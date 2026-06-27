@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecteur HCV16 - Exemple</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .player-container {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        canvas {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            border: 1px solid #444;
+            border-radius: 4px;
+        }
+        .controls {
+            margin: 10px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        button {
+            background: #e50914;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #b81d24;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .file-input {
+            background: #333;
+            border: 2px dashed #666;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        .file-input:hover {
+            border-color: #e50914;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            background: #333;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .info {
+            background: #2a4a2a;
+            border: 1px solid #4a6a4a;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .error {
+            background: #4a2a2a;
+            border: 1px solid #6a4a4a;
+            color: #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎮 Lecteur HCV16</h1>
+    
+    <div class="info">
+        <h3>📋 Instructions :</h3>
+        <ol>
+            <li>Cliquez sur la zone ci-dessous ou glissez votre fichier .hcv16</li>
+            <li>Le player chargera automatiquement le fichier</li>
+            <li>Utilisez les contrôles pour lire la vidéo</li>
+        </ol>
+        <p><strong>Formats supportés :</strong> .hcv16 (tous modes : LOSSLESS, GRAIN_SYNTH, SIGNAL_ONLY)</p>
+    </div>
+
+    <div class="file-input" id="fileInput" onclick="document.getElementById('fileSelector').click()">
+        <p>📁 Cliquez ici ou glissez votre fichier .hcv16</p>
+        <p style="font-size: 12px; color: #999;">Taille max recommandée : 100 MB</p>
+        <input type="file" id="fileSelector" accept=".hcv16" style="display: none;">
+    </div>
+
+    <div class="status" id="status">Prêt à charger un fichier HCV16...</div>
+
+    <div class="player-container">
+        <canvas id="playerCanvas" width="640" height="480"></canvas>
+        
+        <div class="controls">
+            <button id="playBtn" disabled>▶️ Lire</button>
+            <button id="pauseBtn" disabled>⏸️ Pause</button>
+            <button id="stopBtn" disabled>⏹️ Stop</button>
+            <span id="timeDisplay">00:00 / 00:00</span>
+            <input type="range" id="seekBar" min="0" max="100" value="0" disabled style="flex: 1; margin: 0 10px;">
+        </div>
+        
+        <div id="fileInfo" style="display: none;">
+            <h3>📊 Informations Fichier :</h3>
+            <div id="infoContent"></div>
+        </div>
+    </div>
+
+    <!-- Chargement du player HCV16 -->
+    <script src="public/hcv_player.js"></script>
+    
+    <!-- Chargement optionnel de fflate pour décompression -->
+    <script src="https://unpkg.com/fflate@0.8.1/lib/browser.js"></script>
+
+    <script>
+        // Initialisation du player
+        const canvas = document.getElementById('playerCanvas');
+        const status = document.getElementById('status');
+        const fileInfo = document.getElementById('fileInfo');
+        const infoContent = document.getElementById('infoContent');
+        
+        const player = new HCV16Player(canvas, {
+            onStatus: (msg) => {
+                status.textContent = msg;
+                console.log('Player status:', msg);
+            },
+            onProgress: (pct) => {
+                status.textContent = `Chargement... ${pct}%`;
+            },
+            onError: (err) => {
+                status.textContent = `❌ Erreur: ${err}`;
+                status.className = 'status error';
+                console.error('Player error:', err);
+            }
+        });
+
+        // Gestion des fichiers
+        const fileSelector = document.getElementById('fileSelector');
+        const fileInput = document.getElementById('fileInput');
+
+        // Drag & Drop
+        fileInput.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileInput.style.borderColor = '#e50914';
+        });
+
+        fileInput.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            fileInput.style.borderColor = '#666';
+        });
+
+        fileInput.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileInput.style.borderColor = '#666';
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                loadFile(files[0]);
+            }
+        });
+
+        // Sélection fichier
+        fileSelector.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                loadFile(e.target.files[0]);
+            }
+        });
+
+        // Chargement du fichier
+        async function loadFile(file) {
+            if (!file.name.toLowerCase().endsWith('.hcv16')) {
+                status.textContent = '❌ Veuillez sélectionner un fichier .hcv16';
+                status.className = 'status error';
+                return;
+            }
+
+            try {
+                status.textContent = 'Lecture du fichier...';
+                status.className = 'status';
+                
+                const arrayBuffer = await file.arrayBuffer();
+                
+                status.textContent = 'Chargement dans le player...';
+                await player.loadFromBuffer(arrayBuffer);
+                
+                // Afficher les informations du fichier
+                displayFileInfo(file, player.headerInfo);
+                
+                // Activer les contrôles
+                enableControls();
+                
+                status.textContent = `✅ Fichier chargé: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                
+            } catch (error) {
+                status.textContent = `❌ Erreur chargement: ${error.message}`;
+                status.className = 'status error';
+                console.error('Erreur chargement:', error);
+            }
+        }
+
+        // Affichage des informations
+        function displayFileInfo(file, headerInfo) {
+            if (!headerInfo) return;
+            
+            infoContent.innerHTML = `
+                <p><strong>Fichier:</strong> ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</p>
+                <p><strong>Mode:</strong> ${headerInfo.mode || 'N/A'}</p>
+                <p><strong>Résolution:</strong> ${headerInfo.width || 0}×${headerInfo.height || 0}</p>
+                <p><strong>Frames:</strong> ${headerInfo.n_frames || 0}</p>
+                <p><strong>FPS:</strong> ${headerInfo.fps || 0}</p>
+                <p><strong>Durée:</strong> ${player.duration ? player.duration.toFixed(2) + 's' : 'N/A'}</p>
+                <p><strong>Colorspace:</strong> ${headerInfo.colorspace || 'N/A'}</p>
+                <p><strong>Bit Depth:</strong> ${headerInfo.bit_depth || 0}</p>
+                <p><strong>Audio:</strong> ${headerInfo.has_audio ? '✅ Oui' : '❌ Non'}</p>
+            `;
+            fileInfo.style.display = 'block';
+        }
+
+        // Contrôles du player
+        const playBtn = document.getElementById('playBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const seekBar = document.getElementById('seekBar');
+
+        function enableControls() {
+            playBtn.disabled = false;
+            pauseBtn.disabled = false;
+            stopBtn.disabled = false;
+            seekBar.disabled = false;
+        }
+
+        playBtn.addEventListener('click', () => {
+            player.play();
+            updateTimeDisplay();
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            player.pause();
+        });
+
+        stopBtn.addEventListener('click', () => {
+            player.pause();
+            player.seek(0);
+            updateTimeDisplay();
+        });
+
+        seekBar.addEventListener('input', (e) => {
+            const frame = Math.floor((e.target.value / 100) * player.totalFrames);
+            player.seek(frame);
+            updateTimeDisplay();
+        });
+
+        // Mise à jour de l'affichage du temps
+        function updateTimeDisplay() {
+            if (player.duration) {
+                const current = player.currentTime;
+                const total = player.duration;
+                const currentMin = Math.floor(current / 60);
+                const currentSec = Math.floor(current % 60);
+                const totalMin = Math.floor(total / 60);
+                const totalSec = Math.floor(total % 60);
+                
+                timeDisplay.textContent = 
+                    `${currentMin.toString().padStart(2, '0')}:${currentSec.toString().padStart(2, '0')} / ` +
+                    `${totalMin.toString().padStart(2, '0')}:${totalSec.toString().padStart(2, '0')}`;
+                
+                seekBar.value = (current / total) * 100;
+            }
+        }
+
+        // Mise à jour périodique
+        setInterval(updateTimeDisplay, 100);
+
+        // Message d'aide initial
+        console.log('🎮 Lecteur HCV16 prêt !');
+        console.log('Glissez un fichier .hcv16 ou cliquez pour le sélectionner.');
+    </script>
+</body>
+</html>

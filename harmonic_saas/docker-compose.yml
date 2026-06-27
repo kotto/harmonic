@@ -1,0 +1,168 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: harmonic
+      POSTGRES_PASSWORD: harmonic123
+      POSTGRES_DB: harmonic_saas
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U harmonic"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongodb:
+    image: mongo:7-jammy
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: harmonic
+      MONGO_INITDB_ROOT_PASSWORD: harmonic123
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    ports:
+      - "9000:9000"
+    environment:
+      DATABASE_URL: postgresql://harmonic:harmonic123@postgres:5432/harmonic_saas
+      REDIS_URL: redis://redis:6379/0
+      MONGODB_URL: mongodb://harmonic:harmonic123@mongodb:27017/harmonic_saas?authSource=admin
+      JWT_SECRET_KEY: your-super-secret-jwt-key-change-in-production
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      REFRESH_TOKEN_EXPIRE_DAYS: 7
+      STRIPE_SECRET_KEY: your-stripe-secret-key
+      SENDGRID_API_KEY: your-sendgrid-api-key
+      AWS_ACCESS_KEY_ID: your-aws-access-key
+      AWS_SECRET_ACCESS_KEY: your-aws-secret-key
+      AWS_REGION: eu-west-1
+      AUDIO_SERVICE_URL: http://host.docker.internal:9017
+      VIDEO_SERVICE_URL: http://host.docker.internal:9018
+      LM_ARENA_SERVICE_URL: http://host.docker.internal:8000
+    volumes:
+      - ./app:/app
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 9000 --reload
+
+  celery-worker:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://harmonic:harmonic123@postgres:5432/harmonic_saas
+      REDIS_URL: redis://redis:6379/0
+      MONGODB_URL: mongodb://harmonic:harmonic123@mongodb:27017/harmonic_saas?authSource=admin
+      STRIPE_SECRET_KEY: your-stripe-secret-key
+      SENDGRID_API_KEY: your-sendgrid-api-key
+      AWS_ACCESS_KEY_ID: your-aws-access-key
+      AWS_SECRET_ACCESS_KEY: your-aws-secret-key
+      AWS_REGION: eu-west-1
+    volumes:
+      - ./app:/app
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    command: celery -A app.celery_app worker --loglevel=info
+
+  celery-beat:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://harmonic:harmonic123@postgres:5432/harmonic_saas
+      REDIS_URL: redis://redis:6379/0
+      MONGODB_URL: mongodb://harmonic:harmonic123@mongodb:27017/harmonic_saas?authSource=admin
+      STRIPE_SECRET_KEY: your-stripe-secret-key
+      SENDGRID_API_KEY: your-sendgrid-api-key
+    volumes:
+      - ./app:/app
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    command: celery -A app.celery_app beat --loglevel=info
+
+  flower:
+    build: .
+    ports:
+      - "5555:5555"
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      - redis
+      - celery-worker
+    command: celery -A app.celery_app flower --port=5555
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+
+volumes:
+  postgres_data:
+  redis_data:
+  mongodb_data:
+  prometheus_data:
+  grafana_data:

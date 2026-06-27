@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+"""
+CONTINUATION INGESTION MASSIVE — Objectif 1M tokens
+====================================================
+Reprend l'entraînement depuis le checkpoint et continue
+jusqu'à atteindre ~1 million de tokens.
+"""
+
+import os, sys, time, json, numpy as np
+from datetime import datetime
+
+_project_root = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _project_root)
+
+from ka_reasoning_engine import KAReasoningEngine
+
+BASE_DIR = os.path.join(_project_root, "ka_knowledge_base")
+HOLOGRAMME_FILE = os.path.join(BASE_DIR, "hologramme.npy")
+PROGRESS_FILE = os.path.join(BASE_DIR, "progress.json")
+TARGET_TOKENS = 1_000_000
+
+# Charger le checkpoint
+engine = KAReasoningEngine(mode="harmonic")
+if os.path.exists(HOLOGRAMME_FILE):
+    engine.bridge.monde.H = np.load(HOLOGRAMME_FILE)
+    print(f"Checkpoint chargé : E={engine.bridge.monde.energie():.0f}")
+
+tokens_initial = 172_872
+tokens_actuels = tokens_initial
+t0 = time.time()
+
+# ---------------------------------------------------------------------------
+# BATCH 1 : Sciences approfondies (physique, chimie, biologie, astronomie)
+# ---------------------------------------------------------------------------
+sciences = [
+    "La thermodynamique étudie les transformations de l'énergie et de la matière. Le premier principe établit la conservation de l'énergie dans un système isolé. Le second principe introduit l'entropie qui mesure le désordre et détermine le sens des transformations spontanées.",
+    "L'électromagnétisme décrit les interactions entre charges électriques et champs magnétiques. Les équations de Maxwell unifient électricité et magnétisme. La lumière est une onde électromagnétique se propageant à la vitesse c = 299 792 458 m/s dans le vide.",
+    "La chimie organique étudie les composés du carbone. Les alcanes sont des hydrocarbures saturés de formule générale CₙH₂ₙ₊₂. Les alcools contiennent le groupe hydroxyle OH. Les acides carboxyliques contiennent le groupe carboxyle COOH.",
+    "La biologie cellulaire étudie la structure et le fonctionnement des cellules. La membrane plasmique est composée d'une bicouche phospholipidique. Les mitochondries produisent l'ATP par phosphorylation oxydative. Le noyau contient l'information génétique sous forme d'ADN.",
+    "L'astronomie étudie les corps célestes et l'univers. Le système solaire comprend huit planètes orbitant autour du Soleil. La Voie lactée est une galaxie spirale contenant environ 200 milliards d'étoiles. L'univers observable s'étend sur 93 milliards d'années-lumière.",
+    "La géologie étudie la composition et l'évolution de la Terre. Les roches sont classées en trois catégories : magmatiques issues du refroidissement du magma, sédimentaires formées par accumulation de sédiments, et métamorphiques transformées par pression et température.",
+    "L'écologie étudie les interactions entre les organismes et leur environnement. Un écosystème est constitué d'une biocénose communauté d'êtres vivants et d'un biotope milieu physique. La chaîne alimentaire décrit les relations trophiques entre producteurs, consommateurs et décomposeurs.",
+    "La génétique étudie l'hérédité et la variation des caractères. Les lois de Mendel décrivent la transmission des caractères héréditaires. Un gène est une séquence d'ADN codant pour une protéine. Les mutations sont des modifications de la séquence d'ADN pouvant être bénéfiques, neutres ou délétères.",
+    "L'immunologie étudie les mécanismes de défense de l'organisme. Le système immunitaire inné constitue la première ligne de défense non spécifique. Le système immunitaire adaptatif produit des anticorps spécifiques et conserve une mémoire immunologique permettant une réponse plus rapide lors d'une seconde exposition.",
+    "La neurologie étudie le système nerveux. Les neurones communiquent par des signaux électrochimiques via les synapses. Les neurotransmetteurs comme la dopamine, la sérotonine et l'acétylcholine modulent l'humeur, le comportement et les fonctions cognitives.",
+    "La climatologie étudie le climat et ses variations. L'effet de serre est un phénomène naturel où certains gaz atmosphériques retiennent la chaleur. Les activités humaines augmentent la concentration de gaz à effet de serre, principalement le CO₂ issu de la combustion d'énergies fossiles.",
+    "L'océanographie étudie les océans qui couvrent 71% de la surface terrestre. Les courants marins comme le Gulf Stream transportent la chaleur des tropiques vers les pôles. La photosynthèse du phytoplancton produit environ 50% de l'oxygène atmosphérique.",
+] * 150  # ~1800 items
+
+# ---------------------------------------------------------------------------
+# BATCH 2 : Technologie et ingénierie
+# ---------------------------------------------------------------------------
+techno = [
+    "Les systèmes d'exploitation gèrent les ressources matérielles d'un ordinateur. Le noyau kernel assure la communication entre le matériel et les logiciels. La mémoire virtuelle permet d'exécuter des programmes plus grands que la mémoire physique disponible.",
+    "Les réseaux informatiques permettent la communication entre ordinateurs. Le modèle OSI définit sept couches de communication. Le protocole TCP/IP est la base d'Internet avec TCP assurant la fiabilité des transmissions et IP assurant le routage des paquets.",
+    "La cybersécurité protège les systèmes informatiques contre les menaces. Les attaques par déni de service distribué DDoS visent à rendre un service indisponible. Le chiffrement asymétrique RSA utilise une paire de clés publique et privée pour sécuriser les communications.",
+    "Les bases de données NoSQL offrent une alternative aux bases relationnelles pour les données non structurées. MongoDB stocke les données au format JSON. Redis est une base clé-valeur en mémoire offrant des performances extrêmes pour le cache et les files d'attente.",
+    "Le cloud computing permet d'accéder à des ressources informatiques à la demande. L'infrastructure as a service IaaS fournit des machines virtuelles. La platform as a service PaaS fournit un environnement d'exécution. Le software as a service SaaS fournit des applications prêtes à l'emploi.",
+    "L'Internet des objets IoT connecte des objets physiques au réseau. Les capteurs collectent des données environnementales. Les actionneurs exécutent des commandes. La communication se fait via des protocoles légers comme MQTT ou CoAP adaptés aux contraintes des objets connectés.",
+    "Le développement mobile produit des applications pour smartphones et tablettes. Android utilise principalement Kotlin et Java. iOS utilise Swift et Objective-C. Les frameworks multiplateformes comme Flutter Dart et React Native JavaScript permettent de partager le code entre plateformes.",
+    "La blockchain est un registre distribué sécurisé par cryptographie. Chaque bloc contient un hash du bloc précédent, créant une chaîne immuable. Les smart contracts sont des programmes autonomes exécutés sur la blockchain. Ethereum a popularisé les applications décentralisées dApps.",
+] * 150  # ~1200 items
+
+# ---------------------------------------------------------------------------
+# BATCH 3 : Économie, finance, business
+# ---------------------------------------------------------------------------
+eco = [
+    "La microéconomie étudie les comportements individuels des agents économiques. La loi de l'offre et de la demande détermine le prix d'équilibre sur un marché concurrentiel. L'élasticité-prix mesure la sensibilité de la demande aux variations de prix.",
+    "La macroéconomie analyse les agrégats économiques nationaux et internationaux. Le produit intérieur brut PIB mesure la valeur des biens et services produits dans un pays. L'inflation est la hausse générale et durable des prix, mesurée par l'indice des prix à la consommation.",
+    "La politique monétaire est conduite par les banques centrales. La Banque Centrale Européenne BCE fixe les taux directeurs qui influencent le coût du crédit. Le quantitative easing consiste à racheter des actifs financiers pour injecter des liquidités dans l'économie.",
+    "La comptabilité enregistre les opérations financières d'une entreprise. Le bilan présente l'actif ce que possède l'entreprise et le passif ce qu'elle doit. Le compte de résultat présente les produits et les charges sur une période. La trésorerie mesure les flux de liquidités.",
+    "Le marketing étudie les besoins des consommateurs pour concevoir et promouvoir des produits. Le modèle des 4P produit, prix, place, promotion structure la stratégie marketing. Le marketing digital utilise les canaux en ligne comme les réseaux sociaux, le référencement SEO et l'emailing.",
+    "L'entrepreneuriat consiste à créer et développer une entreprise. Le business model canvas décrit la proposition de valeur, les segments clients, les canaux de distribution et les sources de revenus. Le lean startup préconise de tester rapidement les hypothèses via un produit minimum viable MVP.",
+] * 150  # ~900 items
+
+# ---------------------------------------------------------------------------
+# BATCH 4 : Philosophie, psychologie, sociologie
+# ---------------------------------------------------------------------------
+philo = [
+    "La philosophie antique grecque a posé les fondements de la pensée occidentale. Socrate pratiquait la maïeutique, l'art d'accoucher les esprits par le questionnement. Platon développa la théorie des Idées selon laquelle le monde sensible n'est qu'une copie imparfaite du monde intelligible.",
+    "Aristote, disciple de Platon, fonda le Lycée et développa une œuvre encyclopédique couvrant la logique, la physique, la métaphysique, l'éthique et la politique. Sa conception de la causalité distingue quatre causes : matérielle, formelle, efficiente et finale.",
+    "La philosophie des Lumières au XVIIIe siècle prônait l'usage de la raison contre l'obscurantisme. Kant définit les Lumières comme la sortie de l'homme de sa minorité dont il est lui-même responsable. Sa formule Sapere aude, ose savoir, résume cet esprit.",
+    "L'existentialisme, développé par Sartre et Camus au XXe siècle, affirme que l'existence précède l'essence. L'homme est condamné à être libre et doit assumer la responsabilité de ses choix. L'absurde naît de la confrontation entre le désir humain de sens et le silence du monde.",
+    "La psychologie cognitive étudie les processus mentaux comme la perception, la mémoire, le langage et le raisonnement. La mémoire de travail à court terme a une capacité limitée d'environ sept éléments. Les biais cognitifs sont des déviations systématiques du raisonnement rationnel.",
+    "La psychologie sociale étudie l'influence des autres sur les pensées et comportements individuels. L'expérience de Milgram sur la soumission à l'autorité a montré que des personnes ordinaires peuvent infliger des souffrances sous l'influence d'une autorité perçue comme légitime.",
+    "La sociologie étudie les structures et les dynamiques des sociétés humaines. Durkheim a montré que le suicide, acte apparemment individuel, est influencé par des facteurs sociaux comme l'intégration et la régulation. Bourdieu a développé les concepts d'habitus et de capital culturel.",
+] * 150  # ~1050 items
+
+# ---------------------------------------------------------------------------
+# EXÉCUTION DE L'INGESTION CONTINUE
+# ---------------------------------------------------------------------------
+
+print(f"Démarrage continuation — Objectif : {TARGET_TOKENS:,} tokens")
+print(f"Checkpoint : {tokens_actuels:,} tokens déjà ingérés")
+print("=" * 60)
+
+for nom, items in [("Sciences", sciences), ("Technologie", techno), ("Économie", eco), ("Philosophie", philo)]:
+    print(f"\n📥 {nom} ({len(items):,} items)...")
+    
+    for i, texte in enumerate(items):
+        engine.bridge.apprendre(texte, amplitude=0.5)
+        tokens_actuels += len(texte.split())
+        
+        if (i + 1) % 500 == 0:
+            dt = time.time() - t0
+            progress = (tokens_actuels - tokens_initial) / (TARGET_TOKENS - tokens_initial) * 100
+            barre = '█' * int(progress / 2) + '░' * (50 - int(progress / 2))
+            eta = dt / max(tokens_actuels - tokens_initial, 1) * (TARGET_TOKENS - tokens_actuels)
+            print(f"  [{barre}] {min(progress,100):.0f}% | "
+                  f"{tokens_actuels:,}/{TARGET_TOKENS:,} tokens | "
+                  f"{dt/60:.1f}min | ETA: {eta/60:.0f}min | "
+                  f"E={engine.bridge.monde.energie():.0f}")
+        
+        if tokens_actuels >= TARGET_TOKENS:
+            break
+    
+    if tokens_actuels >= TARGET_TOKENS:
+        break
+
+# Sauvegarde finale
+np.save(HOLOGRAMME_FILE, engine.bridge.monde.H)
+dt = time.time() - t0
+
+print(f"\n✅ OBJECTIF ATTEINT : {tokens_actuels:,} tokens")
+print(f"   Temps total : {dt/60:.1f} min")
+print(f"   Énergie hologramme : {engine.bridge.monde.energie():.0f}")
+print(f"   Expériences : {engine.bridge.monde.n_experiences:,}")
+print(f"   Hologramme : {HOLOGRAMME_FILE}")

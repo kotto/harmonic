@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCS V2 - IA Générative Hybride SDXL + Harmonique</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* CSS personnalisé sans dépendance Tailwind */
+        :root {
+            --hcs-purple: #6B46C1;
+            --hcs-gold: #F59E0B;
+            --hcs-blue: #3B82F6;
+            --hcs-green: #10B981;
+            --bg-dark: #0F172A;
+            --bg-light: #1E293B;
+            --text-primary: #F8FAFC;
+            --text-secondary: #CBD5E1;
+            --border-color: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark), var(--bg-light));
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--hcs-purple), var(--hcs-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .panel-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--hcs-gold);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--hcs-purple), var(--hcs-gold));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(107, 70, 193, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-light);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .parameters {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .result-panel {
+            grid-column: 1 / -1;
+        }
+
+        .result-image {
+            width: 100%;
+            max-width: 600px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .metric {
+            background: var(--bg-dark);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--hcs-gold);
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--hcs-gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .file-upload {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .file-upload input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-upload-label {
+            display: block;
+            padding: 12px 16px;
+            background: var(--bg-light);
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-label:hover {
+            border-color: var(--hcs-gold);
+            background: var(--bg-dark);
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .parameters {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">HCS V2 - IA Hybride SDXL</h1>
+            <p class="subtitle">Génération d'images avec principes harmoniques φ²</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Panneau de contrôle -->
+            <div class="panel">
+                <h2 class="panel-title">🎨 Paramètres de Génération</h2>
+                
+                <div class="form-group">
+                    <label for="prompt">📝 Prompt</label>
+                    <textarea id="prompt" placeholder="A beautiful harmonic landscape with golden ratio patterns..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="negative-prompt">🚫 Prompt Négatif</label>
+                    <textarea id="negative-prompt" placeholder="low quality, blurry, distorted..."></textarea>
+                </div>
+
+                <div class="parameters">
+                    <div class="form-group">
+                        <label for="energy-level">⚡ Niveau d'Énergie</label>
+                        <select id="energy-level">
+                            <option value="classique">Classique</option>
+                            <option value="harmonique" selected>Harmonique</option>
+                            <option value="quantum">Quantum</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="harmonic-strength">🌊 Force Harmonique</label>
+                        <input type="range" id="harmonic-strength" min="0" max="1" step="0.1" value="0.8">
+                        <small>Value: <span id="harmonic-value">0.8</span></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="width">📏 Largeur</label>
+                        <select id="width">
+                            <option value="512">512px</option>
+                            <option value="768">768px</option>
+                            <option value="1024" selected>1024px</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="height">📏 Hauteur</label>
+                        <select id="height">
+                            <option value="512">512px</option>
+                            <option value="768">768px</option>
+                            <option value="1024" selected>1024px</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="upscale-factor">📈 Facteur d'Upscale</label>
+                        <select id="upscale-factor">
+                            <option value="1.0">1.0x</option>
+                            <option value="1.5">1.5x</option>
+                            <option value="2.0" selected>2.0x</option>
+                            <option value="3.0">3.0x</option>
+                            <option value="4.0">4.0x</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="temporal-coherence">
+                            <input type="checkbox" id="temporal-coherence" checked>
+                            Cohérence Temporelle
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="reference-image">🖼️ Image de Référence (optionnel)</label>
+                    <div class="file-upload">
+                        <input type="file" id="reference-image" accept="image/*">
+                        <label for="reference-image" class="file-upload-label">
+                            📁 Choisir une image ou glisser-déposer
+                        </label>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="generateImage()">
+                        🚀 Générer
+                    </button>
+                    <button class="btn btn-secondary" onclick="generateWithReference()">
+                        🎨 Générer avec Référence
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearResults()">
+                        🗑️ Effacer
+                    </button>
+                </div>
+            </div>
+
+            <!-- Panneau de résultats -->
+            <div class="panel result-panel">
+                <h2 class="panel-title">📊 Résultats</h2>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 15px;">🎨 Génération en cours...</p>
+                </div>
+
+                <div id="results" style="display: none;">
+                    <img id="result-image" class="result-image" style="display: none;">
+                    
+                    <div class="metrics" id="metrics" style="display: none;">
+                        <div class="metric">
+                            <div class="metric-value" id="harmony-score">-</div>
+                            <div class="metric-label">Score Harmonie</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="psnr">-</div>
+                            <div class="metric-label">PSNR (dB)</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="ssim">-</div>
+                            <div class="metric-label">SSIM</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="phi-balance">-</div>
+                            <div class="metric-label">Balance φ</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="processing-time">-</div>
+                            <div class="metric-label">Temps (s)</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="downloadImage()" id="download-btn" style="display: none;">
+                            💾 Télécharger
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8011';
+        
+        // Mise à jour de la valeur du slider
+        document.getElementById('harmonic-strength').addEventListener('input', function(e) {
+            document.getElementById('harmonic-value').textContent = e.target.value;
+        });
+
+        // Génération d'image simple
+        async function generateImage() {
+            const prompt = document.getElementById('prompt').value;
+            if (!prompt.trim()) {
+                alert('⚠️ Veuillez entrer un prompt');
+                return;
+            }
+
+            showLoading(true);
+
+            const requestData = {
+                prompt: prompt,
+                negative_prompt: document.getElementById('negative-prompt').value,
+                width: parseInt(document.getElementById('width').value),
+                height: parseInt(document.getElementById('height').value),
+                energy_level: document.getElementById('energy-level').value,
+                harmonic_strength: parseFloat(document.getElementById('harmonic-strength').value),
+                upscale_factor: parseFloat(document.getElementById('upscale-factor').value),
+                temporal_coherence: document.getElementById('temporal-coherence').checked
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v2/hybrid/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                displayResults(result);
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert(`❌ Erreur de génération: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Génération avec référence
+        async function generateWithReference() {
+            const prompt = document.getElementById('prompt').value;
+            const referenceFile = document.getElementById('reference-image').files[0];
+
+            if (!prompt.trim()) {
+                alert('⚠️ Veuillez entrer un prompt');
+                return;
+            }
+
+            if (!referenceFile) {
+                alert('⚠️ Veuillez sélectionner une image de référence');
+                return;
+            }
+
+            showLoading(true);
+
+            const formData = new FormData();
+            formData.append('prompt', prompt);
+            formData.append('reference_image', referenceFile);
+            formData.append('width', document.getElementById('width').value);
+            formData.append('height', document.getElementById('height').value);
+            formData.append('energy_level', document.getElementById('energy-level').value);
+            formData.append('harmonic_strength', document.getElementById('harmonic-strength').value);
+            formData.append('upscale_factor', document.getElementById('upscale-factor').value);
+            formData.append('temporal_coherence', document.getElementById('temporal-coherence').checked);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v2/hybrid/generate-with-reference`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                displayResults(result);
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert(`❌ Erreur de génération: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Affichage des résultats
+        function displayResults(result) {
+            const resultImage = document.getElementById('result-image');
+            const resultsDiv = document.getElementById('results');
+            const metricsDiv = document.getElementById('metrics');
+            const downloadBtn = document.getElementById('download-btn');
+
+            if (result.success && result.generated_image_base64) {
+                // Afficher l'image
+                resultImage.src = `data:image/png;base64,${result.generated_image_base64}`;
+                resultImage.style.display = 'block';
+
+                // Afficher les métriques
+                if (result.metrics) {
+                    document.getElementById('harmony-score').textContent = result.metrics.harmony_score?.toFixed(3) || '-';
+                    document.getElementById('psnr').textContent = result.metrics.generation_psnr?.toFixed(1) || '-';
+                    document.getElementById('ssim').textContent = result.metrics.harmonic_ssim?.toFixed(3) || '-';
+                    document.getElementById('phi-balance').textContent = result.metrics.phi_balance?.toFixed(3) || '-';
+                    document.getElementById('processing-time').textContent = result.processing_time?.toFixed(2) || '-';
+                    metricsDiv.style.display = 'grid';
+                }
+
+                // Afficher le bouton de téléchargement
+                downloadBtn.style.display = 'inline-block';
+                resultsDiv.style.display = 'block';
+            } else {
+                alert(`❌ Erreur: ${result.message || 'Erreur inconnue'}`);
+            }
+        }
+
+        // Téléchargement de l'image
+        function downloadImage() {
+            const resultImage = document.getElementById('result-image');
+            if (resultImage.src) {
+                const link = document.createElement('a');
+                link.download = `hcs_hybrid_${Date.now()}.png`;
+                link.href = resultImage.src;
+                link.click();
+            }
+        }
+
+        // Gestion du chargement
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            
+            if (show) {
+                loading.classList.add('active');
+                results.style.display = 'none';
+            } else {
+                loading.classList.remove('active');
+            }
+        }
+
+        // Effacer les résultats
+        function clearResults() {
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('metrics').style.display = 'none';
+            document.getElementById('download-btn').style.display = 'none';
+            document.getElementById('result-image').style.display = 'none';
+        }
+
+        // Gestion du fichier de référence
+        document.getElementById('reference-image').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const label = document.querySelector('.file-upload-label');
+            
+            if (file) {
+                label.textContent = `📁 ${file.name}`;
+                label.style.borderColor = 'var(--hcs-gold)';
+            } else {
+                label.textContent = '📁 Choisir une image ou glisser-déposer';
+                label.style.borderColor = 'var(--border-color)';
+            }
+        });
+
+        // Test de connexion au serveur
+        window.addEventListener('load', async function() {
+            try {
+                const response = await fetch(`${API_BASE}/api/v2/hybrid/info`);
+                if (response.ok) {
+                    const info = await response.json();
+                    console.log('✅ Serveur HCS connecté:', info);
+                } else {
+                    console.warn('⚠️ Serveur HCS non disponible');
+                }
+            } catch (error) {
+                console.error('❌ Erreur de connexion:', error);
+            }
+        });
+    </script>
+</body>
+</html>

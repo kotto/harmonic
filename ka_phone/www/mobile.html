@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>KA Phone — Interface</title>
+
+<!-- Three.js CDN -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+  :root {
+    --bg-deep: #020818;
+    --cyan: #5bc0ff;
+    --violet: #7d5cff;
+    --glass: rgba(255,255,255,0.05);
+    --border: rgba(255,255,255,0.08);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'SF Pro Display', 'Inter', system-ui, sans-serif;
+    background: var(--bg-deep);
+    color: #fff;
+    overflow: hidden;
+    height: 100vh;
+    height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .bg-gradient {
+    position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(circle at center, rgba(88,165,255,0.25), transparent 45%);
+    pointer-events: none;
+  }
+
+  /* ---- CANVAS 3D ---- */
+  #three-canvas {
+    position: fixed; inset: 0; z-index: 1;
+    pointer-events: none;
+  }
+
+  /* ---- MAIN SCREEN ---- */
+  .screen {
+    position: fixed; inset: 0; z-index: 2;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+
+  /* ---- GREETING ---- */
+  .greeting {
+    text-align: center;
+    margin-bottom: 20px;
+    z-index: 3;
+  }
+  .greeting h1 {
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #e0e8ff, #a0c4ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+  .greeting p {
+    font-size: clamp(1rem, 3vw, 1.5rem);
+    color: rgba(255,255,255,0.55);
+    font-weight: 300;
+  }
+
+  /* ---- NEURAL RING ---- */
+  .neural-ring {
+    position: absolute;
+    width: min(540px, 90vw);
+    height: min(540px, 90vw);
+    top: 48%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    pointer-events: none;
+  }
+  .glyph-btn {
+    position: absolute;
+    width: clamp(50px, 10vw, 80px);
+    height: clamp(50px, 10vw, 80px);
+    border-radius: 50%;
+    border: 1px solid rgba(88,200,255,0.3);
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    display: flex; align-items: center; justify-content: center;
+    font-size: clamp(1.2rem, 3vw, 2rem);
+    color: rgba(255,255,255,0.8);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+    pointer-events: auto;
+    cursor: pointer;
+    animation: glyphPulse 4s ease-in-out infinite;
+  }
+  .glyph-btn:hover {
+    transform: scale(1.2);
+    border-color: var(--cyan);
+  }
+  .glyph-btn:nth-child(odd) { animation-delay: 0s; }
+  .glyph-btn:nth-child(even) { animation-delay: 2s; }
+
+  @keyframes glyphPulse {
+    0%,100% { box-shadow: 0 0 20px rgba(91,192,255,0); }
+    50% { box-shadow: 0 0 30px rgba(91,192,255,0.3); }
+  }
+
+  /* ---- ORBIT RING ---- */
+  .orbit-ring {
+    position: absolute;
+    border: 1px solid rgba(91,192,255,0.15);
+    border-radius: 50%;
+    animation: orbitSpin 20s linear infinite;
+    pointer-events: none;
+  }
+  .orbit-ring:nth-child(1) { width: 100%; height: 100%; }
+  .orbit-ring:nth-child(2) {
+    width: 80%; height: 80%;
+    top: 10%; left: 10%;
+    animation-duration: 25s;
+    animation-direction: reverse;
+  }
+  .orbit-ring:nth-child(3) {
+    width: 60%; height: 60%;
+    top: 20%; left: 20%;
+    animation-duration: 30s;
+  }
+
+  @keyframes orbitSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* ---- PROMPT BAR ---- */
+  .prompt-bar {
+    position: fixed;
+    bottom: max(24px, env(safe-area-inset-bottom, 24px));
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(90vw, 800px);
+    height: clamp(60px, 10vh, 80px);
+    border-radius: 40px;
+    border: 1px solid rgba(147,112,255,0.3);
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+    z-index: 10;
+    transition: border-color 0.3s;
+  }
+  .prompt-bar:focus-within {
+    border-color: rgba(147,112,255,0.6);
+    box-shadow: 0 0 40px rgba(125,92,255,0.15);
+  }
+
+  .prompt-bar svg.sparkle {
+    color: var(--violet);
+    flex-shrink: 0;
+    width: 24px; height: 24px;
+  }
+
+  .prompt-bar input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #fff;
+    font-size: clamp(0.95rem, 2.5vw, 1.1rem);
+    font-family: inherit;
+    font-weight: 300;
+  }
+  .prompt-bar input::placeholder {
+    color: rgba(255,255,255,0.35);
+  }
+
+  .prompt-bar .send-btn {
+    width: clamp(44px, 8vh, 56px);
+    height: clamp(44px, 8vh, 56px);
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #22d3ee, #8b5cf6);
+    color: #fff;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s, transform 0.2s;
+    font-size: 1.2rem;
+  }
+  .send-btn:active {
+    transform: scale(0.95);
+  }
+  .send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* ---- RESPONSE OVERLAY ---- */
+  .response-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: rgba(2,8,24,0.9);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+  }
+  .response-overlay.active {
+    display: flex;
+  }
+  .response-overlay .close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+  .response-text {
+    max-width: 600px;
+    font-size: clamp(1rem, 3vw, 1.3rem);
+    line-height: 1.7;
+    color: rgba(255,255,255,0.9);
+    font-weight: 300;
+    white-space: pre-wrap;
+  }
+  .response-text.loading {
+    color: rgba(255,255,255,0.4);
+  }
+  .response-meta {
+    margin-top: 24px;
+    display: flex;
+    gap: 16px;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.4);
+  }
+  .response-meta span {
+    padding: 4px 12px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+  }
+
+  /* ---- AUDIO BUTTON ---- */
+  .audio-btn {
+    margin-top: 16px;
+    padding: 10px 24px;
+    border-radius: 20px;
+    border: 1px solid rgba(91,192,255,0.3);
+    background: rgba(91,192,255,0.1);
+    color: var(--cyan);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.3s;
+  }
+  .audio-btn:hover {
+    background: rgba(91,192,255,0.2);
+  }
+
+  /* ---- LOADING DOTS ---- */
+  .loading-dots {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  .loading-dots span {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--violet);
+    animation: dotBounce 1.4s ease-in-out infinite;
+  }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes dotBounce {
+    0%,80%,100% { transform: scale(0.8); opacity: 0.5; }
+    40% { transform: scale(1.2); opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-gradient"></div>
+
+<canvas id="three-canvas"></canvas>
+
+<!-- ORBIT RINGS -->
+<div class="neural-ring" id="neuralRing">
+  <div class="orbit-ring"></div>
+  <div class="orbit-ring"></div>
+  <div class="orbit-ring"></div>
+</div>
+
+<!-- MAIN SCREEN -->
+<div class="screen">
+  <div class="greeting">
+    <h1 id="greetingName">Bonjour</h1>
+    <p>Que puis-je faire pour toi ?</p>
+  </div>
+</div>
+
+<!-- PROMPT BAR -->
+<div class="prompt-bar" id="promptBar">
+  <svg class="sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/>
+    <path d="M12 3l1.5 4.5" opacity="0.5"/>
+    <path d="M12 3V1" opacity="0.3"/>
+    <path d="M12 15v2" opacity="0.3"/>
+  </svg>
+  <input
+    type="text"
+    id="promptInput"
+    placeholder="Exprime ton intention..."
+    autocomplete="off"
+  />
+  <button class="send-btn" id="sendBtn" onclick="sendPrompt()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 12h14M12 5l7 7-7 7"/>
+    </svg>
+  </button>
+</div>
+
+<!-- RESPONSE OVERLAY -->
+<div class="response-overlay" id="responseOverlay">
+  <button class="close-btn" onclick="closeResponse()">✕</button>
+  <div class="response-text" id="responseText"></div>
+  <div class="loading-dots" id="loadingDots" style="display:none">
+    <span></span><span></span><span></span>
+  </div>
+  <button class="audio-btn" id="audioBtn" style="display:none" onclick="speakResponse()">🔊 Écouter</button>
+  <div class="response-meta" id="responseMeta"></div>
+</div>
+
+<!-- ==================== SCRIPTS ==================== -->
+
+<!-- GLYPHS (pure CSS, injected by JS for dynamic positioning) -->
+<script>
+(function() {
+  const glyphs = ['✦','◈','◌','◎','△','⬢'];
+  const ring = document.getElementById('neuralRing');
+  const radius = Math.min(window.innerWidth * 0.4, 250);
+
+  glyphs.forEach((glyph, index) => {
+    const angle = (index / glyphs.length) * Math.PI * 2 - Math.PI / 2;
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
+
+    const btn = document.createElement('button');
+    btn.className = 'glyph-btn';
+    btn.textContent = glyph;
+    btn.style.left = `calc(50% + ${x}px - ${40}px)`;
+    btn.style.top = `calc(50% + ${y}px - ${40}px)`;
+    btn.onclick = () => {
+      document.getElementById('promptInput').value = glyph;
+      document.getElementById('promptInput').focus();
+    };
+    ring.appendChild(btn);
+  });
+
+  // Heure-based greeting
+  const hour = new Date().getHours();
+  let greeting = 'Bonjour';
+  if (hour < 5) greeting = 'Bonne nuit';
+  else if (hour < 12) greeting = 'Bonjour';
+  else if (hour < 18) greeting = 'Bon après-midi';
+  else greeting = 'Bonsoir';
+  document.getElementById('greetingName').textContent = greeting;
+})();
+</script>
+
+<!-- THREE.JS SPHERE -->
+<script type="module">
+import * as THREE from 'three';
+
+const canvas = document.getElementById('three-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.z = 5;
+
+// Ambient + point lights
+scene.add(new THREE.AmbientLight(0x8090cc, 2));
+const pointLight = new THREE.PointLight(0x7d5cff, 30, 15);
+pointLight.position.set(3, 3, 5);
+scene.add(pointLight);
+
+// Orb sphere
+const geometry = new THREE.SphereGeometry(1.3, 128, 128);
+const material = new THREE.MeshPhysicalMaterial({
+  color: new THREE.Color('#5bc0ff'),
+  emissive: new THREE.Color('#7d5cff'),
+  emissiveIntensity: 1.2,
+  roughness: 0.05,
+  metalness: 0.1,
+  clearcoat: 0.3,
+  clearcoatRoughness: 0.2,
+  transmission: 0.6,
+  thickness: 1.5,
+  ior: 1.5,
+});
+const orb = new THREE.Mesh(geometry, material);
+scene.add(orb);
+
+// Inner glow sphere
+const innerGeo = new THREE.SphereGeometry(1.25, 64, 64);
+const innerMat = new THREE.MeshBasicMaterial({
+  color: new THREE.Color('#5bc0ff'),
+  transparent: true,
+  opacity: 0.08,
+});
+const innerGlow = new THREE.Mesh(innerGeo, innerMat);
+scene.add(innerGlow);
+
+// Responsive
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+// Animation loop
+function animate(timestamp) {
+  requestAnimationFrame(animate);
+
+  const t = timestamp * 0.001;
+  orb.position.y = Math.sin(t * 0.5) * 0.25;
+  orb.rotation.y += 0.002;
+  orb.rotation.x += 0.001;
+  innerGlow.rotation.y -= 0.003;
+  innerGlow.rotation.z += 0.001;
+
+  // Pulse emissive
+  const pulse = 1 + Math.sin(t * 1.5) * 0.15;
+  material.emissiveIntensity = 1.2 * pulse;
+  pointLight.intensity = 30 * pulse;
+
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(animate);
+</script>
+
+<!-- API CONNECTION TO KA HYBRID -->
+<script>
+const API_URL = 'http://localhost:8420';
+let lastResponseText = '';
+let currentVoice = 'fr-FR-DeniseNeural';
+
+async function sendPrompt() {
+  const input = document.getElementById('promptInput');
+  const prompt = input.value.trim();
+  if (!prompt) return;
+
+  const overlay = document.getElementById('responseOverlay');
+  const respText = document.getElementById('responseText');
+  const loading = document.getElementById('loadingDots');
+  const audioBtn = document.getElementById('audioBtn');
+  const metaDiv = document.getElementById('responseMeta');
+  const sendBtn = document.getElementById('sendBtn');
+
+  overlay.classList.add('active');
+  respText.textContent = '';
+  respText.classList.add('loading');
+  loading.style.display = 'flex';
+  audioBtn.style.display = 'none';
+  metaDiv.innerHTML = '';
+  sendBtn.disabled = true;
+  lastResponseText = '';
+
+  try {
+    const res = await fetch(`${API_URL}/query`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, style: 'general' }),
+    });
+    const data = await res.json();
+
+    respText.classList.remove('loading');
+    loading.style.display = 'none';
+    respText.textContent = data.text || data.error || 'Aucune réponse.';
+    lastResponseText = data.text || '';
+
+    if (data.text && data.text.length > 10) {
+      audioBtn.style.display = 'inline-block';
+    }
+
+    metaDiv.innerHTML = `
+      <span>Source: ${data.source || 'N/A'}</span>
+      <span>Trace: ${((data.trace_score||0)*100).toFixed(0)}%</span>
+      <span>Temps: ${data.temps_ms || 0}ms</span>
+      <span>${data.verified ? '✓ Vérifié' : '⚠ Non vérifié'}</span>
+    `;
+  } catch (e) {
+    respText.classList.remove('loading');
+    loading.style.display = 'none';
+    respText.textContent = 'Impossible de contacter KA Hybrid.\n\n' +
+      'Vérifie que le serveur tourne sur http://localhost:8420';
+  }
+
+  sendBtn.disabled = false;
+}
+
+function closeResponse() {
+  document.getElementById('responseOverlay').classList.remove('active');
+}
+
+function speakResponse() {
+  if (!lastResponseText) return;
+  const audio = new Audio(
+    `${API_URL}/tts?text=${encodeURIComponent(lastResponseText.substring(0, 500))}&voice=${currentVoice}`
+  );
+  audio.play().catch(e => alert('Audio non disponible: ' + e.message));
+}
+
+// Enter key to send
+document.getElementById('promptInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') sendPrompt();
+});
+
+// Escape to close
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeResponse();
+});
+</script>
+
+</body>
+</html>

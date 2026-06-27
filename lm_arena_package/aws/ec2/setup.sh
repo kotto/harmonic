@@ -1,0 +1,1 @@
+# Script de configuration EC2

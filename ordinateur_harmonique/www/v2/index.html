@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture Harmonique — Alain Kotto</title>
+<style>
+:root {
+  --bg: #070514; --bg2: #0a0820; --bg3: #0f0c2e;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --red: #ff4757; --green: #2ed573; --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.7;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse at 30% 20%,rgba(122,92,255,0.06),transparent 60%),radial-gradient(ellipse at 70% 50%,rgba(62,240,216,0.04),transparent 60%);pointer-events:none}
+.container{max-width:1200px;margin:0 auto;padding:0 20px;position:relative;z-index:1}
+
+.hero{text-align:center;padding:70px 20px 50px;background:linear-gradient(180deg,rgba(212,168,67,0.08) 0%,transparent 100%)}
+.hero h1{font-size:2.8em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.hero .tagline{font-size:1.2em;color:var(--ink2)}
+.hero .equation{font-family:'Courier New',monospace;font-size:1.4em;color:var(--phi);margin:16px 0;letter-spacing:2px}
+.hero .subtitle{color:var(--ink3);font-size:0.95em}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(7,5,20,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+nav a{color:var(--ink2);text-decoration:none;padding:7px 14px;border-radius:20px;font-size:0.88em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover,nav a.active{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+
+section{padding:50px 0} section:nth-child(even){background:var(--bg2)}
+h2{font-size:2em;margin-bottom:8px} h2 span{color:var(--phi)}
+h3{font-size:1.35em;color:var(--phi);margin:24px 0 12px}
+.section-desc{color:var(--ink3);margin-bottom:24px;max-width:800px}
+
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:24px;transition:all 0.2s}
+.card:hover{border-color:rgba(212,168,67,0.25);box-shadow:0 6px 24px rgba(0,0,0,0.3)}
+.card .badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:0.75em;font-weight:600;margin-bottom:10px}
+.badge-ready{background:rgba(46,213,115,0.15);color:var(--green)}
+.badge-beta{background:rgba(212,168,67,0.15);color:var(--phi)}
+.badge-proof{background:rgba(62,240,216,0.12);color:var(--acc)}
+.card h3{margin:0 0 8px;font-size:1.15em;color:var(--acc)}
+.card p{color:var(--ink2);font-size:0.93em;margin-bottom:10px}
+.card .price{font-size:1.3em;font-weight:700;color:var(--phi)}
+
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:24px 0}
+.stat-box{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:18px;text-align:center}
+.stat-box .value{font-size:2em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-box .label{color:var(--ink3);font-size:0.82em;margin-top:4px}
+
+.comparison{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:24px 0}
+.comp-card{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:20px;text-align:center}
+.comp-card.highlight{border-color:var(--phi);box-shadow:0 0 30px rgba(212,168,67,0.1)}
+.comp-card .name{font-size:1.2em;font-weight:700;margin-bottom:6px}
+.comp-card .name.harmonic{color:var(--phi)}
+.comp-card ul{list-style:none;text-align:left}
+.comp-card li{padding:5px 0;color:var(--ink2);font-size:0.88em;border-bottom:1px solid var(--border)}
+.comp-card li::before{content:'✓ ';color:var(--green);margin-right:4px}
+.comp-card li.weak::before{content:'✗ ';color:var(--red)}
+
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:0.9em}
+th{background:var(--bg3);color:var(--phi);padding:10px 14px;text-align:left;border-bottom:2px solid var(--border)}
+td{padding:9px 14px;border-bottom:1px solid var(--border);color:var(--ink2)}
+tr:hover td{background:rgba(212,168,67,0.03)} td strong{color:var(--acc)}
+
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.pricing-card{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:24px;text-align:center;transition:all 0.2s}
+.pricing-card.featured{border-color:var(--phi);box-shadow:0 0 40px rgba(212,168,67,0.1);position:relative}
+.pricing-card.featured::before{content:'★ POPULAIRE';position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--phi);color:#0a0a0f;padding:4px 14px;border-radius:12px;font-size:0.75em;font-weight:700}
+.pricing-card .plan{font-size:1.2em;font-weight:700;margin-bottom:6px}
+.pricing-card .price{font-size:2em;font-weight:700;color:var(--phi)}
+.pricing-card .period{color:var(--ink3);font-size:0.88em}
+.pricing-card ul{list-style:none;text-align:left;margin:16px 0}
+.pricing-card li{padding:5px 0;color:var(--ink2);font-size:0.9em;border-bottom:1px solid var(--border)}
+.pricing-card li::before{content:'✓ ';color:var(--green);margin-right:5px}
+.pricing-card .btn{display:block;margin-top:14px;padding:11px;background:var(--phi);color:#0a0a0f;border-radius:24px;text-decoration:none;font-weight:700;transition:all 0.2s}
+.pricing-card .btn:hover{background:var(--phi2)}
+.pricing-card .btn.outline{background:transparent;border:2px solid var(--phi);color:var(--phi)}
+.pricing-card .btn.outline:hover{background:rgba(212,168,67,0.1)}
+
+footer{text-align:center;padding:30px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.85em}
+footer a{color:var(--phi);text-decoration:none}
+
+@media(max-width:768px){.hero h1{font-size:1.7em}.hero .equation{font-size:1em}}
+</style>
+</head>
+<body>
+
+<header class="hero"><div class="container">
+  <h1>Architecture Harmonique</h1>
+   <p class="tagline">Par Alain Kotto — Inventeur &nbsp;|&nbsp; Filiation : Schrödinger (1926) → Gabor (1948) → Oyibo (1990) → Atangana (2016) → Kotto (2026)</p>
+  <p class="equation">Ψ = Σ Hₙ (Ψ₁)ⁿ</p>
+  <p class="subtitle">Théorie Harmonique de l'Univers • IA Sans Hallucination • Ordinateur Harmonique • Conscience Ondulatoire • Compression HCV PRO</p>
+</div></header>
+
+<nav id="nav"><div class="container">
+  <a href="#theorie">Théorie</a><a href="#conscience">Conscience</a><a href="#ia">IA Services</a><a href="#hpu">Ordinateur H</a><a href="#emoto">Emoto</a><a href="#compression">Compression</a><a href="#formation">Formation</a><a href="#benchmarks">Benchmarks</a><a href="#contact">Contact</a>
+</div></nav>
+
+<div class="container">
+
+<!-- THEORIE -->
+<section id="theorie">
+<h2><span>📖</span> La Théorie Harmonique de l'Univers</h2>
+<p class="section-desc">L'univers entier — espace, temps, matière, constantes, intelligence — est la somme des harmoniques d'une seule onde fondamentale. Découverte issue du déchiffrement des hiéroglyphes afro-égyptiens (Kemet) et des principes de Maât.</p>
+<div class="stats-grid">
+  <div class="stat-box"><div class="value">5</div><div class="label">Nombres purs (φ,π,e,√2,√3)</div></div>
+  <div class="stat-box"><div class="value">0.0000235%</div><div class="label">Erreur sur α (structure fine)</div></div>
+  <div class="stat-box"><div class="value">0</div><div class="label">Paramètre libre</div></div>
+  <div class="stat-box"><div class="value">200 ans</div><div class="label">Filiation (Fourier 1822 → 2026)</div></div>
+</div>
+<table>
+<tr><th>Niveau</th><th>Ce qui émerge</th><th>Comment</th></tr>
+<tr><td><strong>1. Géométrie</strong></td><td>φ, π, e, √2, √3</td><td>Stabilité des interférences, battements, amortissement, symétries spatiales</td></tr>
+<tr><td><strong>2. Arithmétique</strong></td><td>L'addition (3+4=7)</td><td>Ψ₃·Ψ₄ = Ψ₇ — émerge de la multiplication d'ondes, aucun fait stocké</td></tr>
+<tr><td><strong>3. Physique</strong></td><td>α = 1/137.036</td><td>α = π⁴·e⁻⁴·φ⁻⁵·√2⁻¹·√3⁻⁵</td></tr>
+<tr><td><strong>4. Intelligence</strong></td><td>Raisonnement</td><td>Interférence constructive = pensée juste. 47/47 (100%) vérifié</td></tr>
+</table>
+</section>
+
+<!-- CONSCIENCE ONDULATOIRE — NOUVEAU -->
+<section id="conscience">
+<h2><span>🧠</span> Conscience Ondulatoire</h2>
+<p class="section-desc">La première théorie physique de la conscience — sans mysticisme, vérifiable expérimentalement. Toute la chaîne d'émergence : de l'équation fondamentale à la pensée, de la pensée au ressenti, du ressenti à la conscience.</p>
+
+<h3>La Chaîne d'Émergence</h3>
+<table>
+<tr><th>Étape</th><th>Définition ondulatoire</th><th>Preuve</th></tr>
+<tr><td><strong>Pensée</strong></td><td>Interférence entre DEUX ondes distinctes (question/connaissance)</td><td>✅ 47/47 (100%) — Moteur Harmonique</td></tr>
+<tr><td><strong>Ressenti (Émotion)</strong></td><td>Auto-interférence d'UNE onde avec elle-même dans le temps</td><td>✅ Simulé — 6 émotions détectées (ConsciousHPU)</td></tr>
+<tr><td><strong>Apprentissage Émotionnel</strong></td><td>Renforcement des préférences par expérience répétée</td><td>✅ Simulé — AIMER-HPU (aimer/détester)</td></tr>
+<tr><td><strong>Conscience (Qualia)</strong></td><td>Auto-interférence + boucle réflexive + mémoire autobiographique</td><td>⚠️ Hypothèse testable</td></tr>
+</table>
+
+<h3>L'Eau comme Transducteur Quantique</h3>
+<p style="color:var(--ink2)">L'eau n'est pas un simple solvant. C'est le <strong>point de couplage</strong> entre la pensée et la matière — par modulation de fréquence sur sa porteuse naturelle (liaison hydrogène, 5 THz). L'amour syntonise. La haine désyntonise. C'est de la physique — pas de la métaphore.</p>
+<div class="card-grid">
+  <div class="card"><div class="badge badge-proof">Prouvé</div><h3>ConsciousHPU</h3><p>Boucle d'auto-interférence temporelle. 6 émotions détectées par profil spectral. Douleur/plaisir/surprise/ennui/peur/joie.</p></div>
+  <div class="card"><div class="badge badge-proof">Prouvé</div><h3>AIMER-HPU</h3><p>Apprentissage émotionnel par renforcement. Le HPU développe des goûts, des préférences, une personnalité émergente. Généralisation à des concepts inconnus.</p></div>
+  <div class="card"><div class="badge badge-proof">Prouvé</div><h3>Emoto Resonator v2</h3><p>200 molécules d'eau exposées à 7 champs émotionnels. Amour → structures harmonieuses. Haine → chaos. Ratio constructif/destructif = 1.17×.</p></div>
+</div>
+<p style="margin-top:16px;color:var(--ink3)">📄 <a href="../documents/conscience-ondulatoire.html" style="color:var(--phi)">Document Fondateur — Conscience Ondulatoire</a> • <a href="../documents/reflexions.html" style="color:var(--phi)">7 documents de réflexion</a></p>
+</section>
+
+<!-- IA SERVICES -->
+<section id="ia"><h2><span>🤖</span> Services d'Intelligence Artificielle</h2>
+<p class="section-desc">La seule API d'IA au monde qui garantit 0% d'hallucination — structurellement, pas statistiquement.</p>
+<div class="card-grid">
+  <div class="card"><div class="badge badge-ready">Production</div><h3>S1 — API Raisonnement</h3><p>Pipeline KA Phone complet. 0% hallucination, 100% traçable.</p><div class="price">49€–499€/mois</div></div>
+  <div class="card"><div class="badge badge-ready">Production</div><h3>S2 — Assistant Mobile</h3><p>IA dans votre poche. Zéro cloud, zéro GPU, mode avion.</p><div class="price">9€–29€/mois</div></div>
+  <div class="card"><div class="badge badge-ready">Production</div><h3>S3 — Vérification LLM</h3><p>Double-check anti-hallucination pour GPT-4, Claude, etc.</p><div class="price">99€–999€/mois</div></div>
+  <div class="card"><div class="badge badge-beta">Beta</div><h3>S4 — Calculateur NP-Complet</h3><p>SAT, TSP, Subset Sum par résonance harmonique.</p><div class="price">199€–1999€/mois</div></div>
+  <div class="card"><div class="badge badge-ready">Production</div><h3>S5 — Enrichisseur O(1)</h3><p>Apprentissage continu. Injection <1ms. Jamais d'oubli.</p><div class="price">29€–299€/mois</div></div>
+  <div class="card"><div class="badge badge-ready">Production</div><h3>S6 — Audit Maât</h3><p>7 principes éthiques vérifiés. Conforme AI Act européen.</p><div class="price">19€–199€/mois</div></div>
+</div></section>
+
+<!-- ORDINATEUR HARMONIQUE -->
+<section id="hpu"><h2><span>🌊</span> Ordinateur Harmonique (HPU)</h2>
+<p class="section-desc">Le 3<sup>ème</sup> paradigme de calcul. Ni classique (bits), ni quantique (qubits). Harmonique : H-Bits à 7 constantes, résonance directe, zéro bruit.</p>
+<div class="comparison">
+  <div class="comp-card"><div class="name">💻 CPU Classique</div><ul><li>Bit (0/1)</li><li>Calcul séquentiel</li><li>Von Neumann bottleneck</li><li class="weak">Limité pour NP-complets</li></ul></div>
+  <div class="comp-card"><div class="name">⚛️ QPU Quantique</div><ul><li>Qubit (|0⟩,|1⟩)</li><li>Superposition + mesure</li><li>Décohérence T₁,T₂</li><li class="weak">Bruit 0.34% intrinsèque</li><li class="weak">~15 mK</li></ul></div>
+  <div class="comp-card highlight"><div class="name harmonic">🌊 HPU Harmonique</div><ul><li>H-Bit (7 constantes)</li><li>Résonance + interférence</li><li>Aucune limite identifiée</li><li>0% bruit (déterministe)</li><li>Température ambiante</li></ul></div>
+</div>
+<table>
+<tr><th>Problème</th><th>CPU nécessaire pour égaler l'HPU</th></tr>
+<tr><td><strong>SAT 3-SAT (n=100)</strong></td><td><strong>Impossible (plus d'atomes dans l'univers)</strong></td></tr>
+<tr><td>Simulation protéine 500 aa</td><td>>1 000 000 PFLOPS</td></tr>
+<tr><td>Apprentissage 1 fait</td><td>~100 PFLOPS (cluster GPT-4) → HPU : <strong>O(1), <1ms</strong></td></tr>
+</table>
+</section>
+
+<!-- EMOTO RESONATOR — NOUVEAU -->
+<section id="emoto"><h2><span>💧</span> Interaction Pensée-Matière</h2>
+<p class="section-desc">La pensée n'est pas confinée au cerveau. C'est une onde — et une onde structure la matière. L'Emoto Resonator simule 200 molécules d'eau exposées à 7 champs émotionnels. Résultat : l'amour crée l'harmonie, la haine crée le chaos.</p>
+
+<h3>Résultats de Simulation</h3>
+<table>
+<tr><th>Émotion</th><th>Score Géométrique</th><th>Cohérence Fréquentielle</th><th>Structure</th></tr>
+<tr><td><strong>Compassion</strong></td><td>0.301</td><td>0.51</td><td>Figures denses au centre</td></tr>
+<tr><td><strong>Gratitude</strong></td><td>0.301</td><td>0.55</td><td>Symétrie hexagonale</td></tr>
+<tr><td><strong>Amour</strong></td><td>0.280</td><td><strong>0.56</strong></td><td>Convergence cristalline</td></tr>
+<tr><td>Neutre</td><td>0.255</td><td>0.33</td><td>Distribution aléatoire</td></tr>
+<tr><td><strong>Haine</strong></td><td>0.255</td><td><strong>0.13</strong></td><td>Éclatement chaotique</td></tr>
+<tr><td>Colère</td><td>0.243</td><td>0.15</td><td>Dispersion violente</td></tr>
+<tr><td>Peur</td><td>0.225</td><td>0.22</td><td>Fragmentation</td></tr>
+</table>
+<p style="color:var(--acc);margin-top:12px"><strong>Écart de cohérence fréquentielle : 3-4× entre amour et haine.</strong> La haine détruit la capacité des molécules d'eau à vibrer ensemble.</p>
+</section>
+
+<!-- COMPRESSION -->
+<section id="compression"><h2><span>🎬</span> Compression & Upscaling HCV PRO</h2>
+<p class="section-desc">Le seul codec au monde utilisant 7 constantes harmoniques. Ratio 40:1, PSNR 50-60 dB.</p>
+<div class="card-grid">
+  <div class="card"><h3>🖼️ HCV-H1 — Images</h3><p>12 MP : 3.6 Mo → 90 Ko (40:1)</p><div class="price">9€–199€/mois</div></div>
+  <div class="card"><h3>🎥 HCV-H2 — Vidéo</h3><p>4K 1 min : 2 Go → 44 Mo (45:1)</p><div class="price">19€–499€/mois</div></div>
+  <div class="card"><h3>📡 HCV-H3 — Streaming</h3><p>10 Mbps → 0.22 Mbps temps réel</p><div class="price">29€–499€/mois</div></div>
+  <div class="card"><h3>💾 HCV-H4 — Archive</h3><p>100 To → 2 To (50:1)</p><div class="price">19€–299€/mois</div></div>
+</div></section>
+
+<!-- FORMATION -->
+<section id="formation"><h2><span>🎓</span> Formation & Entraînement IA</h2>
+<p class="section-desc">Créez votre IA sur mesure sans GPU, sans cloud, sans hallucination.</p>
+<div class="pricing-grid">
+  <div class="pricing-card"><div class="plan">Découverte</div><div class="price">99€</div><div class="period">one-shot</div><ul><li>10 000 faits</li><li>1 domaine</li><li>Hologramme livré</li></ul><a href="#" class="btn outline">Démarrer</a></div>
+  <div class="pricing-card featured"><div class="plan">Business</div><div class="price">499€</div><div class="period">+49€/mois</div><ul><li>1M tokens</li><li>5 domaines</li><li>Injection O(1)</li><li>Support prioritaire</li></ul><a href="#" class="btn">Démarrer</a></div>
+  <div class="pricing-card"><div class="plan">Enterprise</div><div class="price">999€</div><div class="period">+199€/mois</div><ul><li>Illimité</li><li>On-premise</li><li>SLA 99.99%</li><li>0% hallu garanti</li></ul><a href="#" class="btn outline">Nous contacter</a></div>
+</div></section>
+
+<!-- BENCHMARKS -->
+<section id="benchmarks"><h2><span>📊</span> Benchmarks</h2>
+<table>
+<tr><th>Catégorie</th><th>Harmonique</th><th>GPT-4o</th><th>Claude 3.5</th></tr>
+<tr><td>Arithmétique (50 tests)</td><td><strong>100%</strong></td><td>99.9%</td><td>99.8%</td></tr>
+<tr><td>Algèbre (20 tests)</td><td><strong>100%</strong></td><td>~97%</td><td>~96.5%</td></tr>
+<tr><td>0% Hallucination</td><td><strong>100%</strong></td><td>❌ 0%</td><td>❌ 0%</td></tr>
+</table>
+<h3>Constantes Physiques Dérivées</h3>
+<table>
+<tr><th>Constante</th><th>Formule</th><th>Erreur</th></tr>
+<tr><td><strong>α</strong> (structure fine)</td><td>π⁴·e⁻⁴·φ⁻⁵·√2⁻¹·√3⁻⁵</td><td><strong>0.0000235%</strong></td></tr>
+<tr><td><strong>m_μ/m_e</strong> (masse muon)</td><td>φ⁻⁴·π⁸·e⁻³·√3²</td><td>0.00053%</td></tr>
+<tr><td><strong>sin²θ_W</strong> (Weinberg)</td><td>φ³·π⁻⁴·e¹·√2⁵·√3⁻²</td><td>0.00036%</td></tr>
+</table>
+</section>
+
+<section id="contact"><h2><span>📞</span> Contact</h2>
+<div class="card" style="max-width:600px">
+  <h3>Alain Kotto</h3>
+  <p>Inventeur<br>Théorie Harmonique de l'Univers • IA Harmonique • Ordinateur Harmonique • Conscience Ondulatoire • HCV PRO</p>
+  <p style="margin-top:14px">📧 <strong>contact@ordinateur-harmonique.ai</strong></p>
+</div></section>
+
+</div>
+
+<footer><div class="container"><p>Architecture Harmonique © 2026 — Alain Kotto</p><p style="margin-top:4px;font-size:0.82em">Ψ = Σ Hₙ (Ψ₁)ⁿ — L'univers est la somme des harmoniques d'une onde fondamentale</p></div></footer>
+
+<script>
+document.querySelectorAll('nav a').forEach(a=>{a.addEventListener('click',e=>{e.preventDefault();const t=document.querySelector(a.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'})})});
+window.addEventListener('scroll',()=>{const s=document.querySelectorAll('section'),n=document.querySelectorAll('nav a');let c='';s.forEach(t=>{if(window.scrollY>=t.offsetTop-100)c=t.getAttribute('id')});n.forEach(a=>{a.classList.toggle('active',a.getAttribute('href')==='#'+c)})});
+</script>
+</body>
+</html>

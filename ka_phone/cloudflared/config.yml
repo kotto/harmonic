@@ -1,0 +1,23 @@
+# Cloudflare Tunnel Configuration
+# This file is used by cloudflared to create a secure tunnel
+# from your VPS to Cloudflare's edge network.
+#
+# SETUP:
+# 1. Create a Cloudflare account (free) at https://dash.cloudflare.com
+# 2. Add your domain to Cloudflare (or use a free Cloudflare Tunnel domain)
+# 3. Run: cloudflared tunnel login (on your VPS)
+# 4. Run: cloudflared tunnel create kaphone
+# 5. Copy the tunnel ID and credentials file
+# 6. Update this config with your tunnel ID
+# 7. Run: cloudflared tunnel route dns kaphone kaphone.yourdomain.com
+
+tunnel: YOUR_TUNNEL_ID_HERE
+credentials-file: /etc/cloudflared/YOUR_TUNNEL_ID_HERE.json
+
+ingress:
+  # Route all traffic to the KA Phone app
+  - hostname: kaphone.yourdomain.com
+    service: http://localhost:8420
+  
+  # Catch-all: return 404 for unmatched hostnames
+  - service: http_status:404

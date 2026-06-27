@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCV16 Debug Player - Première Frame</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #4ecdc4;
+            margin-bottom: 10px;
+        }
+
+        .debug-panel {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .video-area {
+            background: #000;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        #videoCanvas {
+            border: 2px solid #4ecdc4;
+            border-radius: 8px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .btn {
+            background: #4ecdc4;
+            border: none;
+            color: #1a1a1a;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            background: #45b7d1;
+        }
+
+        .info {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+
+        .success { background: #2d5a2d; color: #90ee90; }
+        .error { background: #5a2d2d; color: #ff6b6b; }
+        .loading { background: #2d4a5a; color: #87ceeb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 HCV16 Debug Player</h1>
+            <p>Analyse première frame B3.hcv16</p>
+        </div>
+
+        <div class="debug-panel">
+            <div class="video-area">
+                <canvas id="videoCanvas" width="478" height="850"></canvas>
+            </div>
+
+            <div class="controls">
+                <button id="loadBtn" class="btn">📁 Charger B3.hcv16</button>
+                <button id="testBtn" class="btn">🎨 Test Pattern</button>
+                <button id="debugBtn" class="btn">🔍 Debug Frame</button>
+            </div>
+
+            <div id="status" class="status">
+                Cliquez "Test Pattern" pour vérifier le canvas
+            </div>
+        </div>
+
+        <div class="info" id="debugInfo">
+            <strong>Debug Info:</strong><br>
+            Canvas: 478×850<br>
+            Status: Prêt<br>
+        </div>
+    </div>
+
+    <script>
+        class HCV16DebugPlayer {
+            constructor() {
+                this.canvas = document.getElementById('videoCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.debugInfo = document.getElementById('debugInfo');
+                
+                this.initializeControls();
+                this.showInitialState();
+                this.updateDebugInfo('Initialisation terminée');
+            }
+
+            initializeControls() {
+                document.getElementById('loadBtn').addEventListener('click', () => {
+                    this.loadB3File();
+                });
+
+                document.getElementById('testBtn').addEventListener('click', () => {
+                    this.drawTestPattern();
+                });
+
+                document.getElementById('debugBtn').addEventListener('click', () => {
+                    this.debugFirstFrame();
+                });
+            }
+
+            showInitialState() {
+                this.ctx.fillStyle = '#333333';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                this.ctx.fillStyle = '#4ecdc4';
+                this.ctx.font = '20px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('HCV16 Debug Player', this.canvas.width/2, this.canvas.height/2 - 20);
+                
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = '14px Arial';
+                this.ctx.fillText('Canvas: 478×850', this.canvas.width/2, this.canvas.height/2 + 20);
+            }
+
+            drawTestPattern() {
+                this.updateStatus('🎨 Dessin pattern de test...', 'loading');
+                
+                // Pattern de test simple
+                const width = this.canvas.width;
+                const height = this.canvas.height;
+                
+                // Fond noir
+                this.ctx.fillStyle = '#000000';
+                this.ctx.fillRect(0, 0, width, height);
+                
+                // Bandes colorées horizontales
+                const bandHeight = height / 8;
+                const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffffff', '#888888'];
+                
+                for (let i = 0; i < colors.length; i++) {
+                    this.ctx.fillStyle = colors[i];
+                    this.ctx.fillRect(0, i * bandHeight, width, bandHeight);
+                }
+                
+                // Texte overlay
+                this.ctx.fillStyle = '#000000';
+                this.ctx.font = 'bold 16px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('TEST PATTERN', width/2, height/2);
+                this.ctx.fillText('478×850', width/2, height/2 + 25);
+                
+                this.updateStatus('✅ Pattern de test affiché', 'success');
+                this.updateDebugInfo('Pattern de test: 8 bandes colorées horizontales');
+            }
+
+            async loadB3File() {
+                this.updateStatus('🔄 Chargement B3.hcv16...', 'loading');
+                
+                try {
+                    const response = await fetch('/B3.hcv16');
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const arrayBuffer = await response.arrayBuffer();
+                    this.updateStatus('✅ B3.hcv16 chargé: ' + (arrayBuffer.byteLength / 1024 / 1024).toFixed(2) + ' MB', 'success');
+                    
+                    // Parse basique du fichier
+                    const result = this.parseHCV16Basic(arrayBuffer);
+                    this.updateDebugInfo(`Fichier chargé: ${(arrayBuffer.byteLength / 1024 / 1024).toFixed(2)} MB\n${result}`);
+                    
+                } catch (error) {
+                    this.updateStatus('❌ Erreur: ' + error.message, 'error');
+                    this.updateDebugInfo('Erreur chargement: ' + error.message);
+                }
+            }
+
+            parseHCV16Basic(arrayBuffer) {
+                try {
+                    const data = new Uint8Array(arrayBuffer);
+                    
+                    // Vérification signature
+                    const signature = new TextDecoder().decode(data.slice(0, 5));
+                    if (signature !== 'HCV16') {
+                        return 'Signature invalide: ' + signature;
+                    }
+                    
+                    // Lecture header size
+                    const headerSize = new DataView(arrayBuffer, 8, 4).getUint32(8, true);
+                    
+                    // Lecture header JSON
+                    const headerJson = new TextDecoder().decode(data.slice(12, 12 + headerSize));
+                    const header = JSON.parse(headerJson);
+                    
+                    return `Signature: OK\nHeader: ${headerSize} bytes\nRésolution: ${header.width}×${header.height}\nFrames: ${header.frames}\nMode: ${header.mode}`;
+                    
+                } catch (error) {
+                    return 'Erreur parsing: ' + error.message;
+                }
+            }
+
+            debugFirstFrame() {
+                this.updateStatus('🔍 Debug première frame...', 'loading');
+                
+                // Simulation première frame avec pattern réaliste
+                const width = this.canvas.width;
+                const height = this.canvas.height;
+                
+                // Création ImageData
+                const imageData = this.ctx.createImageData(width, height);
+                const data = imageData.data;
+                
+                // Pattern mobile réaliste (format vertical 478×850)
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const idx = (y * width + x) * 4;
+                        
+                        // Simulation contenu mobile
+                        let r, g, b;
+                        
+                        if (y < 100) {
+                            // Header mobile (bleu foncé)
+                            r = 30;
+                            g = 60;
+                            b = 120;
+                        } else if (y > height - 100) {
+                            // Footer mobile (gris foncé)
+                            r = g = b = 40;
+                        } else {
+                            // Contenu principal
+                            // Gradient vertical avec variation horizontale
+                            const verticalGradient = (y - 100) / (height - 200);
+                            const horizontalVariation = Math.sin(x * 0.02) * 20;
+                            
+                            r = 80 + verticalGradient * 100 + horizontalVariation;
+                            g = 100 + verticalGradient * 120 + horizontalVariation * 0.8;
+                            b = 140 + verticalGradient * 80 + horizontalVariation * 0.6;
+                        }
+                        
+                        data[idx] = Math.max(0, Math.min(255, r));     // R
+                        data[idx + 1] = Math.max(0, Math.min(255, g)); // G
+                        data[idx + 2] = Math.max(0, Math.min(255, b)); // B
+                        data[idx + 3] = 255; // A
+                    }
+                }
+                
+                // Affichage
+                this.ctx.putImageData(imageData, 0, 0);
+                
+                // Overlay debug
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                this.ctx.fillRect(10, 10, 200, 80);
+                
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = '12px Arial';
+                this.ctx.textAlign = 'left';
+                this.ctx.fillText('DEBUG FRAME 1', 15, 25);
+                this.ctx.fillText('Format: Mobile 478×850', 15, 40);
+                this.ctx.fillText('Pattern: Gradient vertical', 15, 55);
+                this.ctx.fillText('HCV16 Simulation', 15, 70);
+                
+                this.updateStatus('✅ Première frame simulée affichée', 'success');
+                this.updateDebugInfo('Frame 1: Pattern mobile vertical avec header/footer\nGradient: Vertical avec variation horizontale\nFormat: 478×850 (mobile)');
+            }
+
+            updateStatus(message, type = '') {
+                const statusEl = document.getElementById('status');
+                statusEl.textContent = message;
+                statusEl.className = 'status ' + type;
+            }
+
+            updateDebugInfo(info) {
+                this.debugInfo.innerHTML = '<strong>Debug Info:</strong><br>' + 
+                    info.replace(/\n/g, '<br>') + '<br><br>' +
+                    `Canvas: ${this.canvas.width}×${this.canvas.height}<br>` +
+                    `Timestamp: ${new Date().toLocaleTimeString()}`;
+            }
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            new HCV16DebugPlayer();
+        });
+    </script>
+</body>
+</html>

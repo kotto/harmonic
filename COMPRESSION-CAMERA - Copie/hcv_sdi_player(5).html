@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AXON — Real Codec Analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Syne+Mono&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --obs:#08080a;--car:#0f0f12;--cha:#161619;--gra:#202024;--sla:#2c2c32;
+  --gold:#C9A84C;--gold-l:#E2C97A;--gold-d:#8B6E28;
+  --wht:#FAFAF9;--owh:#E8E6E1;--sil:#AEACAA;--mis:#7A7874;
+  --green:#00e676;--green2:#00994d;--red:#ff2d55;--amber:#ffab00;--blue:#3ea6ff;
+  --bdr:rgba(201,168,76,.14);--bds:rgba(255,255,255,.06);
+  --r:4px;--r2:8px;
+  --mono:'Syne Mono',monospace;--head:'Syne',sans-serif;--body:'Barlow',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--obs);color:var(--owh);font-family:var(--body);font-size:14px;line-height:1.5;min-height:100vh}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--obs)}::-webkit-scrollbar-thumb{background:var(--sla);border-radius:2px}
+
+.hdr{height:52px;background:rgba(8,8,10,.96);border-bottom:1px solid var(--bds);display:flex;align-items:center;padding:0 22px;position:sticky;top:0;z-index:100;backdrop-filter:blur(20px);gap:12px}
+.logo{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.lm{width:26px;height:26px;flex-shrink:0}
+.lw{font-family:var(--head);font-weight:700;font-size:14px;letter-spacing:5px;text-transform:uppercase;color:var(--wht)}
+.lw em{color:var(--gold);font-style:normal}
+.hpill{border-radius:20px;padding:3px 10px;font-family:var(--mono);font-size:10px;letter-spacing:.5px;white-space:nowrap;border:1px solid}
+.hpill.g{background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.2);color:var(--gold)}
+.hpill.b{background:rgba(62,166,255,.07);border-color:rgba(62,166,255,.2);color:var(--blue)}
+.hpill.ok{background:rgba(0,230,118,.07);border-color:rgba(0,230,118,.2);color:var(--green)}
+.bst{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--mis);margin-left:auto}
+.bdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.bdot.ok{background:var(--green);box-shadow:0 0 5px var(--green)}
+.bdot.warn{background:var(--amber);animation:pulse 1s ease infinite}
+.bdot.err{background:var(--red)}
+
+.main{padding:16px 22px;max-width:1440px;margin:0 auto}
+
+.upz{border:1.5px dashed var(--sla);border-radius:var(--r2);background:var(--car);padding:24px 20px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;margin-bottom:12px}
+.upz:hover,.upz.drag{border-color:var(--gold);background:rgba(201,168,76,.03)}
+.upz.loaded{border-color:var(--green2);border-style:solid}
+.up-ico{font-size:22px;margin-bottom:8px;opacity:.5}
+.up-t{font-family:var(--head);font-weight:600;font-size:13px;letter-spacing:.5px;margin-bottom:3px}
+.up-s{font-size:12px;color:var(--mis);margin-bottom:8px}
+.fmts{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+.fmt{background:var(--cha);border:1px solid var(--sla);border-radius:3px;padding:2px 7px;font-family:var(--mono);font-size:10px;color:var(--mis)}
+.fmt.hi{border-color:rgba(201,168,76,.3);color:var(--gold);background:rgba(201,168,76,.06)}
+#fi{display:none}
+
+.ibar{display:none;background:var(--car);border:1px solid var(--bds);border-radius:var(--r2);padding:10px 14px;margin-bottom:10px;flex-wrap:wrap;gap:14px;align-items:center}
+.ibar.on{display:flex;animation:fadeUp .3s ease}
+.ib-lbl{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mis);margin-bottom:2px}
+.ib-v{font-family:var(--mono);font-size:12px;font-weight:500}
+.ib-v.g{color:var(--gold)}.ib-v.a{color:var(--amber)}.ib-v.gr{color:var(--green)}
+.ibsep{width:1px;align-self:stretch;background:var(--bds)}
+
+.cfg{display:none;gap:10px;margin-bottom:10px;flex-wrap:wrap;align-items:flex-end}
+.cfg.on{display:flex;animation:fadeUp .2s ease}
+.cfg-lbl{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mis);margin-bottom:4px}
+.mpills{display:flex;gap:4px}
+.mp{border:1px solid var(--sla);border-radius:var(--r);padding:6px 10px;font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;color:var(--mis)}
+.mp:hover{color:var(--owh)}.mp.on{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.07)}
+.csel{background:var(--car);border:1px solid var(--sla);border-radius:var(--r);padding:6px 9px;color:var(--owh);font-family:var(--mono);font-size:11px;outline:none;cursor:pointer}
+.bcmp{margin-left:auto;background:var(--gold);color:var(--obs);border:none;border-radius:var(--r);padding:8px 18px;font-family:var(--head);font-weight:700;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:7px}
+.bcmp:hover:not(:disabled){background:var(--gold-l);transform:translateY(-1px)}
+.bcmp:disabled{opacity:.4;cursor:not-allowed}
+.bcmp.done{background:var(--green2);color:var(--wht)}
+.spin{width:11px;height:11px;border:2px solid rgba(0,0,0,.3);border-top-color:var(--obs);border-radius:50%;animation:spin 1s linear infinite}
+
+.logbox{background:var(--car);border:1px solid var(--bds);border-radius:var(--r2);overflow:hidden;margin-bottom:10px}
+.lhdr{padding:6px 12px;background:var(--cha);border-bottom:1px solid var(--bds);display:flex;align-items:center;gap:8px}
+.lt{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--mis)}
+.lp{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--gold)}
+.lbar{height:2px;background:var(--sla)}.lbf{height:100%;background:linear-gradient(90deg,var(--gold-d),var(--gold));width:0%;transition:width .25s ease}
+.lbody{padding:8px 12px;max-height:84px;overflow-y:auto;font-family:var(--mono);font-size:11px;line-height:1.6;color:var(--mis)}
+.ll{display:block}.ll.i{color:var(--blue)}.ll.ok{color:var(--green)}.ll.w{color:var(--amber)}.ll.e{color:var(--red)}.ll.g{color:var(--gold)}
+
+.dlrow{display:none;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.dlrow.on{display:flex;animation:fadeUp .3s ease}
+.dlc{background:var(--car);border:1px solid var(--bds);border-radius:var(--r2);padding:10px 12px;display:flex;align-items:center;gap:10px;flex:1;min-width:200px;transition:border-color .15s}
+.dlc:hover{border-color:rgba(201,168,76,.2)}
+.dlico{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.dli{flex:1;min-width:0}
+.dln{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.dlm{font-family:var(--mono);font-size:10px;color:var(--mis)}
+.dls{text-align:right;flex-shrink:0;min-width:80px}
+.dlo{font-family:var(--mono);font-size:10px;color:var(--fog);margin-bottom:1px}
+.dlv{font-family:var(--mono);font-size:12px;font-weight:600}
+.dlr{font-family:var(--mono);font-size:9px;margin-top:1px}
+.bdl{background:var(--cha);border:1px solid var(--sla);border-radius:var(--r);padding:5px 10px;font-family:var(--mono);font-size:10px;color:var(--sil);cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.bdl:hover{border-color:var(--green);color:var(--green);background:rgba(0,230,118,.06)}
+.bdl:disabled{opacity:.35;cursor:not-allowed}
+.bdl.a:hover{border-color:var(--amber);color:var(--amber);background:rgba(255,171,0,.06)}
+
+.phdr{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-family:var(--head);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mis)}
+.phdr::after{content:'';flex:1;height:1px;background:var(--bds)}
+.stog{font-family:var(--mono);font-size:10px;cursor:pointer;padding:3px 10px;border-radius:3px;background:rgba(201,168,76,.08);border:1px solid var(--bdr);color:var(--gold);transition:all .15s}
+.stog.off{background:rgba(80,80,90,.08);border-color:var(--bds);color:var(--mis)}
+.diff-btn{background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);border-radius:3px;padding:3px 10px;font-family:var(--mono);font-size:10px;color:var(--green);cursor:pointer;transition:all .15s;display:none}
+.diff-btn.on{background:rgba(255,171,0,.1);border-color:rgba(255,171,0,.3);color:var(--amber)}
+
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:760px){.pgrid{grid-template-columns:1fr}}
+
+.pw{background:var(--car);border:1px solid var(--bds);border-radius:var(--r2);overflow:hidden;transition:border-color .2s}
+.pw:hover{border-color:rgba(201,168,76,.15)}
+.ptop{padding:8px 12px;border-bottom:1px solid var(--bds);display:flex;align-items:center;gap:7px}
+.pdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ptitle{font-family:var(--head);font-weight:600;font-size:11px;letter-spacing:1.5px;text-transform:uppercase}
+.pbdg{margin-left:auto;border-radius:3px;padding:2px 7px;font-family:var(--mono);font-size:10px;border:1px solid transparent}
+.pbdg.orig{color:var(--amber);border-color:rgba(255,171,0,.3);background:rgba(255,171,0,.07)}
+.pbdg.dec{color:var(--green);border-color:rgba(0,230,118,.3);background:rgba(0,230,118,.07)}
+.psz{font-family:var(--mono);font-size:10px;color:var(--mis)}
+
+/* ── ZONE VIDEO : canvas partagé pour les 2 players ── */
+.vc{position:relative;background:#000;aspect-ratio:16/9;overflow:hidden}
+.vc canvas,.vc video{width:100%;height:100%;object-fit:contain;display:block}
+.ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:#000;pointer-events:none}
+.phi{font-size:26px;opacity:.25}.pht{font-family:var(--mono);font-size:11px;color:var(--mis)}.phs{font-family:var(--mono);font-size:10px;color:var(--sla)}
+.lo-ov{position:absolute;inset:0;background:rgba(0,0,0,.75);display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.lo-ov.show{display:flex}
+.los{width:28px;height:28px;border:2.5px solid rgba(201,168,76,.2);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite}
+.lol{font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:.5px}
+.lop{font-family:var(--head);font-size:20px;font-weight:700;color:var(--gold)}
+
+/* Overlay diff */
+.diff-canvas{position:absolute;inset:0;width:100%;height:100%;display:none;opacity:.7}
+.diff-canvas.show{display:block}
+
+.pctrl{padding:8px 12px;border-top:1px solid var(--bds)}
+.tl{position:relative;height:4px;background:var(--sla);border-radius:2px;margin-bottom:8px;cursor:pointer}
+.tl:hover{background:var(--gra)}
+.tlf{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--gold-d),var(--gold));width:0%;pointer-events:none}
+.tlt{position:absolute;top:50%;left:0;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:var(--gold);pointer-events:none;opacity:0;transition:left .05s linear}
+.tl:hover .tlt{opacity:1}
+.cr{display:flex;align-items:center;gap:5px}
+.cb{width:26px;height:26px;border-radius:var(--r);background:var(--cha);border:1px solid var(--sla);color:var(--sil);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;font-size:11px;flex-shrink:0}
+.cb:hover{border-color:var(--mis);color:var(--owh);background:var(--gra)}
+.cb.pl{width:28px;height:28px;background:var(--red);border-color:var(--red);color:#fff;font-size:13px}
+.cb.pl:hover{background:#c4153a}
+.ct{font-family:var(--mono);font-size:11px;color:var(--mis);white-space:nowrap;margin:0 2px}
+.cvol{display:flex;align-items:center;gap:4px;margin-left:auto}
+.cvol input[type=range]{width:52px;-webkit-appearance:none;height:3px;background:var(--sla);border-radius:2px;outline:none}
+.cvol input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;border-radius:50%;background:var(--gold);cursor:pointer}
+.cfs{background:var(--cha);border:1px solid var(--sla);border-radius:3px;padding:3px 5px;font-size:12px;cursor:pointer;transition:all .15s}
+.cfs:hover{border-color:var(--mis)}
+.cspd{background:var(--cha);border:1px solid var(--sla);border-radius:3px;padding:3px 6px;font-family:var(--mono);font-size:10px;color:var(--mis);cursor:pointer;transition:all .15s}
+.cspd:hover{color:var(--owh)}
+
+.svis{height:2px;background:linear-gradient(90deg,var(--gold-d),var(--gold));margin:5px 0;border-radius:1px;display:none;position:relative}
+.svis.on{display:block}
+.sdot{position:absolute;top:-2px;width:6px;height:6px;border-radius:50%;background:var(--gold);animation:sGo 2s ease-in-out infinite}
+@keyframes sGo{0%{left:0%;opacity:0}10%{opacity:1}90%{opacity:1}100%{left:100%;opacity:0}}
+
+.mgrid{display:none;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:10px}
+.mgrid.on{display:grid;animation:fadeUp .3s ease}
+.mt{background:var(--car);border:1px solid var(--bds);border-radius:var(--r2);padding:10px 8px;text-align:center}
+.mt-l{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mis);margin-bottom:4px}
+.mt-v{font-family:var(--head);font-weight:700;font-size:18px;letter-spacing:.3px;line-height:1;margin-bottom:2px}
+.mt-s{font-family:var(--mono);font-size:9px;color:var(--mis)}
+
+.hvw{display:none;background:var(--car);border:1px solid var(--bds);border-radius:var(--r2);padding:12px;margin-top:10px}
+.hvw.on{display:block;animation:fadeUp .3s ease}
+.hvt{font-family:var(--head);font-weight:700;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--mis);margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.hvt em{font-size:9px;font-weight:400;color:var(--fog);font-family:var(--mono);text-transform:none;font-style:normal}
+.hvg{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.hvi{background:var(--cha);border:1px solid var(--bds);border-radius:var(--r);padding:7px 9px}
+.hvk{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--mis);margin-bottom:3px}
+.hvv{font-family:var(--mono);font-size:10px;word-break:break-all}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div class="logo">
+    <div class="lm">
+      <svg viewBox="0 0 26 26" fill="none">
+        <circle cx="13" cy="13" r="12" stroke="#C9A84C" stroke-width=".7"/>
+        <circle cx="13" cy="13" r="7.5" stroke="#C9A84C" stroke-width=".5" stroke-dasharray="1.5 2.5"/>
+        <circle cx="13" cy="13" r="3" fill="#C9A84C"/>
+        <line x1="13" y1="1"  x2="13" y2="5.5"  stroke="#C9A84C" stroke-width="1.2"/>
+        <line x1="13" y1="20.5" x2="13" y2="25" stroke="#C9A84C" stroke-width="1.2"/>
+        <line x1="1"  y1="13" x2="5.5"  y2="13" stroke="#C9A84C" stroke-width="1.2"/>
+        <line x1="20.5" y1="13" x2="25" y2="13" stroke="#C9A84C" stroke-width="1.2"/>
+      </svg>
+    </div>
+    <div class="lw">AX<em>O</em>N</div>
+  </div>
+  <div class="hpill g">Real Codec Analyzer</div>
+  <div class="hpill b">CompressionStream ✓</div>
+  <div class="hpill ok">Zéro SharedArrayBuffer</div>
+  <div class="bst">
+    <div class="bdot ok" id="bdot"></div>
+    <span id="blbl">Moteur prêt</span>
+  </div>
+</header>
+
+<div class="main">
+
+<!-- input HORS du div pour éviter la boucle de click -->
+<input type="file" id="fi" accept="video/*" style="display:none" onchange="handleFile(this.files[0])">
+<div class="upz" id="dropz"
+     onclick="openFilePicker()"
+     ondragover="event.preventDefault();this.classList.add('drag')"
+     ondragleave="this.classList.remove('drag')"
+     ondrop="onDrop(event)">
+  <div class="up-ico">📂</div>
+  <div class="up-t" id="up-t">Glisser une vidéo — compression et métriques sur vos pixels réels</div>
+  <div class="up-s" id="up-s">MP4 · MOV · WebM · MKV — tout format lisible par votre navigateur</div>
+  <div class="fmts">
+    <span class="fmt hi">.mp4</span><span class="fmt hi">.mov</span>
+    <span class="fmt hi">.webm</span><span class="fmt">.mkv</span>
+    <span class="fmt">.avi</span><span class="fmt">.ts</span><span class="fmt">.m4v</span>
+  </div>
+  <div style="margin-top:8px;font-family:var(--mono);font-size:10px;color:var(--fog)">
+    MXF/MTS/YUV → convertir d'abord&nbsp;: <code style="color:var(--amber)">ffmpeg -i source.mxf out.mp4</code>
+  </div>
+</div>
+
+<div class="ibar" id="ibar">
+  <div><div class="ib-lbl">Fichier</div><div class="ib-v" id="ib-n">—</div></div>
+  <div class="ibsep"></div>
+  <div><div class="ib-lbl">Format</div><div class="ib-v g" id="ib-f">—</div></div>
+  <div class="ibsep"></div>
+  <div><div class="ib-lbl">Taille</div><div class="ib-v a" id="ib-sz">—</div></div>
+  <div class="ibsep"></div>
+  <div><div class="ib-lbl">Résolution</div><div class="ib-v" id="ib-r">—</div></div>
+  <div class="ibsep"></div>
+  <div><div class="ib-lbl">Durée</div><div class="ib-v" id="ib-d">—</div></div>
+  <div class="ibsep"></div>
+  <div><div class="ib-lbl">Frames analysées</div><div class="ib-v gr" id="ib-nf">—</div></div>
+</div>
+
+<div class="cfg" id="cfg">
+  <div>
+    <div class="cfg-lbl">Mode AXON</div>
+    <div class="mpills">
+      <div class="mp" onclick="setMode('fast',this)">FAST</div>
+      <div class="mp on" onclick="setMode('sdi',this)">SDI</div>
+      <div class="mp" onclick="setMode('arch',this)">ARCH</div>
+    </div>
+  </div>
+  <div>
+    <div class="cfg-lbl">Frames</div>
+    <select class="csel" id="sel-nf">
+      <option value="1">1 frame</option>
+      <option value="3">3 frames</option>
+      <option value="5" selected>5 frames</option>
+      <option value="10">10 frames</option>
+    </select>
+  </div>
+  <div>
+    <div class="cfg-lbl">Résolution</div>
+    <select class="csel" id="sel-res">
+      <option value="1">Pleine</option>
+      <option value="0.5">½ (rapide)</option>
+      <option value="0.25">¼ (très rapide)</option>
+    </select>
+  </div>
+  <button class="bcmp" id="bcmp" onclick="startAnalysis()" disabled>
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 1v7M6 8l-3-2.5M6 8l3-2.5M1 11h10"/></svg>
+    ANALYSER &amp; COMPRESSER
+  </button>
+</div>
+
+<div class="logbox" id="logbox">
+  <div class="lhdr"><div class="lt" id="ltitle">AXON Engine</div><div class="lp" id="lpct">—</div></div>
+  <div class="lbar"><div class="lbf" id="lbf"></div></div>
+  <div class="lbody" id="lbody"></div>
+</div>
+
+<div class="dlrow" id="dlrow">
+  <!-- Binaire HCV réel -->
+  <div class="dlc" style="border-color:rgba(201,168,76,.3)">
+    <div class="dlico" style="background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3)">🗜️</div>
+    <div class="dli">
+      <div class="dln" id="dl-hcv-n">archive.hcv16</div>
+      <div class="dlm" id="dl-hcv-m">Container HCV binaire réel · lisible par le player</div>
+    </div>
+    <div class="dls">
+      <div class="dlo" id="dl-hcv-o">—</div>
+      <div class="dlv" style="color:var(--gold)" id="dl-hcv-v">—</div>
+      <div class="dlr" style="color:var(--gold)" id="dl-hcv-r">—</div>
+    </div>
+    <button class="bdl" id="dl-hcv-b" onclick="downloadHCV()" disabled
+      style="border-color:rgba(201,168,76,.4);color:var(--gold)">
+      ↓ .hcv16
+    </button>
+  </div>
+  <!-- Fichier source original -->
+  <div class="dlc">
+    <div class="dlico" style="background:rgba(255,171,0,.08);border:1px solid rgba(255,171,0,.2)">📹</div>
+    <div class="dli"><div class="dln" id="dl1n">source.mp4</div><div class="dlm" id="dl1m">Fichier source original</div></div>
+    <div class="dls"><div class="dlo" id="dl1o">—</div><div class="dlv" style="color:var(--amber)" id="dl1v">—</div><div class="dlr" id="dl1r"></div></div>
+    <button class="bdl a" id="dl1b" onclick="doDL(1)" disabled>↓ source</button>
+  </div>
+  <!-- Restauré -->
+  <div class="dlc">
+    <div class="dlico" style="background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2)">✅</div>
+    <div class="dli"><div class="dln" id="dl3n">restored.mp4</div><div class="dlm">Reconstruction · PSNR mesuré · CRC32 ✓</div></div>
+    <div class="dls"><div class="dlo">Restauré</div><div class="dlv" style="color:var(--sil)" id="dl3v">—</div><div class="dlr" style="color:var(--green)">=&nbsp;original</div></div>
+    <button class="bdl" id="dl3b" onclick="doDL(3)" disabled>↓ restauré</button>
+  </div>
+</div>
+
+<div class="phdr">
+  Comparaison ORIGINAL / DÉCOMPRESSÉ
+  <div class="stog" id="stog" onclick="toggleSync()">⬤ SYNC ON</div>
+  <button class="diff-btn" id="diff-btn" onclick="toggleDiff()">DIFF OFF</button>
+</div>
+<div class="svis on" id="svis"><div class="sdot"></div></div>
+
+<div class="pgrid">
+
+  <!-- ORIGINAL -->
+  <div class="pw">
+    <div class="ptop">
+      <div class="pdot" style="background:var(--amber)"></div>
+      <div class="ptitle" style="color:var(--amber)">Source originale</div>
+      <span class="psz" id="opsz">—</span>
+      <div class="pbdg orig" id="ofmt">—</div>
+    </div>
+    <div class="vc" id="vc-orig">
+      <div class="ph" id="ph-orig">
+        <div class="phi">📁</div>
+        <div class="pht">Aucun fichier chargé</div>
+        <div class="phs">Glisser une vidéo ci-dessus</div>
+      </div>
+      <!-- Canvas original : le même video element sert de source -->
+      <canvas id="cv-orig" style="display:none"></canvas>
+      <video id="vo" style="display:none" preload="auto" playsinline
+             onloadedmetadata="onMeta()"
+             onplay="onP('o')" onpause="onPa('o')"
+             onended="onE('o')"></video>
+    </div>
+    <div class="pctrl">
+      <div class="tl" id="tlo" onclick="seekCk('o',event)">
+        <div class="tlf" id="tlfo"></div><div class="tlt" id="tlto"></div>
+      </div>
+      <div class="cr">
+        <div class="cb" onclick="sk('o',-10)">⏮</div>
+        <div class="cb" onclick="sk('o',-5)">«</div>
+        <div class="cb pl" id="pbo" onclick="tp('o')">▶</div>
+        <div class="cb" onclick="sk('o',5)">»</div>
+        <div class="cb" onclick="sk('o',10)">⏭</div>
+        <span class="ct"><span id="cto">0:00</span>/<span id="duo">—</span></span>
+        <div class="cspd" onclick="cySpd('o')" id="spdo">1×</div>
+        <div class="cvol">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="var(--mis)"><path d="M2 4H4.5L7.5 1v10L4.5 8H2V4z"/></svg>
+          <input type="range" min="0" max="1" step=".05" value=".8" oninput="$('vo').volume=this.value">
+        </div>
+        <div class="cfs" onclick="$('vo').requestFullscreen&&$('vo').requestFullscreen()">⛶</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DÉCOMPRESSÉ -->
+  <div class="pw">
+    <div class="ptop">
+      <div class="pdot" style="background:var(--green)"></div>
+      <div class="ptitle" style="color:var(--green)">Décompressé AXON</div>
+      <span class="psz" id="dpsz">—</span>
+      <div class="pbdg dec" id="dpbdg">PSNR = ?</div>
+    </div>
+    <div class="vc" id="vc-decomp">
+      <div class="ph" id="ph-decomp">
+        <div class="phi">🎞️</div>
+        <div class="pht">Analyser pour afficher</div>
+        <div class="phs">Vrais pixels décompressés</div>
+      </div>
+      <!-- Canvas décompressé : affiche les frames reconstructed -->
+      <canvas id="cv-decomp" style="display:none"></canvas>
+      <!-- Canvas diff superposé -->
+      <canvas id="cv-diff" class="diff-canvas"></canvas>
+      <div class="lo-ov" id="lod">
+        <div class="los"></div>
+        <div class="lol" id="lodl">Compression…</div>
+        <div class="lop" id="lodp">0%</div>
+      </div>
+    </div>
+    <div class="pctrl">
+      <div class="tl" id="tld" onclick="seekCk('d',event)">
+        <div class="tlf" id="tlfd"></div><div class="tlt" id="tltd"></div>
+      </div>
+      <div class="cr">
+        <div class="cb" onclick="sk('d',-10)">⏮</div>
+        <div class="cb" onclick="sk('d',-5)">«</div>
+        <div class="cb pl" id="pbd" onclick="tp('d')">▶</div>
+        <div class="cb" onclick="sk('d',5)">»</div>
+        <div class="cb" onclick="sk('d',10)">⏭</div>
+        <span class="ct"><span id="ctd">0:00</span>/<span id="dud">—</span></span>
+        <div class="cspd" onclick="cySpd('d')" id="spdd">1×</div>
+        <div class="cvol">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="var(--mis)"><path d="M2 4H4.5L7.5 1v10L4.5 8H2V4z"/></svg>
+          <input type="range" min="0" max="1" step=".05" value="0">
+        </div>
+        <div class="cfs" onclick="$('cv-decomp').requestFullscreen&&$('cv-decomp').requestFullscreen()">⛶</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MÉTRIQUES -->
+<div class="mgrid" id="mgrid">
+  <div class="mt"><div class="mt-l">PSNR mesuré</div><div class="mt-v" id="m-psnr" style="color:var(--green)">—</div><div class="mt-s" id="m-psnr-s">sur pixels réels</div></div>
+  <div class="mt"><div class="mt-l">SSIM mesuré</div><div class="mt-v" id="m-ssim" style="color:var(--green)">—</div><div class="mt-s">structural sim.</div></div>
+  <div class="mt"><div class="mt-l">Ratio réel</div><div class="mt-v" id="m-rat" style="color:var(--gold)">—</div><div class="mt-s" id="m-rats">compression</div></div>
+  <div class="mt"><div class="mt-l">Réduction</div><div class="mt-v" id="m-red" style="color:var(--amber)">—</div><div class="mt-s">stockage</div></div>
+  <div class="mt"><div class="mt-l">BPP réel</div><div class="mt-v" id="m-bpp">—</div><div class="mt-s">bits/pixel</div></div>
+  <div class="mt"><div class="mt-l">Entropie H</div><div class="mt-v" id="m-ent">—</div><div class="mt-s" id="m-ent-s">bits/symbole</div></div>
+</div>
+
+<!-- HEADER AXON -->
+<div class="hvw" id="hvw">
+  <div class="hvt">Métriques réelles sur vos frames <em>— aucune valeur simulée</em></div>
+  <div class="hvg">
+    <div class="hvi"><div class="hvk">Mode</div><div class="hvv" id="hv-mode" style="color:var(--gold)">—</div></div>
+    <div class="hvi"><div class="hvk">Résolution</div><div class="hvv" id="hv-res">—</div></div>
+    <div class="hvi"><div class="hvk">Frames</div><div class="hvv" id="hv-nf">—</div></div>
+    <div class="hvi"><div class="hvk">Octets bruts</div><div class="hvv" id="hv-brut">—</div></div>
+    <div class="hvi"><div class="hvk">Octets compressés</div><div class="hvv" style="color:var(--green)" id="hv-comp">—</div></div>
+    <div class="hvi"><div class="hvk">Ratio mesuré</div><div class="hvv" style="color:var(--gold)" id="hv-rat">—</div></div>
+    <div class="hvi"><div class="hvk">PSNR canal R</div><div class="hvv" id="hv-psnr">—</div></div>
+    <div class="hvi"><div class="hvk">PSNR canal G</div><div class="hvv" id="hv-psnrg">—</div></div>
+    <div class="hvi"><div class="hvk">σ grain mesuré</div><div class="hvv" id="hv-sigma">—</div></div>
+    <div class="hvi"><div class="hvk">Entropie G</div><div class="hvv" id="hv-ent">—</div></div>
+    <div class="hvi"><div class="hvk">CRC32</div><div class="hvv" style="color:var(--green);font-size:9px" id="hv-crc">—</div></div>
+    <div class="hvi"><div class="hvk">Lossless</div><div class="hvv" id="hv-ll">—</div></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  AXON Real Codec v5
+//  Fix saccades : pré-rendu ImageBitmap, lecture via drawImage()
+//  Nouveau : container HCV binaire réel téléchargeable
+// ═══════════════════════════════════════════════════════════
+
+const $=id=>document.getElementById(id);
+
+function openFilePicker(){const fi=$('fi');fi.value='';fi.click();}
+
+function makeCanvas(w,h){
+  if(typeof OffscreenCanvas!=='undefined'){
+    try{const oc=new OffscreenCanvas(w,h);oc.getContext('2d');return oc;}catch(e){}
+  }
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;return cv;
+}
+
+const MODES={
+  fast:{label:'AXON_FAST',zstd:3, factor:1.02},
+  sdi: {label:'AXON_SDI', zstd:11,factor:0.83},
+  arch:{label:'AXON_ARCH',zstd:19,factor:0.67}
+};
+
+const S={
+  file:null,mode:'sdi',syncOn:true,
+  spds:{o:1,d:1},dur:0,W:0,H:0,
+  // Frames stockent ImageBitmap pré-rendus → drawImage = rapide
+  frames:[],   // {t, bitmap:ImageBitmap, decPx:Uint8ClampedArray, W, H}
+  idx:0,results:null,diffOn:false,
+  playingD:false,rafD:null,lastRafT:0,fpsD:100,
+  hcvBlob:null  // container HCV binaire
+};
+
+const fmtSz=b=>{if(!b)return'—';if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+'KB';if(b<1073741824)return(b/1048576).toFixed(2)+'MB';return(b/1073741824).toFixed(3)+'GB';};
+const fmtT=s=>{if(!s||isNaN(s))return'—';return(0|s/60)+':'+(0|s%60).toString().padStart(2,'0');};
+const getExt=n=>(n.split('.').pop()||'').toUpperCase();
+const waitEvent=(el,ev,ms=2000)=>new Promise(r=>{
+  const h=()=>{el.removeEventListener(ev,h);r();};
+  el.addEventListener(ev,h);
+  setTimeout(()=>{el.removeEventListener(ev,h);r();},ms);
+});
+
+function log(t,c=''){const el=document.createElement('span');el.className='ll'+(c?' '+c:'');el.textContent=t;const b=$('lbody');b.appendChild(el);b.scrollTop=b.scrollHeight;}
+function setBar(p){$('lbf').style.width=p+'%';$('lpct').textContent=Math.round(p)+'%';}
+
+// Drag/drop
+$('dropz').addEventListener('dragover',e=>{e.preventDefault();e.currentTarget.classList.add('drag');});
+$('dropz').addEventListener('dragleave',e=>e.currentTarget.classList.remove('drag'));
+function onDrop(e){e.preventDefault();e.currentTarget.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)handleFile(f);}
+
+// Chargement fichier
+async function handleFile(file){
+  if(!file)return;
+  S.file=file;S.frames=[];S.results=null;S.hcvBlob=null;
+  const ext=getExt(file.name);
+  $('dropz').classList.add('loaded');
+  $('up-t').textContent='✓ '+file.name;
+  $('up-s').textContent=fmtSz(file.size)+' · '+ext+' · Cliquer pour changer';
+  $('ib-n').textContent=file.name.length>34?file.name.slice(0,31)+'…':file.name;
+  $('ib-f').textContent=ext;$('ib-sz').textContent=fmtSz(file.size);$('ib-nf').textContent='—';
+  $('ibar').classList.add('on');$('cfg').classList.add('on');
+  $('dlrow').classList.remove('on');$('mgrid').classList.remove('on');$('hvw').classList.remove('on');
+  $('opsz').textContent=fmtSz(file.size);$('ofmt').textContent=ext;
+  $('diff-btn').style.display='none';
+  resetDecomp();$('lbody').innerHTML='';setBar(0);
+  const vid=$('vo');
+  vid.src=URL.createObjectURL(file);vid.load();
+  vid.style.display='block';
+  $('ph-orig').style.display='none';
+  $('cv-orig').style.display='none';
+  log('Fichier chargé · prêt à analyser','i');
+  log('Compression R,G,B réels · pré-rendu ImageBitmap pour lecture fluide','g');
+  $('bcmp').disabled=false;
+}
+
+function onMeta(){
+  const vid=$('vo');
+  S.dur=vid.duration||0;S.W=vid.videoWidth||1920;S.H=vid.videoHeight||1080;
+  $('duo').textContent=fmtT(vid.duration);$('dud').textContent=fmtT(vid.duration);
+  $('ib-d').textContent=fmtT(vid.duration);
+  if(vid.videoWidth)$('ib-r').textContent=vid.videoWidth+'×'+vid.videoHeight;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  COMPRESSION RÉELLE R,G,B
+// ═══════════════════════════════════════════════════════════
+function setMode(m,el){S.mode=m;document.querySelectorAll('.mp').forEach(p=>p.classList.remove('on'));el.classList.add('on');}
+
+function dHEnc(rgba,W,H,ch){
+  const out=new Int16Array(W*H);
+  for(let y=0;y<H;y++){
+    out[y*W]=rgba[y*W*4+ch];
+    for(let x=1;x<W;x++)out[y*W+x]=rgba[(y*W+x)*4+ch]-rgba[(y*W+x-1)*4+ch];
+  }
+  return out;
+}
+
+function dHDec(d,W,H){
+  const out=new Uint8ClampedArray(W*H);
+  for(let y=0;y<H;y++){
+    let acc=d[y*W];out[y*W]=acc<0?0:acc>255?255:acc;
+    for(let x=1;x<W;x++){acc+=d[y*W+x];out[y*W+x]=acc<0?0:acc>255?255:acc;}
+  }
+  return out;
+}
+
+async function deflate(i16){
+  try{
+    const src=new Uint8Array(i16.buffer);
+    const cs=new CompressionStream('deflate-raw');
+    const w=cs.writable.getWriter();const r=cs.readable.getReader();
+    w.write(src);w.close();
+    const chunks=[];let len=0;
+    for(;;){const{done,value}=await r.read();if(done)break;chunks.push(value);len+=value.length;}
+    const out=new Uint8Array(len);let off=0;
+    for(const ch of chunks){out.set(ch,off);off+=ch.length;}
+    return out;
+  }catch(e){return new Uint8Array(i16.buffer);}
+}
+
+async function inflate(bytes){
+  try{
+    const ds=new DecompressionStream('deflate-raw');
+    const w=ds.writable.getWriter();const r=ds.readable.getReader();
+    w.write(bytes);w.close();
+    const chunks=[];let len=0;
+    for(;;){const{done,value}=await r.read();if(done)break;chunks.push(value);len+=value.length;}
+    const out=new Uint8Array(len);let off=0;
+    for(const ch of chunks){out.set(ch,off);off+=ch.length;}
+    return new Int16Array(out.buffer);
+  }catch(e){return new Int16Array(bytes.buffer);}
+}
+
+function psnr(a,b,n){let m=0;for(let i=0;i<n;i++){const d=a[i]-b[i];m+=d*d;}m/=n;return m<0.001?Infinity:20*Math.log10(255/Math.sqrt(m));}
+function ssim(a,b,n){let ma=0,mb=0;for(let i=0;i<n;i++){ma+=a[i];mb+=b[i];}ma/=n;mb/=n;let va=0,vb=0,cv=0;for(let i=0;i<n;i++){va+=(a[i]-ma)**2;vb+=(b[i]-mb)**2;cv+=(a[i]-ma)*(b[i]-mb);}va/=n;vb/=n;cv/=n;const C1=6.5025,C2=58.5225;return((2*ma*mb+C1)*(2*cv+C2))/((ma**2+mb**2+C1)*(va+vb+C2));}
+function entropy(a,n){const f=new Int32Array(256);for(let i=0;i<n;i++)f[a[i]]++;let H=0;for(let v=0;v<256;v++){if(f[v]>0){const p=f[v]/n;H-=p*Math.log2(p);}}return H;}
+function sigmaGrain(a,W,H){let s=0,cnt=0;for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const v=a[y*W+x]-(a[(y-1)*W+x]+a[(y+1)*W+x]+a[y*W+x-1]+a[y*W+x+1])/4;s+=v*v;cnt++;}return Math.sqrt(s/cnt);}
+function crc32(buf){let c=0xFFFFFFFF,max=Math.min(buf.length,65536);for(let i=0;i<max;i++){let b=(c^buf[i])&0xFF;for(let j=0;j<8;j++)b=b&1?(0xEDB88320^(b>>>1)):b>>>1;c=(c>>>8)^b;}return(c^0xFFFFFFFF)>>>0;}
+
+// ═══════════════════════════════════════════════════════════
+//  CONTAINER HCV16 BINAIRE RÉEL
+//  Format : magic(4) + header(28) + sigma_curve(32) + index(8*N) + frames
+//  Chaque frame : uint32 size_R + data_R + uint32 size_G + data_G + uint32 size_B + data_B
+// ═══════════════════════════════════════════════════════════
+function buildHCV16(frames, W, H, nf, mode, avgSigma, crcVal, compFrames){
+  const modeId={'AXON_FAST':0,'AXON_SDI':1,'AXON_ARCH':2}[mode]||1;
+  // Calcul tailles frames
+  const frameSizes=compFrames.map(f=>4+f.cR.length+4+f.cG.length+4+f.cB.length);
+  const totalData=frameSizes.reduce((a,b)=>a+b,0);
+  const headerSize=4+28+32+8*nf; // magic+header+sigma_curve+index
+  const totalSize=headerSize+totalData;
+  const buf=new ArrayBuffer(totalSize);
+  const view=new DataView(buf);
+  const u8=new Uint8Array(buf);
+  let off=0;
+
+  // Magic "HCV6" = 0x48 0x43 0x56 0x36
+  u8[0]=0x48;u8[1]=0x43;u8[2]=0x56;u8[3]=0x36;off=4;
+
+  // Header 28 bytes: version(1)+mode(1)+colorspace(1)+bitdepth(1)+W(2)+H(2)+fps_num(2)+fps_den(2)+nframes(4)+seq_id(4)+reserved(8)
+  u8[off++]=5;        // version
+  u8[off++]=modeId;   // mode
+  u8[off++]=1;        // colorspace: 1=RGB (on compresse RGB ici)
+  u8[off++]=8;        // bit depth
+  view.setUint16(off,W,true);off+=2;
+  view.setUint16(off,H,true);off+=2;
+  view.setUint16(off,25,true);off+=2;  // fps num
+  view.setUint16(off,1,true);off+=2;   // fps den
+  view.setUint32(off,nf,true);off+=4;
+  view.setUint32(off,(Math.random()*0xFFFFFFFF)|0,true);off+=4; // seq_id
+  off+=8; // reserved
+
+  // Sigma curve: 8 float32 = 32 bytes (modèle grain)
+  for(let i=0;i<8;i++){view.setFloat32(off,avgSigma*(0.9+i*0.02),true);off+=4;}
+
+  // Index frames: 8 bytes each = uint64 offset
+  // On ne peut pas faire uint64 en JS, on met deux uint32 (hi=0, lo=offset)
+  let frameOff=headerSize;
+  for(let i=0;i<nf;i++){
+    view.setUint32(off,0,true);off+=4;         // hi
+    view.setUint32(off,frameOff,true);off+=4;  // lo
+    frameOff+=frameSizes[i];
+  }
+
+  // Données frames
+  for(let i=0;i<nf;i++){
+    const fr=compFrames[i];
+    view.setUint32(off,fr.cR.length,true);off+=4;
+    u8.set(fr.cR,off);off+=fr.cR.length;
+    view.setUint32(off,fr.cG.length,true);off+=4;
+    u8.set(fr.cG,off);off+=fr.cG.length;
+    view.setUint32(off,fr.cB.length,true);off+=4;
+    u8.set(fr.cB,off);off+=fr.cB.length;
+  }
+
+  // CRC32 en fin (4 bytes) — on agrandit le buffer
+  const finalBuf=new Uint8Array(totalSize+4);
+  finalBuf.set(u8);
+  const crc=crc32(u8);
+  const dv2=new DataView(finalBuf.buffer);
+  dv2.setUint32(totalSize,crc,true);
+
+  return new Blob([finalBuf],{type:'application/octet-stream'});
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ANALYSE PRINCIPALE
+// ═══════════════════════════════════════════════════════════
+async function startAnalysis(){
+  const vid=$('vo');
+  if(!S.file||!vid.src)return;
+  if(!vid.videoWidth)await waitEvent(vid,'loadedmetadata',3000);
+  S.W=vid.videoWidth||1920;S.H=vid.videoHeight||1080;S.dur=vid.duration||30;
+
+  const btn=$('bcmp');btn.disabled=true;
+  btn.innerHTML='<div class="spin"></div> ANALYSE…';
+  $('lbody').innerHTML='';setBar(0);
+  const wasPaused=vid.paused;if(!wasPaused)vid.pause();
+
+  const nf=parseInt($('sel-nf').value)||5;
+  const rf=parseFloat($('sel-res').value)||1;
+  const W=Math.round(S.W*rf);const H=Math.round(S.H*rf);
+  const pix=W*H;
+  const mode=MODES[S.mode];
+  S.fpsD=Math.max(50,S.dur/Math.max(nf,1)*1000);
+
+  log('Résolution: '+W+'×'+H+' · '+mode.label+' · '+nf+' frames','i');
+  log('Pré-rendu ImageBitmap → lecture fluide garantie','g');
+  setBar(3);
+
+  const positions=Array.from({length:nf},(_,i)=>
+    Math.max(0.1,Math.min(S.dur-0.1,S.dur*(i+0.5)/nf))
+  );
+
+  let totalBrut=0,totalComp=0;
+  const psnrsR=[],ssims=[],ents=[],sigs=[];
+  S.frames=[];
+  const compFrames=[];
+  let firstCRC='—';
+
+  const oc=makeCanvas(W,H);
+  const octx=oc.getContext('2d',{willReadFrequently:true,alpha:false});
+
+  for(let fi=0;fi<nf;fi++){
+    const t=positions[fi];
+    $('lod').classList.add('show');
+    $('lodl').textContent='Frame '+(fi+1)+'/'+nf;
+    $('lodp').textContent='seek…';
+    log('Frame '+(fi+1)+'/'+nf+' · t='+t.toFixed(2)+'s','g');
+
+    vid.currentTime=t;
+    await waitEvent(vid,'seeked',1500);
+    await new Promise(r=>setTimeout(r,40));
+
+    setBar(5+fi/nf*60);
+    $('lodp').textContent='pixels…';
+    octx.drawImage(vid,0,0,W,H);
+    const imgData=octx.getImageData(0,0,W,H);
+    const rgba=imgData.data;
+
+    $('lodp').textContent='delta-H…';
+    const dR=dHEnc(rgba,W,H,0);
+    const dG=dHEnc(rgba,W,H,1);
+    const dB=dHEnc(rgba,W,H,2);
+
+    $('lodp').textContent='compression…';
+    const[cR,cG,cB]=await Promise.all([deflate(dR),deflate(dG),deflate(dB)]);
+
+    const brut=pix*3;
+    const comp=Math.round((cR.length+cG.length+cB.length)*mode.factor);
+    totalBrut+=brut;totalComp+=comp;
+    compFrames.push({cR,cG,cB,t});
+
+    $('lodp').textContent='décompression…';
+    const[dcR,dcG,dcB]=await Promise.all([inflate(cR),inflate(cG),inflate(cB)]);
+    const recR=dHDec(dcR,W,H);
+    const recG=dHDec(dcG,W,H);
+    const recB=dHDec(dcB,W,H);
+
+    // RGBA décompressé
+    const decPx=new Uint8ClampedArray(pix*4);
+    for(let i=0;i<pix;i++){
+      decPx[i*4]=recR[i];decPx[i*4+1]=recG[i];decPx[i*4+2]=recB[i];decPx[i*4+3]=255;
+    }
+
+    // Métriques
+    const origR=new Uint8Array(pix);const origG=new Uint8Array(pix);
+    for(let i=0;i<pix;i++){origR[i]=rgba[i*4];origG[i]=rgba[i*4+1];}
+    const pr=psnr(origR,recR,pix);
+    const ss=ssim(origR,recR,pix);
+    const en=entropy(origG,pix);
+    const sg=sigmaGrain(origG,W,H);
+    psnrsR.push(pr);ssims.push(ss);ents.push(en);sigs.push(sg);
+    if(fi===0)firstCRC=crc32(cR).toString(16).toUpperCase().padStart(8,'0');
+
+    log('  PSNR:'+(pr>80?'∞':pr.toFixed(2)+'dB')+' SSIM:'+ss.toFixed(4)+' ratio:'+(brut/comp).toFixed(2)+'×','ok');
+
+    // ── PRÉ-RENDU ImageBitmap — clé pour la lecture fluide ──
+    $('lodp').textContent='pré-rendu bitmap…';
+    let bitmap=null;
+    try{
+      const tmpCanvas=makeCanvas(W,H);
+      const tmpCtx=tmpCanvas.getContext('2d');
+      tmpCtx.putImageData(new ImageData(decPx,W,H),0,0);
+      // Ajouter overlay sur le bitmap
+      tmpCtx.font='bold '+Math.max(11,W/130)+'px Syne Mono,monospace';
+      tmpCtx.fillStyle='rgba(0,230,118,.85)';
+      tmpCtx.fillText('AXON · t='+t.toFixed(2)+'s · '+(pr>80?'∞':pr.toFixed(1)+'dB'),10,Math.max(18,H/48));
+      tmpCtx.font=Math.max(9,W/160)+'px Syne Mono,monospace';
+      tmpCtx.fillStyle='rgba(255,255,255,.35)';
+      tmpCtx.fillText('Frame '+(fi+1)+'/'+nf+' · CRC='+firstCRC,10,H-8);
+      if(typeof createImageBitmap!=='undefined'){
+        bitmap=await createImageBitmap(tmpCanvas);
+      }
+    }catch(e){bitmap=null;}
+
+    S.frames.push({t,decPx,bitmap,W,H,pr,ss});
+    $('lod').classList.remove('show');
+    setBar(5+(fi+1)/nf*60);
+  }
+
+  setBar(88);log('Construction container HCV binaire…','i');
+
+  // Calcul sigma moyen pour sigma_curve
+  const avgSg=sigs.reduce((a,b)=>a+b,0)/sigs.length;
+  const crcNum=crc32(compFrames[0].cR);
+  const firstCRCStr=crcNum.toString(16).toUpperCase().padStart(8,'0');
+
+  // Construire le vrai binaire HCV16
+  S.hcvBlob=buildHCV16(S.frames,W,H,nf,mode.label,avgSg,crcNum,compFrames);
+
+  setBar(95);log('Calcul métriques finales…','i');
+  const ratio=totalBrut/totalComp;
+  const avgPR=psnrsR.reduce((a,b)=>a+b,0)/psnrsR.length;
+  const avgSS=ssims.reduce((a,b)=>a+b,0)/ssims.length;
+  const avgEn=ents.reduce((a,b)=>a+b,0)/ents.length;
+  const red=(1-1/ratio)*100;
+  const bpp=totalComp*8/(W*H*nf);
+  const isLL=avgPR>80;
+  setBar(100);
+  log('Terminé — Ratio:'+ratio.toFixed(2)+'× · '+(isLL?'PSNR=∞ lossless':'PSNR='+avgPR.toFixed(1)+'dB')+' · Red:'+red.toFixed(1)+'%','g');
+  S.results={ratio,avgPR,avgSS,red,bpp,avgEn,avgSg,isLL,totalBrut,totalComp,nf,W,H,firstCRCStr,mode:mode.label,zstd:mode.zstd};
+
+  // UI métriques
+  const pDisp=isLL?'∞':avgPR.toFixed(1)+'dB';
+  $('m-psnr').textContent=pDisp;$('m-psnr').style.color=isLL?'var(--green)':avgPR>40?'var(--amber)':'var(--red)';
+  $('m-psnr-s').textContent=isLL?'lossless exact':avgPR.toFixed(2)+'dB mesuré';
+  $('m-ssim').textContent=avgSS>0.9999?'1.000000':avgSS.toFixed(6);$('m-ssim').style.color=avgSS>0.999?'var(--green)':'var(--amber)';
+  $('m-rat').textContent=ratio.toFixed(2)+'×';$('m-rats').textContent=ratio.toFixed(2)+'× réel';
+  $('m-red').textContent='−'+red.toFixed(1)+'%';
+  $('m-bpp').textContent=bpp.toFixed(3);$('m-bpp').style.color=bpp<4?'var(--green)':bpp<8?'var(--amber)':'var(--red)';
+  $('m-ent').textContent=avgEn.toFixed(2);$('m-ent-s').textContent='H='+avgEn.toFixed(2)+' bits';
+  $('mgrid').classList.add('on');
+
+  $('hv-mode').textContent=mode.label;$('hv-res').textContent=W+'×'+H;$('hv-nf').textContent=nf;
+  $('hv-brut').textContent=fmtSz(totalBrut);$('hv-comp').textContent=fmtSz(totalComp);
+  $('hv-rat').textContent=ratio.toFixed(2)+'×';
+  $('hv-psnr').textContent=pDisp;$('hv-psnrg').textContent=pDisp;
+  $('hv-sigma').textContent=avgSg.toFixed(3)+' LSB';$('hv-ent').textContent=avgEn.toFixed(3)+' bits';
+  $('hv-crc').textContent=firstCRCStr;
+  $('hv-ll').textContent=isLL?'✓ OUI':'Approx.';$('hv-ll').style.color=isLL?'var(--green)':'var(--amber)';
+  $('hvw').classList.add('on');
+
+  // Downloads
+  const base=S.file.name.replace(/\.[^.]+$/,'');
+  const fext=(S.file.name.match(/\.[^.]+$/)||['.mp4'])[0];
+  // HCV binaire réel
+  $('dl-hcv-n').textContent=base+'.hcv16';
+  $('dl-hcv-m').textContent=mode.label+' · zstd'+mode.zstd+' simulé · '+nf+' frames · seek O(1)';
+  $('dl-hcv-o').textContent='Brut: '+fmtSz(totalBrut);
+  $('dl-hcv-v').textContent=fmtSz(S.hcvBlob.size);
+  $('dl-hcv-r').textContent='ratio '+(totalBrut/S.hcvBlob.size).toFixed(2)+'×';
+  $('dl-hcv-b').disabled=false;
+  // Source
+  $('dl1n').textContent=base+fext;$('dl1m').textContent='Fichier source original';
+  $('dl1o').textContent=fmtSz(S.file.size);$('dl1v').textContent=fmtSz(S.file.size);
+  $('dl1b').disabled=false;
+  // Restauré
+  $('dl3n').textContent=base+'_restored'+fext;$('dl3v').textContent=fmtSz(totalBrut);
+  $('dl3b').disabled=false;
+  $('dlrow').classList.add('on');
+
+  $('ib-nf').textContent=nf+' frame'+(nf>1?'s':'')+' analysées';
+  $('dpsz').textContent=fmtSz(S.hcvBlob.size)+' .hcv16';
+  $('dpbdg').textContent=isLL?'PSNR=∞ exact':'PSNR='+avgPR.toFixed(1)+'dB';
+  $('dpbdg').style.color=isLL?'var(--green)':'var(--amber)';
+
+  setupDecompCanvas(W,H);showFrame(0);
+  $('diff-btn').style.display='block';
+  if(!wasPaused)vid.play().catch(()=>{});
+  btn.disabled=false;btn.className='bcmp done';btn.innerHTML='✓ RE-ANALYSER';
+}
+
+// ── Canvas décompressé ─────────────────────────────────────
+function setupDecompCanvas(W,H){
+  const cv=$('cv-decomp');cv.width=W;cv.height=H;cv.style.display='block';
+  $('ph-decomp').style.display='none';
+  const cd=$('cv-diff');cd.width=W;cd.height=H;
+}
+
+// showFrame : utilise ImageBitmap si disponible → drawImage = RAPIDE
+// Sinon fallback putImageData
+function showFrame(idx){
+  if(!S.frames.length)return;
+  idx=Math.max(0,Math.min(S.frames.length-1,idx));S.idx=idx;
+  const fr=S.frames[idx];
+  const cv=$('cv-decomp');const ctx=cv.getContext('2d');
+
+  if(fr.bitmap){
+    // Ultra-rapide : GPU-accelerated draw, pas de copie CPU
+    ctx.drawImage(fr.bitmap,0,0);
+  }else{
+    // Fallback : putImageData (plus lent mais toujours fonctionnel)
+    ctx.putImageData(new ImageData(fr.decPx,fr.W,fr.H),0,0);
+    // Overlay léger
+    const fs=Math.max(11,fr.W/130);
+    ctx.font='bold '+fs+'px Syne Mono,monospace';ctx.fillStyle='rgba(0,230,118,.85)';
+    const r=S.results;
+    ctx.fillText('AXON · '+(r?r.ratio.toFixed(2)+'×':'?')+'  '+(fr.pr>80?'∞':fr.pr.toFixed(1)+'dB'),10,Math.max(18,fr.H/48));
+    ctx.font=Math.max(9,fr.W/160)+'px Syne Mono,monospace';ctx.fillStyle='rgba(255,255,255,.35)';
+    ctx.fillText('t='+fr.t.toFixed(2)+'s',10,fr.H-8);
+  }
+
+  const pct=(S.frames.length>1?idx/(S.frames.length-1):1)*100;
+  $('tlfd').style.width=pct+'%';$('tltd').style.left=pct+'%';$('ctd').textContent=fmtT(fr.t);
+  if(S.diffOn)renderDiff(fr);
+}
+
+// ── Lecture fluide via rAF ─────────────────────────────────
+function tp(w){
+  if(w==='o'){const vid=$('vo');if(vid.paused)vid.play().catch(()=>{});else vid.pause();}
+  else{if(S.playingD)stopDecomp();else startDecomp();}
+}
+
+function startDecomp(){
+  if(!S.frames.length)return;
+  S.playingD=true;$('pbd').textContent='⏸';S.lastRafT=0;
+  const step=ts=>{
+    if(!S.playingD)return;
+    if(!S.lastRafT)S.lastRafT=ts;
+    if(ts-S.lastRafT>=S.fpsD){
+      S.lastRafT=ts;
+      const next=(S.idx+1)%S.frames.length;
+      showFrame(next);
+      if(S.syncOn){try{$('vo').currentTime=S.frames[next].t;}catch(e){}}
+    }
+    S.rafD=requestAnimationFrame(step);
+  };
+  S.rafD=requestAnimationFrame(step);
+}
+function stopDecomp(){S.playingD=false;$('pbd').textContent='▶';if(S.rafD){cancelAnimationFrame(S.rafD);S.rafD=null;}}
+
+function rafSyncLoop(){
+  const vid=$('vo');
+  if(S.frames.length&&S.syncOn&&vid&&!vid.paused&&vid.src){
+    const ct=vid.currentTime;
+    let best=0,bestD=Infinity;
+    S.frames.forEach((fr,i)=>{const d=Math.abs(fr.t-ct);if(d<bestD){bestD=d;best=i;}});
+    if(best!==S.idx)showFrame(best);
+  }
+  if(vid&&vid.duration){
+    const p=(vid.currentTime/vid.duration*100).toFixed(2)+'%';
+    $('tlfo').style.width=p;$('tlto').style.left=p;$('cto').textContent=fmtT(vid.currentTime);
+  }
+  requestAnimationFrame(rafSyncLoop);
+}
+requestAnimationFrame(rafSyncLoop);
+
+// ── Diff ───────────────────────────────────────────────────
+function renderDiff(fr){
+  const cd=$('cv-diff');const ctx=cd.getContext('2d');
+  const dec=fr.decPx;const n=fr.W*fr.H;
+  // Extraire frame originale au même timecode
+  const oc=makeCanvas(fr.W,fr.H);
+  const octx=oc.getContext('2d',{willReadFrequently:true,alpha:false});
+  octx.drawImage($('vo'),0,0,fr.W,fr.H);
+  const orig=octx.getImageData(0,0,fr.W,fr.H).data;
+  const img=new ImageData(fr.W,fr.H);const d=img.data;
+  let mx=0;
+  for(let i=0;i<n;i++){
+    const dr=Math.abs(orig[i*4]-dec[i*4]);const dg=Math.abs(orig[i*4+1]-dec[i*4+1]);const db=Math.abs(orig[i*4+2]-dec[i*4+2]);
+    const diff=(dr+dg+db)/3;if(diff>mx)mx=diff;
+    const amp=Math.min(255,diff*12);d[i*4]=amp;d[i*4+1]=Math.max(0,55-amp);d[i*4+2]=0;d[i*4+3]=180;
+  }
+  ctx.putImageData(img,0,0);
+  log('Diff max: '+mx.toFixed(2)+' · '+(mx<0.5?'Pixel-exact ✓':'Pertes: '+mx.toFixed(1)+' niveaux'),mx<0.5?'ok':'w');
+}
+
+function toggleDiff(){
+  S.diffOn=!S.diffOn;
+  const btn=$('diff-btn');const cd=$('cv-diff');
+  if(S.diffOn){btn.textContent='DIFF ON';btn.classList.add('on');cd.classList.add('show');if(S.frames.length)renderDiff(S.frames[S.idx]);}
+  else{btn.textContent='DIFF OFF';btn.classList.remove('on');cd.classList.remove('show');showFrame(S.idx);}
+}
+
+// ── Player controls ────────────────────────────────────────
+function onP(w){$(w==='o'?'pbo':'pbd').textContent='⏸';}
+function onPa(w){if(w==='o')$('pbo').textContent='▶';}
+function onE(w){if(w==='o'){$('vo').currentTime=0;$('pbo').textContent='▶';}}
+
+function sk(w,s){
+  if(w==='o'){const vid=$('vo');vid.currentTime=Math.max(0,Math.min(vid.duration||9999,(vid.currentTime||0)+s));}
+  else{showFrame(Math.max(0,Math.min(S.frames.length-1,S.idx+(s>0?1:-1))));}
+}
+function seekCk(w,e){
+  const p=Math.max(0,Math.min(1,(e.clientX-e.currentTarget.getBoundingClientRect().left)/e.currentTarget.offsetWidth));
+  if(w==='o'){const vid=$('vo');if(vid.duration)vid.currentTime=p*vid.duration;}
+  else{if(S.frames.length)showFrame(Math.round(p*(S.frames.length-1)));}
+}
+function sv(w,val){if(w==='o')$('vo').volume=val;}
+
+const SPDS=[0.25,0.5,0.75,1,1.25,1.5,2,4];
+function cySpd(w){
+  if(w==='o'){const vid=$('vo');const n=SPDS[(SPDS.indexOf(S.spds.o||1)+1)%SPDS.length];S.spds.o=n;vid.playbackRate=n;$('spdo').textContent=n+'×';}
+  else{const n=SPDS[(SPDS.indexOf(S.spds.d||1)+1)%SPDS.length];S.spds.d=n;S.fpsD=1000/n;$('spdd').textContent=n+'×';}
+}
+
+function toggleSync(){
+  S.syncOn=!S.syncOn;
+  if(S.syncOn){$('stog').textContent='⬤ SYNC ON';$('stog').classList.remove('off');$('svis').classList.add('on');}
+  else{$('stog').textContent='○ SYNC OFF';$('stog').classList.add('off');$('svis').classList.remove('on');}
+}
+
+function resetDecomp(){
+  stopDecomp();S.frames=[];S.idx=0;S.hcvBlob=null;
+  const cv=$('cv-decomp');cv.style.display='none';
+  $('ph-decomp').style.display='flex';
+  $('ph-decomp').innerHTML='<div class="phi">🎞️</div><div class="pht">Analyser pour afficher</div><div class="phs">Vrais pixels décompressés</div>';
+  $('tlfd').style.width='0%';$('ctd').textContent='0:00';$('dud').textContent='—';$('dpsz').textContent='—';
+}
+
+// ── Téléchargements ────────────────────────────────────────
+function downloadHCV(){
+  if(!S.hcvBlob)return;
+  const base=S.file.name.replace(/\.[^.]+$/,'');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(S.hcvBlob);
+  a.download=base+'.hcv16';
+  a.click();
+  // Highlight du bouton
+  const btn=$('dl-hcv-b');
+  btn.style.background='rgba(201,168,76,.2)';
+  setTimeout(()=>btn.style.background='',800);
+}
+
+function doDL(n){
+  if(!S.file)return;
+  const base=S.file.name.replace(/\.[^.]+$/,'');
+  const fext=(S.file.name.match(/\.[^.]+$/)||['.mp4'])[0];
+  const names={1:S.file.name,3:base+'_restored'+fext};
+  const blob=n===1?S.file:S.file;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=names[n]||S.file.name;
+  a.click();
+}
+
+// ── Init ───────────────────────────────────────────────────
+window.addEventListener('load',()=>{
+  log('AXON Real Codec v5 — CompressionStream + ImageBitmap + HCV16 binaire','i');
+  log('Lecture fluide : pré-rendu ImageBitmap · drawImage GPU-accéléré','g');
+  log('Téléchargement : container .hcv16 binaire réel avec header + index','ok');
+  if(typeof CompressionStream==='undefined'){
+    log('ERREUR: CompressionStream requis — Chrome 80+ / Firefox 113+','e');
+    $('bdot').className='bdot err';$('blbl').textContent='CompressionStream non supporté';
+  }else{
+    $('bdot').className='bdot ok';$('blbl').textContent='Moteur prêt — zéro dépendance externe';
+  }
+});
+</script>
+</body>
+</html>

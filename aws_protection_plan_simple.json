@@ -1,0 +1,136 @@
+{
+  "title": "Plan de Protection AWS Rapide - Harmonic AI",
+  "date": "2026-05-16T21:51:57.911492",
+  "objective": "Protéger l'architecture contre le reverse engineering et les attaques",
+  "priority": "HIGH",
+  "immediate_actions": [
+    {
+      "action": "Sécuriser les instances EC2",
+      "steps": [
+        "1. Configurer Security Groups: Seuls ports 8000 (API) et 22 (SSH admin) ouverts",
+        "2. Activer IMDSv2: aws ec2 modify-instance-metadata-options --instance-id <id> --http-tokens required --http-endpoint enabled",
+        "3. Chiffrer volumes EBS: Utiliser AWS KMS avec clé dédiée",
+        "4. Désactiver API metadata publique: Restreindre l'accès aux métadonnées"
+      ],
+      "time": "1 heure",
+      "owner": "DevOps"
+    },
+    {
+      "action": "Protéger l'API avec WAF",
+      "steps": [
+        "1. Activer AWS WAF: Créer un Web ACL pour l'API",
+        "2. Ajouter rate limiting: 1000 requêtes/minute par IP",
+        "3. Bloquer bots connus: Utiliser AWS Managed Rules",
+        "4. Activer AWS Shield: Protection DDoS standard"
+      ],
+      "time": "2 heures",
+      "owner": "Security"
+    },
+    {
+      "action": "Sécuriser les accès IAM",
+      "steps": [
+        "1. Créer des rôles spécifiques: harmonic-api-role, harmonic-ec2-role",
+        "2. Appliquer le moindre privilège: Seules permissions nécessaires",
+        "3. Activer MFA: Obligatoire pour tous les comptes admin",
+        "4. Configurer rotation des clés: Automatique via Secrets Manager"
+      ],
+      "time": "1 heure",
+      "owner": "IAM Admin"
+    },
+    {
+      "action": "Obfuscation du code Python",
+      "steps": [
+        "1. Compiler en bytecode: python -m compileall -f -b .",
+        "2. Chiffrer les chaînes sensibles: Utiliser AES-256",
+        "3. Modifier les noms de variables: Remplacer par des noms aléatoires",
+        "4. Insérer du code mort: Complexifier l'analyse statique"
+      ],
+      "time": "3 heures",
+      "owner": "Python Developer"
+    },
+    {
+      "action": "Monitoring et alerting",
+      "steps": [
+        "1. Activer CloudTrail: Audit de toutes les actions API",
+        "2. Configurer CloudWatch: Métriques et logs",
+        "3. Activer GuardDuty: Détection intelligente de menaces",
+        "4. Configurer alertes: CPU > 80%, erreurs API > 5%"
+      ],
+      "time": "2 heures",
+      "owner": "Monitoring"
+    }
+  ],
+  "code_obfuscation_techniques": {
+    "bytecode_compilation": {
+      "command": "python -m compileall -f -b .",
+      "effect": "Convertit .py en .pyc, rend le code source moins accessible",
+      "limitation": "Peut être décompilé avec des outils comme uncompyle6"
+    },
+    "string_encryption": {
+      "method": "AES-256 avec clé dérivée de l'environnement",
+      "effect": "Chiffre les chaînes sensibles dans le code",
+      "implementation": "Chiffrer au build, déchiffrer au runtime"
+    },
+    "control_flow_obfuscation": {
+      "method": "Insertion de sauts conditionnels inutiles",
+      "effect": "Rend le flux de contrôle difficile à analyser",
+      "tools": [
+        "pyobfuscate",
+        "pyminifier --obfuscate"
+      ]
+    },
+    "name_mangling": {
+      "method": "Remplacement des noms de variables/fonctions",
+      "effect": "Rend le code illisible pour les humains",
+      "tools": [
+        "pyminifier --obfuscate-variables"
+      ]
+    }
+  },
+  "aws_cli_commands": {
+    "security_groups": [
+      "# Créer un Security Group restrictif",
+      "aws ec2 create-security-group --group-name harmonic-api-sg --description \"Security group for Harmonic AI API\" --vpc-id <vpc-id>",
+      "",
+      "# Autoriser uniquement le port API",
+      "aws ec2 authorize-security-group-ingress --group-id <sg-id> --protocol tcp --port 8000 --cidr 0.0.0.0/0",
+      "",
+      "# Autoriser SSH uniquement depuis IPs admin",
+      "aws ec2 authorize-security-group-ingress --group-id <sg-id> --protocol tcp --port 22 --cidr <admin-ip>/32"
+    ],
+    "waf_setup": [
+      "# Créer un Web ACL",
+      "aws wafv2 create-web-acl --name harmonic-api-waf --scope REGIONAL --default-action Allow={} --visibility-config SampledRequestsEnabled=true,CloudWatchMetricsEnabled=true,MetricName=harmonic-api-waf --region us-east-1",
+      "",
+      "# Ajouter une règle de rate limiting",
+      "aws wafv2 create-rule --name rate-limit --scope REGIONAL --capacity 100 --action Block={} --statement RateBasedStatement Limit=1000,AggregateKeyType=IP --visibility-config SampledRequestsEnabled=true,CloudWatchMetricsEnabled=true,MetricName=rate-limit --region us-east-1"
+    ],
+    "monitoring": [
+      "# Activer CloudTrail",
+      "aws cloudtrail create-trail --name harmonic-audit --s3-bucket-name harmonic-audit-logs --is-multi-region-trail",
+      "",
+      "# Activer GuardDuty",
+      "aws guardduty create-detector --enable --finding-publishing-frequency FIFTEEN_MINUTES"
+    ]
+  },
+  "python_obfuscation_script": "\n#!/usr/bin/env python3\n\"\"\"\nScript simple d'obfuscation Python\n\"\"\"\n\nimport base64\nimport zlib\n\ndef obfuscate_code(input_file, output_file):\n    \"\"\"Obfusque un fichier Python\"\"\"\n    with open(input_file, 'r') as f:\n        code = f.read()\n    \n    # Compresser le code\n    compressed = zlib.compress(code.encode())\n    b64_compressed = base64.b64encode(compressed).decode()\n    \n    # Générer le code obfusqué\n    obfuscated = f\"\"\"\nimport zlib\nimport base64\nimport types\n\n# Code compressé et encodé\ncompressed_code = \"{b64_compressed}\"\n\n# Fonction de décompression\ndef _execute():\n    code_bytes = base64.b64decode(compressed_code)\n    code_str = zlib.decompress(code_bytes).decode()\n    exec(code_str)\n\nif __name__ == \"__main__\":\n    _execute()\n\"\"\"\n    \n    with open(output_file, 'w') as f:\n        f.write(obfuscated)\n    \n    print(f\"Fichier obfusqué: {input_file} -> {output_file}\")\n\nif __name__ == \"__main__\":\n    import sys\n    if len(sys.argv) < 3:\n        print(\"Usage: python simple_obfuscator.py <input.py> <output.py>\")\n        sys.exit(1)\n    \n    obfuscate_code(sys.argv[1], sys.argv[2])\n",
+  "next_steps": [
+    "1. Exécuter les actions immédiates dans les 24 heures",
+    "2. Configurer AWS WAF avec rate limiting",
+    "3. Obfusquer le code source Python",
+    "4. Activer monitoring CloudTrail + GuardDuty",
+    "5. Réviser les accès IAM régulièrement"
+  ],
+  "resources": {
+    "aws_docs": [
+      "https://docs.aws.amazon.com/waf/latest/developerguide/waf-chapter.html",
+      "https://docs.aws.amazon.com/guardduty/latest/ug/what-is-guardduty.html",
+      "https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html"
+    ],
+    "tools": [
+      "pyminifier: pip install pyminifier",
+      "pyarmor: pip install pyarmor",
+      "Nuitka: pip install Nuitka"
+    ]
+  }
+}

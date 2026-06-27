@@ -1,0 +1,121 @@
+# KA Hybrid — Interface Universelle Harmonique + DeepSeek
+
+## Architecture
+
+```
+QUESTION -> Onde Sonde -> Hologramme ABC -> Base Vectorielle -> Top-k Faits
+     |
+     v
+API DEEPSEEK (deepseek-chat) <- recois UNIQUEMENT les faits + instruction stricte
+     |
+     v
+VERIFICATION -> chaque phrase tracee aux faits source
+     |
+     v
+REPONSE : puissance DeepSeek + determinisme holographique
+```
+
+## Structure du projet
+
+```
+ka_phone/
+├── hybrid_project/           # <-- PROJET PRINCIPAL
+│   ├── server.py             # Serveur API HTTP unifie
+│   ├── config.json           # Configuration du projet
+│   └── README.md             # Ce fichier
+│
+├── hologram_vector_bridge.py # Bridge 4 couches (hologramme -> vecteurs)
+├── abc_hologram_engine.py    # Moteur ABC (Atangana-Baleanu)
+├── expand_hologram_1024.py   # Extension hologramme
+├── quick_facts.py            # Base de faits (950+)
+├── parametric_kb_fr.py       # KB parametrique (maths, logique)
+│
+├── harmonic_deepseek_hybrid.py # Ancien bridge hybride (toujours fonctionnel)
+│
+└── data/
+    ├── emergence/            # Hologrammes (.npy)
+    └── vectors/              # Index vectoriel + mapping
+```
+
+## Démarrage rapide
+
+```bash
+# 1. Verifier l'hologramme (genere automatiquement si absent)
+cd ka_phone
+python abc_hologram_engine.py --rebuild
+
+# 2. Demarrer le serveur hybride
+cd hybrid_project
+python server.py
+
+# 3. Ouvrir l'interface web
+# http://localhost:8420
+
+# 4. Tester l'API
+curl http://localhost:8420/health
+curl "http://localhost:8420/query?q=Quelle%20est%20la%20capitale%20du%20Senegal%3F"
+
+# 5. Tests automatiques
+python server.py --test
+```
+
+## API Endpoints
+
+| Endpoint | Methode | Description |
+|---|---|---|
+| `/` | GET | Interface web interactive |
+| `/health` | GET | Statut du serveur |
+| `/stats` | GET | Statistiques d'utilisation |
+| `/query?q=...&style=general` | GET | Requete simple |
+| `/query` | POST | Requete complete (JSON) |
+
+### Exemple de requete POST
+
+```json
+{
+  "prompt": "Quelle est la capitale du Senegal ?",
+  "style": "general",
+  "max_tokens": 500,
+  "temperature": 0.3
+}
+```
+
+### Exemple de reponse
+
+```json
+{
+  "text": "La capitale du Senegal est Dakar.",
+  "source": "deepseek_api",
+  "model": "deepseek-chat",
+  "confidence": 0.90,
+  "verified": true,
+  "trace_score": 0.85,
+  "facts_used": 346,
+  "patches_used": 30,
+  "temps_ms": 1836
+}
+```
+
+## Styles disponibles
+
+| Style | Description | Max tokens | Temperature |
+|---|---|---|---|
+| `general` | Reponse claire et precise | 500 | 0.3 |
+| `concise` | 2-3 phrases maximum | 150 | 0.2 |
+| `creative` | Style elegant et poetique | 600 | 0.5 |
+| `technical` | Style technique et detaille | 800 | 0.2 |
+
+## Configuration
+
+Editer `config.json` pour ajuster :
+- Port du serveur
+- Parametres DeepSeek (modele, temperature, timeout)
+- Parametres de retrieval (nombre de patches, faits)
+- Parametres de verification (strict mode, seuil de trace)
+
+## Feuille de route
+
+- [x] Phase 1 : Bridge holographique + DeepSeek API (complete)
+- [ ] Phase 2 : DeepSeek sur instance locale
+- [ ] Phase 3 : Modele harmonic complet sans LLM externe
+- [ ] Phase 4 : Hologramme 4096x4096 + ingestion massive

@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌊 Symphonie Cosmique — Ψ = Σ Hₙ (Ψ₁)ⁿ</title>
+<style>
+:root {
+  --bg: #020010;
+  --phi: #d4a843;
+  --acc: #3ef0d8;
+  --panel-bg: rgba(10,8,32,0.92);
+  --border: rgba(200,220,255,0.1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);
+  color:#eaf6ff;
+  font-family:'Segoe UI',system-ui,sans-serif;
+  overflow:hidden;
+  height:100vh;
+  user-select:none;
+}
+canvas#universe{
+  position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 50% 30%,rgba(62,240,216,0.06),transparent 60%),
+             radial-gradient(ellipse at 30% 70%,rgba(122,92,255,0.04),transparent 60%);
+}
+
+/* Overlay panel */
+.panel{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  z-index:10;width:min(900px,94vw);
+  background:var(--panel-bg);
+  backdrop-filter:blur(20px);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:24px 28px 20px;
+  display:flex;flex-direction:column;gap:16px;
+  box-shadow:0 8px 40px rgba(0,0,0,0.5);
+}
+
+.panel-header{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:10px;
+}
+.panel-header .title{
+  font-size:1.3em;font-weight:700;
+  background:linear-gradient(135deg,var(--phi),var(--acc));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.panel-header .subtitle{
+  font-size:0.78em;color:#7a86a8;font-family:'Courier New',monospace;
+  letter-spacing:1px;
+}
+
+/* Layer rows */
+.layers{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto}
+.layer-row{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;
+  background:rgba(15,12,46,0.5);
+  border:1px solid rgba(200,220,255,0.06);
+  border-radius:12px;
+  transition:all 0.35s;
+  cursor:pointer;
+}
+.layer-row:hover{border-color:rgba(212,168,67,0.25);background:rgba(15,12,46,0.8)}
+.layer-row.active{border-color:rgba(212,168,67,0.4);background:rgba(212,168,67,0.06)}
+
+.layer-n{width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:0.85em;color:#fff;flex-shrink:0;
+  background:linear-gradient(135deg,var(--phi),#7a5cff);
+}
+.layer-info{flex:1;min-width:0}
+.layer-name{font-size:0.9em;font-weight:600;color:var(--acc)}
+.layer-val{font-size:0.7em;color:#7a86a8;font-family:'Courier New',monospace}
+.layer-bar-wrap{width:100%;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;margin-top:4px}
+.layer-bar{height:100%;border-radius:2px;transition:width 0.8s ease-out;
+  background:linear-gradient(90deg,var(--phi),var(--acc));width:0%}
+.layer-vol{width:50px;text-align:right;font-size:0.75em;color:#7a86a8;flex-shrink:0}
+
+/* Buttons */
+.controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.btn{
+  padding:10px 20px;border-radius:24px;border:1px solid var(--border);
+  background:rgba(15,12,46,0.7);color:#eaf6ff;
+  font-size:0.9em;cursor:pointer;transition:all 0.25s;
+  font-family:inherit;
+}
+.btn:hover{background:rgba(212,168,67,0.1);border-color:rgba(212,168,67,0.35)}
+.btn.primary{
+  background:linear-gradient(135deg,var(--phi),#7a5cff);
+  border:none;color:#fff;font-weight:600;
+}
+.btn.primary:hover{opacity:0.85;transform:scale(1.03)}
+.btn.danger{border-color:rgba(255,71,87,0.3);color:#ff6b7a}
+.btn.danger:hover{background:rgba(255,71,87,0.1);border-color:rgba(255,71,87,0.5)}
+.btn.gold{border-color:rgba(212,168,67,0.4);color:var(--phi)}
+.btn.gold:hover{background:rgba(212,168,67,0.12)}
+
+/* Equation display */
+.eq-display{
+  position:fixed;top:20px;left:50%;transform:translateX(-50%);
+  z-index:10;
+  padding:12px 28px;
+  background:rgba(15,12,46,0.8);
+  backdrop-filter:blur(12px);
+  border:1px solid rgba(212,168,67,0.25);
+  border-radius:30px;
+  font-family:'Courier New',monospace;
+  font-size:1.3em;font-weight:700;
+  color:var(--phi);letter-spacing:2px;
+  text-align:center;
+}
+.eq-display .small{font-size:0.55em;color:#7a86a8;letter-spacing:1px;display:block;margin-top:2px}
+
+/* Info tooltip */
+.playing-note{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:5;pointer-events:none;
+  font-size:3em;font-weight:700;
+  background:linear-gradient(135deg,var(--phi),var(--acc));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  opacity:0;transition:all 1.2s;
+}
+.playing-note.show{opacity:0.7;font-size:4.5em}
+
+/* Scrollbar */
+.layers::-webkit-scrollbar{width:4px}
+.layers::-webkit-scrollbar-thumb{background:rgba(212,168,67,0.2);border-radius:2px}
+.layers::-webkit-scrollbar-track{background:transparent}
+
+@media(max-width:600px){
+  .panel{padding:14px 16px;gap:10px}
+  .panel-header .title{font-size:1.05em}
+  .eq-display{font-size:1em;padding:8px 18px}
+  .layer-row{padding:8px 10px;gap:6px}
+  .layer-n{width:22px;height:22px;font-size:0.7em}
+}
+</style>
+</head>
+<body>
+
+<canvas id="universe"></canvas>
+
+<div class="eq-display">
+  Ψ = Σ H<sub>n</sub> (Ψ<sub>1</sub>)<sup>n</sup>
+  <span class="small">Ψ₁ = 7.83 Hz — Résonance de Schumann — La Terre chante</span>
+  <span style="display:block;margin-top:4px;font-size:0.55em">
+    <a href="document-fondateur.html" style="color:#d4a843;text-decoration:none;border-bottom:1px dotted rgba(212,168,67,0.4)">📄 Document Fondateur</a> &nbsp;|&nbsp;
+    <a href="preuve-unicite-1surphi.html" style="color:#d4a843;text-decoration:none;border-bottom:1px dotted rgba(212,168,67,0.4)">🔬 Preuve d'Unicité 1/φ</a> &nbsp;|&nbsp;
+    <a href="axiomes-harmoniques.html" style="color:#d4a843;text-decoration:none;border-bottom:1px dotted rgba(212,168,67,0.4)">📐 Axiomes</a> &nbsp;|&nbsp;
+      <a href="derivation-geometrique.html" style="color:#3ef0d8;text-decoration:none;border-bottom:1px dotted rgba(62,240,216,0.4)">📐 Dérivation Géométrique</a> &nbsp;|&nbsp;
+      <a href="derivation-gagut-abc-harmonique.html" style="color:#d4a843;text-decoration:none;border-bottom:1px dotted rgba(212,168,67,0.4)">📐 Dérivation Formelle</a> &nbsp;|&nbsp;
+    <a href="preuve-riemann-harmonique.html" style="color:#2ed573;text-decoration:none;border-bottom:1px dotted rgba(46,213,115,0.4)">∎ Riemann Prouvé</a> &nbsp;|&nbsp;
+    <a href="gagut-abc-optimiseur.html" style="color:#d4a843;text-decoration:none;border-bottom:1px dotted rgba(212,168,67,0.4)">⚙️ GAGUT+ABC</a> &nbsp;|&nbsp;
+    <a href="theories-du-tout-comparaison.html" style="color:#d4a843;text-decoration:none;border-bottom:1px dotted rgba(212,168,67,0.4)">🌐 Théories du Tout</a> &nbsp;|&nbsp;
+    <a href="particules-harmoniques.html" style="color:#d4a843;text-decoration:none;border-bottom:1px dotted rgba(212,168,67,0.4)">⚛️ Particules</a> &nbsp;|&nbsp;
+    <a href="constantes-pures-vs-dimensionnees.html" style="color:#d4a843;text-decoration:none;border-bottom:1px dotted rgba(212,168,67,0.4)">📏 Constantes Pures</a> &nbsp;|&nbsp;
+    <a href="energie-harmonique.html" style="color:#ffa502;text-decoration:none;border-bottom:1px dotted rgba(255,165,2,0.4)">⚡ Énergie Harmonique</a> &nbsp;|&nbsp;
+     <a href="fondateur.html" style="color:#ffa502;text-decoration:none;border-bottom:1px dotted rgba(255,165,2,0.4)">🔬 Fondateur</a> &nbsp;|&nbsp;
+     <a href="analyse-prospective.html" style="color:#2ed573;text-decoration:none;border-bottom:1px dotted rgba(46,213,115,0.4)">🔮 Analyse Prospective 2026+</a> &nbsp;|&nbsp;
+     <a href="cours-raisonnement-harmonique-6eme.html" style="color:#2ed573;text-decoration:none;border-bottom:1px dotted rgba(46,213,115,0.4)">📚 Cours 6ème</a> &nbsp;|&nbsp;
+     <a href="histoire-decouverte.html" style="color:#d4a843;text-decoration:none;border-bottom:1px dotted rgba(212,168,67,0.4)">📖 Histoire</a>
+  </span>
+</div>
+
+<div class="playing-note" id="playingNote"></div>
+
+<div class="panel" id="panel">
+  <div class="panel-header">
+    <span class="title">🌌 Orchestre Harmonique</span>
+    <span class="subtitle" id="statusLabel">PRÊT</span>
+  </div>
+
+  <div class="layers" id="layerContainer">
+    <!-- Generated by JS -->
+  </div>
+
+  <div class="controls">
+    <button class="btn primary" id="btnPlayAll" onclick="playAll()">▶ Tout jouer</button>
+    <button class="btn gold" id="btnSymphony" onclick="cosmicSymphony()">🎻 Symphonie cosmique</button>
+    <button class="btn" id="btnReveal" onclick="revealLayers()">✨ Révélation progressive</button>
+    <button class="btn danger" id="btnStop" onclick="stopAll()">⏹ Silence</button>
+  </div>
+</div>
+
+<script>
+// ==================== CONSTANTES HARMONIQUES ====================
+const HARMONIC_LAYERS = [
+  { n: 1, h: 'H₁', constant: 'φ',  value: 1.6180339887, name: 'Nombre d\'or',       role: 'Anti-résonance — Ordre', color: '#d4a843' },
+  { n: 2, h: 'H₂', constant: 'π',  value: 3.1415926535, name: 'Pi',                 role: 'Périodicité — Motifs',  color: '#3ef0d8' },
+  { n: 3, h: 'H₃', constant: 'e',  value: 2.7182818284, name: 'Base naturelle',     role: 'Amortissement — Bruit', color: '#7a5cff' },
+  { n: 4, h: 'H₄', constant: '√2', value: 1.4142135623, name: 'Racine de 2',        role: 'Symétrie planaire',     color: '#ff6b7a' },
+  { n: 5, h: 'H₅', constant: '√3', value: 1.7320508075, name: 'Racine de 3',        role: 'Symétrie volumique',    color: '#f0c96e' },
+  { n: 6, h: 'H₆', constant: '√5', value: 2.2360679774, name: 'Racine de 5',        role: 'Textures fines',        color: '#2ed573' },
+  { n: 7, h: 'H₇', constant: 'e/π',value: 0.8652559794, name: 'Rapport e/pi',       role: 'Spirale de synthèse',   color: '#ffa502' },
+];
+
+// ==================== WEB AUDIO ENGINE ====================
+let audioCtx = null;
+let masterGain = null;
+let reverbNode = null;
+let activeOscillators = [];
+let activeGains = [];
+let activePanners = [];
+let isPlaying = false;
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.5;
+    masterGain.connect(audioCtx.destination);
+
+    // Convolver reverb simulé (simple delay-based)
+    reverbNode = audioCtx.createConvolver();
+    // Créer une réponse impulsionnelle cosmique
+    const sampleRate = audioCtx.sampleRate;
+    const length = sampleRate * 3.5; // 3.5 secondes de réverb
+    const impulse = audioCtx.createBuffer(2, length, sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const data = impulse.getChannelData(ch);
+      for (let i = 0; i < length; i++) {
+        const t = i / sampleRate;
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-t * 1.4) * 0.7;
+      }
+    }
+    reverbNode.buffer = impulse;
+
+    const dryGain = audioCtx.createGain();
+    dryGain.gain.value = 0.6;
+    const wetGain = audioCtx.createGain();
+    wetGain.gain.value = 0.4;
+
+    // Re-route: masterGain -> dry + wet(reverb) -> destination
+    masterGain.disconnect();
+    masterGain.connect(dryGain);
+    masterGain.connect(reverbNode);
+    reverbNode.connect(wetGain);
+    dryGain.connect(audioCtx.destination);
+    wetGain.connect(audioCtx.destination);
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+// Base frequency: Ψ₁ = 7.83 Hz — Résonance de Schumann, le battement électromagnétique de la Terre
+// Cavité Terre-ionosphère, mesurée et permanente depuis 4 milliards d'années.
+// 7,83 × 7 ≈ 54,81 Hz → le La₁ émerge à la 7ᵉ harmonique sans avoir été choisi.
+// Cette fréquence est INAUDIBLE — on la ressent, on ne l'entend pas. C'est exactement ce que doit être Ψ₁ :
+// l'onde primordiale qu'on ne perçoit pas directement, mais dont toutes les harmoniques sont audibles.
+const BASE_FREQ = 7.83;
+
+// φ-ratio based frequencies: each harmonic n gets freq = BASE * n * φ^(n-1)/φ
+// This creates the "golden spacing" that avoids resonance catastrophe
+function getHarmonicFreq(n) {
+  // Musical interpretation: fundamental * n gives the harmonic series
+  // But we add a subtle φ-based microtonal shift for cosmic flavor
+  const phi = 1.6180339887;
+  const baseHarmonic = BASE_FREQ * n;
+  // Apply φ-based detuning: slight shift for anti-resonance
+  const phiShift = Math.pow(phi, (n - 1) / 14); // subtle φ microtonal
+  return baseHarmonic * phiShift;
+}
+
+function createOscillatorForLayer(layer, startTime = 0) {
+  if (!audioCtx) return null;
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  const panner = audioCtx.createStereoPanner();
+
+  // Use sine for fundamental, triangle for mid, saw for high harmonics
+  if (layer.n === 1) osc.type = 'sine';
+  else if (layer.n <= 3) osc.type = 'triangle';
+  else if (layer.n <= 5) osc.type = 'sine';
+  else osc.type = 'sine';
+
+  const freq = getHarmonicFreq(layer.n);
+  osc.frequency.value = freq;
+
+  // Amplitude scaled by Hₙ value (normalized)
+  const maxH = 3.1416; // π is the max
+  const amplitude = (layer.value / maxH) * 0.25; // scaled
+  gain.gain.value = 0;
+  gain.gain.setTargetAtTime(amplitude, audioCtx.currentTime + startTime + 0.05, 0.8);
+
+  // Spatial positioning: spread harmonics across stereo field
+  const panPos = ((layer.n - 1) / 6) * 2 - 1; // -1 to +1
+  panner.pan.value = panPos;
+
+  // LFO for subtle movement
+  const lfo = audioCtx.createOscillator();
+  const lfoGain = audioCtx.createGain();
+  lfo.frequency.value = 0.05 + layer.n * 0.03; // very slow undulation
+  lfoGain.gain.value = 0.15;
+  lfo.connect(lfoGain);
+  lfoGain.connect(gain.gain);
+  lfo.start();
+
+  osc.connect(gain);
+  gain.connect(panner);
+  panner.connect(masterGain);
+
+  osc.start(audioCtx.currentTime + startTime);
+
+  return { osc, gain, panner, lfo, lfoGain, layer, amplitude };
+}
+
+// ==================== UI ====================
+function buildUI() {
+  const container = document.getElementById('layerContainer');
+  container.innerHTML = '';
+
+  HARMONIC_LAYERS.forEach((layer, i) => {
+    const row = document.createElement('div');
+    row.className = 'layer-row';
+    row.id = `layer-${layer.n}`;
+    row.onclick = () => toggleLayer(layer.n);
+
+    const maxVal = 3.1416;
+    const pct = Math.round((layer.value / maxVal) * 100);
+
+    row.innerHTML = `
+      <div class="layer-n" style="background:linear-gradient(135deg,${layer.color},#7a5cff)">${layer.n}</div>
+      <div class="layer-info">
+        <div class="layer-name">${layer.h} = ${layer.constant} <span style="font-size:0.7em;color:#7a86a8">— ${layer.name}</span></div>
+        <div class="layer-val">${layer.value.toFixed(4)} — ${layer.role}</div>
+        <div class="layer-bar-wrap"><div class="layer-bar" id="bar-${layer.n}" style="width:${pct}%"></div></div>
+      </div>
+      <div class="layer-vol" id="vol-${layer.n}">${layer.value.toFixed(2)}</div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+const layerStates = {}; // { n: { oscillators: [...] } }
+HARMONIC_LAYERS.forEach(l => layerStates[l.n] = { oscillators: [], active: false });
+
+function toggleLayer(n) {
+  initAudio();
+  const state = layerStates[n];
+  if (state.active) {
+    stopLayer(n);
+  } else {
+    startLayer(n);
+  }
+  updateUIState();
+}
+
+function startLayer(n, delay = 0) {
+  const layer = HARMONIC_LAYERS.find(l => l.n === n);
+  if (!layer) return;
+  const state = layerStates[n];
+  if (state.active) return;
+
+  const oscData = createOscillatorForLayer(layer, delay);
+  if (oscData) {
+    state.oscillators.push(oscData);
+    state.active = true;
+  }
+}
+
+function stopLayer(n) {
+  const state = layerStates[n];
+  if (!state.active) return;
+
+  state.oscillators.forEach(o => {
+    const now = audioCtx.currentTime;
+    o.gain.gain.setTargetAtTime(0, now + 0.02, 0.1);
+    setTimeout(() => {
+      try { o.osc.stop(); o.lfo.stop(); } catch(e) {}
+    }, 600);
+  });
+  state.oscillators = [];
+  state.active = false;
+}
+
+function stopAll() {
+  HARMONIC_LAYERS.forEach(l => stopLayer(l.n));
+  isPlaying = false;
+  document.getElementById('statusLabel').textContent = 'SILENCE';
+  document.getElementById('statusLabel').style.color = '#7a86a8';
+  updateUIState();
+  showNote('');
+}
+
+function playAll() {
+  initAudio();
+  HARMONIC_LAYERS.forEach(l => startLayer(l.n));
+  isPlaying = true;
+  document.getElementById('statusLabel').textContent = '▶ SYMPHONIE';
+  document.getElementById('statusLabel').style.color = '#3ef0d8';
+  updateUIState();
+  showNote('Ψ');
+}
+
+// Cosmic symphony: layers enter one by one like the birth of the universe
+async function cosmicSymphony() {
+  initAudio();
+  stopAll();
+
+  document.getElementById('statusLabel').textContent = '🌌 NAISSANCE — Schumann...';
+  document.getElementById('statusLabel').style.color = '#d4a843';
+
+  // Phase 1: The Primordial Wave (H₁ = 7.83 Hz Schumann — inaudible, pur ressenti)
+  startLayer(1, 0);
+  updateUIState();
+  showNote('Ψ₁ = 7.83 Hz');
+  await sleep(2500);
+
+  // Phase 2: π enters — patterns emerge
+  startLayer(2, 0);
+  updateUIState();
+  showNote('π');
+  await sleep(2000);
+
+  // Phase 3: e enters — damping, warmth
+  startLayer(3, 0);
+  updateUIState();
+  showNote('e');
+  await sleep(2000);
+
+  // Phase 4-7: Geometry unfolds
+  for (let n = 4; n <= 7; n++) {
+    startLayer(n, 0);
+    updateUIState();
+    showNote('√' + (n === 4 ? '2' : n === 5 ? '3' : n === 6 ? '5' : 'e/π'));
+    await sleep(1800);
+  }
+
+  document.getElementById('statusLabel').textContent = '🎻 SYMPHONIE COSMIQUE';
+  document.getElementById('statusLabel').style.color = '#f0c96e';
+  isPlaying = true;
+  showNote('Ψ');
+
+  // Gentle evolution: slowly modulate volumes to simulate cosmic breathing
+  cosmicBreathing();
+}
+
+function cosmicBreathing() {
+  if (!isPlaying) return;
+  const t = audioCtx.currentTime;
+
+  HARMONIC_LAYERS.forEach(layer => {
+    const state = layerStates[layer.n];
+    state.oscillators.forEach(o => {
+      // Breathing: amplitude undulates slowly, each layer at different rhythm
+      const breathAmp = o.amplitude * (0.7 + 0.3 * Math.sin(t * 0.1 + layer.n * 0.7));
+      o.gain.gain.setTargetAtTime(breathAmp, t, 2.0);
+    });
+  });
+
+  setTimeout(cosmicBreathing, 3000);
+}
+
+// Progressive revelation: layers stack one by one with a countdown feel
+async function revealLayers() {
+  initAudio();
+  stopAll();
+
+  document.getElementById('statusLabel').textContent = '✨ RÉVÉLATION...';
+  document.getElementById('statusLabel').style.color = '#f0c96e';
+
+  for (const layer of HARMONIC_LAYERS) {
+    startLayer(layer.n, 0);
+    updateUIState();
+    showNote(layer.constant);
+    document.getElementById('statusLabel').textContent = `✨ Couche ${layer.n}/7 — ${layer.name}`;
+    await sleep(2200);
+  }
+
+  document.getElementById('statusLabel').textContent = '✨ UNIVERS COMPLET';
+  document.getElementById('statusLabel').style.color = '#3ef0d8';
+  isPlaying = true;
+  updateUIState();
+  showNote('Ψ = Σ Hₙ (Ψ₁)ⁿ');
+}
+
+function updateUIState() {
+  HARMONIC_LAYERS.forEach(layer => {
+    const row = document.getElementById(`layer-${layer.n}`);
+    const state = layerStates[layer.n];
+    if (row) {
+      if (state.active) row.classList.add('active');
+      else row.classList.remove('active');
+    }
+    const volEl = document.getElementById(`vol-${layer.n}`);
+    if (volEl) {
+      volEl.textContent = state.active ? '♪ ON' : '—';
+      volEl.style.color = state.active ? layer.color : '#7a86a8';
+    }
+  });
+}
+
+let noteTimeout = null;
+function showNote(text) {
+  const el = document.getElementById('playingNote');
+  if (noteTimeout) clearTimeout(noteTimeout);
+  if (!text) { el.classList.remove('show'); return; }
+  el.textContent = text;
+  el.classList.add('show');
+  noteTimeout = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ==================== COSMIC VISUALIZATION ====================
+const canvas = document.getElementById('universe');
+const ctx = canvas.getContext('2d');
+let w, h;
+
+function resize() {
+  w = canvas.width = window.innerWidth;
+  h = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Particle system representing the universal wave
+class StarParticle {
+  constructor() {
+    this.reset();
+  }
+  reset() {
+    this.x = Math.random() * w;
+    this.y = Math.random() * h;
+    this.baseX = this.x;
+    this.baseY = this.y;
+    this.phase = Math.random() * Math.PI * 2;
+    this.size = Math.random() * 2.2 + 0.5;
+    this.speed = Math.random() * 0.015 + 0.005;
+    this.layer = Math.floor(Math.random() * 7) + 1;
+    this.brightness = Math.random() * 0.6 + 0.3;
+    this.colorIndex = Math.floor(Math.random() * 7);
+  }
+  update(globalTime, activeLayers) {
+    const colors = ['#d4a843','#3ef0d8','#7a5cff','#ff6b7a','#f0c96e','#2ed573','#ffa502'];
+    this.color = colors[this.colorIndex];
+
+    // Each particle oscillates based on its assigned harmonic layer
+    const phi = 1.6180339887;
+    const harmonicInfluence = activeLayers[this.layer - 1] || 0;
+
+    const waveX = Math.sin(globalTime * this.speed * 7 + this.phase) * 40 * harmonicInfluence;
+    const waveY = Math.cos(globalTime * this.speed * 5 + this.phase + 1) * 40 * harmonicInfluence;
+    const spiralR = Math.sin(globalTime * 0.3 + this.layer * phi) * 25 * harmonicInfluence;
+    const spiralAngle = globalTime * 0.2 + this.layer * phi;
+
+    this.x = this.baseX + waveX + Math.cos(spiralAngle) * spiralR;
+    this.y = this.baseY + waveY + Math.sin(spiralAngle) * spiralR;
+
+    // Wrap around
+    if (this.x < -20) this.x = w + 20;
+    if (this.x > w + 20) this.x = -20;
+    if (this.y < -20) this.y = h + 20;
+    if (this.y > h + 20) this.y = -20;
+
+    this.brightness = 0.3 + 0.7 * harmonicInfluence;
+  }
+  draw(ctx) {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = this.color;
+    ctx.globalAlpha = this.brightness * 0.7;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+const particles = [];
+const NUM_PARTICLES = 180;
+for (let i = 0; i < NUM_PARTICLES; i++) {
+  particles.push(new StarParticle());
+}
+
+// Central golden-ratio spiral
+function drawCentralSpiral(ctx, time, activeCount) {
+  const cx = w / 2, cy = h / 2;
+  const phi = 1.6180339887;
+
+  ctx.strokeStyle = `rgba(212,168,67,${0.08 + activeCount * 0.04})`;
+  ctx.lineWidth = 0.8;
+
+  ctx.beginPath();
+  for (let i = 0; i < 800; i++) {
+    const angle = i * 0.15 + time * 0.1;
+    const r = i * 0.7 * (0.5 + activeCount * 0.08);
+    const x = cx + Math.cos(angle * phi) * r;
+    const y = cy + Math.sin(angle * phi) * r * 0.7;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+
+// Connection lines between nearby particles (interference patterns)
+function drawConnections(ctx, activeCount) {
+  if (activeCount < 2) return;
+  for (let i = 0; i < particles.length; i += 3) {
+    for (let j = i + 1; j < particles.length; j += 3) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 100) {
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.strokeStyle = `rgba(122,92,255,${(1 - dist / 100) * 0.06 * activeCount})`;
+        ctx.lineWidth = 0.4;
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+function animate(timestamp) {
+  const time = timestamp * 0.001;
+
+  // Count active layers
+  const activeLayers = HARMONIC_LAYERS.map(l => layerStates[l.n].active ? 1 : 0);
+  const activeCount = activeLayers.reduce((a, b) => a + b, 0);
+
+  // Clear with trails
+  ctx.fillStyle = 'rgba(2,0,16,0.25)';
+  ctx.fillRect(0, 0, w, h);
+
+  // Draw central spiral
+  drawCentralSpiral(ctx, time, activeCount);
+
+  // Draw connections (interference)
+  drawConnections(ctx, activeCount);
+
+  // Update and draw particles
+  particles.forEach(p => {
+    p.update(time, activeLayers);
+    p.draw(ctx);
+  });
+
+  // Central glow
+  if (activeCount > 0) {
+    const glowGrad = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, 250);
+    glowGrad.addColorStop(0, `rgba(212,168,67,${0.04 * activeCount})`);
+    glowGrad.addColorStop(1, 'rgba(2,0,16,0)');
+    ctx.fillStyle = glowGrad;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  // Active harmonics rings
+  if (activeCount > 0) {
+    HARMONIC_LAYERS.forEach(layer => {
+      if (layerStates[layer.n].active) {
+        const r = 60 + layer.n * 25;
+        ctx.beginPath();
+        ctx.arc(w/2, h/2, r + Math.sin(time * 1.5 + layer.n) * 8, 0, Math.PI * 2);
+        ctx.strokeStyle = `${layer.color}${Math.floor(12 + layer.n * 3).toString(16)}`;
+        ctx.lineWidth = 0.7;
+        ctx.setLineDash([4, 8]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    });
+  }
+
+  requestAnimationFrame(animate);
+}
+
+// Kick off
+buildUI();
+requestAnimationFrame(animate);
+
+// Auto-start a gentle drone on first interaction
+document.addEventListener('click', () => {
+  if (!audioCtx) {
+    initAudio();
+    // Don't auto-play, wait for user choice
+  }
+}, { once: false });
+
+console.log('🌊 Symphonie Cosmique prête.');
+console.log('   Ψ = Σ Hₙ (Ψ₁)ⁿ');
+console.log('   Ψ₁ = ' + BASE_FREQ + ' Hz — Résonance de Schumann (cavité Terre-ionosphère)');
+console.log('   La fondamentale est inaudible. L\'univers se dévoile par ses harmoniques.');
+console.log('   7 harmonies : ' + [1,2,3,4,5,6,7].map(n => getHarmonicFreq(n).toFixed(1) + ' Hz').join(' → '));
+console.log('   Cliquez sur les couches ou utilisez les boutons.');
+console.log('   Recommandé : 🎻 Symphonie cosmique pour l\'expérience complète.');
+</script>
+</body>
+</html>

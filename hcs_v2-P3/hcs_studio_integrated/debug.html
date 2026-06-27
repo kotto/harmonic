@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCS Studio Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a2e; color: white; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 20px; background: #16213e; border-radius: 8px; }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .warning { color: #fbbf24; }
+        button { padding: 10px 20px; margin: 5px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #2563eb; }
+        pre { background: #0f172a; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 HCS Studio Debug Tool</h1>
+        <p>Page de test pour diagnostiquer les problèmes d'upload et de connexion</p>
+        <p><strong>URL API:</strong> <code id="apiUrl">http://localhost:8013/api/v3</code></p>
+
+        <div class="test-section">
+            <h2>1. Test de Connexion au Serveur</h2>
+            <button onclick="testConnection()">Tester la connexion</button>
+            <div id="connectionResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Test Upload Image</h2>
+            <input type="file" id="testImage" accept="image/*">
+            <button onclick="testImageUpload()">Uploader l'image</button>
+            <div id="imageResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Test Upload Vidéo</h2>
+            <input type="file" id="testVideo" accept="video/*">
+            <button onclick="testVideoUpload()">Uploader la vidéo</button>
+            <div id="videoResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Informations du Navigateur</h2>
+            <div id="browserInfo"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>5. Logs</h2>
+            <pre id="logs"></pre>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8013/api/v3';
+        let logs = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.push(`[${timestamp}] ${type.toUpperCase()}: ${message}`);
+            updateLogs();
+        }
+
+        function updateLogs() {
+            document.getElementById('logs').textContent = logs.join('\n');
+        }
+
+        function showResult(elementId, content, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="${type}">${content}</div>`;
+        }
+
+        async function testConnection() {
+            log('Test de connexion au serveur...');
+            try {
+                const response = await fetch(`${API_BASE}/health`, {
+                    mode: 'cors',
+                    credentials: 'omit'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                log(`Connexion réussie: ${JSON.stringify(data, null, 2)}`);
+                showResult('connectionResult', `✅ Serveur connecté - Status: ${data.status}`, 'success');
+            } catch (error) {
+                log(`Erreur de connexion: ${error.message}`);
+                showResult('connectionResult', `❌ Erreur: ${error.message}`, 'error');
+            }
+        }
+
+        async function testImageUpload() {
+            const fileInput = document.getElementById('testImage');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showResult('imageResult', '⚠️ Veuillez sélectionner une image', 'warning');
+                return;
+            }
+
+            log(`Test upload image: ${file.name} (${file.size} bytes)`);
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('target_ratio', '50');
+            formData.append('use_optimized_params', 'false');
+
+            try {
+                showResult('imageResult', '⏳ Upload en cours...', 'warning');
+                
+                const response = await fetch(`${API_BASE}/compress/image`, {
+                    method: 'POST',
+                    body: formData,
+                    mode: 'cors',
+                    credentials: 'omit'
+                });
+
+                log(`Response status: ${response.status} ${response.statusText}`);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                const result = await response.json();
+                log(`Upload réussi: ${JSON.stringify(result, null, 2)}`);
+                showResult('imageResult', `✅ Image uploadée - Ratio: ${result.compression_ratio}:1`, 'success');
+            } catch (error) {
+                log(`Erreur upload image: ${error.message}`);
+                showResult('imageResult', `❌ Erreur: ${error.message}`, 'error');
+            }
+        }
+
+        async function testVideoUpload() {
+            const fileInput = document.getElementById('testVideo');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showResult('videoResult', '⚠️ Veuillez sélectionner une vidéo', 'warning');
+                return;
+            }
+
+            log(`Test upload vidéo: ${file.name} (${file.size} bytes)`);
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('target', 'balanced_video');
+            formData.append('quality', '85');
+            formData.append('use_optimized_params', 'true');
+
+            try {
+                showResult('videoResult', '⏳ Upload en cours...', 'warning');
+                
+                const response = await fetch(`${API_BASE}/compress/video`, {
+                    method: 'POST',
+                    body: formData,
+                    mode: 'cors',
+                    credentials: 'omit'
+                });
+
+                log(`Response status: ${response.status} ${response.statusText}`);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                const result = await response.json();
+                log(`Upload vidéo réussi: ${JSON.stringify(result, null, 2)}`);
+                showResult('videoResult', `✅ Vidéo uploadée - Ratio: ${result.compression_ratio}:1`, 'success');
+            } catch (error) {
+                log(`Erreur upload vidéo: ${error.message}`);
+                showResult('videoResult', `❌ Erreur: ${error.message}`, 'error');
+            }
+        }
+
+        function showBrowserInfo() {
+            const info = {
+                userAgent: navigator.userAgent,
+                language: navigator.language,
+                platform: navigator.platform,
+                cookieEnabled: navigator.cookieEnabled,
+                onLine: navigator.onLine,
+                screenResolution: `${screen.width}x${screen.height}`,
+                windowSize: `${window.innerWidth}x${window.innerHeight}`
+            };
+
+            document.getElementById('browserInfo').innerHTML = `
+                <pre>${JSON.stringify(info, null, 2)}</pre>
+            `;
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            log('Page de debug chargée');
+            showBrowserInfo();
+            testConnection(); // Test automatique au chargement
+        });
+
+        // Intercepter les erreurs globales
+        window.addEventListener('error', (event) => {
+            log(`Erreur globale: ${event.error.message} à ${event.filename}:${event.lineno}`);
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            log(`Promesse rejetée: ${event.reason}`);
+        });
+    </script>
+</body>
+</html>

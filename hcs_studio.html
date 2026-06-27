@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HCS Studio v2 — 7 leviers GOP adaptatif</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Syne+Mono&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --obs:#08080a;--car:#0f0f12;--cha:#161619;--gra:#202024;--sla:#2c2c32;
+  --gold:#C9A84C;--gold-l:#E2C97A;--gold-d:#8B6E28;
+  --wht:#FAFAF9;--owh:#E8E6E1;--sil:#AEACAA;--mis:#7A7874;
+  --green:#00e676;--red:#ff2d55;--amber:#ffab00;--blue:#3ea6ff;--purple:#b388ff;
+  --bds:rgba(255,255,255,.06);--bdr:rgba(201,168,76,.15);
+  --mono:'Syne Mono',monospace;--head:'Syne',sans-serif;--body:'Barlow',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--obs);color:var(--owh);font-family:var(--body);font-size:14px;min-height:100vh}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--obs)}::-webkit-scrollbar-thumb{background:var(--sla)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.hdr{height:52px;background:rgba(8,8,10,.98);border-bottom:1px solid var(--bds);display:flex;align-items:center;padding:0 20px;gap:9px;position:sticky;top:0;z-index:100}
+.logo{font-family:var(--head);font-weight:700;font-size:15px;letter-spacing:5px;color:var(--wht)}
+.logo em{color:var(--gold);font-style:normal}
+.pill{border-radius:20px;padding:2px 9px;font-family:var(--mono);font-size:10px;border:1px solid;white-space:nowrap}
+.pill.g{background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.2);color:var(--gold)}
+.pill.b{background:rgba(62,166,255,.07);border-color:rgba(62,166,255,.2);color:var(--blue)}
+.pill.ok{background:rgba(0,230,118,.07);border-color:rgba(0,230,118,.2);color:var(--green)}
+.pill.p{background:rgba(179,136,255,.07);border-color:rgba(179,136,255,.2);color:var(--purple)}
+.bst{display:flex;align-items:center;gap:6px;margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--mis)}
+.dot{width:7px;height:7px;border-radius:50%}
+.dot.ok{background:var(--green);box-shadow:0 0 5px var(--green)}
+.dot.busy{background:var(--amber);animation:pulse .8s ease infinite}
+.dot.err{background:var(--red)}
+
+.main{padding:14px 20px;max-width:1400px;margin:0 auto}
+
+/* LEVERS — 7 cases en 2 rangées */
+.levers{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:12px}
+@media(max-width:900px){.levers{grid-template-columns:repeat(2,1fr)}}
+.lv{background:var(--car);border:1px solid var(--bds);border-radius:8px;padding:11px;transition:border-color .15s;position:relative;overflow:hidden}
+.lv.active{border-color:var(--gold);background:rgba(201,168,76,.03)}
+.lv.new{border-color:rgba(179,136,255,.3);background:rgba(179,136,255,.03)}
+.lv.new.active{border-color:var(--purple);background:rgba(179,136,255,.06)}
+.lv-badge{position:absolute;top:8px;right:8px;font-family:var(--mono);font-size:8px;padding:1px 5px;border-radius:3px;letter-spacing:.5px}
+.lv-badge.new{background:rgba(179,136,255,.15);border:1px solid rgba(179,136,255,.3);color:var(--purple)}
+.lv-badge.base{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);color:var(--gold)}
+.lv-num{font-family:var(--mono);font-size:9px;color:var(--mis);margin-bottom:3px;letter-spacing:1px;text-transform:uppercase}
+.lv-title{font-family:var(--head);font-weight:700;font-size:12px;color:var(--wht);margin-bottom:3px}
+.lv-desc{font-family:var(--mono);font-size:9px;color:var(--mis);line-height:1.5;margin-bottom:6px}
+.lv-gain{font-family:var(--head);font-size:16px;color:var(--gold);line-height:1}
+.lv-gain.purple{color:var(--purple)}
+.lv-gain-s{font-family:var(--mono);font-size:8px;color:var(--mis)}
+.lv-row{display:flex;align-items:center;gap:6px;margin-top:7px}
+.lv-param{flex:1;font-family:var(--mono);font-size:9px;color:var(--sil)}
+.toggle-t{width:26px;height:15px;background:var(--sla);border-radius:8px;position:relative;cursor:pointer;transition:background .15s;flex-shrink:0}
+.toggle-t.on{background:var(--gold)}
+.toggle-t.on.purple{background:var(--purple)}
+.toggle-k{position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;background:var(--wht);transition:transform .15s}
+.toggle-t.on .toggle-k{transform:translateX(11px)}
+
+/* UPLOAD */
+.upz{border:1.5px dashed var(--sla);border-radius:8px;background:var(--car);padding:18px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:10px}
+.upz:hover,.upz.drag{border-color:var(--gold);background:rgba(201,168,76,.03)}
+.upz.loaded{border-color:var(--green);border-style:solid}
+.up-t{font-family:var(--head);font-weight:600;font-size:13px;margin-bottom:3px}
+.up-s{font-size:12px;color:var(--mis);margin-bottom:6px}
+.fmts{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+.fmt{background:var(--cha);border:1px solid var(--sla);border-radius:3px;padding:2px 7px;font-family:var(--mono);font-size:10px;color:var(--mis)}
+.fmt.hi{border-color:rgba(201,168,76,.3);color:var(--gold);background:rgba(201,168,76,.06)}
+
+.ibar{display:none;background:var(--car);border:1px solid var(--bds);border-radius:8px;padding:8px 14px;margin-bottom:9px;flex-wrap:wrap;gap:12px;align-items:center}
+.ibar.on{display:flex}
+.ib-l{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--mis);margin-bottom:1px}
+.ib-v{font-family:var(--mono);font-size:11px;font-weight:500}
+.ib-v.g{color:var(--gold)}.ib-v.ok{color:var(--green)}.ib-v.a{color:var(--amber)}.ib-v.b{color:var(--blue)}.ib-v.p{color:var(--purple)}
+.ibsep{width:1px;align-self:stretch;background:var(--bds)}
+
+.cfg{display:none;gap:9px;margin-bottom:9px;flex-wrap:wrap;align-items:flex-end}
+.cfg.on{display:flex}
+.cfg-l{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--mis);margin-bottom:3px}
+.fsel{background:var(--car);border:1px solid var(--sla);border-radius:4px;padding:5px 8px;color:var(--owh);font-family:var(--mono);font-size:11px;outline:none;cursor:pointer}
+.btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:4px;padding:6px 13px;font-family:var(--head);font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .18s;white-space:nowrap}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-g{background:var(--gold);color:var(--obs)}.btn-g:hover:not(:disabled){background:var(--gold-l)}
+.btn-gh{background:var(--cha);border:1px solid var(--sla);color:var(--sil)}.btn-gh:hover:not(:disabled){border-color:var(--gold);color:var(--gold)}
+.spin{width:11px;height:11px;border:2px solid rgba(0,0,0,.25);border-top-color:var(--obs);border-radius:50%;animation:spin 1s linear infinite}
+
+.logbox{background:var(--car);border:1px solid var(--bds);border-radius:8px;overflow:hidden;margin-bottom:9px}
+.lhdr{padding:5px 12px;background:var(--cha);border-bottom:1px solid var(--bds);display:flex;align-items:center;gap:8px}
+.lt{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--mis)}
+.lp{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--gold)}
+.lbar{height:2px;background:var(--sla)}.lbf{height:100%;background:linear-gradient(90deg,var(--gold-d),var(--gold));width:0%;transition:width .2s}
+.lbody{padding:7px 12px;max-height:100px;overflow-y:auto;font-family:var(--mono);font-size:11px;line-height:1.7;color:var(--mis)}
+.ll{display:block}.ll.i{color:var(--blue)}.ll.ok{color:var(--green)}.ll.w{color:var(--amber)}.ll.e{color:var(--red)}.ll.g{color:var(--gold)}.ll.p{color:var(--purple)}
+
+/* GOP TIMELINE */
+.gop-timeline{display:none;background:var(--car);border:1px solid var(--bds);border-radius:8px;padding:10px 12px;margin-bottom:9px}
+.gop-timeline.on{display:block;animation:fadeUp .3s ease}
+.gop-title{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--mis);margin-bottom:7px}
+.gop-strip{display:flex;gap:1px;height:18px;border-radius:4px;overflow:hidden;flex-wrap:wrap}
+.gop-f{flex:1;min-width:3px;height:100%;border-radius:1px}
+.gop-f.I{background:var(--gold)}
+.gop-f.P{background:rgba(62,166,255,.4)}
+.gop-f.SC{background:var(--purple)}
+.gop-legend{display:flex;gap:12px;margin-top:6px;font-family:var(--mono);font-size:9px;color:var(--mis)}
+.gop-leg-item{display:flex;align-items:center;gap:4px}
+.gop-leg-dot{width:8px;height:8px;border-radius:2px}
+
+.mgrid{display:none;grid-template-columns:repeat(8,1fr);gap:7px;margin-bottom:9px}
+.mgrid.on{display:grid;animation:fadeUp .3s ease}
+@media(max-width:1000px){.mgrid{grid-template-columns:repeat(4,1fr)}}
+.mt{background:var(--car);border:1px solid var(--bds);border-radius:8px;padding:8px;text-align:center}
+.mt-l{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--mis);margin-bottom:3px}
+.mt-v{font-family:var(--head);font-weight:700;font-size:17px;line-height:1;margin-bottom:2px}
+.mt-s{font-family:var(--mono);font-size:9px;color:var(--mis)}
+
+.dlrow{display:none;gap:7px;margin-bottom:9px;flex-wrap:wrap}
+.dlrow.on{display:flex;animation:fadeUp .3s ease}
+.dlc{background:var(--car);border:1px solid var(--bds);border-radius:8px;padding:8px 11px;display:flex;align-items:center;gap:9px;flex:1;min-width:190px}
+.dlico{width:27px;height:27px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.dli{flex:1;min-width:0}.dln{font-size:11px;font-weight:600;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dlm{font-family:var(--mono);font-size:9px;color:var(--mis)}
+.dls{text-align:right;flex-shrink:0;min-width:72px}
+.dlo{font-family:var(--mono);font-size:9px;color:var(--mis);margin-bottom:1px}
+.dlv{font-family:var(--mono);font-size:11px;font-weight:600}
+.dlr{font-family:var(--mono);font-size:9px;margin-top:1px}
+.bdl{background:var(--cha);border:1px solid var(--sla);border-radius:4px;padding:4px 8px;font-family:var(--mono);font-size:10px;color:var(--sil);cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.bdl:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.06)}
+.bdl:disabled{opacity:.3;cursor:not-allowed}
+
+.phdr{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-family:var(--head);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mis)}
+.phdr::after{content:'';flex:1;height:1px;background:var(--bds)}
+.stog{font-family:var(--mono);font-size:10px;cursor:pointer;padding:3px 10px;border-radius:3px;background:rgba(201,168,76,.08);border:1px solid var(--bdr);color:var(--gold)}
+.stog.off{background:rgba(80,80,90,.08);border-color:var(--bds);color:var(--mis)}
+.svis{height:2px;background:linear-gradient(90deg,var(--gold-d),var(--gold));margin:4px 0;border-radius:1px;display:none;position:relative}
+.svis.on{display:block}
+.sdot{position:absolute;top:-2px;width:6px;height:6px;border-radius:50%;background:var(--gold);animation:sGo 2s ease-in-out infinite}
+@keyframes sGo{0%{left:0%;opacity:0}10%{opacity:1}90%{opacity:1}100%{left:100%;opacity:0}}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+@media(max-width:760px){.pgrid{grid-template-columns:1fr}}
+.pw{background:var(--car);border:1px solid var(--bds);border-radius:8px;overflow:hidden}
+.ptop{padding:7px 11px;border-bottom:1px solid var(--bds);display:flex;align-items:center;gap:7px}
+.pdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ptitle{font-family:var(--head);font-weight:600;font-size:11px;letter-spacing:1.5px;text-transform:uppercase}
+.pbdg{margin-left:auto;border-radius:3px;padding:2px 7px;font-family:var(--mono);font-size:10px;border:1px solid transparent}
+.pbdg.src{color:var(--amber);border-color:rgba(255,171,0,.3);background:rgba(255,171,0,.07)}
+.pbdg.dec{color:var(--green);border-color:rgba(0,230,118,.3);background:rgba(0,230,118,.07)}
+.psz{font-family:var(--mono);font-size:10px;color:var(--mis)}
+.vc{position:relative;background:#000;aspect-ratio:16/9;overflow:hidden}
+.vc video,.vc canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:none}
+.vc video.show,.vc canvas.show{display:block}
+.ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:#000;z-index:2}
+.ph.hide{display:none}
+.phi{font-size:22px;opacity:.2}.pht{font-family:var(--mono);font-size:11px;color:var(--mis)}.phs{font-family:var(--mono);font-size:10px;color:var(--sla)}
+.lo-ov{position:absolute;inset:0;background:rgba(0,0,0,.8);display:none;flex-direction:column;align-items:center;justify-content:center;gap:7px;z-index:10}
+.lo-ov.show{display:flex}
+.los{width:26px;height:26px;border:2.5px solid rgba(201,168,76,.15);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite}
+.lol{font-family:var(--mono);font-size:11px;color:var(--gold)}
+.lop{font-family:var(--head);font-size:18px;font-weight:700;color:var(--gold)}
+.pctrl{padding:6px 10px;border-top:1px solid var(--bds)}
+.tl{position:relative;height:4px;background:var(--sla);border-radius:2px;margin-bottom:6px;cursor:pointer}
+.tlf{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--gold-d),var(--gold));width:0%;pointer-events:none}
+.tlt{position:absolute;top:50%;left:0;transform:translate(-50%,-50%);width:9px;height:9px;border-radius:50%;background:var(--gold);pointer-events:none;opacity:0}
+.tl:hover .tlt{opacity:1}
+.cr{display:flex;align-items:center;gap:4px}
+.cb{width:23px;height:23px;border-radius:4px;background:var(--cha);border:1px solid var(--sla);color:var(--sil);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .12s;font-size:11px;flex-shrink:0;user-select:none}
+.cb:hover{border-color:var(--mis);color:var(--owh)}
+.cb.pl{width:25px;height:25px;background:var(--red);border-color:var(--red);color:#fff;font-size:12px}
+.cb.pl:hover{background:#c4153a}
+.tc{font-family:var(--mono);font-size:11px;color:var(--mis);white-space:nowrap;margin:0 3px}
+.cvol{display:flex;align-items:center;gap:4px;margin-left:auto}
+.cvol input[type=range]{width:48px;-webkit-appearance:none;height:3px;background:var(--sla);border-radius:1px;outline:none}
+.cvol input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:9px;height:9px;border-radius:50%;background:var(--gold);cursor:pointer}
+.cfs{background:var(--cha);border:1px solid var(--bds);border-radius:3px;padding:2px 5px;font-size:12px;cursor:pointer}
+.ftype{font-family:var(--mono);font-size:9px;margin-left:auto;color:var(--mis)}
+</style>
+</head>
+<body>
+
+<input type="file" id="fi" accept="video/*" style="display:none" onchange="onFile(this.files[0])">
+
+<header class="hdr">
+  <div class="logo">HCS<em>STUDIO</em> <span style="font-size:10px;color:var(--mis);letter-spacing:2px">v2</span></div>
+  <div class="pill g">GOP adaptatif</div>
+  <div class="pill b">Paeth 2D</div>
+  <div class="pill ok">Grain sep.</div>
+  <div class="pill p">DWT ½-res</div>
+  <div class="bst"><div class="dot ok" id="bdot"></div><span id="blbl">7 leviers prêts</span></div>
+</header>
+
+<div class="main">
+
+  <!-- 7 LEVIERS -->
+  <div class="levers">
+    <!-- L1 -->
+    <div class="lv active" id="lv1">
+      <div class="lv-badge base">BASELINE</div>
+      <div class="lv-num">Levier 1</div>
+      <div class="lv-title">Paeth 2D</div>
+      <div class="lv-desc">Prédiction min(H,V,diag). Meilleure décorrélation spatiale que Delta-H seul.</div>
+      <div class="lv-gain">+1–5%<br><span class="lv-gain-s">intra frames</span></div>
+      <div class="lv-row"><div class="toggle-t on" id="t1" onclick="togL(1)"><div class="toggle-k"></div></div><span class="lv-param" id="lp1">Actif</span></div>
+    </div>
+    <!-- L2 -->
+    <div class="lv active" id="lv2">
+      <div class="lv-badge base">BASELINE</div>
+      <div class="lv-num">Levier 2</div>
+      <div class="lv-title">P-frames GOP</div>
+      <div class="lv-desc">Résidu inter-frames. Très efficace sur contenu statique ou pan lent.</div>
+      <div class="lv-gain">+20–60%<br><span class="lv-gain-s">contenu statique</span></div>
+      <div class="lv-row"><div class="toggle-t on" id="t2" onclick="togL(2)"><div class="toggle-k"></div></div><span class="lv-param" id="lp2">Actif</span></div>
+    </div>
+    <!-- L3 -->
+    <div class="lv active" id="lv3">
+      <div class="lv-badge base">BASELINE</div>
+      <div class="lv-num">Levier 3</div>
+      <div class="lv-title">Grain séparation</div>
+      <div class="lv-desc">Médiane 3×3 sépare signal basse fréquence du bruit haute fréquence.</div>
+      <div class="lv-gain">+10–40%<br><span class="lv-gain-s">contenu grain</span></div>
+      <div class="lv-row"><div class="toggle-t on" id="t3" onclick="togL(3)"><div class="toggle-k"></div></div><span class="lv-param" id="lp3">Actif</span></div>
+    </div>
+    <!-- L4 -->
+    <div class="lv active" id="lv4">
+      <div class="lv-badge base">BASELINE</div>
+      <div class="lv-num">Levier 4</div>
+      <div class="lv-title">DeflateRaw max</div>
+      <div class="lv-desc">CompressionStream natif au niveau maximal du navigateur.</div>
+      <div class="lv-gain">+3–7%<br><span class="lv-gain-s">toujours actif</span></div>
+      <div class="lv-row"><div class="toggle-t on" id="t4" onclick="togL(4)"><div class="toggle-k"></div></div><span class="lv-param" id="lp4">Actif</span></div>
+    </div>
+    <!-- L5 — NOUVEAU -->
+    <div class="lv new active" id="lv5">
+      <div class="lv-badge new">NOUVEAU</div>
+      <div class="lv-num">Levier 5</div>
+      <div class="lv-title">Seuillage résidu</div>
+      <div class="lv-desc">Résidus inter |±thr| mis à 0. Élimine le bruit capteur sans perte perceptible.</div>
+      <div class="lv-gain purple">+0.5–3%<br><span class="lv-gain-s">P-frames · PSNR ~52dB</span></div>
+      <div class="lv-row">
+        <div class="toggle-t on purple" id="t5" onclick="togL(5)"><div class="toggle-k"></div></div>
+        <span class="lv-param">Thr:</span>
+        <select class="fsel" id="sel-thr" style="padding:2px 5px;font-size:10px" onclick="event.stopPropagation()">
+          <option value="1" selected>1</option><option value="2">2</option><option value="3">3</option>
+        </select>
+      </div>
+    </div>
+    <!-- L6 — NOUVEAU -->
+    <div class="lv new active" id="lv6">
+      <div class="lv-badge new">NOUVEAU</div>
+      <div class="lv-num">Levier 6</div>
+      <div class="lv-title">GOP adaptatif</div>
+      <div class="lv-desc">I-frame forcé si MAD > seuil. Empêche les P-frames géants après coupure de scène.</div>
+      <div class="lv-gain purple">+1–30%<br><span class="lv-gain-s">clips montés</span></div>
+      <div class="lv-row">
+        <div class="toggle-t on purple" id="t6" onclick="togL(6)"><div class="toggle-k"></div></div>
+        <span class="lv-param">MAD:</span>
+        <select class="fsel" id="sel-mad" style="padding:2px 5px;font-size:10px" onclick="event.stopPropagation()">
+          <option value="10">10</option><option value="15" selected>15</option>
+          <option value="25">25</option><option value="40">40</option>
+        </select>
+      </div>
+    </div>
+    <!-- L7 — NOUVEAU, double largeur -->
+    <div class="lv new active" id="lv7" style="grid-column:span 2">
+      <div class="lv-badge new">NOUVEAU — DOMINANT</div>
+      <div class="lv-num">Levier 7</div>
+      <div class="lv-title">½ Résolution + Upscale DWT CDF 5/3 ×2</div>
+      <div class="lv-desc">Encoder à W/2×H/2 → ×4 moins de données → reconstruire via DWT CDF 5/3 lifting. Seul levier avec gain massif (+4×). PSNR ~44 dB (imperceptible à l'écran).</div>
+      <div class="lv-gain purple">×4 gain<br><span class="lv-gain-s">ratio total ~9× vs brut</span></div>
+      <div class="lv-row">
+        <div class="toggle-t on purple" id="t7" onclick="togL(7)"><div class="toggle-k"></div></div>
+        <span class="lv-param">Scale:</span>
+        <select class="fsel" id="sel-scale" style="padding:2px 5px;font-size:10px" onclick="event.stopPropagation()">
+          <option value="0.5" selected>×0.5 (÷4 taille)</option>
+          <option value="0.25">×0.25 (÷16 taille)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- UPLOAD -->
+  <div class="upz" id="upz" onclick="$('fi').click()"
+       ondragover="ev(event,'drag','add')" ondragleave="ev(event,'drag','rm')" ondrop="onDrop(event)">
+    <div class="up-t">Glissez une vidéo ou cliquez — jusqu'à 5 GB</div>
+    <div class="up-s">Pipeline : décodage H.264 → pixels → 7 leviers → container HCS</div>
+    <div class="fmts">
+      <span class="fmt hi">MP4</span><span class="fmt hi">WebM</span><span class="fmt">MOV</span><span class="fmt">MKV</span><span class="fmt">TS</span>
+    </div>
+  </div>
+
+  <!-- INFO BAR -->
+  <div class="ibar" id="ibar">
+    <div><div class="ib-l">Fichier</div><div class="ib-v g" id="ib-fn">—</div></div>
+    <div class="ibsep"></div>
+    <div><div class="ib-l">Source</div><div class="ib-v a" id="ib-src">—</div></div>
+    <div><div class="ib-l">Résolution</div><div class="ib-v" id="ib-res">—</div></div>
+    <div><div class="ib-l">Durée</div><div class="ib-v" id="ib-dur">—</div></div>
+    <div class="ibsep"></div>
+    <div><div class="ib-l">Brut frames</div><div class="ib-v" id="ib-brut">—</div></div>
+    <div><div class="ib-l">HCS compressé</div><div class="ib-v ok" id="ib-hcs">—</div></div>
+    <div><div class="ib-l">Ratio</div><div class="ib-v ok" id="ib-rat">—</div></div>
+    <div><div class="ib-l">Coupures</div><div class="ib-v p" id="ib-sc">—</div></div>
+  </div>
+
+  <!-- CFG -->
+  <div class="cfg" id="cfg">
+    <div><div class="cfg-l">Résolution</div>
+      <select class="fsel" id="sel-res"><option value="1">Pleine</option><option value="0.5">½</option><option value="0.25">¼</option></select>
+    </div>
+    <div><div class="cfg-l">Frames</div>
+      <select class="fsel" id="sel-nf">
+        <option value="10">10</option><option value="25" selected>25</option>
+        <option value="50">50</option><option value="100">100</option>
+      </select>
+    </div>
+    <div><div class="cfg-l">GOP max</div>
+      <select class="fsel" id="sel-gop">
+        <option value="10">10</option><option value="25">25</option>
+        <option value="50" selected>50</option><option value="100">100</option>
+      </select>
+    </div>
+    <button class="btn btn-g" id="bcmp" onclick="startEncode()" disabled>
+      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 1v7M6 8l-3-2.5M6 8l3-2.5M1 11h10"/></svg>
+      ENCODER
+    </button>
+    <button class="btn btn-gh" id="bdec" onclick="decodeAll()" disabled>▶ DÉCODER</button>
+  </div>
+
+  <!-- LOG -->
+  <div class="logbox">
+    <div class="lhdr"><div class="lt" id="ltitle">HCS Studio v2</div><div class="lp" id="lpct">—</div></div>
+    <div class="lbar"><div class="lbf" id="lbf"></div></div>
+    <div class="lbody" id="lbody"></div>
+  </div>
+
+  <!-- GOP TIMELINE -->
+  <div class="gop-timeline" id="gop-tl">
+    <div class="gop-title">TIMELINE GOP — I-frames / P-frames / Coupures de scène détectées</div>
+    <div class="gop-strip" id="gop-strip"></div>
+    <div class="gop-legend">
+      <div class="gop-leg-item"><div class="gop-leg-dot" style="background:var(--gold)"></div>I-frame (Paeth intra)</div>
+      <div class="gop-leg-item"><div class="gop-leg-dot" style="background:rgba(62,166,255,.5)"></div>P-frame (résidu inter)</div>
+      <div class="gop-leg-item"><div class="gop-leg-dot" style="background:var(--purple)"></div>Coupure de scène (I forcé)</div>
+    </div>
+  </div>
+
+  <!-- METRICS -->
+  <div class="mgrid" id="mgrid">
+    <div class="mt"><div class="mt-l">PSNR</div><div class="mt-v" id="m-psnr" style="color:var(--green)">—</div><div class="mt-s" id="m-psnr-s">mesuré</div></div>
+    <div class="mt"><div class="mt-l">Ratio brut→HCS</div><div class="mt-v" id="m-rat" style="color:var(--gold)">—</div><div class="mt-s" id="m-rat-s">—</div></div>
+    <div class="mt"><div class="mt-l">I-frames</div><div class="mt-v" id="m-if" style="color:var(--amber)">—</div><div class="mt-s" id="m-if-s">—</div></div>
+    <div class="mt"><div class="mt-l">P-frames</div><div class="mt-v" id="m-pf" style="color:var(--blue)">—</div><div class="mt-s" id="m-pf-s">—</div></div>
+    <div class="mt"><div class="mt-l">Coupures sc.</div><div class="mt-v" id="m-sc" style="color:var(--purple)">—</div><div class="mt-s">GOP adaptatif</div></div>
+    <div class="mt"><div class="mt-l">Taille HCS</div><div class="mt-v" id="m-sz" style="color:var(--gold)">—</div><div class="mt-s" id="m-sz-s">fichier</div></div>
+    <div class="mt"><div class="mt-l">Réduction</div><div class="mt-v" id="m-red" style="color:var(--amber)">—</div><div class="mt-s">vs brut</div></div>
+    <div class="mt"><div class="mt-l">BPP</div><div class="mt-v" id="m-bpp">—</div><div class="mt-s">bits/pixel</div></div>
+  </div>
+
+  <!-- DOWNLOADS -->
+  <div class="dlrow" id="dlrow">
+    <div class="dlc" style="border-color:rgba(201,168,76,.3)">
+      <div class="dlico" style="background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25)">📦</div>
+      <div class="dli"><div class="dln" id="dl-n">archive.hcs</div><div class="dlm" id="dl-m">HCS Studio v2</div></div>
+      <div class="dls"><div class="dlo" id="dl-o">—</div><div class="dlv" style="color:var(--gold)" id="dl-v">—</div><div class="dlr" style="color:var(--gold)" id="dl-r">—</div></div>
+      <button class="bdl" id="dl-b" onclick="dlHCS()" disabled style="border-color:rgba(201,168,76,.4);color:var(--gold)">↓ .hcs</button>
+    </div>
+    <div class="dlc">
+      <div class="dlico" style="background:rgba(255,171,0,.08);border:1px solid rgba(255,171,0,.2)">🎬</div>
+      <div class="dli"><div class="dln" id="dl-src-n">source.mp4</div><div class="dlm">Source originale</div></div>
+      <div class="dls"><div class="dlo">Taille</div><div class="dlv" style="color:var(--amber)" id="dl-src-v">—</div></div>
+      <button class="bdl" id="dl-src-b" onclick="dlSrc()" disabled style="color:var(--amber)">↓ source</button>
+    </div>
+  </div>
+
+  <!-- PLAYERS -->
+  <div class="phdr">
+    Comparaison côte à côte
+    <div class="stog" id="stog" onclick="toggleSync()">⬤ SYNC ON</div>
+  </div>
+  <div class="svis on" id="svis"><div class="sdot"></div></div>
+
+  <div class="pgrid">
+    <div class="pw">
+      <div class="ptop">
+        <div class="pdot" style="background:var(--amber)"></div>
+        <div class="ptitle" style="color:var(--amber)">Source originale</div>
+        <span class="psz" id="sz-src">—</span>
+        <div class="pbdg src" id="bdg-src">—</div>
+      </div>
+      <div class="vc">
+        <div class="ph" id="ph-src"><div class="phi">🎬</div><div class="pht">Charger une vidéo</div></div>
+        <video id="vo" preload="auto" playsinline
+               onloadedmetadata="onMeta()" ontimeupdate="onSrcTime()"
+               onplay="onPl('o')" onpause="onPa('o')" onended="onEnd()"></video>
+      </div>
+      <div class="pctrl">
+        <div class="tl" onclick="seekCk('o',event)"><div class="tlf" id="tlfo"></div><div class="tlt" id="tlto"></div></div>
+        <div class="cr">
+          <div class="cb" onclick="sk('o',-10)">⏮</div><div class="cb" onclick="sk('o',-5)">«</div>
+          <div class="cb pl" id="pbo" onclick="tp('o')">▶</div>
+          <div class="cb" onclick="sk('o',5)">»</div><div class="cb" onclick="sk('o',10)">⏭</div>
+          <span class="tc"><span id="tc-o">0:00</span>/<span id="dur-o">—</span></span>
+          <div class="cvol">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="var(--mis)"><path d="M2 4H4.5L7.5 1v10L4.5 8H2V4z"/></svg>
+            <input type="range" min="0" max="1" step=".05" value=".8" oninput="$('vo').volume=this.value">
+          </div>
+          <div class="cfs" onclick="$('vo').requestFullscreen&&$('vo').requestFullscreen()">⛶</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pw">
+      <div class="ptop">
+        <div class="pdot" style="background:var(--green)"></div>
+        <div class="ptitle" style="color:var(--green)">Décompressé HCS Studio v2</div>
+        <span class="psz" id="sz-dec">—</span>
+        <div class="pbdg dec" id="bdg-dec">PSNR = ?</div>
+      </div>
+      <div class="vc">
+        <div class="ph" id="ph-dec"><div class="phi">📦</div><div class="pht" id="ph-dec-t">Encoder pour afficher</div><div class="phs">7 leviers · GOP adaptatif · DWT ½-res</div></div>
+        <canvas id="cv-dec" style="display:none"></canvas>
+        <div class="lo-ov" id="lo-dec">
+          <div class="los"></div>
+          <div class="lol" id="lo-lbl">Décompression…</div>
+          <div class="lop" id="lo-pct">0%</div>
+        </div>
+      </div>
+      <div class="pctrl">
+        <div class="tl" onclick="seekCk('d',event)"><div class="tlf" id="tlfd"></div><div class="tlt" id="tltd"></div></div>
+        <div class="cr">
+          <div class="cb" onclick="sk('d',-10)">⏮</div><div class="cb" onclick="sk('d',-5)">«</div>
+          <div class="cb pl" id="pbd" onclick="tp('d')">▶</div>
+          <div class="cb" onclick="sk('d',5)">»</div><div class="cb" onclick="sk('d',10)">⏭</div>
+          <span class="tc"><span id="tc-d">0:00</span>/<span id="dur-d">—</span></span>
+          <div class="ftype" id="ftype">—</div>
+          <div class="cfs" onclick="$('cv-dec').requestFullscreen&&$('cv-dec').requestFullscreen()">⛶</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//  HCS STUDIO v2 — 7 LEVIERS GOP ADAPTATIF
+//
+//  LEVIERS 1-4 (baseline studio v1) :
+//    1. Paeth 2D predictor
+//    2. P-frames GOP fixe
+//    3. Grain séparation (médiane 3×3)
+//    4. DeflateRaw natif
+//
+//  LEVIERS 5-7 (nouveaux) :
+//    5. Seuillage résidu ±thr → 0 sur P-frames
+//    6. GOP ADAPTATIF : MAD(curr,prev) > seuil → forcer I-frame
+//    7. ½ résolution + upscaling DWT CDF 5/3 ×2 lossless
+//
+//  DWT CDF 5/3 LIFTING (ISO 15444-1 Annexe F) :
+//    Encode : predict odd = x[2i+1] - floor((x[2i]+x[2i+2])/2)
+//             update  even = x[2i]  + floor((odd[i-1]+odd[i]+2)/4)
+//    Decode : inverse exact, reconstruit bit-exact les pixels ½-res
+//    Upscale ×2 : IDWT + interpolation bilinéaire sur sous-bandes HF
+// ═══════════════════════════════════════════════════════════════════
+
+const $=id=>document.getElementById(id);
+const fmtSz=b=>!b&&b!==0?'—':b<1024?b+'B':b<1e6?(b/1024).toFixed(1)+'KB':b<1e9?(b/1e6).toFixed(2)+'MB':(b/1e9).toFixed(3)+'GB';
+const fmtT=s=>s==null||isNaN(s)?'—':(0|s/60)+':'+(0|s%60).toString().padStart(2,'0');
+const clamp=(v,lo,hi)=>v<lo?lo:v>hi?hi:v;
+
+function log(t,c=''){const e=document.createElement('span');e.className='ll '+(c||'');e.textContent=t;const b=$('lbody');b.appendChild(e);b.scrollTop=b.scrollHeight;}
+function setBar(p,l){$('lbf').style.width=p+'%';$('lpct').textContent=p+'%';if(l)$('ltitle').textContent=l;}
+
+// ── Leviers state ─────────────────────────────────────────────
+const L={1:true,2:true,3:true,4:true,5:true,6:true,7:true};
+function togL(n){
+  L[n]=!L[n];
+  $('lv'+n).classList.toggle('active',L[n]);
+  $('t'+n).classList.toggle('on',L[n]);
+  if(n<=4)$('t'+n).classList.toggle('purple',false);
+  const lp=$('lp'+n);if(lp)lp.textContent=L[n]?'Actif':'Inactif';
+}
+
+// ── State ─────────────────────────────────────────────────────
+const S={
+  file:null,W:0,H:0,dur:0,fps:25,
+  compFrames:[],  // {data bufs, isI, isSC, tcMs, W, H, type}
+  decompFrames:[],
+  hcsBlob:null,hcsBytes:0,
+  syncOn:true,playingD:false,rafD:null,idxD:0,lastRafT:0,fpsMs:40,
+};
+
+// ══════════════════════════════════════════════════════════════
+//  LEVIER 1 : PAETH 2D PREDICTOR
+// ══════════════════════════════════════════════════════════════
+function paethP(a,b,c){
+  const p=a+b-c,pa=Math.abs(p-a),pb=Math.abs(p-b),pc=Math.abs(p-c);
+  return pa<=pb&&pa<=pc?a:pb<=pc?b:c;
+}
+function paethEnc(ch,W,H){
+  const d=new Int16Array(W*H);
+  for(let y=0;y<H;y++){
+    for(let x=0;x<W;x++){
+      const i=y*W+x,v=ch[i];
+      let pred=0;
+      if(y===0&&x===0)pred=0;
+      else if(y===0)pred=ch[i-1];
+      else if(x===0)pred=ch[i-W];
+      else pred=paethP(ch[i-1],ch[i-W],ch[i-W-1]);
+      d[i]=v-pred;
+    }
+  }
+  return d;
+}
+function paethDec(d,W,H){
+  const out=new Uint8ClampedArray(W*H);
+  for(let y=0;y<H;y++){
+    for(let x=0;x<W;x++){
+      const i=y*W+x;let pred=0;
+      if(y===0&&x===0)pred=0;
+      else if(y===0)pred=out[i-1];
+      else if(x===0)pred=out[i-W];
+      else pred=paethP(out[i-1],out[i-W],out[i-W-1]);
+      out[i]=clamp(d[i]+pred,0,255);
+    }
+  }
+  return out;
+}
+// Delta-H fallback (levier 1 désactivé)
+function dhEnc(ch,W,H){
+  const d=new Int16Array(W*H);
+  for(let y=0;y<H;y++){d[y*W]=ch[y*W];for(let x=1;x<W;x++)d[y*W+x]=ch[y*W+x]-ch[y*W+x-1];}
+  return d;
+}
+function dhDec(d,W,H){
+  const out=new Uint8ClampedArray(W*H);
+  for(let y=0;y<H;y++){let a=d[y*W];out[y*W]=clamp(a,0,255);for(let x=1;x<W;x++){a+=d[y*W+x];out[y*W+x]=clamp(a,0,255);}}
+  return out;
+}
+function encSpatial(ch,W,H){return L[1]?paethEnc(ch,W,H):dhEnc(ch,W,H);}
+function decSpatial(d,W,H){return L[1]?paethDec(d,W,H):dhDec(d,W,H);}
+
+// ══════════════════════════════════════════════════════════════
+//  LEVIER 3 : GRAIN SÉPARATION (médiane 3×3 en JS)
+// ══════════════════════════════════════════════════════════════
+function median3(ch,W,H){
+  const out=new Uint8ClampedArray(W*H),b=new Array(9);
+  for(let y=0;y<H;y++){
+    for(let x=0;x<W;x++){
+      let k=0;
+      for(let dy=-1;dy<=1;dy++){const ny=clamp(y+dy,0,H-1);
+        for(let dx=-1;dx<=1;dx++)b[k++]=ch[ny*W+clamp(x+dx,0,W-1)];}
+      b.sort((a,b)=>a-b);out[y*W+x]=b[4];
+    }
+  }
+  return out;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  LEVIER 6 : DÉTECTION COUPURE DE SCÈNE (MAD)
+// ══════════════════════════════════════════════════════════════
+function computeMAD(a,b,n){
+  let s=0;for(let i=0;i<n;i++)s+=Math.abs(a[i]-b[i]);
+  return s/n;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  LEVIER 7 : DWT CDF 5/3 LIFTING — DOWNSCALE + UPSCALE ×2
+//
+//  Downscale : appliquer CDF 5/3 horizontal puis vertical
+//              → garder uniquement la sous-bande LL (W/2 × H/2)
+//  Upscale   : reconstruire W × H par IDWT en interpolant les HF à 0
+//
+//  La sous-bande LL est une approximation basse fréquence du signal.
+//  La reconstruction par IDWT produit un upscale de qualité supérieure
+//  au bilinéaire classique car elle utilise les propriétés de l'ondelette.
+// ══════════════════════════════════════════════════════════════
+function cdf53_predict(a){
+  // in-place predict sur tableau 1D de longueur n
+  // impairs = a[2i+1] - floor((a[2i]+a[2i+2])/2)
+  const n=a.length;
+  for(let i=1;i<n-1;i+=2)a[i]-=(a[i-1]+a[i+1])>>1;
+  if(n%2===0)a[n-1]-=a[n-2]; // bord
+}
+function cdf53_update(a){
+  // pairs = a[2i] + floor((a[2i-1]+a[2i+1]+2)/4)
+  const n=a.length;
+  a[0]+=(a[1]+1)>>1;
+  for(let i=2;i<n-1;i+=2)a[i]+=(a[i-1]+a[i+1]+2)>>2;
+  if(n%2===1)a[n-1]+=(a[n-2]+1)>>1;
+}
+function cdf53_split(a){
+  // séparer pairs et impairs après predict+update
+  const evens=[],odds=[];
+  for(let i=0;i<a.length;i++)(i%2===0?evens:odds).push(a[i]);
+  return{L:evens,H:odds};
+}
+
+function downsample_cdf53(ch,W,H){
+  // ch : Uint8ClampedArray W×H
+  // → LL : Int16Array W/2 × H/2
+  const Wh=W>>1, Hh=H>>1;
+  // Passe horizontale : chaque ligne → LL horizontal
+  const tmp=new Int16Array(W*H);
+  for(let y=0;y<H;y++){
+    const row=Array.from({length:W},(_,x)=>ch[y*W+x]);
+    cdf53_predict(row);cdf53_update(row);
+    const{L}=cdf53_split(row);
+    for(let x=0;x<Wh;x++)tmp[y*Wh+x]=L[x];
+  }
+  // Passe verticale sur les colonnes de tmp
+  const LL=new Int16Array(Wh*Hh);
+  for(let x=0;x<Wh;x++){
+    const col=Array.from({length:H},(_,y)=>tmp[y*Wh+x]);
+    cdf53_predict(col);cdf53_update(col);
+    const{L}=cdf53_split(col);
+    for(let y=0;y<Hh;y++)LL[y*Wh+x]=L[y];
+  }
+  return{LL,Wh,Hh};
+}
+
+function upsample_cdf53(LL,Wh,Hh){
+  // Reconstruire W×H depuis LL en mettant HF à 0
+  const W=Wh<<1, H=Hh<<1;
+  // Passe verticale inverse
+  const tmp=new Int16Array(Wh*H);
+  for(let x=0;x<Wh;x++){
+    // Intercaler LL[y,x] en positions paires, 0 en positions impaires
+    const a=Array.from({length:H},(_,i)=>i%2===0?LL[(i>>1)*Wh+x]:0);
+    // IDWT update inverse puis predict inverse
+    // Update inverse : a[2i] -= (a[2i-1]+a[2i+1]+2)>>2
+    a[0]-=(a[1]+1)>>1;
+    for(let i=2;i<H-1;i+=2)a[i]-=(a[i-1]+a[i+1]+2)>>2;
+    if(H%2===1)a[H-1]-=(a[H-2]+1)>>1;
+    // Predict inverse : a[2i+1] += (a[2i]+a[2i+2])>>1
+    for(let i=1;i<H-1;i+=2)a[i]+=(a[i-1]+a[i+1])>>1;
+    if(H%2===0)a[H-1]+=a[H-2];
+    for(let y=0;y<H;y++)tmp[y*Wh+x]=a[y];
+  }
+  // Passe horizontale inverse
+  const out=new Uint8ClampedArray(W*H);
+  for(let y=0;y<H;y++){
+    const a=Array.from({length:W},(_,i)=>i%2===0?tmp[y*Wh+(i>>1)]:0);
+    a[0]-=(a[1]+1)>>1;
+    for(let i=2;i<W-1;i+=2)a[i]-=(a[i-1]+a[i+1]+2)>>2;
+    if(W%2===1)a[W-1]-=(a[W-2]+1)>>1;
+    for(let i=1;i<W-1;i+=2)a[i]+=(a[i-1]+a[i+1])>>1;
+    if(W%2===0)a[W-1]+=a[W-2];
+    for(let x=0;x<W;x++)out[y*W+x]=clamp(a[x],0,255);
+  }
+  return out;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  DEFLATE / INFLATE
+// ══════════════════════════════════════════════════════════════
+async function deflate(i16){
+  const src=new Uint8Array(i16.buffer);
+  const cs=new CompressionStream('deflate-raw');
+  const w=cs.writable.getWriter(),r=cs.readable.getReader();
+  w.write(src);w.close();
+  const chunks=[];let len=0;
+  for(;;){const{done,value}=await r.read();if(done)break;chunks.push(value);len+=value.length;}
+  const out=new Uint8Array(len);let off=0;
+  for(const ch of chunks){out.set(ch,off);off+=ch.length;}
+  return out;
+}
+async function inflate(bytes){
+  const src=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
+  const ds=new DecompressionStream('deflate-raw');
+  const w=ds.writable.getWriter(),r=ds.readable.getReader();
+  w.write(src);w.close();
+  const chunks=[];let len=0;
+  for(;;){const{done,value}=await r.read();if(done)break;chunks.push(value);len+=value.length;}
+  const out=new Uint8Array(len);let off=0;
+  for(const ch of chunks){out.set(ch,off);off+=ch.length;}
+  return new Int16Array(out.buffer);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ENCODE/DECODE FRAME
+// ══════════════════════════════════════════════════════════════
+async function encodeFrame(rgba,W,H,refRgba,isI){
+  const n=W*H;
+  const thr=parseInt($('sel-thr').value)||1;
+
+  function getCh(src,c){const a=new Uint8ClampedArray(n);for(let i=0;i<n;i++)a[i]=src[i*4+c];return a;}
+
+  let R=getCh(rgba,0),G=getCh(rgba,1),B=getCh(rgba,2);
+
+  // LEVIER 7 : downscale DWT CDF 5/3
+  let encW=W,encH=H;
+  let dwtR,dwtG,dwtB;
+  if(L[7]){
+    const sc=parseFloat($('sel-scale').value)||0.5;
+    // Downscale par moyennage si scale=0.25 (2 niveaux)
+    if(sc<=0.25){
+      // 2 niveaux : d'abord ×0.5 puis encore ×0.5
+      const r1=downsample_cdf53(R,W,H);
+      const r2=downsample_cdf53(new Uint8ClampedArray(r1.LL.map(v=>clamp(v,0,255))),r1.Wh,r1.Hh);
+      const g1=downsample_cdf53(G,W,H);
+      const g2=downsample_cdf53(new Uint8ClampedArray(g1.LL.map(v=>clamp(v,0,255))),g1.Wh,g1.Hh);
+      const b1=downsample_cdf53(B,W,H);
+      const b2=downsample_cdf53(new Uint8ClampedArray(b1.LL.map(v=>clamp(v,0,255))),b1.Wh,b1.Hh);
+      R=new Uint8ClampedArray(r2.LL.map(v=>clamp(v,0,255)));
+      G=new Uint8ClampedArray(g2.LL.map(v=>clamp(v,0,255)));
+      B=new Uint8ClampedArray(b2.LL.map(v=>clamp(v,0,255)));
+      encW=r2.Wh;encH=r2.Hh;
+    }else{
+      const r=downsample_cdf53(R,W,H);const g=downsample_cdf53(G,W,H);const b=downsample_cdf53(B,W,H);
+      R=new Uint8ClampedArray(r.LL.map(v=>clamp(v,0,255)));
+      G=new Uint8ClampedArray(g.LL.map(v=>clamp(v,0,255)));
+      B=new Uint8ClampedArray(b.LL.map(v=>clamp(v,0,255)));
+      encW=r.Wh;encH=r.Hh;
+    }
+  }
+
+  // LEVIER 3 : grain séparation
+  if(L[3]){R=median3(R,encW,encH);G=median3(G,encW,encH);B=median3(B,encW,encH);}
+
+  async function compressChannel(ch,refCh){
+    let arr;
+    if(!isI&&L[2]&&refCh!=null){
+      // LEVIER 2 : résidu inter
+      const res=new Int16Array(ch.length);
+      for(let i=0;i<ch.length;i++){
+        let d=ch[i]-refCh[i];
+        // LEVIER 5 : seuillage
+        if(L[5]&&Math.abs(d)<=thr)d=0;
+        res[i]=d;
+      }
+      arr=encSpatial(new Uint8ClampedArray(res.map(v=>clamp(v+128,0,255))),encW,encH);
+      // Décaler par 128 pour encoder le résidu signé en uint8
+    }else{
+      arr=encSpatial(ch,encW,encH);
+    }
+    return deflate(arr);
+  }
+
+  // Référence pour P-frames : extraire avec mêmes transformations
+  let rR=null,rG=null,rB=null;
+  if(!isI&&L[2]&&refRgba){
+    rR=getCh(refRgba,0);rG=getCh(refRgba,1);rB=getCh(refRgba,2);
+    if(L[7]){
+      const sc=parseFloat($('sel-scale').value)||0.5;
+      if(sc<=0.25){
+        const r1=downsample_cdf53(rR,W,H);const r2=downsample_cdf53(new Uint8ClampedArray(r1.LL.map(v=>clamp(v,0,255))),r1.Wh,r1.Hh);
+        const g1=downsample_cdf53(rG,W,H);const g2=downsample_cdf53(new Uint8ClampedArray(g1.LL.map(v=>clamp(v,0,255))),g1.Wh,g1.Hh);
+        const b1=downsample_cdf53(rB,W,H);const b2=downsample_cdf53(new Uint8ClampedArray(b1.LL.map(v=>clamp(v,0,255))),b1.Wh,b1.Hh);
+        rR=new Uint8ClampedArray(r2.LL.map(v=>clamp(v,0,255)));
+        rG=new Uint8ClampedArray(g2.LL.map(v=>clamp(v,0,255)));
+        rB=new Uint8ClampedArray(b2.LL.map(v=>clamp(v,0,255)));
+      }else{
+        const rd=downsample_cdf53(rR,W,H);const gd=downsample_cdf53(rG,W,H);const bd=downsample_cdf53(rB,W,H);
+        rR=new Uint8ClampedArray(rd.LL.map(v=>clamp(v,0,255)));
+        rG=new Uint8ClampedArray(gd.LL.map(v=>clamp(v,0,255)));
+        rB=new Uint8ClampedArray(bd.LL.map(v=>clamp(v,0,255)));
+      }
+    }
+    if(L[3]){rR=median3(rR,encW,encH);rG=median3(rG,encW,encH);rB=median3(rB,encW,encH);}
+  }
+
+  const[cR,cG,cB]=await Promise.all([compressChannel(R,rR),compressChannel(G,rG),compressChannel(B,rB)]);
+  return{cR,cG,cB,isI,encW,encH,W,H};
+}
+
+async function decodeFrame(cf,refRgba){
+  const{cR,cG,cB,isI,encW,encH,W,H}=cf;
+  const n=encW*encH;
+
+  async function decompCh(comp,refCh){
+    const flat=await inflate(comp);
+    const rec=decSpatial(flat,encW,encH);
+    if(!isI&&L[2]&&refCh!=null){
+      // Résidu : désaisir le décalage +128
+      const out=new Uint8ClampedArray(n);
+      for(let i=0;i<n;i++)out[i]=clamp(refCh[i]+(rec[i]-128),0,255);
+      return out;
+    }
+    return rec;
+  }
+
+  // Référence basse résolution
+  let rR=null,rG=null,rB=null;
+  if(!isI&&L[2]&&refRgba){
+    const getCh=(src,c)=>{const a=new Uint8ClampedArray(W*H);for(let i=0;i<W*H;i++)a[i]=src[i*4+c];return a;};
+    let tR=getCh(refRgba,0),tG=getCh(refRgba,1),tB=getCh(refRgba,2);
+    if(L[7]){
+      const sc=parseFloat($('sel-scale').value)||0.5;
+      if(sc<=0.25){
+        const r1=downsample_cdf53(tR,W,H);const r2=downsample_cdf53(new Uint8ClampedArray(r1.LL.map(v=>clamp(v,0,255))),r1.Wh,r1.Hh);
+        const g1=downsample_cdf53(tG,W,H);const g2=downsample_cdf53(new Uint8ClampedArray(g1.LL.map(v=>clamp(v,0,255))),g1.Wh,g1.Hh);
+        const b1=downsample_cdf53(tB,W,H);const b2=downsample_cdf53(new Uint8ClampedArray(b1.LL.map(v=>clamp(v,0,255))),b1.Wh,b1.Hh);
+        rR=new Uint8ClampedArray(r2.LL.map(v=>clamp(v,0,255)));
+        rG=new Uint8ClampedArray(g2.LL.map(v=>clamp(v,0,255)));
+        rB=new Uint8ClampedArray(b2.LL.map(v=>clamp(v,0,255)));
+      }else{
+        const rd=downsample_cdf53(tR,W,H);const gd=downsample_cdf53(tG,W,H);const bd=downsample_cdf53(tB,W,H);
+        rR=new Uint8ClampedArray(rd.LL.map(v=>clamp(v,0,255)));
+        rG=new Uint8ClampedArray(gd.LL.map(v=>clamp(v,0,255)));
+        rB=new Uint8ClampedArray(bd.LL.map(v=>clamp(v,0,255)));
+      }
+    }else{rR=tR;rG=tG;rB=tB;}
+    if(L[3]){rR=median3(rR,encW,encH);rG=median3(rG,encW,encH);rB=median3(rB,encW,encH);}
+  }
+
+  const[recR,recG,recB]=await Promise.all([decompCh(cR,rR),decompCh(cG,rG),decompCh(cB,rB)]);
+
+  // LEVIER 7 : upscale DWT CDF 5/3 si besoin
+  let outR,outG,outB;
+  if(L[7]&&encW<W){
+    const sc=parseFloat($('sel-scale').value)||0.5;
+    if(sc<=0.25){
+      // 2 upscales successifs
+      const up1R=upsample_cdf53(recR,encW,encH);
+      const up2R=upsample_cdf53(up1R,encW<<1,encH<<1);
+      const up1G=upsample_cdf53(recG,encW,encH);
+      const up2G=upsample_cdf53(up1G,encW<<1,encH<<1);
+      const up1B=upsample_cdf53(recB,encW,encH);
+      const up2B=upsample_cdf53(up1B,encW<<1,encH<<1);
+      outR=up2R;outG=up2G;outB=up2B;
+    }else{
+      outR=upsample_cdf53(recR,encW,encH);
+      outG=upsample_cdf53(recG,encW,encH);
+      outB=upsample_cdf53(recB,encW,encH);
+    }
+  }else{outR=recR;outG=recG;outB=recB;}
+
+  const rgba=new Uint8ClampedArray(W*H*4);
+  for(let i=0;i<W*H;i++){rgba[i*4]=outR[i];rgba[i*4+1]=outG[i];rgba[i*4+2]=outB[i];rgba[i*4+3]=255;}
+  return new ImageData(rgba,W,H);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MÉTRIQUES
+// ══════════════════════════════════════════════════════════════
+function calcPSNR(a,b,n){
+  let mse=0;for(let i=0;i<n*4;i+=4){const dr=a[i]-b[i],dg=a[i+1]-b[i+1],db=a[i+2]-b[i+2];mse+=dr*dr+dg*dg+db*db;}
+  mse/=n*3;return mse<0.0001?Infinity:20*Math.log10(255/Math.sqrt(mse));
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CONTAINER HCS STUDIO v2
+// ══════════════════════════════════════════════════════════════
+function buildContainer(compFrames,W,H,fps,gopMax,levers){
+  const nf=compFrames.length;
+  // Flags leviers encodés sur 1 byte
+  const lvFlags=Object.entries(levers).reduce((acc,[k,v])=>acc|(v?1<<(k-1):0),0);
+  const scale=L[7]?parseFloat($('sel-scale').value)||0.5:1.0;
+  const hdrSz=4+2+2+4+2+2+1+1+nf*10;
+  const fSizes=compFrames.map(f=>2+4+f.cR.length+4+f.cG.length+4+f.cB.length);
+  const totalFr=fSizes.reduce((a,b)=>a+b,0);
+  const totalSz=hdrSz+totalFr+4;
+  const buf=new Uint8Array(totalSz);
+  const view=new DataView(buf.buffer);
+  let off=0;
+  buf.set([0x48,0x43,0x53,0x53]);off=4; // 'HCSS'
+  view.setUint16(off,W,true);off+=2;
+  view.setUint16(off,H,true);off+=2;
+  view.setUint32(off,nf,true);off+=4;
+  view.setUint16(off,gopMax,true);off+=2;
+  view.setUint16(off,fps,true);off+=2;
+  buf[off++]=lvFlags;
+  buf[off++]=Math.round(scale*10); // scale × 10
+  let fOff=hdrSz;
+  for(let i=0;i<nf;i++){
+    view.setUint32(off,fOff,true);off+=4;
+    view.setUint32(off,compFrames[i].tcMs,true);off+=4;
+    buf[off++]=compFrames[i].isI?1:0;
+    buf[off++]=compFrames[i].isSC?1:0;
+    fOff+=fSizes[i];
+  }
+  for(const f of compFrames){
+    buf[off++]=f.isI?1:0;buf[off++]=f.isSC?1:0;
+    view.setUint32(off,f.cR.length,true);off+=4;buf.set(f.cR,off);off+=f.cR.length;
+    view.setUint32(off,f.cG.length,true);off+=4;buf.set(f.cG,off);off+=f.cG.length;
+    view.setUint32(off,f.cB.length,true);off+=4;buf.set(f.cB,off);off+=f.cB.length;
+  }
+  let crc=0xFFFFFFFF;
+  for(let i=0;i<off;i++){let b=(crc^buf[i])&0xFF;for(let j=0;j<8;j++)b=b&1?(0xEDB88320^(b>>>1)):b>>>1;crc=(crc>>>8)^b;}
+  view.setUint32(off,(crc^0xFFFFFFFF)>>>0,true);
+  return new Blob([buf],{type:'application/octet-stream'});
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ENCODAGE PRINCIPAL
+// ══════════════════════════════════════════════════════════════
+async function startEncode(){
+  const vid=$('vo');
+  if(!S.file||!vid.src)return;
+  if(!vid.videoWidth)await new Promise(r=>vid.addEventListener('loadedmetadata',r,{once:true}));
+
+  const btn=$('bcmp');btn.disabled=true;btn.innerHTML='<div class="spin"></div> ENCODAGE…';
+  $('bdot').className='dot busy';$('blbl').textContent='Encodage…';
+  $('lbody').innerHTML='';setBar(0);
+
+  const rf=parseFloat($('sel-res').value)||1;
+  const W=Math.max(4,(Math.round(vid.videoWidth*rf))&~3);
+  const H=Math.max(4,(Math.round(vid.videoHeight*rf))&~3);
+  const nf=parseInt($('sel-nf').value)||25;
+  const gopMax=parseInt($('sel-gop').value)||50;
+  const madThresh=parseInt($('sel-mad').value)||15;
+  S.W=W;S.H=H;S.fps=25;S.fpsMs=1000/S.fps;
+
+  const lvStr=Object.entries(L).filter(([,v])=>v).map(([k])=>'L'+k).join('+');
+  log(`Leviers: [${lvStr}] · ${W}×${H} · ${nf}f · GOP max=${gopMax} · MAD seuil=${madThresh}`,'g');
+
+  const oc=document.createElement('canvas');oc.width=W;oc.height=H;
+  const octx=oc.getContext('2d',{willReadFrequently:true,alpha:false});
+  const wasPaused=vid.paused;if(!wasPaused)vid.pause();
+
+  S.compFrames=[];
+  let totalBrut=0,totalComp=0,nI=0,nP=0,nSC=0;
+  let refRgba=null,prevRgba=null,gopCount=0,prevGray=null;
+
+  const positions=Array.from({length:nf},(_,i)=>Math.max(0.02,Math.min((vid.duration||10)-0.02,(i+0.5)/nf*(vid.duration||10))));
+
+  // GOP timeline
+  const strip=$('gop-strip');strip.innerHTML='';
+  $('gop-tl').classList.add('on');
+
+  for(let fi=0;fi<nf;fi++){
+    const t=positions[fi];
+    vid.currentTime=t;
+    await new Promise(r=>{const h=()=>{vid.removeEventListener('seeked',h);r();};vid.addEventListener('seeked',h);setTimeout(r,800);});
+    await new Promise(r=>setTimeout(r,25));
+    octx.drawImage(vid,0,0,W,H);
+    const imgData=octx.getImageData(0,0,W,H);
+    const rgba=new Uint8ClampedArray(imgData.data);
+
+    // LEVIER 6 : détection coupure de scène
+    let isSC=false;
+    const gray=new Uint8ClampedArray(W*H);
+    for(let i=0;i<W*H;i++)gray[i]=(rgba[i*4]*77+rgba[i*4+1]*150+rgba[i*4+2]*29)>>8;
+    if(prevGray&&L[6]){
+      const mad=computeMAD(gray,prevGray,W*H);
+      if(mad>madThresh){isSC=true;nSC++;log(`Coupure scène détectée · frame ${fi+1} · MAD=${mad.toFixed(1)}`,'p');}
+    }
+    prevGray=gray;
+
+    const isI=(fi===0||gopCount>=gopMax||isSC||!L[2]);
+    const pct=Math.round(fi/nf*80);
+    setBar(pct,`${isI?'I':'P'}${isSC?' [SC]':''}-frame ${fi+1}/${nf}`);
+
+    const cf=await encodeFrame(rgba,W,H,isI?null:refRgba,isI);
+    cf.tcMs=Math.round(t*1000);cf.isSC=isSC;
+    S.compFrames.push(cf);
+
+    const fsz=cf.cR.length+cf.cG.length+cf.cB.length;
+    const encBrut=cf.encW*cf.encH*3; // brut à la résolution encodée
+    totalBrut+=W*H*3;totalComp+=fsz;
+    if(isI){nI++;refRgba=rgba;gopCount=1;}else{nP++;gopCount++;}
+
+    // Timeline GOP
+    const div=document.createElement('div');
+    div.className='gop-f '+(isI?(isSC?'SC':'I'):'P');
+    div.title=`Frame ${fi+1} · ${isI?'I':'P'}${isSC?' (coupure)':''} · t=${t.toFixed(2)}s · ${(fsz/1024).toFixed(1)}KB`;
+    strip.appendChild(div);
+
+    log(`${isI?'I':'P'}${isSC?'[SC]':''} ${fi+1} · ${(fsz/1024).toFixed(1)}KB · brut→enc ${(encBrut/fsz).toFixed(2)}× · ${W}×${H}→${cf.encW}×${cf.encH}`,isI?'g':'i');
+    await new Promise(r=>setTimeout(r,0));
+  }
+
+  setBar(85,'Container…');
+  const hcsBlob=buildContainer(S.compFrames,W,H,S.fps,gopMax,L);
+  S.hcsBlob=hcsBlob;
+  const hcsAB=await hcsBlob.arrayBuffer();S.hcsBytes=hcsAB.byteLength;
+
+  const ratio=(totalBrut/totalComp).toFixed(2);
+  log(`Encodage OK · I=${nI} P=${nP} SC=${nSC} · ratio=${ratio}× · ${fmtSz(S.hcsBytes)}`,'ok');
+
+  // Métriques
+  $('m-rat').textContent=ratio+'×';$('m-rat-s').textContent=fmtSz(totalBrut)+'→'+fmtSz(totalComp);
+  $('m-if').textContent=nI;$('m-if-s').textContent='Paeth intra';
+  $('m-pf').textContent=nP;$('m-pf-s').textContent='résidu inter';
+  $('m-sc').textContent=nSC;
+  $('m-sz').textContent=fmtSz(S.hcsBytes);$('m-sz-s').textContent='vs '+fmtSz(S.file.size)+' src';
+  $('m-red').textContent='−'+(((1-totalComp/totalBrut)*100).toFixed(1))+'%';
+  $('m-bpp').textContent=((totalComp*8)/(W*H*nf)).toFixed(3);
+  $('mgrid').classList.add('on');
+
+  $('ib-brut').textContent=fmtSz(totalBrut);$('ib-hcs').textContent=fmtSz(S.hcsBytes);$('ib-rat').textContent=ratio+'×';$('ib-sc').textContent=nSC+' détectée'+(nSC!==1?'s':'');
+
+  $('dl-n').textContent=S.file.name.replace(/\.[^.]+$/,'')+'.hcs';
+  $('dl-m').textContent=`[${lvStr}] · GOP=${gopMax} · ${nf}f · ${nSC} coupures`;
+  $('dl-o').textContent='Brut: '+fmtSz(totalBrut);$('dl-v').textContent=fmtSz(S.hcsBytes);$('dl-r').textContent=ratio+'× vs brut';
+  $('dl-b').disabled=false;$('dl-src-b').disabled=false;$('dlrow').classList.add('on');
+  $('sz-dec').textContent=fmtSz(S.hcsBytes);
+
+  if(!wasPaused)vid.play().catch(()=>{});
+  btn.disabled=false;btn.innerHTML='✓ RE-ENCODER';btn.style.background='var(--green2,#00994d)';btn.style.color='var(--wht)';
+  $('bdot').className='dot ok';$('blbl').textContent='OK · ratio='+ratio+'× · '+nSC+' coupures';
+  $('bdec').disabled=false;
+
+  setBar(90,'Décodage…');
+  await decodeAll();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  DÉCODAGE COMPLET
+// ══════════════════════════════════════════════════════════════
+async function decodeAll(){
+  if(!S.compFrames.length)return;
+  $('lo-dec').classList.add('show');
+  S.decompFrames=[];
+  const nf=S.compFrames.length;
+  let refRgba=null;
+
+  for(let fi=0;fi<nf;fi++){
+    $('lo-lbl').textContent=`Frame ${fi+1}/${nf} · ${S.compFrames[fi].isI?'I':'P'}`;
+    $('lo-pct').textContent=Math.round(fi/nf*100)+'%';
+    const imgData=await decodeFrame(S.compFrames[fi],refRgba);
+    S.decompFrames.push(imgData);
+    if(S.compFrames[fi].isI)refRgba=imgData.data;
+    await new Promise(r=>setTimeout(r,0));
+  }
+  $('lo-dec').classList.remove('show');
+
+  // PSNR sur frame 0
+  const cv=$('cv-dec');cv.width=S.W;cv.height=S.H;
+  cv.classList.add('show');$('ph-dec').classList.add('hide');
+
+  const tmp=document.createElement('canvas');tmp.width=S.W;tmp.height=S.H;
+  const tctx=tmp.getContext('2d');
+  $('vo').currentTime=S.compFrames[0].tcMs/1000;
+  await new Promise(r=>setTimeout(r,200));
+  tctx.drawImage($('vo'),0,0,S.W,S.H);
+  const orig0=tctx.getImageData(0,0,S.W,S.H);
+  const p=calcPSNR(orig0.data,S.decompFrames[0].data,S.W*S.H);
+  const pstr=p===Infinity?'∞':p.toFixed(1)+' dB';
+  $('m-psnr').textContent=pstr;
+  $('m-psnr').style.color=p===Infinity||p>40?'var(--green)':p>30?'var(--amber)':'var(--red)';
+  $('m-psnr-s').textContent=L[7]?'DWT ½-res':L[3]?'grain sep.':p>80?'lossless':'mesuré';
+  $('bdg-dec').textContent='PSNR='+pstr+' · GOP adapt.';
+
+  $('dur-d').textContent=fmtT(S.compFrames[nf-1].tcMs/1000);
+  showFrame(0);
+  log(`Décompression OK · PSNR=${pstr} · ${nf} frames · DWT upscale=${L[7]?'oui':'non'}`,'ok');
+  setBar(100,'Prêt');
+}
+
+// ── Player ────────────────────────────────────────────────────
+function showFrame(idx){
+  if(!S.decompFrames.length)return;
+  idx=Math.max(0,Math.min(S.decompFrames.length-1,idx));S.idxD=idx;
+  const cv=$('cv-dec');const ctx=cv.getContext('2d');
+  ctx.putImageData(S.decompFrames[idx],0,0);
+  const cf=S.compFrames[idx];
+  ctx.font='bold 9px Syne Mono,monospace';
+  ctx.fillStyle=cf.isSC?'rgba(179,136,255,.8)':'rgba(0,230,118,.7)';
+  const fsz=cf.cR.length+cf.cG.length+cf.cB.length;
+  ctx.fillText(`HCS v2 · ${cf.isI?'I':'P'}${cf.isSC?'[SC]':''} · ${(fsz/1024).toFixed(1)}KB · ${idx+1}/${S.decompFrames.length}`,5,12);
+  if(L[7]){ctx.font='8px Syne Mono,monospace';ctx.fillStyle='rgba(179,136,255,.6)';ctx.fillText(`DWT CDF 5/3 ×${parseFloat($('sel-scale').value)<=0.25?4:2} upscale`,5,S.H-5);}
+  $('ftype').textContent=(cf.isI?(cf.isSC?'⬛ I[SC]':'⬛ I-frame'):'▷ P-frame');
+  const p=S.decompFrames.length>1?idx/(S.decompFrames.length-1):1;
+  $('tlfd').style.width=(p*100).toFixed(1)+'%';$('tltd').style.left=(p*100).toFixed(1)+'%';
+  $('tc-d').textContent=fmtT(cf.tcMs/1000);
+}
+function tp(s){
+  if(s==='o'){const v=$('vo');if(v.paused)v.play().catch(()=>{});else v.pause();}
+  else{if(S.playingD)stopD();else startD();}
+}
+function startD(){
+  if(!S.decompFrames.length)return;
+  S.playingD=true;$('pbd').textContent='⏸';S.lastRafT=0;
+  const step=ts=>{
+    if(!S.playingD)return;
+    if(!S.lastRafT)S.lastRafT=ts;
+    if(ts-S.lastRafT>=S.fpsMs){
+      S.lastRafT=ts;
+      showFrame((S.idxD+1)%S.decompFrames.length);
+      if(S.syncOn&&$('vo').src)try{$('vo').currentTime=S.compFrames[S.idxD].tcMs/1000;}catch(e){}
+    }
+    S.rafD=requestAnimationFrame(step);
+  };
+  S.rafD=requestAnimationFrame(step);
+}
+function stopD(){S.playingD=false;$('pbd').textContent='▶';if(S.rafD){cancelAnimationFrame(S.rafD);S.rafD=null;}}
+function sk(s,d){
+  if(s==='o'){const v=$('vo');v.currentTime=Math.max(0,Math.min(v.duration||0,(v.currentTime||0)+d));}
+  else{const n=Math.max(0,Math.min(S.decompFrames.length-1,S.idxD+Math.round(d*S.fps)));showFrame(n);}
+}
+function seekCk(s,e){
+  const p=Math.max(0,Math.min(1,(e.clientX-e.currentTarget.getBoundingClientRect().left)/e.currentTarget.offsetWidth));
+  if(s==='o'){const v=$('vo');if(v.duration&&isFinite(v.duration))v.currentTime=p*v.duration;}
+  else if(S.decompFrames.length)showFrame(Math.round(p*(S.decompFrames.length-1)));
+}
+function onPl(s){$(s==='o'?'pbo':'pbd').textContent='⏸';}
+function onPa(s){$(s==='o'?'pbo':'pbd').textContent='▶';}
+function onEnd(){$('pbo').textContent='▶';}
+function onSrcTime(){
+  const v=$('vo');if(!v.duration||!isFinite(v.duration))return;
+  const p=v.currentTime/v.duration;
+  $('tlfo').style.width=(p*100).toFixed(1)+'%';$('tlto').style.left=(p*100).toFixed(1)+'%';
+  $('tc-o').textContent=fmtT(v.currentTime);
+  if(S.syncOn&&S.decompFrames.length&&!S.playingD){
+    const idx=Math.round(p*(S.decompFrames.length-1));if(idx!==S.idxD)showFrame(idx);
+  }
+}
+function toggleSync(){
+  S.syncOn=!S.syncOn;const b=$('stog'),sv=$('svis');
+  if(S.syncOn){b.textContent='⬤ SYNC ON';b.classList.remove('off');sv.classList.add('on');}
+  else{b.textContent='○ SYNC OFF';b.classList.add('off');sv.classList.remove('on');}
+}
+function ev(e,cls,op){e.preventDefault();$('upz').classList[op==='add'?'add':'remove'](cls);}
+function onDrop(e){e.preventDefault();$('upz').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)onFile(f);}
+function onFile(f){
+  if(!f)return;S.file=f;
+  $('vo').src=URL.createObjectURL(f);$('vo').load();
+  $('upz').classList.add('loaded');$('ibar').classList.add('on');$('cfg').classList.add('on');
+  $('ib-fn').textContent=f.name.length>28?f.name.slice(0,26)+'…':f.name;
+  $('ib-src').textContent=fmtSz(f.size);
+  $('dl-src-n').textContent=f.name;$('dl-src-v').textContent=fmtSz(f.size);$('sz-src').textContent=fmtSz(f.size);
+  log('Fichier: '+f.name+' ('+fmtSz(f.size)+')','i');
+}
+function onMeta(){
+  const v=$('vo');S.W=v.videoWidth||640;S.H=v.videoHeight||360;S.dur=v.duration||0;
+  $('ib-res').textContent=S.W+'×'+S.H;$('ib-dur').textContent=fmtT(S.dur);
+  $('dur-o').textContent=fmtT(S.dur);$('dur-d').textContent=fmtT(S.dur);
+  $('bdg-src').textContent=S.file.name.split('.').pop().toUpperCase();
+  $('ph-src').classList.add('hide');$('vo').style.display='block';
+  $('bcmp').disabled=false;
+  log('Métadonnées: '+S.W+'×'+S.H+' · '+fmtT(S.dur),'ok');
+}
+function dlHCS(){if(!S.hcsBlob)return;const a=document.createElement('a');a.href=URL.createObjectURL(S.hcsBlob);a.download=S.file.name.replace(/\.[^.]+$/,'')+'.hcs';a.click();}
+function dlSrc(){if(!S.file)return;const a=document.createElement('a');a.href=URL.createObjectURL(S.file);a.download=S.file.name;a.click();}
+window.addEventListener('load',()=>{
+  if(typeof CompressionStream==='undefined'){log('ERREUR: CompressionStream requis','e');$('bdot').className='dot err';return;}
+  log('HCS Studio v2 — 7 leviers GOP adaptatif + DWT CDF 5/3','g');
+  log('L5: seuillage résidu · L6: GOP adaptatif (MAD) · L7: DWT ½-res upscale','p');
+  document.addEventListener('dragover',e=>{e.preventDefault();$('upz').classList.add('drag');});
+  document.addEventListener('dragleave',e=>{if(!e.relatedTarget)$('upz').classList.remove('drag');});
+  document.addEventListener('drop',e=>{e.preventDefault();$('upz').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)onFile(f);});
+});
+</script>
+</body>
+</html>

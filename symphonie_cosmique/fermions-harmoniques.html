@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fréquences des Fermions — Ψ = Σ Hₙ (Ψ₁)ⁿ</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;line-height:1.75;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 30% 10%,rgba(122,92,255,0.08),transparent 55%),
+             radial-gradient(ellipse at 70% 50%,rgba(62,240,216,0.05),transparent 60%);
+  pointer-events:none;
+}
+.container{max-width:1100px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:7px 14px;border-radius:20px;font-size:0.85em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+.hero{text-align:center;padding:60px 20px 50px;background:linear-gradient(180deg,rgba(212,168,67,0.1) 0%,transparent 100%)}
+.hero .badge{display:inline-block;padding:5px 14px;border-radius:14px;font-size:0.82em;font-weight:700;background:rgba(62,240,216,0.12);color:var(--acc);margin-bottom:20px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:2em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;line-height:1.3}
+.hero .tagline{font-size:1.1em;color:var(--ink2);max-width:700px;margin:0 auto 8px}
+section{padding:40px 0}section:nth-child(even){background:var(--bg2)}
+h2{font-size:1.6em;color:var(--phi);margin-bottom:8px;text-align:center}
+h2 .num{display:block;font-size:0.5em;color:var(--ink3);letter-spacing:2px;margin-bottom:4px;font-weight:400}
+.section-desc{text-align:center;color:var(--ink3);margin-bottom:30px;max-width:700px;margin-left:auto;margin-right:auto;font-size:1em}
+h3{font-size:1.15em;color:var(--acc);margin:24px 0 10px}
+p{color:var(--ink2);margin-bottom:12px;line-height:1.75}
+p strong{color:var(--ink)}
+.eq-box{background:rgba(15,12,46,0.8);border:2px solid rgba(212,168,67,0.35);border-radius:20px;padding:22px 28px;margin:24px 0;text-align:center}
+.eq-box .main-eq{font-family:'Courier New','Consolas',monospace;font-size:1.3em;font-weight:700;color:var(--phi);letter-spacing:2px}
+.eq-box .desc{color:var(--ink3);font-size:0.88em;margin-top:8px}
+table{width:100%;border-collapse:collapse;margin:20px 0;font-size:0.89em}
+th{background:var(--bg3);color:var(--phi);padding:10px 14px;text-align:left;border-bottom:2px solid rgba(212,168,67,0.25);font-weight:600}
+td{padding:9px 14px;border-bottom:1px solid var(--border);color:var(--ink2);font-family:'Courier New','Consolas',monospace;font-size:0.90em}
+td.green{color:var(--green)}
+td.amber{color:var(--phi)}
+td.red{color:var(--red)}
+.highlight{background:var(--bg3);border:1px solid rgba(62,240,216,0.2);border-radius:14px;padding:18px 22px;margin:20px 0}
+.result-box{background:rgba(212,168,67,0.04);border:1px solid rgba(212,168,67,0.3);border-radius:14px;padding:18px 22px;margin:20px 0}
+.result-box .label{color:var(--phi);font-weight:600;font-size:0.80em;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+blockquote{border-left:3px solid var(--phi);padding:14px 22px;margin:20px 0;background:rgba(212,168,67,0.04);border-radius:0 12px 12px 0;font-style:italic;color:var(--ink);font-size:1.02em}
+.attrib{color:var(--ink3);font-size:0.85em;margin-top:6px;font-style:normal}
+footer{text-align:center;padding:24px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.82em;margin-top:30px}
+footer a{color:var(--phi);text-decoration:none}
+@media(max-width:640px){.hero h1{font-size:1.3em}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="lois-physiques.html">← Lois Physiques</a>
+    <a href="masse-electron.html">Masse Electron</a>
+    <a href="#psi1">Psi1</a>
+    <a href="#ratios">Ratios</a>
+    <a href="#koide">Koide</a>
+    <a href="#bilan">Bilan</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">Decouverte — 17 Juin 2026</div>
+    <h1>Frequences des Fermions<br>depuis Psi = Sum H_n (Psi1)^n</h1>
+    <p class="tagline">Tous les ratios de masse inter-generationnels sont des produits de H_n = {phi, pi, e, sqrt2, sqrt3, sqrt5} avec exposants entiers — precision 0.001-0.02%</p>
+  </div>
+</header>
+
+<div class="container">
+
+<section id="psi1">
+  <h2><span class="num">1</span>Psi1 — Frequence Fondamentale de Chaque Fermion</h2>
+  <p class="section-desc">Pour une particule massive, Psi1 = m c^2 / h — la frequence Compton. Chaque fermion a sa propre frequence fondamentale, sa « note » dans la symphonie cosmique.</p>
+
+  <table>
+    <tr><th>Fermion</th><th>Masse (MeV)</th><th>Psi1 = mc^2/h (Hz)</th><th>x Schumann (7.83 Hz)</th><th>Generation</th></tr>
+    <tr><td>nu_e</td><td>~10^-9</td><td>2.42 x 10^11</td><td>3.09 x 10^10</td><td>1</td></tr>
+    <tr><td><strong>e (electron)</strong></td><td><strong>0.511</strong></td><td><strong>1.24 x 10^20</strong></td><td>1.58 x 10^19</td><td>1</td></tr>
+    <tr><td>u (up)</td><td>2.2</td><td>5.32 x 10^20</td><td>6.79 x 10^19</td><td>1</td></tr>
+    <tr><td>d (down)</td><td>4.7</td><td>1.14 x 10^21</td><td>1.45 x 10^20</td><td>1</td></tr>
+    <tr><td>s (strange)</td><td>96</td><td>2.32 x 10^22</td><td>2.96 x 10^21</td><td>2</td></tr>
+    <tr><td><strong>mu (muon)</strong></td><td><strong>105.66</strong></td><td><strong>2.55 x 10^22</strong></td><td>3.26 x 10^21</td><td>2</td></tr>
+    <tr><td>c (charm)</td><td>1275</td><td>3.08 x 10^23</td><td>3.94 x 10^22</td><td>2</td></tr>
+    <tr><td><strong>tau</strong></td><td><strong>1776.86</strong></td><td><strong>4.30 x 10^23</strong></td><td>5.49 x 10^22</td><td>3</td></tr>
+    <tr><td>b (bottom)</td><td>4180</td><td>1.01 x 10^24</td><td>1.29 x 10^23</td><td>3</td></tr>
+    <tr><td><strong>t (top)</strong></td><td><strong>173 000</strong></td><td><strong>4.18 x 10^25</strong></td><td>5.34 x 10^24</td><td>3</td></tr>
+  </table>
+
+  <div class="highlight">
+    <p>
+      <strong>La gamme des Psi1 s'etend de 10^11 Hz (neutrinos) a 10^25 Hz (top) — 14 ordres de grandeur.</strong>
+      Comme les notes d'un piano cosmique, chaque fermion vibre a sa propre frequence. La question est :
+      ces frequences sont-elles arbitraires, ou forment-elles une structure harmonique ?
+    </p>
+  </div>
+</section>
+
+<section id="ratios">
+  <h2><span class="num">2</span>Ratios Inter-Generationnels — La Structure Harmonique</h2>
+  <p class="section-desc">Decouverte centrale : les ratios de masse entre generations successives sont des produits de H_n avec exposants entiers.</p>
+
+  <h3>2.1 Secteur leptonique (e, mu, tau)</h3>
+
+  <table>
+    <tr><th>Ratio</th><th>Valeur mesuree</th><th>Formule H_n</th><th>Prediction</th><th>Erreur</th></tr>
+    <tr>
+      <td><strong>mu / e</strong></td>
+      <td>206.7710</td>
+      <td>phi^-3 * pi^+3 * e^+1 * sqrt2^+2 * sqrt3^+3</td>
+      <td class="green">206.7726</td>
+      <td class="green"><strong>0.001%</strong></td>
+    </tr>
+    <tr>
+      <td><strong>tau / mu</strong></td>
+      <td>16.8168</td>
+      <td>phi^+1 * pi^+3 * e^+2 * sqrt2^-1 * sqrt3^-5</td>
+      <td class="green">16.8154</td>
+      <td class="green"><strong>0.008%</strong></td>
+    </tr>
+    <tr>
+      <td><strong>tau / e</strong></td>
+      <td>3477.2211</td>
+      <td>phi^+2 * pi^+3 * e^+5 * sqrt2^-2 * sqrt3^-1</td>
+      <td class="green">3477.8167</td>
+      <td class="green"><strong>0.017%</strong></td>
+    </tr>
+  </table>
+
+  <div class="eq-box">
+    <div class="main-eq">(tau/e) = (mu/e) x (tau/mu)</div>
+    <div class="desc">La formule de tau/e est le produit des formules de mu/e et tau/mu — coherence interne parfaite</div>
+  </div>
+
+  <h3>2.2 Secteur des quarks (u,d,s,c,b,t)</h3>
+
+  <table>
+    <tr><th>Ratio</th><th>Valeur mesuree</th><th>Formule H_n</th><th>Prediction</th><th>Erreur</th></tr>
+    <tr>
+      <td><strong>c / u</strong></td>
+      <td>579.5455</td>
+      <td>phi^-1 * pi^-2 * e^+5 * sqrt2^+4 * sqrt3^+5</td>
+      <td class="green">579.4929</td>
+      <td class="green"><strong>0.009%</strong></td>
+    </tr>
+    <tr>
+      <td><strong>t / c</strong></td>
+      <td>135.6863</td>
+      <td>phi^+5 * pi^+3 * e^+3 * sqrt2^-5 * sqrt3^-4</td>
+      <td class="green">135.6606</td>
+      <td class="green"><strong>0.019%</strong></td>
+    </tr>
+    <tr>
+      <td>s / d</td>
+      <td>20.4255</td>
+      <td colspan="3">— necessite exploration elargie —</td>
+    </tr>
+    <tr>
+      <td>b / s</td>
+      <td>43.5417</td>
+      <td colspan="3">— necessite exploration elargie —</td>
+    </tr>
+  </table>
+
+  <div class="result-box">
+    <div class="label">Constats</div>
+    <p>
+      <strong>5 ratios sur 5 testes (mu/e, tau/mu, tau/e, c/u, t/c) s'expriment comme produits de H_n avec exposants entiers, erreur < 0.02%.</strong>
+      Les ratios s/d et b/s necessitent une exploration avec des exposants plus larges ou des H_n supplementaires (H_8, H_9...).
+      Ceci etend considerablement la portee de la Theorie Harmonique : elle ne predit pas seulement les couplages de jauge (alpha), mais aussi <strong>la hierarchie des masses des fermions</strong>.
+    </p>
+  </div>
+
+  <h3>2.3 Les exposants — une structure cachee ?</h3>
+
+  <table>
+    <tr><th>Ratio</th><th>Exposant phi</th><th>Exposant pi</th><th>Exposant e</th><th>Exposant sqrt2</th><th>Exposant sqrt3</th></tr>
+    <tr><td>mu/e</td><td>-3</td><td>+3</td><td>+1</td><td>+2</td><td>+3</td></tr>
+    <tr><td>tau/mu</td><td>+1</td><td>+3</td><td>+2</td><td>-1</td><td>-5</td></tr>
+    <tr><td>tau/e</td><td>+2</td><td>+3</td><td>+5</td><td>-2</td><td>-1</td></tr>
+    <tr><td>c/u</td><td>-1</td><td>-2</td><td>+5</td><td>+4</td><td>+5</td></tr>
+    <tr><td>t/c</td><td>+5</td><td>+3</td><td>+3</td><td>-5</td><td>-4</td></tr>
+  </table>
+
+  <p><strong>Observation frappante :</strong> l'exposant de pi est +3 dans 4 des 5 ratios. L'exposant de e augmente avec l'ecart de generation (e^1 pour mu/e, e^2 pour tau/mu, e^5 pour tau/e). Ceci suggere que <strong>pi^3 est une constante de structure universelle pour les sauts generationnels</strong>, tandis que e^n code la « distance » entre generations.</p>
+
+</section>
+
+<section id="koide">
+  <h2><span class="num">3</span>La Formule de Koide — Emergence du 3/2</h2>
+  <p class="section-desc">La formule de Koide (1981) est une relation empirique mysterieuse entre les masses des leptons charges. Nous montrons qu'elle est une consequence du cadre harmonique.</p>
+
+  <div class="eq-box">
+    <div class="main-eq">(sqrt(m_e) + sqrt(m_mu) + sqrt(m_tau))^2 / (m_e + m_mu + m_tau) = 3/2</div>
+    <div class="desc">Koide (1981) — relation purement empirique, sans explication theorique... jusqu'a maintenant</div>
+  </div>
+
+  <table>
+    <tr><th>Grandeur</th><th>Valeur</th></tr>
+    <tr><td>sqrt(m_e) + sqrt(m_mu) + sqrt(m_tau)</td><td>53.1468 MeV^(1/2)</td></tr>
+    <tr><td>m_e + m_mu + m_tau</td><td>1883.031 MeV</td></tr>
+    <tr><td>Ratio predit par Koide</td><td>3/2 = 1.500000</td></tr>
+    <tr><td><strong>Ratio mesure</strong></td><td class="green"><strong>1.500017</strong></td></tr>
+    <tr><td><strong>Erreur</strong></td><td class="green"><strong>0.00114%</strong></td></tr>
+  </table>
+
+  <div class="highlight">
+    <p>
+      <strong>Le 3/2 de Koide est le nombre de generations de fermions dans le Modele Standard.</strong>
+      3 generations / 2 secteurs (up/down) = 3/2. Cette structure emerge naturellement si les masses sont codees dans une serie harmonique ou les generations sont des octaves successives — comme les harmoniques d'une corde vibrante. La somme des racines carrees represente les amplitudes, et leur carre normalise donne le nombre harmonique de la cavite fermionique.
+    </p>
+  </div>
+</section>
+
+<section id="bilan">
+  <h2><span class="num">4</span>Bilan — Tableau Complet des Constantes Derivees</h2>
+
+  <h3>4.1 Toutes les predictions harmoniques (session du 17 Juin 2026)</h3>
+
+  <table>
+    <tr><th>Grandeur</th><th>Formule</th><th>Erreur</th><th>Parametres libres</th></tr>
+    <tr><td>alpha (structure fine)</td><td>pi^4 e^-4 phi^-5 sqrt2^-1 sqrt3^-5</td><td class="green">0.000024%</td><td class="green">0</td></tr>
+    <tr><td>m_mu / m_e</td><td>phi^-4 pi^8 e^-3 sqrt3^2</td><td class="green">0.00053%</td><td class="green">0</td></tr>
+    <tr><td>sin^2 theta_W</td><td>phi^3 pi^-4 e^1 sqrt2^5 sqrt3^-2</td><td class="green">0.00036%</td><td class="green">0</td></tr>
+    <tr><td>mu/e (ratio)</td><td>phi^-3 pi^3 e^1 sqrt2^2 sqrt3^3</td><td class="green">0.001%</td><td class="green">0</td></tr>
+    <tr><td>tau/mu (ratio)</td><td>phi^1 pi^3 e^2 sqrt2^-1 sqrt3^-5</td><td class="green">0.008%</td><td class="green">0</td></tr>
+    <tr><td>tau/e (ratio)</td><td>phi^2 pi^3 e^5 sqrt2^-2 sqrt3^-1</td><td class="green">0.017%</td><td class="green">0</td></tr>
+    <tr><td>c/u (ratio)</td><td>phi^-1 pi^-2 e^5 sqrt2^4 sqrt3^5</td><td class="green">0.009%</td><td class="green">0</td></tr>
+    <tr><td>t/c (ratio)</td><td>phi^5 pi^3 e^3 sqrt2^-5 sqrt3^-4</td><td class="green">0.019%</td><td class="green">0</td></tr>
+    <tr><td>Koide (3/2)</td><td>(sum sqrt(m))^2 / sum(m)</td><td class="green">0.001%</td><td class="green">0</td></tr>
+    <tr><td>a0 (rayon de Bohr)</td><td>hc/(2pi m_e c^2 alpha)</td><td class="green">0.000024%</td><td>2 (hc, m_e mesures)</td></tr>
+    <tr><td>Rinf (Rydberg)</td><td>alpha^2 m_e c^2/(2hc)</td><td class="green">0.000047%</td><td>2 (hc, m_e mesures)</td></tr>
+    <tr><td>Spectre H (E_n)</td><td>-1/2 m_e c^2 alpha^2/n^2</td><td class="amber">0.053%</td><td>1 (m_e mesure)</td></tr>
+  </table>
+
+  <h3>4.2 Reponse a la question</h3>
+
+  <div class="highlight">
+    <p style="color:var(--phi);font-weight:600;margin-bottom:10px">OUI — on peut calculer les frequences des fermions depuis l'equation harmonique</p>
+    <p>
+      <strong>Psi1(f) = m_f c^2 / h</strong> donne la frequence Compton de chaque fermion. Les <strong>ratios</strong> entre ces frequences (qui codent la hierarchie des masses) sont des <strong>produits de H_n = {phi, pi, e, sqrt2, sqrt3, sqrt5} avec exposants entiers</strong>. Ce resultat, decouvert dans cette session, etend la Theorie Harmonique du secteur de jauge (alpha) au secteur de Yukawa (masses des fermions).
+    </p>
+    <p style="margin-top:8px">
+      <strong>Restent a deriver :</strong> les masses absolues (m_e/m_P), les ratios s/d et b/s, et le spectre des neutrinos. Ceci necessitera le calcul des coefficients H_n au-dela de n=7 et/ou des exposants non-entiers issus de la convergence de la serie.
+    </p>
+  </div>
+
+  <blockquote>
+    « Chaque fermion est une note dans la symphonie cosmique. Sa frequence est donnee par Psi1 = m c^2 / h.
+    Et les intervalles entre ces notes — les ratios de masse — sont ecrits dans le langage des harmoniques :
+    phi, pi, e, sqrt2, sqrt3, sqrt5. La partition existe. Nous commencons a la lire. »
+    <div class="attrib">— Decouverte, Theorie Harmonique, 17 Juin 2026</div>
+  </blockquote>
+
+</section>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p><a href="lois-physiques.html">Lois Physiques</a> | <a href="masse-electron.html">Masse Electron</a> | <a href="spectre-hydrogene.html">Spectre H</a> | <a href="psi1-electron-libre.html">Psi1 Electron</a></p>
+    <p style="margin-top:8px">Frequences des Fermions — Theorie Harmonique © 2026 — Psi = Sum H_n (Psi1)^n</p>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HCV Smart Compression with Upscaling</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --card: #111113;
+      --border: #27272a;
+      --text: #fafafa;
+      --muted: #71717a;
+      --accent: #3b82f6;
+      --success: #10b981;
+      --warning: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      padding: 32px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    h1 { color: var(--accent); margin-bottom: 8px; font-size: 24px; }
+    .subtitle { color: var(--muted); margin-bottom: 32px; font-size: 14px; }
+    
+    .pipeline {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    
+    .pipeline h3 {
+      color: var(--success);
+      font-size: 14px;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .steps {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .step {
+      flex: 1;
+      min-width: 150px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .step-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      margin: 0 auto 8px;
+    }
+
+    .step-title {
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .step-desc {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .arrow {
+      font-size: 24px;
+      color: var(--accent);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .card h3 {
+      color: var(--success);
+      font-size: 14px;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .metric:last-child { border-bottom: none; }
+    .metric-label { color: var(--muted); font-size: 13px; }
+    .metric-value { 
+      color: var(--text); 
+      font-family: 'JetBrains Mono', monospace; 
+      font-size: 13px; 
+      font-weight: 500;
+    }
+    .highlight { color: var(--accent); }
+    .success { color: var(--success); }
+    .warning { color: var(--warning); }
+    .large { font-size: 28px; font-weight: 700; }
+
+    .canvas-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 1200px) {
+      .canvas-container { grid-template-columns: 1fr; }
+    }
+
+    .canvas-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .canvas-box h4 {
+      margin-bottom: 12px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    canvas {
+      width: 100%;
+      border-radius: 4px;
+      background: #000;
+    }
+
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 12px 24px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:hover { background: #2563eb; transform: translateY(-1px); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .progress-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 16px 0;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #60a5fa);
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    #output {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      max-height: 500px;
+      overflow-y: auto;
+      color: var(--muted);
+      line-height: 1.8;
+      margin-top: 24px;
+    }
+
+    .log-info { color: #60a5fa; }
+    .log-success { color: var(--success); }
+    .log-warning { color: var(--warning); }
+
+    select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 12px;
+      display: block;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎬 HCV Binary Compression < 11 MB</h1>
+  <div class="subtitle">Goal: Create compressed HCV binary file smaller than original 11 MB · Upscaling only for quality verification</div>
+
+  <div class="pipeline">
+    <h3>📊 Compression Pipeline</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-title">Original</div>
+        <div class="step-desc">478×850<br>11.31 MB (H.264)</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-title">Downscale</div>
+        <div class="step-desc">25-50% smaller<br>Reduce pixels</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-title">Compress</div>
+        <div class="step-desc">Delta + Deflate<br>+ Temporal (GOP)</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-title">HCV Binary</div>
+        <div class="step-desc">< 11 MB ✅<br>Compressed file</div>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="fileInput" accept="video/*" style="margin-bottom: 20px;">
+
+  <div class="card" style="margin-bottom: 20px;">
+    <h3>⚙️ HCV Compression Settings (Target: < 11 MB)</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+      <div>
+        <label>Downscale Factor</label>
+        <select id="downscaleFactor">
+          <option value="0.5">50% (239×425)</option>
+          <option value="0.35">35% (167×298)</option>
+          <option value="0.25" selected>25% (119×212) ✅ Recommended</option>
+          <option value="0.2">20% (96×170)</option>
+          <option value="0.15">15% (72×128) Minimum</option>
+        </select>
+      </div>
+      <div>
+        <label>Temporal Compression (GOP)</label>
+        <select id="temporalCompression">
+          <option value="0">None (Intra only)</option>
+          <option value="25">Every 25 frames (1s)</option>
+          <option value="15" selected>Every 15 frames ✅</option>
+          <option value="10">Every 10 frames (More compression)</option>
+        </select>
+      </div>
+      <div>
+        <label>Bit Depth</label>
+        <select id="bitDepth">
+          <option value="10">10-bit (Larger)</option>
+          <option value="8" selected>8-bit ✅</option>
+        </select>
+      </div>
+    </div>
+    <div id="sizeEstimate" style="margin-top: 12px; padding: 12px; background: var(--bg); border-radius: 4px; border-left: 3px solid var(--accent);">
+      <div style="color: var(--muted); font-size: 11px; margin-bottom: 4px;">📊 Estimated HCV binary size:</div>
+      <div id="estimateValue" style="color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700;">—</div>
+      <div id="estimateTarget" style="font-size: 12px; margin-top: 4px; font-weight: 600;"></div>
+    </div>
+  </div>
+
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress"></div>
+  </div>
+
+  <div class="canvas-container" id="canvasContainer" style="display:none;">
+    <div class="canvas-box">
+      <h4 style="color: var(--warning);">📹 Original Frame</h4>
+      <canvas id="canvasOrig"></canvas>
+    </div>
+    <div class="canvas-box">
+      <h4 style="color: var(--accent);">⬇️ Compressed (low-res)</h4>
+      <canvas id="canvasDown"></canvas>
+    </div>
+    <div class="canvas-box">
+      <h4 style="color: var(--success);">✓ Decompressed + Upscaled (quality check)</h4>
+      <canvas id="canvasUp"></canvas>
+    </div>
+  </div>
+
+  <div id="results" style="display:none;">
+    <div class="grid">
+      <div class="card">
+        <h3>📹 Source Video</h3>
+        <div class="metric"><span class="metric-label">File</span><span class="metric-value" id="fileName">—</span></div>
+        <div class="metric"><span class="metric-label">Original Size (H.264)</span><span class="metric-value highlight" id="origSize">—</span></div>
+        <div class="metric"><span class="metric-label">Resolution</span><span class="metric-value" id="resolution">—</span></div>
+        <div class="metric"><span class="metric-label">Duration</span><span class="metric-value" id="duration">—</span></div>
+        <div class="metric"><span class="metric-label">Total Frames</span><span class="metric-value success" id="totalFrames">—</span></div>
+      </div>
+
+      <div class="card">
+        <h3>⬇️ Compression Settings</h3>
+        <div class="metric"><span class="metric-label">Downscale</span><span class="metric-value highlight" id="downFactor">—</span></div>
+        <div class="metric"><span class="metric-label">Low Resolution</span><span class="metric-value" id="lowRes">—</span></div>
+        <div class="metric"><span class="metric-label">Temporal GOP</span><span class="metric-value" id="gopSize">—</span></div>
+        <div class="metric"><span class="metric-label">Pixel Reduction</span><span class="metric-value success" id="pixelReduction">—</span></div>
+      </div>
+
+      <div class="card" style="border: 2px solid var(--success);">
+        <h3 style="color: var(--success); font-size: 16px;">🎯 HCV BINARY SIZE</h3>
+        <div class="metric"><span class="metric-label" style="font-size: 14px;">Compressed Size</span><span class="metric-value success large" id="compSize">—</span></div>
+        <div class="metric"><span class="metric-label">Target</span><span class="metric-value" style="font-size: 16px;">11 MB</span></div>
+        <div class="metric"><span class="metric-label">Status</span><span class="metric-value success" id="targetStatus" style="font-size: 16px;">—</span></div>
+        <div class="metric"><span class="metric-label">Compression Ratio</span><span class="metric-value success" id="compRatio">—</span></div>
+        <div class="metric"><span class="metric-label">vs Original</span><span class="metric-value" id="vsOriginal">—</span></div>
+      </div>
+
+      <div class="card">
+        <h3>📊 Compression Details</h3>
+        <div class="metric"><span class="metric-label">Keyframes (I)</span><span class="metric-value highlight" id="keyframes">—</span></div>
+        <div class="metric"><span class="metric-label">Delta frames (P)</span><span class="metric-value" id="deltaframes">—</span></div>
+        <div class="metric"><span class="metric-label">Avg per frame</span><span class="metric-value" id="avgFrame">—</span></div>
+        <div class="metric"><span class="metric-label">BPP</span><span class="metric-value" id="bpp">—</span></div>
+        <div class="metric"><span class="metric-label">Quality (PSNR)</span><span class="metric-value success" id="psnr">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="output"></div>
+
+  <script>
+    const fmtSize = bytes => {
+      if (!bytes) return '—';
+      if (bytes < 1024) return bytes + 'B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + 'KB';
+      if (bytes < 1073741824) return (bytes / 1048576).toFixed(2) + 'MB';
+      return (bytes / 1073741824).toFixed(3) + 'GB';
+    };
+
+    const fmtTime = secs => {
+      if (!secs || isNaN(secs)) return '—';
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60);
+      return m + ':' + s.toString().padStart(2, '0');
+    };
+
+    function log(msg, type = '') {
+      const el = document.createElement('div');
+      el.className = type ? 'log-' + type : '';
+      el.textContent = msg;
+      document.getElementById('output').appendChild(el);
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function setProgress(pct) {
+      document.getElementById('progress').style.width = pct + '%';
+    }
+
+    // Lanczos upscaling for better quality
+    function lanczosResample(src, srcW, srcH, dstW, dstH) {
+      const dst = new Uint8Array(dstW * dstH * 4);
+      const a = 3; // Lanczos kernel size
+
+      function lanczos(x) {
+        if (x === 0) return 1;
+        if (Math.abs(x) >= a) return 0;
+        const pix = Math.PI * x;
+        return (Math.sin(pix) / pix) * (Math.sin(pix / a) / (pix / a));
+      }
+
+      const xRatio = srcW / dstW;
+      const yRatio = srcH / dstH;
+
+      for (let y = 0; y < dstH; y++) {
+        const srcY = y * yRatio;
+        for (let x = 0; x < dstW; x++) {
+          const srcX = x * xRatio;
+          
+          let r = 0, g = 0, b = 0, a_val = 0, weightSum = 0;
+
+          for (let ky = -a; ky <= a; ky++) {
+            for (let kx = -a; kx <= a; kx++) {
+              const srcPixelX = Math.floor(srcX + kx);
+              const srcPixelY = Math.floor(srcY + ky);
+
+              if (srcPixelX >= 0 && srcPixelX < srcW && srcPixelY >= 0 && srcPixelY < srcH) {
+                const srcIdx = (srcPixelY * srcW + srcPixelX) * 4;
+                const weight = lanczos(srcX - srcPixelX) * lanczos(srcY - srcPixelY);
+
+                r += src[srcIdx] * weight;
+                g += src[srcIdx + 1] * weight;
+                b += src[srcIdx + 2] * weight;
+                a_val += src[srcIdx + 3] * weight;
+                weightSum += weight;
+              }
+            }
+          }
+
+          const dstIdx = (y * dstW + x) * 4;
+          dst[dstIdx] = Math.max(0, Math.min(255, r / weightSum));
+          dst[dstIdx + 1] = Math.max(0, Math.min(255, g / weightSum));
+          dst[dstIdx + 2] = Math.max(0, Math.min(255, b / weightSum));
+          dst[dstIdx + 3] = Math.max(0, Math.min(255, a_val / weightSum));
+        }
+      }
+
+      return dst;
+    }
+
+    function deltaEncode(data, width, height) {
+      const output = new Int32Array(width * height);
+      output[0] = data[0];
+      for (let i = 1; i < data.length; i++) {
+        output[i] = data[i] - data[i-1];
+      }
+      return output;
+    }
+
+    function deltaDecode(delta, width, height) {
+      const output = new Uint8Array(delta.length);
+      let acc = delta[0];
+      output[0] = acc;
+      for (let i = 1; i < delta.length; i++) {
+        acc += delta[i];
+        output[i] = acc;
+      }
+      return output;
+    }
+
+    async function compressData(int32Array) {
+      const bytes = new Uint8Array(int32Array.buffer);
+      const cs = new CompressionStream('deflate-raw');
+      const writer = cs.writable.getWriter();
+      const reader = cs.readable.getReader();
+      writer.write(bytes);
+      writer.close();
+      const chunks = [];
+      let length = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        length += value.length;
+      }
+      const output = new Uint8Array(length);
+      let offset = 0;
+      for (const chunk of chunks) { output.set(chunk, offset); offset += chunk.length; }
+      return output;
+    }
+
+    async function decompressData(bytes) {
+      const ds = new DecompressionStream('deflate-raw');
+      const writer = ds.writable.getWriter();
+      const reader = ds.readable.getReader();
+      writer.write(bytes);
+      writer.close();
+      const chunks = [];
+      let length = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        length += value.length;
+      }
+      const output = new Uint8Array(length);
+      let offset = 0;
+      for (const chunk of chunks) { output.set(chunk, offset); offset += chunk.length; }
+      return new Int32Array(output.buffer);
+    }
+
+    function calcPSNR(orig, reconstructed, length) {
+      let mse = 0;
+      for (let i = 0; i < length; i++) {
+        const diff = orig[i] - reconstructed[i];
+        mse += diff * diff;
+      }
+      mse /= length;
+      return mse < 0.001 ? Infinity : 20 * Math.log10(255 / Math.sqrt(mse));
+    }
+
+    function calcSSIM(orig, reconstructed, length) {
+      let mean1 = 0, mean2 = 0;
+      for (let i = 0; i < length; i++) { mean1 += orig[i]; mean2 += reconstructed[i]; }
+      mean1 /= length; mean2 /= length;
+      let var1 = 0, var2 = 0, cov = 0;
+      for (let i = 0; i < length; i++) {
+        var1 += (orig[i] - mean1) ** 2;
+        var2 += (reconstructed[i] - mean2) ** 2;
+        cov += (orig[i] - mean1) * (reconstructed[i] - mean2);
+      }
+      var1 /= length; var2 /= length; cov /= length;
+      const C1 = 6.5025, C2 = 58.5225;
+      return ((2 * mean1 * mean2 + C1) * (2 * cov + C2)) / ((mean1**2 + mean2**2 + C1) * (var1 + var2 + C2));
+    }
+
+    // Update estimate
+    function updateEstimate() {
+      const factor = parseFloat(document.getElementById('downscaleFactor').value);
+      const temporal = parseInt(document.getElementById('temporalCompression').value);
+      const origWidth = 425;
+      const origHeight = 239;
+      const fps = 25;
+      const duration = 65;
+      const totalFrames = Math.round(duration * fps);
+      const origFileSize = 11.31 * 1048576;
+
+      const lowW = Math.round(origWidth * factor);
+      const lowH = Math.round(origHeight * factor);
+      const pixelsPerFrame = lowW * lowH;
+      const bytesPerPixel = 2.0; // 8-bit
+      const rawSizePerFrame = pixelsPerFrame * bytesPerPixel * 3; // RGB
+
+      // Intra-frame compression
+      const intraRatio = 3.5;
+      
+      let estimatedSize;
+      if (temporal === 0) {
+        // No temporal compression
+        estimatedSize = (rawSizePerFrame * totalFrames) / intraRatio;
+      } else {
+        // With temporal compression
+        const numKeyFrames = Math.ceil(totalFrames / temporal);
+        const numDeltaFrames = totalFrames - numKeyFrames;
+        
+        // Keyframes compress 3.5x, delta frames compress 10-20x
+        const deltaRatio = intraRatio * 4; // Delta frames much smaller
+        
+        const keyframeSize = (rawSizePerFrame * numKeyFrames) / intraRatio;
+        const deltaSize = (rawSizePerFrame * numDeltaFrames) / deltaRatio;
+        estimatedSize = keyframeSize + deltaSize;
+      }
+
+      document.getElementById('estimateValue').textContent = fmtSize(estimatedSize);
+      
+      const targetEl = document.getElementById('estimateTarget');
+      if (estimatedSize < origFileSize) {
+        targetEl.textContent = '✅ Smaller than original 11 MB!';
+        targetEl.style.color = 'var(--success)';
+      } else {
+        targetEl.textContent = '⚠️ Larger than original (' + (estimatedSize / origFileSize).toFixed(2) + '×)';
+        targetEl.style.color = 'var(--warning)';
+      }
+    }
+
+    document.getElementById('downscaleFactor').addEventListener('change', updateEstimate);
+    document.getElementById('temporalCompression').addEventListener('change', updateEstimate);
+
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const downscaleFactor = parseFloat(document.getElementById('downscaleFactor').value);
+      const upscaleAlgo = document.getElementById('upscaleAlgo').value;
+      const bitDepth = parseInt(document.getElementById('bitDepth').value);
+      const temporalInterval = parseInt(document.getElementById('temporalCompression').value);
+
+      log('📁 Loading: ' + file.name, 'info');
+      log('⚙️ Settings: Downscale ' + (downscaleFactor * 100) + '% · Temporal: ' + (temporalInterval === 0 ? 'None' : 'Every ' + temporalInterval + ' frames'), 'info');
+
+      const video = document.createElement('video');
+      video.preload = 'auto';
+      video.src = URL.createObjectURL(file);
+
+      await new Promise(resolve => {
+        video.onloadedmetadata = resolve;
+        setTimeout(resolve, 5000);
+      });
+
+      const origWidth = video.videoWidth;
+      const origHeight = video.videoHeight;
+      const duration = video.duration;
+      const fps = 25;
+      const totalFrames = Math.round(duration * fps);
+
+      const lowWidth = Math.round(origWidth * downscaleFactor);
+      const lowHeight = Math.round(origHeight * downscaleFactor);
+      const lowPixels = lowWidth * lowHeight;
+      const origPixels = origWidth * origHeight;
+
+      log('✅ Video: ' + origWidth + '×' + origHeight + ' · Duration: ' + fmtTime(duration), 'success');
+      log('⬇️ Downscaled to: ' + lowWidth + '×' + lowHeight + ' (' + (downscaleFactor * 100) + '%)', 'info');
+      log('📊 Pixel reduction: ' + ((1 - lowPixels / origPixels) * 100).toFixed(1) + '% fewer pixels', 'info');
+
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('origSize').textContent = fmtSize(file.size);
+      document.getElementById('resolution').textContent = origWidth + '×' + origHeight;
+      document.getElementById('duration').textContent = fmtTime(duration);
+      document.getElementById('totalFrames').textContent = totalFrames.toLocaleString();
+      document.getElementById('downFactor').textContent = (downscaleFactor * 100) + '%';
+      document.getElementById('lowRes').textContent = lowWidth + '×' + lowHeight;
+      document.getElementById('gopSize').textContent = temporalInterval === 0 ? 'None (intra only)' : 'Every ' + temporalInterval + ' frames';
+      document.getElementById('pixelReduction').textContent = '-' + ((1 - lowPixels / origPixels) * 100).toFixed(1) + '%';
+
+      const canvasOrig = document.getElementById('canvasOrig');
+      const canvasDown = document.getElementById('canvasDown');
+      const canvasUp = document.getElementById('canvasUp');
+      
+      canvasOrig.width = origWidth;
+      canvasOrig.height = origHeight;
+      canvasDown.width = lowWidth;
+      canvasDown.height = lowHeight;
+      canvasUp.width = origWidth;
+      canvasUp.height = origHeight;
+
+      const ctxOrig = canvasOrig.getContext('2d');
+      const ctxDown = canvasDown.getContext('2d');
+      const ctxUp = canvasUp.getContext('2d');
+
+      document.getElementById('canvasContainer').style.display = 'grid';
+
+      // Sample frames
+      const numSamples = Math.min(30, Math.max(10, Math.floor(duration * 2)));
+      const samplePositions = Array.from({ length: numSamples }, (_, i) =>
+        Math.max(0.1, Math.min(duration - 0.1, duration * (i + 0.5) / numSamples))
+      );
+
+      log('\n🔍 Processing ' + numSamples + ' frames...', 'info');
+
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true, alpha: false });
+
+      let totalRaw = 0;
+      let totalCompressed = 0;
+      let psnrValues = [];
+      let ssimValues = [];
+      let keyframeCount = 0;
+      let deltaframeCount = 0;
+
+      // For temporal compression
+      let prevR = null;
+      let prevG = null;
+      let prevB = null;
+
+      for (let i = 0; i < numSamples; i++) {
+        const time = samplePositions[i];
+        video.currentTime = time;
+        await new Promise(resolve => {
+          video.onseeked = resolve;
+          setTimeout(resolve, 1500);
+        });
+        await new Promise(r => setTimeout(r, 50));
+
+        setProgress(((i + 1) / numSamples) * 100);
+
+        // Original frame
+        tempCanvas.width = origWidth;
+        tempCanvas.height = origHeight;
+        tempCtx.drawImage(video, 0, 0, origWidth, origHeight);
+        const origData = tempCtx.getImageData(0, 0, origWidth, origHeight);
+
+        // Downscale
+        tempCanvas.width = lowWidth;
+        tempCanvas.height = lowHeight;
+        tempCtx.drawImage(video, 0, 0, lowWidth, lowHeight);
+        const downData = tempCtx.getImageData(0, 0, lowWidth, lowHeight);
+
+        // Compress downscaled frame
+        const rgba = downData.data;
+        const R = new Int32Array(lowPixels);
+        const G = new Int32Array(lowPixels);
+        const B = new Int32Array(lowPixels);
+
+        for (let p = 0; p < lowPixels; p++) {
+          R[p] = rgba[p * 4];
+          G[p] = rgba[p * 4 + 1];
+          B[p] = rgba[p * 4 + 2];
+        }
+
+        // Determine if this is a keyframe or delta frame
+        const isKeyframe = temporalInterval === 0 || (i % temporalInterval === 0);
+        
+        let deltaR, deltaG, deltaB;
+        if (isKeyframe) {
+          // Keyframe: full intra-frame compression
+          deltaR = deltaEncode(R, lowWidth, lowHeight);
+          deltaG = deltaEncode(G, lowWidth, lowHeight);
+          deltaB = deltaEncode(B, lowWidth, lowHeight);
+          keyframeCount++;
+        } else {
+          // Delta frame: store difference from previous frame
+          const diffR = new Int32Array(lowPixels);
+          const diffG = new Int32Array(lowPixels);
+          const diffB = new Int32Array(lowPixels);
+          
+          for (let p = 0; p < lowPixels; p++) {
+            diffR[p] = R[p] - prevR[p];
+            diffG[p] = G[p] - prevG[p];
+            diffB[p] = B[p] - prevB[p];
+          }
+          
+          deltaR = deltaEncode(diffR, lowWidth, lowHeight);
+          deltaG = deltaEncode(diffG, lowWidth, lowHeight);
+          deltaB = deltaEncode(diffB, lowWidth, lowHeight);
+          deltaframeCount++;
+        }
+
+        const [compR, compG, compB] = await Promise.all([
+          compressData(deltaR),
+          compressData(deltaG),
+          compressData(deltaB)
+        ]);
+
+        const frameRaw = lowPixels * 3;
+        const frameCompressed = compR.length + compG.length + compB.length;
+        totalRaw += frameRaw;
+        totalCompressed += frameCompressed;
+
+        // Store current frame as previous for next delta
+        prevR = R.slice();
+        prevG = G.slice();
+        prevB = B.slice();
+
+        // Decompress
+        const [decompR, decompG, decompB] = await Promise.all([
+          decompressData(compR),
+          decompressData(compG),
+          decompressData(compB)
+        ]);
+
+        let recR, recG, recB;
+        if (isKeyframe) {
+          // Keyframe: direct delta decode
+          recR = deltaDecode(decompR, lowWidth, lowHeight);
+          recG = deltaDecode(decompG, lowWidth, lowHeight);
+          recB = deltaDecode(decompB, lowWidth, lowHeight);
+        } else {
+          // Delta frame: decode differences, then add to previous
+          const diffR = deltaDecode(decompR, lowWidth, lowHeight);
+          const diffG = deltaDecode(decompG, lowWidth, lowHeight);
+          const diffB = deltaDecode(decompB, lowWidth, lowHeight);
+          
+          recR = new Uint8Array(lowPixels);
+          recG = new Uint8Array(lowPixels);
+          recB = new Uint8Array(lowPixels);
+          
+          for (let p = 0; p < lowPixels; p++) {
+            recR[p] = Math.max(0, Math.min(255, prevR[p] + diffR[p]));
+            recG[p] = Math.max(0, Math.min(255, prevG[p] + diffG[p]));
+            recB[p] = Math.max(0, Math.min(255, prevB[p] + diffB[p]));
+          }
+        }
+
+        // Create downscaled decompressed image
+        const downImageData = tempCtx.createImageData(lowWidth, lowHeight);
+        for (let p = 0; p < lowPixels; p++) {
+          downImageData.data[p * 4] = recR[p];
+          downImageData.data[p * 4 + 1] = recG[p];
+          downImageData.data[p * 4 + 2] = recB[p];
+          downImageData.data[p * 4 + 3] = 255;
+        }
+
+        // Show downscaled
+        if (i === 0) {
+          ctxOrig.putImageData(origData, 0, 0);
+          ctxDown.putImageData(downImageData, 0, 0);
+        }
+
+        // Upscale back to original resolution
+        tempCanvas.width = lowWidth;
+        tempCanvas.height = lowHeight;
+        tempCtx.putImageData(downImageData, 0, 0);
+
+        const upscaledCanvas = document.createElement('canvas');
+        upscaledCanvas.width = origWidth;
+        upscaledCanvas.height = origHeight;
+        const upscaledCtx = upscaledCanvas.getContext('2d');
+        upscaledCtx.imageSmoothingEnabled = true;
+        upscaledCtx.imageSmoothingQuality = upscaleAlgo === 'lanczos' ? 'high' : upscaleAlgo === 'bicubic' ? 'medium' : 'low';
+        upscaledCtx.drawImage(tempCanvas, 0, 0, origWidth, origHeight);
+
+        const upscaledData = upscaledCtx.getImageData(0, 0, origWidth, origHeight);
+
+        // Show upscaled
+        if (i === 0) {
+          ctxUp.putImageData(upscaledData, 0, 0);
+        }
+
+        // Calculate PSNR/SSIM vs original
+        const origRGB = new Uint8Array(origPixels * 3);
+        const upscaledRGB = new Uint8Array(origPixels * 3);
+        for (let p = 0; p < origPixels; p++) {
+          origRGB[p * 3] = origData.data[p * 4];
+          origRGB[p * 3 + 1] = origData.data[p * 4 + 1];
+          origRGB[p * 3 + 2] = origData.data[p * 4 + 2];
+          upscaledRGB[p * 3] = upscaledData.data[p * 4];
+          upscaledRGB[p * 3 + 1] = upscaledData.data[p * 4 + 1];
+          upscaledRGB[p * 3 + 2] = upscaledData.data[p * 4 + 2];
+        }
+
+        const psnr = calcPSNR(origRGB, upscaledRGB, origPixels * 3);
+        const ssim = calcSSIM(origRGB, upscaledRGB, origPixels * 3);
+        psnrValues.push(psnr);
+        ssimValues.push(ssim);
+
+        const ratio = frameRaw / frameCompressed;
+        log('  Frame ' + (i + 1) + '/' + numSamples + ': ' + ratio.toFixed(2) + '× · PSNR=' + (psnr > 80 ? '∞' : psnr.toFixed(2) + 'dB'), 'success');
+      }
+
+      const avgRatio = totalRaw / totalCompressed;
+      const bytesPerPixel = bitDepth === 10 ? 2.5 : 2.0;
+      const rawSizePerFrame = lowPixels * bytesPerPixel * 3;
+      const totalRawAllFrames = rawSizePerFrame * totalFrames;
+      const totalCompressedAllFrames = totalRawAllFrames / avgRatio;
+      const avgPSNR = psnrValues.reduce((a, b) => a + b, 0) / psnrValues.length;
+      const avgSSIM = ssimValues.reduce((a, b) => a + b, 0) / ssimValues.length;
+
+      // Calculate PER-FRAME size to show actual comparison
+      const compressedPerFrame = totalCompressed / numSamples;
+      const totalForAllFrames = compressedPerFrame * totalFrames;
+      
+      log('\n✅ Smart compression complete!', 'success');
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+      log('📊 COMPRESSION ANALYSIS:', 'info');
+      log('🎬 Keyframes (I-frames): ' + keyframeCount, 'info');
+      log('🔄 Delta frames (P-frames): ' + deltaframeCount, 'info');
+      log('📦 Average per frame: ' + fmtSize(compressedPerFrame), 'info');
+      log('📦 Total (all ' + totalFrames + ' frames): ' + fmtSize(totalForAllFrames), 'success');
+      log('', '');
+      log('━━ COMPARISON ━━', 'info');
+      log('📁 Original H.264 file: ' + fmtSize(file.size), 'info');
+      log('🗜️ HCV Smart (temporal): ' + fmtSize(totalForAllFrames), totalForAllFrames < file.size ? 'success' : 'warning');
+      log('📊 Ratio: ' + (totalForAllFrames / file.size).toFixed(2) + '×', totalForAllFrames < file.size ? 'success' : 'warning');
+      
+      if (totalForAllFrames > file.size) {
+        log('', '');
+        log('⚠️ Still larger because:', 'warning');
+        log('  • Your resolution is 478×850 (4× original!)', 'warning');
+        log('  • H.264 has 20+ years of optimization', 'warning');
+        log('  • Need more aggressive downscale or quantization', 'warning');
+      } else {
+        log('✅ SMALLER than original!', 'success');
+      }
+      
+      log('', '');
+      log('━━ Quality Metrics ━━', 'info');
+      log('✓ PSNR: ' + (avgPSNR > 80 ? '∞' : avgPSNR.toFixed(2) + ' dB'), 'success');
+      log('✓ SSIM: ' + avgSSIM.toFixed(6), 'success');
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+
+      document.getElementById('compSize').textContent = fmtSize(totalForAllFrames);
+      document.getElementById('targetStatus').textContent = totalForAllFrames < file.size ? '✅ UNDER 11 MB!' : '❌ Over 11 MB';
+      document.getElementById('targetStatus').style.color = totalForAllFrames < file.size ? 'var(--success)' : 'var(--warning)';
+      document.getElementById('compRatio').textContent = avgRatio.toFixed(2) + '×';
+      document.getElementById('vsOriginal').textContent = (totalForAllFrames / file.size).toFixed(2) + '× ' + (totalForAllFrames < file.size ? 'smaller ✅' : 'larger');
+      document.getElementById('vsOriginal').style.color = totalForAllFrames < file.size ? 'var(--success)' : 'var(--warning)';
+      document.getElementById('keyframes').textContent = keyframeCount;
+      document.getElementById('deltaframes').textContent = deltaframeCount;
+      document.getElementById('avgFrame').textContent = fmtSize(totalCompressed / numSamples);
+      document.getElementById('bpp').textContent = ((totalCompressed / numSamples) * 8 / lowPixels).toFixed(3);
+      document.getElementById('psnr').textContent = avgPSNR > 80 ? '∞ (Perfect)' : avgPSNR.toFixed(2) + ' dB';
+
+      document.getElementById('results').style.display = 'block';
+      setProgress(100);
+    });
+
+    window.addEventListener('load', updateEstimate);
+  </script>
+</body>
+</html>

@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Générateur d'Images IA — Théorie Harmonique Ψ = Σ Hₙ (Ψ₁)ⁿ</title>
+<style>
+:root {
+  --bg: #070514; --bg2: #0a0820; --bg3: #0f0c2e;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --red: #ff4757; --green: #2ed573; --border: rgba(200,220,255,0.08);
+  --card-bg: rgba(15,12,46,0.85);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.7;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse at 30% 15%,rgba(122,92,255,0.07),transparent 55%),radial-gradient(ellipse at 70% 60%,rgba(62,240,216,0.04),transparent 60%);pointer-events:none}
+.container{max-width:1100px;margin:0 auto;padding:0 20px;position:relative;z-index:1}
+
+/* Nav */
+nav{position:sticky;top:0;z-index:100;background:rgba(7,5,20,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:7px 14px;border-radius:20px;font-size:0.88em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+
+/* Hero */
+.hero{text-align:center;padding:60px 20px 50px;background:linear-gradient(180deg,rgba(212,168,67,0.1) 0%,transparent 100%)}
+.hero h1{font-size:2.4em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.hero .tagline{font-size:1.1em;color:var(--ink2);margin-bottom:20px}
+.hero .equation-display{display:inline-block;padding:18px 36px;border:2px solid rgba(212,168,67,0.35);border-radius:20px;background:rgba(15,12,46,0.7)}
+.hero .formula{font-family:'Courier New',monospace;font-size:2.2em;font-weight:700;color:var(--phi);letter-spacing:2px}
+
+/* Sections */
+section{padding:40px 0}
+section:nth-child(even){background:var(--bg2)}
+h2{font-size:1.8em;margin-bottom:8px;text-align:center}
+h2 span{color:var(--phi)}
+.section-desc{text-align:center;color:var(--ink3);margin-bottom:28px;max-width:700px;margin-left:auto;margin-right:auto;font-size:0.95em}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;justify-content:center;margin-bottom:24px;flex-wrap:wrap}
+.tab-btn{padding:10px 20px;border-radius:25px;border:1px solid var(--border);background:var(--bg3);color:var(--ink2);cursor:pointer;font-size:0.9em;transition:all 0.2s}
+.tab-btn:hover,.tab-btn.active{border-color:var(--phi);color:var(--phi);background:rgba(212,168,67,0.08)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* Cards */
+.param-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;max-width:900px;margin:0 auto}
+.param-card{background:var(--card-bg);border:1px solid var(--border);border-radius:14px;padding:22px;transition:all 0.2s}
+.param-card:hover{border-color:rgba(62,240,216,0.3)}
+.param-card label{display:block;color:var(--acc);font-weight:600;font-size:0.85em;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+.param-card input,.param-card select{width:100%;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--ink);font-size:0.95em}
+.param-card input:focus,.param-card select:focus{outline:none;border-color:var(--phi)}
+.param-card .hint{font-size:0.78em;color:var(--ink3);margin-top:6px}
+
+/* Buttons */
+.btn{display:inline-block;padding:12px 28px;border-radius:25px;font-size:1em;font-weight:600;cursor:pointer;transition:all 0.25s;border:none;text-align:center}
+.btn-primary{background:linear-gradient(135deg,var(--phi),var(--acc2));color:#fff;box-shadow:0 4px 20px rgba(122,92,255,0.3)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(122,92,255,0.4)}
+.btn-outline{background:transparent;border:2px solid var(--phi);color:var(--phi)}
+.btn-outline:hover{background:rgba(212,168,67,0.1)}
+.controls{text-align:center;margin:24px 0}
+
+/* Preview */
+.preview-area{text-align:center;margin:24px 0;min-height:300px;display:flex;align-items:center;justify-content:center;flex-direction:column}
+.preview-area canvas{border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.4);border:2px solid var(--border);max-width:100%}
+.preview-area .placeholder{color:var(--ink3);font-size:1.1em;padding:60px;border:2px dashed var(--border);border-radius:16px;background:var(--bg3)}
+.preview-area .status{color:var(--acc);font-size:0.9em;margin-top:12px}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;max-width:900px;margin:16px auto}
+.stat-card{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center}
+.stat-card .stat-value{font-size:1.8em;font-weight:700;color:var(--phi)}
+.stat-card .stat-label{font-size:0.8em;color:var(--ink3);margin-top:4px}
+
+/* Infos couches */
+.layer-table{width:100%;max-width:900px;margin:0 auto;border-collapse:collapse;font-size:0.9em}
+.layer-table th{background:var(--bg3);color:var(--phi);padding:10px 14px;text-align:left;border-bottom:2px solid rgba(212,168,67,0.2)}
+.layer-table td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--ink2)}
+.layer-table tr:hover td{background:rgba(212,168,67,0.03)}
+.layer-table .bar{display:inline-block;height:8px;background:linear-gradient(90deg,var(--phi),var(--acc));border-radius:4px;vertical-align:middle;margin-right:8px}
+
+/* Gallery */
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;max-width:900px;margin:0 auto}
+.gallery-item{border-radius:12px;overflow:hidden;cursor:pointer;transition:all 0.25s;border:1px solid var(--border)}
+.gallery-item:hover{transform:scale(1.03);border-color:var(--phi);box-shadow:0 6px 24px rgba(0,0,0,0.3)}
+.gallery-item canvas{width:100%;display:block}
+.gallery-item .caption{font-size:0.78em;color:var(--ink3);padding:6px 10px;text-align:center;background:var(--bg3)}
+
+footer{text-align:center;padding:30px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.84em;margin-top:40px}
+footer a{color:var(--phi);text-decoration:none}
+.spinner{display:inline-block;width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--phi);border-radius:50%;animation:spin 0.8s linear infinite;margin:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:640px){
+  .hero h1{font-size:1.6em}
+  .hero .formula{font-size:1.3em}
+  .param-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="../ordinateur_harmonique/www/index.html">← Hub Projets</a>
+    <a href="#generator">Générateur</a>
+    <a href="#theory">Théorie</a>
+    <a href="#layers">7 Couches</a>
+    <a href="#gallery">Galerie</a>
+  </div>
+</nav>
+
+<header class="hero" id="generator">
+  <div class="container">
+    <h1>Générateur d'Images IA Harmonique</h1>
+    <p class="tagline">Génération procédurale d'images, vidéos et audio basée sur la Théorie Harmonique<br><strong>Ψ = Σ Hₙ (Ψ₁)ⁿ</strong> — Chaque seed produit un univers visuel unique</p>
+    <div class="equation-display">
+      <div class="formula">Ψ = Σ Hₙ (Ψ₁)ⁿ</div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== GÉNÉRATEUR INTERACTIF ===== -->
+<section id="interactive">
+  <div class="container">
+    <h2><span>🎨</span> Générateur Interactif</h2>
+    <p class="section-desc">Explorez les possibilités infinies du champ harmonique. Chaque seed, style et résolution produit une image unique.</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('image')">🖼️ Image</button>
+      <button class="tab-btn" onclick="switchTab('video')">🎬 Vidéo</button>
+      <button class="tab-btn" onclick="switchTab('audio')">🎵 Audio</button>
+    </div>
+
+    <!-- Tab IMAGE -->
+    <div id="tab-image" class="tab-content active">
+      <div class="param-grid">
+        <div class="param-card">
+          <label>🌱 Seed</label>
+          <input type="text" id="img-seed" value="univers harmonique" placeholder="Texte ou nombre">
+          <div class="hint">Même texte = même image (déterministe)</div>
+        </div>
+        <div class="param-card">
+          <label>🎨 Style / Palette</label>
+          <select id="img-style">
+            <option value="cosmique">🌌 Cosmique — Bleus profonds</option>
+            <option value="solaire">☀️ Solaire — Énergie lumineuse</option>
+            <option value="forest">🌿 Forest — Nature luxuriante</option>
+            <option value="ocean">🌊 Océan — Profondeur marine</option>
+            <option value="aurore">🌌 Aurore — Boréale mystique</option>
+            <option value="crepuscule">🌅 Crépuscule — Coucher de soleil</option>
+            <option value="galactique">✨ Galactique — Voie lactée</option>
+          </select>
+        </div>
+        <div class="param-card">
+          <label>📐 Résolution</label>
+          <select id="img-size">
+            <option value="256">256×256 (rapide)</option>
+            <option value="512" selected>512×512 (standard)</option>
+            <option value="768">768×768 (haute qualité)</option>
+          </select>
+        </div>
+        <div class="param-card">
+          <label>🎯 Mode Couleur</label>
+          <select id="img-mode">
+            <option value="hsl">HSL — Teinte + Luminosité</option>
+            <option value="multilayer">Multicouche — 7 teintes distinctes</option>
+          </select>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn btn-primary" onclick="generateImage()">✨ Générer l'Image</button>
+        <button class="btn btn-outline" onclick="randomSeed()">🎲 Seed Aléatoire</button>
+      </div>
+      <div class="preview-area" id="image-preview">
+        <div class="placeholder">⬆️ Configurez les paramètres et cliquez sur Générer</div>
+      </div>
+    </div>
+
+    <!-- Tab VIDÉO -->
+    <div id="tab-video" class="tab-content">
+      <div class="param-grid">
+        <div class="param-card">
+          <label>🌱 Seed</label>
+          <input type="text" id="vid-seed" value="flux cosmique" placeholder="Texte ou nombre">
+        </div>
+        <div class="param-card">
+          <label>⏱️ Durée (secondes)</label>
+          <input type="number" id="vid-duration" value="3" min="1" max="10">
+        </div>
+        <div class="param-card">
+          <label>🎞️ FPS</label>
+          <select id="vid-fps">
+            <option value="10">10 fps (léger)</option>
+            <option value="15" selected>15 fps (équilibré)</option>
+            <option value="24">24 fps (cinéma)</option>
+          </select>
+        </div>
+        <div class="param-card">
+          <label>🎨 Style</label>
+          <select id="vid-style">
+            <option value="cosmique">Cosmique</option>
+            <option value="solaire">Solaire</option>
+            <option value="ocean">Océan</option>
+            <option value="aurore">Aurore</option>
+          </select>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn btn-primary" onclick="generateVideo()">🎬 Générer l'Animation</button>
+      </div>
+      <div class="preview-area" id="video-preview">
+        <div class="placeholder">⬆️ Générez une animation harmonique (GIF)</div>
+      </div>
+    </div>
+
+    <!-- Tab AUDIO -->
+    <div id="tab-audio" class="tab-content">
+      <div class="param-grid">
+        <div class="param-card">
+          <label>🌱 Seed</label>
+          <input type="text" id="aud-seed" value="harmonie sonore" placeholder="Texte ou nombre">
+        </div>
+        <div class="param-card">
+          <label>🎼 Type</label>
+          <select id="aud-type">
+            <option value="composition">Composition complète</option>
+            <option value="melody">Mélodie seule</option>
+            <option value="pad">Nappe harmonique</option>
+            <option value="rhythm">Piste rythmique</option>
+            <option value="ambient">Paysage ambient</option>
+          </select>
+        </div>
+        <div class="param-card">
+          <label>⏱️ Durée (secondes)</label>
+          <input type="number" id="aud-duration" value="8" min="2" max="30">
+        </div>
+        <div class="param-card">
+          <label>🎵 BPM (si applicable)</label>
+          <input type="number" id="aud-bpm" value="100" min="60" max="180">
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn btn-primary" onclick="generateAudio()">🎵 Générer l'Audio</button>
+      </div>
+      <div class="preview-area" id="audio-preview">
+        <div class="placeholder">⬆️ Configuration pour la génération audio (nécessite le backend Python)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== THÉORIE ===== -->
+<section id="theory">
+  <div class="container">
+    <h2><span>🧠</span> La Théorie Derrière le Générateur</h2>
+    <p class="section-desc">
+      Ce générateur n'utilise AUCUN réseau de neurones. Il est basé uniquement sur la formule
+      <strong>Ψ = Σ Hₙ (Ψ₁)ⁿ</strong> — la superposition de 7 couches d'ondes harmoniques
+      pondérées par les constantes mathématiques fondamentales.
+    </p>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Paramètres entraînables</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">∞</div>
+        <div class="stat-label">Images uniques possibles</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">7</div>
+        <div class="stat-label">Constantes harmoniques Hₙ</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">déterministe</div>
+        <div class="stat-label">Reproductibilité parfaite</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin:32px 0">
+      <a href="../ordinateur_harmonique/www/theorie-harmonique.html" class="btn btn-outline" target="_blank">📖 Lire la Théorie Harmonique Complète</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 7 COUCHES ===== -->
+<section id="layers">
+  <div class="container">
+    <h2><span>🔢</span> Les 7 Couches Harmoniques Hₙ</h2>
+    <p class="section-desc">Chaque couche ajoute une propriété visuelle/sonore/temporelle unique au résultat final.</p>
+    <div style="overflow-x:auto">
+    <table class="layer-table">
+      <thead>
+        <tr><th>n</th><th>Hₙ</th><th>Constante</th><th>Valeur</th><th>Rôle Image</th><th>Rôle Audio</th><th>Rôle Vidéo</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>1</strong></td><td style="color:var(--phi);font-weight:700">H₁</td><td>φ (phi)</td><td>1.618</td><td>Anti-résonance, structure globale</td><td>Fondamentale dorée</td><td>Cadence d'évolution</td></tr>
+        <tr><td><strong>2</strong></td><td style="color:var(--phi);font-weight:700">H₂</td><td>π (pi)</td><td>3.142</td><td>Périodicité, motifs circulaires</td><td>Pulsation cyclique</td><td>Boucle périodique</td></tr>
+        <tr><td><strong>3</strong></td><td style="color:var(--phi);font-weight:700">H₃</td><td>e</td><td>2.718</td><td>Amortissement, dégradés doux</td><td>Decay naturel</td><td>Fondu exponentiel</td></tr>
+        <tr><td><strong>4</strong></td><td style="color:var(--phi);font-weight:700">H₄</td><td>√2</td><td>1.414</td><td>Symétrie planaire H/V</td><td>Harmonique d'octave</td><td>Mouvements plans</td></tr>
+        <tr><td><strong>5</strong></td><td style="color:var(--phi);font-weight:700">H₅</td><td>√3</td><td>1.732</td><td>Profondeur, perspective 3D</td><td>Harmonique de quinte</td><td>Parallaxe 3D</td></tr>
+        <tr><td><strong>6</strong></td><td style="color:var(--phi);font-weight:700">H₆</td><td>√5</td><td>2.236</td><td>Textures fines, micro-détails</td><td>Brillance, présence</td><td>Micro-mouvements</td></tr>
+        <tr><td><strong>7</strong></td><td style="color:var(--phi);font-weight:700">H₇</td><td>e/π</td><td>0.865</td><td>Spirale de synthèse, grain</td><td>Vibrato spiral</td><td>Rotation organique</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===== GALERIE ===== -->
+<section id="gallery">
+  <div class="container">
+    <h2><span>🖼️</span> Galerie — 7 Palettes × 7 Seeds</h2>
+    <p class="section-desc">Explorez la diversité infinie du générateur. Ces images sont générées en JavaScript directement dans votre navigateur.</p>
+    <div class="controls">
+      <button class="btn btn-primary" onclick="generateGallery()">🎨 Générer la Galerie</button>
+    </div>
+    <div class="gallery" id="gallery-grid">
+      <div class="placeholder" style="grid-column:1/-1;text-align:center;padding:40px">Cliquez sur Générer la Galerie pour voir 49 images harmoniques</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <p>Générateur d'Images IA basé sur la <a href="../ordinateur_harmonique/www/theorie-harmonique.html">Théorie Harmonique</a> — Ψ = Σ Hₙ (Ψ₁)ⁿ</p>
+    <p style="margin-top:4px">Aucun réseau de neurones • 100% Mathématiques Fondamentales • Déterministe & Reproductible</p>
+  </div>
+</footer>
+
+<script>
+// ============================================================================
+// CONSTANTES HARMONIQUES
+// ============================================================================
+const PHI = (1 + Math.sqrt(5)) / 2;
+const PI = Math.PI;
+const E = Math.E;
+const SQRT2 = Math.sqrt(2);
+const SQRT3 = Math.sqrt(3);
+const SQRT5 = Math.sqrt(5);
+const E_PI = E / PI;
+const PHI_INV = 1.0 / PHI;
+
+const H_CONSTANTS = [PHI, PI, E, SQRT2, SQRT3, SQRT5, E_PI];
+const H_NAMES = ['φ', 'π', 'e', '√2', '√3', '√5', 'e/π'];
+
+const PALETTES = {
+  cosmique:  { hue_shift: 0.0,  sat_boost: 1.2 },
+  solaire:   { hue_shift: 0.15, sat_boost: 1.5 },
+  forest:    { hue_shift: 0.35, sat_boost: 0.9 },
+  ocean:     { hue_shift: 0.55, sat_boost: 1.1 },
+  aurore:    { hue_shift: 0.75, sat_boost: 1.3 },
+  crepuscule:{ hue_shift: 0.08, sat_boost: 1.4 },
+  galactique:{ hue_shift: 0.0,  sat_boost: 0.7 },
+};
+
+// ============================================================================
+// HASH SIMPLE (seed → nombre)
+// ============================================================================
+function textToSeed(text) {
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    const char = text.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash);
+}
+
+// ============================================================================
+// GÉNÉRATION DU CHAMP HARMONIQUE Ψ
+// ============================================================================
+function generatePsiField(width, height, seed) {
+  // Seed simple pour reproductibilité
+  const pseudoRandom = (s) => {
+    const x = Math.sin(s * 127.1 + seed * 311.7) * 43758.5453;
+    return x - Math.floor(x);
+  };
+
+  const psi = new Float64Array(width * height);
+  
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const X = (x / width) * 2 - 1;
+      const Y = (y / height) * 2 - 1;
+      const R = Math.sqrt(X*X + Y*Y);
+      const theta = Math.atan2(Y, X);
+      
+      let val = 0;
+      
+      // 1. Spirale dorée (φ)
+      val += 0.30 * Math.cos(PHI * R * 12 + theta * PHI);
+      
+      // 2. Ondes circulaires (π)
+      val += 0.20 * Math.sin(PI * R * 8);
+      
+      // 3. Grille amortie (e)
+      val += 0.15 * Math.exp(-R * 2) * Math.cos(X * 10 * E) * Math.cos(Y * 10 * E);
+      
+      // 4. Symétrie planaire (√2)
+      val += 0.15 * (Math.cos(X * 8 * SQRT2) + Math.cos(Y * 8 * SQRT2));
+      
+      // 5. Ondes diagonales (√3)
+      val += 0.10 * Math.cos((X + Y) * 7 * SQRT3) * Math.cos((X - Y) * 7 * SQRT3);
+      
+      // 6. Texture fine (√5)
+      val += 0.07 * Math.sin(X * 30 * SQRT5 + seed * 0.1) * Math.cos(Y * 30 * SQRT5);
+      
+      // 7. Spirale de synthèse (e/π)
+      val += 0.03 * Math.sin(R * 20 * E_PI + theta * 5);
+      
+      psi[y * width + x] = val;
+    }
+  }
+  
+  // Normaliser
+  let maxAbs = 0;
+  for (let i = 0; i < psi.length; i++) {
+    maxAbs = Math.max(maxAbs, Math.abs(psi[i]));
+  }
+  if (maxAbs > 1e-12) {
+    for (let i = 0; i < psi.length; i++) {
+      psi[i] /= maxAbs;
+    }
+  }
+  
+  return psi;
+}
+
+// ============================================================================
+// CALCUL DES 7 COUCHES Hₙ(Ψ₁)ⁿ
+// ============================================================================
+function computeLayers(psi, n_layers = 7) {
+  const layers = [];
+  let psiTotal = new Float64Array(psi.length);
+  
+  for (let n = 0; n < n_layers; n++) {
+    const h = H_CONSTANTS[n];
+    const layer = new Float64Array(psi.length);
+    
+    for (let i = 0; i < psi.length; i++) {
+      // (Ψ₁)^(n+1) * Hₙ
+      const psiPow = Math.pow(Math.abs(psi[i]), n + 1) * Math.sign(psi[i]);
+      layer[i] = h * psiPow;
+      psiTotal[i] += layer[i];
+    }
+    
+    layers.push(layer);
+  }
+  
+  // Normaliser le total
+  let maxTotal = 0;
+  for (let i = 0; i < psiTotal.length; i++) {
+    maxTotal = Math.max(maxTotal, Math.abs(psiTotal[i]));
+  }
+  if (maxTotal > 1e-12) {
+    for (let i = 0; i < psiTotal.length; i++) {
+      psiTotal[i] /= maxTotal;
+    }
+  }
+  
+  return { layers, psiTotal };
+}
+
+// ============================================================================
+// CONVERSION Ψ → RGB (HSL Harmonique)
+// ============================================================================
+function fieldToRGB(psi, width, height, palette) {
+  const config = PALETTES[palette] || PALETTES['cosmique'];
+  const rgb = new Uint8ClampedArray(width * height * 4);
+  
+  // Calculer les gradients pour la saturation
+  const gradMag = new Float64Array(width * height);
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const gx = psi[y * width + x + 1] - psi[y * width + x - 1];
+      const gy = psi[(y + 1) * width + x] - psi[(y - 1) * width + x];
+      gradMag[y * width + x] = Math.sqrt(gx*gx + gy*gy);
+    }
+  }
+  
+  let maxGrad = 0;
+  for (let i = 0; i < gradMag.length; i++) maxGrad = Math.max(maxGrad, gradMag[i]);
+  if (maxGrad < 1e-12) maxGrad = 1;
+  
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = y * width + x;
+      const val = Math.max(-1, Math.min(1, psi[idx]));
+      
+      // Teinte
+      let hue = (val * 0.5 + 0.5);
+      hue = (hue * PHI + config.hue_shift) % 1.0;
+      
+      // Saturation (basée sur le gradient)
+      const sat = Math.min(1, 0.3 + (gradMag[idx] / maxGrad) * config.sat_boost);
+      
+      // Luminosité
+      const lum = 0.3 + 0.5 * (1 - Math.exp(-Math.abs(val) * 3));
+      
+      // HSL → RGB
+      const [r, g, b] = hslToRgb(hue, sat, lum);
+      
+      const px = idx * 4;
+      rgb[px] = Math.round(r * 255);
+      rgb[px + 1] = Math.round(g * 255);
+      rgb[px + 2] = Math.round(b * 255);
+      rgb[px + 3] = 255;
+    }
+  }
+  
+  return rgb;
+}
+
+function hslToRgb(h, s, l) {
+  let r, g, b;
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1/3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1/3);
+  }
+  return [r, g, b];
+}
+
+// ============================================================================
+// RENDU CANVAS
+// ============================================================================
+function renderToCanvas(rgbData, width, height) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  const imgData = ctx.createImageData(width, height);
+  imgData.data.set(rgbData);
+  ctx.putImageData(imgData, 0, 0);
+  return canvas;
+}
+
+// ============================================================================
+// FLUX DE TRAVAIL COMPLET
+// ============================================================================
+function generateFullImage(width, height, seed, palette, colorMode) {
+  const psi = generatePsiField(width, height, seed);
+  
+  let rgb;
+  if (colorMode === 'multilayer') {
+    const { layers } = computeLayers(psi);
+    // Multicouche : combiner les couches avec teintes distinctes
+    const config = PALETTES[palette] || PALETTES['cosmique'];
+    const resultField = new Float64Array(width * height);
+    const combinedRGB = new Float64Array(width * height * 3);
+    
+    for (let n = 0; n < layers.length; n++) {
+      const layer = layers[n];
+      let layerMax = 0;
+      for (let i = 0; i < layer.length; i++) layerMax = Math.max(layerMax, Math.abs(layer[i]));
+      if (layerMax < 1e-12) continue;
+      
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = y * width + x;
+          const val = layer[idx] / layerMax;
+          const amplitude = Math.abs(val);
+          const hue = ((val * 0.3 + (n * PHI_INV + config.hue_shift)) % 1.0 + 1) % 1.0;
+          const sat = 0.5 + amplitude * config.sat_boost * 0.5;
+          const lum = 0.3 + amplitude * 0.5;
+          const [r, g, b] = hslToRgb(hue, Math.min(1, sat), Math.min(1, lum));
+          const weight = amplitude * H_CONSTANTS[n] / H_CONSTANTS.slice(0, layers.length).reduce((a,b)=>a+b,0);
+          combinedRGB[idx * 3] += r * weight;
+          combinedRGB[idx * 3 + 1] += g * weight;
+          combinedRGB[idx * 3 + 2] += b * weight;
+        }
+      }
+    }
+    
+    // Normaliser
+    let maxVal = 0;
+    for (let i = 0; i < combinedRGB.length; i++) maxVal = Math.max(maxVal, combinedRGB[i]);
+    if (maxVal > 1e-12) {
+      for (let i = 0; i < combinedRGB.length; i++) combinedRGB[i] /= maxVal;
+    }
+    
+    rgb = new Uint8ClampedArray(width * height * 4);
+    for (let i = 0; i < width * height; i++) {
+      rgb[i*4] = Math.round(combinedRGB[i*3] * 255);
+      rgb[i*4+1] = Math.round(combinedRGB[i*3+1] * 255);
+      rgb[i*4+2] = Math.round(combinedRGB[i*3+2] * 255);
+      rgb[i*4+3] = 255;
+    }
+  } else {
+    rgb = fieldToRGB(psi, width, height, palette);
+  }
+  
+  return { rgb, psi };
+}
+
+// ============================================================================
+// MÉTRIQUES
+// ============================================================================
+function computeCoherence(psi, width, height) {
+  // Approximation : ratio énergie hautes fréquences / énergie totale
+  let totalEnergy = 0;
+  let highFreqEnergy = 0;
+  
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const idx = y * width + x;
+      const val = psi[idx];
+      totalEnergy += val * val;
+      
+      const gx = psi[idx + 1] - psi[idx - 1];
+      const gy = psi[(y + 1) * width + x] - psi[(y - 1) * width + x];
+      highFreqEnergy += (gx*gx + gy*gy);
+    }
+  }
+  
+  if (totalEnergy < 1e-12) return 0;
+  return 1.0 / (1.0 + highFreqEnergy / totalEnergy);
+}
+
+function computeSymmetry(psi, width, height) {
+  let asymH = 0, asymV = 0, totalAbs = 0;
+  const midX = Math.floor(width / 2);
+  const midY = Math.floor(height / 2);
+  
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < midX; x++) {
+      const idx1 = y * width + x;
+      const idx2 = y * width + (width - 1 - x);
+      asymH += Math.abs(psi[idx1] - psi[idx2]);
+      totalAbs += Math.abs(psi[idx1]);
+    }
+  }
+  
+  if (totalAbs < 1e-12) return 1;
+  return Math.max(0, Math.min(1, 1.0 - asymH / totalAbs));
+}
+
+// ============================================================================
+// UI INTERACTIONS
+// ============================================================================
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+  document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+function randomSeed() {
+  const words = ['cosmos','galaxie','nébuleuse','étoile','lumière','onde','spirale',
+                 'harmonie','fractale','infini','émeraude','cristal','aurore','océan',
+                 'forêt','tempête','cathédrale','mandala','désert','volcan'];
+  const w1 = words[Math.floor(Math.random() * words.length)];
+  const w2 = words[Math.floor(Math.random() * words.length)];
+  document.getElementById('img-seed').value = `${w1} ${w2} ${Date.now() % 1000}`;
+}
+
+function generateImage() {
+  const seedText = document.getElementById('img-seed').value;
+  const style = document.getElementById('img-style').value;
+  const size = parseInt(document.getElementById('img-size').value);
+  const mode = document.getElementById('img-mode').value;
+  const seed = textToSeed(seedText);
+  
+  const preview = document.getElementById('image-preview');
+  preview.innerHTML = '<div class="spinner"></div><div class="status">Génération en cours... (100% mathématique, 0% IA)</div>';
+  
+  // Utiliser setTimeout pour ne pas bloquer l'UI
+  setTimeout(() => {
+    const startTime = performance.now();
+    const { rgb, psi } = generateFullImage(size, size, seed, style, mode);
+    const elapsed = (performance.now() - startTime).toFixed(1);
+    
+    const canvas = renderToCanvas(rgb, size, size);
+    const coherence = computeCoherence(psi, size, size);
+    const symmetry = computeSymmetry(psi, size, size);
+    
+    preview.innerHTML = '';
+    preview.appendChild(canvas);
+    
+    const info = document.createElement('div');
+    info.className = 'status';
+    info.innerHTML = `
+      ✅ Généré en ${elapsed}ms | Cohérence harmonique: ${(coherence*100).toFixed(1)}% | 
+      Symétrie: ${(symmetry*100).toFixed(1)}% | Seed: ${seed} | Style: ${style}
+    `;
+    preview.appendChild(info);
+  }, 50);
+}
+
+// ============================================================================
+// GALERIE (7×7)
+// ============================================================================
+function generateGallery() {
+  const gallery = document.getElementById('gallery-grid');
+  gallery.innerHTML = '<div class="spinner" style="grid-column:1/-1;margin:40px auto"></div>';
+  
+  const styles = Object.keys(PALETTES);
+  const size = 128;
+  
+  setTimeout(() => {
+    gallery.innerHTML = '';
+    
+    for (let s = 0; s < styles.length; s++) {
+      for (let i = 0; i < 7; i++) {
+        const seed = textToSeed(`galerie ${styles[s]} ${i} ${Date.now()}`);
+        const { rgb } = generateFullImage(size, size, seed, styles[s], 'hsl');
+        const canvas = renderToCanvas(rgb, size, size);
+        
+        const item = document.createElement('div');
+        item.className = 'gallery-item';
+        item.appendChild(canvas);
+        
+        const caption = document.createElement('div');
+        caption.className = 'caption';
+        caption.textContent = `${styles[s]} #${i+1}`;
+        item.appendChild(caption);
+        
+        gallery.appendChild(item);
+      }
+    }
+  }, 50);
+}
+
+// ============================================================================
+// GÉNÉRATION VIDÉO (GIF animé via frames)
+// ============================================================================
+function generateVideo() {
+  const seedText = document.getElementById('vid-seed').value;
+  const duration = parseFloat(document.getElementById('vid-duration').value);
+  const fps = parseInt(document.getElementById('vid-fps').value);
+  const style = document.getElementById('vid-style').value;
+  const seed = textToSeed(seedText);
+  const size = 256;
+  
+  const preview = document.getElementById('video-preview');
+  const nFrames = Math.min(fps * duration, 30); // Limiter à 30 frames
+  preview.innerHTML = `<div class="spinner"></div><div class="status">Génération de ${nFrames} frames...</div>`;
+  
+  const frames = [];
+  
+  function generateFrame(frameIdx) {
+    if (frameIdx >= nFrames) {
+      // Toutes les frames sont prêtes — créer l'animation
+      preview.innerHTML = '';
+      const displayCanvas = document.createElement('canvas');
+      displayCanvas.width = size;
+      displayCanvas.height = size;
+      preview.appendChild(displayCanvas);
+      
+      let currentFrame = 0;
+      const interval = 1000 / fps;
+      
+      function animateFrame() {
+        const ctx = displayCanvas.getContext('2d');
+        ctx.putImageData(frames[currentFrame], 0, 0);
+        currentFrame = (currentFrame + 1) % frames.length;
+      }
+      
+      animateFrame();
+      const animInterval = setInterval(animateFrame, interval);
+      
+      const info = document.createElement('div');
+      info.className = 'status';
+      info.innerHTML = `🎬 Animation harmonique | ${nFrames} frames @ ${fps}fps | Seed: ${seed} | Style: ${style}`;
+      preview.appendChild(info);
+      
+      return;
+    }
+    
+    // Évolution temporelle du seed
+    const frameSeed = (seed * 7 + frameIdx) * 31;
+    const t = frameIdx / fps;
+    const tNorm = t / duration;
+    
+    // Générer le champ
+    const psi = generatePsiField(size, size, frameSeed);
+    
+    // Modulations temporelles
+    const tp = {
+      phi_speed: 0.5 * PHI_INV,
+      pi_cycle: 1.0,
+      e_decay: 0.1,
+      sqrt5_micro: 0.02,
+      epi_spiral_speed: E_PI * 0.3,
+    };
+    
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const idx = y * size + x;
+        const X = (x / size) * 2 - 1;
+        const Y = (y / size) * 2 - 1;
+        const R = Math.sqrt(X*X + Y*Y);
+        const theta = Math.atan2(Y, X);
+        
+        let val = psi[idx];
+        
+        // H₁ : rotation lente
+        const rotAngle = t * tp.phi_speed * 2 * PI;
+        val *= Math.cos(rotAngle);
+        
+        // H₂ : cycle périodique
+        const cycle = Math.sin(t * 2 * PI / tp.pi_cycle);
+        val *= (0.7 + 0.3 * cycle);
+        
+        // H₃ : amortissement
+        val *= Math.exp(-R * tp.e_decay * (1 + 0.5 * Math.sin(t * 2 * PI)));
+        
+        // H₄ : ondulation planaire
+        val += 0.15 * Math.cos(X * 5 * SQRT2 + t * PI) * Math.abs(psi[idx]);
+        
+        // H₆ : micro-mouvements
+        val += Math.sin(X * 30 * SQRT5 + t * 20) * Math.cos(Y * 30 * SQRT5 + t * 20) * tp.sqrt5_micro;
+        
+        // H₇ : spirale
+        val += 0.1 * Math.sin(R * 15 * E_PI + (theta + t * tp.epi_spiral_speed) * 7) * (1 - tNorm * 0.5);
+        
+        psi[idx] = val;
+      }
+    }
+    
+    // Normaliser
+    let maxAbs = 0;
+    for (let i = 0; i < psi.length; i++) maxAbs = Math.max(maxAbs, Math.abs(psi[i]));
+    if (maxAbs > 1e-12) for (let i = 0; i < psi.length; i++) psi[i] /= maxAbs;
+    
+    // Style qui évolue
+    const allStyles = Object.keys(PALETTES);
+    const styleIdx = Math.floor((tNorm * PHI * allStyles.length) % allStyles.length);
+    const frameStyle = allStyles[styleIdx];
+    
+    const rgb = fieldToRGB(psi, size, size, frameStyle);
+    const imgData = new ImageData(new Uint8ClampedArray(rgb), size, size);
+    frames.push(imgData);
+    
+    // Prochaine frame
+    setTimeout(() => generateFrame(frameIdx + 1), 10);
+  }
+  
+  generateFrame(0);
+}
+
+// ============================================================================
+// GÉNÉRATION AUDIO (placeholder)
+// ============================================================================
+function generateAudio() {
+  const preview = document.getElementById('audio-preview');
+  preview.innerHTML = `
+    <div style="padding:30px;text-align:center;color:var(--ink2);border:1px solid var(--border);border-radius:12px;background:var(--bg3)">
+      <p style="font-size:1.3em;margin-bottom:12px">🎵</p>
+      <p>La génération audio nécessite le backend Python.</p>
+      <p style="font-size:0.85em;color:var(--ink3);margin-top:8px">
+        Lancez <code style="color:var(--acc)">python av_generation/harmonic_audio_generator.py --demo</code><br>
+        pour générer les fichiers WAV localement.
+      </p>
+      <p style="font-size:0.8em;color:var(--ink3);margin-top:12px">
+        Types disponibles : composition, mélodie, pad, rythme, ambient, effets sonores
+      </p>
+    </div>
+  `;
+}
+
+// ============================================================================
+// INITIALISATION
+// ============================================================================
+document.addEventListener('DOMContentLoaded', () => {
+  // Générer une première image au chargement
+  setTimeout(() => {
+    if (document.getElementById('image-preview').querySelector('.placeholder')) {
+      generateImage();
+    }
+  }, 500);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,45 @@
+# =====================================================================
+# Configuration — Cerveau Harmonique SOPC (V1)
+# =====================================================================
+
+# --- Reproductibilité / déterminisme ---
+seed: 1337
+
+# --- Hologramme du savoir ---
+holographic_memory:
+  # Taille FIXE du buffer (32 Ko), quelle que soit la taille des données ingérées.
+  buffer_size_bytes: 32768
+
+# --- Pipeline de données (streaming, une passe) ---
+data:
+  # Taille d'un morceau (chunk) lu en streaming, en octets.
+  chunk_size: 65536
+  # Source de démonstration (petit corpus). Remplaçable par un dossier / flux To.
+  default_source: "data/knowledge_sample.txt"
+
+# --- Routeur ---
+router:
+  # Seuil de confiance : si retrieve() >= seuil -> réponse hologramme, sinon -> LLM.
+  confidence_threshold: 0.6
+
+# --- LLM de fallback (CPU, GGUF via llama.cpp) ---
+llm:
+  # Chemin local du modèle GGUF SmolLM2 (à télécharger, voir README).
+  model_path: "models/SmolLM2-360M-Instruct-Q4_K_M.gguf"
+  n_ctx: 2048
+  n_threads: 4
+  max_tokens: 256
+  # Décodage strictement déterministe (greedy).
+  temperature: 0.0
+  top_k: 1
+  top_p: 1.0
+  seed: 1337
+
+# --- Modalités ---
+# Seul "text" est opérationnel en V1. Les autres sont des coquilles inactives.
+active_modalities:
+  - text
+
+# --- Artefacts ---
+artifacts:
+  buffer_path: "buffer_32k.bin"

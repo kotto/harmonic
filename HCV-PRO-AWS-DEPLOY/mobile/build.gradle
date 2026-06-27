@@ -1,0 +1,200 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'kotlin-kapt'
+}
+
+android {
+    namespace 'com.hcvpro.openclaw.mobile'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.hcvpro.openclaw.mobile"
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        
+        // HCV PRO - OpenClaw Mobile Configuration
+        buildConfigField "String", "OPENCLAW_VERSION", "\"2.1.0\""
+        buildConfigField "String", "HCV_PRO_VERSION", "\"1.0.0\""
+        buildConfigField "boolean", "AUGMENTED_MODE", "true"
+        buildConfigField "int", "COMPRESSION_ENGINE_VERSION", "3"
+        
+        vectorDrawables {
+            useSupportLibrary true
+        }
+        
+        multiDexEnabled true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            buildConfigField "boolean", "DEBUG_MODE", "false"
+            
+            // Signature pour release
+            signingConfigs {
+                release {
+                    storeFile file('../keystore/hcv_pro_release.keystore')
+                    storePassword 'hcv_pro_2025'
+                    keyAlias 'hcv_pro_key'
+                    keyPassword 'hcv_pro_key_2025'
+                }
+            }
+            signingConfig signingConfigs.release
+        }
+        
+        debug {
+            buildConfigField "boolean", "DEBUG_MODE", "true"
+            applicationIdSuffix ".debug"
+            debuggable true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+        kotlinOptions {
+            jvmTarget = '1.8'
+        }
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    packagingOptions {
+        pickFirst '**/libc++_shared.so'
+        pickFirst '**/libjsc.so'
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/NOTICE.txt'
+    }
+
+    lintOptions {
+        disable 'MissingTranslation'
+        disable 'ExtraTranslation'
+        checkReleaseBuilds false
+    }
+}
+
+dependencies {
+    // HCV PRO Core Dependencies
+    implementation 'org.numpy:numpy:1.24.0'
+    implementation 'org.opencv:opencv-android:4.8.0'
+    implementation 'com.github.luben:zstd-jni:1.5.5-4@aar'
+    implementation 'org.imageio:imageio:2.3.0'
+    
+    // OpenClaw Integration
+    implementation 'ai.openclaw:openclaw-android:2.1.0'
+    implementation 'ai.clawcode:clawcode-sdk:1.5.0'
+    
+    // Android Core
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
+    implementation 'androidx.activity:activity-ktx:1.8.2'
+    implementation 'androidx.fragment:fragment-ktx:1.6.2'
+    
+    // UI Components
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    implementation 'androidx.cardview:cardview:1.0.0'
+    
+    // Navigation
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.7.6'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.7.6'
+    
+    // Background Processing
+    implementation 'androidx.work:work-runtime-ktx:2.8.1'
+    implementation 'androidx.work:work-multiprocess:2.8.1'
+    
+    // Permissions & Security
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+    implementation 'commons-io:commons-io:2.11.0'
+    
+    // Networking
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    
+    // Image Processing
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+    implementation 'jp.wasabeef:glide-transformations:4.3.0'
+    kapt 'com.github.bumptech.glide:compiler:4.16.0'
+    
+    // Video Processing
+    implementation 'com.arthenica:smart-ffmpeg:4.4'
+    implementation 'com.github.wseemann:FFmpegAndroid:0.3.2'
+    
+    // Storage & Database
+    implementation 'androidx.room:room-runtime:2.6.1'
+    implementation 'androidx.room:room-ktx:2.6.1'
+    kapt 'androidx.room:room-compiler:2.6.1'
+    implementation 'androidx.preference:preference-ktx:1.2.1'
+    
+    // AI & ML
+    implementation 'org.tensorflow:tensorflow-lite:2.13.0'
+    implementation 'org.tensorflow:tensorflow-lite-gpu:2.13.0'
+    implementation 'com.google.mlkit:image-labeling:17.0.1'
+    
+    // Background Services
+    implementation 'androidx.work:work-runtime:2.8.1'
+    implementation 'androidx.lifecycle:lifecycle-service:2.6.2'
+    
+    // Testing
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.mockito:mockito-core:5.5.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    
+    // Debugging
+    debugImplementation 'com.facebook.flipper:flipper:0.26.1'
+    debugImplementation 'com.facebook.flipper:flipper-network-plugin:0.26.1'
+}
+
+// HCV PRO - OpenClaw Custom Tasks
+task hcvProBuild {
+    doLast {
+        println "🚀 HCV PRO - OpenClaw Mobile Build"
+        println "Building augmented mobile application..."
+        println "Target: Android ${android.defaultConfig.targetSdk}"
+        println "Min SDK: ${android.defaultConfig.minSdk}"
+        println "Version: ${android.defaultConfig.versionName}"
+    }
+}
+
+// Pre-build task for OpenClaw integration
+task prepareOpenClaw {
+    doLast {
+        println "🤖 Preparing OpenClaw integration..."
+        // Copy OpenClaw libraries if needed
+        // Generate configuration files
+        // Validate API keys
+    }
+}
+
+// Post-build task
+task hcvProPackage {
+    dependsOn 'assembleRelease'
+    doLast {
+        println "📦 HCV PRO - OpenClaw Mobile Package Ready!"
+        println "APK Location: build/outputs/apk/release/")
+        println "Features:")
+        println("  ✅ Advanced Compression Engine")
+        println("  ✅ OpenClaw Integration")
+        println("  ✅ AI Assistant")
+        println("  ✅ Cloud Sync")
+        println("  ✅ Mobile Augmentation")
+    }
+}
+
+// Hook into build process
+preBuild.dependsOn prepareOpenClaw
+assembleRelease.finalizedBy hcvProPackage

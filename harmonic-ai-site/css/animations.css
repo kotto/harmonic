@@ -1,0 +1,467 @@
+/* ==========================================================================
+   Harmonic AI - Animations Avancées
+   Effets fluides et modernes basés sur le ratio d'or φ
+   ========================================================================== */
+
+/* Variables d'animation */
+:root {
+    --animation-duration-fast: 150ms;
+    --animation-duration-normal: 300ms;
+    --animation-duration-slow: 500ms;
+    --animation-duration-slower: 800ms;
+    --animation-timing-ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --animation-timing-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* 1. Animations de fond harmonique */
+@keyframes harmonic-gradient {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.harmonic-bg {
+    background: linear-gradient(
+        135deg,
+        var(--color-primary) 0%,
+        var(--color-primary-light) 25%,
+        var(--color-accent-purple) 50%,
+        var(--color-secondary) 75%,
+        var(--color-secondary-light) 100%
+    );
+    background-size: 400% 400%;
+    animation: harmonic-gradient 15s ease infinite;
+}
+
+/* 2. Pulsation subtile pour les éléments importants */
+@keyframes subtle-pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.02);
+        opacity: 0.9;
+    }
+}
+
+.pulse-element {
+    animation: subtle-pulse 3s var(--animation-timing-ease) infinite;
+}
+
+/* 3. Flottement léger */
+@keyframes gentle-float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.float-element {
+    animation: gentle-float 6s var(--animation-timing-ease) infinite;
+}
+
+/* 4. Rotation continue (pour les icônes de chargement) */
+@keyframes continuous-rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.rotate-element {
+    animation: continuous-rotate 20s linear infinite;
+}
+
+/* 5. Apparition progressive avec délai φ */
+@keyframes staggered-fade-in {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.staggered-item:nth-child(1) { animation-delay: 0ms; }
+.staggered-item:nth-child(2) { animation-delay: 100ms; }
+.staggered-item:nth-child(3) { animation-delay: 200ms; }
+.staggered-item:nth-child(4) { animation-delay: 300ms; }
+.staggered-item:nth-child(5) { animation-delay: 500ms; } /* φ * 300ms ≈ 485ms */
+
+.staggered-item {
+    opacity: 0;
+    animation: staggered-fade-in var(--animation-duration-slow) var(--animation-timing-ease) forwards;
+}
+
+/* 6. Effet de vague pour les séparateurs */
+@keyframes wave-motion {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+.wave-separator {
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        var(--color-primary) 25%, 
+        transparent 50%, 
+        var(--color-secondary) 75%, 
+        transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: wave-motion 10s linear infinite;
+}
+
+/* 7. Effet de particules (points flottants) */
+@keyframes particle-float {
+    0%, 100% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.3;
+    }
+    33% {
+        transform: translate(10px, -10px) scale(1.1);
+        opacity: 0.5;
+    }
+    66% {
+        transform: translate(-10px, 10px) scale(0.9);
+        opacity: 0.2;
+    }
+}
+
+.particle {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--color-primary);
+    animation: particle-float 8s var(--animation-timing-ease) infinite;
+}
+
+.particle:nth-child(2) {
+    animation-delay: 1.618s;
+    background: var(--color-secondary);
+}
+
+.particle:nth-child(3) {
+    animation-delay: 3.236s;
+    background: var(--color-accent-purple);
+}
+
+/* 8. Effet de glissement au survol */
+.hover-slide {
+    position: relative;
+    overflow: hidden;
+}
+
+.hover-slide::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.2), 
+        transparent
+    );
+    transition: left 0.6s var(--animation-timing-ease);
+}
+
+.hover-slide:hover::before {
+    left: 100%;
+}
+
+/* 9. Effet de révélation de texte */
+.reveal-text {
+    position: relative;
+    overflow: hidden;
+}
+
+.reveal-text::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--color-primary);
+    transform: translateX(-100%);
+    transition: transform 0.8s var(--animation-timing-ease);
+}
+
+.reveal-text:hover::after {
+    transform: translateX(100%);
+}
+
+/* 10. Animation de chargement harmonique */
+@keyframes harmonic-loading {
+    0%, 100% {
+        transform: scale(0.8);
+        opacity: 0.5;
+    }
+    25% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(0.8);
+        opacity: 0.5;
+    }
+    75% {
+        transform: scale(1.1);
+        opacity: 0.7;
+    }
+}
+
+.loading-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    animation: harmonic-loading 1.618s var(--animation-timing-bounce) infinite;
+}
+
+.loading-dot:nth-child(2) {
+    animation-delay: 0.2s;
+    background: var(--color-secondary);
+}
+
+.loading-dot:nth-child(3) {
+    animation-delay: 0.4s;
+    background: var(--color-accent-purple);
+}
+
+/* 11. Effet de parallaxe subtil */
+.parallax-element {
+    will-change: transform;
+    transition: transform 0.3s var(--animation-timing-ease);
+}
+
+/* 12. Animation de rebond élégant */
+@keyframes elegant-bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    25% {
+        transform: translateY(-15px);
+    }
+    50% {
+        transform: translateY(0);
+    }
+    75% {
+        transform: translateY(-5px);
+    }
+}
+
+.bounce-element {
+    animation: elegant-bounce 2s var(--animation-timing-bounce) infinite;
+}
+
+/* 13. Effet de scintillement pour les données */
+@keyframes data-twinkle {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.data-point {
+    animation: data-twinkle 3s var(--animation-timing-ease) infinite;
+}
+
+/* 14. Transition de morphing pour les formes */
+@keyframes shape-morph {
+    0% {
+        border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+    }
+    25% {
+        border-radius: 58% 42% 75% 25% / 76% 46% 54% 24%;
+    }
+    50% {
+        border-radius: 50% 50% 33% 67% / 55% 27% 73% 45%;
+    }
+    75% {
+        border-radius: 33% 67% 58% 42% / 63% 68% 32% 37%;
+    }
+    100% {
+        border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+    }
+}
+
+.morph-shape {
+    animation: shape-morph 20s ease-in-out infinite;
+}
+
+/* 15. Effet de focus avec halo */
+@keyframes focus-halo {
+    0% {
+        box-shadow: 0 0 0 0 rgba(41, 98, 255, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(41, 98, 255, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(41, 98, 255, 0);
+    }
+}
+
+.focus-element:focus {
+    animation: focus-halo 1.5s var(--animation-timing-ease);
+}
+
+/* 16. Animation de progression (barres de chargement) */
+@keyframes progress-fill {
+    0% {
+        width: 0%;
+    }
+    100% {
+        width: 100%;
+    }
+}
+
+.progress-bar {
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        var(--color-primary), 
+        var(--color-secondary)
+    );
+    animation: progress-fill 2s var(--animation-timing-ease) forwards;
+}
+
+/* 17. Effet de vibration subtile pour les notifications */
+@keyframes subtle-vibration {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    20%, 60% {
+        transform: translateX(-2px);
+    }
+    40%, 80% {
+        transform: translateX(2px);
+    }
+}
+
+.vibrate-element {
+    animation: subtle-vibration 0.5s var(--animation-timing-ease);
+}
+
+/* 18. Animation de défilement infini */
+@keyframes infinite-scroll {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+.scroll-container {
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.scroll-content {
+    display: inline-block;
+    animation: infinite-scroll 30s linear infinite;
+}
+
+/* 19. Effet de perspective 3D */
+.perspective-container {
+    perspective: 1000px;
+}
+
+.perspective-element {
+    transform-style: preserve-3d;
+    transition: transform 0.6s var(--animation-timing-ease);
+}
+
+.perspective-element:hover {
+    transform: rotateY(10deg) rotateX(5deg);
+}
+
+/* 20. Animation de respiration (pour les éléments interactifs) */
+@keyframes breathing {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.9;
+    }
+}
+
+.breathing-element {
+    animation: breathing 4s var(--animation-timing-ease) infinite;
+}
+
+/* Classes utilitaires pour les animations */
+.animate-on-scroll {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s var(--animation-timing-ease), 
+                transform 0.8s var(--animation-timing-ease);
+}
+
+.animate-on-scroll.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-500 { animation-delay: 500ms; }
+.delay-800 { animation-delay: 800ms; }
+
+.duration-fast { animation-duration: var(--animation-duration-fast); }
+.duration-normal { animation-duration: var(--animation-duration-normal); }
+.duration-slow { animation-duration: var(--animation-duration-slow); }
+.duration-slower { animation-duration: var(--animation-duration-slower); }
+
+/* Optimisations de performance */
+.will-change-transform {
+    will-change: transform;
+}
+
+.will-change-opacity {
+    will-change: opacity;
+}
+
+/* Préférences de réduction de mouvement */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

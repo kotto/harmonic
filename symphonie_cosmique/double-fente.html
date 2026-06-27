@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎯 L'Expérience de la Double Fente — Expliquée Simplement</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --orange: #ffa502; --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;line-height:1.75;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 30% 10%,rgba(62,240,216,0.08),transparent 55%),
+             radial-gradient(ellipse at 70% 60%,rgba(122,92,255,0.05),transparent 60%);
+  pointer-events:none;
+}
+.container{max-width:900px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:7px 14px;border-radius:20px;font-size:0.88em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+
+.hero{text-align:center;padding:60px 20px 50px;background:linear-gradient(180deg,rgba(62,240,216,0.1) 0%,rgba(122,92,255,0.05) 50%,transparent 100%)}
+.hero .badge{display:inline-block;padding:5px 16px;border-radius:14px;font-size:0.82em;font-weight:700;background:rgba(62,240,216,0.12);color:var(--acc);margin-bottom:20px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:2.3em;font-weight:700;background:linear-gradient(135deg,var(--acc),var(--phi));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;line-height:1.3}
+.hero .tagline{font-size:1.1em;color:var(--ink2);max-width:700px;margin:0 auto}
+
+section{padding:40px 0}section:nth-child(even){background:var(--bg2)}
+h2{font-size:1.6em;color:var(--phi);margin-bottom:8px;text-align:center}
+h2 .num{display:block;font-size:0.5em;color:var(--ink3);letter-spacing:2px;margin-bottom:4px;font-weight:400}
+.section-desc{text-align:center;color:var(--ink3);margin-bottom:28px;max-width:650px;margin-left:auto;margin-right:auto;font-size:0.95em}
+h3{font-size:1.15em;color:var(--acc);margin:22px 0 8px}
+p{color:var(--ink2);margin-bottom:12px;line-height:1.75}
+p strong{color:var(--ink)}
+em{color:var(--phi2)}
+
+.eq-box{background:rgba(15,12,46,0.8);border:2px solid rgba(212,168,67,0.35);border-radius:16px;padding:20px 26px;margin:18px 0;text-align:center}
+.eq-box .main-eq{font-family:'Courier New',monospace;font-size:1.2em;font-weight:700;color:var(--phi);letter-spacing:1px}
+.eq-box .desc{color:var(--ink3);font-size:0.84em;margin-top:8px}
+
+.highlight{background:var(--bg3);border:1px solid rgba(62,240,216,0.2);border-radius:14px;padding:18px 22px;margin:18px 0}
+.highlight .label{color:var(--acc);font-weight:600;font-size:0.80em;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.highlight p:last-child{margin-bottom:0}
+
+.result-box{background:rgba(46,213,115,0.04);border:1px solid rgba(46,213,115,0.25);border-radius:14px;padding:16px 20px;margin:16px 0}
+.result-box .label{color:var(--green);font-weight:600;font-size:0.80em;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+
+blockquote{border-left:3px solid var(--phi);padding:14px 22px;margin:18px 0;background:rgba(212,168,67,0.04);border-radius:0 12px 12px 0;font-style:italic;color:var(--ink);font-size:1.02em}
+
+/* Fente experiment diagram */
+.experiment-diagram{
+  background:var(--bg3);border:1px solid var(--border);border-radius:16px;
+  padding:32px 20px;margin:20px 0;text-align:center;
+  font-family:'Courier New',monospace;font-size:0.78em;
+  color:var(--acc);line-height:1.3;
+  overflow-x:auto;
+}
+.experiment-diagram pre{display:inline-block;text-align:left}
+
+.wave-illustration{
+  display:flex;justify-content:center;align-items:center;gap:12px;
+  margin:20px 0;flex-wrap:wrap;
+}
+.wave-step{
+  background:var(--bg3);border:1px solid var(--border);border-radius:14px;
+  padding:20px 18px;text-align:center;flex:1;min-width:160px;max-width:250px;
+}
+.wave-step .icon{font-size:2.5em;margin-bottom:8px}
+.wave-step h4{color:var(--phi);font-size:0.95em;margin-bottom:6px}
+.wave-step p{font-size:0.82em;margin-bottom:0}
+
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:0.88em}
+th{background:var(--bg3);color:var(--phi);padding:9px 12px;text-align:left;border-bottom:2px solid rgba(212,168,67,0.25);font-weight:600}
+td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--ink2);font-size:0.86em}
+tr:hover td{background:rgba(62,240,216,0.03)}
+
+footer{text-align:center;padding:24px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.84em;margin-top:30px}
+footer a{color:var(--phi);text-decoration:none}
+
+@media(max-width:640px){
+  .hero h1{font-size:1.5em}
+  .wave-illustration{flex-direction:column;align-items:stretch}
+  .wave-step{max-width:100%}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Symphonie Cosmique</a>
+    <a href="#experience">L'Expérience</a>
+    <a href="#mystere">Le Mystère</a>
+    <a href="#harmonique">Explication Harmonique</a>
+    <a href="#comprendre">Pour comprendre</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">Physique Quantique Expliquée</div>
+    <h1>L'Expérience de la Double Fente</h1>
+    <p class="tagline">
+      La plus belle, la plus mystérieuse, la plus profonde expérience de toute la physique —
+      expliquée simplement, et résolue par Ψ = Σ Hₙ (Ψ₁)ⁿ.
+    </p>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ==================== SECTION 1 : L'EXPÉRIENCE ==================== -->
+<section id="experience">
+  <h2><span class="num">1</span>L'Expérience — De quoi s'agit-il ?</h2>
+
+  <p>
+    Imaginez ceci. Vous avez une lampe, une plaque avec deux fentes fines, et un écran blanc au fond. 
+    Vous allumez la lampe. La lumière passe par les deux fentes. Sur l'écran, vous voyez apparaître 
+    <strong>des bandes alternées claires et sombres</strong> — comme des vagues à la surface de l'eau 
+    qui se croisent.
+  </p>
+
+  <div class="experiment-diagram">
+    <pre>
+                    LUMIÈRE
+                       │
+                       ▼
+    ┌─────────────────────────────────────┐
+    │  SOURCE            ═══════════►     │
+    │  (laser)                            │
+    └─────────────────────────────────────┘
+                       │
+                       ▼
+    ┌─────────────────────────────────────┐
+    │          ██████████████             │
+    │          ██   FENTE 1 ██            │  ← PLAQUE À DEUX FENTES
+    │          ██   FENTE 2 ██            │
+    │          ██████████████             │
+    └─────────────────────────────────────┘
+                │           │
+                ▼           ▼
+         ╲      │           │      ╱
+          ╲     │  INTERFÉ- │     ╱
+           ╲    │   RENCE   │    ╱
+            ╲   │           │   ╱
+             ╲  │           │  ╱
+              ╲ │           │ ╱
+    ┌─────────────────────────────────────┐
+    │ ▓░▓░▓░▓░▓░▓░▓░▓░▓░▓░▓░▓░▓░▓░▓░▓ │  ← ÉCRAN
+    │ ░▓░▓░▓░▓░▓░▓░▓░▓░▓░▓░▓░▓░▓░▓░▓░▓ │     FRANGES
+    │ BANDES CLAIRES ET SOMBRES ALTERNÉES│     D'INTERFÉRENCE
+    └─────────────────────────────────────┘
+    </pre>
+  </div>
+
+  <p>
+    Ce motif de bandes s'appelle des <strong>franges d'interférence</strong>. Il apparaît parce que 
+    la lumière qui sort de la fente 1 et celle qui sort de la fente 2 se rencontrent sur l'écran. 
+    Là où les vagues s'additionnent, c'est clair. Là où elles s'annulent, c'est sombre.
+  </p>
+
+  <p>
+    Jusqu'ici, rien d'extraordinaire. La lumière est une onde, les ondes interfèrent — c'est normal.
+  </p>
+</section>
+
+<!-- ==================== SECTION 2 : LE MYSTÈRE ==================== -->
+<section id="mystere">
+  <h2><span class="num">2</span>Le Mystère — Quand tout bascule</h2>
+
+  <p>
+    Maintenant, <strong>réduisez l'intensité de la lumière</strong> jusqu'à n'envoyer 
+    <strong>qu'un seul photon à la fois</strong>. Un seul. Puis un autre. Puis un autre.
+  </p>
+
+  <div class="wave-illustration">
+    <div class="wave-step">
+      <div class="icon">💡</div>
+      <h4>1. Un seul photon</h4>
+      <p>Vous envoyez <strong>un photon unique</strong>. Il passe par l'une OU l'autre fente. Sur l'écran : <strong>un petit point</strong>.</p>
+    </div>
+    <div class="wave-step">
+      <div class="icon">💡💡</div>
+      <h4>2. Encore un photon</h4>
+      <p>Un deuxième photon. Encore <strong>un petit point</strong> ailleurs sur l'écran.</p>
+    </div>
+    <div class="wave-step">
+      <div class="icon">💡💡💡</div>
+      <h4>3. Des milliers de photons</h4>
+      <p>Après des milliers de photons, les points <strong>dessinent les franges</strong> ! Les bandes alternées réapparaissent.</p>
+    </div>
+  </div>
+
+  <p>
+    <strong>C'est le choc.</strong> Chaque photon passe <strong>seul</strong>. Il ne peut pas interférer 
+    avec un autre photon — il n'y a personne d'autre dans l'appareil. Et pourtant, collectivement, 
+    les photons dessinent un motif d'interférence. Comme si chaque photon <strong>passait par les deux fentes 
+    en même temps</strong> et interférait avec lui-même.
+  </p>
+
+  <div class="highlight">
+    <div class="label">🤯 Le mystère en une phrase</div>
+    <p>
+      <strong>Un photon unique passe par les deux fentes simultanément, interfère avec lui-même, 
+      et atterrit sur l'écran comme s'il était une onde — alors qu'on le détecte comme une particule.</strong>
+    </p>
+  </div>
+
+  <!-- ==================== LE DÉTECTEUR ==================== -->
+  <h3>Et si on essaie de regarder ?</h3>
+  <p>
+    Les physiciens ont eu une idée : plaçons un détecteur près des fentes pour savoir <strong>par laquelle</strong> 
+    le photon est passé. Juste pour voir.
+  </p>
+  <p>
+    Résultat : <strong>dès qu'on regarde, les franges disparaissent.</strong> Le photon se comporte 
+    comme une bille qui passe par une fente ou l'autre — plus d'interférence. L'écran montre deux taches 
+    floues, pas des bandes.
+  </p>
+  <p>
+    <strong>L'acte d'observer détruit le motif d'interférence.</strong> C'est comme si le photon 
+    « savait » qu'on le regarde et changeait de comportement.
+  </p>
+
+  <div class="result-box">
+    <div class="label">Résumé du mystère</div>
+    <p>
+      • <strong>Sans détecteur :</strong> franges d'interférence → le photon se comporte comme une <strong>onde</strong><br>
+      • <strong>Avec détecteur :</strong> plus de franges → le photon se comporte comme une <strong>particule</strong><br>
+      • <strong>La question :</strong> comment le photon « choisit-il » son comportement selon qu'on l'observe ou pas ?
+    </p>
+  </div>
+</section>
+
+<!-- ==================== SECTION 3 : EXPLICATION HARMONIQUE ==================== -->
+<section id="harmonique">
+  <h2><span class="num">3</span>L'Explication par la Théorie Harmonique</h2>
+  <p class="section-desc">
+    L'interprétation standard (Copenhague) dit : « le photon est les deux à la fois, et l'observation 
+    l'oblige à choisir ». C'est poétique, mais ça n'explique rien. La Théorie Harmonique, elle, explique.
+  </p>
+
+  <h3>3.1 Le photon EST une onde — toujours</h3>
+  <p>
+    Dans la Théorie Harmonique, il n'y a pas de « dualité onde-particule ». Le photon <strong>est</strong> 
+    une onde. Ce qu'on appelle « particule » est simplement le moment où cette onde interagit avec la matière 
+    (l'écran, le détecteur) et <strong>localise son énergie en un point</strong>.
+  </p>
+
+  <div class="eq-box" style="border:2px solid rgba(62,240,216,0.3);background:rgba(62,240,216,0.03)">
+    <div class="main-eq">Ψ_photon = Σ Hₙ (Ψ₁)ⁿ</div>
+    <div class="desc">
+      Le photon est une superposition d'harmoniques d'une onde fondamentale Ψ₁.<br>
+      Ce n'est PAS une particule qui « devient » une onde. C'est une onde qui, parfois, <strong>se manifeste</strong> 
+      localement.
+    </div>
+  </div>
+
+  <h3>3.2 Sans détecteur : l'onde se déploie librement</h3>
+  <p>
+    Quand le photon traverse les fentes <strong>sans être observé</strong>, son onde Ψ se déploie 
+    naturellement. Elle passe par les deux fentes — pas comme une bille qui devrait choisir, mais comme 
+    une vague qui traverse toutes les ouvertures disponibles. C'est <strong>la nature même d'une onde</strong> 
+    que de se répartir dans l'espace.
+  </p>
+  <p>
+    Les deux « morceaux » d'onde qui sortent des fentes se superposent. Là où ils sont en phase 
+    (interférence constructive), l'intensité est forte → <strong>bande claire</strong>. Là où ils sont 
+    en opposition de phase (interférence destructive), l'intensité est nulle → <strong>bande sombre</strong>.
+  </p>
+  <p>
+    Quand l'onde touche l'écran, elle <strong>cède son énergie en un point</strong> — un électron 
+    de l'écran absorbe l'énergie d'un seul coup. C'est ce qu'on appelle « détecter un photon ». 
+    Mais ce n'est pas une particule qui arrive : c'est une onde qui se <strong>localise</strong> au moment 
+    de l'interaction.
+  </p>
+
+  <h3>3.3 Avec détecteur : l'onde est perturbée</h3>
+  <p>
+    Placer un détecteur près d'une fente, c'est <strong>ajouter une interaction</strong> dans le chemin 
+    de l'onde. Le détecteur est un système physique (atomes, électrons) avec ses propres états Ψ. 
+    Quand l'onde du photon rencontre le détecteur, les deux systèmes <strong>interfèrent</strong>.
+  </p>
+  <p>
+    Cette interférence supplémentaire <strong>détruit la cohérence de phase</strong> entre les deux 
+    chemins (fente 1 et fente 2). L'onde du photon ne peut plus interférer avec elle-même parce que 
+    le détecteur a <strong>brouillé sa phase</strong>. C'est comme essayer d'entendre un diapason 
+    dans une foule bruyante — le son est toujours là, mais vous ne percevez plus la note pure.
+  </p>
+
+  <div class="highlight">
+    <div class="label">🎯 L'explication en une phrase</div>
+    <p>
+      <strong>Le photon est une onde. Le détecteur est une autre onde. Quand elles se rencontrent, 
+      leurs phases se brouillent — plus d'interférence possible. Ce n'est pas la « conscience » 
+      de l'observateur qui change la réalité. C'est l'interaction physique entre deux ondes.</strong>
+    </p>
+  </div>
+
+  <h3>3.4 Pourquoi l'énergie se dépose en un point ?</h3>
+  <p>
+    C'est la dernière pièce du puzzle. Si le photon est une onde étalée, pourquoi l'écran montre-t-il 
+    un <strong>point</strong> et non une tache floue ?
+  </p>
+  <p>
+    Réponse harmonique : l'écran est fait d'atomes. Chaque atome a ses propres harmoniques Ψ_atome. 
+    L'onde du photon <strong>ne peut céder son énergie que par résonance</strong> — quand sa fréquence 
+    correspond exactement à une transition électronique d'un atome. Cette résonance est <strong>locale</strong> : 
+    un seul atome absorbe le photon. Mais <strong>quel</strong> atome ? Celui pour lequel la somme 
+    des couches harmoniques Hₙ au point d'impact est maximale — c'est-à-dire là où l'interférence 
+    est constructive.
+  </p>
+
+  <div class="eq-box">
+    <div class="main-eq">P(x) ∝ |Ψ(x)|² = |Σ Hₙ (Ψ₁)ⁿ|²</div>
+    <div class="desc">
+      La probabilité que le photon soit absorbé au point x est proportionnelle au carré de l'amplitude 
+      de l'onde Ψ en ce point. C'est la règle de Born — qui n'est plus un postulat mystérieux mais une 
+      conséquence de la résonance harmonique.
+    </div>
+  </div>
+
+  <h3>3.5 La vision d'ensemble</h3>
+
+  <table>
+    <tr><th>Étape</th><th>Interprétation standard</th><th>Interprétation Harmonique</th></tr>
+    <tr>
+      <td>Le photon traverse les fentes</td>
+      <td>« Il passe par les deux en même temps » (mystère)</td>
+      <td style="color:var(--green)">L'onde Ψ se répartit naturellement dans l'espace — elle passe par toutes les ouvertures</td>
+    </tr>
+    <tr>
+      <td>Les franges apparaissent</td>
+      <td>« La fonction d'onde interfère avec elle-même » (abstrait)</td>
+      <td style="color:var(--green)">Superposition physique des harmoniques Hₙ(Ψ₁)ⁿ — interférence réelle, pas mathématique</td>
+    </tr>
+    <tr>
+      <td>On place un détecteur</td>
+      <td>« L'observation effondre la fonction d'onde » (mystique)</td>
+      <td style="color:var(--green)">Le détecteur est une onde qui interfère avec Ψ_photon → la cohérence de phase est détruite</td>
+    </tr>
+    <tr>
+      <td>Un point sur l'écran</td>
+      <td>« La particule se matérialise » (dualité)</td>
+      <td style="color:var(--green)">L'onde cède son énergie par résonance à UN atome — celui où |Ψ|² est maximal</td>
+    </tr>
+  </table>
+</section>
+
+<!-- ==================== SECTION 4 : POUR COMPRENDRE ==================== -->
+<section id="comprendre">
+  <h2><span class="num">4</span>Pour Comprendre Vraiment — Une Analogie</h2>
+  <p class="section-desc">
+    Si tout ça vous semble encore abstrait, voici l'analogie qui clarifie tout.
+  </p>
+
+  <h3>L'analogie de la goutte d'eau sur un étang 🌊</h3>
+
+  <div class="wave-illustration">
+    <div class="wave-step">
+      <div class="icon">💧</div>
+      <h4>La goutte = la source</h4>
+      <p>Vous laissez tomber une goutte d'eau sur un étang calme. Une <strong>onde circulaire</strong> se forme et se propage.</p>
+    </div>
+    <div class="wave-step">
+      <div class="icon">🚧🚧</div>
+      <h4>Les fentes = deux ouvertures</h4>
+      <p>L'onde arrive sur une barrière avec deux ouvertures. <strong>Deux nouvelles ondes circulaires</strong> émergent de l'autre côté.</p>
+    </div>
+    <div class="wave-step">
+      <div class="icon">〰️</div>
+      <h4>L'écran = la berge</h4>
+      <p>Sur la berge, les deux ondes se croisent. Par endroits, l'eau monte (vague + vague). Ailleurs, l'eau reste plate (vague − vague).</p>
+    </div>
+  </div>
+
+  <p>
+    <strong>Le photon, c'est la goutte.</strong> Une fois la goutte tombée, l'onde se propage — elle 
+    n'a plus besoin de la goutte. L'onde traverse les deux ouvertures parce que c'est une onde, 
+    pas un objet solide.
+  </p>
+
+  <p>
+    <strong>Le détecteur, c'est un enfant qui tape dans l'eau.</strong> Si un enfant tape dans l'eau 
+    près d'une ouverture, il crée ses propres vagues qui se mélangent à l'onde principale. Le motif 
+    sur la berge devient illisible — plus de belles franges. L'enfant n'a pas « observé » l'onde au sens 
+    mystique. Il a <strong>physiquement perturbé le milieu</strong>.
+  </p>
+
+  <p>
+    <strong>Le point sur l'écran, c'est une feuille qui absorbe la vague.</strong> Une feuille flotte 
+    sur l'eau près de la berge. Quand la vague arrive, la feuille monte brusquement — elle a absorbé 
+    l'énergie de la vague <strong>en un point</strong>. La vague était étalée, mais son énergie s'est 
+    transmise localement. Aucun mystère.
+  </p>
+
+  <blockquote>
+    « La double fente n'est pas un mystère quantique. C'est un phénomène ondulatoire ordinaire, 
+    masqué par un vocabulaire inutilement mystérieux. Le photon est une onde. Le détecteur est une onde. 
+    L'écran est fait d'ondes. Quand on traite tout comme des ondes, tout s'explique. 
+    Ψ = Σ Hₙ (Ψ₁)ⁿ. »
+    <div class="attrib">— Théorie Harmonique</div>
+  </blockquote>
+
+  <h3>En bref — ce qu'il faut retenir</h3>
+
+  <table style="font-size:0.92em">
+    <tr><th style="width:50%">Ce que l'expérience montre</th><th>Ce que la Théorie Harmonique explique</th></tr>
+    <tr>
+      <td>Un photon unique crée des franges</td>
+      <td>L'onde Ψ du photon passe par les deux fentes — c'est une onde, c'est normal</td>
+    </tr>
+    <tr>
+      <td>Un détecteur détruit les franges</td>
+      <td>Le détecteur est une onde qui interfère avec Ψ → déphasage → fin de l'interférence nette</td>
+    </tr>
+    <tr>
+      <td>L'énergie arrive en un point</td>
+      <td>L'onde se localise par résonance avec UN atome au moment de l'absorption</td>
+    </tr>
+    <tr>
+      <td>|Ψ|² donne la probabilité</td>
+      <td>Là où l'intensité de l'onde est maximale, la résonance avec l'atome est la plus probable</td>
+    </tr>
+  </table>
+
+</section>
+
+</div><!-- .container -->
+
+<footer>
+  <div class="container">
+    <p>
+      <a href="index.html">Symphonie Cosmique</a> |
+      <a href="document-fondateur.html">Document Fondateur</a> |
+      <a href="psi-quantique-classique.html">Ψ Quantique & Classique</a> |
+      <a href="laboratoire-quantique.html">Laboratoire Quantique</a>
+    </p>
+    <p style="margin-top:8px">
+      L'Expérience de la Double Fente expliquée par Ψ = Σ Hₙ (Ψ₁)ⁿ — © 2026 Théorie Harmonique
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

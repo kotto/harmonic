@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCS Harmonic Music Generator</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        'hcs-purple': '#8B5CF6',
+                        'hcs-pink': '#EC4899',
+                        'hcs-blue': '#3B82F6',
+                        'hcs-green': '#10B981',
+                        'hcs-gold': '#F59E0B',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        * { scroll-behavior: smooth; }
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        
+        .gradient-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            background: radial-gradient(ellipse at 20% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
+        }
+        
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+        
+        .glass-card:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+            box-shadow: 0 12px 48px rgba(139, 92, 246, 0.1);
+        }
+        
+        .gold-accent {
+            background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 50%, #F59E0B 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(139, 92, 246, 0.4);
+        }
+        
+        .loading-spinner {
+            border: 3px solid rgba(139, 92, 246, 0.2);
+            border-top: 3px solid #8B5CF6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .waveform {
+            background: linear-gradient(90deg, #8B5CF6 0%, #EC4899 50%, #8B5CF6 100%);
+            height: 60px;
+            border-radius: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .waveform::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: wave 2s linear infinite;
+        }
+        
+        @keyframes wave {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+    </style>
+</head>
+
+<body class="font-sans">
+    <div class="gradient-bg"></div>
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full glass-card z-50 border-b border-white/10">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 bg-gradient-to-br from-hcs-purple to-hcs-pink rounded-lg flex items-center justify-center">
+                        <i data-lucide="music" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold gold-accent">HCS Harmonic Music</h1>
+                        <p class="text-xs text-gray-400">IA Music Generation</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="healthBtn" class="flex items-center space-x-2 px-3 py-1 rounded-full bg-green-500/20 border border-green-500/30 text-green-400">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-sm">Connected</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 pt-24 pb-12">
+        <!-- Hero Section -->
+        <section class="text-center mb-12 fade-in">
+            <h2 class="text-4xl md:text-5xl font-bold mb-4 gold-accent">Harmonic Music Generator</h2>
+            <p class="text-xl text-gray-400 mb-8 max-w-3xl mx-auto">
+                Génération IA de musique harmonique basée sur les principes de la compression harmonique HCS
+            </p>
+            
+            <!-- Waveform Animation -->
+            <div class="waveform max-w-2xl mx-auto mb-8"></div>
+            
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="glass-card rounded-xl p-6">
+                    <i data-lucide="music-2" class="w-8 h-8 text-hcs-purple mb-2"></i>
+                    <h3 class="text-lg font-semibold mb-1">Styles</h3>
+                    <p class="text-sm text-gray-400">Pop, Jazz, Classical, Electronic</p>
+                </div>
+                <div class="glass-card rounded-xl p-6">
+                    <i data-lucide="tuning" class="w-8 h-8 text-hcs-pink mb-2"></i>
+                    <h3 class="text-lg font-semibold mb-1">Harmonies</h3>
+                    <p class="text-sm text-gray-400">Séries harmoniques naturelles</p>
+                </div>
+                <div class="glass-card rounded-xl p-6">
+                    <i data-lucide="zap" class="w-8 h-8 text-hcs-blue mb-2"></i>
+                    <h3 class="text-lg font-semibold mb-1">Generation</h3>
+                    <p class="text-sm text-gray-400">IA temps réel</p>
+                </div>
+                <div class="glass-card rounded-xl p-6">
+                    <i data-lucide="download" class="w-8 h-8 text-hcs-green mb-2"></i>
+                    <h3 class="text-lg font-semibold mb-1">Export</h3>
+                    <p class="text-sm text-gray-400">WAV haute qualité</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Generation Interface -->
+        <div class="glass-card rounded-2xl p-8 mb-8">
+            <h3 class="text-2xl font-semibold mb-6 flex items-center">
+                <i data-lucide="sliders" class="w-6 h-6 mr-3 text-hcs-purple"></i>
+                Génération Musicale
+            </h3>
+            
+            <form id="generationForm" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Style Selection -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Style Musical</label>
+                        <select id="style" name="style" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white">
+                            <option value="pop">Pop</option>
+                            <option value="jazz">Jazz</option>
+                            <option value="classical">Classique</option>
+                            <option value="electronic">Électronique</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Key Selection -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Tonalité</label>
+                        <select id="key" name="key" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white">
+                            <option value="C">C (Do)</option>
+                            <option value="D">D (Ré)</option>
+                            <option value="E">E (Mi)</option>
+                            <option value="F">F (Fa)</option>
+                            <option value="G">G (Sol)</option>
+                            <option value="A">A (La)</option>
+                            <option value="B">B (Si)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Tempo -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Tempo: <span id="tempoValue">120</span> BPM</label>
+                        <input type="range" id="tempo" name="tempo" min="60" max="180" value="120" class="w-full">
+                    </div>
+                    
+                    <!-- Duration -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Durée: <span id="durationValue">30</span> secondes</label>
+                        <input type="range" id="duration" name="duration" min="10" max="120" value="30" step="5" class="w-full">
+                    </div>
+                </div>
+                
+                <!-- Scale Selection -->
+                <div>
+                    <label class="block text-sm font-medium mb-2">Gamme</label>
+                    <select id="scale" name="scale" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white">
+                        <option value="major">Majeure</option>
+                        <option value="minor">Mineure</option>
+                        <option value="pentatonic">Pentatonique</option>
+                        <option value="blues">Blues</option>
+                        <option value="chromatic">Chromatique</option>
+                    </select>
+                </div>
+                
+                <!-- Generate Button -->
+                <button type="submit" id="generateBtn" class="btn-primary w-full py-4 rounded-lg text-lg">
+                    <i data-lucide="play" class="w-5 h-5 inline mr-2"></i>
+                    Générer la Musique
+                </button>
+            </form>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden glass-card rounded-2xl p-8">
+            <h3 class="text-2xl font-semibold mb-6 flex items-center">
+                <i data-lucide="music-2" class="w-6 h-6 mr-3 text-hcs-purple"></i>
+                Résultat de Génération
+            </h3>
+            
+            <div id="resultsContent"></div>
+        </div>
+
+        <!-- Tracks List -->
+        <div class="glass-card rounded-2xl p-8">
+            <h3 class="text-2xl font-semibold mb-6 flex items-center">
+                <i data-lucide="list-music" class="w-6 h-6 mr-3 text-hcs-purple"></i>
+                Pistes Générées
+            </h3>
+            
+            <div id="tracksList" class="space-y-4">
+                <p class="text-gray-400 text-center py-8">Aucune piste générée pour le moment</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden">
+        <div class="glass-card rounded-2xl p-8 max-w-md mx-auto text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-lg font-semibold mb-2">Génération en cours...</p>
+            <p id="loadingMessage" class="text-sm text-gray-400">Création de la musique harmonique</p>
+            <div class="w-64 h-2 bg-gray-700 rounded-full mt-4">
+                <div id="progressBar" class="h-2 bg-gradient-to-r from-hcs-purple to-hcs-pink rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="fixed top-20 right-6 z-50 space-y-2"></div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // API base URL
+        const API_BASE = 'http://localhost:8020/api';
+        
+        // State
+        let currentTracks = [];
+        let isGenerating = false;
+        
+        // Elements
+        const generationForm = document.getElementById('generationForm');
+        const generateBtn = document.getElementById('generateBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsContent = document.getElementById('resultsContent');
+        const tracksList = document.getElementById('tracksList');
+        const notificationContainer = document.getElementById('notificationContainer');
+        
+        // Range inputs
+        const tempoSlider = document.getElementById('tempo');
+        const tempoValue = document.getElementById('tempoValue');
+        const durationSlider = document.getElementById('duration');
+        const durationValue = document.getElementById('durationValue');
+        
+        // Event listeners
+        tempoSlider.addEventListener('input', (e) => {
+            tempoValue.textContent = e.target.value;
+        });
+        
+        durationSlider.addEventListener('input', (e) => {
+            durationValue.textContent = e.target.value;
+        });
+        
+        generationForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await generateMusic();
+        });
+        
+        // Health check
+        document.getElementById('healthBtn').addEventListener('click', checkHealth);
+        
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                showNotification('Serveur OK', 'success');
+            } catch (error) {
+                showNotification('Erreur de connexion', 'error');
+            }
+        }
+        
+        async function generateMusic() {
+            if (isGenerating) return;
+            
+            isGenerating = true;
+            showLoading(true);
+            
+            try {
+                const formData = new FormData(generationForm);
+                const params = Object.fromEntries(formData.entries());
+                
+                // Convert string values to numbers
+                params.tempo = parseInt(params.tempo);
+                params.duration = parseFloat(params.duration);
+                
+                const response = await fetch(`${API_BASE}/generate`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResults(result);
+                    await loadTracks();
+                    showNotification('Musique générée avec succès!', 'success');
+                } else {
+                    throw new Error(result.message || 'Erreur de génération');
+                }
+                
+            } catch (error) {
+                console.error('Generation error:', error);
+                showNotification('Erreur: ' + error.message, 'error');
+            } finally {
+                isGenerating = false;
+                showLoading(false);
+            }
+        }
+        
+        function showLoading(show) {
+            if (show) {
+                loadingOverlay.classList.remove('hidden');
+                animateProgress();
+            } else {
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+        
+        function animateProgress() {
+            const progressBar = document.getElementById('progressBar');
+            let progress = 0;
+            
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress >= 90) {
+                    progress = 90;
+                    clearInterval(interval);
+                }
+                progressBar.style.width = progress + '%';
+            }, 200);
+        }
+        
+        function showResults(result) {
+            resultsContent.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Style:</span>
+                            <span class="font-semibold">${result.style}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Tonalité:</span>
+                            <span class="font-semibold">${result.key}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Tempo:</span>
+                            <span class="font-semibold">${result.tempo} BPM</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Durée:</span>
+                            <span class="font-semibold">${result.duration}s</span>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Taille:</span>
+                            <span class="font-semibold">${formatFileSize(result.file_size)}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Temps:</span>
+                            <span class="font-semibold">${result.generation_time.toFixed(2)}s</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Fréquence:</span>
+                            <span class="font-semibold">${result.analysis.fundamental_freq.toFixed(1)} Hz</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Harmoniques:</span>
+                            <span class="font-semibold">${result.analysis.harmonic_content}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex gap-4 mt-6">
+                    <button onclick="downloadTrack('${result.track_id}')" class="btn-primary px-6 py-3 rounded-lg">
+                        <i data-lucide="download" class="w-4 h-4 inline mr-2"></i>
+                        Télécharger
+                    </button>
+                    <button onclick="analyzeTrack('${result.track_id}')" class="px-6 py-3 rounded-lg bg-white/10 border border-white/20 text-white hover:bg-white/20">
+                        <i data-lucide="bar-chart" class="w-4 h-4 inline mr-2"></i>
+                        Analyser
+                    </button>
+                </div>
+            `;
+            
+            resultsSection.classList.remove('hidden');
+            lucide.createIcons();
+        }
+        
+        async function loadTracks() {
+            try {
+                const response = await fetch(`${API_BASE}/tracks`);
+                const data = await response.json();
+                
+                currentTracks = data.tracks;
+                displayTracks();
+                
+            } catch (error) {
+                console.error('Load tracks error:', error);
+            }
+        }
+        
+        function displayTracks() {
+            if (Object.keys(currentTracks).length === 0) {
+                tracksList.innerHTML = '<p class="text-gray-400 text-center py-8">Aucune piste générée pour le moment</p>';
+                return;
+            }
+            
+            const tracksHTML = Object.entries(currentTracks)
+                .reverse()
+                .map(([trackId, track]) => `
+                    <div class="glass-card rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-semibold">${track.filename}</h4>
+                                <p class="text-sm text-gray-400">
+                                    ${track.style} • ${track.key} • ${track.tempo} BPM • ${track.duration}s
+                                </p>
+                                <p class="text-xs text-gray-500">
+                                    ${formatFileSize(track.file_size)} • ${new Date(track.timestamp * 1000).toLocaleString()}
+                                </p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="downloadTrack('${trackId}')" class="p-2 rounded bg-hcs-purple/20 text-hcs-purple hover:bg-hcs-purple/30">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteTrack('${trackId}')" class="p-2 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            
+            tracksList.innerHTML = tracksHTML;
+            lucide.createIcons();
+        }
+        
+        async function downloadTrack(trackId) {
+            try {
+                const response = await fetch(`${API_BASE}/download/${trackId}`);
+                const blob = await response.blob();
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = currentTracks[trackId].filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                showNotification('Téléchargement démarré', 'success');
+                
+            } catch (error) {
+                showNotification('Erreur de téléchargement', 'error');
+            }
+        }
+        
+        async function deleteTrack(trackId) {
+            if (!confirm('Supprimer cette piste ?')) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/track/${trackId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    await loadTracks();
+                    showNotification('Piste supprimée', 'success');
+                } else {
+                    throw new Error('Erreur de suppression');
+                }
+                
+            } catch (error) {
+                showNotification('Erreur de suppression', 'error');
+            }
+        }
+        
+        async function analyzeTrack(trackId) {
+            try {
+                const response = await fetch(`${API_BASE}/analyze/${trackId}`);
+                const data = await response.json();
+                
+                // Afficher l'analyse (simplifié pour l'instant)
+                showNotification('Analyse disponible dans la console', 'info');
+                console.log('Track Analysis:', data);
+                
+            } catch (error) {
+                showNotification('Erreur d\'analyse', 'error');
+            }
+        }
+        
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `glass-card rounded-lg p-4 fade-in`;
+            
+            const colors = {
+                success: 'text-green-400 border-green-500/30',
+                error: 'text-red-400 border-red-500/30',
+                info: 'text-blue-400 border-blue-500/30'
+            };
+            
+            notification.innerHTML = `
+                <div class="flex items-center space-x-2 ${colors[type]}">
+                    <i data-lucide="${type === 'success' ? 'check-circle' : type === 'error' ? 'x-circle' : 'info'}" class="w-5 h-5"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            notificationContainer.appendChild(notification);
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // Initial load
+        loadTracks();
+    </script>
+</body>
+</html>

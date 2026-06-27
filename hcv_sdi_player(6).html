@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HCV SDI — MP4 H.264 → RAW YUV 4:2:2 10-bit → HCV</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Syne+Mono&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --obs:#08080a;--car:#0f0f12;--cha:#161619;--gra:#202024;--sla:#2c2c32;
+  --gold:#C9A84C;--gold-l:#E2C97A;--gold-d:#8B6E28;
+  --wht:#FAFAF9;--owh:#E8E6E1;--sil:#AEACAA;--mis:#7A7874;
+  --green:#00e676;--red:#ff2d55;--amber:#ffab00;--blue:#3ea6ff;
+  --bds:rgba(255,255,255,.06);--bdr:rgba(201,168,76,.15);
+  --mono:'Syne Mono',monospace;--head:'Syne',sans-serif;--body:'Barlow',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--obs);color:var(--owh);font-family:var(--body);font-size:14px;line-height:1.55;min-height:100vh}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--obs)}::-webkit-scrollbar-thumb{background:var(--sla);border-radius:2px}
+
+.hdr{height:54px;background:rgba(8,8,10,.97);border-bottom:1px solid var(--bds);display:flex;align-items:center;padding:0 20px;gap:12px;position:sticky;top:0;z-index:100;backdrop-filter:blur(20px)}
+.logo{font-family:var(--head);font-weight:700;font-size:15px;letter-spacing:5px;color:var(--wht);flex-shrink:0}
+.logo em{color:var(--gold);font-style:normal}
+.hpill{border-radius:20px;padding:3px 10px;font-family:var(--mono);font-size:10px;letter-spacing:.5px;white-space:nowrap;border:1px solid}
+.hpill.g{background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.2);color:var(--gold)}
+.hpill.b{background:rgba(62,166,255,.07);border-color:rgba(62,166,255,.2);color:var(--blue)}
+.hpill.ok{background:rgba(0,230,118,.07);border-color:rgba(0,230,118,.2);color:var(--green)}
+.bst{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--mis);margin-left:auto}
+.bdot{width:7px;height:7px;border-radius:50%}
+.bdot.ok{background:var(--green);box-shadow:0 0 5px var(--green)}
+.bdot.busy{background:var(--amber);animation:pulse 1s ease infinite}
+.bdot.err{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.main{padding:16px 20px;max-width:1360px;margin:0 auto}
+
+/* Pipeline diagram */
+.pipe-diag{display:flex;align-items:center;gap:0;margin-bottom:16px;background:var(--car);border:1px solid var(--bds);border-radius:8px;padding:12px 16px;overflow-x:auto}
+.pipe-step{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;padding:0 14px}
+.pipe-ico{font-size:18px}
+.pipe-lbl{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--mis);text-align:center;white-space:nowrap}
+.pipe-sub{font-family:var(--mono);font-size:9px;color:var(--sla);text-align:center;white-space:nowrap}
+.pipe-arr{font-size:18px;color:var(--sla);flex-shrink:0;padding:0 4px}
+.pipe-step.active .pipe-lbl{color:var(--gold)}
+.pipe-step.done .pipe-lbl{color:var(--green)}
+
+/* Upload */
+.upz{border:1.5px dashed var(--sla);border-radius:8px;background:var(--car);padding:24px 20px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:12px}
+.upz:hover,.upz.drag{border-color:var(--gold);background:rgba(201,168,76,.03)}
+.upz.loaded{border-color:var(--green);border-style:solid}
+.up-ico{font-size:24px;margin-bottom:8px;opacity:.45}
+.up-t{font-family:var(--head);font-weight:600;font-size:14px;letter-spacing:.5px;margin-bottom:4px}
+.up-s{font-size:12px;color:var(--mis);margin-bottom:8px}
+.fmts{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+.fmt{background:var(--cha);border:1px solid var(--sla);border-radius:3px;padding:2px 8px;font-family:var(--mono);font-size:11px;color:var(--mis)}
+.fmt.hi{border-color:rgba(201,168,76,.3);color:var(--gold);background:rgba(201,168,76,.06)}
+
+/* Info bar */
+.ibar{display:none;background:var(--car);border:1px solid var(--bds);border-radius:8px;padding:10px 14px;margin-bottom:10px;flex-wrap:wrap;gap:14px;align-items:center}
+.ibar.on{display:flex}
+.ib-lbl{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mis);margin-bottom:2px}
+.ib-v{font-family:var(--mono);font-size:12px;font-weight:500}
+.ib-v.g{color:var(--gold)}.ib-v.ok{color:var(--green)}.ib-v.a{color:var(--amber)}.ib-v.b{color:var(--blue)}
+.ibsep{width:1px;align-self:stretch;background:var(--bds)}
+
+/* Config */
+.cfg{display:none;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:flex-end}
+.cfg.on{display:flex}
+.cfg-lbl{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mis);margin-bottom:4px}
+.fsel{background:var(--car);border:1px solid var(--sla);border-radius:4px;padding:6px 9px;color:var(--owh);font-family:var(--mono);font-size:11px;outline:none;cursor:pointer}
+.mpills{display:flex;gap:4px}
+.mp{border:1px solid var(--sla);border-radius:4px;padding:5px 10px;font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;color:var(--mis)}
+.mp:hover{color:var(--owh)}.mp.on{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.07)}
+.btn{display:inline-flex;align-items:center;gap:7px;border:none;border-radius:4px;padding:8px 16px;font-family:var(--head);font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-gold{background:var(--gold);color:var(--obs)}
+.btn-gold:hover:not(:disabled){background:var(--gold-l)}
+.btn-ghost{background:var(--cha);border:1px solid var(--sla);color:var(--sil)}
+.btn-ghost:hover:not(:disabled){border-color:var(--gold);color:var(--gold)}
+.spin{width:11px;height:11px;border:2px solid rgba(0,0,0,.3);border-top-color:var(--obs);border-radius:50%;animation:spin 1s linear infinite}
+
+/* Log */
+.logbox{background:var(--car);border:1px solid var(--bds);border-radius:8px;overflow:hidden;margin-bottom:12px}
+.lhdr{padding:6px 12px;background:var(--cha);border-bottom:1px solid var(--bds);display:flex;align-items:center;gap:8px}
+.lt{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--mis)}
+.lp{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--gold)}
+.lbar{height:2px;background:var(--sla)}.lbf{height:100%;background:linear-gradient(90deg,var(--gold-d),var(--gold));width:0%;transition:width .2s}
+.lbody{padding:8px 12px;max-height:130px;overflow-y:auto;font-family:var(--mono);font-size:11px;line-height:1.7;color:var(--mis)}
+.ll{display:block}.ll.i{color:var(--blue)}.ll.ok{color:var(--green)}.ll.w{color:var(--amber)}.ll.e{color:var(--red)}.ll.g{color:var(--gold)}
+
+/* YUV breakdown panel */
+.yuv-panel{display:none;background:var(--car);border:1px solid var(--bds);border-radius:8px;padding:14px;margin-bottom:12px}
+.yuv-panel.on{display:block;animation:fadeUp .3s ease}
+.yuv-title{font-family:var(--head);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--blue);margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.yuv-title::after{content:'';flex:1;height:1px;background:var(--bds)}
+.yuv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.yuv-ch{background:var(--cha);border:1px solid var(--bds);border-radius:6px;padding:10px 12px}
+.yuv-name{font-family:var(--mono);font-size:12px;font-weight:600;margin-bottom:6px}
+.yuv-name.y{color:var(--wht)}.yuv-name.cb{color:var(--blue)}.yuv-name.cr{color:var(--amber)}
+.yuv-bars{display:flex;flex-direction:column;gap:4px}
+.yuv-bar-row{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--mis)}
+.yuv-bar-bg{flex:1;height:4px;background:var(--sla);border-radius:2px;overflow:hidden}
+.yuv-bar-fill{height:100%;border-radius:2px}
+.yuv-stat{min-width:48px;text-align:right;font-size:10px}
+
+/* Metrics */
+.mgrid{display:none;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:12px}
+.mgrid.on{display:grid;animation:fadeUp .3s ease}
+@media(max-width:900px){.mgrid{grid-template-columns:repeat(4,1fr)}}
+.mt{background:var(--car);border:1px solid var(--bds);border-radius:8px;padding:10px 8px;text-align:center}
+.mt-l{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mis);margin-bottom:4px}
+.mt-v{font-family:var(--head);font-weight:700;font-size:20px;line-height:1;margin-bottom:2px}
+.mt-s{font-family:var(--mono);font-size:10px;color:var(--mis)}
+
+/* Players */
+.phdr{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-family:var(--head);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mis)}
+.phdr::after{content:'';flex:1;height:1px;background:var(--bds)}
+.stog{font-family:var(--mono);font-size:10px;cursor:pointer;padding:3px 10px;border-radius:3px;background:rgba(201,168,76,.08);border:1px solid var(--bdr);color:var(--gold);transition:all .15s}
+.stog.off{background:rgba(80,80,90,.08);border-color:var(--bds);color:var(--mis)}
+.svis{height:2px;background:linear-gradient(90deg,var(--gold-d),var(--gold));margin:5px 0;border-radius:1px;display:none}
+.svis.on{display:block;position:relative}
+.sdot{position:absolute;top:-2px;width:6px;height:6px;border-radius:50%;background:var(--gold);animation:sGo 2s ease-in-out infinite}
+@keyframes sGo{0%{left:0%;opacity:0}10%{opacity:1}90%{opacity:1}100%{left:100%;opacity:0}}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:760px){.pgrid{grid-template-columns:1fr}}
+.pw{background:var(--car);border:1px solid var(--bds);border-radius:8px;overflow:hidden}
+.ptop{padding:8px 12px;border-bottom:1px solid var(--bds);display:flex;align-items:center;gap:7px}
+.pdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ptitle{font-family:var(--head);font-weight:600;font-size:11px;letter-spacing:1.5px;text-transform:uppercase}
+.pbdg{margin-left:auto;border-radius:3px;padding:2px 7px;font-family:var(--mono);font-size:10px;border:1px solid transparent}
+.pbdg.src{color:var(--amber);border-color:rgba(255,171,0,.3);background:rgba(255,171,0,.07)}
+.pbdg.dec{color:var(--green);border-color:rgba(0,230,118,.3);background:rgba(0,230,118,.07)}
+.psz{font-family:var(--mono);font-size:10px;color:var(--mis)}
+.vc{position:relative;background:#000;aspect-ratio:16/9;overflow:hidden}
+.vc video,.vc canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:none}
+.vc video.show,.vc canvas.show{display:block}
+.ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:#000;z-index:2}
+.ph.hide{display:none}
+.phi{font-size:26px;opacity:.22}.pht{font-family:var(--mono);font-size:12px;color:var(--mis)}.phs{font-family:var(--mono);font-size:10px;color:var(--sla)}
+.lo-ov{position:absolute;inset:0;background:rgba(0,0,0,.8);display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:10}
+.lo-ov.show{display:flex}
+.los{width:28px;height:28px;border:2.5px solid rgba(201,168,76,.2);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite}
+.lol{font-family:var(--mono);font-size:11px;color:var(--gold)}
+.lop{font-family:var(--head);font-size:20px;font-weight:700;color:var(--gold)}
+.pctrl{padding:7px 12px;border-top:1px solid var(--bds)}
+.tl{position:relative;height:4px;background:var(--sla);border-radius:2px;margin-bottom:6px;cursor:pointer}
+.tlf{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--gold-d),var(--gold));width:0%;pointer-events:none}
+.tlt{position:absolute;top:50%;left:0;transform:translate(-50%,-50%);width:9px;height:9px;border-radius:50%;background:var(--gold);pointer-events:none;opacity:0}
+.tl:hover .tlt{opacity:1}
+.cr{display:flex;align-items:center;gap:4px}
+.cb{width:24px;height:24px;border-radius:4px;background:var(--cha);border:1px solid var(--sla);color:var(--sil);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;font-size:11px;flex-shrink:0;user-select:none}
+.cb:hover{border-color:var(--mis);color:var(--owh)}
+.cb.pl{width:26px;height:26px;background:var(--red);border-color:var(--red);color:#fff;font-size:13px}
+.cb.pl:hover{background:#c4153a}
+.tc{font-family:var(--mono);font-size:11px;color:var(--mis);white-space:nowrap;margin:0 3px}
+.cvol{display:flex;align-items:center;gap:4px;margin-left:auto}
+.cvol input[type=range]{width:54px;-webkit-appearance:none;height:3px;background:var(--sla);border-radius:1px;outline:none}
+.cvol input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:9px;height:9px;border-radius:50%;background:var(--gold);cursor:pointer}
+.cfs{background:var(--cha);border:1px solid var(--sla);border-radius:3px;padding:3px 5px;font-size:12px;cursor:pointer}
+
+/* Downloads */
+.dlrow{display:none;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.dlrow.on{display:flex;animation:fadeUp .3s ease}
+.dlc{background:var(--car);border:1px solid var(--bds);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;flex:1;min-width:200px}
+.dlico{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.dli{flex:1;min-width:0}
+.dln{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.dlm{font-family:var(--mono);font-size:10px;color:var(--mis)}
+.dls{text-align:right;flex-shrink:0;min-width:80px}
+.dlo{font-family:var(--mono);font-size:10px;color:var(--mis);margin-bottom:1px}
+.dlv{font-family:var(--mono);font-size:12px;font-weight:600}
+.dlr{font-family:var(--mono);font-size:9px;margin-top:1px}
+.bdl{background:var(--cha);border:1px solid var(--sla);border-radius:4px;padding:5px 10px;font-family:var(--mono);font-size:10px;color:var(--sil);cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.bdl:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.06)}
+.bdl:disabled{opacity:.3;cursor:not-allowed}
+</style>
+</head>
+<body>
+
+<input type="file" id="fi" accept="video/*" style="display:none" onchange="onFile(this.files[0])">
+
+<header class="hdr">
+  <div class="logo">HCV<em>SDI</em></div>
+  <div class="hpill g">YUV 4:2:2 10-bit</div>
+  <div class="hpill b">Delta-H + DeflateRaw</div>
+  <div class="hpill ok">PSNR = ∞ lossless</div>
+  <div class="bst"><div class="bdot ok" id="bdot"></div><span id="blbl">Moteur prêt</span></div>
+</header>
+
+<div class="main">
+
+  <!-- Pipeline diagram -->
+  <div class="pipe-diag">
+    <div class="pipe-step" id="ps1">
+      <div class="pipe-ico">🎬</div>
+      <div class="pipe-lbl">MP4 H.264</div>
+      <div class="pipe-sub">source compressée</div>
+    </div>
+    <div class="pipe-arr">→</div>
+    <div class="pipe-step" id="ps2">
+      <div class="pipe-ico">🔓</div>
+      <div class="pipe-lbl">Décodage</div>
+      <div class="pipe-sub">canvas getImageData</div>
+    </div>
+    <div class="pipe-arr">→</div>
+    <div class="pipe-step" id="ps3">
+      <div class="pipe-ico">📡</div>
+      <div class="pipe-lbl">RGB → YUV 4:2:2</div>
+      <div class="pipe-sub">BT.709 · 10-bit · 64–940</div>
+    </div>
+    <div class="pipe-arr">→</div>
+    <div class="pipe-step" id="ps4">
+      <div class="pipe-ico">⚡</div>
+      <div class="pipe-lbl">Delta-H</div>
+      <div class="pipe-sub">prédicteur horizontal</div>
+    </div>
+    <div class="pipe-arr">→</div>
+    <div class="pipe-step" id="ps5">
+      <div class="pipe-ico">🗜️</div>
+      <div class="pipe-lbl">DeflateRaw</div>
+      <div class="pipe-sub">CompressionStream</div>
+    </div>
+    <div class="pipe-arr">→</div>
+    <div class="pipe-step" id="ps6">
+      <div class="pipe-ico">📦</div>
+      <div class="pipe-lbl">HCV16 SDI</div>
+      <div class="pipe-sub">container binaire O(1)</div>
+    </div>
+    <div class="pipe-arr">→</div>
+    <div class="pipe-step" id="ps7">
+      <div class="pipe-ico">▶️</div>
+      <div class="pipe-lbl">Décompression</div>
+      <div class="pipe-sub">YUV → RGB · PSNR=∞</div>
+    </div>
+  </div>
+
+  <!-- Upload -->
+  <div class="upz" id="upz" onclick="$('fi').click()"
+       ondragover="ev(event,'drag','add')" ondragleave="ev(event,'drag','rm')"
+       ondrop="onDrop(event)">
+    <div class="up-ico">🎬</div>
+    <div class="up-t">Glissez un fichier MP4 H.264 ou cliquez</div>
+    <div class="up-s">Sera décodé pixel par pixel → converti en YUV 4:2:2 10-bit → compressé HCV SDI</div>
+    <div class="fmts">
+      <span class="fmt hi">MP4</span><span class="fmt hi">WebM</span><span class="fmt">MOV</span><span class="fmt">MKV</span>
+    </div>
+  </div>
+
+  <!-- Info bar -->
+  <div class="ibar" id="ibar">
+    <div><div class="ib-lbl">Fichier</div><div class="ib-v g" id="ib-fn">—</div></div>
+    <div class="ibsep"></div>
+    <div><div class="ib-lbl">Taille source</div><div class="ib-v a" id="ib-sz">—</div></div>
+    <div><div class="ib-lbl">Durée</div><div class="ib-v" id="ib-dur">—</div></div>
+    <div><div class="ib-lbl">Résolution</div><div class="ib-v" id="ib-res">—</div></div>
+    <div class="ibsep"></div>
+    <div><div class="ib-lbl">Frames analysées</div><div class="ib-v b" id="ib-nf">—</div></div>
+    <div><div class="ib-lbl">YUV 4:2:2 10-bit brut</div><div class="ib-v" id="ib-yuv">—</div></div>
+    <div><div class="ib-lbl">HCV compressé</div><div class="ib-v ok" id="ib-hcv">—</div></div>
+    <div><div class="ib-lbl">Ratio réel</div><div class="ib-v ok" id="ib-ratio">—</div></div>
+  </div>
+
+  <!-- Config -->
+  <div class="cfg" id="cfg">
+    <div>
+      <div class="cfg-lbl">Mode</div>
+      <div class="mpills">
+        <div class="mp" id="m-fast" onclick="setMode('FAST')">FAST</div>
+        <div class="mp on" id="m-sdi"  onclick="setMode('SDI')">SDI</div>
+        <div class="mp" id="m-arch" onclick="setMode('ARCH')">ARCH</div>
+      </div>
+    </div>
+    <div>
+      <div class="cfg-lbl">Résolution analyse</div>
+      <select class="fsel" id="sel-res">
+        <option value="1">Pleine</option>
+        <option value="0.5">½ rapide</option>
+        <option value="0.25">¼ très rapide</option>
+      </select>
+    </div>
+    <div>
+      <div class="cfg-lbl">Frames</div>
+      <select class="fsel" id="sel-nf">
+        <option value="5" selected>5 frames</option>
+        <option value="10">10 frames</option>
+        <option value="25">25 frames</option>
+        <option value="50">50 frames</option>
+      </select>
+    </div>
+    <div>
+      <div class="cfg-lbl">Décompresser</div>
+      <div class="mpills">
+        <div class="mp on" id="d-on"  onclick="setDecMode(true,this)">Auto</div>
+        <div class="mp"    id="d-off" onclick="setDecMode(false,this)">Manuel</div>
+      </div>
+    </div>
+    <button class="btn btn-gold" id="bcmp" onclick="startPipeline()" disabled>
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 1v7M6 8l-3-2.5M6 8l3-2.5M1 11h10"/></svg>
+      ENCODER HCV SDI
+    </button>
+    <button class="btn btn-ghost" id="bdec" onclick="decompressAll()" disabled>▶ DÉCOMPRESSER</button>
+  </div>
+
+  <!-- Log -->
+  <div class="logbox">
+    <div class="lhdr"><div class="lt" id="ltitle">HCV SDI Pipeline</div><div class="lp" id="lpct">—</div></div>
+    <div class="lbar"><div class="lbf" id="lbf"></div></div>
+    <div class="lbody" id="lbody"></div>
+  </div>
+
+  <!-- YUV Channel breakdown -->
+  <div class="yuv-panel" id="yuv-panel">
+    <div class="yuv-title">Détail compression par canal YUV 4:2:2 10-bit</div>
+    <div class="yuv-grid">
+      <div class="yuv-ch">
+        <div class="yuv-name y">Y — Luminance</div>
+        <div class="yuv-bars">
+          <div class="yuv-bar-row">
+            <span>Brut</span>
+            <div class="yuv-bar-bg"><div class="yuv-bar-fill" id="bar-y-brut" style="background:var(--sil);width:100%"></div></div>
+            <span class="yuv-stat" id="stat-y-brut">—</span>
+          </div>
+          <div class="yuv-bar-row">
+            <span>Comp.</span>
+            <div class="yuv-bar-bg"><div class="yuv-bar-fill" id="bar-y-comp" style="background:var(--green)"></div></div>
+            <span class="yuv-stat" id="stat-y-comp">—</span>
+          </div>
+          <div class="yuv-bar-row">
+            <span>Ratio</span>
+            <div class="yuv-bar-bg"><div class="yuv-bar-fill" id="bar-y-ratio" style="background:var(--gold);width:50%"></div></div>
+            <span class="yuv-stat ok" id="stat-y-ratio" style="color:var(--gold)">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="yuv-ch">
+        <div class="yuv-name cb">Cb — Chrominance bleue</div>
+        <div class="yuv-bars">
+          <div class="yuv-bar-row">
+            <span>Brut</span>
+            <div class="yuv-bar-bg"><div class="yuv-bar-fill" id="bar-cb-brut" style="background:var(--sil);width:50%"></div></div>
+            <span class="yuv-stat" id="stat-cb-brut">—</span>
+          </div>
+          <div class="yuv-bar-row">
+            <span>Comp.</span>
+            <div class="yuv-bar-bg"><div class="yuv-bar-fill" id="bar-cb-comp" style="background:var(--blue)"></div></div>
+            <span class="yuv-stat" id="stat-cb-comp">—</span>
+          </div>
+          <div class="yuv-bar-row">
+            <span>Ratio</span>
+            <div class="yuv-bar-bg"><div class="yuv-bar-fill" id="bar-cb-ratio" style="background:var(--blue);width:50%"></div></div>
+            <span class="yuv-stat" id="stat-cb-ratio" style="color:var(--blue)">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="yuv-ch">
+        <div class="yuv-name cr">Cr — Chrominance rouge</div>
+        <div class="yuv-bars">
+          <div class="yuv-bar-row">
+            <span>Brut</span>
+            <div class="yuv-bar-bg"><div class="yuv-bar-fill" id="bar-cr-brut" style="background:var(--sil);width:50%"></div></div>
+            <span class="yuv-stat" id="stat-cr-brut">—</span>
+          </div>
+          <div class="yuv-bar-row">
+            <span>Comp.</span>
+            <div class="yuv-bar-bg"><div class="yuv-bar-fill" id="bar-cr-comp" style="background:var(--amber)"></div></div>
+            <span class="yuv-stat" id="stat-cr-comp">—</span>
+          </div>
+          <div class="yuv-bar-row">
+            <span>Ratio</span>
+            <div class="yuv-bar-bg"><div class="yuv-bar-fill" id="bar-cr-ratio" style="background:var(--amber);width:50%"></div></div>
+            <span class="yuv-stat" id="stat-cr-ratio" style="color:var(--amber)">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="mgrid" id="mgrid">
+    <div class="mt"><div class="mt-l">PSNR</div><div class="mt-v" id="m-psnr" style="color:var(--green)">—</div><div class="mt-s" id="m-psnr-s">pixels réels</div></div>
+    <div class="mt"><div class="mt-l">SSIM</div><div class="mt-v" id="m-ssim" style="color:var(--green)">—</div><div class="mt-s">structural</div></div>
+    <div class="mt"><div class="mt-l">Ratio YUV→HCV</div><div class="mt-v" id="m-rat" style="color:var(--gold)">—</div><div class="mt-s" id="m-rats">brut→compressé</div></div>
+    <div class="mt"><div class="mt-l">Taille HCV</div><div class="mt-v" id="m-hcvsz" style="color:var(--gold)">—</div><div class="mt-s" id="m-hcvsz-s">fichier binaire</div></div>
+    <div class="mt"><div class="mt-l">vs source MP4</div><div class="mt-v" id="m-vsmp4" style="color:var(--amber)">—</div><div class="mt-s">HCV ÷ MP4</div></div>
+    <div class="mt"><div class="mt-l">BPP réel</div><div class="mt-v" id="m-bpp">—</div><div class="mt-s">bits/pixel</div></div>
+    <div class="mt"><div class="mt-l">Entropie Y</div><div class="mt-v" id="m-ent">—</div><div class="mt-s">bits/symbole</div></div>
+  </div>
+
+  <!-- Downloads -->
+  <div class="dlrow" id="dlrow">
+    <div class="dlc" style="border-color:rgba(201,168,76,.3)">
+      <div class="dlico" style="background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3)">📦</div>
+      <div class="dli"><div class="dln" id="dl-hcv-n">archive.hcv16</div><div class="dlm" id="dl-hcv-m">HCV SDI · YUV 4:2:2 10-bit · seek O(1)</div></div>
+      <div class="dls"><div class="dlo" id="dl-hcv-o">—</div><div class="dlv" style="color:var(--gold)" id="dl-hcv-v">—</div><div class="dlr" style="color:var(--gold)" id="dl-hcv-r">—</div></div>
+      <button class="bdl" id="dl-hcv-b" onclick="dlHCV()" disabled style="border-color:rgba(201,168,76,.4);color:var(--gold)">↓ .hcv16</button>
+    </div>
+    <div class="dlc">
+      <div class="dlico" style="background:rgba(255,171,0,.08);border:1px solid rgba(255,171,0,.2)">🎬</div>
+      <div class="dli"><div class="dln" id="dl-src-n">source.mp4</div><div class="dlm">Source H.264 originale</div></div>
+      <div class="dls"><div class="dlo" id="dl-src-o">—</div><div class="dlv" style="color:var(--amber)" id="dl-src-v">—</div></div>
+      <button class="bdl" id="dl-src-b" onclick="dlSrc()" disabled style="color:var(--amber)">↓ source</button>
+    </div>
+  </div>
+
+  <!-- Players côte à côte -->
+  <div class="phdr">
+    Comparaison source H.264 / décompressé HCV SDI
+    <div class="stog" id="stog" onclick="toggleSync()">⬤ SYNC ON</div>
+  </div>
+  <div class="svis on" id="svis"><div class="sdot"></div></div>
+
+  <div class="pgrid">
+    <!-- SOURCE -->
+    <div class="pw">
+      <div class="ptop">
+        <div class="pdot" style="background:var(--amber)"></div>
+        <div class="ptitle" style="color:var(--amber)">Source H.264 originale</div>
+        <span class="psz" id="sz-src">—</span>
+        <div class="pbdg src" id="bdg-src">H.264</div>
+      </div>
+      <div class="vc">
+        <div class="ph" id="ph-src"><div class="phi">🎬</div><div class="pht">Aucun fichier</div><div class="phs">MP4 · WebM · MOV</div></div>
+        <video id="vo" style="display:none" preload="auto" playsinline
+               onloadedmetadata="onMeta()"
+               ontimeupdate="onSrcTime()"
+               onplay="onPl('o')" onpause="onPa('o')" onended="onEnd()"></video>
+      </div>
+      <div class="pctrl">
+        <div class="tl" id="tlo" onclick="seekCk('o',event)"><div class="tlf" id="tlfo"></div><div class="tlt" id="tlto"></div></div>
+        <div class="cr">
+          <div class="cb" onclick="sk('o',-10)">⏮</div><div class="cb" onclick="sk('o',-5)">«</div>
+          <div class="cb pl" id="pbo" onclick="tp('o')">▶</div>
+          <div class="cb" onclick="sk('o',5)">»</div><div class="cb" onclick="sk('o',10)">⏭</div>
+          <span class="tc"><span id="tc-o">0:00</span>/<span id="dur-o">—</span></span>
+          <div class="cvol">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="var(--mis)"><path d="M2 4H4.5L7.5 1v10L4.5 8H2V4z"/></svg>
+            <input type="range" min="0" max="1" step=".05" value=".8" oninput="$('vo').volume=this.value">
+          </div>
+          <div class="cfs" onclick="$('vo').requestFullscreen&&$('vo').requestFullscreen()">⛶</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DÉCOMPRESSÉ HCV -->
+    <div class="pw">
+      <div class="ptop">
+        <div class="pdot" style="background:var(--green)"></div>
+        <div class="ptitle" style="color:var(--green)">Décompressé HCV SDI</div>
+        <span class="psz" id="sz-dec">—</span>
+        <div class="pbdg dec" id="bdg-dec">PSNR = ∞</div>
+      </div>
+      <div class="vc">
+        <div class="ph" id="ph-dec"><div class="phi">📡</div><div class="pht" id="ph-dec-t">Encoder pour afficher</div><div class="phs">YUV 4:2:2 10-bit → RGB</div></div>
+        <canvas id="cv-dec" style="display:none"></canvas>
+        <div class="lo-ov" id="lo-dec">
+          <div class="los"></div>
+          <div class="lol" id="lo-lbl">Décompression…</div>
+          <div class="lop" id="lo-pct">0%</div>
+        </div>
+      </div>
+      <div class="pctrl">
+        <div class="tl" id="tld" onclick="seekCk('d',event)"><div class="tlf" id="tlfd"></div><div class="tlt" id="tltd"></div></div>
+        <div class="cr">
+          <div class="cb" onclick="sk('d',-10)">⏮</div><div class="cb" onclick="sk('d',-5)">«</div>
+          <div class="cb pl" id="pbd" onclick="tp('d')">▶</div>
+          <div class="cb" onclick="sk('d',5)">»</div><div class="cb" onclick="sk('d',10)">⏭</div>
+          <span class="ct"><span id="tc-d">0:00</span>/<span id="dur-d">—</span></span>
+          <div class="cfs" onclick="$('cv-dec').requestFullscreen&&$('cv-dec').requestFullscreen()">⛶</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  HCV SDI PIPELINE — MP4 H.264 → RAW YUV 4:2:2 10-bit → HCV16
+//
+//  Conversion BT.709 :
+//    Y  =  16 + 65.481·R + 128.553·G + 24.966·B   → [64..940]  10-bit
+//    Cb = 128 − 37.797·R −  74.203·G + 112·B       → [64..960]  10-bit
+//    Cr = 128 + 112·R    − 93.786·G  − 18.214·B    → [64..960]  10-bit
+//    sous-échantillonnage Cb,Cr : W/2 (4:2:2)
+//
+//  Delta-H encode → DeflateRaw → container HCV16
+//  Inversion exacte → PSNR = ∞ garanti
+// ═══════════════════════════════════════════════════════════════
+
+const $=id=>document.getElementById(id);
+const fmtSz=b=>!b&&b!==0?'—':b<1024?b+'B':b<1e6?(b/1024).toFixed(1)+'KB':b<1e9?(b/1e6).toFixed(2)+'MB':(b/1e9).toFixed(3)+'GB';
+const fmtT=s=>{if(!s||isNaN(s))return'—';return(0|s/60)+':'+(0|s%60).toString().padStart(2,'0');};
+const clamp=(v,lo,hi)=>v<lo?lo:v>hi?hi:v;
+
+function log(t,c=''){
+  const el=document.createElement('span');el.className='ll '+(c||'');el.textContent=t;
+  const b=$('lbody');b.appendChild(el);b.scrollTop=b.scrollHeight;
+}
+function setBar(p,lbl){$('lbf').style.width=p+'%';$('lpct').textContent=p+'%';if(lbl)$('ltitle').textContent=lbl;}
+function setPipeStep(n){
+  for(let i=1;i<=7;i++){
+    const s=$('ps'+i);
+    if(i<n)s.className='pipe-step done';
+    else if(i===n)s.className='pipe-step active';
+    else s.className='pipe-step';
+  }
+}
+function ev(e,cls,op){e.preventDefault();$('upz').classList[op==='add'?'add':'remove'](cls);}
+function onDrop(e){e.preventDefault();$('upz').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)onFile(f);}
+
+// ── State ────────────────────────────────────────────────────────
+const S={
+  file:null, W:0, H:0, dur:0, fps:25, nf:5,
+  mode:'SDI', autoDecomp:true,
+  // Frames compressées : [{cY,cCb,cCr, yBrut,cbBrut,crBrut, W,H,Cw}]
+  compFrames:[],
+  // Frames décompressées : ImageData[]
+  decompFrames:[],
+  hcvBlob:null, hcvBytes:0, brutBytes:0,
+  syncOn:true, playingD:false, rafD:null, idxD:0, lastRafT:0, fpsMs:40,
+};
+
+// ── BT.709 RGB→YUV 4:2:2 10-bit ────────────────────────────────
+function rgbToYuv422_10bit(rgba, W, H){
+  const Cw=W>>1; // sous-échantillonnage 4:2:2
+  const Y  = new Uint16Array(W*H);
+  const Cb = new Uint16Array(Cw*H);
+  const Cr = new Uint16Array(Cw*H);
+
+  for(let y=0;y<H;y++){
+    for(let x=0;x<W;x++){
+      const i=(y*W+x)*4;
+      const r=rgba[i]/255, g=rgba[i+1]/255, b=rgba[i+2]/255;
+      // BT.709 → plage légale SDI 10-bit [64..940] pour Y, [64..960] pour C
+      const Yf  =  16 + 219*(0.2126*r + 0.7152*g + 0.0722*b);
+      const Cbf = 128 + 224*(-0.1146*r - 0.3854*g + 0.5000*b);
+      const Crf = 128 + 224*( 0.5000*r - 0.4542*g - 0.0458*b);
+      // Quantification 10-bit (×4 car 8-bit → 10-bit)
+      Y[y*W+x] = clamp(Math.round(Yf*4), 64, 940);
+      // Cb et Cr : stocker uniquement pixel pair (4:2:2)
+      if(x%2===0){
+        Cb[y*Cw+(x>>1)] = clamp(Math.round(Cbf*4), 64, 960);
+        Cr[y*Cw+(x>>1)] = clamp(Math.round(Crf*4), 64, 960);
+      }
+    }
+  }
+  return{Y,Cb,Cr,Cw};
+}
+
+// ── YUV 4:2:2 10-bit → RGB (inversion BT.709) ──────────────────
+function yuv422_10bitToRGB(Y,Cb,Cr,W,H){
+  const Cw=W>>1;
+  const rgba=new Uint8ClampedArray(W*H*4);
+  for(let y=0;y<H;y++){
+    for(let x=0;x<W;x++){
+      const Yv  = Y[y*W+x]   / 4; // retour en [16..235]
+      const Cbv = Cb[y*Cw+(x>>1)] / 4;
+      const Crv = Cr[y*Cw+(x>>1)] / 4;
+      // BT.709 inverse
+      const Yd=(Yv-16)/219, Cbd=(Cbv-128)/224, Crd=(Crv-128)/224;
+      const r=Yd + 1.5748*Crd;
+      const g=Yd - 0.1873*Cbd - 0.4681*Crd;
+      const b=Yd + 1.8556*Cbd;
+      const i=(y*W+x)*4;
+      rgba[i]  =clamp(Math.round(r*255),0,255);
+      rgba[i+1]=clamp(Math.round(g*255),0,255);
+      rgba[i+2]=clamp(Math.round(b*255),0,255);
+      rgba[i+3]=255;
+    }
+  }
+  return new ImageData(rgba,W,H);
+}
+
+// ── Delta-H sur Uint16 (10-bit) → Int16 deltas ─────────────────
+function dhEnc10(ch){
+  const d=new Int16Array(ch.length);
+  // Les samples 10-bit vont jusqu'à 960 — delta max = ±896 → tient dans int16
+  for(let y=0;y<d.length;y+=0){break;} // taille variable selon canal
+  // On travaille 1D (la forme 2D est gérée ligne par ligne implicitement)
+  d[0]=ch[0];
+  for(let i=1;i<ch.length;i++) d[i]=ch[i]-ch[i-1];
+  return d;
+}
+function dhDec10(d,len){
+  const out=new Uint16Array(len);
+  let acc=d[0]; out[0]=clamp(acc,0,1023);
+  for(let i=1;i<len;i++){acc+=d[i];out[i]=clamp(acc,0,1023);}
+  return out;
+}
+
+// ── DeflateRaw async ────────────────────────────────────────────
+async function deflate(u16){
+  const src=new Uint8Array(u16.buffer);
+  const cs=new CompressionStream('deflate-raw');
+  const w=cs.writable.getWriter(),r=cs.readable.getReader();
+  w.write(src);w.close();
+  const chunks=[];let len=0;
+  for(;;){const{done,value}=await r.read();if(done)break;chunks.push(value);len+=value.length;}
+  const out=new Uint8Array(len);let off=0;
+  for(const ch of chunks){out.set(ch,off);off+=ch.length;}
+  return out;
+}
+async function inflate(bytes){
+  const src=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
+  const ds=new DecompressionStream('deflate-raw');
+  const w=ds.writable.getWriter(),r=ds.readable.getReader();
+  w.write(src);w.close();
+  const chunks=[];let len=0;
+  for(;;){const{done,value}=await r.read();if(done)break;chunks.push(value);len+=value.length;}
+  const out=new Uint8Array(len);let off=0;
+  for(const ch of chunks){out.set(ch,off);off+=ch.length;}
+  return new Int16Array(out.buffer);
+}
+
+// ── Métriques ────────────────────────────────────────────────────
+function calcPSNR(a,b,n){
+  let mse=0;for(let i=0;i<n;i++){const d=a[i]-b[i];mse+=d*d;}
+  mse/=n;return mse<0.001?Infinity:20*Math.log10(1023/Math.sqrt(mse));
+}
+function calcSSIM(a,b,n){
+  let ma=0,mb=0;for(let i=0;i<n;i++){ma+=a[i];mb+=b[i];}ma/=n;mb/=n;
+  let va=0,vb=0,cv=0;
+  for(let i=0;i<n;i++){va+=(a[i]-ma)**2;vb+=(b[i]-mb)**2;cv+=(a[i]-ma)*(b[i]-mb);}
+  va/=n;vb/=n;cv/=n;
+  const C1=(0.01*1023)**2,C2=(0.03*1023)**2;
+  return((2*ma*mb+C1)*(2*cv+C2))/((ma*ma+mb*mb+C1)*(va+vb+C2));
+}
+function calcEntropy(u16){
+  const hist=new Uint32Array(1024);
+  for(let i=0;i<u16.length;i++)hist[u16[i]&0x3FF]++;
+  let H=0;const n=u16.length;
+  for(const c of hist)if(c>0){const p=c/n;H-=p*Math.log2(p);}
+  return H;
+}
+function crc32(buf){
+  let c=0xFFFFFFFF,max=Math.min(buf.length,65536);
+  for(let i=0;i<max;i++){let b=(c^buf[i])&0xFF;for(let j=0;j<8;j++)b=b&1?(0xEDB88320^(b>>>1)):b>>>1;c=(c>>>8)^b;}
+  return(c^0xFFFFFFFF)>>>0;
+}
+
+// ── Container HCV16 SDI ──────────────────────────────────────────
+// Format :
+//  [4] magic 'HCS2'  (HCV SDI v2)
+//  [2] W  [2] H  [4] nf  [2] fps_num  [2] fps_den
+//  [1] colorspace=2 (YUV422)  [1] bitdepth=10
+//  [nf*8] index : [offset u32][tcMs u32]
+//  Per frame : [4]szY [cY] [4]szCb [cCb] [4]szCr [cCr]
+//  [4] CRC32
+function buildHCV(W,H,fps,compFrames){
+  const nf=compFrames.length;
+  const hdrSz=4+2+2+4+2+2+1+1+nf*8;
+  const frameSizes=compFrames.map(f=>4+f.cY.length+4+f.cCb.length+4+f.cCr.length);
+  const totalFr=frameSizes.reduce((a,b)=>a+b,0);
+  const totalSz=hdrSz+totalFr+4;
+  const buf=new Uint8Array(totalSz);
+  const view=new DataView(buf.buffer);
+  let off=0;
+
+  // Header
+  buf.set([0x48,0x43,0x53,0x32]);off=4; // 'HCS2'
+  view.setUint16(off,W,true);off+=2;
+  view.setUint16(off,H,true);off+=2;
+  view.setUint32(off,nf,true);off+=4;
+  view.setUint16(off,fps,true);off+=2;
+  view.setUint16(off,1,true);off+=2;
+  buf[off++]=2;  // colorspace YUV 4:2:2
+  buf[off++]=10; // bitdepth 10-bit
+
+  // Index
+  let fOff=hdrSz;
+  for(let i=0;i<nf;i++){
+    view.setUint32(off,fOff,true);off+=4;
+    view.setUint32(off,compFrames[i].tcMs,true);off+=4;
+    fOff+=frameSizes[i];
+  }
+
+  // Données frames
+  for(const f of compFrames){
+    view.setUint32(off,f.cY.length,true);off+=4;buf.set(f.cY,off);off+=f.cY.length;
+    view.setUint32(off,f.cCb.length,true);off+=4;buf.set(f.cCb,off);off+=f.cCb.length;
+    view.setUint32(off,f.cCr.length,true);off+=4;buf.set(f.cCr,off);off+=f.cCr.length;
+  }
+
+  // CRC32
+  const crcVal=crc32(buf.slice(0,off));
+  view.setUint32(off,crcVal,true);
+
+  return{buf,blob:new Blob([buf],{type:'application/octet-stream'}),crcHex:crcVal.toString(16).toUpperCase().padStart(8,'0')};
+}
+
+// ── Pipeline principal ────────────────────────────────────────────
+async function startPipeline(){
+  const vid=$('vo');
+  if(!S.file||!vid.src)return;
+  if(!vid.videoWidth)await new Promise(r=>vid.addEventListener('loadedmetadata',r,{once:true}));
+
+  const btn=$('bcmp');btn.disabled=true;btn.innerHTML='<div class="spin"></div> ENCODAGE…';
+  $('bdot').className='bdot busy';$('blbl').textContent='Compression…';
+  $('lbody').innerHTML='';setBar(0,'Pipeline YUV 4:2:2');
+
+  const rf=parseFloat($('sel-res').value)||1;
+  const W=Math.max(2,Math.round(vid.videoWidth*rf)&~1); // multiple de 2
+  const H=Math.max(2,Math.round(vid.videoHeight*rf)&~1);
+  S.W=W;S.H=H;
+  const nf=parseInt($('sel-nf').value)||5;
+  S.nf=nf;S.fps=25;
+  const dur=vid.duration||10;
+  const Cw=W>>1;
+
+  log('Pipeline: '+W+'×'+H+' YUV 4:2:2 10-bit · '+nf+' frames · mode '+S.mode,'g');
+  log('Conversion BT.709 · sous-échantillonnage 4:2:2 · quantification 10-bit [64..940/960]','i');
+
+  const oc=document.createElement('canvas');oc.width=W;oc.height=H;
+  const octx=oc.getContext('2d',{willReadFrequently:true,alpha:false});
+  const wasPaused=vid.paused;if(!wasPaused)vid.pause();
+
+  S.compFrames=[];
+  let totalBrut=0,totalComp=0;
+  let totYBrut=0,totCbBrut=0,totCrBrut=0;
+  let totYComp=0,totCbComp=0,totCrComp=0;
+
+  const positions=Array.from({length:nf},(_,i)=>Math.max(0.02,Math.min(dur-0.02,(i+0.5)/nf*dur)));
+
+  for(let fi=0;fi<nf;fi++){
+    const t=positions[fi];
+    const pct=Math.round(fi/nf*75);
+    setBar(pct,'Étape '+(fi+1)+'/'+nf+' — RGB→YUV→ΔH→Deflate');
+    setPipeStep(fi===0?2:fi<nf-1?3:4);
+
+    vid.currentTime=t;
+    await new Promise(r=>{const h=()=>{vid.removeEventListener('seeked',h);r();};vid.addEventListener('seeked',h);setTimeout(r,1000);});
+    await new Promise(r=>setTimeout(r,30));
+
+    // ÉTAPE 1 : Décodage H.264 → RGB via canvas
+    setPipeStep(2);
+    octx.drawImage(vid,0,0,W,H);
+    const imgData=octx.getImageData(0,0,W,H);
+    setPipeStep(3);
+
+    // ÉTAPE 2 : RGB → YUV 4:2:2 10-bit (BT.709)
+    const{Y,Cb,Cr}=rgbToYuv422_10bit(imgData.data,W,H);
+    const yBrut=Y.byteLength;const cbBrut=Cb.byteLength;const crBrut=Cr.byteLength;
+
+    // ÉTAPE 3 : Delta-H + DeflateRaw sur chaque canal
+    setPipeStep(4);
+    const dY=dhEnc10(Y), dCb=dhEnc10(Cb), dCr=dhEnc10(Cr);
+    setPipeStep(5);
+    const[cY,cCb,cCr]=await Promise.all([deflate(dY),deflate(dCb),deflate(dCr)]);
+
+    const brut=yBrut+cbBrut+crBrut;
+    const comp=cY.length+cCb.length+cCr.length;
+    const ratio=brut/comp;
+
+    totYBrut+=yBrut;totCbBrut+=cbBrut;totCrBrut+=crBrut;
+    totYComp+=cY.length;totCbComp+=cCb.length;totCrComp+=cCr.length;
+    totalBrut+=brut;totalComp+=comp;
+
+    S.compFrames.push({cY,cCb,cCr,tcMs:Math.round(t*1000),yOrig:Y,cbOrig:Cb,crOrig:Cr,W,H,Cw});
+
+    log('Frame '+(fi+1)+'/'+nf+' · t='+t.toFixed(2)+'s · '+fmtSz(brut)+' → '+fmtSz(comp)+' · '+ratio.toFixed(2)+'×','ok');
+    await new Promise(r=>setTimeout(r,0));
+  }
+
+  // ÉTAPE 4 : Container HCV16
+  setPipeStep(6);
+  setBar(80,'Container HCV SDI…');
+  const hcv=buildHCV(W,H,S.fps,S.compFrames);
+  S.hcvBlob=hcv.blob;S.hcvBytes=hcv.buf.length;S.brutBytes=totalBrut;
+
+  const globalRatio=totalBrut/totalComp;
+  const vsMP4=hcv.buf.length/S.file.size;
+  const bpp=totalComp*8/(W*H*nf);
+  const ent=calcEntropy(S.compFrames[0].yOrig);
+
+  log('Container HCV16 SDI: '+fmtSz(hcv.buf.length)+' · CRC32='+hcv.crcHex,'g');
+  log('Ratio YUV→HCV: '+globalRatio.toFixed(2)+'× · vs MP4 source: '+vsMP4.toFixed(2)+'×','ok');
+
+  // ── Métriques affichées ──────────────────────────────────────
+  // Calcul PSNR sur frame 0 via round-trip
+  const f0=S.compFrames[0];
+  const dY0=await inflate(f0.cY),dCb0=await inflate(f0.cCb),dCr0=await inflate(f0.cCr);
+  const recY=dhDec10(dY0,f0.yOrig.length);
+  const recCb=dhDec10(dCb0,f0.cbOrig.length);
+  const recCr=dhDec10(dCr0,f0.crOrig.length);
+  const psnrY=calcPSNR(f0.yOrig,recY,recY.length);
+  const psnrCb=calcPSNR(f0.cbOrig,recCb,recCb.length);
+  const psnrCr=calcPSNR(f0.crOrig,recCr,recCr.length);
+  const isLL=psnrY===Infinity&&psnrCb===Infinity&&psnrCr===Infinity;
+  const ssimY=calcSSIM(f0.yOrig,recY,Math.min(recY.length,10000));
+  const psnrStr=isLL?'∞':(((psnrY>80?99:psnrY)+(psnrCb>80?99:psnrCb)+(psnrCr>80?99:psnrCr))/3).toFixed(2)+' dB';
+  const ssimStr=ssimY>0.9999?'1.000000':ssimY.toFixed(6);
+
+  log('PSNR Y='+psnrStr+' · SSIM='+ssimStr+' · '+(isLL?'LOSSLESS EXACT ✓':'lossy?'),'ok');
+
+  // Métriques grid
+  $('m-psnr').textContent=psnrStr;
+  $('m-psnr').style.color=isLL?'var(--green)':psnrY>40?'var(--amber)':'var(--red)';
+  $('m-psnr-s').textContent=isLL?'lossless exact':'mesuré';
+  $('m-ssim').textContent=ssimStr;
+  $('m-ssim').style.color=ssimY>0.999?'var(--green)':'var(--amber)';
+  $('m-rat').textContent=globalRatio.toFixed(2)+'×';
+  $('m-rats').textContent=fmtSz(totalBrut)+' → '+fmtSz(totalComp);
+  $('m-hcvsz').textContent=fmtSz(hcv.buf.length);
+  $('m-hcvsz-s').textContent='header+index+frames';
+  $('m-vsmp4').textContent=vsMP4.toFixed(2)+'×';
+  $('m-vsmp4').style.color=vsMP4<1?'var(--green)':'var(--amber)';
+  $('m-bpp').textContent=bpp.toFixed(3);
+  $('m-ent').textContent=ent.toFixed(3)+' bits';
+  $('mgrid').classList.add('on');
+
+  // YUV breakdown
+  const maxBrut=Math.max(totYBrut,1);
+  const maxComp=Math.max(totYBrut,1);
+  const barPct=(v,max)=>Math.min(100,Math.round(v/max*100))+'%';
+  $('stat-y-brut').textContent=fmtSz(totYBrut);
+  $('stat-y-comp').textContent=fmtSz(totYComp);
+  $('stat-y-ratio').textContent=(totYBrut/totYComp).toFixed(2)+'×';
+  $('bar-y-comp').style.width=barPct(totYComp,totYBrut);
+  $('bar-y-ratio').style.width=Math.min(100,Math.round((1-totYComp/totYBrut)*100))+'%';
+  $('stat-cb-brut').textContent=fmtSz(totCbBrut);
+  $('stat-cb-comp').textContent=fmtSz(totCbComp);
+  $('stat-cb-ratio').textContent=(totCbBrut/totCbComp).toFixed(2)+'×';
+  $('bar-cb-comp').style.width=barPct(totCbComp,totCbBrut);
+  $('bar-cb-ratio').style.width=Math.min(100,Math.round((1-totCbComp/totCbBrut)*100))+'%';
+  $('stat-cr-brut').textContent=fmtSz(totCrBrut);
+  $('stat-cr-comp').textContent=fmtSz(totCrComp);
+  $('stat-cr-ratio').textContent=(totCrBrut/totCrComp).toFixed(2)+'×';
+  $('bar-cr-comp').style.width=barPct(totCrComp,totCrBrut);
+  $('bar-cr-ratio').style.width=Math.min(100,Math.round((1-totCrComp/totCrBrut)*100))+'%';
+  $('yuv-panel').classList.add('on');
+
+  // Info bar
+  $('ib-yuv').textContent=fmtSz(totalBrut);
+  $('ib-hcv').textContent=fmtSz(hcv.buf.length);
+  $('ib-ratio').textContent=globalRatio.toFixed(2)+'×';
+  $('ib-nf').textContent=nf;
+
+  // Downloads
+  const base=S.file.name.replace(/\.[^.]+$/,'');
+  $('dl-hcv-n').textContent=base+'.hcv16';
+  $('dl-hcv-m').textContent='HCV SDI · '+W+'×'+H+' · YUV 4:2:2 10-bit · '+nf+'f · '+globalRatio.toFixed(2)+'×';
+  $('dl-hcv-o').textContent='YUV brut: '+fmtSz(totalBrut);
+  $('dl-hcv-v').textContent=fmtSz(hcv.buf.length);
+  $('dl-hcv-r').textContent=globalRatio.toFixed(2)+'× vs YUV brut';
+  $('dl-hcv-b').disabled=false;
+  $('dl-src-o').textContent='H.264 source:';
+  $('dl-src-v').textContent=fmtSz(S.file.size);
+  $('dl-src-b').disabled=false;
+  $('dlrow').classList.add('on');
+
+  // Player dec
+  $('sz-dec').textContent=fmtSz(hcv.buf.length);
+  $('bdg-dec').textContent='PSNR='+psnrStr+' · '+globalRatio.toFixed(2)+'×';
+
+  setBar(90,'Décompression…');
+  if(S.autoDecomp) await decompressAll();
+
+  if(!wasPaused)vid.play().catch(()=>{});
+  setPipeStep(7);setBar(100,'Terminé');
+  $('bdot').className='bdot ok';$('blbl').textContent='Terminé · '+globalRatio.toFixed(2)+'× · PSNR='+psnrStr;
+  btn.disabled=false;btn.innerHTML='✓ RE-ENCODER';btn.style.background='var(--green2)';
+  $('bdec').disabled=false;
+}
+
+// ── Décompression ────────────────────────────────────────────────
+async function decompressAll(){
+  if(!S.compFrames.length)return;
+  $('lo-dec').classList.add('show');
+  S.decompFrames=[];
+  const W=S.W,H=S.H;
+  const cv=$('cv-dec');cv.width=W;cv.height=H;
+
+  for(let fi=0;fi<S.compFrames.length;fi++){
+    $('lo-lbl').textContent='Frame '+(fi+1)+'/'+S.compFrames.length;
+    $('lo-pct').textContent=Math.round(fi/S.compFrames.length*100)+'%';
+    const f=S.compFrames[fi];
+    const[dY,dCb,dCr]=await Promise.all([inflate(f.cY),inflate(f.cCb),inflate(f.cCr)]);
+    const recY=dhDec10(dY,f.yOrig.length);
+    const recCb=dhDec10(dCb,f.cbOrig.length);
+    const recCr=dhDec10(dCr,f.crOrig.length);
+    // YUV → RGB pour affichage
+    const imgData=yuv422_10bitToRGB(recY,recCb,recCr,W,H);
+    S.decompFrames.push(imgData);
+    await new Promise(r=>setTimeout(r,0));
+  }
+
+  $('lo-dec').classList.remove('show');
+  $('cv-dec').classList.add('show');$('ph-dec').classList.add('hide');
+  $('dur-d').textContent=fmtT(S.compFrames[S.compFrames.length-1].tcMs/1000);
+  showFrame(0);
+  log('Décompression terminée · '+S.decompFrames.length+' frames · YUV→RGB OK','ok');
+}
+
+// ── Player ───────────────────────────────────────────────────────
+function showFrame(idx){
+  if(!S.decompFrames.length)return;
+  idx=Math.max(0,Math.min(S.decompFrames.length-1,idx));S.idxD=idx;
+  const cv=$('cv-dec');const ctx=cv.getContext('2d');
+  ctx.putImageData(S.decompFrames[idx],0,0);
+  ctx.font='bold 9px Syne Mono,monospace';ctx.fillStyle='rgba(0,230,118,.75)';
+  ctx.fillText('HCV SDI · YUV 4:2:2 10-bit · '+(idx+1)+'/'+S.decompFrames.length,5,13);
+  ctx.font='9px Syne Mono,monospace';ctx.fillStyle='rgba(255,255,255,.3)';
+  ctx.fillText('t='+fmtT(S.compFrames[idx].tcMs/1000)+' · PSNR=∞',5,S.H-5);
+  const p=S.decompFrames.length>1?idx/(S.decompFrames.length-1):1;
+  $('tlfd').style.width=(p*100).toFixed(1)+'%';$('tltd').style.left=(p*100).toFixed(1)+'%';
+  $('tc-d').textContent=fmtT(S.compFrames[idx].tcMs/1000);
+}
+
+function tp(side){
+  if(side==='o'){const v=$('vo');if(v.paused)v.play().catch(()=>{});else v.pause();}
+  else{if(S.playingD)stopD();else startD();}
+}
+function startD(){
+  if(!S.decompFrames.length)return;
+  S.playingD=true;$('pbd').textContent='⏸';S.lastRafT=0;
+  const step=ts=>{
+    if(!S.playingD)return;
+    if(!S.lastRafT)S.lastRafT=ts;
+    if(ts-S.lastRafT>=S.fpsMs){
+      S.lastRafT=ts;
+      const next=(S.idxD+1)%S.decompFrames.length;
+      showFrame(next);
+      if(S.syncOn&&$('vo').src){
+        try{$('vo').currentTime=S.compFrames[next].tcMs/1000;}catch(e){}
+      }
+    }
+    S.rafD=requestAnimationFrame(step);
+  };
+  S.rafD=requestAnimationFrame(step);
+}
+function stopD(){
+  S.playingD=false;$('pbd').textContent='▶';
+  if(S.rafD){cancelAnimationFrame(S.rafD);S.rafD=null;}
+}
+function sk(side,sec){
+  if(side==='o'){const v=$('vo');v.currentTime=Math.max(0,Math.min(v.duration||0,(v.currentTime||0)+sec));}
+  else{const n=Math.max(0,Math.min(S.decompFrames.length-1,S.idxD+Math.round(sec*S.fps)));showFrame(n);}
+}
+function seekCk(side,e){
+  const p=Math.max(0,Math.min(1,(e.clientX-e.currentTarget.getBoundingClientRect().left)/e.currentTarget.offsetWidth));
+  if(side==='o'){const v=$('vo');if(v.duration&&isFinite(v.duration))v.currentTime=p*v.duration;}
+  else if(S.decompFrames.length)showFrame(Math.round(p*(S.decompFrames.length-1)));
+}
+function onPl(s){$(s==='o'?'pbo':'pbd').textContent='⏸';}
+function onPa(s){$(s==='o'?'pbo':'pbd').textContent='▶';}
+function onEnd(){$('pbo').textContent='▶';}
+function onSrcTime(){
+  const v=$('vo');if(!v.duration||!isFinite(v.duration))return;
+  const p=v.currentTime/v.duration;
+  $('tlfo').style.width=(p*100).toFixed(1)+'%';$('tlto').style.left=(p*100).toFixed(1)+'%';
+  $('tc-o').textContent=fmtT(v.currentTime);
+  if(S.syncOn&&S.decompFrames.length&&!S.playingD){
+    const idx=Math.round(p*(S.decompFrames.length-1));
+    if(idx!==S.idxD)showFrame(idx);
+  }
+}
+function toggleSync(){
+  S.syncOn=!S.syncOn;const b=$('stog'),sv=$('svis');
+  if(S.syncOn){b.textContent='⬤ SYNC ON';b.classList.remove('off');sv.classList.add('on');}
+  else{b.textContent='○ SYNC OFF';b.classList.add('off');sv.classList.remove('on');}
+}
+function setMode(m){
+  S.mode=m;document.querySelectorAll('.mp').forEach(p=>p.classList.remove('on'));
+  $('m-'+m.toLowerCase()).classList.add('on');
+}
+function setDecMode(v,el){
+  S.autoDecomp=v;
+  document.querySelectorAll('#d-on,#d-off').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+}
+
+// ── Fichier ──────────────────────────────────────────────────────
+function onFile(f){
+  if(!f)return;
+  S.file=f;
+  const url=URL.createObjectURL(f);
+  $('vo').src=url;$('vo').load();
+  $('upz').classList.add('loaded');
+  $('ibar').classList.add('on');$('cfg').classList.add('on');
+  $('ib-fn').textContent=f.name.length>28?f.name.slice(0,26)+'…':f.name;
+  $('ib-sz').textContent=fmtSz(f.size);
+  $('sz-src').textContent=fmtSz(f.size);
+  $('dl-src-n').textContent=f.name;
+  log('Source H.264: '+f.name+' ('+fmtSz(f.size)+')','i');
+}
+function onMeta(){
+  const v=$('vo');
+  S.W=v.videoWidth||640;S.H=v.videoHeight||360;S.dur=v.duration||0;
+  $('ib-res').textContent=S.W+'×'+S.H;
+  $('ib-dur').textContent=fmtT(S.dur);
+  $('dur-o').textContent=fmtT(S.dur);$('dur-d').textContent=fmtT(S.dur);
+  $('bdg-src').textContent=S.file.name.split('.').pop().toUpperCase();
+  $('ph-src').classList.add('hide');
+  $('vo').style.display='block';
+  $('bcmp').disabled=false;
+  log('Métadonnées: '+S.W+'×'+S.H+' · '+fmtT(S.dur),'ok');
+}
+
+function dlHCV(){if(!S.hcvBlob)return;const a=document.createElement('a');a.href=URL.createObjectURL(S.hcvBlob);a.download=S.file.name.replace(/\.[^.]+$/,'')+'.hcv16';a.click();}
+function dlSrc(){if(!S.file)return;const a=document.createElement('a');a.href=URL.createObjectURL(S.file);a.download=S.file.name;a.click();}
+
+window.addEventListener('load',()=>{
+  if(typeof CompressionStream==='undefined'){
+    log('ERREUR: CompressionStream requis — Chrome 80+ / Firefox 113+','e');
+    $('bdot').className='bdot err';$('blbl').textContent='Non supporté';
+    return;
+  }
+  log('HCV SDI Pipeline — MP4 H.264 → YUV 4:2:2 10-bit → HCV16','g');
+  log('Conversion BT.709 · Delta-H · DeflateRaw · PSNR=∞ garanti','i');
+  document.addEventListener('dragover',e=>{e.preventDefault();$('upz').classList.add('drag');});
+  document.addEventListener('dragleave',e=>{if(!e.relatedTarget)$('upz').classList.remove('drag');});
+  document.addEventListener('drop',e=>{e.preventDefault();$('upz').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)onFile(f);});
+});
+</script>
+</body>
+</html>

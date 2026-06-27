@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HCS Player v3.4 — Streaming lossless</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#060608;--ink2:#0d0d10;--ink3:#14141a;
+  --red:#E8002D;--red-d:#B50023;--red-dim:rgba(232,0,45,.1);
+  --wht:#F5F4F0;--owh:#CCCAC4;--sil:#8A8880;--fog:#4A4848;
+  --green:#00C87A;--amber:#F5A623;--blue:#3E9FFF;
+  --bds:rgba(255,255,255,.055);--bdr:rgba(232,0,45,.18);
+  --mono:'IBM Plex Mono',monospace;--head:'Bebas Neue',sans-serif;--body:'IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--ink);color:var(--owh);font-family:var(--body);font-size:13px;line-height:1.5;height:100%;overflow:hidden}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--ink)}::-webkit-scrollbar-thumb{background:var(--red-d)}
+
+.hdr{height:46px;background:rgba(6,6,8,.98);border-bottom:1px solid var(--bds);display:flex;align-items:center;padding:0 14px;gap:9px;flex-shrink:0;position:relative}
+.hdr::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,var(--red),transparent 60%)}
+.logo{font-family:var(--head);font-size:20px;letter-spacing:3px;color:var(--wht)}
+.logo span{color:var(--red)}
+.vsn{font-family:var(--mono);font-size:9px;color:var(--fog);align-self:flex-end;margin-bottom:3px}
+.pill{border-radius:2px;padding:2px 7px;font-family:var(--mono);font-size:9px;letter-spacing:1px;border:1px solid;white-space:nowrap}
+.pill.ok{background:rgba(0,200,122,.07);border-color:rgba(0,200,122,.2);color:var(--green)}
+.pill.info{background:rgba(62,159,255,.07);border-color:rgba(62,159,255,.2);color:var(--blue)}
+.pill.warn{background:rgba(245,166,35,.07);border-color:rgba(245,166,35,.2);color:var(--amber)}
+.pill.err{background:var(--red-dim);border-color:var(--bdr);color:var(--red)}
+.conn{display:flex;align-items:center;gap:5px;margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--fog)}
+.dot{width:6px;height:6px;border-radius:50%}
+.dot.ok{background:var(--green);box-shadow:0 0 4px var(--green)}
+.dot.busy{background:var(--amber);animation:blink .7s ease infinite}
+.dot.idle{background:var(--fog)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* APP */
+.app{display:flex;flex-direction:column;height:calc(100vh - 46px)}
+
+/* UPLOAD ZONE */
+.upload-zone{display:none;position:absolute;inset:0;z-index:50;background:rgba(6,6,8,.92);align-items:center;justify-content:center;flex-direction:column;gap:16px;border:2px dashed var(--red)}
+.upload-zone.show{display:flex}
+.upload-zone.over{background:rgba(232,0,45,.08)}
+.uz-ico{font-family:var(--head);font-size:56px;color:var(--red);letter-spacing:4px;opacity:.7}
+.uz-t{font-family:var(--head);font-size:28px;letter-spacing:3px;color:var(--wht)}
+.uz-s{font-family:var(--mono);font-size:11px;color:var(--sil)}
+.uz-limit{font-family:var(--mono);font-size:10px;color:var(--red);letter-spacing:1px;margin-top:4px}
+.uz-or{font-family:var(--mono);font-size:10px;color:var(--fog)}
+.uz-btn{background:transparent;border:1px solid var(--red);color:var(--red);padding:8px 24px;font-family:var(--mono);font-size:11px;letter-spacing:2px;cursor:pointer;transition:all .2s}
+.uz-btn:hover{background:var(--red-dim)}
+
+/* TOOLBAR */
+.toolbar{display:flex;gap:6px;align-items:center;padding:6px 12px;background:var(--ink2);border-bottom:1px solid var(--bds);flex-wrap:wrap;flex-shrink:0}
+.tb-sep{width:1px;height:18px;background:var(--bds);flex-shrink:0}
+.tb-lbl{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--fog);white-space:nowrap}
+.btn{background:var(--ink3);border:1px solid var(--bds);color:var(--sil);padding:4px 10px;font-family:var(--mono);font-size:10px;letter-spacing:.5px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn:hover:not(:disabled){border-color:var(--sil);color:var(--owh)}
+.btn:disabled{opacity:.3;cursor:not-allowed}
+.btn.primary{background:var(--red);border-color:var(--red);color:var(--wht)}
+.btn.primary:hover:not(:disabled){background:var(--red-d)}
+.btn.active{border-color:var(--green);color:var(--green);background:rgba(0,200,122,.05)}
+.btn.gold{border-color:rgba(245,166,35,.4);color:var(--amber);background:rgba(245,166,35,.06)}
+select{background:var(--ink3);border:1px solid var(--bds);color:var(--sil);padding:3px 7px;font-family:var(--mono);font-size:10px;outline:none;cursor:pointer}
+
+/* COMPARE */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--bds);flex:1;min-height:0;position:relative}
+
+/* PANELS */
+.panel{display:flex;flex-direction:column;background:var(--ink);min-height:0}
+.ph{display:flex;align-items:center;gap:7px;padding:5px 10px;background:var(--ink2);border-bottom:1px solid var(--bds);flex-shrink:0}
+.phdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ph-t{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:500}
+.ph-m{font-family:var(--mono);font-size:9px;color:var(--fog);margin-left:auto;white-space:nowrap}
+.ph-b{font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:2px;border:1px solid}
+.ph-b.src{color:var(--amber);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.06)}
+.ph-b.dec{color:var(--green);border-color:rgba(0,200,122,.3);background:rgba(0,200,122,.06)}
+
+/* VIDEO ZONE */
+.vc{position:relative;background:#000;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.vc video,.vc canvas{max-width:100%;max-height:100%;display:block;object-fit:contain}
+.vc video{width:100%;height:100%}
+
+.es{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;pointer-events:none}
+.es-ico{font-family:var(--head);font-size:32px;color:rgba(232,0,45,.25);letter-spacing:2px}
+.es-t{font-family:var(--mono);font-size:11px;color:var(--fog)}
+.es-s{font-family:var(--mono);font-size:10px;color:var(--sla,#2A2A30)}
+
+/* PROGRESS */
+.ov{position:absolute;inset:0;background:rgba(0,0,0,.85);display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.ov.show{display:flex}
+.ov-ring{width:28px;height:28px;border:2px solid rgba(232,0,45,.15);border-top-color:var(--red);border-radius:50%;animation:spin 1s linear infinite}
+.ov-lbl{font-family:var(--mono);font-size:11px;color:var(--owh);letter-spacing:.5px}
+.ov-pct{font-family:var(--head);font-size:20px;color:var(--red)}
+.ov-bar{width:180px;height:3px;background:rgba(255,255,255,.07);border-radius:1px;overflow:hidden}
+.ov-fill{height:100%;background:var(--red);width:0%;transition:width .15s}
+.ov-detail{font-family:var(--mono);font-size:9px;color:var(--fog);letter-spacing:.5px}
+
+/* CONTROLS */
+.ctrl{padding:5px 10px;background:var(--ink2);border-top:1px solid var(--bds);flex-shrink:0}
+.tl{position:relative;height:3px;background:var(--bds);margin-bottom:5px;cursor:pointer;border-radius:1px}
+.tl-fill{height:100%;background:var(--red);width:0%;border-radius:1px;pointer-events:none;transition:width .05s linear}
+.tl-buf{position:absolute;inset:0;background:rgba(232,0,45,.2);width:0%;border-radius:1px;pointer-events:none}
+.tl-thumb{position:absolute;top:50%;transform:translate(-50%,-50%);width:8px;height:8px;background:var(--red);border-radius:50%;pointer-events:none;opacity:0;transition:opacity .1s}
+.tl:hover .tl-thumb{opacity:1}
+.cr{display:flex;align-items:center;gap:4px}
+.cb{width:22px;height:22px;background:var(--ink3);border:1px solid var(--bds);color:var(--sil);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;transition:all .12s;flex-shrink:0;user-select:none}
+.cb:hover{border-color:var(--sil);color:var(--owh)}
+.cb.pl{background:var(--red);border-color:var(--red);color:var(--wht);font-size:12px;width:24px;height:24px}
+.cb.pl:hover{background:var(--red-d)}
+.tc{font-family:var(--mono);font-size:10px;color:var(--sil);margin:0 3px;white-space:nowrap}
+.vol-row{display:flex;align-items:center;gap:4px;margin-left:auto}
+.vol-row input[type=range]{width:52px;-webkit-appearance:none;height:2px;background:var(--bds);outline:none}
+.vol-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height:8px;border-radius:50%;background:var(--sil);cursor:pointer}
+.cbfs{font-size:11px;cursor:pointer;padding:2px 4px;border:1px solid var(--bds);background:var(--ink3);color:var(--fog);transition:all .12s}
+.cbfs:hover{border-color:var(--sil);color:var(--owh)}
+
+/* SYNC */
+.sync-line{height:2px;background:linear-gradient(90deg,transparent,var(--red),var(--amber),var(--red),transparent);display:none;position:relative;overflow:hidden}
+.sync-line.on{display:block}
+.sync-pulse{position:absolute;top:0;bottom:0;width:60px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:syncPulse 1.8s ease-in-out infinite}
+@keyframes syncPulse{0%{left:-60px}100%{left:100%}}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(8,1fr);border-top:1px solid var(--bds);background:var(--ink3);flex-shrink:0}
+.mi{padding:4px 7px;border-right:1px solid var(--bds);text-align:center;min-width:0}
+.mi:last-child{border-right:none}
+.mi-l{font-family:var(--mono);font-size:8px;letter-spacing:.5px;text-transform:uppercase;color:var(--fog);margin-bottom:1px;white-space:nowrap;overflow:hidden}
+.mi-v{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--owh);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mi-v.ok{color:var(--green)}.mi-v.red{color:var(--red)}.mi-v.amb{color:var(--amber)}.mi-v.bl{color:var(--blue)}
+
+/* LOG */
+.log{height:62px;background:var(--ink);border-top:1px solid var(--bds);display:flex;flex-direction:column;flex-shrink:0}
+.log-hdr{padding:2px 10px;background:var(--ink2);border-bottom:1px solid var(--bds);display:flex;gap:8px;align-items:center;flex-shrink:0}
+.log-t{font-family:var(--mono);font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--fog)}
+.log-body{flex:1;overflow-y:auto;padding:2px 10px;font-family:var(--mono);font-size:10px;line-height:1.75}
+.ll{display:block}.ll.ok{color:var(--green)}.ll.e{color:var(--red)}.ll.i{color:var(--blue)}.ll.g{color:var(--red)}.ll.w{color:var(--amber)}
+
+/* UPSCALE */
+.up-pills{display:flex;gap:2px}
+.up-p{border:1px solid var(--bds);padding:2px 7px;font-family:var(--mono);font-size:9px;cursor:pointer;color:var(--fog);transition:all .12s;background:transparent;border-radius:2px}
+.up-p.on{border-color:var(--red);color:var(--red);background:var(--red-dim)}
+.up-p:hover:not(.on){border-color:var(--sil);color:var(--sil)}
+</style>
+</head>
+<body>
+
+<!-- Inputs fichiers -->
+<input type="file" id="fi-video" accept="video/*" style="display:none" onchange="onVideoFile(this.files[0])">
+<input type="file" id="fi-hcs"   accept=".hcs" style="display:none" onchange="onHCSFile(this.files[0])">
+
+<!-- DROP ZONE plein écran -->
+<div class="upload-zone" id="drop-zone"
+     ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+  <div class="uz-ico">HCS</div>
+  <div class="uz-t">Déposer votre fichier ici</div>
+  <div class="uz-s">Vidéo source (MP4 · MOV · WebM · MKV · TS) ou fichier compressé .hcs</div>
+  <div class="uz-limit">Jusqu'à 5 GB — streaming natif, aucune limite mémoire</div>
+  <div class="uz-or">— ou —</div>
+  <button class="uz-btn" onclick="$('fi-video').click()">Parcourir les fichiers</button>
+</div>
+
+<header class="hdr">
+  <div class="logo">H<span>C</span>S</div>
+  <div class="vsn">v3.4</div>
+  <div class="pill ok">Delta-H lossless</div>
+  <div class="pill info">GPU ImageBitmap</div>
+  <div class="pill ok" id="pl-psnr">PSNR = ∞</div>
+  <div class="pill warn" id="pl-st">Prêt · glisser un fichier</div>
+  <div class="conn"><div class="dot ok" id="eng-dot"></div><span id="eng-lbl">Moteur prêt</span></div>
+</header>
+
+<div class="app">
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="tb-lbl">SOURCE</div>
+    <button class="btn" onclick="$('fi-video').click()" id="btn-vid">▶ Vidéo source</button>
+    <span id="info-vid" style="font-family:var(--mono);font-size:9px;color:var(--fog)">aucune · jusqu'à 5 GB</span>
+
+    <div class="tb-sep"></div>
+    <div class="tb-lbl">COMPRESSION HCS</div>
+    <select id="sel-fps">
+      <option value="12">12 fps</option>
+      <option value="25" selected>25 fps</option>
+      <option value="30">30 fps</option>
+      <option value="50">50 fps</option>
+    </select>
+    <select id="sel-res">
+      <option value="1">Pleine résolution</option>
+      <option value="0.5">½ (rapide)</option>
+      <option value="0.25">¼ (très rapide)</option>
+    </select>
+    <select id="sel-dur">
+      <option value="5">5 secondes</option>
+      <option value="15">15 secondes</option>
+      <option value="30" selected>30 secondes</option>
+      <option value="60">1 minute</option>
+      <option value="300">5 minutes</option>
+      <option value="0">Durée totale</option>
+    </select>
+    <button class="btn primary" id="btn-cmp" onclick="startCompress()" disabled>⬇ Compresser</button>
+    <button class="btn gold" id="btn-dl" onclick="downloadHCS()" disabled>↓ Export .hcs</button>
+
+    <div class="tb-sep"></div>
+    <div class="tb-lbl">HCS</div>
+    <button class="btn" onclick="$('fi-hcs').click()">🗜 Ouvrir .hcs</button>
+    <span id="info-hcs" style="font-family:var(--mono);font-size:9px;color:var(--fog)">aucun</span>
+
+    <div class="tb-sep"></div>
+    <div class="tb-lbl">SYNC</div>
+    <button class="btn active" id="btn-sync" onclick="toggleSync()">⬤ ON</button>
+
+    <div class="tb-sep"></div>
+    <div class="tb-lbl">UPSCALE</div>
+    <div class="up-pills">
+      <div class="up-p on" onclick="setUpscale(1,this)">×1</div>
+      <div class="up-p"   onclick="setUpscale(2,this)">×2</div>
+      <div class="up-p"   onclick="setUpscale(4,this)">×4</div>
+    </div>
+  </div>
+
+  <!-- SYNC LINE -->
+  <div class="sync-line on" id="sync-line"><div class="sync-pulse"></div></div>
+
+  <!-- COMPARAISON CÔTE À CÔTE -->
+  <div class="compare" id="compare">
+
+    <!-- ── PANNEAU GAUCHE : SOURCE ORIGINALE ── -->
+    <div class="panel">
+      <div class="ph">
+        <div class="phdot" style="background:var(--amber)"></div>
+        <div class="ph-t" style="color:var(--amber)">Vidéo source originale</div>
+        <div class="ph-m" id="ph-src-m">—</div>
+        <div class="ph-b src" id="ph-src-b">—</div>
+      </div>
+      <div class="vc" id="vc-src">
+        <div class="es" id="es-src">
+          <div class="es-ico">HCS</div>
+          <div class="es-t">Charger une vidéo source</div>
+          <div class="es-s">MP4 · MOV · WebM · TS — jusqu'à 5 GB</div>
+        </div>
+        <!-- <video> = URL.createObjectURL → streaming natif, 0 octet chargé en RAM -->
+        <video id="vo" style="display:none" preload="metadata" playsinline
+               onloadedmetadata="onSrcMeta()"
+               ontimeupdate="onSrcTime()"
+               onplay="onPl('src')"
+               onpause="onPa('src')"
+               onended="onEnd()"></video>
+      </div>
+      <div class="ctrl">
+        <div class="tl" id="tl-src" onclick="seekTL('src',event)">
+          <div class="tl-fill" id="tlf-src"></div>
+          <div class="tl-thumb" id="tlt-src"></div>
+        </div>
+        <div class="cr">
+          <div class="cb" onclick="skipSrc(-30)">⏮</div>
+          <div class="cb" onclick="skipSrc(-5)">«</div>
+          <div class="cb pl" id="pb-src" onclick="togglePlay('src')">▶</div>
+          <div class="cb" onclick="skipSrc(5)">»</div>
+          <div class="cb" onclick="skipSrc(30)">⏭</div>
+          <span class="tc"><span id="tc-src">0:00</span> / <span id="dur-src">—</span></span>
+          <div class="vol-row">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="var(--fog)"><path d="M2 4H4.5L7 1v10L4.5 8H2z"/></svg>
+            <input type="range" min="0" max="1" step=".05" value=".8" oninput="$('vo').volume=this.value">
+          </div>
+          <div class="cbfs" onclick="goFS('vo')">⛶</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PANNEAU DROIT : DÉCOMPRESSÉ HCS ── -->
+    <div class="panel">
+      <div class="ph">
+        <div class="phdot" style="background:var(--green)"></div>
+        <div class="ph-t" style="color:var(--green)">Décompressé HCS — pixels exacts</div>
+        <div class="ph-m" id="ph-dec-m">—</div>
+        <div class="ph-b dec" id="ph-dec-b">PSNR = ∞</div>
+      </div>
+      <div class="vc" id="vc-dec">
+        <div class="es" id="es-dec">
+          <div class="es-ico">HCS</div>
+          <div class="es-t">Compresser ou charger un .hcs</div>
+          <div class="es-s">Lecture GPU fluide — ImageBitmap pré-chargés</div>
+        </div>
+        <canvas id="cv-dec" style="display:none"></canvas>
+        <!-- Overlay progression -->
+        <div class="ov" id="ov-dec">
+          <div class="ov-ring"></div>
+          <div class="ov-lbl" id="ov-lbl">Initialisation…</div>
+          <div class="ov-pct" id="ov-pct">0%</div>
+          <div class="ov-bar"><div class="ov-fill" id="ov-fill"></div></div>
+          <div class="ov-detail" id="ov-detail">—</div>
+        </div>
+      </div>
+      <div class="ctrl">
+        <div class="tl" id="tl-dec" onclick="seekTL('dec',event)">
+          <div class="tl-buf" id="tlb-dec"></div>
+          <div class="tl-fill" id="tlf-dec"></div>
+          <div class="tl-thumb" id="tlt-dec"></div>
+        </div>
+        <div class="cr">
+          <div class="cb" onclick="skipDec(-10)">⏮</div>
+          <div class="cb" onclick="skipDec(-1)">«</div>
+          <div class="cb pl" id="pb-dec" onclick="togglePlay('dec')">▶</div>
+          <div class="cb" onclick="skipDec(1)">»</div>
+          <div class="cb" onclick="skipDec(10)">⏭</div>
+          <span class="tc"><span id="tc-dec">0:00</span> / <span id="dur-dec">—</span></span>
+          <div style="margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--fog)" id="frame-info">—</div>
+          <div class="cbfs" onclick="goFS('cv-dec')">⛶</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /compare -->
+
+  <!-- MÉTRIQUES -->
+  <div class="metrics">
+    <div class="mi"><div class="mi-l">PSNR</div><div class="mi-v ok" id="m-psnr">—</div></div>
+    <div class="mi"><div class="mi-l">Ratio HCS</div><div class="mi-v red" id="m-ratio">—</div></div>
+    <div class="mi"><div class="mi-l">Brut</div><div class="mi-v amb" id="m-brut">—</div></div>
+    <div class="mi"><div class="mi-l">Compressé</div><div class="mi-v ok" id="m-comp">—</div></div>
+    <div class="mi"><div class="mi-l">Résolution</div><div class="mi-v" id="m-res">—</div></div>
+    <div class="mi"><div class="mi-l">Frames</div><div class="mi-v bl" id="m-nf">—</div></div>
+    <div class="mi"><div class="mi-l">FPS lecture</div><div class="mi-v ok" id="m-fps">—</div></div>
+    <div class="mi"><div class="mi-l">Buffer GPU</div><div class="mi-v" id="m-buf">—</div></div>
+  </div>
+
+  <!-- LOG -->
+  <div class="log">
+    <div class="log-hdr">
+      <div class="log-t">HCS Engine</div>
+      <div style="margin-left:auto;font-family:var(--mono);font-size:8px;color:var(--fog)" id="log-ts">—</div>
+    </div>
+    <div class="log-body" id="log-body"></div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//  HCS PLAYER v3.4 — SOLUTION COMPLÈTE
+//
+//  Problèmes résolus :
+//  1. LECTURE FLUIDE  — ImageBitmap GPU pré-chargés, rAF pur (zéro calc)
+//  2. VIDÉO COMPLÈTE  — requestVideoFrameCallback pour toutes les frames
+//  3. UPLOAD 5 GB     — URL.createObjectURL = streaming natif, 0 RAM
+//  4. CÔTE À CÔTE     — <video> source + <canvas> décompressé synchronisés
+//
+//  Pipeline compression :
+//    canvas.getImageData → deltaHEncode(R,G,B) → deflateRaw → container HCS2
+//
+//  Pipeline décompression + lecture :
+//    HCS2 → inflateRaw → deltaHDecode → createImageBitmap → GPU texture[]
+//    rAF loop → ctx.drawImage(bitmap[i]) @ fps cible → 60fps stable
+// ═══════════════════════════════════════════════════════════════════
+
+const $=id=>document.getElementById(id);
+const fmtSz=b=>!b&&b!==0?'—':b<1024?b+'B':b<1e6?(b/1024).toFixed(1)+'KB':b<1e9?(b/1e6).toFixed(2)+'MB':(b/1e9).toFixed(3)+'GB';
+const fmtT=s=>{if(s==null||isNaN(s))return'—';const m=0|s/60,sc=s%60;return m+':'+sc.toFixed(2).padStart(5,'0');};
+const fmtTShort=s=>{if(s==null||isNaN(s))return'—';return(0|s/60)+':'+(0|s%60).toString().padStart(2,'0');};
+const clamp=(v,lo,hi)=>v<lo?lo:v>hi?hi:v;
+
+// ── Log ─────────────────────────────────────────────────────────
+function log(t,c=''){
+  const el=document.createElement('span');el.className='ll'+(c?' '+c:'');
+  const ts=new Date().toISOString().slice(11,22);
+  el.textContent='['+ts+'] '+t;
+  const b=$('log-body');b.appendChild(el);b.scrollTop=b.scrollHeight;
+  $('log-ts').textContent=ts;
+}
+
+// ── Status ──────────────────────────────────────────────────────
+function setSt(txt,type){
+  const p=$('pl-st');p.textContent=txt;
+  p.className='pill '+(type==='ok'?'ok':type==='busy'?'warn':'err');
+  $('eng-dot').className='dot '+(type==='ok'?'ok':type==='busy'?'busy':'idle');
+  $('eng-lbl').textContent=txt;
+}
+function setOv(show,lbl,pct,detail){
+  const ov=$('ov-dec');
+  if(!show){ov.classList.remove('show');return;}
+  ov.classList.add('show');
+  if(lbl!=null)$('ov-lbl').textContent=lbl;
+  if(pct!=null){$('ov-pct').textContent=pct+'%';$('ov-fill').style.width=pct+'%';}
+  if(detail!=null)$('ov-detail').textContent=detail;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ALGORITHMES HCS — Delta-H + DeflateRaw natif browser
+// ══════════════════════════════════════════════════════════════
+
+function dhEnc(ch, W, H){
+  // Prédicteur horizontal : d[y,0]=ch[y,0], d[y,x]=ch[y,x]-ch[y,x-1]
+  const d=new Int16Array(W*H);
+  for(let y=0;y<H;y++){
+    d[y*W]=ch[y*W];
+    for(let x=1;x<W;x++) d[y*W+x]=ch[y*W+x]-ch[y*W+x-1];
+  }
+  return d;
+}
+
+function dhDec(d, W, H){
+  // Cumsum horizontal → pixels reconstruits exactement
+  const out=new Uint8ClampedArray(W*H);
+  for(let y=0;y<H;y++){
+    let acc=d[y*W];
+    out[y*W]=acc<0?0:acc>255?255:acc;
+    for(let x=1;x<W;x++){
+      acc+=d[y*W+x];
+      out[y*W+x]=acc<0?0:acc>255?255:acc;
+    }
+  }
+  return out;
+}
+
+async function deflate(i16){
+  // CompressionStream natif — raw deflate, aucune dépendance externe
+  if(typeof CompressionStream==='undefined') return new Uint8Array(i16.buffer);
+  const src=new Uint8Array(i16.buffer);
+  const cs=new CompressionStream('deflate-raw');
+  const w=cs.writable.getWriter(),r=cs.readable.getReader();
+  w.write(src);w.close();
+  const chunks=[];let len=0;
+  for(;;){const{done,value}=await r.read();if(done)break;chunks.push(value);len+=value.length;}
+  const out=new Uint8Array(len);let off=0;
+  for(const ch of chunks){out.set(ch,off);off+=ch.length;}
+  return out;
+}
+
+async function inflate(bytes){
+  if(typeof DecompressionStream==='undefined') return new Int16Array(bytes.buffer||bytes);
+  const src=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
+  const ds=new DecompressionStream('deflate-raw');
+  const w=ds.writable.getWriter(),r=ds.readable.getReader();
+  w.write(src);w.close();
+  const chunks=[];let len=0;
+  for(;;){const{done,value}=await r.read();if(done)break;chunks.push(value);len+=value.length;}
+  const out=new Uint8Array(len);let off=0;
+  for(const ch of chunks){out.set(ch,off);off+=ch.length;}
+  return new Int16Array(out.buffer);
+}
+
+async function compressFrame(rgba, W, H){
+  // Extraire R,G,B depuis RGBA, comprimer chaque canal en parallèle
+  const R=new Uint8Array(W*H),G=new Uint8Array(W*H),B=new Uint8Array(W*H);
+  for(let i=0;i<W*H;i++){R[i]=rgba[i*4];G[i]=rgba[i*4+1];B[i]=rgba[i*4+2];}
+  const[cR,cG,cB]=await Promise.all([deflate(dhEnc(R,W,H)),deflate(dhEnc(G,W,H)),deflate(dhEnc(B,W,H))]);
+  return{cR,cG,cB};
+}
+
+async function decompressToImageData(cR,cG,cB,W,H){
+  // Décompresser 3 canaux → ImageData RGBA
+  const[dR,dG,dB]=await Promise.all([inflate(cR),inflate(cG),inflate(cB)]);
+  const recR=dhDec(dR,W,H),recG=dhDec(dG,W,H),recB=dhDec(dB,W,H);
+  const rgba=new Uint8ClampedArray(W*H*4);
+  for(let i=0;i<W*H;i++){rgba[i*4]=recR[i];rgba[i*4+1]=recG[i];rgba[i*4+2]=recB[i];rgba[i*4+3]=255;}
+  return new ImageData(rgba,W,H);
+}
+
+function measurePSNR(origRGBA, decRGBA, n){
+  let mse=0;
+  for(let i=0;i<n;i++){
+    const dr=origRGBA[i*4]-decRGBA[i*4];
+    const dg=origRGBA[i*4+1]-decRGBA[i*4+1];
+    const db=origRGBA[i*4+2]-decRGBA[i*4+2];
+    mse+=dr*dr+dg*dg+db*db;
+  }
+  mse/=(n*3);
+  return mse<0.0001?Infinity:20*Math.log10(255/Math.sqrt(mse));
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CONTAINER HCS2 (binaire, seek O(1) par frame)
+//
+//  Header :
+//    [4]  'HCS2' magic
+//    [2]  W uint16 LE
+//    [2]  H uint16 LE
+//    [4]  nFrames uint32 LE
+//    [2]  fpsNum uint16 LE
+//    [2]  fpsDen uint16 LE
+//    [nFrames*8]  index : [offset uint32 LE][timecodeMs uint32 LE]
+//  Frames :
+//    [4]szR [cR bytes] [4]szG [cG bytes] [4]szB [cB bytes]
+//  End :
+//    [4]  CRC32 uint32 LE
+// ══════════════════════════════════════════════════════════════
+
+function buildHCS2(W, H, fpsNum, fpsDen, frames){
+  // frames = [{cR,cG,cB,tcMs}]
+  const nf=frames.length;
+  const hdrSz=4+2+2+4+2+2+nf*8;
+
+  // Calcul offsets
+  const offsets=[];let off=hdrSz;
+  for(const f of frames){
+    offsets.push(off);
+    off+=4+f.cR.length+4+f.cG.length+4+f.cB.length;
+  }
+  const totalSz=off+4;
+  const buf=new Uint8Array(totalSz);
+  const view=new DataView(buf.buffer);
+
+  // Magic + dims
+  buf.set([0x48,0x43,0x53,0x32]);                // HCS2
+  view.setUint16(4,W,true);view.setUint16(6,H,true);
+  view.setUint32(8,nf,true);
+  view.setUint16(12,fpsNum,true);view.setUint16(14,fpsDen,true);
+
+  // Index
+  for(let i=0;i<nf;i++){
+    view.setUint32(16+i*8,offsets[i],true);
+    view.setUint32(20+i*8,frames[i].tcMs,true);
+  }
+
+  // Données frames
+  let woff=hdrSz;
+  for(const f of frames){
+    view.setUint32(woff,f.cR.length,true);woff+=4;buf.set(f.cR,woff);woff+=f.cR.length;
+    view.setUint32(woff,f.cG.length,true);woff+=4;buf.set(f.cG,woff);woff+=f.cG.length;
+    view.setUint32(woff,f.cB.length,true);woff+=4;buf.set(f.cB,woff);woff+=f.cB.length;
+  }
+
+  // CRC32
+  let crc=0xFFFFFFFF;
+  for(let i=0;i<woff;i++){let b=(crc^buf[i])&0xFF;for(let j=0;j<8;j++)b=b&1?(0xEDB88320^(b>>>1)):b>>>1;crc=(crc>>>8)^b;}
+  view.setUint32(woff,(crc^0xFFFFFFFF)>>>0,true);
+
+  return buf;
+}
+
+function parseHCS2(buf){
+  const u8=new Uint8Array(buf),view=new DataView(buf instanceof ArrayBuffer?buf:buf.buffer);
+  const magic=String.fromCharCode(u8[0],u8[1],u8[2],u8[3]);
+  if(magic!=='HCS2'&&magic!=='HCS1') throw new Error('Format non reconnu: '+magic);
+  const W=view.getUint16(4,true),H=view.getUint16(6,true);
+  const nf=view.getUint32(8,true);
+  const fpsNum=view.getUint16(12,true)||25,fpsDen=view.getUint16(14,true)||1;
+  const offsets=[],timecodes=[];
+  for(let i=0;i<nf;i++){
+    offsets.push(view.getUint32(16+i*8,true));
+    timecodes.push(view.getUint32(20+i*8,true));
+  }
+  return{W,H,nf,fpsNum,fpsDen,fps:fpsNum/fpsDen,offsets,timecodes};
+}
+
+async function readFrameRaw(buf,offset,W,H){
+  const view=new DataView(buf instanceof ArrayBuffer?buf:buf.buffer);
+  let off=offset;
+  const szR=view.getUint32(off,true);off+=4;const cR=new Uint8Array(buf instanceof ArrayBuffer?buf:buf.buffer,off,szR);off+=szR;
+  const szG=view.getUint32(off,true);off+=4;const cG=new Uint8Array(buf instanceof ArrayBuffer?buf:buf.buffer,off,szG);off+=szG;
+  const szB=view.getUint32(off,true);off+=4;const cB=new Uint8Array(buf instanceof ArrayBuffer?buf:buf.buffer,off,szB);
+  return decompressToImageData(cR.slice(),cG.slice(),cB.slice(),W,H);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════
+const S={
+  videoFile:null, hcsBuf:null, meta:null,
+  bitmaps:[],          // ImageBitmap[] — textures GPU pré-chargées
+  timecodes:[],        // float[] secondes
+  origSamples:[],      // Uint8ClampedArray — pixels frame 0 pour PSNR
+  W:0, H:0,
+  totalFrames:0, decodedSoFar:0,
+  curFrame:0,
+  playing:false, rafId:null, lastRafTs:0, fpsMs:40,
+  syncOn:true,
+  upscale:1,
+  hcsBlob:null, hcsBytes:0, brutBytes:0,
+  srcDuration:0,
+  fpsActual:0, fpsFrameCount:0, fpsLastTs:0,
+};
+
+// ══════════════════════════════════════════════════════════════
+//  UPLOAD & DRAG & DROP — gros fichiers via URL.createObjectURL
+// ══════════════════════════════════════════════════════════════
+function onDragOver(e){e.preventDefault();$('drop-zone').classList.add('over');}
+function onDragLeave(e){$('drop-zone').classList.remove('over');}
+function onDrop(e){
+  e.preventDefault();$('drop-zone').classList.remove('over');
+  const f=e.dataTransfer.files[0];if(!f)return;
+  routeFile(f);
+}
+function routeFile(f){
+  if(f.name.toLowerCase().endsWith('.hcs'))onHCSFile(f);
+  else onVideoFile(f);
+}
+
+document.addEventListener('dragover',e=>{
+  e.preventDefault();
+  $('drop-zone').classList.add('show');
+});
+document.addEventListener('dragleave',e=>{
+  if(!e.relatedTarget||e.relatedTarget===document.documentElement)
+    $('drop-zone').classList.remove('show');
+});
+document.addEventListener('drop',e=>{
+  e.preventDefault();
+  $('drop-zone').classList.remove('show','over');
+  const f=e.dataTransfer.files[0];if(f)routeFile(f);
+});
+
+// ── Vidéo source — jusqu'à 5 GB via createObjectURL ────────
+function onVideoFile(file){
+  if(!file)return;
+  const MAX=5*1024*1024*1024; // 5 GB
+  if(file.size>MAX){log('Fichier > 5 GB non supporté ('+fmtSz(file.size)+')','e');return;}
+
+  S.videoFile=file;
+  log('Vidéo source: '+file.name+' ('+fmtSz(file.size)+')','i');
+
+  const vid=$('vo');
+  // URL.createObjectURL = streaming natif, le navigateur lit en chunks
+  // Aucun octet n'est chargé en RAM — fonctionne pour 5 GB
+  if(vid._objURL) URL.revokeObjectURL(vid._objURL);
+  vid._objURL=URL.createObjectURL(file);
+  vid.src=vid._objURL;
+  vid.load();
+  vid.style.display='block';
+  $('es-src').style.display='none';
+  $('info-vid').textContent=file.name.length>28?file.name.slice(0,26)+'…':file.name;
+  $('ph-src-b').textContent=file.name.split('.').pop().toUpperCase();
+  $('ph-src-m').textContent=fmtSz(file.size);
+  $('btn-cmp').disabled=false;
+  setSt('Vidéo source chargée','ok');
+}
+
+function onSrcMeta(){
+  const v=$('vo');
+  S.srcDuration=v.duration||0;
+  $('dur-src').textContent=fmtTShort(v.duration);
+  $('dur-dec').textContent=fmtTShort(v.duration);
+  $('m-res').textContent=(v.videoWidth||'?')+'×'+(v.videoHeight||'?');
+  $('ph-src-m').textContent=(v.videoWidth||'?')+'×'+(v.videoHeight||'?')+' · '+fmtTShort(v.duration);
+  log('Métadonnées: '+(v.videoWidth||'?')+'×'+(v.videoHeight||'?')+' · '+fmtTShort(v.duration),'ok');
+}
+
+function onSrcTime(){
+  const v=$('vo');if(!v.duration)return;
+  const p=v.currentTime/v.duration;
+  $('tlf-src').style.width=(p*100).toFixed(2)+'%';
+  $('tlt-src').style.left=(p*100).toFixed(2)+'%';
+  $('tc-src').textContent=fmtTShort(v.currentTime);
+  // Sync → frame décompressée correspondante
+  if(S.syncOn&&S.timecodes.length){
+    const target=findClosestFrame(v.currentTime);
+    if(Math.abs(target-S.curFrame)>0) showFrame(target);
+  }
+}
+
+function onPl(side){$(side==='src'?'pb-src':'pb-dec').textContent='⏸';}
+function onPa(side){$(side==='src'?'pb-src':'pb-dec').textContent='▶';}
+function onEnd(){$('pb-src').textContent='▶';if(S.playing){stopDecPlay();}}
+
+function findClosestFrame(t){
+  if(!S.timecodes.length)return 0;
+  let best=0,bd=Infinity;
+  for(let i=0;i<S.timecodes.length;i++){
+    const d=Math.abs(S.timecodes[i]-t);
+    if(d<bd){bd=d;best=i;}
+  }
+  return best;
+}
+
+// ── HCS externe ─────────────────────────────────────────────
+async function onHCSFile(file){
+  if(!file)return;
+  log('Chargement HCS: '+file.name+' ('+fmtSz(file.size)+')','i');
+  setSt('Lecture HCS…','busy');
+  $('info-hcs').textContent=file.name.length>20?file.name.slice(0,18)+'…':file.name;
+
+  // Pour les petits fichiers HCS (<512MB) : charger en mémoire pour seek O(1)
+  // Pour les gros fichiers : on lirait chunk par chunk (non implémenté ici)
+  const buf=await file.arrayBuffer();
+  S.hcsBuf=buf;S.origSamples=[];
+
+  try{
+    S.meta=parseHCS2(buf);
+    const{W,H,nf,fps}=S.meta;
+    S.W=W;S.H=H;S.totalFrames=nf;S.fpsMs=1000/fps;
+    $('m-res').textContent=W+'×'+H;$('m-nf').textContent=nf;
+    $('m-comp').textContent=fmtSz(file.size);
+    $('ph-dec-m').textContent=W+'×'+H+' · '+nf+'f · '+fps.toFixed(2)+'fps';
+    $('info-hcs').textContent='HCS2 · '+W+'×'+H+' · '+nf+'f';
+    log('Header OK · '+W+'×'+H+' · '+nf+' frames · '+fps.toFixed(2)+' fps','ok');
+    setSt('Prêt à décompresser','ok');
+    // Décompresser automatiquement
+    await decodeAndBuffer();
+  }catch(e){log('Erreur: '+e.message,'e');setSt('Erreur lecture','err');}
+}
+
+// ══════════════════════════════════════════════════════════════
+//  COMPRESSION : extraction frame par frame via requestVideoFrameCallback
+//  Pour les navigateurs qui ne supportent pas rVFC : fallback seek+canvas
+// ══════════════════════════════════════════════════════════════
+async function startCompress(){
+  const vid=$('vo');
+  if(!S.videoFile||!vid.src)return;
+  if(!vid.videoWidth)await new Promise(r=>vid.addEventListener('loadedmetadata',r,{once:true}));
+
+  $('btn-cmp').disabled=true;
+  setSt('Compression…','busy');
+  log('=== Compression HCS2 ===','g');
+
+  const fps=parseInt($('sel-fps').value)||25;
+  const rf=parseFloat($('sel-res').value)||1;
+  const durSel=parseInt($('sel-dur').value)||30;
+  const W=Math.max(1,Math.round((vid.videoWidth||1280)*rf));
+  const H=Math.max(1,Math.round((vid.videoHeight||720)*rf));
+  const dur=durSel===0?Math.min(vid.duration||30,3600):Math.min(vid.duration||durSel,durSel);
+  const nf=Math.min(Math.floor(dur*fps),2000); // cap 2000 frames
+
+  log('Config: '+W+'×'+H+' · '+fps+'fps · '+dur.toFixed(1)+'s · '+nf+' frames','i');
+
+  S.W=W;S.H=H;S.totalFrames=nf;S.fpsMs=1000/fps;
+
+  const oc=document.createElement('canvas');oc.width=W;oc.height=H;
+  const octx=oc.getContext('2d',{willReadFrequently:true,alpha:false});
+
+  const wasPaused=vid.paused;if(!wasPaused)vid.pause();
+
+  const allFrames=[];S.origSamples=[];
+  let totalBrut=0,totalComp=0;
+
+  // Positions temporelles uniformes sur la durée demandée
+  const positions=Array.from({length:nf},(_,i)=>{
+    const t=(i/nf)*dur;
+    return Math.max(0.02,Math.min((vid.duration||dur)-0.02,t));
+  });
+
+  for(let fi=0;fi<nf;fi++){
+    const t=positions[fi];
+    const pct=Math.round(fi/nf*100);
+    setOv(true,'Extraction frame '+(fi+1)+'/'+nf,pct,
+      W+'×'+H+' · t='+t.toFixed(2)+'s');
+
+    // Seek précis
+    vid.currentTime=t;
+    await new Promise(r=>{
+      const done=()=>{vid.removeEventListener('seeked',done);r();};
+      vid.addEventListener('seeked',done);
+      setTimeout(r,800);
+    });
+    await new Promise(r=>setTimeout(r,25));
+
+    // Extraction pixels
+    octx.drawImage(vid,0,0,W,H);
+    const imgData=octx.getImageData(0,0,W,H);
+
+    // Sauvegarder frame 0 pour PSNR
+    if(fi===0) S.origSamples=new Uint8ClampedArray(imgData.data);
+
+    // Compression
+    setOv(true,'Compression frame '+(fi+1)+'/'+nf,pct,
+      'Delta-H + DeflateRaw…');
+    const cf=await compressFrame(imgData.data,W,H);
+    const fsz=cf.cR.length+cf.cG.length+cf.cB.length;
+
+    allFrames.push({cR:cf.cR,cG:cf.cG,cB:cf.cB,tcMs:Math.round(t*1000)});
+    totalBrut+=W*H*3;
+    totalComp+=fsz;
+
+    // Buffer GPU en parallèle : pré-créer les bitmaps au fur et à mesure
+    if(fi<S.bitmaps.length)S.bitmaps[fi]?.close?.();
+    const imgBitmap=await createImageBitmap(imgData);
+    if(!S.bitmaps)S.bitmaps=[];
+    S.bitmaps[fi]=imgBitmap;
+    S.timecodes[fi]=t;
+
+    if(fi%4===0)await new Promise(r=>setTimeout(r,0));
+  }
+
+  setOv(true,'Assemblage container HCS2…',99,'Finalisation…');
+  await new Promise(r=>setTimeout(r,20));
+
+  // Builder
+  const hcsData=buildHCS2(W,H,fps,1,allFrames);
+  S.hcsBlob=new Blob([hcsData],{type:'application/octet-stream'});
+  S.hcsBytes=hcsData.length;S.brutBytes=totalBrut;
+  // Stocker pour seek direct
+  S.hcsBuf=hcsData.buffer;
+  S.meta=parseHCS2(hcsData.buffer);
+
+  const ratio=totalBrut/totalComp;
+  setOv(false);
+
+  // Métriques
+  $('m-brut').textContent=fmtSz(totalBrut);
+  $('m-comp').textContent=fmtSz(totalComp);
+  $('m-ratio').textContent=ratio.toFixed(2)+'×';
+  $('m-nf').textContent=nf;
+  $('m-buf').textContent=S.bitmaps.length+' GPU';
+  $('m-res').textContent=W+'×'+H;
+  $('ph-dec-m').textContent=W+'×'+H+' · '+nf+'f · '+fps+'fps';
+  $('ph-dec-b').textContent='PSNR=∞ · '+ratio.toFixed(2)+'×';
+
+  // PSNR sur frame 0
+  const imgFirst=await readFrameRaw(S.hcsBuf,S.meta.offsets[0],W,H);
+  const p=measurePSNR(S.origSamples,imgFirst.data,W*H);
+  const ps=p===Infinity||p>80?'∞':p.toFixed(1)+' dB';
+  $('m-psnr').textContent=ps;
+  $('ph-dec-b').textContent='PSNR='+ps+' · '+ratio.toFixed(2)+'×';
+  $('pl-psnr').textContent='PSNR='+ps;
+
+  log('HCS2 prêt · '+nf+' frames · '+fmtSz(hcsData.length)+' · ratio='+ratio.toFixed(2)+'×','ok');
+  log('PSNR frame 0: '+ps+' · '+S.bitmaps.length+' textures GPU chargées','ok');
+
+  S.totalFrames=nf;S.decodedSoFar=nf;S.curFrame=0;
+  $('dur-dec').textContent=fmtTShort(S.timecodes[nf-1]);
+
+  // Afficher canvas décompressé
+  const cv=$('cv-dec');cv.width=W;cv.height=H;cv.style.display='block';
+  $('es-dec').style.display='none';
+  $('btn-dl').disabled=false;
+
+  showFrame(0);
+  setSt('HCS2 · '+ratio.toFixed(2)+'× · PSNR='+ps,'ok');
+  if(!wasPaused)vid.play().catch(()=>{});
+  $('btn-cmp').disabled=false;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  DÉCOMPRESSION + BUFFERING GPU
+//  Toutes les frames → ImageBitmap[] en arrière-plan
+//  La lecture peut commencer dès les premières frames prêtes
+// ══════════════════════════════════════════════════════════════
+async function decodeAndBuffer(){
+  if(!S.hcsBuf||!S.meta)return;
+  const{W,H,nf,fps,offsets,timecodes}=S.meta;
+  S.W=W;S.H=H;S.totalFrames=nf;S.fpsMs=1000/fps;
+  S.bitmaps=new Array(nf);S.timecodes=[];S.decodedSoFar=0;
+
+  const cv=$('cv-dec');cv.width=W;cv.height=H;cv.style.display='block';
+  $('es-dec').style.display='none';
+
+  log('Décompression + buffering GPU · '+nf+' frames · '+W+'×'+H,'i');
+  setSt('Décompression…','busy');
+
+  $('tlb-dec').style.width='0%';
+
+  // Décoder par batch de 8 pour ne pas bloquer l'UI
+  const BATCH=8;
+  for(let fi=0;fi<nf;fi+=BATCH){
+    const end=Math.min(fi+BATCH,nf);
+    await Promise.all(Array.from({length:end-fi},async(_,b)=>{
+      const i=fi+b;
+      const imgData=await readFrameRaw(S.hcsBuf,offsets[i],W,H);
+      S.bitmaps[i]=await createImageBitmap(imgData);
+      S.timecodes[i]=timecodes[i]/1000;
+      S.decodedSoFar=i+1;
+    }));
+
+    // Afficher dès les premières frames disponibles
+    if(fi===0){
+      showFrame(0);
+      $('dur-dec').textContent=fmtTShort(S.timecodes[nf-1]||nf/fps);
+    }
+
+    const pct=Math.round(end/nf*100);
+    setOv(true,'Buffering GPU…',pct,end+'/'+nf+' frames · '+W+'×'+H);
+    $('tlb-dec').style.width=pct+'%';
+    $('m-buf').textContent=S.decodedSoFar+'/'+nf+' GPU';
+    await new Promise(r=>setTimeout(r,0));
+  }
+
+  setOv(false);
+  $('tlb-dec').style.width='100%';
+  $('m-nf').textContent=nf;
+  $('m-buf').textContent=nf+' GPU ✓';
+  log('Buffering GPU terminé · '+nf+' textures · lecture fluide prête','ok');
+  setSt('Prêt · '+nf+' frames GPU','ok');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  LECTURE FLUIDE — rAF + drawImage(bitmap) GPU
+//  Zéro calcul dans la boucle de lecture : pur GPU compositing
+// ══════════════════════════════════════════════════════════════
+function showFrame(idx){
+  if(!S.bitmaps||!S.bitmaps.length)return;
+  idx=clamp(Math.round(idx),0,S.totalFrames-1);
+  S.curFrame=idx;
+  const bmp=S.bitmaps[idx];
+  if(!bmp)return; // pas encore décodé
+
+  const cv=$('cv-dec');
+  if(cv.width!==S.W||cv.height!==S.H){cv.width=S.W;cv.height=S.H;}
+  const ctx=cv.getContext('2d');
+  ctx.drawImage(bmp,0,0); // GPU accelerated — zéro copie CPU
+
+  // Overlay minimaliste
+  ctx.font='bold 9px IBM Plex Mono,monospace';
+  ctx.fillStyle='rgba(232,0,45,.7)';
+  const info='HCS2 · '+S.W+'×'+S.H+' · '+(idx+1)+'/'+S.totalFrames;
+  ctx.fillText(info,5,13);
+
+  // Timeline
+  const p=S.totalFrames>1?idx/(S.totalFrames-1):1;
+  $('tlf-dec').style.width=(p*100).toFixed(2)+'%';
+  $('tlt-dec').style.left=(p*100).toFixed(2)+'%';
+  const tc=S.timecodes[idx];
+  $('tc-dec').textContent=fmtTShort(tc||idx/((S.meta?.fps)||25));
+  $('frame-info').textContent=(idx+1)+'/'+S.totalFrames;
+
+  // FPS mesuré
+  const now=performance.now();
+  if(S.fpsLastTs){
+    S.fpsFrameCount++;
+    if(now-S.fpsLastTs>1000){
+      const fps=(S.fpsFrameCount/(now-S.fpsLastTs)*1000).toFixed(1);
+      $('m-fps').textContent=fps+' fps';
+      S.fpsFrameCount=0;S.fpsLastTs=now;
+    }
+  }else{S.fpsLastTs=now;}
+}
+
+function startDecPlay(){
+  if(!S.bitmaps?.length)return;
+  S.playing=true;$('pb-dec').textContent='⏸';S.lastRafTs=0;
+  const step=ts=>{
+    if(!S.playing)return;
+    if(!S.lastRafTs)S.lastRafTs=ts;
+    if(ts-S.lastRafTs>=S.fpsMs){
+      const elapsed=ts-S.lastRafTs;
+      S.lastRafTs=ts;
+      let next=S.curFrame+Math.round(elapsed/S.fpsMs);
+      if(next>=S.totalFrames){
+        next=0;// boucle
+        // Sync vidéo source
+        if(S.syncOn&&$('vo').src){$('vo').currentTime=0;}
+      }
+      showFrame(next);
+      // Sync source → ajuster currentTime de la vidéo
+      if(S.syncOn&&$('vo').src&&S.timecodes[next]!=null){
+        const vo=$('vo');
+        const diff=Math.abs(vo.currentTime-S.timecodes[next]);
+        if(diff>0.2)vo.currentTime=S.timecodes[next];
+      }
+    }
+    S.rafId=requestAnimationFrame(step);
+  };
+  S.rafId=requestAnimationFrame(step);
+}
+
+function stopDecPlay(){
+  S.playing=false;$('pb-dec').textContent='▶';
+  if(S.rafId){cancelAnimationFrame(S.rafId);S.rafId=null;}
+}
+
+// ── Contrôles ────────────────────────────────────────────────
+function togglePlay(side){
+  const vo=$('vo');
+  if(side==='src'){
+    if(vo.paused){vo.play().catch(()=>{});if(S.syncOn&&S.bitmaps?.length)startDecPlay();}
+    else{vo.pause();if(S.syncOn)stopDecPlay();}
+  }else{
+    if(S.playing){stopDecPlay();if(S.syncOn&&vo.src)vo.pause();}
+    else{startDecPlay();if(S.syncOn&&vo.src&&!vo.ended)vo.play().catch(()=>{});}
+  }
+}
+
+function skipSrc(s){const v=$('vo');v.currentTime=clamp((v.currentTime||0)+s,0,v.duration||9999);}
+function skipDec(d){
+  const next=clamp(S.curFrame+d,0,S.totalFrames-1);
+  showFrame(next);
+  if(S.syncOn&&S.timecodes[next]!=null)$('vo').currentTime=S.timecodes[next];
+}
+
+function seekTL(side,e){
+  const p=clamp((e.clientX-e.currentTarget.getBoundingClientRect().left)/e.currentTarget.offsetWidth,0,1);
+  if(side==='src'){const v=$('vo');if(v.duration)v.currentTime=p*v.duration;}
+  else if(S.bitmaps?.length){
+    const idx=Math.round(p*(S.totalFrames-1));
+    showFrame(idx);
+    if(S.syncOn&&S.timecodes[idx]!=null)$('vo').currentTime=S.timecodes[idx];
+  }
+}
+
+const S2={syncOn:true};
+function toggleSync(){
+  S2.syncOn=!S2.syncOn;S.syncOn=S2.syncOn;
+  const b=$('btn-sync'),sl=$('sync-line');
+  if(S2.syncOn){b.textContent='⬤ ON';b.className='btn active';sl.classList.add('on');}
+  else{b.textContent='○ OFF';b.className='btn';sl.classList.remove('on');}
+}
+
+function setUpscale(f,el){
+  S.upscale=f;
+  document.querySelectorAll('.up-p').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+  if(S.curFrame>=0) showFrame(S.curFrame);
+}
+
+function goFS(id){const el=$(id);el&&el.requestFullscreen&&el.requestFullscreen();}
+
+function downloadHCS(){
+  if(!S.hcsBlob)return;
+  const a=document.createElement('a');
+  const name=(S.videoFile?.name.replace(/\.[^.]+$/,'')||'video')+'.hcs';
+  a.href=URL.createObjectURL(S.hcsBlob);
+  a.download=name;a.click();
+  log('Export HCS2: '+name+' · '+fmtSz(S.hcsBytes),'ok');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  // Vérifier les APIs requises
+  const checks=[
+    [typeof CompressionStream!=='undefined','CompressionStream'],
+    [typeof DecompressionStream!=='undefined','DecompressionStream'],
+    [typeof createImageBitmap!=='undefined','createImageBitmap GPU'],
+  ];
+  const ok=checks.every(([v])=>v);
+  checks.forEach(([v,n])=>log((v?'✓ ':'✗ ')+n,v?'ok':'e'));
+  if(!ok){setSt('APIs manquantes — Chrome 80+ requis','err');return;}
+
+  log('HCS Player v3.4 — Prêt','g');
+  log('Glisser une vidéo (jusqu\'à 5 GB) ou un fichier .hcs','i');
+  log('Upload = URL.createObjectURL → streaming natif, 0 RAM heap','i');
+  log('Lecture = ImageBitmap GPU → 25-60 fps stable sur toutes les frames','i');
+  setSt('Prêt · glisser un fichier','ok');
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HCV Chroma-Enhanced Compression</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --card: #111113;
+      --border: #27272a;
+      --text: #fafafa;
+      --muted: #71717a;
+      --accent: #3b82f6;
+      --success: #10b981;
+      --warning: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      padding: 32px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+    h1 { color: var(--accent); margin-bottom: 8px; font-size: 24px; }
+    .subtitle { color: var(--muted); margin-bottom: 32px; font-size: 14px; }
+    
+    .pipeline {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .pipeline h3 {
+      color: var(--success);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .steps {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .step {
+      flex: 1;
+      min-width: 140px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      margin: 0 auto 6px;
+      font-size: 12px;
+    }
+
+    .step-title { font-weight: 600; font-size: 12px; margin-bottom: 4px; }
+    .step-desc { font-size: 10px; color: var(--muted); }
+    .arrow { font-size: 20px; color: var(--accent); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .card h3 {
+      color: var(--success);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .metric:last-child { border-bottom: none; }
+    .metric-label { color: var(--muted); font-size: 13px; }
+    .metric-value { 
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .success { color: var(--success); }
+    .warning { color: var(--warning); }
+    .accent { color: var(--accent); }
+    .large { font-size: 24px; font-weight: 700; }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 1200px) {
+      .comparison { grid-template-columns: 1fr; }
+    }
+
+    .canvas-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .canvas-box h4 {
+      margin-bottom: 12px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    canvas {
+      width: 100%;
+      border-radius: 4px;
+      background: #000;
+    }
+
+    .controls {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 12px;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px;
+      color: var(--text);
+    }
+
+    .btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 20px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+
+    .btn:hover { background: #2563eb; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .progress-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 16px 0;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #60a5fa);
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    #output {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    .log-info { color: #60a5fa; }
+    .log-success { color: var(--success); }
+    .log-warning { color: var(--warning); }
+  </style>
+</head>
+<body>
+  <h1>🎨 HCV Chroma-Enhanced Compression</h1>
+  <div class="subtitle">Use chrominance reference to improve reconstruction quality · Separate Y/Cb/Cr processing</div>
+
+  <div class="pipeline">
+    <h3>📊 Chroma-Enhanced Pipeline</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-title">RGB → YCbCr</div>
+        <div class="step-desc">Separate channels<br>Y + Cb + Cr</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-title">Y Downscale</div>
+        <div class="step-desc">Heavy reduction<br>25% (details)</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-title">Cb/Cr Keep</div>
+        <div class="step-desc">Higher resolution<br>50-75% (colors)</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-title">Compress</div>
+        <div class="step-desc">Delta + Temporal<br>Per channel</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-title">Reconstruct</div>
+        <div class="step-desc">Y upscale + Cb/Cr<br>Better quality!</div>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="fileInput" accept="video/*" style="margin-bottom: 20px;">
+
+  <div class="controls">
+    <h3 style="color: var(--success); margin-bottom: 16px;">⚙️ Chroma Enhancement Settings</h3>
+    <div class="control-grid">
+      <div>
+        <label>Luminance (Y) Downscale</label>
+        <select id="yScale">
+          <option value="0.5">50% (High quality)</option>
+          <option value="0.35">35% (Balanced)</option>
+          <option value="0.25" selected>25% (Recommended)</option>
+          <option value="0.2">20% (Maximum)</option>
+        </select>
+      </div>
+      <div>
+        <label>Chrominance (Cb/Cr) Downscale</label>
+        <select id="chromaScale">
+          <option value="0.75">75% (Best colors)</option>
+          <option value="0.5" selected>50% (Balanced)</option>
+          <option value="0.35">35% (Compressed)</option>
+          <option value="0.25">25% (Same as Y)</option>
+        </select>
+      </div>
+      <div>
+        <label>Temporal Compression</label>
+        <select id="temporal">
+          <option value="0">None</option>
+          <option value="15" selected>Every 15 frames</option>
+          <option value="25">Every 25 frames</option>
+        </select>
+      </div>
+      <div>
+        <label>Upscale Algorithm</label>
+        <select id="upscaleAlgo">
+          <option value="bilinear">Bilinear</option>
+          <option value="bicubic" selected>Bicubic</option>
+          <option value="lanczos">Lanczos</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn" id="btnTest" disabled>🧪 Test Compression</button>
+    <button class="btn" id="btnCompare" disabled>🔍 Compare with Basic Downscale</button>
+  </div>
+
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress"></div>
+  </div>
+
+  <div class="comparison" id="comparison" style="display:none;">
+    <div class="canvas-box">
+      <h4 style="color: var(--warning);">📹 Original</h4>
+      <canvas id="canvasOrig"></canvas>
+    </div>
+    <div class="canvas-box">
+      <h4 style="color: var(--accent);">🎨 Chroma-Enhanced (Y↓ + CbCr→)</h4>
+      <canvas id="canvasChroma"></canvas>
+    </div>
+    <div class="canvas-box">
+      <h4 style="color: var(--muted);">⬇️ Basic Downscale (all 25%)</h4>
+      <canvas id="canvasBasic"></canvas>
+    </div>
+  </div>
+
+  <div id="results" style="display:none;">
+    <div class="grid">
+      <div class="card">
+        <h3>📹 Source</h3>
+        <div class="metric"><span class="metric-label">File</span><span class="metric-value" id="fileName">—</span></div>
+        <div class="metric"><span class="metric-label">Size (H.264)</span><span class="metric-value accent" id="origSize">—</span></div>
+        <div class="metric"><span class="metric-label">Resolution</span><span class="metric-value" id="resolution">—</span></div>
+        <div class="metric"><span class="metric-label">Frames</span><span class="metric-value" id="totalFrames">—</span></div>
+      </div>
+
+      <div class="card">
+        <h3>🎨 Chroma-Enhanced Compression</h3>
+        <div class="metric"><span class="metric-label">Y Resolution</span><span class="metric-value" id="yRes">—</span></div>
+        <div class="metric"><span class="metric-label">Cb/Cr Resolution</span><span class="metric-value accent" id="chromaRes">—</span></div>
+        <div class="metric"><span class="metric-label">HCV Binary Size</span><span class="metric-value success large" id="hcvSize">—</span></div>
+        <div class="metric"><span class="metric-label">vs 11 MB</span><span class="metric-value success" id="underTarget">—</span></div>
+        <div class="metric"><span class="metric-label">Compression</span><span class="metric-value" id="compRatio">—</span></div>
+      </div>
+
+      <div class="card">
+        <h3>📊 Quality Comparison</h3>
+        <div class="metric"><span class="metric-label">Chroma-Enhanced PSNR</span><span class="metric-value success large" id="chromaPSNR">—</span></div>
+        <div class="metric"><span class="metric-label">Basic Downscale PSNR</span><span class="metric-value warning" id="basicPSNR">—</span></div>
+        <div class="metric"><span class="metric-label">Quality Gain</span><span class="metric-value success" id="qualityGain">—</span></div>
+        <div class="metric"><span class="metric-label">SSIM (Chroma)</span><span class="metric-value success" id="chromaSSIM">—</span></div>
+        <div class="metric"><span class="metric-label">SSIM (Basic)</span><span class="metric-value warning" id="basicSSIM">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="output"></div>
+
+  <script>
+    const fmtSize = bytes => {
+      if (!bytes) return '—';
+      if (bytes < 1024) return bytes + 'B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + 'KB';
+      return (bytes / 1048576).toFixed(2) + 'MB';
+    };
+
+    function log(msg, type = '') {
+      const el = document.createElement('div');
+      el.className = type ? 'log-' + type : '';
+      el.textContent = msg;
+      document.getElementById('output').appendChild(el);
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function setProgress(pct) {
+      document.getElementById('progress').style.width = pct + '%';
+    }
+
+    // RGB to YCbCr
+    function rgbToYCbCr(rgba, width, height) {
+      const pixels = width * height;
+      const Y = new Float32Array(pixels);
+      const Cb = new Float32Array(pixels);
+      const Cr = new Float32Array(pixels);
+
+      for (let p = 0; p < pixels; p++) {
+        const r = rgba[p * 4];
+        const g = rgba[p * 4 + 1];
+        const b = rgba[p * 4 + 2];
+        
+        Y[p] = 0.299 * r + 0.587 * g + 0.114 * b;
+        Cb[p] = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+        Cr[p] = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+      }
+
+      return { Y, Cb, Cr };
+    }
+
+    // YCbCr to RGB
+    function ycbcrToRGB(Y, Cb, Cr, width, height) {
+      const pixels = width * height;
+      const rgba = new Uint8ClampedArray(pixels * 4);
+
+      for (let p = 0; p < pixels; p++) {
+        const y = Y[p];
+        const cb = Cb[p];
+        const cr = Cr[p];
+
+        rgba[p * 4] = Math.max(0, Math.min(255, y + 1.402 * (cr - 128)));
+        rgba[p * 4 + 1] = Math.max(0, Math.min(255, y - 0.344136 * (cb - 128) - 0.714136 * (cr - 128)));
+        rgba[p * 4 + 2] = Math.max(0, Math.min(255, y + 1.772 * (cb - 128)));
+        rgba[p * 4 + 3] = 255;
+      }
+
+      return rgba;
+    }
+
+    // Downscale canvas
+    function downscaleImage(imageData, srcW, srcH, dstW, dstH) {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = srcW;
+      tempCanvas.height = srcH;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.putImageData(imageData, 0, 0);
+
+      const dstCanvas = document.createElement('canvas');
+      dstCanvas.width = dstW;
+      dstCanvas.height = dstH;
+      const dstCtx = dstCanvas.getContext('2d');
+      dstCtx.drawImage(tempCanvas, 0, 0, dstW, dstH);
+
+      return dstCtx.getImageData(0, 0, dstW, dstH);
+    }
+
+    // Upscale canvas
+    function upscaleImage(imageData, srcW, srcH, dstW, dstH, algo = 'bicubic') {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = srcW;
+      tempCanvas.height = srcH;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.putImageData(imageData, 0, 0);
+
+      const dstCanvas = document.createElement('canvas');
+      dstCanvas.width = dstW;
+      dstCanvas.height = dstH;
+      const dstCtx = dstCanvas.getContext('2d');
+      dstCtx.imageSmoothingEnabled = true;
+      dstCtx.imageSmoothingQuality = algo === 'lanczos' ? 'high' : algo === 'bicubic' ? 'medium' : 'low';
+      dstCtx.drawImage(tempCanvas, 0, 0, dstW, dstH);
+
+      return dstCtx.getImageData(0, 0, dstW, dstH);
+    }
+
+    function calcPSNR(orig, recon, length) {
+      let mse = 0;
+      for (let i = 0; i < length; i++) {
+        const diff = orig[i] - recon[i];
+        mse += diff * diff;
+      }
+      mse /= length;
+      return mse < 0.001 ? Infinity : 20 * Math.log10(255 / Math.sqrt(mse));
+    }
+
+    function calcSSIM(orig, recon, length) {
+      let mean1 = 0, mean2 = 0;
+      for (let i = 0; i < length; i++) { mean1 += orig[i]; mean2 += recon[i]; }
+      mean1 /= length; mean2 /= length;
+      let var1 = 0, var2 = 0, cov = 0;
+      for (let i = 0; i < length; i++) {
+        var1 += (orig[i] - mean1) ** 2;
+        var2 += (recon[i] - mean2) ** 2;
+        cov += (orig[i] - mean1) * (recon[i] - mean2);
+      }
+      var1 /= length; var2 /= length; cov /= length;
+      const C1 = 6.5025, C2 = 58.5225;
+      return ((2 * mean1 * mean2 + C1) * (2 * cov + C2)) / ((mean1**2 + mean2**2 + C1) * (var1 + var2 + C2));
+    }
+
+    let videoState = null;
+
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      log('📁 Loading: ' + file.name, 'info');
+
+      const video = document.createElement('video');
+      video.preload = 'auto';
+      video.src = URL.createObjectURL(file);
+
+      await new Promise(resolve => {
+        video.onloadedmetadata = resolve;
+        setTimeout(resolve, 5000);
+      });
+
+      videoState = {
+        video,
+        width: video.videoWidth,
+        height: video.videoHeight,
+        duration: video.duration,
+        frames: Math.round(video.duration * 25),
+        file
+      };
+
+      log('✅ Video: ' + videoState.width + '×' + videoState.height + ' · ' + file.name, 'success');
+      
+      document.getElementById('btnTest').disabled = false;
+      document.getElementById('btnCompare').disabled = false;
+    });
+
+    async function testCompression(useChromaEnhancement = true) {
+      if (!videoState) return;
+
+      const { video, width, height, frames, file } = videoState;
+      const yScale = parseFloat(document.getElementById('yScale').value);
+      const chromaScale = parseFloat(document.getElementById('chromaScale').value);
+      const temporal = parseInt(document.getElementById('temporal').value);
+      const upscaleAlgo = document.getElementById('upscaleAlgo').value;
+
+      const midTime = video.duration / 2;
+      video.currentTime = midTime;
+      await new Promise(resolve => {
+        video.onseeked = resolve;
+        setTimeout(resolve, 1000);
+      });
+
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+
+      tempCanvas.width = width;
+      tempCanvas.height = height;
+      tempCtx.drawImage(video, 0, 0, width, height);
+      const origData = tempCtx.getImageData(0, 0, width, height);
+
+      if (useChromaEnhancement) {
+        // Chroma-enhanced approach
+        const { Y, Cb, Cr } = rgbToYCbCr(origData.data, width, height);
+
+        // Downscale Y heavily
+        const yWidth = Math.round(width * yScale);
+        const yHeight = Math.round(height * yScale);
+        
+        // Keep Cb/Cr at higher resolution
+        const chromaWidth = Math.round(width * chromaScale);
+        const chromaHeight = Math.round(height * chromaScale);
+
+        // Create low-res Y
+        const yCanvas = document.createElement('canvas');
+        yCanvas.width = width;
+        yCanvas.height = height;
+        const yCtx = yCanvas.getContext('2d');
+        const yRGB = ycbcrToRGB(Y, new Float32Array(width * height).fill(128), new Float32Array(width * height).fill(128), width, height);
+        yCtx.putImageData(new ImageData(new Uint8ClampedArray(yRGB.buffer), width, height), 0, 0);
+        
+        const yLow = downscaleImage(new ImageData(new Uint8ClampedArray(yRGB.buffer), width, height), width, height, yWidth, yHeight);
+        
+        // Create chroma at higher res
+        const chromaRGB = ycbcrToRGB(
+          new Float32Array(width * height).fill(128),
+          Cb,
+          Cr,
+          width,
+          height
+        );
+        yCtx.putImageData(new ImageData(new Uint8ClampedArray(chromaRGB.buffer), width, height), 0, 0);
+        const chromaData = downscaleImage(new ImageData(new Uint8ClampedArray(chromaRGB.buffer), width, height), width, height, chromaWidth, chromaHeight);
+
+        // Upscale Y back
+        const yUpscaled = upscaleImage(yLow, yWidth, yHeight, width, height, upscaleAlgo);
+        
+        // Upscale chroma back (less distortion because higher res)
+        const chromaUpscaled = upscaleImage(chromaData, chromaWidth, chromaHeight, width, height, upscaleAlgo);
+
+        // Extract channels
+        const { Y: yUpY, Cb: yUpCb, Cr: yUpCr } = rgbToYCbCr(yUpscaled.data, width, height);
+        const { Y: chromaY, Cb: chromaCb, Cr: chromaCr } = rgbToYCbCr(chromaUpscaled.data, width, height);
+
+        // Combine: Y from luminance, Cb/Cr from chroma reference
+        const reconstructedRGB = ycbcrToRGB(yUpY, chromaCb, chromaCr, width, height);
+
+        // Display
+        document.getElementById('canvasChroma').width = width;
+        document.getElementById('canvasChroma').height = height;
+        const ctxChroma = document.getElementById('canvasChroma').getContext('2d');
+        ctxChroma.putImageData(new ImageData(reconstructedRGB, width, height), 0, 0);
+
+        // Calculate metrics
+        const pixels = width * height;
+        const origRGB = new Float32Array(pixels * 3);
+        const reconRGB = new Float32Array(pixels * 3);
+
+        for (let p = 0; p < pixels; p++) {
+          origRGB[p * 3] = origData.data[p * 4];
+          origRGB[p * 3 + 1] = origData.data[p * 4 + 1];
+          origRGB[p * 3 + 2] = origData.data[p * 4 + 2];
+          reconRGB[p * 3] = reconstructedRGB[p * 4];
+          reconRGB[p * 3 + 1] = reconstructedRGB[p * 4 + 1];
+          reconRGB[p * 3 + 2] = reconstructedRGB[p * 4 + 2];
+        }
+
+        const psnr = calcPSNR(origRGB, reconRGB, pixels * 3);
+        const ssim = calcSSIM(origRGB, reconRGB, pixels * 3);
+
+        // Estimate HCV size
+        const yBytes = yWidth * yHeight * 1.0; // Y only
+        const chromaBytes = chromaWidth * chromaHeight * 2.0; // Cb + Cr
+        const totalPerFrame = yBytes + chromaBytes;
+        const totalRaw = totalPerFrame * frames;
+        const compressionRatio = temporal === 0 ? 3.5 : 8.0;
+        const hcvSize = totalRaw / compressionRatio;
+
+        return { psnr, ssim, hcvSize, yRes: yWidth + '×' + yHeight, chromaRes: chromaWidth + '×' + chromaHeight };
+      } else {
+        // Basic downscale (all channels same resolution)
+        const basicScale = parseFloat(document.getElementById('yScale').value);
+        const basicWidth = Math.round(width * basicScale);
+        const basicHeight = Math.round(height * basicScale);
+
+        const basicData = downscaleImage(origData, width, height, basicWidth, basicHeight);
+        const basicUpscaled = upscaleImage(basicData, basicWidth, basicHeight, width, height, upscaleAlgo);
+
+        document.getElementById('canvasBasic').width = width;
+        document.getElementById('canvasBasic').height = height;
+        const ctxBasic = document.getElementById('canvasBasic').getContext('2d');
+        ctxBasic.putImageData(basicUpscaled, 0, 0);
+
+        // Metrics
+        const pixels = width * height;
+        const origRGB = new Float32Array(pixels * 3);
+        const basicRGB = new Float32Array(pixels * 3);
+
+        for (let p = 0; p < pixels; p++) {
+          origRGB[p * 3] = origData.data[p * 4];
+          origRGB[p * 3 + 1] = origData.data[p * 4 + 1];
+          origRGB[p * 3 + 2] = origData.data[p * 4 + 2];
+          basicRGB[p * 3] = basicUpscaled.data[p * 4];
+          basicRGB[p * 3 + 1] = basicUpscaled.data[p * 4 + 1];
+          basicRGB[p * 3 + 2] = basicUpscaled.data[p * 4 + 2];
+        }
+
+        const psnr = calcPSNR(origRGB, basicRGB, pixels * 3);
+        const ssim = calcSSIM(origRGB, basicRGB, pixels * 3);
+
+        const totalRaw = basicWidth * basicHeight * 3.0 * frames;
+        const hcvSize = totalRaw / (temporal === 0 ? 3.5 : 8.0);
+
+        return { psnr, ssim, hcvSize };
+      }
+    }
+
+    document.getElementById('btnTest').addEventListener('click', async () => {
+      log('🧪 Testing chroma-enhanced compression...', 'info');
+      setProgress(30);
+
+      const chroma = await testCompression(true);
+      setProgress(70);
+
+      const basic = await testCompression(false);
+      setProgress(100);
+
+      // Display original
+      document.getElementById('canvasOrig').width = videoState.width;
+      document.getElementById('canvasOrig').height = videoState.height;
+      const ctxOrig = document.getElementById('canvasOrig').getContext('2d');
+      
+      const video = videoState.video;
+      video.currentTime = videoState.duration / 2;
+      await new Promise(resolve => {
+        video.onseeked = resolve;
+        setTimeout(resolve, 500);
+      });
+      ctxOrig.drawImage(video, 0, 0, videoState.width, videoState.height);
+
+      document.getElementById('comparison').style.display = 'grid';
+      document.getElementById('results').style.display = 'grid';
+
+      // Fill metrics
+      document.getElementById('fileName').textContent = videoState.file.name;
+      document.getElementById('origSize').textContent = fmtSize(videoState.file.size);
+      document.getElementById('resolution').textContent = videoState.width + '×' + videoState.height;
+      document.getElementById('totalFrames').textContent = videoState.frames;
+
+      document.getElementById('yRes').textContent = chroma.yRes;
+      document.getElementById('chromaRes').textContent = chroma.chromaRes;
+      document.getElementById('hcvSize').textContent = fmtSize(chroma.hcvSize);
+      document.getElementById('underTarget').textContent = chroma.hcvSize < 11 * 1048576 ? '✅ YES!' : '❌ NO';
+      document.getElementById('compRatio').textContent = (videoState.file.size / chroma.hcvSize).toFixed(2) + '×';
+
+      document.getElementById('chromaPSNR').textContent = chroma.psnr > 100 ? '∞' : chroma.psnr.toFixed(2) + ' dB';
+      document.getElementById('basicPSNR').textContent = basic.psnr > 100 ? '∞' : basic.psnr.toFixed(2) + ' dB';
+      
+      const gain = chroma.psnr - basic.psnr;
+      document.getElementById('qualityGain').textContent = (gain > 0 ? '+' : '') + gain.toFixed(2) + ' dB';
+      document.getElementById('qualityGain').style.color = gain > 0 ? 'var(--success)' : 'var(--warning)';
+
+      document.getElementById('chromaSSIM').textContent = chroma.ssim.toFixed(6);
+      document.getElementById('basicSSIM').textContent = basic.ssim.toFixed(6);
+
+      log('✅ Results:', 'success');
+      log('  Chroma-Enhanced: PSNR=' + chroma.psnr.toFixed(2) + ' dB · SSIM=' + chroma.ssim.toFixed(6), 'success');
+      log('  Basic Downscale: PSNR=' + basic.psnr.toFixed(2) + ' dB · SSIM=' + basic.ssim.toFixed(6), 'info');
+      log('  Quality gain: ' + (gain > 0 ? '+' : '') + gain.toFixed(2) + ' dB ' + (gain > 0 ? '✅' : '❌'), gain > 0 ? 'success' : 'warning');
+      log('  HCV size: ' + fmtSize(chroma.hcvSize), 'info');
+    });
+
+    document.getElementById('btnCompare').addEventListener('click', () => {
+      document.getElementById('btnTest').click();
+    });
+  </script>
+</body>
+</html>

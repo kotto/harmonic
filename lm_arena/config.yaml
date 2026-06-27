@@ -1,0 +1,46 @@
+# =============================================================================
+# Configuration — LM Arena Harmonic AI Submission
+# =============================================================================
+
+# --- Serveur ---
+server:
+  host: "0.0.0.0"
+  port: 8000
+
+# --- Moteur Harmonique (Math & Reasoning) ---
+harmonic:
+  # Seuil de confiance pour réponse harmonique pure
+  confidence_threshold: 0.55
+  # Taille du buffer holographique (octets)
+  buffer_size: 32768
+  # Ordre fractionnaire ABC
+  alpha: 0.618033988749895
+  # Constantes
+  phi: 1.618033988749895
+  b1_phi: 0.8506508083
+
+# --- Routeur Fallback ---
+fallback:
+  # Mode: "mock" (toujours disponible), "ollama", "api"
+  mode: "mock"
+  
+  # Ollama (si mode=ollama)
+  ollama:
+    host: "http://localhost:11434"
+    model: "deepseek-math-1.5b:latest"
+    timeout_seconds: 30
+  
+  # API externe (si mode=api)
+  api:
+    endpoint: ""
+    key: ""
+    timeout_seconds: 30
+  
+  # Seuil de rejet fallback
+  coherence_min: 0.35
+  max_retries: 2
+
+# --- Logging ---
+logging:
+  level: "INFO"
+  format: "%(asctime)s [%(levelname)s] %(message)s"

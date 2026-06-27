@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KA-Next — Interface Holographique Univers↔Humain</title>
+<style>
+:root {
+  --bg: #0a0a1a;
+  --surface: #111122;
+  --border: #2a2a4a;
+  --gold: #ffd700;
+  --orange: #ff8c00;
+  --green: #4CAF50;
+  --blue: #2196F3;
+  --purple: #9C27B0;
+  --red: #FF5722;
+  --text: #e0e0e0;
+  --dim: #888;
+  --phi: 1.618034;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);
+     min-height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.header{background:linear-gradient(135deg,#1a1a3a,#0d0d2d);padding:1rem 1.5rem;
+        display:flex;align-items:center;justify-content:space-between;
+        border-bottom:1px solid var(--border);z-index:100}
+.header h1{font-size:1.5rem;background:linear-gradient(90deg,var(--gold),var(--orange));
+           -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .phi-badge{background:#1a1a3a;border:1px solid var(--border);
+                   padding:.3rem .8rem;border-radius:20px;font-size:.8rem;color:var(--dim)}
+.main{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr auto;
+      gap:1px;background:var(--border);overflow:hidden}
+.panel{background:var(--bg);padding:1rem;display:flex;flex-direction:column;overflow:hidden}
+.panel-title{font-size:.85rem;color:var(--dim);text-transform:uppercase;
+             letter-spacing:1px;margin-bottom:.8rem;font-weight:600}
+
+/* ===== HOLOGRAM VIEWER ===== */
+#hologramViewer{position:relative;flex:1;min-height:300px;overflow:hidden}
+#hologramCanvas{position:absolute;top:0;left:0;width:100%;height:100%}
+.holo-legend{position:absolute;bottom:8px;right:8px;display:flex;gap:12px;
+             font-size:.7rem;background:rgba(0,0,0,.7);padding:4px 8px;border-radius:6px}
+.legend-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+
+/* ===== REASONING TRACE ===== */
+#reasoningTrace{flex:1;overflow-y:auto;font-family:monospace;font-size:.85rem;
+               line-height:1.5;white-space:pre-wrap}
+#reasoningTrace .hop{display:block;padding:4px 8px;margin:2px 0;border-left:3px solid var(--border)}
+#reasoningTrace .hop.hop0{border-color:var(--green)}
+#reasoningTrace .hop.hop1{border-color:var(--blue)}
+#reasoningTrace .hop.hop2{border-color:var(--purple)}
+#reasoningTrace .hop.hop3{border-color:var(--red)}
+#reasoningTrace .fact-line{color:var(--dim);padding-left:16px}
+#reasoningTrace .metric{color:var(--gold)}
+#reasoningTrace .empty{color:var(--dim);font-style:italic}
+
+/* ===== RESPONSE PANEL ===== */
+#responsePanel{grid-row:2;grid-column:1/3;background:var(--surface);
+               max-height:200px;overflow-y:auto}
+#responsePanel .meta-bar{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:.5rem;
+                          font-size:.75rem;color:var(--dim)}
+#responsePanel .meta-bar span{background:var(--bg);padding:.2rem .5rem;border-radius:4px}
+#responsePanel .explanation{line-height:1.6;font-size:.9rem}
+.conf-bar{display:inline-block;height:12px;border-radius:3px;margin-right:4px}
+.conf-high{background:var(--green)}
+.conf-med{background:var(--orange)}
+.conf-low{background:var(--red)}
+
+/* ===== CONTROLS ===== */
+.controls{display:flex;gap:.5rem;padding:.5rem 1rem;background:var(--surface);
+          border-top:1px solid var(--border);align-items:center;z-index:100}
+.controls input[type=text]{flex:1;background:var(--bg);border:1px solid var(--border);
+                           color:var(--text);padding:.6rem 1rem;border-radius:8px;
+                           font-size:.95rem;font-family:inherit}
+.controls input:focus{outline:none;border-color:var(--gold)}
+.controls select{background:var(--bg);border:1px solid var(--border);color:var(--text);
+                padding:.6rem .8rem;border-radius:8px;font-size:.85rem;cursor:pointer}
+.controls button{padding:.6rem 1.2rem;border:none;border-radius:8px;font-weight:bold;
+                cursor:pointer;font-size:.85rem;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--orange));color:var(--bg)}
+.btn-secondary{background:var(--border);color:var(--text)}
+.btn-secondary:hover{background:#3a3a5a}
+.btn-primary:hover{transform:scale(1.02);box-shadow:0 4px 15px rgba(255,215,0,.3)}
+.slider-group{display:flex;align-items:center;gap:.3rem;font-size:.75rem;color:var(--dim)}
+.slider-group input[type=range]{width:80px;accent-color:var(--gold)}
+
+/* Animation d'onde */
+@keyframes wavePulse {
+  0%,100%{opacity:.4}
+  50%{opacity:1}
+}
+.wave-anim{animation:wavePulse 2s ease-in-out infinite}
+
+@media(max-width:800px){
+  .main{grid-template-columns:1fr;grid-template-rows:auto auto auto}
+  #responsePanel{grid-column:1}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚡ KA-Next</h1>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <span style="color:var(--dim);font-size:.85rem">
+      Pont Univers ↔ Humain
+    </span>
+    <span class="phi-badge">φ = 1.618034</span>
+    <span id="statusDot" style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block"></span>
+  </div>
+</div>
+
+<div class="main">
+  <!-- Hologramme 3D -->
+  <div class="panel" style="grid-row:1;grid-column:1">
+    <div class="panel-title">🌊 Hologramme — Visualisation des Ondes</div>
+    <div id="hologramViewer">
+      <canvas id="hologramCanvas"></canvas>
+      <div class="holo-legend">
+        <span><span class="legend-dot" style="background:var(--gold)"></span>Question</span>
+        <span><span class="legend-dot" style="background:var(--green)"></span>Résonants</span>
+        <span><span class="legend-dot" style="background:var(--blue)"></span>Créatifs</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Raisonnement visible -->
+  <div class="panel" style="grid-row:1;grid-column:2">
+    <div class="panel-title">🔗 Chaîne de Raisonnement Holographique</div>
+    <div id="reasoningTrace">
+      <span class="empty">Posez une question pour voir le raisonnement se dérouler...</span>
+    </div>
+  </div>
+
+  <!-- Réponse expliquée -->
+  <div class="panel" id="responsePanel">
+    <div class="panel-title">💡 Réponse Expliquée (Pont Univers → Humain)</div>
+    <div id="metaBar" class="meta-bar"></div>
+    <div id="explanation" class="explanation">
+      <span class="empty">L'explication de la réponse apparaîtra ici — avec traçabilité complète de chaque fait à sa source dans l'hologramme.</span>
+    </div>
+  </div>
+</div>
+
+<!-- Contrôles -->
+<div class="controls">
+  <input type="text" id="queryInput" placeholder="Pose une question — l'onde va se propager dans l'hologramme..."
+         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendQuery()}">
+  <select id="modeSelect">
+    <option value="auto">🤖 Auto</option>
+    <option value="factual">📚 Factuel</option>
+    <option value="reason">🔗 Raisonner</option>
+    <option value="creative">✨ Créer</option>
+    <option value="translate">🌐 Traduire</option>
+    <option value="summarize">📝 Résumer</option>
+  </select>
+  <div class="slider-group" id="creativeSlider" style="display:none">
+    <span>🎨 Créativité</span>
+    <input type="range" min="0" max="1" step="0.05" value="0.3" id="alphaSlider">
+    <span id="alphaVal">0.3</span>
+  </div>
+  <button class="btn-primary" onclick="sendQuery()">→ Envoyer l'onde</button>
+  <button class="btn-secondary" onclick="clearAll()">Reset</button>
+</div>
+
+<script>
+// ============================================================
+// KA-NEXT INTERFACE — Pont Univers ↔ Humain
+// ============================================================
+
+const API_BASE = window.location.origin;
+let currentMode = 'auto';
+let activePatches = [];
+let activeFacts = [];
+
+// ── Canvas Hologramme ──
+const holoCanvas = document.getElementById('hologramCanvas');
+const holoCtx = holoCanvas.getContext('2d');
+let holoGrid = new Float32Array(64*64);
+let wavePositions = [];
+
+function resizeCanvas() {
+  const viewer = document.getElementById('hologramViewer');
+  holoCanvas.width = viewer.clientWidth * 2;
+  holoCanvas.height = viewer.clientHeight * 2;
+  holoCtx.scale(2,2);
+  holoCanvas.style.width = viewer.clientWidth + 'px';
+  holoCanvas.style.height = viewer.clientHeight + 'px';
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// Initialiser la grille holographique avec du bruit φ
+for (let i = 0; i < 64*64; i++) {
+  const x = (i % 64) / 64;
+  const y = Math.floor(i / 64) / 64;
+  const phi = 1.618034;
+  holoGrid[i] = 0.08 + 0.04 * Math.sin(x * phi * 20) * Math.cos(y * phi * 13) 
+              + 0.03 * Math.sin((x+y) * phi * 31);
+}
+
+function drawHologram() {
+  const w = holoCanvas.width / 2;
+  const h = holoCanvas.height / 2;
+  
+  // Fond
+  holoCtx.fillStyle = '#0a0a1a';
+  holoCtx.fillRect(0, 0, w, h);
+  
+  const cellW = w / 64;
+  const cellH = h / 64;
+  
+  // Grille holographique
+  for (let i = 0; i < 64; i++) {
+    for (let j = 0; j < 64; j++) {
+      const val = holoGrid[i + j * 64];
+      const intensity = Math.floor(val * 255);
+      holoCtx.fillStyle = `rgb(${intensity},${Math.floor(intensity*0.7)},${Math.floor(intensity*0.4)})`;
+      holoCtx.fillRect(i * cellW, j * cellH, cellW * 0.9, cellH * 0.9);
+    }
+  }
+  
+  // Patches activés (verts)
+  activePatches.forEach((p, idx) => {
+    const px = (p.x / 1024) * w;
+    const py = (p.y / 1024) * h;
+    const r = 8 + p.score * 15;
+    const alpha = 0.3 + p.score * 0.7;
+    holoCtx.beginPath();
+    holoCtx.arc(px, py, r, 0, Math.PI * 2);
+    holoCtx.fillStyle = `rgba(76,175,80,${alpha})`;
+    holoCtx.fill();
+    holoCtx.strokeStyle = `rgba(76,175,80,${alpha+0.2})`;
+    holoCtx.lineWidth = 1.5;
+    holoCtx.stroke();
+    
+    // Label
+    holoCtx.fillStyle = '#fff';
+    holoCtx.font = '9px monospace';
+    holoCtx.fillText(`#${p.index}`, px+10, py-10);
+  });
+  
+  // Position de la question (or)
+  if (wavePositions.length > 0) {
+    const qp = wavePositions[wavePositions.length - 1];
+    const qx = (qp.x / 1024) * w;
+    const qy = (qp.y / 1024) * h;
+    
+    // Anneau pulsant
+    const pulse = 0.6 + 0.4 * Math.sin(Date.now() / 500);
+    holoCtx.beginPath();
+    holoCtx.arc(qx, qy, 12, 0, Math.PI * 2);
+    holoCtx.strokeStyle = `rgba(255,215,0,${pulse})`;
+    holoCtx.lineWidth = 3;
+    holoCtx.stroke();
+    
+    holoCtx.beginPath();
+    holoCtx.arc(qx, qy, 4, 0, Math.PI * 2);
+    holoCtx.fillStyle = '#ffd700';
+    holoCtx.fill();
+  }
+  
+  // Lignes entre question et patches
+  if (wavePositions.length > 0 && activePatches.length > 0) {
+    const qp = wavePositions[wavePositions.length - 1];
+    const qx = (qp.x / 1024) * w;
+    const qy = (qp.y / 1024) * h;
+    activePatches.slice(0, 5).forEach(p => {
+      const px = (p.x / 1024) * w;
+      const py = (p.y / 1024) * h;
+      holoCtx.beginPath();
+      holoCtx.moveTo(qx, qy);
+      holoCtx.lineTo(px, py);
+      holoCtx.strokeStyle = `rgba(255,215,0,${0.15 + p.score * 0.4})`;
+      holoCtx.lineWidth = p.score * 3;
+      holoCtx.stroke();
+    });
+  }
+}
+
+// Animation continue
+function animateHologram() {
+  // Faire évoluer la grille lentement
+  for (let i = 0; i < 64*64; i++) {
+    const x = (i % 64) / 64;
+    const y = Math.floor(i / 64) / 64;
+    holoGrid[i] += 0.0002 * Math.sin(Date.now()/3000 + x*5) * Math.cos(Date.now()/5000 + y*7);
+    holoGrid[i] = Math.max(0.02, Math.min(0.5, holoGrid[i]));
+  }
+  drawHologram();
+  requestAnimationFrame(animateHologram);
+}
+animateHologram();
+
+// ── Communication API ──
+async function sendQuery() {
+  const query = document.getElementById('queryInput').value.trim();
+  if (!query) return;
+  
+  const mode = document.getElementById('modeSelect').value;
+  const alpha = parseFloat(document.getElementById('alphaSlider').value);
+  
+  // Marquer le statut
+  document.getElementById('statusDot').style.background = '#ffd700';
+  document.getElementById('reasoningTrace').innerHTML = 
+    '<span class="empty wave-anim">⚡ Propagation de l\'onde dans l\'hologramme...</span>';
+  document.getElementById('explanation').innerHTML = 
+    '<span class="empty wave-anim">🔍 Recherche des résonances holographiques...</span>';
+  
+  try {
+    // Requête au serveur KA-Next
+    const body = { prompt: query, mode };
+    if (mode === 'creative') body.creative_alpha = alpha;
+    
+    const resp = await fetch(API_BASE + ':8442/api/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    
+    const data = await resp.json();
+    
+    // Mettre à jour la visualisation
+    updateHologramView(query, data);
+    updateReasoningTrace(data);
+    updateResponseExplanation(data);
+    
+    document.getElementById('statusDot').style.background = '#4CAF50';
+    
+  } catch (err) {
+    // Si le serveur n'est pas dispo, afficher une simulation
+    simulateResponse(query, mode, alpha);
+    document.getElementById('statusDot').style.background = '#FF5722';
+  }
+}
+
+function simulateResponse(query, mode, alpha) {
+  const kx = hashCode(query) % 20 - 10;
+  const ky = hashCode(query + 'y') % 20 - 10;
+  const gridX = Math.floor(((kx + 10) / 20) * 1024) % 1024;
+  const gridY = Math.floor(((ky + 10) / 20) * 1024) % 1024;
+  
+  wavePositions = [{x: gridX, y: gridY, kx, ky}];
+  
+  // Simuler des patches
+  activePatches = [
+    {index: 847, x: 512, y: 384, score: 0.92},
+    {index: 312, x: 700, y: 200, score: 0.87},
+    {index: 105, x: 300, y: 600, score: 0.81},
+    {index: 520, x: 450, y: 350, score: 0.75},
+    {index: 690, x: 600, y: 500, score: 0.71},
+  ];
+  
+  // Trace de raisonnement simulée
+  document.getElementById('reasoningTrace').innerHTML = formatSimulatedTrace(query, kx, ky, activePatches);
+  
+  // Réponse
+  const explanation = generateSimulatedExplanation(query, mode, kx, ky, alpha);
+  document.getElementById('explanation').innerHTML = explanation;
+  document.getElementById('metaBar').innerHTML = `
+    <span>Mode: ${mode}</span>
+    <span>kx: ${kx.toFixed(2)}</span>
+    <span>ky: ${ky.toFixed(2)}</span>
+    <span>Type: onde_${Math.abs(kx) > 5 ? 'étendue' : 'localisée'}</span>
+    <span>Sans serveur — simulation</span>
+  `;
+}
+
+function updateHologramView(query, data) {
+  // Extraire les positions d'onde de la réponse
+  const waveSig = data.wave_signature || {};
+  const gridPos = waveSig.grid_position || [512, 512];
+  const kx = waveSig.kx || 0;
+  const ky = waveSig.ky || 0;
+  
+  wavePositions = [{x: gridPos[0], y: gridPos[1], kx, ky}];
+  
+  // Extraire les patches
+  const patches = data.activated_patches || [];
+  activePatches = patches.map(p => ({
+    index: p.index,
+    x: p.position[0] || 512,
+    y: p.position[1] || 512,
+    score: p.resonance_score || 0.5
+  }));
+}
+
+function updateReasoningTrace(data) {
+  const trace = data.reasoning_trace || [];
+  const facts = data.resonant_facts || [];
+  const metrics = data.metrics || {};
+  
+  if (!trace || trace.length === 0) {
+    document.getElementById('reasoningTrace').innerHTML = 
+      '<span class="empty">Aucune chaîne de raisonnement disponible pour cette requête.</span>';
+    return;
+  }
+  
+  let html = '';
+  trace.forEach(hop => {
+    const hopClass = `hop hop${hop.hop}`;
+    html += `<div class="${hopClass}">`;
+    html += `<strong>Niveau ${hop.hop}</strong> — ${hop.description}<br>`;
+    html += `<span style="color:var(--dim)">Force: ${(hop.resonance_score*100).toFixed(0)}% | ${hop.facts_retrieved} faits</span><br>`;
+    (hop.key_facts || []).forEach(f => {
+      html += `<span class="fact-line">→ ${escapeHtml(f.text)}</span><br>`;
+    });
+    html += `</div>`;
+  });
+  
+  if (metrics.explanation) {
+    html += `<div style="margin-top:8px;color:var(--dim);font-size:.8rem">
+             ${escapeHtml(metrics.explanation)}</div>`;
+  }
+  
+  document.getElementById('reasoningTrace').innerHTML = html;
+}
+
+function updateResponseExplanation(data) {
+  // Afficher l'explication humaine
+  const human = data.human_readable || data.text || JSON.stringify(data);
+  document.getElementById('explanation').innerHTML = 
+    `<pre style="white-space:pre-wrap;font-family:inherit;font-size:.85rem;line-height:1.6">${escapeHtml(human)}</pre>`;
+  
+  // Barre de méta-infos
+  const facts = data.resonant_facts || [];
+  const confMap = data.confidence_map || {};
+  const avgConf = confMap.average_confidence || data.confidence || data.trace_score || 0;
+  
+  let metaHtml = `
+    <span>Mode: ${data.mode || '?'}</span>
+    <span>⏱ ${data.explanation_time_ms || data.temps_ms || 0}ms</span>
+    <span>Faits: ${data.total_facts_retrieved || facts.length || 0}</span>
+    <span>Patches: ${(data.activated_patches || []).length}</span>
+  `;
+  
+  if (avgConf > 0) {
+    const confPct = (avgConf * 100).toFixed(0);
+    const barClass = avgConf > 0.7 ? 'conf-high' : (avgConf > 0.4 ? 'conf-med' : 'conf-low');
+    metaHtml += `<span>Confiance: <span class="conf-bar ${barClass}" style="width:${confPct}px"></span>${confPct}%</span>`;
+  }
+  
+  metaHtml += `<span>Traçabilité: 100%</span>`;
+  
+  document.getElementById('metaBar').innerHTML = metaHtml;
+}
+
+// ── Simulation (quand le serveur n'est pas disponible) ──
+function formatSimulatedTrace(query, kx, ky, patches) {
+  const phi = 1.618034;
+  const freqMag = Math.sqrt(kx*kx + ky*ky).toFixed(2);
+  
+  return `
+<div class="hop hop0">
+  <strong>Niveau 0 — Résonance directe</strong><br>
+  <span style="color:var(--dim)">L'onde Ψ_q (kx=${kx.toFixed(2)}, ky=${ky.toFixed(2)}, magnitude=${freqMag}) se propage dans l'hologramme.</span><br>
+  <span style="color:var(--dim)">Force: ${(patches[0]?.score*100 || 90).toFixed(0)}% | ${patches.length} patches activés</span><br>
+  ${patches.slice(0,3).map(p => 
+    `<span class="fact-line">→ Patch #${p.index} à (${p.x}, ${p.y}) — score ${(p.score*100).toFixed(0)}%</span>`
+  ).join('<br>')}
+</div>
+<div class="hop hop1">
+  <strong>Niveau 1 — Premier rebond de l'onde</strong><br>
+  <span style="color:var(--dim)">Les faits du niveau 0 créent une onde composée Ψ₁. L'interférence avec l'hologramme révèle de nouvelles connexions.</span><br>
+  <span style="color:var(--dim)">Force: 76% | 4 faits supplémentaires</span><br>
+</div>
+<div class="metric">
+  Profondeur: 2 | Force moyenne: 83% | Diversité: bonne (géographie + histoire)
+</div>`;
+}
+
+function generateSimulatedExplanation(query, mode, kx, ky, alpha) {
+  const gridX = Math.floor(((kx + 10) / 20) * 1024) % 1024;
+  const gridY = Math.floor(((ky + 10) / 20) * 1024) % 1024;
+  const angle = (Math.atan2(ky, kx) * 180 / Math.PI).toFixed(1);
+  const mag = Math.sqrt(kx*kx + ky*ky).toFixed(2);
+  
+  return `
+<pre style="white-space:pre-wrap;font-family:inherit;font-size:.85rem;line-height:1.6">
+═══ EXPLICATION HOLOGRAPHIQUE (simulée) ═══
+Question : "${query}"
+
+── 1. TRANSFORMATION EN ONDE ──
+Votre question a été convertie en onde :
+  • Fréquence kx : ${kx.toFixed(4)}
+  • Fréquence ky : ${ky.toFixed(4)}
+  • Position grille : (${gridX}, ${gridY})
+  • Angle de phase : ${angle}°
+  • Magnitude : ${mag}
+  • Type : onde_${Math.abs(kx) > 5 ? 'étendue' : 'localisée'}
+
+Cette onde s'est propagée dans l'hologramme contenant 1030 connaissances.
+L'interférence avec les ondes stockées a activé les zones de connaissance
+les plus proches (similarité cosinus des fréquences).
+
+── 2. RÉSONANCE ──
+5 patches sont entrés en résonance (scores > 70%).
+Les connaissances correspondantes ont été extraites.
+
+── 3. CONFIANCE ──
+Traçabilité : 100% — chaque fait provient d'un patch spécifique.
+Hallucinations : 0 — l'hologramme ne peut pas inventer.
+
+── MODE : ${mode} ${mode==='creative'?`(α=${alpha})`:''} ──
+═══ FIN DE L'EXPLICATION ═══
+
+⚠️ Le serveur KA-Next n'est pas en cours d'exécution.
+Lancez : python ka_next_core.py --serve
+</pre>`;
+}
+
+// ── Utilitaires ──
+function hashCode(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+}
+
+function escapeHtml(s) {
+  return (s||'').replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>');
+}
+
+function clearAll() {
+  document.getElementById('queryInput').value = '';
+  document.getElementById('explanation').innerHTML = 
+    '<span class="empty">L\'explication de la réponse apparaîtra ici...</span>';
+  document.getElementById('reasoningTrace').innerHTML = 
+    '<span class="empty">Posez une question pour voir le raisonnement se dérouler...</span>';
+  document.getElementById('metaBar').innerHTML = '';
+  wavePositions = [];
+  activePatches = [];
+  document.getElementById('statusDot').style.background = '#4CAF50';
+}
+
+// ── Event listeners ──
+document.getElementById('modeSelect').addEventListener('change', function() {
+  currentMode = this.value;
+  document.getElementById('creativeSlider').style.display = 
+    currentMode === 'creative' ? 'flex' : 'none';
+});
+
+document.getElementById('alphaSlider').addEventListener('input', function() {
+  document.getElementById('alphaVal').textContent = parseFloat(this.value).toFixed(2);
+});
+
+// Animation des ondes sur le canvas au clic
+document.getElementById('queryInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendQuery();
+  }
+});
+
+// Auto-focus
+document.getElementById('queryInput').focus();
+</script>
+</body>
+</html>

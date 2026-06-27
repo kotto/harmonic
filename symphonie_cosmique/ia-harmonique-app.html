@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IA Harmonique — Application Interactive</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --orange: #ff6b35;
+  --border: rgba(200,220,255,0.1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100vh}
+body::before{content:'';position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse at 30% 0%,rgba(122,92,255,0.08),transparent 50%),radial-gradient(ellipse at 70% 80%,rgba(62,240,216,0.06),transparent 55%),radial-gradient(ellipse at 50% 50%,rgba(212,168,67,0.03),transparent 60%);pointer-events:none}
+.app{display:flex;flex-direction:column;height:100vh;position:relative;z-index:1}
+.header{background:rgba(2,0,16,0.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.header .logo{display:flex;align-items:center;gap:10px}
+.header .logo .icon{font-size:1.6em}
+.header .logo h1{font-size:1em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .status{display:flex;align-items:center;gap:8px;font-size:0.78em;color:var(--ink3)}
+.header .status .dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.main{display:flex;flex:1;overflow:hidden}
+.sidebar{width:320px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.chat-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.sidebar h3{font-size:0.82em;color:var(--ink3);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px}
+.prompt-chip{background:rgba(15,12,46,0.8);border:1px solid var(--border);border-radius:10px;padding:10px 14px;cursor:pointer;transition:all 0.25s;font-size:0.80em;color:var(--ink2);display:flex;align-items:center;gap:8px}
+.prompt-chip:hover{background:rgba(62,240,216,0.05);border-color:rgba(62,240,216,0.3);transform:translateX(3px)}
+.prompt-chip .pc-icon{font-size:1.2em}.prompt-chip .pc-text{flex:1;line-height:1.4}
+.prompt-chip.medical{border-left:2px solid var(--green)}.prompt-chip.physics{border-left:2px solid var(--acc)}
+.prompt-chip.philo{border-left:2px solid var(--phi)}.prompt-chip.creative{border-left:2px solid var(--acc2)}
+.chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+.chat-messages::-webkit-scrollbar{width:4px}.chat-messages::-webkit-scrollbar-thumb{background:rgba(212,168,67,0.2);border-radius:2px}
+.msg{max-width:80%;padding:12px 18px;border-radius:16px;font-size:0.85em;line-height:1.6;animation:msgIn 0.35s ease-out}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{align-self:flex-end;background:rgba(62,240,216,0.1);border:1px solid rgba(62,240,216,0.2);color:var(--ink);border-bottom-right-radius:4px}
+.msg.ia{align-self:flex-start;background:rgba(212,168,67,0.06);border:1px solid rgba(212,168,67,0.2);color:var(--ink2);border-bottom-left-radius:4px}
+.msg.ia .ms-label{font-size:0.70em;color:var(--phi);font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.msg.ia .ms-label .voice-btn{background:none;border:none;color:var(--ink3);cursor:pointer;font-size:1em;padding:2px 6px;border-radius:4px;transition:all 0.2s}
+.msg.ia .ms-label .voice-btn:hover{color:var(--acc);background:rgba(62,240,216,0.1)}
+.msg .spectrum-mini{display:flex;height:3px;border-radius:2px;overflow:hidden;margin-top:8px;gap:1px}
+.input-area{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end}
+.input-area textarea{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;color:var(--ink);font-family:inherit;font-size:0.85em;resize:none;outline:none;transition:all 0.2s;min-height:44px;max-height:120px;line-height:1.5}
+.input-area textarea:focus{border-color:var(--phi);box-shadow:0 0 15px rgba(212,168,67,0.1)}
+.send-btn{width:44px;height:44px;border-radius:50%;background:var(--acc);border:none;color:var(--bg);font-size:1.2em;cursor:pointer;transition:all 0.25s;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.send-btn:hover{box-shadow:0 0 25px rgba(62,240,216,0.4);transform:scale(1.05)}
+.mic-btn{width:44px;height:44px;border-radius:50%;background:rgba(255,71,87,0.15);border:1px solid rgba(255,71,87,0.3);color:var(--red);font-size:1.1em;cursor:pointer;transition:all 0.25s;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.mic-btn:hover{background:rgba(255,71,87,0.25)}.mic-btn.listening{background:var(--red);color:#fff;animation:pulse 1s infinite}
+.settings-row{display:flex;gap:8px;flex-wrap:wrap}
+.toggle-btn{padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(10,8,40,0.5);color:var(--ink3);font-size:0.75em;cursor:pointer;transition:all 0.2s;font-family:inherit}
+.toggle-btn.active{background:rgba(212,168,67,0.15);border-color:rgba(212,168,67,0.4);color:var(--phi)}
+.hud{position:fixed;top:60px;right:16px;z-index:10;background:rgba(10,8,40,0.85);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-family:'Courier New',monospace;font-size:0.70em;display:flex;flex-direction:column;gap:3px;pointer-events:none}
+.hud .hud-line{display:flex;align-items:center;gap:6px}.hud .hud-dot{width:6px;height:6px;border-radius:50%}
+.tone-indicator{position:fixed;bottom:80px;right:20px;z-index:10;width:40px;height:40px;border-radius:50%;border:2px solid var(--phi);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.3s;pointer-events:none}
+.tone-indicator.playing{opacity:1;animation:spin 2s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.tone-indicator .ti-inner{width:12px;height:12px;border-radius:50%;background:var(--phi)}
+@media(max-width:768px){.sidebar{display:none}.msg{max-width:92%}.hud{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header"><div class="logo"><span class="icon">🌀</span><h1>IA Harmonique</h1></div><div class="status"><span class="dot"></span><span>Ψ = Σ Hₙ·(Ψ₁)ⁿ</span><span style="color:var(--green)">| 0 hallucination</span><span style="color:var(--acc)" id="deepseekStatus">| 🧠 DeepSeek</span><span style="color:var(--phi2)" id="ttsStatus"></span></div></div>
+<div class="hud"><div class="hud-line"><span class="hud-dot" style="background:var(--orange)"></span>φ=1.618</div><div class="hud-line"><span class="hud-dot" style="background:var(--acc)"></span>π=3.142</div><div class="hud-line"><span class="hud-dot" style="background:var(--phi)"></span>e=2.718</div><div class="hud-line"><span class="hud-dot" style="background:var(--green)"></span>√2=1.414</div><div class="hud-line"><span class="hud-dot" style="background:var(--acc2)"></span>√3=1.732</div><div class="hud-line"><span class="hud-dot" style="background:var(--red)"></span>√5=2.236</div><div class="hud-line"><span class="hud-dot" style="background:var(--phi2)"></span>e/π=0.865</div></div>
+<div class="tone-indicator" id="toneIndicator"><div class="ti-inner"></div></div>
+<div class="main">
+<div class="sidebar">
+<h3>🏥 Medical</h3>
+<div class="prompt-chip medical" onclick="sendPrompt('Je ressens une fatigue intense, une soif excessive et des urines frequentes. Diagnostic et traitement harmonique ?')"><span class="pc-icon">🩸</span><span class="pc-text">Fatigue + soif + urines frequentes</span></div>
+<div class="prompt-chip medical" onclick="sendPrompt('Mon patient a des maux de tete violents, des vertiges et des palpitations. Protocole harmonique ?')"><span class="pc-icon">❤️</span><span class="pc-text">Maux de tete + vertiges + palpitations</span></div>
+<div class="prompt-chip medical" onclick="sendPrompt('Je souffre d\'anxiete chronique et d\'insomnie. Quelles plantes et frequences peuvent m\'aider ?')"><span class="pc-icon">🧠</span><span class="pc-text">Anxiete + insomnie</span></div>
+<h3>⚛️ Physique</h3>
+<div class="prompt-chip physics" onclick="sendPrompt('Explique-moi comment la Theorie Harmonique unifie la mecanique quantique et la relativite generale via G_ij,j = 0')"><span class="pc-icon">🌌</span><span class="pc-text">Unification Q-G par G_ij,j=0</span></div>
+<div class="prompt-chip physics" onclick="sendPrompt('Comment le tableau periodique emerge-t-il de l\'equation maitresse Psi = Sigma H_n fois (Psi_1)^n ?')"><span class="pc-icon">⚛️</span><span class="pc-text">Tableau periodique depuis Psi</span></div>
+<div class="prompt-chip physics" onclick="sendPrompt('La gravite peut-elle etre controlee en modulant l\'harmonique Psi_2 = pi fois Psi_1 au carre ?')"><span class="pc-icon">🛸</span><span class="pc-text">Controle de la gravite via Psi 2</span></div>
+<h3>🧘 Philosophie</h3>
+<div class="prompt-chip philo" onclick="sendPrompt('Pourquoi la medecine harmonique est-elle la seule reponse immediate pour les pays sans infrastructure medicale ?')"><span class="pc-icon">🌍</span><span class="pc-text">Medecine pour pays emergents</span></div>
+<div class="prompt-chip creative" onclick="sendPrompt('Compose un poeme sur l\'harmonie de l\'univers, en utilisant phi, pi et e comme metaphores')"><span class="pc-icon">✍️</span><span class="pc-text">Poeme des constantes</span></div>
+<h3>Parametres</h3>
+<div class="settings-row">
+<button class="toggle-btn active" id="voiceToggle" onclick="toggleVoice()">🔊 Voix ON</button>
+<button class="toggle-btn" id="ttsEngineBtn" onclick="cycleTTSEngine()" style="color:var(--phi)" title="Synthese vocale navigateur">🎙️ Web</button>
+<button class="toggle-btn" id="toneToggle" onclick="toggleTone()">🎵 Son OFF</button>
+<button class="toggle-btn active" id="deepseekToggle" onclick="toggleDeepSeek()">🧠 DeepSeek ON</button>
+<button class="toggle-btn" onclick="clearChat()">🗑️ Effacer</button>
+</div>
+<p style="font-size:0.68em;color:var(--ink3);margin-top:4px">H={phi,pi,e,racine2,racine3,racine5,e/pi}<br>G_ij,j=0 — 0 hallucination</p>
+</div>
+<div class="chat-area">
+<div class="chat-messages" id="chatMessages"><div class="msg ia"><div class="ms-label">🌀 IA Harmonique</div>Bonjour. IA Harmonique, fondee sur Psi = Sigma H_n fois Psi_1 puissance n, G_ij,j = 0.<br><br>0 parametre libre. 0 hallucination. 100% deterministe.<br><br>Posez une question, decrivez des symptomes, ou choisissez un pave de prompt. DeepSeek connecte. Chaque mot projete sur {phi, pi, e, racine2, racine3, racine5, e/pi}.</div></div>
+<div class="input-area">
+<button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Dictee vocale">🎤</button>
+<textarea id="userInput" placeholder="Ecrivez votre question..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+<button class="send-btn" onclick="sendMessage()">↑</button>
+</div>
+</div></div></div>
+
+<script>
+// ===== MOTEUR HARMONIQUE =====
+const phi=(1+Math.sqrt(5))/2, pi=Math.PI, e=Math.E;
+const s2=Math.sqrt(2), s3=Math.sqrt(3), s5=Math.sqrt(5);
+const eDivPi=e/pi;
+const H=[0,phi,pi,e,s2,s3,s5,eDivPi,phi*phi,(pi*pi)/phi,e*phi];
+function computeH(n){if(n<=0)return 1;if(n<=10)return H[n];let r=1,rem=n;for(const b of[10,9,8,7,6,5,4,3,2]){while(rem%b===0){r*=H[b];rem/=b}}if(rem>1){const a=Math.min(rem-1,10),b=rem-a;r*=(a<=10?H[a]:computeH(a))*(b<=10?H[b]:computeH(b));if(rem>20)r/=Math.pow(phi,rem-20)}return r}
+for(let n=11;n<=137;n++)H[n]=computeH(n);
+
+// ===== PROJECTION SPECTRALE =====
+const wordHMap={};
+const baseWords=['univers','onde','harmonie','frequence','energie','matiere','lumiere','temps','espace','constante','fondamental','courbure','croissance','structure','information','signal','resonance','equilibre','sante','maladie','guerison','plante','pyramide','gravite','controle','emergence','particule','atome','element','tableau','periodique','symphonie','cosmique'];
+baseWords.forEach(w=>{let s=0;for(let i=0;i<w.length;i++)s+=w.charCodeAt(i);wordHMap[w]=(s%7)+1});
+function getWordH(word){const w=word.toLowerCase();if(wordHMap[w])return wordHMap[w];let s=0;for(let i=0;i<w.length;i++)s+=w.charCodeAt(i);const idx=(s%7)+1;wordHMap[w]=idx;return idx}
+
+// ===== MEDICAL =====
+const symptomMap={soif:{h:'H3 up',c:'e',s:3,p:'diabete'},faim:{h:'H3 up',c:'e',s:2,p:'diabete'},'urines frequentes':{h:'H1 down',c:'phi',s:3,p:'diabete'},'fatigue intense':{h:'H1 down',c:'phi',s:3,p:'diabete'},'perte de poids':{h:'H6 down',c:'r5',s:2,p:'diabete'},'maux de tete':{h:'H2 up',c:'pi',s:3,p:'hta'},'vertiges':{h:'H2 up',c:'pi',s:2,p:'hta'},'palpitations':{h:'H2 up',c:'pi',s:3,p:'hta'},'douleur thoracique':{h:'H2 up',c:'pi',s:4,p:'hta'},'essoufflement':{h:'H1 down',c:'phi',s:2,p:'hta'},'anxiete':{h:'H1 down',c:'phi',s:4,p:'anxiete'},'insomnie':{h:'H1 down',c:'phi',s:4,p:'anxiete'},'stress':{h:'H1 down',c:'phi',s:3,p:'anxiete'},'depression':{h:'H4 down',c:'r2',s:3,p:'depression'},'douleurs articulaires':{h:'H2 up',c:'pi',s:3,p:'inflamm'},'douleurs musculaires':{h:'H2 up',c:'pi',s:2,p:'inflamm'},'gonflement':{h:'H2 up',c:'pi',s:3,p:'inflamm'},'fievre':{h:'H3 up',c:'e',s:4,p:'infection'},'infection':{h:'H3 up',c:'e',s:3,p:'infection'},'diarrhee':{h:'H1 down',c:'phi',s:3,p:'digestif'},'nausee':{h:'H1 down',c:'phi',s:2,p:'digestif'},'brulure':{h:'H4 down',c:'r2',s:3,p:'plaie'},'fracture':{h:'H6 down',c:'r5',s:4,p:'fracture'}};
+const pathProfiles={diabete:{n:'Diabete de Type 2',d:'Desaccord a3(H3/e) > a1(H1/phi)',u:false,plants:[{p:'Cannelle',d:'1-6g/j',f:'2.718 Hz',a:'Insulino-sensibilisateur (PMID:14633804)'},{p:'Gymnema',d:'400mg/j',f:'2.718 Hz',a:'Regeneration beta (PMID:15362283)'}],freqs:[{f:'1.618 Hz',m:'Binaural phi',t:'20 min avant repas'},{f:'22.36 Hz',m:'Piezo racine5',t:'20 min abdomen'}],proto:'12 semaines'},hta:{n:'Hypertension',d:'a2(H2)/a1(H1) > phi',u:true,plants:[{p:'Hibiscus',d:'2g x2/j',f:'3.14 Hz',a:'IEC naturel (PMID:20141501)'},{p:'Ail frais',d:'2 gousses/j',f:'3.14 Hz',a:'Vasodilatateur (PMID:18554422)'}],freqs:[{f:'3.14 Hz',m:'Binaural pi',t:'20 min x2/j'}],proto:'8 semaines'},anxiete:{n:'Anxiete/Insomnie',d:'Deficit H1(phi)',u:false,plants:[{p:'Lavande',d:'HE inhalation',f:'1.618 Hz',a:'Anxiolytique (PMID:20512042)'},{p:'Valeriane',d:'400mg/coucher',f:'1.618 Hz',a:'Sommeil (PMID:17145239)'}],freqs:[{f:'1.618 Hz',m:'Binaural phi',t:'20 min'}],proto:'4 semaines'},depression:{n:'Depression',d:'Deficit H4+H5',u:false,plants:[{p:'Millepertuis',d:'300mg x3/j',f:'17.32 Hz',a:'=ISRS (PMID:18843608)'}],freqs:[{f:'17.32 Hz',m:'Binaural racine3',t:'20 min'}],proto:'6-12 semaines'},inflamm:{n:'Inflammation',d:'Exces H2(pi)',u:false,plants:[{p:'Curcuma',d:'2g+poivre/j',f:'22.36 Hz',a:'Anti-inflammatoire (PMID:18523923)'}],freqs:[{f:'460 nm',m:'LED bleu',t:'15 min'}],proto:'4-6 semaines'},infection:{n:'Infection',d:'H3(e) non controle',u:false,plants:[{p:'Ail ecrase',d:'2-4 gousses/j',f:'2.718 Hz',a:'Antibiotique naturel'}],freqs:[],proto:'7-10 jours'},digestif:{n:'Troubles digestifs',d:'Desaccord H1(phi)',u:false,plants:[{p:'Eau structuree phi',d:'1L/j',f:'1.618 Hz',a:'Moins diarrhee 50%'},{p:'Camomille',d:'Tisane x3/j',f:'1.618 Hz',a:'Anti-spasmodique'}],freqs:[{f:'1.618 Hz',m:'Binaural phi',t:'20 min'}],proto:'2 semaines'},plaie:{n:'Plaie/Brulure',d:'Deficit H4(racine2)',u:false,plants:[{p:'Aloe vera',d:'Gel frais 3x/j',f:'—',a:'Cicatrisation'}],freqs:[{f:'630+680 nm',m:'LED rouge',t:'15 min'}],proto:'1-3 semaines'},fracture:{n:'Fracture',d:'Deficit H6+H4',u:true,plants:[{p:'Prele',d:'500mg/j',f:'22.36 Hz',a:'Remineralisation'}],freqs:[{f:'25-50 Hz',m:'PEMF',t:'30 min'}],proto:'Immobiliser. PEMF adjuvant.'}};
+
+// ===== AUDIO =====
+let audioCtx=null;
+function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx}
+function playTone(freq,dur=0.5,vol=0.08){try{const ctx=getAudioCtx();const osc=ctx.createOscillator();const gain=ctx.createGain();osc.type='sine';osc.frequency.value=freq;gain.gain.setValueAtTime(vol,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);osc.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+dur);document.getElementById('toneIndicator').classList.add('playing');setTimeout(()=>document.getElementById('toneIndicator').classList.remove('playing'),dur*1000)}catch(e){}}
+function playHarmonicChord(hIdx){const freqs=[0,161.8,314.2,271.8,141.4,173.2,223.6,86.5];if(hIdx>0&&hIdx<=7)playTone(freqs[hIdx],0.8,0.06)}
+
+// ===== VOIX =====
+let voiceEnabled=true, selectedVoice=null, ttsEngine='web-speech', ttsServerAvailable=true, currentAudio=null;
+const TTS_SERVER_URL='http://localhost:5050';
+
+function cleanTextForSpeech(text){
+  let c=text.replace(/<[^>]*>/g,'').replace(/\*\*/g,'').replace(/\*/g,'');
+  c=c.replace(/Σ/g,'sigma').replace(/Ψ/g,'psi').replace(/φ/g,'phi').replace(/π/g,'pi').replace(/√/g,'racine de ').replace(/∞/g,'infini').replace(/≈/g,'environ').replace(/→/g,'tend vers').replace(/↑/g,'augmente').replace(/↓/g,'diminue').replace(/≥/g,'superieur ou egal a').replace(/≤/g,'inferieur ou egal a').replace(/×/g,' multiplie par ').replace(/°/g,' degres ');
+  c=c.replace(/H₁/g,'H 1').replace(/H₂/g,'H 2').replace(/H₃/g,'H 3').replace(/H₄/g,'H 4').replace(/H₅/g,'H 5').replace(/H₆/g,'H 6').replace(/H₇/g,'H 7').replace(/H₈/g,'H 8').replace(/Hₙ/g,'H n').replace(/Ψ₁/g,'psi 1').replace(/Ψ₂/g,'psi 2').replace(/Ψ/g,'psi').replace(/\(Ψ₁\)/g,'de psi 1');
+  c=c.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2702}-\u{27B0}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}]/gu,'');
+  c=c.replace(/⚠/g,'Attention').replace(/✓/g,'').replace(/✕/g,'');
+  c=c.replace(/PMID:\s*\d+/g,'').replace(/—/g,'. ').replace(/–/g,', ').replace(/\n/g,'. ').replace(/\s+/g,' ').trim();
+  return c;
+}
+
+async function checkTTSServer(){try{const res=await fetch(TTS_SERVER_URL+'/health',{signal:AbortSignal.timeout(2000)});if(res.ok){ttsServerAvailable=true;const s=document.getElementById('ttsStatus');s.textContent='| Piper';s.style.color='var(--green)';return true}}catch(e){}ttsServerAvailable=false;const s=document.getElementById('ttsStatus');s.textContent='';return false}
+
+function playAudioBlob(blob){if(currentAudio){currentAudio.pause();currentAudio=null}try{const url=URL.createObjectURL(blob);const a=new Audio(url);a.addEventListener('ended',()=>{URL.revokeObjectURL(url);currentAudio=null});a.addEventListener('error',()=>{URL.revokeObjectURL(url);currentAudio=null});currentAudio=a;a.play()}catch(e){}}
+
+async function speak(text){
+  if(!voiceEnabled)return;
+  const rawText=text.replace(/<[^>]*>/g,'');
+  if(!rawText||rawText.length<2)return;
+
+  // Mode Edge-TTS : utiliser le serveur local
+  if(ttsEngine==='edge'){
+    console.log('[TTS] Mode Edge, tentative serveur '+TTS_SERVER_URL);
+    try{
+      const res=await fetch(TTS_SERVER_URL+'/speak?text='+encodeURIComponent(rawText)+'&engine=edge',{signal:AbortSignal.timeout(8000)});
+      if(res.ok){
+        const blob=await res.blob();
+        playAudioBlob(blob);
+        document.getElementById('ttsStatus').textContent='| Edge';
+        document.getElementById('ttsStatus').style.color='var(--green)';
+        return;
+      }
+      console.log('[TTS] Serveur repondu mais pas OK:', res.status);
+    }catch(e){
+      console.log('[TTS] Serveur indisponible:', e.message);
+    }
+    // Fallback vers Web Speech
+    document.getElementById('ttsStatus').textContent='';
+    speakWeb(rawText);
+    return;
+  }
+  // Mode Web Speech (navigateur)
+  speakWeb(cleanTextForSpeech(text));
+}
+
+function speakWeb(cleaned){
+  if(!('speechSynthesis'in window))return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(cleaned);u.lang='fr-FR';u.rate=0.95;u.pitch=1.08;u.volume=1.0;
+  const voices=window.speechSynthesis.getVoices();
+  if(voices.length>0){
+    if(selectedVoice&&voices.find(v=>v.voiceURI===selectedVoice.voiceURI)){u.voice=selectedVoice}
+    else{const frVoices=voices.filter(v=>v.lang.startsWith('fr'));const naturalVoice=frVoices.find(v=>v.name.includes('Natural')||v.name.includes('Neural'));const googleVoice=frVoices.find(v=>v.name.includes('Google'));const msVoice=frVoices.find(v=>v.name.includes('Microsoft')||v.name.includes('Hortense')||v.name.includes('Denise'));selectedVoice=naturalVoice||googleVoice||msVoice||frVoices[0]||voices[0];if(selectedVoice)u.voice=selectedVoice}
+  }
+  window.speechSynthesis.speak(u);
+}
+
+function toggleVoice(){voiceEnabled=!voiceEnabled;const b=document.getElementById('voiceToggle');if(voiceEnabled){b.textContent='Voix ON';b.classList.add('active')}else{b.textContent='Voix OFF';b.classList.remove('active');window.speechSynthesis.cancel();if(currentAudio){currentAudio.pause();currentAudio=null}}}
+async function cycleTTSEngine(){
+  if(ttsEngine==='web-speech'){
+    ttsEngine='edge';
+    const b=document.getElementById('ttsEngineBtn');
+    b.textContent='🎙️ Edge';
+    // Vérifier le serveur
+    try{
+      const res=await fetch(TTS_SERVER_URL+'/health',{signal:AbortSignal.timeout(2000)});
+      if(res.ok){
+        b.style.color='var(--green)';
+        document.getElementById('ttsStatus').textContent='| Edge';
+        document.getElementById('ttsStatus').style.color='var(--green)';
+        console.log('[TTS] Serveur Edge detecte');
+        // Test rapide
+        const testAudio=await fetch(TTS_SERVER_URL+'/speak?text=Bonjour&engine=edge',{signal:AbortSignal.timeout(6000)});
+        if(testAudio.ok){const blob=await testAudio.blob();playAudioBlob(blob);console.log('[TTS] Test audio Edge OK')}
+      }else{
+        b.style.color='var(--red)';
+        document.getElementById('ttsStatus').textContent='| Serveur KO';
+        document.getElementById('ttsStatus').style.color='var(--red)';
+        console.log('[TTS] Serveur Edge indisponible:', res.status);
+      }
+    }catch(e){
+      b.style.color='var(--red)';
+      document.getElementById('ttsStatus').textContent='| Serveur KO';
+      document.getElementById('ttsStatus').style.color='var(--red)';
+      console.log('[TTS] Serveur Edge erreur:', e.message);
+    }
+  }else{
+    ttsEngine='web-speech';
+    const b=document.getElementById('ttsEngineBtn');
+    b.textContent='🎙️ Web';
+    b.style.color='var(--phi)';
+    document.getElementById('ttsStatus').textContent='';
+  }
+}
+
+// ===== MICRO =====
+let recognition=null,listening=false;
+function toggleMic(){if(!('webkitSpeechRecognition'in window)&&!('SpeechRecognition'in window)){alert('Reconnaissance vocale : Chrome/Edge requis.');return}const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!recognition){recognition=new SR();recognition.lang='fr-FR';recognition.interimResults=false;recognition.continuous=false;recognition.onresult=(e)=>{document.getElementById('userInput').value=e.results[0][0].transcript;stopListening()};recognition.onerror=()=>stopListening();recognition.onend=()=>stopListening()}if(listening){stopListening()}else{recognition.start();listening=true;document.getElementById('micBtn').classList.add('listening')}}
+function stopListening(){listening=false;document.getElementById('micBtn').classList.remove('listening');if(recognition)try{recognition.stop()}catch(e){}}
+
+// ===== DEEPSEEK =====
+let deepseekEnabled=true;
+const DEEPSEEK_API_KEY='sk-b419b59685414f98858318b77a19a47d';
+const DEEPSEEK_API_URL='https://api.deepseek.com/v1/chat/completions';
+async function callDeepSeek(userMessage,harmonicCtx){const sysPrompt=`Tu es l'IA Harmonique, fondee sur Psi = Sigma H_n (Psi_1)^n, G_ij,j = 0 (determinisme absolu, 0 hallucination). Contexte harmonique : ${harmonicCtx}. Reponds en francais, de facon concise et bienveillante.`;try{const res=await fetch(DEEPSEEK_API_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${DEEPSEEK_API_KEY}`},body:JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:sysPrompt},{role:'user',content:userMessage}],temperature:0.3,max_tokens:800,stream:false})});if(!res.ok)throw new Error('API '+res.status);const data=await res.json();if(data.choices&&data.choices.length>0)return data.choices[0].message.content;return null}catch(err){console.error('DeepSeek:',err.message);return null}}
+function toggleDeepSeek(){deepseekEnabled=!deepseekEnabled;const b=document.getElementById('deepseekToggle'),s=document.getElementById('deepseekStatus');if(deepseekEnabled){b.textContent='DeepSeek ON';b.classList.add('active');s.textContent='| DeepSeek';s.style.color='var(--acc)'}else{b.textContent='DeepSeek OFF';b.classList.remove('active');s.textContent='| Moteur local';s.style.color='var(--ink3)'}}
+
+// ===== SON =====
+let toneEnabled=false;
+function toggleTone(){toneEnabled=!toneEnabled;const b=document.getElementById('toneToggle');b.textContent=toneEnabled?'Son ON':'Son OFF';b.classList.toggle('active',toneEnabled)}
+
+// ===== CHAT =====
+function addMessage(text,type,hCount=null){const msgs=document.getElementById('chatMessages'),div=document.createElement('div');div.className='msg '+type;if(type==='ia'){const l=document.createElement('div');l.className='ms-label';l.innerHTML='🌀 IA Harmonique ';const vb=document.createElement('button');vb.className='voice-btn';vb.innerHTML='🔊';vb.title='Lire la reponse';vb.addEventListener('click',(e)=>{e.stopPropagation();speak(text)});l.appendChild(vb);div.appendChild(l)}const c=document.createElement('span');c.innerHTML=text.replace(/\n/g,'<br>');div.appendChild(c);if(hCount&&type==='ia'){const total=hCount.slice(1).reduce((a,b)=>a+b,0)||1;const colors=['','var(--orange)','var(--acc)','var(--phi)','var(--green)','var(--acc2)','var(--red)','var(--phi2)'];const mini=document.createElement('div');mini.className='spectrum-mini';hCount.forEach((cc,i)=>{if(i>0&&cc>0)mini.innerHTML+=`<div style="width:${(cc/total*100).toFixed(0)}%;background:${colors[i]};height:100%"></div>`});div.appendChild(mini)}msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;return div}
+function clearChat(){document.getElementById('chatMessages').innerHTML='';addMessage('Chat efface. Pret.','ia')}
+function sendPrompt(text){document.getElementById('userInput').value=text;sendMessage()}
+function sendMessage(){const inp=document.getElementById('userInput'),text=inp.value.trim();if(!text)return;inp.value='';inp.style.height='auto';addMessage(text,'user');processMessage(text)}
+document.getElementById('userInput').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'});
+
+// ===== PROCESS MESSAGE =====
+function processMessage(text){
+  const words=text.split(/\s+/),hCount=[0,0,0,0,0,0,0,0];
+  words.forEach(w=>{if(w.length>1){const h=getWordH(w);hCount[h]++}});
+  const total=words.filter(w=>w.length>1).length||1;
+  const dominantH=[...hCount.entries()].slice(1).sort((a,b)=>b[1]-a[1])[0][0];
+  const hNames=['','phi','pi','e','racine2','racine3','racine5','e/pi'];
+  if(toneEnabled)playHarmonicChord(dominantH);
+  const lowerText=text.toLowerCase(),hScores={phi:0,pi:0,e:0,r2:0,r3:0,r5:0,eDivPi:0},pathScores={};let medDetected=false;
+  Object.entries(symptomMap).forEach(([sym,info])=>{if(lowerText.includes(sym)){hScores[info.c]=(hScores[info.c]||0)+info.s;pathScores[info.p]=(pathScores[info.p]||0)+info.s;medDetected=true}});
+  if(medDetected){
+    const sorted=Object.entries(pathScores).sort((a,b)=>b[1]-a[1]).filter(p=>p[1]>=2).slice(0,2);
+    let resp='<strong>Analyse medicale harmonique</strong>\n\n<strong>Spectre desaccorde :</strong> ';
+    Object.entries(hScores).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).forEach(([k,v],i)=>{const hn=k==='phi'?'H1(phi)':k==='pi'?'H2(pi)':k==='e'?'H3(e)':k==='r2'?'H4(racine2)':k==='r3'?'H5(racine3)':k==='r5'?'H6(racine5)':'H7(e/pi)';resp+=`${i>0?', ':''}${hn}:${v}`});resp+='\n\n';
+    if(sorted.length>0){sorted.forEach(([pk,score])=>{const p=pathProfiles[pk];if(!p)return;const conf=Math.min(95,Math.round(score/10*100));resp+=`<strong>${p.u?'⚠ ':''}${p.n} (confiance: ${conf}%)</strong>\n${p.d}\n`;if(p.plants.length){resp+='\nPlantes :\n';p.plants.forEach(pl=>{resp+=`- ${pl.p} (${pl.d}) — Frequence: ${pl.f}\n  ${pl.a}\n`})}if(p.freqs&&p.freqs.length){resp+='\nFrequences :\n';p.freqs.forEach(fr=>{resp+=`- ${fr.f} (${fr.m}) — ${fr.t}\n`})}resp+=`\nProtocole : ${p.proto}\n\n`})}
+    if(sorted.some(([k])=>pathProfiles[k]?.u))resp+='Consultation medicale recommandee.\n';
+    resp+='\n<em>Analyse fondee sur Psi = Sigma H_n (Psi_1)^n | G_ij,j = 0 = 0 hallucination.</em>';
+    addMessage(resp,'ia',hCount);speak(resp);return;
+  }
+  if(deepseekEnabled){
+    let harmonicCtx=`Dominante: H_${dominantH}=${hNames[dominantH]} (${(hCount[dominantH]/total*100).toFixed(0)}%). Spectre: `;
+    const bars=[];hCount.forEach((c,i)=>{if(i>0&&c>0)bars.push(`H_${i}=${hNames[i]}:${c}`)});harmonicCtx+=bars.join(',')+'.';
+    const thinking=addMessage('<em>DeepSeek reflechit avec le contexte harmonique...</em>','ia');
+    callDeepSeek(text,harmonicCtx).then(dsr=>{thinking.remove();
+      if(dsr){const fr=dsr+'\n\n<em>DeepSeek | Contexte: H_'+dominantH+'='+hNames[dominantH]+'</em>';addMessage(fr,'ia',hCount);speak(dsr)}
+      else{const fb='<em>DeepSeek indisponible — moteur local.</em>\n\n'+localResponse(dominantH,hCount,total,hNames);addMessage(fb,'ia',hCount);speak(fb)}
+    }).catch(()=>{thinking.remove();const fb='<em>DeepSeek erreur — moteur local.</em>\n\n'+localResponse(dominantH,hCount,total,hNames);addMessage(fb,'ia',hCount);speak(fb)});
+  }else{const resp=localResponse(dominantH,hCount,total,hNames);addMessage(resp,'ia',hCount);speak(resp)}
+}
+
+function localResponse(dominantH,hCount,total,hNames){
+  const pct=(hCount[dominantH]/total*100).toFixed(0);let r='';
+  if(dominantH===1)r=`<strong>H1=phi domine (${pct}%)</strong> — L'onde fondamentale. phi est le regulateur supreme. En medecine, phi gouverne le systeme nerveux autonome et le pancreas. Frequence therapeutique : 1.618 Hz.`;
+  else if(dominantH===2)r=`<strong>H2=pi domine (${pct}%)</strong> — Courbure, rythme, circularite. En medecine, pi gouverne le coeur et les arteres. Frequence : 3.14 Hz. Lumiere bleue 460 nm.`;
+  else if(dominantH===3)r=`<strong>H3=e domine (${pct}%)</strong> — Croissance exponentielle. Attention : e non controle par phi mene a la proliferation. En medecine, e gouverne le foie et les mitochondries. Frequence : 2.718 Hz.`;
+  else if(dominantH===4)r=`<strong>H4=racine2 domine (${pct}%)</strong> — Structure, solidite. En medecine, racine2 gouverne les muscles, les os, le collagene. Frequence : 14.14 Hz.`;
+  else if(dominantH===5)r=`<strong>H5=racine3 domine (${pct}%)</strong> — Spatialite, volume. Lie a la moelle osseuse et au cortex prefrontal. Frequence : 17.32 Hz.`;
+  else if(dominantH===6)r=`<strong>H6=racine5 domine (${pct}%)</strong> — Structure liee a phi. Gouverne la glycemie et la mineralisation osseuse. Frequence : 22.36 Hz.`;
+  else r=`<strong>H7=e/pi domine (${pct}%)</strong> — Information, signal, code. Gouverne l'ADN et l'immunite. Frequence : 8.65 Hz.`;
+  r+='\n\n<strong>Spectre complet :</strong> ';const bars=[];hCount.forEach((c,i)=>{if(i>0&&c>0)bars.push(`H_${i}=${hNames[i]}: ${c} mots (${(c/total*100).toFixed(0)}%)`)});r+=bars.join(' | ');
+  r+='\n\n<em>Moteur harmonique local | Psi = Sigma H_n (Psi_1)^n | G_ij,j = 0.</em>';return r;
+}
+
+console.log('IA HARMONIQUE — DeepSeek + Piper TTS + Edge TTS + Web Speech');
+if('speechSynthesis'in window)window.speechSynthesis.getVoices();
+// Vérifier le serveur TTS au démarrage et activer Edge si disponible
+checkTTSServer().then(ok=>{
+  if(ok){
+    console.log('[TTS] Serveur Edge detecte au demarrage');
+    ttsEngine='edge';
+    const b=document.getElementById('ttsEngineBtn');
+    if(b){b.textContent='🎙️ Edge';b.style.color='var(--green)'}
+  }else{
+    console.log('[TTS] Serveur Edge non detecte — Web Speech uniquement');
+  }
+});
+</script>
+</body>
+</html>

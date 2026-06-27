@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmonic AI - Chat Déterministe</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/chat.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Header -->
+        <header class="chat-header">
+            <div class="header-left">
+                <div class="logo">
+                    <span class="logo-icon">φ</span>
+                    <span class="logo-text">Harmonic AI</span>
+                </div>
+                <div class="model-info">
+                    <span class="model-badge">
+                        <i class="fas fa-shield-alt"></i>
+                        Mode Vérifié
+                    </span>
+                    <span class="model-badge">
+                        <i class="fas fa-bolt"></i>
+                        Déterministe
+                    </span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-outline" id="settingsBtn">
+                    <i class="fas fa-cog"></i>
+                    Paramètres
+                </button>
+                <button class="btn btn-primary" id="newChatBtn">
+                    <i class="fas fa-plus"></i>
+                    Nouveau Chat
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Chat Area -->
+        <main class="chat-main">
+            <!-- Welcome Screen -->
+            <div class="welcome-screen" id="welcomeScreen">
+                <div class="welcome-content">
+                    <div class="welcome-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h1 class="welcome-title">Harmonic AI</h1>
+                    <p class="welcome-subtitle">La première IA 100% déterministe avec vérification des sources</p>
+                    
+                    <div class="trust-indicators">
+                        <div class="trust-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>0% d'hallucination vérifiable</span>
+                        </div>
+                        <div class="trust-item">
+                            <i class="fas fa-fingerprint"></i>
+                            <span>Response ID unique pour chaque réponse</span>
+                        </div>
+                        <div class="trust-item">
+                            <i class="fas fa-quote-right"></i>
+                            <span>Citations obligatoires pour les faits</span>
+                        </div>
+                    </div>
+
+                    <div class="quick-prompts">
+                        <h3>Essayez ces exemples :</h3>
+                        <div class="prompt-grid">
+                            <button class="prompt-card" data-prompt="Explique le théorème de Pythagore avec des citations mathématiques">
+                                <i class="fas fa-calculator"></i>
+                                <span>Théorème de Pythagore</span>
+                            </button>
+                            <button class="prompt-card" data-prompt="Quels sont les symptômes du COVID-19 selon l'OMS ?">
+                                <i class="fas fa-heartbeat"></i>
+                                <span>Symptômes COVID-19</span>
+                            </button>
+                            <button class="prompt-card" data-prompt="Quelles sont les dernières régulations GDPR pour la protection des données ?">
+                                <i class="fas fa-gavel"></i>
+                                <span>Régulations GDPR</span>
+                            </button>
+                            <button class="prompt-card" data-prompt="Compare les performances énergétiques des panneaux solaires monocristallins vs polycristallins">
+                                <i class="fas fa-solar-panel"></i>
+                                <span>Panneaux solaires</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div class="chat-messages" id="chatMessages" style="display: none;">
+                <div class="messages-container" id="messagesContainer">
+                    <!-- Messages will be dynamically added here -->
+                </div>
+            </div>
+
+            <!-- Sidebar - Citations & Details -->
+            <aside class="chat-sidebar" id="chatSidebar">
+                <div class="sidebar-header">
+                    <h3><i class="fas fa-quote-right"></i> Sources & Vérifications</h3>
+                    <button class="sidebar-close" id="sidebarClose">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="sidebar-content">
+                    <!-- Current Response Info -->
+                    <div class="response-info" id="responseInfo">
+                        <div class="info-item">
+                            <span class="info-label">Response ID :</span>
+                            <span class="info-value" id="currentResponseId">-</span>
+                            <button class="copy-btn" data-target="currentResponseId">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Confiance :</span>
+                            <span class="info-value">
+                                <span class="confidence-bar">
+                                    <span class="confidence-fill" id="confidenceFill" style="width: 0%"></span>
+                                </span>
+                                <span id="confidenceValue">0%</span>
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Temps de réponse :</span>
+                            <span class="info-value" id="responseTime">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Citations List -->
+                    <div class="citations-section">
+                        <h4><i class="fas fa-book"></i> Citations</h4>
+                        <div class="citations-list" id="citationsList">
+                            <div class="empty-state">
+                                <i class="fas fa-search"></i>
+                                <p>Aucune citation pour le moment</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Verification Status -->
+                    <div class="verification-section">
+                        <h4><i class="fas fa-shield-alt"></i> Statut de Vérification</h4>
+                        <div class="verification-status" id="verificationStatus">
+                            <div class="status-item">
+                                <i class="fas fa-check-circle status-verified"></i>
+                                <span>Citations vérifiées</span>
+                            </div>
+                            <div class="status-item">
+                                <i class="fas fa-check-circle status-verified"></i>
+                                <span>Consistance logique</span>
+                            </div>
+                            <div class="status-item">
+                                <i class="fas fa-check-circle status-verified"></i>
+                                <span>Calibration de confiance</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Options -->
+                    <div class="export-section">
+                        <h4><i class="fas fa-download"></i> Exporter</h4>
+                        <div class="export-options">
+                            <button class="export-btn" data-format="markdown">
+                                <i class="fab fa-markdown"></i>
+                                Markdown
+                            </button>
+                            <button class="export-btn" data-format="pdf">
+                                <i class="fas fa-file-pdf"></i>
+                                PDF
+                            </button>
+                            <button class="export-btn" data-format="json">
+                                <i class="fas fa-code"></i>
+                                JSON
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Input Area -->
+        <footer class="chat-footer">
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="Posez votre question ici... (Les affirmations factuelles nécessiteront des citations)" 
+                        rows="1"
+                    ></textarea>
+                    
+                    <div class="input-actions">
+                        <button class="action-btn" id="attachBtn" title="Attacher un fichier">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <button class="action-btn" id="voiceBtn" title="Activer la voix">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        <button class="send-btn" id="sendBtn">
+                            <i class="fas fa-paper-plane"></i>
+                            Envoyer
+                        </button>
+                    </div>
+                </div>
+
+                <div class="input-footer">
+                    <div class="mode-selector">
+                        <span class="mode-label">Mode :</span>
+                        <select id="responseMode">
+                            <option value="verified" selected>Vérifié (citations obligatoires)</option>
+                            <option value="balanced">Équilibré</option>
+                            <option value="creative">Créatif (expérimental)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="trust-disclaimer">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Harmonic AI garantit 0% d'hallucination vérifiable. Response ID : <span id="sessionId">-</span></span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Settings Modal -->
+        <div class="modal" id="settingsModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Paramètres</h2>
+                    <button class="modal-close" id="settingsClose">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="settings-section">
+                        <h3>Configuration du Modèle</h3>
+                        <div class="setting-item">
+                            <label for="temperature">Température : <span id="tempValue">0.0</span></label>
+                            <input type="range" id="temperature" min="0" max="1" step="0.1" value="0">
+                            <div class="setting-description">
+                                Contrôle la créativité. 0 = déterministe, 1 = créatif
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="maxTokens">Longueur maximale : <span id="tokensValue">250</span> tokens</label>
+                            <input type="range" id="maxTokens" min="50" max="1000" step="50" value="250">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Vérification des Sources</h3>
+                        <div class="setting-item">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="requireCitations" checked>
+                                <span>Exiger des citations pour les affirmations factuelles</span>
+                            </label>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enableAbstention" checked>
+                                <span>Activer l'abstention quand les sources sont insuffisantes</span>
+                            </label>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="confidenceThreshold">Seuil de confiance : <span id="thresholdValue">80%</span></label>
+                            <input type="range" id="confidenceThreshold" min="50" max="100" step="5" value="80">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Interface</h3>
+                        <div class="setting-item">
+                            <label for="theme">Thème :</label>
+                            <select id="theme">
+                                <option value="light" selected>Clair</option>
+                                <option value="dark">Sombre</option>
+                                <option value="auto">Auto</option>
+                            </select>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="showSidebar" checked>
+                                <span>Afficher le panneau des sources</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="resetSettings">
+                        Réinitialiser
+                    </button>
+                    <button class="btn btn-primary" id="saveSettings">
+                        Enregistrer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script src="js/chat.js"></script>
+</body>
+</html>

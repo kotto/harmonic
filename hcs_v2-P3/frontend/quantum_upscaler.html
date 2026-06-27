@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Harmonic Upscaler - HCS V2</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        'hcs-black': '#0a0a0f',
+                        'hcs-dark': '#12121a',
+                        'hcs-card': '#1a1a25',
+                        'hcs-gold': '#FFD700',
+                        'hcs-gold-light': '#FFE55C',
+                        'hcs-purple': '#8B5CF6',
+                        'hcs-blue': '#3B82F6',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * { scroll-behavior: smooth; }
+        body {
+            background: #0a0a0f;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .video-preview {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .video-progress {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .video-progress .progress-bar {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .video-progress .progress-fill {
+            background: linear-gradient(90deg, #FFD700, #8B5CF6);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 8px;
+        }
+
+        .gradient-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%);
+        }
+
+        .glass-card {
+            background: rgba(26, 26, 37, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(255, 215, 0, 0.2);
+            box-shadow: 0 12px 48px rgba(255, 215, 0, 0.1);
+        }
+
+        .gold-accent {
+            background: linear-gradient(135deg, #FFD700 0%, #FFE55C 50%, #FFD700 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .gold-border {
+            border: 1px solid transparent;
+            background: linear-gradient(#1a1a25, #1a1a25) padding-box,
+                        linear-gradient(135deg, #FFD700, #8B5CF6) border-box;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #FFD700 0%, #FFE55C 100%);
+            color: #0a0a0f;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(255, 215, 0, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+
+        .reality-harmonique {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .reality-quantique {
+            background: linear-gradient(135deg, #007bff 0%, #6f42c1 100%);
+            color: white;
+        }
+
+        .reality-classique {
+            background: linear-gradient(135deg, #fd7e14 0%, #dc3545 100%);
+            color: white;
+        }
+
+        .upload-area {
+            background: linear-gradient(45deg, rgba(139, 92, 246, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+            border: 2px dashed rgba(139, 92, 246, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            border-color: rgba(255, 215, 0, 0.5);
+            background: linear-gradient(45deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+        }
+
+        .upload-area.dragover {
+            border-color: #28a745;
+            background: rgba(40, 167, 69, 0.1);
+        }
+
+        .metric-card {
+            background: linear-gradient(45deg, rgba(26, 26, 37, 0.8) 0%, rgba(26, 26, 37, 0.6) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #FFD700 0%, #8B5CF6 50%, #FFD700 100%);
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a0f; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #FFD700; }
+    </style>
+</head>
+<body class="font-sans antialiased">
+    <!-- Background -->
+    <div class="gradient-bg"></div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-30 glass-card border-b border-white/5 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <a href="hcs_dashboard_v2.html" class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-lg gold-border flex items-center justify-center">
+                        <i data-lucide="maximize-2" class="w-5 h-5 text-hcs-gold"></i>
+                    </div>
+                    <span class="font-display font-bold text-lg">
+                        HCS <span class="gold-accent">Studio</span>
+                    </span>
+                </a>
+                <h1 class="text-xl font-display font-bold">Quantum Harmonic Upscaler</h1>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <div class="hidden sm:flex items-center space-x-2 text-sm text-gray-400">
+                    <i data-lucide="zap" class="w-4 h-4 text-hcs-gold"></i>
+                    <span>IA Harmonique Active</span>
+                </div>
+                <a href="hcs_dashboard_v2.html" class="btn-primary px-4 py-2 rounded-full text-sm flex items-center space-x-2">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    <span>Dashboard</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="min-h-screen pt-20">
+        <div class="container mx-auto px-6 py-8 max-w-7xl">
+            <div class="glass-card rounded-2xl p-8 mb-8">
+                <h2 class="text-2xl font-bold mb-6 text-hcs-gold">📸 Upload d'Image</h2>
+                <div class="upload-area rounded-xl p-12 text-center cursor-pointer transition-all" id="uploadArea">
+                    <div class="upload-icon text-6xl mb-6">📤</div>
+                    <p class="text-lg font-semibold mb-2"><strong>Cliquez pour sélectionner</strong> ou glissez-déposez une image</p>
+                    <p class="text-sm text-gray-400">
+                        Formats supportés: JPEG, PNG, WebP, BMP (max 100MB)
+                    </p>
+                    <input type="file" id="fileInput" class="file-input" accept="image/*">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+                    <div class="control-group">
+                        <label for="upscaleFactor" class="block text-sm font-medium mb-3 text-gray-300">Facteur d'Upscaling</label>
+                        <select id="upscaleFactor" class="w-full px-4 py-3 rounded-lg bg-hcs-card border border-white/10 text-white focus:border-hcs-gold focus:outline-none transition-colors">
+                            <option value="2x">2x (Standard)</option>
+                            <option value="3x">3x</option>
+                            <option value="4x">4x</option>
+                            <option value="8k_from_4k">8K depuis 4K</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="energyLevel" class="block text-sm font-medium mb-3 text-gray-300">Niveau d'Énergie</label>
+                        <select id="energyLevel" class="w-full px-4 py-3 rounded-lg bg-hcs-card border border-white/10 text-white focus:border-hcs-gold focus:outline-none transition-colors">
+                            <option value="economy">💰 Économique (Rapide)</option>
+                            <option value="standard" selected>⚖️ Standard (Optimal)</option>
+                            <option value="high">🎯 Haute Qualité</option>
+                            <option value="ultra">🚀 Ultra Qualité</option>
+                            <option value="quantum">🌊 Niveau Quantique</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="customEnergy" class="block text-sm font-medium mb-3 text-gray-300">Énergie Personnalisée (Joules)</label>
+                        <input type="number" id="customEnergy" placeholder="ex: 1e-13" step="1e-15" class="w-full px-4 py-3 rounded-lg bg-hcs-card border border-white/10 text-white focus:border-hcs-gold focus:outline-none transition-colors">
+                    </div>
+
+                    <div class="control-group">
+                        <label class="block text-sm font-medium mb-3 text-gray-300">&nbsp;</label>
+                        <button class="btn-primary px-6 py-3 rounded-lg w-full flex items-center justify-center space-x-2" id="analyzeBtn" disabled>
+                            <i data-lucide="search" class="w-5 h-5"></i>
+                            <span>Analyser l'Image</span>
+                        </button>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="block text-sm font-medium mb-3 text-gray-300">&nbsp;</label>
+                        <button class="btn-primary px-6 py-3 rounded-lg w-full flex items-center justify-center space-x-2" id="upscaleBtn" disabled>
+                            <i data-lucide="zap" class="w-5 h-5"></i>
+                            <span>Lancer l'Upscaling</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="progress-bar h-2 rounded-full overflow-hidden mt-8" id="progressBar" style="display: none;">
+                    <div class="progress-fill h-full rounded-full transition-all duration-300" id="progressFill"></div>
+                </div>
+
+                <div class="loading text-center py-8" id="loading">
+                    <div class="spinner w-10 h-10 border-4 border-hcs-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p class="text-gray-300">Traitement en cours...</p>
+                </div>
+
+                <div id="messageArea" class="mt-6"></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="glass-card rounded-2xl p-8">
+                    <h2 class="text-2xl font-bold mb-6 text-hcs-gold">📊 Image Originale</h2>
+                    <div class="preview-container">
+                        <div id="originalPreview" class="text-center">
+                            <div class="text-gray-400 py-12">
+                                <i data-lucide="image" class="w-16 h-16 mx-auto mb-4 text-gray-500"></i>
+                                <p>Aucune image sélectionnée</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-2xl p-8">
+                    <h2 class="text-2xl font-bold mb-6 text-hcs-gold">🎯 Résultat Upscalé</h2>
+                    <div class="preview-container">
+                        <div id="upscaledPreview" class="text-center">
+                            <div class="text-gray-400 py-12">
+                                <i data-lucide="maximize-2" class="w-16 h-16 mx-auto mb-4 text-gray-500"></i>
+                                <p>En attente d'upscaling...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Boutons de téléchargement -->
+                    <div id="downloadButtons" class="mt-6 flex flex-col sm:flex-row gap-4" style="display: none;">
+                        <button class="btn-primary px-6 py-3 rounded-lg flex items-center justify-center space-x-2" id="downloadPngBtn">
+                            <i data-lucide="download" class="w-5 h-5"></i>
+                            <span>Télécharger PNG</span>
+                        </button>
+                        <button class="btn-secondary px-6 py-3 rounded-lg flex items-center justify-center space-x-2" id="downloadJpgBtn">
+                            <i data-lucide="image" class="w-5 h-5"></i>
+                            <span>Télécharger JPG</span>
+                        </button>
+                        <button class="btn-secondary px-6 py-3 rounded-lg flex items-center justify-center space-x-2" id="downloadWebpBtn">
+                            <i data-lucide="file-image" class="w-5 h-5"></i>
+                            <span>Télécharger WebP</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-8 mt-8">
+                <h2 class="text-2xl font-bold mb-6 text-hcs-gold">🎬 Upscaling Vidéo Quantique-Harmonique</h2>
+                
+                <!-- Upload vidéo -->
+                <div class="upload-area rounded-xl p-12 text-center cursor-pointer transition-all" id="videoUploadArea">
+                    <input type="file" id="videoFileInput" accept="video/*" style="display: none;">
+                    <div class="upload-content flex flex-col items-center">
+                        <i data-lucide="video" class="w-16 h-16 text-hcs-gold mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">Uploader une Vidéo</h3>
+                        <p class="text-gray-400 mb-4">Glissez-déposez une vidéo ou <strong>cliquez pour sélectionner</strong></p>
+                        <p class="text-sm text-gray-500">Formats supportés: MP4, AVI, MOV, MKV, WebM (max 500MB)</p>
+                    </div>
+                </div>
+
+                <!-- Contrôles vidéo -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+                    <div class="control-group">
+                        <label for="videoUpscaleFactor" class="block text-sm font-medium mb-3 text-gray-300">Facteur d'Upscaling Vidéo</label>
+                        <select id="videoUpscaleFactor" class="w-full px-4 py-3 rounded-lg bg-hcs-card border border-white/10 text-white focus:border-hcs-gold focus:outline-none transition-colors">
+                            <option value="2x">2x (1080p→4K)</option>
+                            <option value="4x">4x (720p→4K)</option>
+                            <option value="8k_from_4k">8K depuis 4K</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="videoEnergyLevel" class="block text-sm font-medium mb-3 text-gray-300">Niveau d'Énergie Vidéo</label>
+                        <select id="videoEnergyLevel" class="w-full px-4 py-3 rounded-lg bg-hcs-card border border-white/10 text-white focus:border-hcs-gold focus:outline-none transition-colors">
+                            <option value="standard">⚖️ Standard (Optimal)</option>
+                            <option value="high">🎯 Haute Qualité</option>
+                            <option value="ultra">🚀 Ultra Qualité</option>
+                            <option value="quantum">🌊 Niveau Quantique</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="temporalCoherence" class="block text-sm font-medium mb-3 text-gray-300">Cohérence Temporelle</label>
+                        <select id="temporalCoherence" class="w-full px-4 py-3 rounded-lg bg-hcs-card border border-white/10 text-white focus:border-hcs-gold focus:outline-none transition-colors">
+                            <option value="disabled">❌ Désactivée</option>
+                            <option value="enabled" selected>✅ Activée (Recommandé)</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="block text-sm font-medium mb-3 text-gray-300">&nbsp;</label>
+                        <button class="btn-primary px-6 py-3 rounded-lg w-full flex items-center justify-center space-x-2" id="videoUpscaleBtn" disabled>
+                            <i data-lucide="play" class="w-5 h-5"></i>
+                            <span>Lancer l'Upscaling Vidéo</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Progression vidéo -->
+                <div class="video-progress mt-8" id="videoProgressContainer" style="display: none;">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm text-gray-300">Progression de l'upscaling vidéo</span>
+                        <span class="text-sm text-hcs-gold" id="videoProgressText">0%</span>
+                    </div>
+                    <div class="progress-bar h-3 rounded-full overflow-hidden">
+                        <div class="progress-fill h-full rounded-full transition-all duration-300" id="videoProgressFill"></div>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-400">
+                        <span id="videoFrameInfo">Frame: 0/0</span> | 
+                        <span id="videoTimeInfo">Temps: 0s</span> | 
+                        <span id="videoFpsInfo">FPS: 0.0</span>
+                    </div>
+                </div>
+
+                <!-- Aperçu vidéo -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8" id="videoPreviewContainer" style="display: none;">
+                    <div class="glass-card rounded-2xl p-8">
+                        <h3 class="text-xl font-bold mb-4 text-hcs-gold">📹 Vidéo Originale</h3>
+                        <div class="video-preview">
+                            <video id="originalVideoPreview" controls class="w-full rounded-lg" style="max-height: 400px;">
+                                Votre navigateur ne supporte pas les vidéos.
+                            </video>
+                            <div class="mt-4 text-sm text-gray-400" id="originalVideoInfo">
+                                Informations vidéo en cours de chargement...
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-8">
+                        <h3 class="text-xl font-bold mb-4 text-hcs-gold">🎯 Vidéo Upscalée</h3>
+                        <div class="video-preview">
+                            <video id="upscaledVideoPreview" controls class="w-full rounded-lg" style="max-height: 400px; display: none;">
+                                Votre navigateur ne supporte pas les vidéos.
+                            </video>
+                            <div class="mt-4 text-sm text-gray-400" id="upscaledVideoInfo">
+                                En attente d'upscaling...
+                            </div>
+                            
+                            <!-- Bouton de téléchargement vidéo -->
+                            <div class="mt-6" id="videoDownloadContainer" style="display: none;">
+                                <button class="btn-primary px-6 py-3 rounded-lg w-full flex items-center justify-center space-x-2" id="downloadVideoBtn">
+                                    <i data-lucide="download" class="w-5 h-5"></i>
+                                    <span>Télécharger Vidéo Upscalée</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Métriques vidéo -->
+                <div class="glass-card rounded-2xl p-8 mt-8" id="videoResultsPanel" style="display: none;">
+                    <h3 class="text-xl font-bold mb-6 text-hcs-gold">📊 Métriques d'Upscaling Vidéo</h3>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                        <div class="metric-card">
+                            <div class="metric-value" id="videoTotalFrames">0</div>
+                            <div class="metric-label">Frames Totales</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="videoProcessingTime">0.0s</div>
+                            <div class="metric-label">Temps Total</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="videoProcessingFps">0.0</div>
+                            <div class="metric-label">Vitesse Processing</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="videoAveragePsnr">0.0 dB</div>
+                            <div class="metric-label">PSNR Moyen</div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-xl p-6">
+                        <h4 class="text-lg font-bold mb-4 text-hcs-gold">🌊 Informations Quantiques Vidéo</h4>
+                        <ul class="space-y-3" id="videoQuantumInfo">
+                            <li class="flex items-center space-x-3 text-gray-300">
+                                <i data-lucide="layers" class="w-5 h-5 text-hcs-purple"></i>
+                                <span>Niveau de Réalité: <strong id="videoRealityLevel">--</strong></span>
+                            </li>
+                            <li class="flex items-center space-x-3 text-gray-300">
+                                <i data-lucide="activity" class="w-5 h-5 text-hcs-blue"></i>
+                                <span>Cohérence Temporelle: <strong id="videoTemporalCoherence">--</strong></span>
+                            </li>
+                            <li class="flex items-center space-x-3 text-gray-300">
+                                <i data-lucide="zap" class="w-5 h-5 text-hcs-gold"></i>
+                                <span>Énergie Totale: <strong id="videoTotalEnergy">--</strong></span>
+                            </li>
+                            <li class="flex items-center space-x-3 text-gray-300">
+                                <i data-lucide="cpu" class="w-5 h-5 text-hcs-purple"></i>
+                                <span>Ordinateur Harmonique: <strong id="videoHarmonicComputer">--</strong></span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-8 mt-8" id="resultsPanel" style="display: none;">
+                <h2 class="text-2xl font-bold mb-6 text-hcs-gold">📈 Résultats et Métriques</h2>
+                
+                <div class="text-center mb-8">
+                    <span class="reality-indicator px-6 py-3 rounded-full text-sm font-semibold" id="realityIndicator">
+                        Niveau de Réalité: --
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8" id="metricsContainer">
+                    <!-- Les métriques seront insérées ici -->
+                </div>
+
+                <div class="glass-card rounded-xl p-6 mt-8">
+                    <h3 class="text-xl font-bold mb-4 text-hcs-gold">🌊 Informations Quantiques</h3>
+                    <ul class="space-y-3" id="quantumInfo">
+                        <li class="flex items-center space-x-3 text-gray-300">
+                            <i data-lucide="cpu" class="w-5 h-5 text-hcs-purple"></i>
+                            <span>En attente des résultats...</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-card border-t border-white/5 mt-20">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex flex-col md:flex-row items-center justify-between">
+                <div class="flex items-center space-x-3 mb-4 md:mb-0">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-hcs-gold to-hcs-purple flex items-center justify-center">
+                        <span class="font-bold text-hcs-black text-sm">HC</span>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium">HCS Studio</p>
+                        <p class="text-xs text-gray-500">Quantum Harmonic Upscaler v2.0</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-6 text-sm text-gray-400">
+                    <a href="hcs_dashboard_v2.html" class="hover:text-hcs-gold transition-colors">Dashboard</a>
+                    <a href="http://localhost:8000/api/v2/docs" class="hover:text-hcs-gold transition-colors">API Docs</a>
+                    <a href="https://github.com/hcs-studio" class="hover:text-hcs-gold transition-colors">GitHub</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script>
+        class QuantumHarmonicUpscaler {
+            constructor() {
+                this.selectedFile = null;
+                this.selectedVideoFile = null;
+                this.currentResult = null;
+                this.currentVideoResult = null;
+                this.initializeEventListeners();
+                this.loadSystemInfo();
+            }
+
+            initializeEventListeners() {
+                const uploadArea = document.getElementById('uploadArea');
+                const fileInput = document.getElementById('fileInput');
+                const analyzeBtn = document.getElementById('analyzeBtn');
+                const upscaleBtn = document.getElementById('upscaleBtn');
+
+                // Events pour image
+                uploadArea.addEventListener('click', () => fileInput.click());
+                fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+
+                // Drag and drop pour image
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('dragover');
+                });
+
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('dragover');
+                });
+
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        this.handleFile(files[0]);
+                    }
+                });
+
+                // Button events pour image
+                analyzeBtn.addEventListener('click', () => this.analyzeImage());
+                upscaleBtn.addEventListener('click', () => this.upscaleImage());
+                
+                // Download events pour image
+                document.getElementById('downloadPngBtn').addEventListener('click', () => this.downloadImage('png'));
+                document.getElementById('downloadJpgBtn').addEventListener('click', () => this.downloadImage('jpg'));
+                document.getElementById('downloadWebpBtn').addEventListener('click', () => this.downloadImage('webp'));
+
+                // Events pour vidéo
+                this.initializeVideoEventListeners();
+            }
+
+            initializeVideoEventListeners() {
+                const videoUploadArea = document.getElementById('videoUploadArea');
+                const videoFileInput = document.getElementById('videoFileInput');
+                const videoUpscaleBtn = document.getElementById('videoUpscaleBtn');
+                const downloadVideoBtn = document.getElementById('downloadVideoBtn');
+
+                // Upload vidéo
+                videoUploadArea.addEventListener('click', () => videoFileInput.click());
+                videoFileInput.addEventListener('change', (e) => this.handleVideoFileSelect(e));
+
+                // Drag and drop pour vidéo
+                videoUploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    videoUploadArea.classList.add('dragover');
+                });
+
+                videoUploadArea.addEventListener('dragleave', () => {
+                    videoUploadArea.classList.remove('dragover');
+                });
+
+                videoUploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    videoUploadArea.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        this.handleVideoFile(files[0]);
+                    }
+                });
+
+                // Button events pour vidéo
+                videoUpscaleBtn.addEventListener('click', () => this.upscaleVideo());
+                downloadVideoBtn.addEventListener('click', () => this.downloadVideo());
+            }
+
+            handleVideoFileSelect(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    this.handleVideoFile(file);
+                }
+            }
+
+            handleVideoFile(file) {
+                // Validation vidéo - vérifier l'extension du fichier (plus fiable que le MIME type)
+                const validExts = ['.mp4', '.avi', '.mov', '.mkv', '.webm', '.m4v'];
+                const validMimes = ['video/mp4', 'video/avi', 'video/quicktime', 'video/x-msvideo',
+                                    'video/webm', 'video/x-matroska', 'video/x-m4v'];
+                const filename = file.name.toLowerCase();
+                const hasValidExt = validExts.some(ext => filename.endsWith(ext));
+                const hasValidMime = file.type === '' || validMimes.includes(file.type) || file.type.startsWith('video/');
+                if (!hasValidExt && !hasValidMime) {
+                    this.showMessage('Format vidéo non supporté. Utilisez MP4, AVI, MOV, MKV ou WebM', 'error');
+                    return;
+                }
+
+                if (file.size > 500 * 1024 * 1024) {
+                    this.showMessage('Vidéo trop volumineuse (max 500MB)', 'error');
+                    return;
+                }
+
+                this.selectedVideoFile = file;
+                this.displayOriginalVideo(file);
+                this.enableVideoButtons();
+                this.showMessage('Vidéo chargée avec succès', 'success');
+            }
+
+            displayOriginalVideo(file) {
+                const videoPreview = document.getElementById('originalVideoPreview');
+                const videoInfo = document.getElementById('originalVideoInfo');
+                
+                const videoURL = URL.createObjectURL(file);
+                videoPreview.src = videoURL;
+                
+                videoPreview.onloadedmetadata = () => {
+                    const duration = videoPreview.duration;
+                    const width = videoPreview.videoWidth;
+                    const height = videoPreview.videoHeight;
+                    const fps = this.estimateVideoFPS(videoPreview);
+                    
+                    videoInfo.innerHTML = `
+                        <strong>Fichier:</strong> ${file.name}<br>
+                        <strong>Taille:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB<br>
+                        <strong>Format:</strong> ${file.type}<br>
+                        <strong>Résolution:</strong> ${width}×${height}<br>
+                        <strong>Durée:</strong> ${duration.toFixed(2)}s<br>
+                        <strong>FPS estimé:</strong> ${fps.toFixed(2)}
+                    `;
+                    
+                    document.getElementById('videoPreviewContainer').style.display = 'grid';
+                };
+            }
+
+            estimateVideoFPS(video) {
+                // Estimation simple du FPS (peut être amélioré)
+                return 30.0; // Valeur par défaut
+            }
+
+            enableVideoButtons() {
+                document.getElementById('videoUpscaleBtn').disabled = false;
+            }
+
+            async upscaleVideo() {
+                if (!this.selectedVideoFile) {
+                    this.showMessage('Veuillez sélectionner une vidéo', 'error');
+                    return;
+                }
+
+                this.showVideoProgress(true);
+                this.showMessage('Upscaling vidéo en cours...', 'info');
+
+                try {
+                    const formData = new FormData();
+                    formData.append('file', this.selectedVideoFile);
+
+                    // Paramètres vidéo
+                    const scaleFactor = document.getElementById('videoUpscaleFactor').value;
+                    const energyLevel = document.getElementById('videoEnergyLevel').value;
+                    // Fix: convertir "enabled"/"disabled" en "true"/"false" pour le serveur
+                    const temporalCoherenceRaw = document.getElementById('temporalCoherence').value;
+                    const temporalCoherence = (temporalCoherenceRaw === 'enabled') ? 'true' : 'false';
+
+                    // Fix: envoyer le facteur numérique (ex: "2x" -> "2.0")
+                    const scaleFactorClean = scaleFactor.replace('x', '').replace('8k_from_4k', '2.0');
+
+                    formData.append('scale_factor', scaleFactorClean);
+                    formData.append('energy_level', energyLevel);
+                    formData.append('temporal_coherence', temporalCoherence);
+
+                    // Simulation de progression vidéo
+                    this.simulateVideoProgress();
+
+                    const response = await fetch('http://localhost:8000/api/v2/upscale/video-reference', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        this.currentVideoResult = result;
+                        this.displayVideoResults(result);
+                        this.showMessage('Upscaling vidéo complété avec succès!', 'success');
+                    } else {
+                        this.showMessage(`Erreur d'upscaling vidéo: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    this.showMessage(`Erreur réseau vidéo: ${error.message}`, 'error');
+                } finally {
+                    this.showVideoProgress(false);
+                }
+            }
+
+            simulateVideoProgress() {
+                const progressContainer = document.getElementById('videoProgressContainer');
+                const progressFill = document.getElementById('videoProgressFill');
+                const progressText = document.getElementById('videoProgressText');
+                const frameInfo = document.getElementById('videoFrameInfo');
+                const timeInfo = document.getElementById('videoTimeInfo');
+                const fpsInfo = document.getElementById('videoFpsInfo');
+                
+                progressContainer.style.display = 'block';
+                let progress = 0;
+                let currentFrame = 0;
+                const totalFrames = 60; // Simulation
+                
+                const interval = setInterval(() => {
+                    progress += Math.random() * 3;
+                    currentFrame += Math.floor(Math.random() * 3);
+                    
+                    if (progress > 95) progress = 95;
+                    if (currentFrame > totalFrames) currentFrame = totalFrames;
+                    
+                    progressFill.style.width = progress + '%';
+                    progressText.textContent = progress.toFixed(1) + '%';
+                    
+                    frameInfo.textContent = `Frame: ${currentFrame}/${totalFrames}`;
+                    timeInfo.textContent = `Temps: ${(currentFrame / 30).toFixed(1)}s`;
+                    fpsInfo.textContent = `FPS: ${(currentFrame / ((Date.now() - startTime) / 1000)).toFixed(1)}`;
+                    
+                    if (progress >= 95) {
+                        clearInterval(interval);
+                    }
+                }, 200);
+                
+                const startTime = Date.now();
+            }
+
+            showVideoProgress(show) {
+                const progressContainer = document.getElementById('videoProgressContainer');
+                if (show) {
+                    progressContainer.style.display = 'block';
+                } else {
+                    setTimeout(() => {
+                        progressContainer.style.display = 'none';
+                    }, 1000);
+                }
+            }
+
+            displayVideoTestResults(result) {
+                const upscaledVideoInfo = document.getElementById('upscaledVideoInfo');
+                const videoResultsPanel = document.getElementById('videoResultsPanel');
+
+                // Afficher les informations du test
+                upscaledVideoInfo.innerHTML = `
+                    <strong>✅ Test Upload Réussi</strong><br>
+                    <strong>Fichier:</strong> ${result.filename}<br>
+                    <strong>Type:</strong> ${result.content_type}<br>
+                    <strong>Taille:</strong> ${result.size_mb} MB (${result.size_bytes} bytes)<br>
+                    <strong>Message:</strong> ${result.message}
+                `;
+
+                // Métriques de test
+                document.getElementById('videoTotalFrames').textContent = 'N/A (test)';
+                document.getElementById('videoProcessingTime').textContent = '0.0s';
+                document.getElementById('videoProcessingFps').textContent = 'N/A';
+                document.getElementById('videoAveragePsnr').textContent = 'N/A';
+
+                // Informations quantiques vidéo
+                document.getElementById('videoRealityLevel').textContent = 'Test';
+                document.getElementById('videoTemporalCoherence').textContent = 'Non testé';
+                document.getElementById('videoTotalEnergy').textContent = 'N/A';
+                document.getElementById('videoHarmonicComputer').textContent = 'Non utilisé';
+
+                // Afficher les panneaux
+                videoResultsPanel.style.display = 'block';
+                
+                // Réinitialiser les icônes
+                lucide.createIcons();
+            }
+
+            displayVideoResults(result) {
+                const upscaledVideoPreview = document.getElementById('upscaledVideoPreview');
+                const upscaledVideoInfo = document.getElementById('upscaledVideoInfo');
+                const videoResultsPanel = document.getElementById('videoResultsPanel');
+
+                // Afficher la vidéo upscalée
+                if (result.upscaled_video_base64) {
+                    // Fix: utiliser le MIME type retourné par le serveur (mp4 ou avi)
+                    const mimeType = result.output_mime_type || 'video/mp4';
+                    const videoURL = `data:${mimeType};base64,${result.upscaled_video_base64}`;
+                    upscaledVideoPreview.src = videoURL;
+                    upscaledVideoPreview.style.display = 'block';
+                    
+                    upscaledVideoInfo.innerHTML = `
+                        <strong>Résolution:</strong> ${result.target_resolution}<br>
+                        <strong>Facteur:</strong> ${result.scale_factor}<br>
+                        <strong>Temps:</strong> ${result.total_processing_time.toFixed(2)}s<br>
+                        <strong>Vitesse:</strong> ${result.processing_fps.toFixed(2)} fps
+                    `;
+                }
+
+                // Métriques vidéo
+                document.getElementById('videoTotalFrames').textContent = result.total_frames || '0';
+                document.getElementById('videoProcessingTime').textContent = result.total_processing_time?.toFixed(2) + 's' || '0.0s';
+                document.getElementById('videoProcessingFps').textContent = result.processing_fps?.toFixed(2) || '0.0';
+                document.getElementById('videoAveragePsnr').textContent = result.average_psnr?.toFixed(1) + ' dB' || '0.0 dB';
+
+                // Informations quantiques vidéo
+                document.getElementById('videoRealityLevel').textContent = result.optimal_reality_level || '--';
+                document.getElementById('videoTemporalCoherence').textContent = 
+                    result.temporal_coherence_enabled ? 'Activée' : 'Désactivée';
+                document.getElementById('videoTotalEnergy').textContent = 
+                    (result.total_energy_consumed?.toExponential(2) || '--') + ' J';
+                document.getElementById('videoHarmonicComputer').textContent = 
+                    result.harmonic_computer_used ? 'Oui' : 'Non';
+
+                // Afficher les panneaux
+                videoResultsPanel.style.display = 'block';
+                document.getElementById('videoDownloadContainer').style.display = 'block';
+                
+                // Réinitialiser les icônes
+                lucide.createIcons();
+            }
+
+            async downloadVideo() {
+                if (!this.currentVideoResult || !this.currentVideoResult.upscaled_video_base64) {
+                    this.showMessage('Aucune vidéo à télécharger', 'error');
+                    return;
+                }
+
+                try {
+                    // Convertir base64 en blob pour vidéo
+                    const byteCharacters = atob(this.currentVideoResult.upscaled_video_base64);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const videoBlob = new Blob([byteArray], { type: 'video/mp4' });
+                    
+                    // Créer un lien de téléchargement
+                    const url = URL.createObjectURL(videoBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    
+                    // Nom de fichier avec timestamp
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                    const realityLevel = this.currentVideoResult.optimal_reality_level || 'unknown';
+                    link.download = `harmonic_upscaled_video_${realityLevel}_${timestamp}.mp4`;
+                    
+                    // Déclencher le téléchargement
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // Nettoyer l'URL
+                    URL.revokeObjectURL(url);
+                    
+                    this.showMessage('Vidéo téléchargée avec succès', 'success');
+                    
+                } catch (error) {
+                    console.error('Erreur lors du téléchargement vidéo:', error);
+                    this.showMessage('Erreur lors du téléchargement vidéo', 'error');
+                }
+            }
+
+            handleFileSelect(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    this.handleFile(file);
+                }
+            }
+
+            handleFile(file) {
+                // Validation
+                const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp'];
+                if (!validTypes.includes(file.type)) {
+                    this.showMessage('Format de fichier non supporté', 'error');
+                    return;
+                }
+
+                if (file.size > 100 * 1024 * 1024) {
+                    this.showMessage('Fichier trop volumineux (max 100MB)', 'error');
+                    return;
+                }
+
+                this.selectedFile = file;
+                this.displayOriginalImage(file);
+                this.enableButtons();
+                this.showMessage('Image chargée avec succès', 'success');
+            }
+
+            displayOriginalImage(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const preview = document.getElementById('originalPreview');
+                    preview.innerHTML = `
+                        <img src="${e.target.result}" class="preview-image" alt="Image originale">
+                        <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                            <strong>Fichier:</strong> ${file.name}<br>
+                            <strong>Taille:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB<br>
+                            <strong>Format:</strong> ${file.type}
+                        </p>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            enableButtons() {
+                document.getElementById('analyzeBtn').disabled = false;
+                document.getElementById('upscaleBtn').disabled = false;
+            }
+
+            async analyzeImage() {
+                if (!this.selectedFile) {
+                    this.showMessage('Veuillez sélectionner une image', 'error');
+                    return;
+                }
+
+                this.showLoading(true);
+                this.showMessage('Analyse en cours...', 'info');
+
+                try {
+                    const formData = new FormData();
+                    formData.append('file', this.selectedFile);
+
+                    const response = await fetch('http://localhost:8000/api/v2/upscale/analyze', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        this.displayAnalysis(result);
+                        this.showMessage('Analyse complétée', 'success');
+                    } else {
+                        this.showMessage(`Erreur d'analyse: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    this.showMessage(`Erreur réseau: ${error.message}`, 'error');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            displayAnalysis(analysis) {
+                if (!analysis.success) return;
+
+                const characteristics = analysis.characteristics;
+                const recommendations = analysis.recommendations;
+
+                let analysisHtml = `
+                    <h3>📊 Caractéristiques Détectées</h3>
+                    <div class="metrics">
+                        <div class="metric-card">
+                            <div class="metric-value">${(characteristics.symmetry * 100).toFixed(1)}%</div>
+                            <div class="metric-label">Symétrie</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${(characteristics.complexity * 100).toFixed(1)}%</div>
+                            <div class="metric-label">Complexité</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${(characteristics.continuity * 100).toFixed(1)}%</div>
+                            <div class="metric-label">Continuité</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${(characteristics.entropy * 100).toFixed(1)}%</div>
+                            <div class="metric-label">Entropie</div>
+                        </div>
+                    </div>
+
+                    <h3>🎯 Recommandations</h3>
+                    <div class="metrics">
+                        <div class="metric-card">
+                            <div class="metric-value">${recommendations.energy_level.recommended}</div>
+                            <div class="metric-label">Niveau d'Énergie</div>
+                            <div style="font-size: 0.8em; color: #666; margin-top: 5px;">
+                                ${recommendations.energy_level.reason}
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${recommendations.upscale_factor.recommended}</div>
+                            <div class="metric-label">Facteur d'Upscaling</div>
+                            <div style="font-size: 0.8em; color: #666; margin-top: 5px;">
+                                ${recommendations.upscale_factor.reason}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Mettre à jour l'interface avec les recommandations
+                document.getElementById('energyLevel').value = recommendations.energy_level.recommended;
+                document.getElementById('upscaleFactor').value = recommendations.upscale_factor.recommended;
+
+                this.showMessage(analysisHtml, 'info');
+            }
+
+            async upscaleImage() {
+                if (!this.selectedFile) {
+                    this.showMessage('Veuillez sélectionner une image', 'error');
+                    return;
+                }
+
+                this.showLoading(true);
+                this.showMessage('Upscaling en cours...', 'info');
+                this.hideResults();
+
+                try {
+                    const formData = new FormData();
+                    formData.append('file', this.selectedFile);
+
+                    // Ajouter les paramètres
+                    const factor = document.getElementById('upscaleFactor').value;
+                    const energyLevel = document.getElementById('energyLevel').value;
+                    const customEnergy = document.getElementById('customEnergy').value;
+
+                    formData.append('factor', factor);
+                    formData.append('energy_level', energyLevel);
+
+                    if (customEnergy) {
+                        formData.append('custom_energy', parseFloat(customEnergy));
+                    }
+
+                    // Simulation de progression
+                    this.simulateProgress();
+
+                    const response = await fetch('http://localhost:8000/api/v2/upscale/image', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        this.currentResult = result;
+                        this.displayResults(result);
+                        this.showMessage('Upscaling complété avec succès!', 'success');
+                    } else {
+                        this.showMessage(`Erreur d'upscaling: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    this.showMessage(`Erreur réseau: ${error.message}`, 'error');
+                } finally {
+                    this.showLoading(false);
+                    this.hideProgress();
+                }
+            }
+
+            simulateProgress() {
+                const progressBar = document.getElementById('progressBar');
+                const progressFill = document.getElementById('progressFill');
+                
+                progressBar.style.display = 'block';
+                let progress = 0;
+                
+                const interval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress > 90) progress = 90;
+                    
+                    progressFill.style.width = progress + '%';
+                    
+                    if (progress >= 90) {
+                        clearInterval(interval);
+                    }
+                }, 200);
+            }
+
+            hideProgress() {
+                const progressBar = document.getElementById('progressBar');
+                const progressFill = document.getElementById('progressFill');
+                
+                setTimeout(() => {
+                    progressFill.style.width = '100%';
+                    setTimeout(() => {
+                        progressBar.style.display = 'none';
+                        progressFill.style.width = '0%';
+                    }, 500);
+                }, 100);
+            }
+
+            displayResults(result) {
+                const resultsPanel = document.getElementById('resultsPanel');
+                const metricsContainer = document.getElementById('metricsContainer');
+                const upscaledPreview = document.getElementById('upscaledPreview');
+                const realityIndicator = document.getElementById('realityIndicator');
+                const quantumInfo = document.getElementById('quantumInfo');
+
+                // Afficher l'image upscalée
+                upscaledPreview.innerHTML = `
+                    <img src="data:image/png;base64,${result.upscaled_image_base64}" class="preview-image" alt="Image upscalée">
+                    <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                        <strong>Taille:</strong> ${result.target_shape[1]}×${result.target_shape[0]}<br>
+                        <strong>Facteur:</strong> ${result.upscale_factor}<br>
+                        <strong>Temps:</strong> ${result.processing_time.toFixed(3)}s
+                    </p>
+                `;
+
+                // Indicateur de niveau de réalité
+                const realityLevel = result.reality_level_used;
+                let realityClass = '';
+                let realityText = '';
+
+                switch(realityLevel) {
+                    case 'harmonique':
+                        realityClass = 'reality-harmonique';
+                        realityText = '🎯 Niveau Harmonique';
+                        break;
+                    case 'quantique':
+                        realityClass = 'reality-quantique';
+                        realityText = '🌊 Niveau Quantique';
+                        break;
+                    case 'classique':
+                        realityClass = 'reality-classique';
+                        realityText = '⚖️ Niveau Classique';
+                        break;
+                }
+
+                realityIndicator.className = `reality-indicator ${realityClass}`;
+                realityIndicator.textContent = realityText;
+
+                // Métriques de qualité
+                const quality = result.quality_metrics;
+                const efficiency = result.efficiency_metrics;
+                const budget = result.computational_budget;
+
+                metricsContainer.innerHTML = `
+                    <div class="metric-card">
+                        <div class="metric-value">${quality.psnr.toFixed(1)} dB</div>
+                        <div class="metric-label">PSNR</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${quality.ssim.toFixed(3)}</div>
+                        <div class="metric-label">SSIM</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${quality.sharpness_ratio.toFixed(2)}x</div>
+                        <div class="metric-label">Sharpness</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${(quality.quality_score * 100).toFixed(1)}%</div>
+                        <div class="metric-label">Qualité Globale</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${budget.resolution_level.toFixed(3)}</div>
+                        <div class="metric-label">Résolution Dynamique</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${budget.available_operations.toLocaleString()}</div>
+                        <div class="metric-label">Opérations Totales</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${budget.operations_per_bit}</div>
+                        <div class="metric-label">Ops/Bit</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${efficiency.ops_per_second.toExponential(2)}</div>
+                        <div class="metric-label">Ops/Seconde</div>
+                    </div>
+                `;
+
+                // Informations quantiques
+                quantumInfo.innerHTML = `
+                    <li class="flex items-center space-x-3 text-gray-300">
+                        <i data-lucide="layers" class="w-5 h-5 text-hcs-purple"></i>
+                        <span><strong>Niveau de Réalité:</strong> ${realityText}</span>
+                    </li>
+                    <li class="flex items-center space-x-3 text-gray-300">
+                        <i data-lucide="zap" class="w-5 h-5 text-hcs-gold"></i>
+                        <span><strong>Énergie Allouée:</strong> ${budget.total_energy_joules.toExponential(2)} J</span>
+                    </li>
+                    <li class="flex items-center space-x-3 text-gray-300">
+                        <i data-lucide="target" class="w-5 h-5 text-hcs-blue"></i>
+                        <span><strong>Résolution Efficace:</strong> ${(budget.resolution_level * 100).toFixed(1)}%</span>
+                    </li>
+                    <li class="flex items-center space-x-3 text-gray-300">
+                        <i data-lucide="battery-charging" class="w-5 h-5 text-hcs-purple"></i>
+                        <span><strong>Efficacité Énergétique:</strong> ${budget.energy_efficiency.toExponential(2)} ops/J</span>
+                    </li>
+                    <li class="flex items-center space-x-3 text-gray-300">
+                        <i data-lucide="shield-check" class="w-5 h-5 text-hcs-gold"></i>
+                        <span><strong>Limite de Lloyd:</strong> ${efficiency.ops_per_second > 1e40 ? 'Approchée' : 'Respectée'}</span>
+                    </li>
+                    <li class="flex items-center space-x-3 text-gray-300">
+                        <i data-lucide="activity" class="w-5 h-5 text-hcs-blue"></i>
+                        <span><strong>Principe Actif:</strong> ${realityLevel === 'quantique' ? 'Interférence Constructive' : realityLevel === 'harmonique' ? 'Relations Algébriques' : 'Relaxation Harmonique'}</span>
+                    </li>
+                `;
+
+                // Afficher les boutons de téléchargement
+                document.getElementById('downloadButtons').style.display = 'flex';
+                
+                // Réinitialiser les icônes Lucide
+                lucide.createIcons();
+
+                resultsPanel.style.display = 'block';
+            }
+
+            hideResults() {
+                document.getElementById('resultsPanel').style.display = 'none';
+                document.getElementById('downloadButtons').style.display = 'none';
+            }
+
+            showLoading(show) {
+                const loading = document.getElementById('loading');
+                if (show) {
+                    loading.classList.add('active');
+                } else {
+                    loading.classList.remove('active');
+                }
+            }
+
+            enableButtons() {
+                document.getElementById('analyzeBtn').disabled = false;
+                document.getElementById('upscaleBtn').disabled = false;
+            }
+
+            showMessage(message, type = 'info') {
+                const messageArea = document.getElementById('messageArea');
+                const className = type === 'error' ? 'error-message' : 
+                                 type === 'success' ? 'success-message' : 'info-panel';
+                
+                messageArea.innerHTML = `<div class="${className}">${message}</div>`;
+                
+                // Auto-hide pour les messages de succès
+                if (type === 'success') {
+                    setTimeout(() => {
+                        messageArea.innerHTML = '';
+                    }, 5000);
+                }
+            }
+
+            async downloadImage(format) {
+                if (!this.currentResult || !this.currentResult.upscaled_image_base64) {
+                    this.showMessage('Aucune image à télécharger', 'error');
+                    return;
+                }
+
+                try {
+                    // Convertir base64 en blob selon le format
+                    const imageBlob = await this.convertBase64ToBlob(this.currentResult.upscaled_image_base64, format);
+                    
+                    // Créer un lien de téléchargement
+                    const url = URL.createObjectURL(imageBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    
+                    // Nom de fichier avec timestamp et format
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                    const realityLevel = this.currentResult.reality_level_used || 'unknown';
+                    link.download = `quantum_upscaled_${realityLevel}_${timestamp}.${format}`;
+                    
+                    // Déclencher le téléchargement
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // Nettoyer l'URL
+                    URL.revokeObjectURL(url);
+                    
+                    this.showMessage(`Image téléchargée en format ${format.toUpperCase()}`, 'success');
+                    
+                } catch (error) {
+                    console.error('Erreur lors du téléchargement:', error);
+                    this.showMessage('Erreur lors du téléchargement', 'error');
+                }
+            }
+
+            async convertBase64ToBlob(base64Data, format) {
+                // Convertir base64 en blob
+                const byteCharacters = atob(base64Data);
+                const byteNumbers = new Array(byteCharacters.length);
+                
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                
+                const byteArray = new Uint8Array(byteNumbers);
+                
+                // Si le format est PNG, retourner directement
+                if (format === 'png') {
+                    return new Blob([byteArray], { type: 'image/png' });
+                }
+                
+                // Pour les autres formats, convertir en utilisant canvas
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        
+                        canvas.toBlob((blob) => {
+                            if (blob) {
+                                resolve(blob);
+                            } else {
+                                reject(new Error('Erreur de conversion'));
+                            }
+                        }, `image/${format}`, format === 'jpg' ? 0.95 : 0.9);
+                    };
+                    img.onerror = () => reject(new Error('Erreur de chargement de l\'image'));
+                    img.src = `data:image/png;base64,${base64Data}`;
+                });
+            }
+
+            async loadSystemInfo() {
+                try {
+                    const response = await fetch('http://localhost:8000/api/v2/upscale/info');
+                    const info = await response.json();
+                    
+                    console.log('Quantum Harmonic Upscaler System Info:', info);
+                    
+                    // Mettre à jour les presets si nécessaire
+                    if (info.energy_presets) {
+                        const energySelect = document.getElementById('energyLevel');
+                        // Les presets sont déjà dans le HTML, donc pas besoin de mise à jour
+                    }
+                } catch (error) {
+                    console.warn('Impossible de charger les informations système:', error);
+                }
+            }
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            new QuantumHarmonicUpscaler();
+        });
+
+        // Ajout des styles CSS pour la vidéo
+        const style = document.createElement('style');
+        style.textContent = `
+            .video-preview {
+                background: rgba(255, 255, 255, 0.02);
+                border-radius: 12px;
+                padding: 20px;
+                text-align: center;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .video-progress {
+                background: rgba(255, 255, 255, 0.02);
+                border-radius: 12px;
+                padding: 20px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .video-progress .progress-bar {
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            
+            .video-progress .progress-fill {
+                background: linear-gradient(90deg, #FFD700, #8B5CF6);
+                height: 100%;
+                width: 0%;
+                transition: width 0.3s ease;
+                border-radius: 8px;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

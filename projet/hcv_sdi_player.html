@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player HCV16 SDI - Compatible Multi-Versions</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      color: #fff;
+      min-height: 100vh;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: rgba(229, 9, 20, 0.1);
+      border-radius: 12px;
+      border: 1px solid rgba(229, 9, 20, 0.3);
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 2.5em;
+      background: linear-gradient(45deg, #e50914, #ff6b6b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header p {
+      margin: 10px 0 0 0;
+      color: #ccc;
+      font-size: 1.1em;
+    }
+
+    .player-container {
+      background: rgba(42, 42, 42, 0.8);
+      border-radius: 12px;
+      padding: 25px;
+      margin: 20px 0;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .file-drop-zone {
+      background: linear-gradient(135deg, #333 0%, #444 100%);
+      border: 3px dashed #666;
+      border-radius: 12px;
+      padding: 50px 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 20px;
+    }
+
+    .file-drop-zone:hover,
+    .file-drop-zone.drag-over {
+      border-color: #e50914;
+      background: linear-gradient(135deg, #2a1a1a 0%, #3a2a2a 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(229, 9, 20, 0.2);
+    }
+
+    .file-drop-zone .icon {
+      font-size: 3em;
+      margin-bottom: 15px;
+      opacity: 0.7;
+    }
+
+    .file-drop-zone h3 {
+      margin: 0 0 10px 0;
+      font-size: 1.3em;
+    }
+
+    .file-drop-zone p {
+      margin: 5px 0;
+      color: #999;
+      font-size: 0.9em;
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 800px;
+      height: auto;
+      border: 2px solid #444;
+      border-radius: 8px;
+      background: #000;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .controls {
+      margin: 20px 0;
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #e50914 0%, #b81d24 100%);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn:hover {
+      background: linear-gradient(135deg, #b81d24 0%, #8b1a1a 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3);
+    }
+
+    .btn:disabled {
+      background: #666;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .time-display {
+      background: #333;
+      padding: 8px 15px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      font-weight: bold;
+      color: #00ff88;
+    }
+
+    .seek-bar {
+      flex: 1;
+      min-width: 200px;
+      height: 6px;
+      background: #333;
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .seek-bar::-webkit-slider-thumb {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #e50914;
+      cursor: pointer;
+    }
+
+    .status {
+      margin: 15px 0;
+      padding: 12px 18px;
+      background: #333;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      border-left: 4px solid #00ff88;
+    }
+
+    .status.error {
+      border-left-color: #ff4757;
+      background: rgba(255, 71, 87, 0.1);
+      color: #ff6b6b;
+    }
+
+    .status.warning {
+      border-left-color: #ffa502;
+      background: rgba(255, 165, 2, 0.1);
+      color: #ffb84d;
+    }
+
+    .file-info {
+      background: rgba(0, 255, 136, 0.1);
+      border: 1px solid rgba(0, 255, 136, 0.3);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      display: none;
+    }
+
+    .file-info h3 {
+      margin: 0 0 15px 0;
+      color: #00ff88;
+      font-size: 1.2em;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+
+    .info-item {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 10px 15px;
+      border-radius: 6px;
+    }
+
+    .info-label {
+      font-size: 11px;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 5px;
+    }
+
+    .info-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .compatibility-warning {
+      background: rgba(255, 165, 2, 0.1);
+      border: 1px solid rgba(255, 165, 2, 0.3);
+      border-radius: 8px;
+      padding: 15px;
+      margin: 15px 0;
+      display: none;
+    }
+
+    .compatibility-warning h4 {
+      margin: 0 0 10px 0;
+      color: #ffa502;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <h1>🎮 Player HCV16 SDI</h1>
+    <p>Lecteur compatible multi-versions - Support HCV16 v1-v5</p>
+  </div>
+
+  <div class="player-container">
+    <div class="file-drop-zone" id="dropZone">
+      <div class="icon">📁</div>
+      <h3>Glissez votre fichier .hcv16 ici</h3>
+      <p>ou cliquez pour sélectionner</p>
+      <p style="font-size: 0.8em; margin-top: 15px;">
+        Formats supportés: HCV16 v1-v5 • Taille max: 500 MB
+      </p>
+      <input type="file" id="fileInput" accept=".hcv16" style="display: none;">
+    </div>
+
+    <div class="status" id="status">
+      🎯 Prêt à charger un fichier HCV16...
+    </div>
+
+    <div class="compatibility-warning" id="compatibilityWarning">
+      <h4>⚠️ Avertissement de Compatibilité</h4>
+      <p id="warningMessage"></p>
+    </div>
+
+    <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
+
+    <div class="controls" style="display: none;" id="controls">
+      <button class="btn" id="playBtn">
+        ▶️ Lire
+      </button>
+      <button class="btn" id="pauseBtn">
+        ⏸️ Pause
+      </button>
+      <button class="btn" id="stopBtn">
+        ⏹️ Stop
+      </button>
+      <div class="time-display" id="timeDisplay">00:00 / 00:00</div>
+      <input type="range" class="seek-bar" id="seekBar" min="0" max="100" value="0">
+    </div>
+
+    <div class="file-info" id="fileInfo">
+      <h3>📊 Informations du Fichier</h3>
+      <div class="info-grid" id="infoGrid"></div>
+    </div>
+  </div>
+
+  <!-- Chargement du décodeur HCV16 V5 -->
+  <script src="hcv16_v5_decoder.js"></script>
+
+  <!-- Chargement optionnel de fflate pour décompression -->
+  <script src="https://unpkg.com/fflate@0.8.1/lib/browser.js"></script>
+
+  <script>
+    // Player HCV16 SDI avec décodeur V5 intégré
+    class HCV16SDIPlayer {
+      constructor(canvas, options = {}) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.onStatus = options.onStatus || (() => { });
+        this.onError = options.onError || console.error;
+        this.onWarning = options.onWarning || console.warn;
+
+        this.decoder = new HCV16V5Decoder();
+        this.fileInfo = null;
+        this.frames = [];
+        this.isLoaded = false;
+        this.isPlaying = false;
+        this.currentFrame = 0;
+        this.totalFrames = 0;
+        this.fps = 25;
+        this.animationId = null;
+        this.startTime = 0;
+      }
+
+      async loadFile(file) {
+        try {
+          this.onStatus(`📁 Chargement: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+
+          const buffer = await file.arrayBuffer();
+
+          this.onStatus('🔍 Décodage avec moteur V5...');
+          const result = await this.decoder.decode(buffer);
+
+          // Stocker les résultats
+          this.fileInfo = {
+            fileName: file.name,
+            fileSize: file.size,
+            ...result.header
+          };
+
+          this.frames = result.frames;
+          this.totalFrames = this.frames.length;
+          this.fps = result.header.fps || 25;
+
+          // Configurer le canvas
+          this.canvas.width = Math.min(result.header.width || 640, 1920);
+          this.canvas.height = Math.min(result.header.height || 480, 1080);
+
+          // Afficher la première frame
+          if (this.frames.length > 0) {
+            this.renderFrame(0);
+          }
+
+          this.onStatus(`✅ Décodage terminé: ${this.frames.length} frames`);
+          this.isLoaded = true;
+
+        } catch (error) {
+          this.onError(`❌ Erreur décodage: ${error.message}`);
+          throw error;
+        }
+      }
+
+      renderFrame(frameIndex) {
+        if (frameIndex >= 0 && frameIndex < this.frames.length) {
+          const frame = this.frames[frameIndex];
+
+          if (frame instanceof HTMLCanvasElement) {
+            // Frame de type canvas (placeholder V5)
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.drawImage(frame, 0, 0, this.canvas.width, this.canvas.height);
+          } else if (frame instanceof ImageData) {
+            // Frame de type ImageData (décodage standard)
+            this.ctx.putImageData(frame, 0, 0);
+          } else {
+            // Autres types de frames
+            this.drawErrorFrame(`Frame ${frameIndex + 1} - Type non supporté`);
+          }
+
+          this.currentFrame = frameIndex;
+        }
+      }
+
+      drawErrorFrame(message) {
+        const ctx = this.ctx;
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = '#e50914';
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Erreur de Rendu', w / 2, h / 2 - 20);
+
+        ctx.fillStyle = '#ccc';
+        ctx.font = '16px Arial';
+        ctx.fillText(message, w / 2, h / 2 + 20);
+      }
+
+      // Contrôles de lecture
+      play() {
+        if (!this.isLoaded || this.frames.length === 0) {
+          this.onWarning('⚠️ Aucun fichier chargé');
+          return;
+        }
+
+        if (this.isPlaying) return;
+
+        this.isPlaying = true;
+        this.startTime = performance.now() - (this.currentFrame / this.fps) * 1000;
+        this.animate();
+
+        this.onStatus(`▶️ Lecture: ${this.frames.length} frames à ${this.fps} fps`);
+      }
+
+      pause() {
+        this.isPlaying = false;
+        if (this.animationId) {
+          cancelAnimationFrame(this.animationId);
+          this.animationId = null;
+        }
+        this.onStatus('⏸️ Pause');
+      }
+
+      stop() {
+        this.pause();
+        this.currentFrame = 0;
+        if (this.frames.length > 0) {
+          this.renderFrame(0);
+        }
+        this.onStatus('⏹️ Arrêt');
+      }
+
+      seek(frameIndex) {
+        const targetFrame = Math.max(0, Math.min(frameIndex, this.frames.length - 1));
+        this.renderFrame(targetFrame);
+
+        if (this.isPlaying) {
+          this.startTime = performance.now() - (targetFrame / this.fps) * 1000;
+        }
+      }
+
+      animate() {
+        if (!this.isPlaying) return;
+
+        const elapsed = performance.now() - this.startTime;
+        const targetFrame = Math.floor((elapsed / 1000) * this.fps);
+
+        if (targetFrame !== this.currentFrame && targetFrame < this.frames.length) {
+          this.renderFrame(targetFrame);
+        }
+
+        if (targetFrame >= this.frames.length - 1) {
+          this.pause();
+          this.onStatus('🏁 Lecture terminée');
+          return;
+        }
+
+        this.animationId = requestAnimationFrame(() => this.animate());
+      }
+
+      // Getters
+      get duration() {
+        return this.totalFrames / this.fps;
+      }
+
+      get currentTime() {
+        return this.currentFrame / this.fps;
+      }
+
+      get progress() {
+        return this.totalFrames > 0 ? (this.currentFrame / this.totalFrames) * 100 : 0;
+      }
+    }
+
+    // Interface utilisateur
+    const canvas = document.getElementById('canvas');
+    const status = document.getElementById('status');
+    const fileInfo = document.getElementById('fileInfo');
+    const infoGrid = document.getElementById('infoGrid');
+    const controls = document.getElementById('controls');
+    const compatibilityWarning = document.getElementById('compatibilityWarning');
+    const warningMessage = document.getElementById('warningMessage');
+
+    const player = new HCV16SDIPlayer(canvas, {
+      onStatus: (msg) => {
+        status.textContent = msg;
+        status.className = 'status';
+      },
+      onError: (msg) => {
+        status.textContent = msg;
+        status.className = 'status error';
+      },
+      onWarning: (msg) => {
+        warningMessage.textContent = msg;
+        compatibilityWarning.style.display = 'block';
+      }
+    });
+
+    // Gestion des fichiers
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      handleFile(e.dataTransfer.files[0]);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      handleFile(e.target.files[0]);
+    });
+
+    async function handleFile(file) {
+      if (!file) return;
+
+      if (!file.name.toLowerCase().endsWith('.hcv16')) {
+        player.onError('❌ Veuillez sélectionner un fichier .hcv16');
+        return;
+      }
+
+      try {
+        await player.loadFile(file);
+        displayFileInfo();
+        showControls();
+      } catch (error) {
+        console.error('Erreur chargement:', error);
+      }
+    }
+
+    function displayFileInfo() {
+      if (!player.fileInfo) return;
+
+      const info = player.fileInfo;
+      infoGrid.innerHTML = `
+                <div class="info-item">
+                    <div class="info-label">Fichier</div>
+                    <div class="info-value">${info.fileName}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Taille</div>
+                    <div class="info-value">${(info.fileSize / 1024 / 1024).toFixed(2)} MB</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Version HCV16</div>
+                    <div class="info-value">v${info.version}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Mode</div>
+                    <div class="info-value">${info.mode}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Résolution</div>
+                    <div class="info-value">${info.width}×${info.height}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Frames</div>
+                    <div class="info-value">${info.nFrames}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">FPS</div>
+                    <div class="info-value">${info.fps.toFixed(2)}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Durée</div>
+                    <div class="info-value">${info.duration.toFixed(1)}s</div>
+                </div>
+            `;
+
+      fileInfo.style.display = 'block';
+    }
+
+    function showControls() {
+      canvas.style.display = 'block';
+      controls.style.display = 'flex';
+    }
+
+    // Contrôles
+    document.getElementById('playBtn').addEventListener('click', () => player.play());
+    document.getElementById('pauseBtn').addEventListener('click', () => player.pause());
+    document.getElementById('stopBtn').addEventListener('click', () => player.stop());
+
+    // Contrôle de la barre de progression
+    const seekBar = document.getElementById('seekBar');
+    const timeDisplay = document.getElementById('timeDisplay');
+
+    seekBar.addEventListener('input', (e) => {
+      if (player.isLoaded && player.totalFrames > 0) {
+        const progress = parseFloat(e.target.value);
+        const targetFrame = Math.floor((progress / 100) * player.totalFrames);
+        player.seek(targetFrame);
+        updateTimeDisplay();
+      }
+    });
+
+    // Mise à jour de l'affichage du temps
+    function updateTimeDisplay() {
+      if (player.isLoaded && player.totalFrames > 0) {
+        const current = player.currentTime;
+        const total = player.duration;
+        const progress = player.progress;
+
+        const formatTime = (seconds) => {
+          const mins = Math.floor(seconds / 60);
+          const secs = Math.floor(seconds % 60);
+          return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        };
+
+        timeDisplay.textContent = `${formatTime(current)} / ${formatTime(total)}`;
+        seekBar.value = progress;
+      }
+    }
+
+    // Mise à jour périodique pendant la lecture
+    setInterval(() => {
+      if (player.isPlaying) {
+        updateTimeDisplay();
+      }
+    }, 100);
+
+    console.log('🎮 Player HCV16 SDI prêt - Support multi-versions avec décodeur V5');
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HCS MiniCDN - Dashboard Admin</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#0a0e1a;color:#e0e6f0;min-height:100vh;}
+.hdr{background:linear-gradient(135deg,#0d1b3e,#1a2a5e);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #1e3a8a;box-shadow:0 4px 20px rgba(0,80,200,0.15);}
+.logo h1{font-size:1.3em;font-weight:800;color:#60a5fa;letter-spacing:1px;}
+.logo p{font-size:0.72em;color:#94a3b8;margin-top:2px;}
+.sbar{display:flex;gap:20px;align-items:center;}
+.sdot{width:10px;height:10px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+.ws{font-size:0.78em;padding:4px 10px;border-radius:12px;background:#1e3a8a;color:#60a5fa;}
+.cont{max-width:1500px;margin:0 auto;padding:20px 28px;}
+.gstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px;}
+.scard{background:linear-gradient(135deg,#111827,#1e2a3a);border:1px solid #1e3a8a;border-radius:12px;padding:18px;text-align:center;transition:transform .2s;}
+.scard:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(59,130,246,.2);}
+.sv{font-size:1.9em;font-weight:800;color:#60a5fa;margin-bottom:4px;}
+.sl{font-size:.73em;color:#64748b;text-transform:uppercase;letter-spacing:1px;}
+.sec{font-size:1em;font-weight:700;color:#93c5fd;margin-bottom:14px;padding-bottom:7px;border-bottom:1px solid #1e3a8a;text-transform:uppercase;letter-spacing:1px;}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;margin-bottom:28px;}
+.svcc{background:linear-gradient(135deg,#111827,#1a2438);border:1px solid #1e3a8a;border-radius:14px;padding:20px;transition:transform .2s;}
+.svcc:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,.4);}
+.shdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+.sn{font-size:1em;font-weight:700;color:#e2e8f0;}
+.sbadge{font-size:.68em;padding:3px 9px;border-radius:10px;background:#10b981;color:#fff;font-weight:600;}
+.smeta{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px;}
+.mi{background:#0d1525;border-radius:7px;padding:7px 10px;}
+.ml{font-size:.65em;color:#64748b;text-transform:uppercase;}
+.mv{font-size:.84em;color:#93c5fd;font-weight:600;margin-top:2px;}
+.tbar{margin-top:10px;}
+.tl{display:flex;justify-content:space-between;font-size:.72em;color:#64748b;margin-bottom:5px;}
+.bbg{background:#0d1525;border-radius:4px;height:7px;overflow:hidden;}
+.bf{height:100%;border-radius:4px;transition:width 1.2s ease;}
+.srow{display:flex;gap:10px;margin-top:12px;}
+.mst{flex:1;background:#0d1525;border-radius:7px;padding:7px;text-align:center;}
+.mv2{font-size:1em;font-weight:700;color:#60a5fa;}
+.ml2{font-size:.62em;color:#64748b;text-transform:uppercase;}
+.bgrid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px;}
+.panel{background:linear-gradient(135deg,#111827,#1a2438);border:1px solid #1e3a8a;border-radius:14px;padding:20px;}
+.elist{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.ei{background:#0d1525;border-radius:9px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;}
+.en{font-size:.84em;color:#e2e8f0;font-weight:600;}
+.er{font-size:.67em;color:#64748b;}
+.ec{font-size:.78em;color:#10b981;font-weight:700;}
+.logbox{background:#040810;border-radius:9px;padding:12px;height:190px;overflow-y:auto;font-family:monospace;font-size:.76em;line-height:1.6;}
+.le{color:#64748b;margin-bottom:2px;}
+.le.i{color:#60a5fa;} .le.s{color:#10b981;} .le.w{color:#f59e0b;}
+.logbox::-webkit-scrollbar{width:4px;}
+.logbox::-webkit-scrollbar-thumb{background:#1e3a8a;border-radius:2px;}
+.agrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:28px;}
+.ac{background:#0d1525;border:1px solid #1e3a8a;border-radius:10px;padding:14px;}
+.am{display:inline-block;font-size:.69em;padding:2px 7px;border-radius:5px;font-weight:700;margin-right:6px;}
+.get{background:#1d4ed8;color:#bfdbfe;}
+.post{background:#065f46;color:#6ee7b7;}
+.ap{font-size:.79em;color:#93c5fd;font-family:monospace;}
+.ad{font-size:.72em;color:#64748b;margin-top:5px;}
+.ab{margin-top:7px;padding:5px 12px;background:#1e3a8a;border:none;border-radius:5px;color:#93c5fd;font-size:.75em;cursor:pointer;}
+.ab:hover{background:#2563eb;}
+.ar{margin-top:7px;background:#040810;border-radius:5px;padding:7px;font-family:monospace;font-size:.68em;color:#10b981;max-height:110px;overflow-y:auto;display:none;white-space:pre-wrap;}
+.tsum{background:linear-gradient(135deg,#1e3a8a,#1e1b4b);border:1px solid #3b82f6;border-radius:14px;padding:20px;margin-bottom:20px;display:flex;justify-content:space-around;align-items:center;flex-wrap:wrap;gap:14px;}
+.tb{text-align:center;}
+.tv{font-size:2.4em;font-weight:900;color:#60a5fa;}
+.tbl{font-size:.78em;color:#94a3b8;margin-top:3px;}
+@media(max-width:768px){.bgrid,.elist,.sgrid{grid-template-columns:1fr;}.gstats{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="logo">
+    <h1>&#128246; HCS MiniCDN</h1>
+    <p>Distribution Multi-Services 4K/8K Mondial &bull; Gateway Port 9000</p>
+  </div>
+  <div class="sbar">
+    <div style="display:flex;align-items:center;gap:7px;">
+      <div class="sdot"></div>
+      <span style="font-size:.83em;color:#10b981;font-weight:600;">OPERATIONAL</span>
+    </div>
+    <span style="font-size:.82em;color:#94a3b8;" id="up">Uptime: --</span>
+    <span class="ws" id="ws">WS: Connexion...</span>
+  </div>
+</div>
+
+<div class="cont">
+  <div class="gstats">
+    <div class="scard"><div class="sv" id="req">0</div><div class="sl">Requetes Totales</div></div>
+    <div class="scard"><div class="sv" id="gbps">0.0</div><div class="sl">Gbps Trafic</div></div>
+    <div class="scard"><div class="sv">7</div><div class="sl">Services Actifs</div></div>
+    <div class="scard"><div class="sv">21</div><div class="sl">Edge Nodes</div></div>
+    <div class="scard"><div class="sv">50M</div><div class="sl">Utilisateurs</div></div>
+    <div class="scard"><div class="sv">45</div><div class="sl">Pays Couverts</div></div>
+    <div class="scard"><div class="sv" id="sess">0</div><div class="sl">Sessions Actives</div></div>
+    <div class="scard"><div class="sv">99.99%</div><div class="sl">SLA Uptime</div></div>
+  </div>
+
+  <div class="tsum">
+    <div class="tb"><div class="tv" id="tgbps">0.0</div><div class="tbl">Gbps Total Actuel</div></div>
+    <div class="tb"><div class="tv" id="pkgbps">0.0</div><div class="tbl">Peak Gbps</div></div>
+    <div class="tb"><div class="tv">2.5 PB</div><div class="tbl">Trafic Mensuel</div></div>
+    <div class="tb"><div class="tv">15 Tbps</div><div class="tbl">Capacite Totale</div></div>
+  </div>
+
+  <div class="sec">&#128225; Services CDN</div>
+  <div class="sgrid" id="sg">
+    <div style="color:#64748b;text-align:center;padding:40px;grid-column:1/-1;">Connexion CDN en cours...</div>
+  </div>
+
+  <div class="bgrid">
+    <div class="panel">
+      <div class="sec">&#127758; Noeuds Edge (21 PoP)</div>
+      <div class="elist" id="el">
+        <div style="color:#64748b;font-size:.83em;">Chargement...</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="sec">&#128196; Journal Temps Reel</div>
+      <div class="logbox" id="la">
+        <div class="le i">[CDN] Dashboard initialise - HCS MiniCDN v1.0</div>
+        <div class="le">[SYS] Connexion au gateway port 9000...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">&#9889; API - Tests Rapides</div>
+  <div class="agrid">
+    <div class="ac">
+      <div><span class="am get">GET</span><span class="ap">/health</span></div>
+      <div class="ad">Sante du CDN gateway</div>
+      <button class="ab" onclick="tg(this,'http://localhost:9000/health')">Tester</button>
+      <pre class="ar"></pre>
+    </div>
+    <div class="ac">
+      <div><span class="am get">GET</span><span class="ap">/api/traffic</span></div>
+      <div class="ad">Trafic temps reel par service</div>
+      <button class="ab" onclick="tg(this,'http://localhost:9000/api/traffic')">Tester</button>
+      <pre class="ar"></pre>
+    </div>
+    <div class="ac">
+      <div><span class="am get">GET</span><span class="ap">/api/edge-nodes</span></div>
+      <div class="ad">Statut des 21 noeuds edge</div>
+      <button class="ab" onclick="tg(this,'http://localhost:9000/api/edge-nodes')">Tester</button>
+      <pre class="ar"></pre>
+    </div>
+    <div class="ac">
+      <div><span class="am post">POST</span><span class="ap">/api/route</span></div>
+      <div class="ad">Routage: Afrique mobile 1Mbps</div>
+      <button class="ab" onclick="tp(this,'http://localhost:9000/api/route',{region:'AF',device:'mobile',bandwidth_mbps:1})">Tester</button>
+      <pre class="ar"></pre>
+    </div>
+    <div class="ac">
+      <div><span class="am post">POST</span><span class="ap">/api/simulate/stream</span></div>
+      <div class="ad">Simulation streaming VOD 60s</div>
+      <button class="ab" onclick="tp(this,'http://localhost:9000/api/simulate/stream',{service_id:'vod_premium',duration_seconds:60})">Tester</button>
+      <pre class="ar"></pre>
+    </div>
+    <div class="ac">
+      <div><span class="am get">GET</span><span class="ap">/api/cost-estimate</span></div>
+      <div class="ad">Cout 1000 viewers 4K 30 jours</div>
+      <button class="ab" onclick="tg(this,'http://localhost:9000/api/cost-estimate?service_id=tv_broadcast_4k&viewers=1000&hours_per_day=4&days=30')">Tester</button>
+      <pre class="ar"></pre>
+    </div>
+    <div class="ac">
+      <div><span class="am get">GET</span><span class="ap">:9010/channels</span></div>
+      <div class="ad">Chaines TV 4K disponibles</div>
+      <button class="ab" onclick="tg(this,'http://localhost:9010/channels')">Tester</button>
+      <pre class="ar"></pre>
+    </div>
+    <div class="ac">
+      <div><span class="am get">GET</span><span class="ap">:9015/events</span></div>
+      <div class="ad">Evenements live en cours</div>
+      <button class="ab" onclick="tg(this,'http://localhost:9015/events')">Tester</button>
+      <pre class="ar"></pre>
+    </div>
+    <div class="ac">
+      <div><span class="am get">GET</span><span class="ap">:9016/catalog</span></div>
+      <div class="ad">Catalogue archives HCS</div>
+      <button class="ab" onclick="tg(this,'http://localhost:9016/catalog')">Tester</button>
+      <pre class="ar"></pre>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS={
+  tv_broadcast_4k:'#FFD700',tv_broadcast_8k:'#8B5CF6',
+  mobile_streaming_8k_us:'#3B82F6',mobile_streaming_africa:'#10B981',
+  vod_premium:'#F59E0B',live_events:'#EF4444',archive_storage:'#6B7280'
+};
+const ICONS={
+  tv_broadcast_4k:'TV-4K',tv_broadcast_8k:'TV-8K',
+  mobile_streaming_8k_us:'MOB-US',mobile_streaming_africa:'MOB-AF',
+  vod_premium:'VOD',live_events:'LIVE',archive_storage:'ARC'
+};
+const MAXT={
+  tv_broadcast_4k:30,tv_broadcast_8k:10,mobile_streaming_8k_us:40,
+  mobile_streaming_africa:8,vod_premium:20,live_events:50,archive_storage:2
+};
+let pkG=0,wsConn=null;
+
+function cws(){
+  wsConn=new WebSocket('ws://localhost:9000/ws/metrics');
+  wsConn.onopen=()=>{ss('ws','WS: Connecte','#10b981');log('WebSocket connecte','s');};
+  wsConn.onmessage=e=>{try{upd(JSON.parse(e.data));}catch(x){}};
+  wsConn.onclose=()=>{ss('ws','WS: Reconnexion...','#f59e0b');setTimeout(cws,3000);};
+  wsConn.onerror=()=>{log('WS erreur, bascule HTTP','w');setTimeout(poll,2000);};
+}
+
+async function poll(){
+  try{
+    const r=await fetch('http://localhost:9000/api/metrics');
+    upd(await r.json());
+    ss('ws','HTTP Poll','#60a5fa');
+  }catch(e){ss('ws','CDN offline','#ef4444');}
+  setTimeout(poll,5000);
+}
+
+function ss(id,t,c){const e=document.getElementById(id);if(e){e.textContent=t;if(c)e.style.color=c;}}
+
+function upd(d){
+  ss('up','Uptime: '+(d.uptime||'?'));
+  ss('req',(d.requests_total||0).toLocaleString());
+  let g=0,s2=0,pk=0;
+  const sv=d.services||{};
+  Object.values(sv).forEach(x=>{
+    g+=(x.current_traffic_gbps||0);
+    s2+=(x.active_sessions||0);
+    if((x.peak_traffic_gbps||0)>pk)pk=x.peak_traffic_gbps;
+  });
+  if(pk>pkG)pkG=pk;
+  ss('gbps',g.toFixed(1));
+  ss('sess',s2.toLocaleString());
+  ss('tgbps',g.toFixed(1));
+  ss('pkgbps',pkG.toFixed(1));
+  rSvcs(sv);
+  rEdge(d.edge_nodes||{});
+}
+
+function rSvcs(sv){
+  const g=document.getElementById('sg');
+  g.innerHTML='';
+  Object.entries(sv).forEach(([id,s])=>{
+    const c=COLORS[id]||'#60a5fa';
+    const ic=ICONS[id]||'SVC';
+    const mx=MAXT[id]||20;
+    const pct=Math.min(100,((s.current_traffic_gbps||0)/mx*100));
+    const d=document.createElement('div');
+    d.className='svcc';
+    d.style.borderTop='3px solid '+c;
+    d.innerHTML=
+      '<div class="shdr">'+
+        '<div>'+
+          '<span style="font-size:.72em;padding:3px 8px;background:'+c+'22;color:'+c+';border-radius:6px;font-weight:700;">'+ic+'</span>'+
+          '<span class="sn" style="margin-left:8px;">'+s.name+'</span>'+
+          '<div style="font-size:.69em;color:#64748b;margin-top:3px;">Port:'+s.port+' | '+(s.protocol||'')+'</div>'+
+        '</div>'+
+        '<span class="sbadge">'+(s.status=='active'?'LIVE':'OFF')+'</span>'+
+      '</div>'+
+      '<div class="smeta">'+
+        '<div class="mi"><div class="ml">Resolution</div><div class="mv">'+(s.resolution||'Variable')+'</div></div>'+
+        '<div class="mi"><div class="ml">Codec</div><div class="mv">'+(s.codec||'HCS')+'</div></div>'+
+        '<div class="mi"><div class="ml">HCS Ratio</div><div class="mv">'+(s.hcs_compression_ratio||1)+':1</div></div>'+
+        '<div class="mi"><div class="ml">SLA</div><div class="mv">'+(s.sla_uptime||'99.9%')+'</div></div>'+
+      '</div>'+
+      '<div class="tbar">'+
+        '<div class="tl"><span>Trafic: '+(s.current_traffic_gbps||0).toFixed(1)+' Gbps</span><span>Peak: '+(s.peak_traffic_gbps||0).toFixed(1)+'</span></div>'+
+        '<div class="bbg"><div class="bf" style="width:'+pct+'%;background:'+c+';"></div></div>'+
+      '</div>'+
+      '<div class="srow">'+
+        '<div class="mst"><div class="mv2">'+(s.requests||0).toLocaleString()+'</div><div class="ml2">Req</div></div>'+
+        '<div class="mst"><div class="mv2" style="color:'+((s.error_rate||0)>1?'#ef4444':'#10b981')+'">'+(s.error_rate||0).toFixed(2)+'%</div><div class="ml2">Err</div></div>'+
+        '<div class="mst"><div class="mv2">'+(s.active_sessions||0).toLocaleString()+'</div><div class="ml2">Sessions</div></div>'+
+        '<div class="mst"><div class="mv2">'+(s.avg_latency_ms||0)+'ms</div><div class="ml2">Latence</div></div>'+
+      '</div>';
+    g.appendChild(d);
+  });
+}
+
+function rEdge(ns){
+  const e=document.getElementById('el');
+  e.innerHTML='';
+  Object.entries(ns).slice(0,12).forEach(([n,i])=>{
+    const d=document.createElement('div');
+    d.className='ei';
+    d.innerHTML='<div><div class="en">'+n+'</div><div class="er">'+i.region+' | '+i.status+'</div></div><div class="ec">'+i.capacity_gbps+' Gbps</div>';
+    e.appendChild(d);
+  });
+}
+
+function log(msg,t){
+  t=t||'i';
+  const a=document.getElementById('la');
+  const now=new Date().toLocaleTimeString('fr-FR');
+  const d=document.createElement('div');
+  d.className='le '+t;
+  d.textContent='['+now+'] '+msg;
+  a.appendChild(d);
+  a.scrollTop=a.scrollHeight;
+  if(a.children.length>80)a.removeChild(a.firstChild);
+}
+
+async function tg(btn,url){
+  const r=btn.nextElementSibling;
+  r.style.display='block';
+  r.textContent='Chargement...';
+  try{
+    const x=await fetch(url);
+    r.textContent=JSON.stringify(await x.json(),null,2).slice(0,700);
+    r.style.color='#10b981';
+  }catch(e){r.textContent='Erreur: '+e.message;r.style.color='#ef4444';}
+}
+
+async function tp(btn,url,body){
+  const r=btn.nextElementSibling;
+  r.style.display='block';
+  r.textContent='Chargement...';
+  try{
+    const x=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    r.textContent=JSON.stringify(await x.json(),null,2).slice(0,700);
+    r.style.color='#10b981';
+  }catch(e){r.textContent='Erreur: '+e.message;r.style.color='#ef4444';}
+}
+
+cws();
+setTimeout(()=>{if(!wsConn||wsConn.readyState!==1)poll();},3000);
+
+setInterval(()=>{
+  const msgs=['Trafic nominal tous les noeuds','HCS compression active','Routage ABR optimise','Edge cache 94% efficacite','Multi-DRM verifie','SLA 99.99% maintenu'];
+  log(msgs[Math.floor(Math.random()*msgs.length)]);
+},8000);
+</script>
+</body>
+</html>

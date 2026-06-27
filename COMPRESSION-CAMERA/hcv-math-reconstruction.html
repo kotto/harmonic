@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HCV Math-Guided Reconstruction</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --card: #111113;
+      --border: #27272a;
+      --text: #fafafa;
+      --muted: #71717a;
+      --accent: #3b82f6;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --purple: #a855f7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      padding: 32px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+    h1 { color: var(--accent); margin-bottom: 8px; font-size: 24px; }
+    .subtitle { color: var(--muted); margin-bottom: 32px; font-size: 14px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .card h3 {
+      color: var(--success);
+      font-size: 13px;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .metric:last-child { border-bottom: none; }
+    .metric-label { color: var(--muted); font-size: 12px; }
+    .metric-value { 
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .success { color: var(--success); }
+    .warning { color: var(--warning); }
+    .accent { color: var(--accent); }
+    .purple { color: var(--purple); }
+    .large { font-size: 18px; font-weight: 700; }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 1200px) {
+      .comparison { grid-template-columns: 1fr; }
+    }
+
+    .canvas-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .canvas-box h4 {
+      margin-bottom: 12px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    canvas {
+      width: 100%;
+      border-radius: 4px;
+      background: #000;
+    }
+
+    .controls {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 12px;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px;
+      color: var(--text);
+    }
+
+    .btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 20px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+
+    .btn:hover { background: #2563eb; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .progress-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 16px 0;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--purple));
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    #output {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    .log-info { color: #60a5fa; }
+    .log-success { color: var(--success); }
+    .log-warning { color: var(--warning); }
+    .log-purple { color: var(--purple); }
+  </style>
+</head>
+<body>
+  <h1>🧮 HCV Math-Guided Reconstruction</h1>
+  <div class="subtitle">Use mathematical correlations from original resolution to guide upscaling</div>
+
+  <input type="file" id="fileInput" accept="video/*" style="margin-bottom: 20px;">
+
+  <div class="controls">
+    <h3 style="color: var(--purple); margin-bottom: 16px;">⚙️ Reconstruction Method</h3>
+    <div class="control-grid">
+      <div>
+        <label>Upscale Algorithm</label>
+        <select id="upscaleAlgo">
+          <option value="bilinear">Bilinear (Basic)</option>
+          <option value="bicubic">Bicubic</option>
+          <option value="lanczos" selected>Lanczos-3</option>
+        </select>
+      </div>
+      <div>
+        <label>Statistical Guidance</label>
+        <select id="statGuidance">
+          <option value="none">None (Standard upscale)</option>
+          <option value="frequency" selected>Frequency-based (FFT)</option>
+          <option value="texture">Texture-guided</option>
+          <option value="correlation">Auto-correlation</option>
+        </select>
+      </div>
+      <div>
+        <label>Sharpness Adaptation</label>
+        <select id="sharpness">
+          <option value="auto" selected>Auto (from stats)</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn" id="btnAnalyze" disabled>📊 Analyze Original</button>
+    <button class="btn" id="btnReconstruct" disabled>🔄 Reconstruct with Math</button>
+  </div>
+
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress"></div>
+  </div>
+
+  <div id="results" style="display:none;">
+    <div class="grid">
+      <div class="card" style="border-left: 3px solid var(--accent);">
+        <h3 style="color: var(--accent);">📐 Original Image Statistics</h3>
+        <div class="metric"><span class="metric-label">Resolution</span><span class="metric-value" id="origRes">—</span></div>
+        <div class="metric"><span class="metric-label">Y Mean/Std</span><span class="metric-value" id="yStats">—</span></div>
+        <div class="metric"><span class="metric-label">Edge Density</span><span class="metric-value purple" id="edgeDensity">—</span></div>
+        <div class="metric"><span class="metric-label">Texture Variance</span><span class="metric-value" id="textureVar">—</span></div>
+        <div class="metric"><span class="metric-label">Auto-corr H/V</span><span class="metric-value" id="autocorr">—</span></div>
+        <div class="metric"><span class="metric-label">Freq: Low/Mid/High</span><span class="metric-value accent" id="freqDist">—</span></div>
+      </div>
+
+      <div class="card" style="border-left: 3px solid var(--purple);">
+        <h3 style="color: var(--purple);">🧮 Mathematical Correlations</h3>
+        <div class="metric"><span class="metric-label">Scale Factor</span><span class="metric-value large" id="scaleFactor">—</span></div>
+        <div class="metric"><span class="metric-label">Expected PSNR Gain</span><span class="metric-value success" id="expectedGain">—</span></div>
+        <div class="metric"><span class="metric-label">Guidance Method</span><span class="metric-value" id="guidanceMethod">—</span></div>
+        <div class="metric"><span class="metric-label">Adaptive Sharpness</span><span class="metric-value" id="adaptiveSharp">—</span></div>
+        <div class="metric"><span class="metric-label">Reconstruction Error</span><span class="metric-value warning" id="reconError">—</span></div>
+      </div>
+
+      <div class="card" style="border-left: 3px solid var(--success);">
+        <h3 style="color: var(--success);">📊 Quality Metrics</h3>
+        <div class="metric"><span class="metric-label">Standard Upscale PSNR</span><span class="metric-value warning" id="stdPSNR">—</span></div>
+        <div class="metric"><span class="metric-label">Math-Guided PSNR</span><span class="metric-value success large" id="guidedPSNR">—</span></div>
+        <div class="metric"><span class="metric-label">PSNR Improvement</span><span class="metric-value success" id="psnrGain">—</span></div>
+        <div class="metric"><span class="metric-label">Standard SSIM</span><span class="metric-value" id="stdSSIM">—</span></div>
+        <div class="metric"><span class="metric-label">Guided SSIM</span><span class="metric-value success" id="guidedSSIM">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="comparison" id="comparison" style="display:none;">
+    <div class="canvas-box">
+      <h4 style="color: var(--accent);">📹 Original</h4>
+      <canvas id="canvasOrig"></canvas>
+    </div>
+    <div class="canvas-box">
+      <h4 style="color: var(--warning);">⬇️ Compressed (15%)</h4>
+      <canvas id="canvasLow"></canvas>
+    </div>
+    <div class="canvas-box">
+      <h4 style="color: var(--success);">🧮 Math-Guided Reconstruction</h4>
+      <canvas id="canvasGuided"></canvas>
+    </div>
+  </div>
+
+  <div id="output"></div>
+
+  <script>
+    const fmtSize = bytes => {
+      if (!bytes) return '—';
+      if (bytes < 1024) return bytes + 'B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + 'KB';
+      return (bytes / 1048576).toFixed(2) + 'MB';
+    };
+
+    function log(msg, type = '') {
+      const el = document.createElement('div');
+      el.className = type ? 'log-' + type : '';
+      el.textContent = msg;
+      document.getElementById('output').appendChild(el);
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function setProgress(pct) {
+      document.getElementById('progress').style.width = pct + '%';
+    }
+
+    // Calculate image statistics
+    function calculateStats(imageData, width, height) {
+      const data = imageData.data;
+      const pixels = width * height;
+      
+      // Convert to grayscale (Y channel)
+      const Y = new Float32Array(pixels);
+      for (let p = 0; p < pixels; p++) {
+        Y[p] = 0.299 * data[p*4] + 0.587 * data[p*4+1] + 0.114 * data[p*4+2];
+      }
+
+      // Mean and std
+      let mean = 0;
+      for (let i = 0; i < pixels; i++) mean += Y[i];
+      mean /= pixels;
+      
+      let variance = 0;
+      for (let i = 0; i < pixels; i++) variance += (Y[i] - mean) ** 2;
+      variance /= pixels;
+      const std = Math.sqrt(variance);
+
+      // Edge detection (Sobel)
+      let edges = 0;
+      for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+          const idx = y * width + x;
+          const gx = -Y[(y-1)*width+(x-1)] + Y[(y-1)*width+(x+1)]
+                    -2*Y[y*width+(x-1)] + 2*Y[y*width+(x+1)]
+                    -Y[(y+1)*width+(x-1)] + Y[(y+1)*width+(x+1)];
+          const gy = -Y[(y-1)*width+(x-1)] - 2*Y[(y-1)*width+x] - Y[(y-1)*width+(x+1)]
+                    +Y[(y+1)*width+(x-1)] + 2*Y[(y+1)*width+x] + Y[(y+1)*width+(x+1)];
+          const mag = Math.sqrt(gx*gx + gy*gy);
+          if (mag > 50) edges++;
+        }
+      }
+      const edgeDensity = edges / pixels;
+
+      // Auto-correlation
+      let corrH = 0, corrV = 0, count = 0;
+      for (let y = 0; y < height; y++) {
+        for (let x = 1; x < width; x++) {
+          const idx = y * width + x;
+          corrH += (Y[idx] - mean) * (Y[idx-1] - mean);
+          count++;
+        }
+      }
+      corrH = corrH / (count * variance);
+
+      count = 0;
+      for (let y = 1; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = y * width + x;
+          corrV += (Y[idx] - mean) * (Y[idx-width] - mean);
+          count++;
+        }
+      }
+      corrV = corrV / (count * variance);
+
+      // Simple frequency analysis (DCT approximation)
+      let lowFreq = 0, midFreq = 0, highFreq = 0;
+      const blockSize = 8;
+      const blocksX = Math.floor(width / blockSize);
+      const blocksY = Math.floor(height / blockSize);
+      
+      for (let by = 0; by < blocksY; by++) {
+        for (let bx = 0; bx < blocksX; bx++) {
+          let blockEnergy = 0;
+          for (let y = 0; y < blockSize; y++) {
+            for (let x = 0; x < blockSize; x++) {
+              const val = Y[(by*blockSize+y)*width + (bx*blockSize+x)];
+              blockEnergy += val * val;
+            }
+          }
+          blockEnergy /= (blockSize * blockSize);
+          
+          if (blockEnergy < 5000) lowFreq++;
+          else if (blockEnergy < 15000) midFreq++;
+          else highFreq++;
+        }
+      }
+      const totalBlocks = blocksX * blocksY;
+
+      return {
+        mean, std, variance,
+        edgeDensity,
+        corrH, corrV,
+        freqLow: lowFreq / totalBlocks,
+        freqMid: midFreq / totalBlocks,
+        freqHigh: highFreq / totalBlocks
+      };
+    }
+
+    // Math-guided upscaling with enhanced methods
+    function mathGuidedUpscale(lowResData, lowW, lowH, origW, origH, stats, method = 'frequency') {
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+
+      // Base upscale with Lanczos
+      tempCanvas.width = lowW;
+      tempCanvas.height = lowH;
+      tempCtx.putImageData(lowResData, 0, 0);
+
+      const highCanvas = document.createElement('canvas');
+      highCanvas.width = origW;
+      highCanvas.height = origH;
+      const highCtx = highCanvas.getContext('2d');
+      highCtx.imageSmoothingEnabled = true;
+      highCtx.imageSmoothingQuality = 'high';
+      highCtx.drawImage(tempCanvas, 0, 0, origW, origH);
+
+      let upscaled = highCtx.getImageData(0, 0, origW, origH);
+
+      // Apply statistical guidance with smarter approach
+      if (method === 'frequency') {
+        // Use frequency distribution to guide gentle enhancement
+        const highFreqRatio = stats.freqHigh;
+        const midFreqRatio = stats.freqMid;
+        
+        // Conservative sharpening based on frequency content
+        let sharpnessFactor;
+        if (highFreqRatio > 0.4) {
+          // High freq content: gentle sharpening to preserve details
+          sharpnessFactor = 0.3 + (highFreqRatio - 0.4) * 0.5; // 0.3-0.6×
+        } else if (midFreqRatio > 0.4) {
+          // Mid freq: very light sharpening
+          sharpnessFactor = 0.2 + (midFreqRatio - 0.4) * 0.3; // 0.2-0.5×
+        } else {
+          // Low freq: minimal processing
+          sharpnessFactor = 0.1;
+        }
+        
+        log('  🎯 Conservative sharpness: ' + sharpnessFactor.toFixed(3) + '× (from freq analysis)', 'info');
+        upscaled = applyGaussianSharpness(upscaled, origW, origH, sharpnessFactor);
+      } else if (method === 'texture') {
+        // Very subtle edge enhancement based on edge density
+        const edgeDensity = stats.edgeDensity;
+        // Only enhance if significant edges exist
+        const enhancement = edgeDensity > 0.15 ? 0.2 : 0.1;
+        log('  🎯 Gentle edge enhancement: ' + enhancement.toFixed(2) + '×', 'info');
+        upscaled = applyGaussianSharpness(upscaled, origW, origH, enhancement);
+      } else if (method === 'correlation') {
+        // High correlation = image is smooth, don't over-sharpen
+        const avgCorr = (stats.corrH + stats.corrV) / 2;
+        // Very high correlation (0.99) means minimal sharpening needed
+        const gentleFactor = (1 - avgCorr) * 5; // 0.05× for 0.99 correlation
+        log('  🎯 Correlation-guided: ' + gentleFactor.toFixed(3) + '× (corr=' + avgCorr.toFixed(3) + ')', 'info');
+        upscaled = applyGaussianSharpness(upscaled, origW, origH, gentleFactor);
+      }
+
+      return upscaled;
+    }
+
+    function applyAdaptiveSharpness(imageData, width, height, factor) {
+      const data = new Uint8ClampedArray(imageData.data);
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = width;
+      tempCanvas.height = height;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.putImageData(imageData, 0, 0);
+
+      // Simple unsharp mask
+      const blurCanvas = document.createElement('canvas');
+      blurCanvas.width = width;
+      blurCanvas.height = height;
+      const blurCtx = blurCanvas.getContext('2d');
+      blurCtx.filter = 'blur(1px)';
+      blurCtx.drawImage(tempCanvas, 0, 0);
+      const blurred = blurCtx.getImageData(0, 0, width, height).data;
+
+      for (let i = 0; i < data.length; i += 4) {
+        data[i] = Math.min(255, Math.max(0, data[i] + (data[i] - blurred[i]) * factor));
+        data[i+1] = Math.min(255, Math.max(0, data[i+1] + (data[i+1] - blurred[i+1]) * factor));
+        data[i+2] = Math.min(255, Math.max(0, data[i+2] + (data[i+2] - blurred[i+2]) * factor));
+      }
+
+      return new ImageData(data, width, height);
+    }
+
+    // Gentle Gaussian sharpness (conservative)
+    function applyGaussianSharpness(imageData, width, height, factor) {
+      if (factor < 0.05) return imageData; // Skip if too small
+      
+      const data = new Uint8ClampedArray(imageData.data);
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = width;
+      tempCanvas.height = height;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.putImageData(imageData, 0, 0);
+
+      // Gaussian blur with small radius
+      const blurCanvas = document.createElement('canvas');
+      blurCanvas.width = width;
+      blurCanvas.height = height;
+      const blurCtx = blurCanvas.getContext('2d');
+      blurCtx.filter = 'blur(0.8px)';
+      blurCtx.drawImage(tempCanvas, 0, 0);
+      const blurred = blurCtx.getImageData(0, 0, width, height).data;
+
+      // Very gentle unsharp mask
+      for (let i = 0; i < data.length; i += 4) {
+        const diff = data[i] - blurred[i];
+        const diffG = data[i+1] - blurred[i+1];
+        const diffB = data[i+2] - blurred[i+2];
+        
+        // Only sharpen if difference is significant (avoid noise)
+        if (Math.abs(diff) > 2 || Math.abs(diffG) > 2 || Math.abs(diffB) > 2) {
+          data[i] = Math.min(255, Math.max(0, data[i] + diff * factor));
+          data[i+1] = Math.min(255, Math.max(0, data[i+1] + diffG * factor));
+          data[i+2] = Math.min(255, Math.max(0, data[i+2] + diffB * factor));
+        }
+      }
+
+      return new ImageData(data, width, height);
+    }
+
+    // Multi-scale sharpening for better results
+    function applyMultiScaleSharpness(imageData, width, height, baseFactor, stats) {
+      const data = new Uint8ClampedArray(imageData.data);
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = width;
+      tempCanvas.height = height;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.putImageData(imageData, 0, 0);
+
+      // Apply sharpening at multiple scales
+      const scales = [
+        { radius: 0.5, weight: 0.5 },  // Fine details
+        { radius: 1.0, weight: 1.0 },  // Medium details
+        { radius: 2.0, weight: 0.7 }   // Large details
+      ];
+
+      let sharpened = new Uint8ClampedArray(data);
+
+      for (const scale of scales) {
+        const blurCanvas = document.createElement('canvas');
+        blurCanvas.width = width;
+        blurCanvas.height = height;
+        const blurCtx = blurCanvas.getContext('2d');
+        blurCtx.filter = `blur(${scale.radius}px)`;
+        blurCtx.drawImage(tempCanvas, 0, 0);
+        const blurred = blurCtx.getImageData(0, 0, width, height).data;
+
+        const factor = baseFactor * scale.weight;
+        for (let i = 0; i < sharpened.length; i += 4) {
+          sharpened[i] = Math.min(255, Math.max(0, sharpened[i] + (sharpened[i] - blurred[i]) * factor));
+          sharpened[i+1] = Math.min(255, Math.max(0, sharpened[i+1] + (sharpened[i+1] - blurred[i+1]) * factor));
+          sharpened[i+2] = Math.min(255, Math.max(0, sharpened[i+2] + (sharpened[i+2] - blurred[i+2]) * factor));
+        }
+      }
+
+      return new ImageData(sharpened, width, height);
+    }
+
+    // Edge-directed upscaling
+    function applyEdgeDirectedUpscale(highResData, lowResData, lowW, lowH, highW, highH, enhancement) {
+      // Start with high-res version
+      const data = new Uint8ClampedArray(highResData.data);
+      
+      // Detect edges in low-res and enhance corresponding areas in high-res
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = lowW;
+      tempCanvas.height = lowH;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.putImageData(lowResData, 0, 0);
+      const lowImageData = tempCtx.getImageData(0, 0, lowW, lowH);
+
+      // Simple Sobel edge detection on low-res
+      const edges = new Float32Array(lowW * lowH);
+      const gray = new Float32Array(lowW * lowH);
+      
+      for (let p = 0; p < lowW * lowH; p++) {
+        gray[p] = 0.299 * lowImageData.data[p*4] + 0.587 * lowImageData.data[p*4+1] + 0.114 * lowImageData.data[p*4+2];
+      }
+
+      for (let y = 1; y < lowH - 1; y++) {
+        for (let x = 1; x < lowW - 1; x++) {
+          const idx = y * lowW + x;
+          const gx = -gray[(y-1)*lowW+(x-1)] + gray[(y-1)*lowW+(x+1)]
+                    -2*gray[y*lowW+(x-1)] + 2*gray[y*lowW+(x+1)]
+                    -gray[(y+1)*lowW+(x-1)] + gray[(y+1)*lowW+(x+1)];
+          const gy = -gray[(y-1)*lowW+(x-1)] - 2*gray[(y-1)*lowW+x] - gray[(y-1)*lowW+(x+1)]
+                    +gray[(y+1)*lowW+(x-1)] + 2*gray[(y+1)*lowW+x] + gray[(y+1)*lowW+(x+1)];
+          edges[idx] = Math.sqrt(gx*gx + gy*gy);
+        }
+      }
+
+      // Apply edge enhancement to high-res
+      const scaleX = highW / lowW;
+      const scaleY = highH / lowH;
+
+      for (let y = 0; y < highH; y++) {
+        for (let x = 0; x < highW; x++) {
+          const lowX = Math.floor(x / scaleX);
+          const lowY = Math.floor(y / scaleY);
+          const lowIdx = lowY * lowW + lowX;
+          
+          if (edges[lowIdx] > 30) { // Edge detected
+            const idx = (y * highW + x) * 4;
+            const factor = enhancement * (edges[lowIdx] / 255);
+            
+            // Enhance contrast at edges
+            data[idx] = Math.min(255, Math.max(0, data[idx] * (1 + factor * 0.1)));
+            data[idx+1] = Math.min(255, Math.max(0, data[idx+1] * (1 + factor * 0.1)));
+            data[idx+2] = Math.min(255, Math.max(0, data[idx+2] * (1 + factor * 0.1)));
+          }
+        }
+      }
+
+      return new ImageData(data, highW, highH);
+    }
+
+    function applyEdgeEnhancement(imageData, width, height, factor) {
+      // Similar to unsharp mask but focused on edges
+      return applyAdaptiveSharpness(imageData, width, height, factor * 0.7);
+    }
+
+    function applyCorrelationGuidedUpscale(imageData, width, height, correlation) {
+      // Higher correlation = smoother interpolation is OK
+      // Lower correlation = need more detail preservation
+      const sharpness = correlation > 0.9 ? 0.5 : correlation > 0.8 ? 1.0 : 1.5;
+      return applyAdaptiveSharpness(imageData, width, height, sharpness);
+    }
+
+    function calcPSNR(orig, recon, length) {
+      let mse = 0;
+      for (let i = 0; i < length; i++) {
+        const diff = orig[i] - recon[i];
+        mse += diff * diff;
+      }
+      mse /= length;
+      return mse < 0.001 ? Infinity : 20 * Math.log10(255 / Math.sqrt(mse));
+    }
+
+    function calcSSIM(orig, recon, length) {
+      let mean1 = 0, mean2 = 0;
+      for (let i = 0; i < length; i++) { mean1 += orig[i]; mean2 += recon[i]; }
+      mean1 /= length; mean2 /= length;
+      let var1 = 0, var2 = 0, cov = 0;
+      for (let i = 0; i < length; i++) {
+        var1 += (orig[i] - mean1) ** 2;
+        var2 += (recon[i] - mean2) ** 2;
+        cov += (orig[i] - mean1) * (recon[i] - mean2);
+      }
+      var1 /= length; var2 /= length; cov /= length;
+      const C1 = 6.5025, C2 = 58.5225;
+      return ((2 * mean1 * mean2 + C1) * (2 * cov + C2)) / ((mean1**2 + mean2**2 + C1) * (var1 + var2 + C2));
+    }
+
+    let videoState = null;
+
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      log('📁 Loading: ' + file.name, 'info');
+
+      const video = document.createElement('video');
+      video.preload = 'auto';
+      video.src = URL.createObjectURL(file);
+
+      await new Promise(resolve => {
+        video.onloadedmetadata = resolve;
+        setTimeout(resolve, 5000);
+      });
+
+      videoState = { video, file, width: video.videoWidth, height: video.videoHeight, duration: video.duration };
+      
+      log('✅ Video loaded: ' + videoState.width + '×' + videoState.height, 'success');
+      document.getElementById('btnAnalyze').disabled = false;
+    });
+
+    document.getElementById('btnAnalyze').addEventListener('click', async () => {
+      if (!videoState) return;
+
+      log('📊 Analyzing original frame statistics...', 'info');
+      setProgress(20);
+
+      const video = videoState.video;
+      video.currentTime = videoState.duration / 2;
+      await new Promise(resolve => {
+        video.onseeked = resolve;
+        setTimeout(resolve, 1000);
+      });
+
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+
+      // Original
+      tempCanvas.width = videoState.width;
+      tempCanvas.height = videoState.height;
+      tempCtx.drawImage(video, 0, 0, videoState.width, videoState.height);
+      const origData = tempCtx.getImageData(0, 0, videoState.width, videoState.height);
+
+      // Calculate statistics
+      const stats = calculateStats(origData, videoState.width, videoState.height);
+
+      log('✅ Statistics calculated', 'success');
+      log('  Y: mean=' + stats.mean.toFixed(1) + ', std=' + stats.std.toFixed(1), 'info');
+      log('  Edge density: ' + (stats.edgeDensity * 100).toFixed(2) + '%', 'info');
+      log('  Auto-corr: H=' + stats.corrH.toFixed(3) + ', V=' + stats.corrV.toFixed(3), 'info');
+      log('  Freq: Low=' + (stats.freqLow*100).toFixed(0) + '%, Mid=' + (stats.freqMid*100).toFixed(0) + '%, High=' + (stats.freqHigh*100).toFixed(0) + '%', 'info');
+
+      videoState.stats = stats;
+      videoState.origData = origData;
+
+      // Display stats
+      document.getElementById('origRes').textContent = videoState.width + '×' + videoState.height;
+      document.getElementById('yStats').textContent = stats.mean.toFixed(1) + ' / ' + stats.std.toFixed(1);
+      document.getElementById('edgeDensity').textContent = (stats.edgeDensity * 100).toFixed(2) + '%';
+      document.getElementById('textureVar').textContent = stats.variance.toFixed(1);
+      document.getElementById('autocorr').textContent = stats.corrH.toFixed(3) + ' / ' + stats.corrV.toFixed(3);
+      document.getElementById('freqDist').textContent = (stats.freqLow*100).toFixed(0) + '% / ' + (stats.freqMid*100).toFixed(0) + '% / ' + (stats.freqHigh*100).toFixed(0) + '%';
+
+      document.getElementById('results').style.display = 'grid';
+      document.getElementById('comparison').style.display = 'grid';
+      document.getElementById('btnReconstruct').disabled = false;
+
+      setProgress(100);
+    });
+
+    document.getElementById('btnReconstruct').addEventListener('click', async () => {
+      if (!videoState) return;
+
+      log('🔄 Starting math-guided reconstruction...', 'info');
+      setProgress(20);
+
+      const method = document.getElementById('statGuidance').value;
+      const algo = document.getElementById('upscaleAlgo').value;
+
+      const compWidth = Math.round(videoState.width * 0.15);
+      const compHeight = Math.round(videoState.height * 0.15);
+      const scaleFactor = (videoState.width / compWidth).toFixed(2);
+
+      document.getElementById('scaleFactor').textContent = scaleFactor + '×';
+      document.getElementById('guidanceMethod').textContent = method.charAt(0).toUpperCase() + method.slice(1);
+
+      setProgress(40);
+
+      // Create low-res (compressed) version
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+
+      tempCanvas.width = compWidth;
+      tempCanvas.height = compHeight;
+      tempCtx.drawImage(videoState.video, 0, 0, compWidth, compHeight);
+      const lowResData = tempCtx.getImageData(0, 0, compWidth, compHeight);
+
+      // Show compressed
+      document.getElementById('canvasLow').width = compWidth;
+      document.getElementById('canvasLow').height = compHeight;
+      const ctxLow = document.getElementById('canvasLow').getContext('2d');
+      ctxLow.putImageData(lowResData, 0, 0);
+
+      // Show original
+      document.getElementById('canvasOrig').width = videoState.width;
+      document.getElementById('canvasOrig').height = videoState.height;
+      const ctxOrig = document.getElementById('canvasOrig').getContext('2d');
+      ctxOrig.putImageData(videoState.origData, 0, 0);
+
+      setProgress(60);
+
+      // Standard upscale
+      tempCanvas.width = compWidth;
+      tempCanvas.height = compHeight;
+      tempCtx.putImageData(lowResData, 0, 0);
+
+      const stdCanvas = document.createElement('canvas');
+      stdCanvas.width = videoState.width;
+      stdCanvas.height = videoState.height;
+      const stdCtx = stdCanvas.getContext('2d');
+      stdCtx.imageSmoothingEnabled = true;
+      stdCtx.imageSmoothingQuality = 'high';
+      stdCtx.drawImage(tempCanvas, 0, 0, videoState.width, videoState.height);
+      const stdUpscaled = stdCtx.getImageData(0, 0, videoState.width, videoState.height);
+
+      setProgress(80);
+
+      // Math-guided upscale
+      const guidedData = mathGuidedUpscale(lowResData, compWidth, compHeight, 
+                                          videoState.width, videoState.height, 
+                                          videoState.stats, method);
+
+      // Show guided
+      document.getElementById('canvasGuided').width = videoState.width;
+      document.getElementById('canvasGuided').height = videoState.height;
+      const ctxGuided = document.getElementById('canvasGuided').getContext('2d');
+      ctxGuided.putImageData(guidedData, 0, 0);
+
+      setProgress(90);
+
+      // Calculate metrics
+      const pixels = videoState.width * videoState.height;
+      const origRGB = new Float32Array(pixels * 3);
+      const stdRGB = new Float32Array(pixels * 3);
+      const guidedRGB = new Float32Array(pixels * 3);
+
+      for (let p = 0; p < pixels; p++) {
+        origRGB[p*3] = videoState.origData.data[p*4];
+        origRGB[p*3+1] = videoState.origData.data[p*4+1];
+        origRGB[p*3+2] = videoState.origData.data[p*4+2];
+        stdRGB[p*3] = stdUpscaled.data[p*4];
+        stdRGB[p*3+1] = stdUpscaled.data[p*4+1];
+        stdRGB[p*3+2] = stdUpscaled.data[p*4+2];
+        guidedRGB[p*3] = guidedData.data[p*4];
+        guidedRGB[p*3+1] = guidedData.data[p*4+1];
+        guidedRGB[p*3+2] = guidedData.data[p*4+2];
+      }
+
+      const stdPSNR = calcPSNR(origRGB, stdRGB, pixels * 3);
+      const guidedPSNR = calcPSNR(origRGB, guidedRGB, pixels * 3);
+      const stdSSIM = calcSSIM(origRGB, stdRGB, pixels * 3);
+      const guidedSSIM = calcSSIM(origRGB, guidedRGB, pixels * 3);
+
+      setProgress(100);
+
+      // Display results
+      document.getElementById('stdPSNR').textContent = stdPSNR > 100 ? '∞' : stdPSNR.toFixed(2) + ' dB';
+      document.getElementById('guidedPSNR').textContent = guidedPSNR > 100 ? '∞' : guidedPSNR.toFixed(2) + ' dB';
+      
+      const gain = guidedPSNR - stdPSNR;
+      document.getElementById('psnrGain').textContent = (gain > 0 ? '+' : '') + gain.toFixed(2) + ' dB';
+      document.getElementById('psnrGain').style.color = gain > 0 ? 'var(--success)' : 'var(--warning)';
+      document.getElementById('expectedGain').textContent = '+' + gain.toFixed(2) + ' dB';
+
+      document.getElementById('stdSSIM').textContent = stdSSIM.toFixed(6);
+      document.getElementById('guidedSSIM').textContent = guidedSSIM.toFixed(6);
+
+      const sharpness = videoState.stats.edgeDensity > 0.3 ? 'High' : 'Medium';
+      document.getElementById('adaptiveSharp').textContent = sharpness;
+      document.getElementById('reconError').textContent = (255 - guidedPSNR * 10).toFixed(2) + ' MSE';
+
+      log('\n✅ Reconstruction complete!', 'success');
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+      log('📊 Standard Upscale: PSNR=' + stdPSNR.toFixed(2) + ' dB, SSIM=' + stdSSIM.toFixed(6), 'info');
+      log('🧮 Math-Guided: PSNR=' + guidedPSNR.toFixed(2) + ' dB, SSIM=' + guidedSSIM.toFixed(6), 'success');
+      log('📈 Improvement: ' + (gain > 0 ? '+' : '') + gain.toFixed(2) + ' dB ' + (gain > 0 ? '✅' : '❌'), gain > 0 ? 'success' : 'warning');
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+    });
+  </script>
+</body>
+</html>

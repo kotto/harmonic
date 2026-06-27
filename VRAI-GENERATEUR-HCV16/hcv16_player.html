@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HCV16 Player</title>
+<style>
+  :root {
+    --bg:       #0d0d0f;
+    --surface:  #16161a;
+    --panel:    #1e1e24;
+    --border:   rgba(255,255,255,0.08);
+    --accent:   #4a8fff;
+    --accent2:  #2fd6a8;
+    --text:     #e8e8ec;
+    --muted:    #7a7a8c;
+    --danger:   #ff5a5a;
+    --success:  #2fd6a8;
+    --font:     'DM Mono', 'Fira Code', monospace;
+    --sans:     'DM Sans', system-ui, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ─── Header ─────────────────────────── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-mark {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font);
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.5px;
+  }
+  .logo-text {
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+  .logo-ver {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--font);
+  }
+  .status-pill {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    font-family: var(--font);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.3s;
+  }
+  .status-dot.ready { background: var(--success); box-shadow: 0 0 6px var(--success); }
+  .status-dot.playing { background: var(--accent); box-shadow: 0 0 6px var(--accent); animation: pulse 1s infinite; }
+  .status-dot.error { background: var(--danger); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ─── Main layout ─────────────────────── */
+  .main {
+    display: flex;
+    flex: 1;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  /* ─── Canvas area ─────────────────────── */
+  .player-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    min-width: 0;
+  }
+  .canvas-wrapper {
+    position: relative;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    max-width: 100%;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  }
+  #canvas {
+    display: block;
+    max-width: 100%;
+    max-height: 55vh;
+    object-fit: contain;
+  }
+  .drop-overlay {
+    position: absolute; inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .drop-overlay:hover { background: rgba(74,143,255,0.06); }
+  .drop-icon {
+    width: 56px; height: 56px;
+    border: 2px dashed rgba(74,143,255,0.5);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    color: var(--accent);
+  }
+  .drop-label { font-size: 13px; color: var(--muted); }
+  .drop-sub { font-family: var(--font); font-size: 10px; color: rgba(122,122,140,0.6); }
+
+  /* ─── Progress / controls ─────────────── */
+  .controls {
+    width: 100%;
+    max-width: 900px;
+    margin-top: 16px;
+  }
+  .progress-track {
+    width: 100%;
+    height: 4px;
+    background: var(--panel);
+    border-radius: 2px;
+    position: relative;
+    cursor: pointer;
+    margin-bottom: 12px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    width: 0%;
+    pointer-events: none;
+    transition: width 0.05s;
+  }
+  .progress-thumb {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    left: 0%;
+    pointer-events: none;
+    transition: left 0.05s;
+  }
+  .ctrl-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    padding: 7px 16px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 12px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    transition: background 0.15s, border-color 0.15s;
+    user-select: none;
+  }
+  .btn:hover { background: rgba(74,143,255,0.12); border-color: var(--accent); }
+  .btn:active { transform: scale(0.97); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: #6aabff; }
+  .btn svg { width: 14px; height: 14px; }
+  .tc {
+    font-family: var(--font);
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+  .fps-badge {
+    font-family: var(--font);
+    font-size: 11px;
+    color: var(--accent2);
+    padding: 3px 8px;
+    border: 1px solid rgba(47,214,168,0.3);
+    border-radius: 5px;
+  }
+  .speed-sel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    outline: none;
+  }
+  .speed-sel:hover { border-color: var(--accent); }
+
+  /* ─── Sidebar ─────────────────────────── */
+  .sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    font-family: var(--font);
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-panel { display: none; flex: 1; overflow-y: auto; padding: 14px; flex-direction: column; gap: 10px; }
+  .tab-panel.active { display: flex; }
+
+  /* ─── Info cards ──────────────────────── */
+  .info-group { margin-bottom: 4px; }
+  .info-label {
+    font-family: var(--font);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .kv-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    gap: 8px;
+  }
+  .kv-key { color: var(--muted); font-size: 12px; }
+  .kv-val {
+    font-family: var(--font);
+    font-size: 12px;
+    color: var(--text);
+    text-align: right;
+    word-break: break-all;
+  }
+  .kv-val.accent { color: var(--accent); }
+  .kv-val.success { color: var(--success); }
+  .kv-val.warn { color: #ffaa4a; }
+
+  /* ─── Frame log ───────────────────────── */
+  .frame-log {
+    font-family: var(--font);
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.8;
+    flex: 1;
+    overflow-y: auto;
+  }
+  .frame-log .entry {
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .frame-log .fi { color: var(--accent); min-width: 40px; }
+  .frame-log .fk {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: rgba(74,143,255,0.15);
+    color: var(--accent);
+  }
+  .frame-log .fsize { color: rgba(255,255,255,0.3); margin-left: auto; }
+
+  /* ─── Waveform / timeline strip ────────── */
+  .timeline-strip {
+    width: 100%;
+    height: 32px;
+    background: var(--panel);
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 4px;
+    cursor: pointer;
+  }
+  #timelineCanvas { width: 100%; height: 100%; }
+
+  /* ─── Error / loading states ────────────── */
+  .msg-box {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.6;
+    margin: 8px 0;
+  }
+  .msg-box.error { background: rgba(255,90,90,0.1); border: 1px solid rgba(255,90,90,0.3); color: #ff9a9a; }
+  .msg-box.info  { background: rgba(74,143,255,0.08); border: 1px solid rgba(74,143,255,0.25); color: #9ac5ff; }
+
+  #fileInput { display: none; }
+
+  /* ─── Scrollbars ─────────────────────── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    #canvas { max-height: 42vh; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">HCV</div>
+    <div>
+      <div class="logo-text">HCV16</div>
+      <div class="logo-ver">HARMONIC CODEC PLAYER</div>
+    </div>
+  </div>
+  <div class="status-pill">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">En attente</span>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- ─── Player ─────────────────────── -->
+  <div class="player-area">
+    <div class="canvas-wrapper" id="canvasWrapper">
+      <canvas id="canvas" width="640" height="360"></canvas>
+      <div class="drop-overlay" id="dropOverlay" onclick="document.getElementById('fileInput').click()">
+        <div class="drop-icon">▶</div>
+        <div class="drop-label">Ouvrir un fichier .hcv16</div>
+        <div class="drop-sub">Cliquer ou glisser-déposer</div>
+      </div>
+    </div>
+
+    <div class="controls" id="controls" style="display:none;">
+      <div class="timeline-strip">
+        <canvas id="timelineCanvas"></canvas>
+      </div>
+      <div class="progress-track" id="progressTrack">
+        <div class="progress-fill" id="progressFill"></div>
+        <div class="progress-thumb" id="progressThumb"></div>
+      </div>
+      <div class="ctrl-row">
+        <button class="btn" id="btnSkipPrev" title="Frame précédente">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M3 3v10M13 3L7 8l6 5V3z"/>
+          </svg>
+        </button>
+        <button class="btn primary" id="btnPlay">
+          <svg id="playIcon" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M4 3l9 5-9 5V3z"/>
+          </svg>
+        </button>
+        <button class="btn" id="btnSkipNext" title="Frame suivante">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M13 3v10M3 3l6 5-6 5V3z"/>
+          </svg>
+        </button>
+        <select class="speed-sel" id="speedSel">
+          <option value="0.25">0.25×</option>
+          <option value="0.5">0.5×</option>
+          <option value="1" selected>1×</option>
+          <option value="2">2×</option>
+          <option value="4">4×</option>
+        </select>
+        <div class="fps-badge" id="fpsBadge">— fps</div>
+        <div class="tc" id="timeCode">00:00:00 / 00:00:00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Sidebar ────────────────────── -->
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <div class="tab active" onclick="switchTab('info')">Info</div>
+      <div class="tab" onclick="switchTab('frames')">Frames</div>
+    </div>
+
+    <div class="tab-panel active" id="tab-info">
+      <div id="infoPlaceholder" style="color:var(--muted);font-size:12px;margin-top:8px;">
+        Aucun fichier chargé.
+      </div>
+      <div id="infoContent" style="display:none; flex-direction:column; gap:10px;"></div>
+    </div>
+
+    <div class="tab-panel" id="tab-frames">
+      <div class="frame-log" id="frameLog">
+        <div style="color:var(--muted);font-size:12px;">Aucun fichier chargé.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<input type="file" id="fileInput" accept=".hcv16,.hcs,.bin"/>
+
+<script>
+// ─── CRC32 ───────────────────────────────────────────────────────────────────
+const CRC32_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[i] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(buf) {
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < buf.length; i++) crc = (CRC32_TABLE[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8)) >>> 0;
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+// ─── HCV16 Parser ────────────────────────────────────────────────────────────
+class HCV16File {
+  constructor(buffer) {
+    this.buf   = buffer;
+    this.view  = new DataView(buffer);
+    this.meta  = null;
+    this.index = [];   // [{offset:BigInt, size:number}]
+    this._parse();
+  }
+
+  _parse() {
+    const MAGIC = 'HCV16\x01\x00\x00';
+    const magic = String.fromCharCode(...new Uint8Array(this.buf, 0, 8));
+    if (!magic.startsWith('HCV16')) throw new Error(`Magic invalide: "${magic}"`);
+
+    let pos = 8;
+    const headerLen = this.view.getUint32(pos, true); pos += 4;
+    const headerBytes = new Uint8Array(this.buf, pos, headerLen); pos += headerLen;
+    this.meta = JSON.parse(new TextDecoder().decode(headerBytes));
+
+    const frameCount = this.view.getUint32(pos, true); pos += 4;
+    for (let i = 0; i < frameCount; i++) {
+      const offset = this.view.getBigUint64(pos, true);     pos += 8;
+      const size   = this.view.getUint32(pos, true);        pos += 4;
+      this.index.push({ offset, size });
+    }
+  }
+
+  get frameCount() { return this.index.length; }
+  get width()      { return this.meta.width;  }
+  get height()     { return this.meta.height; }
+  get fps()        { return this.meta.fps;    }
+  get duration()   { return this.meta.duration; }
+
+  // Retourne une frame parsée (seek O(1))
+  readFrame(idx) {
+    if (idx < 0 || idx >= this.index.length) throw new Error('Index hors limites');
+    const { offset, size } = this.index[idx];
+    const off = Number(offset);
+
+    // Frame header: magic(4) + frameIdx(4) + w(2) + h(2) + flags(1) + crc(4) + payloadLen(4) = 21 bytes
+    const FM = String.fromCharCode(...new Uint8Array(this.buf, off, 4));
+    if (FM !== 'FRHC') throw new Error(`Frame magic invalide à index ${idx}: "${FM}"`);
+
+    const frameIdx  = this.view.getUint32(off + 4,  true);
+    const w         = this.view.getUint16(off + 8,  true);
+    const h         = this.view.getUint16(off + 10, true);
+    const flags     = this.view.getUint8(off + 12);
+    const storedCRC = this.view.getUint32(off + 13, true);
+    const payLen    = this.view.getUint32(off + 17, true);
+
+    const payload   = new Uint8Array(this.buf, off + 21, payLen);
+
+    // Vérification CRC
+    const calcCRC   = crc32(payload);
+    const crcOk     = (calcCRC === storedCRC);
+
+    // Décompression DeflateRaw via DecompressionStream
+    return {
+      frameIdx, w, h,
+      isKeyFrame: !!(flags & 0x01),
+      crcOk,
+      payloadSize: payLen,
+      payload: payload.slice(),  // copie pour usage async
+    };
+  }
+}
+
+// ─── Delta-H + YCbCr → RGB decoder ──────────────────────────────────────────
+async function decompressPayload(payload) {
+  const ds = new DecompressionStream('deflate-raw');
+  const writer = ds.writable.getWriter();
+  writer.write(payload);
+  writer.close();
+  const chunks = [];
+  const reader = ds.readable.getReader();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+  }
+  const totalLen = chunks.reduce((a, c) => a + c.length, 0);
+  const out = new Uint8Array(totalLen);
+  let pos = 0;
+  for (const c of chunks) { out.set(c, pos); pos += c.length; }
+  return out;
+}
+
+function deltaDecode(plane, w) {
+  const out = new Uint8Array(plane.length);
+  const rows = Math.ceil(plane.length / w);
+  for (let row = 0; row < rows; row++) {
+    let prev = 128;
+    for (let col = 0; col < w && row*w+col < plane.length; col++) {
+      const idx = row*w + col;
+      const val = (prev + plane[idx]) & 0xFF;
+      out[idx] = val;
+      prev = val;
+    }
+  }
+  return out;
+}
+
+function ycbcr420ToRGB(decompressed, w, h) {
+  const pixels = w * h;
+  const hw = w >> 1, hh = h >> 1;
+  const yPlane  = deltaDecode(decompressed.subarray(0, pixels), w);
+  const cbPlane = deltaDecode(decompressed.subarray(pixels, pixels + hw*hh), hw);
+  const crPlane = deltaDecode(decompressed.subarray(pixels + hw*hh), hw);
+
+  const rgb = new Uint8ClampedArray(pixels * 4);
+  for (let py = 0; py < h; py++) {
+    for (let px = 0; px < w; px++) {
+      const Y  = yPlane[py*w + px];
+      const ci = (py >> 1) * hw + (px >> 1);
+      const Cb = cbPlane[ci] - 128;
+      const Cr = crPlane[ci] - 128;
+      const R = Y + 1.402  * Cr;
+      const G = Y - 0.344136 * Cb - 0.714136 * Cr;
+      const B = Y + 1.772  * Cb;
+      const i4 = (py*w + px) * 4;
+      rgb[i4]   = Math.max(0, Math.min(255, R));
+      rgb[i4+1] = Math.max(0, Math.min(255, G));
+      rgb[i4+2] = Math.max(0, Math.min(255, B));
+      rgb[i4+3] = 255;
+    }
+  }
+  return rgb;
+}
+
+// ─── Player state ─────────────────────────────────────────────────────────────
+let hcv   = null;
+let playing     = false;
+let curFrame    = 0;
+let playTimer   = null;
+let fpsHistory  = [];
+let lastFrameTs = 0;
+const frameCache = new Map();   // LRU de taille fixe
+
+const canvas    = document.getElementById('canvas');
+const ctx       = canvas.getContext('2d');
+const tlCanvas  = document.getElementById('timelineCanvas');
+const tlCtx     = tlCanvas.getContext('2d');
+
+function setStatus(state, text) {
+  const dot  = document.getElementById('statusDot');
+  const span = document.getElementById('statusText');
+  dot.className = 'status-dot ' + state;
+  span.textContent = text;
+}
+
+async function renderFrame(idx) {
+  if (!hcv) return;
+  idx = Math.max(0, Math.min(idx, hcv.frameCount - 1));
+  curFrame = idx;
+
+  // FPS measurement
+  const now = performance.now();
+  if (lastFrameTs) {
+    fpsHistory.push(1000 / (now - lastFrameTs));
+    if (fpsHistory.length > 20) fpsHistory.shift();
+    const avgFPS = fpsHistory.reduce((a,b) => a+b, 0) / fpsHistory.length;
+    document.getElementById('fpsBadge').textContent = avgFPS.toFixed(0) + ' fps';
+  }
+  lastFrameTs = now;
+
+  // Check cache
+  let rgbaData = frameCache.get(idx);
+  if (!rgbaData) {
+    const frame = hcv.readFrame(idx);
+    const decompressed = await decompressPayload(frame.payload);
+    rgbaData = ycbcr420ToRGB(decompressed, frame.w, frame.h);
+    if (frameCache.size > 30) {
+      const oldest = frameCache.keys().next().value;
+      frameCache.delete(oldest);
+    }
+    frameCache.set(idx, rgbaData);
+    logFrame(frame);
+  }
+
+  // Draw
+  const { width: w, height: h } = hcv;
+  canvas.width  = w;
+  canvas.height = h;
+  const imgData = new ImageData(rgbaData, w, h);
+  ctx.putImageData(imgData, 0, 0);
+
+  // Update UI
+  updateProgress(idx);
+}
+
+function updateProgress(idx) {
+  const pct = hcv ? idx / (hcv.frameCount - 1) * 100 : 0;
+  document.getElementById('progressFill').style.width  = pct + '%';
+  document.getElementById('progressThumb').style.left  = pct + '%';
+
+  const cur = idx / (hcv.fps || 30);
+  const tot = hcv.duration;
+  document.getElementById('timeCode').textContent = formatTime(cur) + ' / ' + formatTime(tot);
+}
+
+function formatTime(s) {
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = Math.floor(s % 60);
+  return [h,m,sec].map(v => String(v).padStart(2,'0')).join(':');
+}
+
+// ─── Frame log ───────────────────────────────────────────────────────────────
+const loggedFrames = new Set();
+function logFrame(frame) {
+  if (loggedFrames.has(frame.frameIdx)) return;
+  loggedFrames.add(frame.frameIdx);
+  const log = document.getElementById('frameLog');
+  if (loggedFrames.size === 1) log.innerHTML = '';
+  const el = document.createElement('div');
+  el.className = 'entry';
+  el.innerHTML = `
+    <span class="fi">#${String(frame.frameIdx).padStart(4,'0')}</span>
+    ${frame.isKeyFrame ? '<span class="fk">KEY</span>' : ''}
+    <span style="color:${frame.crcOk?'var(--success)':'var(--danger)'};font-size:11px;">${frame.crcOk?'CRC✓':'CRC✗'}</span>
+    <span class="fsize">${(frame.payloadSize/1024).toFixed(1)}K</span>
+  `;
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
+}
+
+// ─── Timeline strip ──────────────────────────────────────────────────────────
+function drawTimeline() {
+  if (!hcv) return;
+  const tc = tlCanvas;
+  const tcc = tlCtx;
+  tc.width = tc.offsetWidth * devicePixelRatio;
+  tc.height = 32 * devicePixelRatio;
+  tcc.scale(devicePixelRatio, devicePixelRatio);
+  const w = tc.offsetWidth, h = 32;
+  const barW = w / hcv.frameCount;
+  for (let i = 0; i < hcv.frameCount; i++) {
+    const isKey = (i % (hcv.meta.gop_size || 30) === 0);
+    tcc.fillStyle = isKey ? 'rgba(74,143,255,0.5)' : 'rgba(255,255,255,0.07)';
+    tcc.fillRect(i * barW, 0, Math.max(barW - 0.5, 0.5), h);
+  }
+}
+
+// ─── Info sidebar ─────────────────────────────────────────────────────────────
+function populateInfo() {
+  if (!hcv) return;
+  document.getElementById('infoPlaceholder').style.display = 'none';
+  const ic = document.getElementById('infoContent');
+  ic.style.display = 'flex';
+  ic.innerHTML = '';
+  const m = hcv.meta;
+  const sections = [
+    { label: 'Vidéo', rows: [
+      ['Format',      'HCV16 v' + m.version],
+      ['Résolution',  m.width + '×' + m.height],
+      ['FPS',         m.fps.toFixed(2)],
+      ['Frames',      m.frames],
+      ['Durée',       formatTime(m.duration)],
+      ['Source',      m.source || '—'],
+    ]},
+    { label: 'Compression', rows: [
+      ['Mode',        m.mode],
+      ['Pipeline',    'RGB→YCbCr→ΔH→Deflate'],
+      ['GOP size',    m.gop_size || '—'],
+    ]},
+    { label: 'Lecture', rows: [
+      ['Seek',        'O(1) index'],
+      ['Cache',       'LRU 30 frames'],
+      ['CRC',         'CRC32 / frame'],
+    ]},
+  ];
+  for (const sec of sections) {
+    const g = document.createElement('div');
+    g.className = 'info-group';
+    g.innerHTML = `<div class="info-label">${sec.label}</div>`;
+    for (const [k,v] of sec.rows) {
+      const r = document.createElement('div');
+      r.className = 'kv-row';
+      r.innerHTML = `<span class="kv-key">${k}</span><span class="kv-val">${v}</span>`;
+      g.appendChild(r);
+    }
+    ic.appendChild(g);
+  }
+}
+
+// ─── Load file ────────────────────────────────────────────────────────────────
+async function loadFile(file) {
+  setStatus('', 'Lecture...');
+  frameCache.clear();
+  loggedFrames.clear();
+  document.getElementById('frameLog').innerHTML = '<div style="color:var(--muted);font-size:12px;">Chargement...</div>';
+
+  try {
+    const buf = await file.arrayBuffer();
+    hcv = new HCV16File(buf);
+    document.getElementById('dropOverlay').style.display = 'none';
+    document.getElementById('controls').style.display = '';
+
+    canvas.width  = hcv.width;
+    canvas.height = hcv.height;
+
+    populateInfo();
+    drawTimeline();
+    await renderFrame(0);
+    setStatus('ready', 'Prêt · ' + hcv.frameCount + ' frames');
+    fpsHistory = [];
+  } catch (err) {
+    setStatus('error', 'Erreur');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#ff5a5a22';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#ff9a9a';
+    ctx.font = '14px monospace';
+    ctx.fillText('Erreur: ' + err.message, 16, 40);
+    document.getElementById('infoContent').innerHTML =
+      `<div class="msg-box error">${err.message}</div>`;
+  }
+}
+
+// ─── Playback ─────────────────────────────────────────────────────────────────
+function getInterval() {
+  if (!hcv) return 33;
+  const speed = parseFloat(document.getElementById('speedSel').value);
+  return (1000 / hcv.fps) / speed;
+}
+
+function togglePlay() {
+  playing = !playing;
+  const icon = document.getElementById('playIcon');
+  if (playing) {
+    setStatus('playing', 'Lecture');
+    icon.innerHTML = '<rect x="4" y="3" width="3" height="10" rx="1"/><rect x="9" y="3" width="3" height="10" rx="1"/>';
+    scheduleNext();
+  } else {
+    setStatus('ready', 'Pause');
+    icon.innerHTML = '<path d="M4 3l9 5-9 5V3z"/>';
+    clearTimeout(playTimer);
+  }
+}
+
+function scheduleNext() {
+  if (!playing) return;
+  const interval = getInterval();
+  const t0 = performance.now();
+  playTimer = setTimeout(async () => {
+    if (!playing) return;
+    const next = (curFrame + 1) % hcv.frameCount;
+    if (next === 0) { togglePlay(); return; }
+    await renderFrame(next);
+    const elapsed = performance.now() - t0;
+    const drift = Math.max(0, interval - elapsed);
+    playTimer = setTimeout(() => scheduleNext(), drift);
+  }, interval);
+}
+
+// ─── Controls ─────────────────────────────────────────────────────────────────
+document.getElementById('btnPlay').onclick = () => { if (hcv) togglePlay(); };
+document.getElementById('btnSkipPrev').onclick = () => { if (hcv) { if (playing) togglePlay(); renderFrame(curFrame - 1); } };
+document.getElementById('btnSkipNext').onclick = () => { if (hcv) { if (playing) togglePlay(); renderFrame(curFrame + 1); } };
+
+document.getElementById('progressTrack').addEventListener('click', e => {
+  if (!hcv) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pct  = (e.clientX - rect.left) / rect.width;
+  const fi   = Math.round(pct * (hcv.frameCount - 1));
+  if (playing) togglePlay();
+  renderFrame(fi);
+});
+
+document.getElementById('timelineCanvas').parentElement.addEventListener('click', e => {
+  if (!hcv) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pct  = (e.clientX - rect.left) / rect.width;
+  const fi   = Math.round(pct * (hcv.frameCount - 1));
+  if (playing) togglePlay();
+  renderFrame(fi);
+});
+
+// ─── Keyboard shortcuts ───────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (!hcv) return;
+  if (e.key === ' ')           { e.preventDefault(); togglePlay(); }
+  if (e.key === 'ArrowRight')  { if (playing) togglePlay(); renderFrame(curFrame + 1); }
+  if (e.key === 'ArrowLeft')   { if (playing) togglePlay(); renderFrame(curFrame - 1); }
+  if (e.key === 'Home')        { if (playing) togglePlay(); renderFrame(0); }
+  if (e.key === 'End')         { if (playing) togglePlay(); renderFrame(hcv.frameCount - 1); }
+});
+
+// ─── File input ───────────────────────────────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (f) loadFile(f);
+});
+
+// Drag & drop
+const body = document.body;
+body.addEventListener('dragover', e => e.preventDefault());
+body.addEventListener('drop', e => {
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if (f) loadFile(f);
+});
+
+// ─── Tab switch ────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['info','frames'][i] === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ─── Demo mode (génère quelques frames synthétiques pour test) ─────────────────
+function createDemoHCV16() {
+  const W = 320, H = 240, FPS = 15, NFRAMES = 90, GOP = 15;
+  const MAGIC = new Uint8Array([72,67,86,49,54,1,0,0]);   // "HCV16\x01\x00\x00"
+
+  const headerObj = {
+    magic:'HCV16', version:'16.1', mode:'demo_synthetic',
+    width:W, height:H, fps:FPS, frames:NFRAMES, duration:NFRAMES/FPS,
+    source:'DEMO', gop_size:GOP, created: new Date().toISOString()
+  };
+  const headerBytes = new TextEncoder().encode(JSON.stringify(headerObj, null, 2));
+  const headerLen = new Uint8Array(4);
+  new DataView(headerLen.buffer).setUint32(0, headerBytes.length, true);
+
+  // Build frames first to know offsets
+  const frameBuffers = [];
+  for (let fi = 0; fi < NFRAMES; fi++) {
+    const isKey = (fi % GOP === 0);
+    // Synthetic YCbCr 4:2:0 (delta-encoded) — gradient animation
+    const pixels = W * H;
+    const hw = W>>1, hh = H>>1;
+    const yRaw  = new Uint8Array(pixels);
+    const cbRaw = new Uint8Array(hw*hh);
+    const crRaw = new Uint8Array(hw*hh);
+
+    const t = fi / NFRAMES;
+    for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
+      yRaw[py*W+px] = (px + py + fi*3) & 0xFF;
+    }
+    for (let i = 0; i < hw*hh; i++) {
+      cbRaw[i] = Math.round(128 + 40*Math.sin(t*Math.PI*2 + i*0.01));
+      crRaw[i] = Math.round(128 + 40*Math.cos(t*Math.PI*2 + i*0.01));
+    }
+
+    // Delta-H encode
+    function dEnc(plane, w) {
+      const out = new Uint8Array(plane.length);
+      const rows = Math.ceil(plane.length/w);
+      for (let r=0;r<rows;r++) {
+        let prev=128;
+        for (let c=0;c<w&&r*w+c<plane.length;c++) {
+          const idx=r*w+c;
+          out[idx] = (plane[idx]-prev+256)&0xFF;
+          prev=plane[idx];
+        }
+      }
+      return out;
+    }
+    const dy = dEnc(yRaw,W), dc = dEnc(cbRaw,hw), dr = dEnc(crRaw,hw);
+    const combined = new Uint8Array(dy.length+dc.length+dr.length);
+    combined.set(dy,0); combined.set(dc,dy.length); combined.set(dr,dy.length+dc.length);
+
+    // Compress via pako (DeflateRaw)
+    // Since we're in a browser without pako here, use a simple RLE substitute
+    // that's compatible with our decoder (we'll skip compression for demo)
+    // Actually use CompressionStream — but it's async so we'll store raw + flag
+    // For demo we store uncompressed wrapped in a dummy "no-op deflate" trick:
+    // We mark it as raw by actually running real DeflateRaw via a sync workaround.
+    // Since browser doesn't have sync compress, we store with flag in a custom demo format.
+    // SIMPLIFICATION: for demo frames, store raw data with a tiny custom wrapper
+    // that our decoder handles: if CRC stored = 0x00000000 AND payloadLen = combined.length+1,
+    // first payload byte = 0xFF (raw marker).
+    const payload = new Uint8Array(1 + combined.length);
+    payload[0] = 0xFF; // raw marker (no deflate)
+    payload.set(combined, 1);
+
+    const fh = new ArrayBuffer(21);
+    const fdv = new DataView(fh);
+    fdv.setUint8(0,70); fdv.setUint8(1,82); fdv.setUint8(2,72); fdv.setUint8(3,67); // FRHC
+    fdv.setUint32(4, fi, true);
+    fdv.setUint16(8, W, true);
+    fdv.setUint16(10, H, true);
+    fdv.setUint8(12, isKey ? 1 : 0);
+    fdv.setUint32(13, 0, true); // CRC = 0 for demo (raw mode)
+    fdv.setUint32(17, payload.length, true);
+
+    const frameFull = new Uint8Array(21 + payload.length);
+    frameFull.set(new Uint8Array(fh), 0);
+    frameFull.set(payload, 21);
+    frameBuffers.push(frameFull);
+  }
+
+  // Build index
+  const INDEX_ENTRY = 12;
+  const preambleSize = MAGIC.length + 4 + headerBytes.length + 4 + NFRAMES*INDEX_ENTRY;
+  const indexBuf = new ArrayBuffer(4 + NFRAMES*INDEX_ENTRY);
+  const idv = new DataView(indexBuf);
+  idv.setUint32(0, NFRAMES, true);
+  let off = BigInt(preambleSize);
+  for (let i=0;i<NFRAMES;i++) {
+    idv.setBigUint64(4+i*INDEX_ENTRY, off, true);
+    idv.setUint32(4+i*INDEX_ENTRY+8, frameBuffers[i].length, true);
+    off += BigInt(frameBuffers[i].length);
+  }
+
+  // Assemble
+  const totalSize = preambleSize + frameBuffers.reduce((a,f)=>a+f.length,0);
+  const out = new Uint8Array(totalSize);
+  let pos = 0;
+  out.set(MAGIC, pos); pos += MAGIC.length;
+  out.set(headerLen, pos); pos += 4;
+  out.set(headerBytes, pos); pos += headerBytes.length;
+  out.set(new Uint8Array(indexBuf), pos); pos += indexBuf.byteLength;
+  for (const fb of frameBuffers) { out.set(fb, pos); pos += fb.length; }
+
+  return out.buffer;
+}
+
+// Override decompressPayload to handle demo raw marker
+const _origDecompress = decompressPayload;
+window.decompressPayload = async function(payload) {
+  if (payload[0] === 0xFF) {
+    // raw mode — skip first byte
+    return payload.slice(1);
+  }
+  return _origDecompress(payload);
+};
+// Patch the global ref used above
+const decompressPayload_orig = decompressPayload;
+
+// ─── Demo button ──────────────────────────────────────────────────────────────
+const demoBtn = document.createElement('button');
+demoBtn.className = 'btn';
+demoBtn.style.marginTop = '10px';
+demoBtn.textContent = 'Charger démo synthétique';
+demoBtn.onclick = async () => {
+  const buf = createDemoHCV16();
+  const file = new File([buf], 'demo.hcv16', { type: 'application/octet-stream' });
+  loadFile(file);
+};
+document.getElementById('dropOverlay').appendChild(demoBtn);
+
+// ─── Resize timeline ──────────────────────────────────────────────────────────
+new ResizeObserver(() => { if (hcv) drawTimeline(); }).observe(document.getElementById('timelineCanvas').parentElement);
+</script>
+</body>
+</html>

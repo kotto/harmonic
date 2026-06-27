@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCS Studio - Comparaison Avant/Après</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        'hcs-black': '#0a0a0f',
+                        'hcs-dark': '#12121a',
+                        'hcs-card': '#1a1a25',
+                        'hcs-gold': '#FFD700',
+                        'hcs-gold-light': '#FFE55C',
+                        'hcs-purple': '#8B5CF6',
+                        'hcs-blue': '#3B82F6',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        * { scroll-behavior: smooth; }
+        body {
+            background: #0a0a0f;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        
+        .gradient-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%);
+        }
+        
+        .glass-card {
+            background: rgba(26, 26, 37, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        
+        .gold-accent {
+            background: linear-gradient(135deg, #FFD700 0%, #FFE55C 50%, #FFD700 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #FFD700 0%, #FFE55C 100%);
+            color: #0a0a0f;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(255, 215, 0, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+        
+        /* Image Comparison Slider */
+        .comparison-container {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            overflow: hidden;
+            border-radius: 16px;
+        }
+        
+        .comparison-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .comparison-container .before-image {
+            z-index: 1;
+            width: 50%;
+            overflow: hidden;
+        }
+        
+        .comparison-container .before-image img {
+            width: 200%;
+            height: 100%;
+        }
+        
+        .comparison-slider-handle {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background: #FFD700;
+            z-index: 10;
+            cursor: ew-resize;
+            transform: translateX(-50%);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+        
+        .comparison-slider-handle::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 48px;
+            height: 48px;
+            background: #FFD700;
+            border-radius: 50%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .comparison-slider-handle::after {
+            content: '↔';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #0a0a0f;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .comparison-label {
+            position: absolute;
+            top: 20px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            z-index: 5;
+        }
+        
+        .comparison-label.before {
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+        }
+        
+        .comparison-label.after {
+            right: 20px;
+            background: rgba(255, 215, 0, 0.9);
+            color: #0a0a0f;
+        }
+        
+        /* Video Comparison */
+        .video-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .video-container {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #1a1a25;
+        }
+        
+        .video-container video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .video-label {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            z-index: 10;
+        }
+        
+        /* Play button overlay */
+        .play-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+        
+        .play-overlay:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        .play-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 215, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s;
+        }
+        
+        .play-button:hover {
+            transform: scale(1.1);
+        }
+        
+        /* Stats overlay */
+        .stats-overlay {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            right: 16px;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            z-index: 10;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a0f; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #FFD700; }
+        
+        /* Upload zone */
+        .upload-zone {
+            border: 2px dashed rgba(255, 215, 0, 0.3);
+            background: rgba(255, 215, 0, 0.02);
+            transition: all 0.3s ease;
+        }
+        
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #FFD700;
+            background: rgba(255, 215, 0, 0.05);
+        }
+        
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="font-sans antialiased">
+    <!-- Background -->
+    <div class="gradient-bg"></div>
+    
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass-card border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="hcs_studio.html" class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg border border-hcs-gold/50 flex items-center justify-center">
+                    <i data-lucide="film" class="w-5 h-5 text-hcs-gold"></i>
+                </div>
+                <span class="font-display font-bold text-lg">
+                    HCS <span class="gold-accent">Studio</span>
+                </span>
+            </a>
+            
+            <div class="flex items-center space-x-4">
+                <button onclick="window.location.href='hcs_dashboard_v2.html'" class="btn-secondary px-4 py-2 rounded-full text-sm flex items-center space-x-2">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                    <span>Retour au Dashboard</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="pt-24 pb-12 px-6">
+        <div class="max-w-7xl mx-auto">
+            
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <h1 class="font-display text-4xl md:text-5xl font-bold mb-4">
+                    Comparaison <span class="gold-accent">Avant/Après</span>
+                </h1>
+                <p class="text-gray-400 max-w-2xl mx-auto">
+                    Visualisez les résultats de nos traitements avec un slider interactif
+                </p>
+            </div>
+            
+            <!-- Mode Selection -->
+            <div class="flex justify-center mb-8">
+                <div class="glass-card rounded-full p-1 flex space-x-1">
+                    <button onclick="switchMode('image')" id="btn-image" class="px-6 py-2 rounded-full text-sm font-medium transition-all bg-hcs-gold/20 text-hcs-gold">
+                        <i data-lucide="image" class="w-4 h-4 inline mr-2"></i>
+                        Images
+                    </button>
+                    <button onclick="switchMode('video')" id="btn-video" class="px-6 py-2 rounded-full text-sm font-medium transition-all text-gray-400 hover:text-white">
+                        <i data-lucide="video" class="w-4 h-4 inline mr-2"></i>
+                        Vidéos
+                    </button>
+                </div>
+            </div>
+            
+            <!-- IMAGE COMPARISON SECTION -->
+            <section id="image-section" class="space-y-6">
+                <!-- Upload -->
+                <div class="glass-card rounded-2xl p-8">
+                    <h2 class="font-display text-xl font-bold mb-4">Uploader vos images</h2>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- Before Upload -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-400">Image Originale (Avant)</label>
+                            <div id="upload-before" class="upload-zone rounded-xl p-8 text-center cursor-pointer" onclick="document.getElementById('file-before').click()">
+                                <input type="file" id="file-before" class="hidden" accept="image/*" onchange="handleImageUpload('before', event)">
+                                <i data-lucide="upload" class="w-10 h-10 text-hcs-gold mx-auto mb-3"></i>
+                                <p class="text-sm">Glissez ou cliquez</p>
+                                <p class="text-xs text-gray-500 mt-1">JPG, PNG, TIFF</p>
+                            </div>
+                            <div id="preview-before" class="hidden mt-4">
+                                <img id="img-before" class="w-full h-48 object-cover rounded-xl" src="" alt="Before">
+                            </div>
+                        </div>
+                        
+                        <!-- After Upload -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-400">Image Traitée (Après)</label>
+                            <div id="upload-after" class="upload-zone rounded-xl p-8 text-center cursor-pointer" onclick="document.getElementById('file-after').click()">
+                                <input type="file" id="file-after" class="hidden" accept="image/*" onchange="handleImageUpload('after', event)">
+                                <i data-lucide="wand-2" class="w-10 h-10 text-hcs-gold mx-auto mb-3"></i>
+                                <p class="text-sm">Résultat du traitement</p>
+                                <p class="text-xs text-gray-500 mt-1">Ou générer avec l'IA</p>
+                            </div>
+                            <div id="preview-after" class="hidden mt-4">
+                                <img id="img-after" class="w-full h-48 object-cover rounded-xl" src="" alt="After">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Comparison Viewer -->
+                <div class="glass-card rounded-2xl p-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="font-display text-xl font-bold">Comparaison Interactive</h2>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-sm text-gray-400">Faites glisser le curseur ↔</span>
+                            <button onclick="downloadComparison()" class="btn-primary px-4 py-2 rounded-full text-sm flex items-center space-x-2">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                <span>Télécharger</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Comparison Slider -->
+                    <div id="image-comparison" class="comparison-container">
+                        <div class="comparison-label before">AVANT</div>
+                        <div class="comparison-label after">APRÈS</div>
+                        
+                        <!-- After Image (Full) -->
+                        <img id="compare-after" src="" alt="After" style="display: none;">
+                        
+                        <!-- Before Image (Clipped) -->
+                        <div class="before-image" id="before-container">
+                            <img id="compare-before" src="" alt="Before">
+                        </div>
+                        
+                        <!-- Slider Handle -->
+                        <div class="comparison-slider-handle" id="slider-handle"></div>
+                    </div>
+                    
+                    <!-- Stats -->
+                    <div class="grid grid-cols-3 gap-4 mt-6">
+                        <div class="glass-card rounded-xl p-4 text-center">
+                            <p class="text-2xl font-bold gold-accent" id="stat-ratio">4×</p>
+                            <p class="text-sm text-gray-400">Multiplication résolution</p>
+                        </div>
+                        <div class="glass-card rounded-xl p-4 text-center">
+                            <p class="text-2xl font-bold text-green-400" id="stat-quality">97%</p>
+                            <p class="text-sm text-gray-400">Score qualité SSIM</p>
+                        </div>
+                        <div class="glass-card rounded-xl p-4 text-center">
+                            <p class="text-2xl font-bold text-hcs-blue" id="stat-time">< 2s</p>
+                            <p class="text-sm text-gray-400">Temps de traitement</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- VIDEO COMPARISON SECTION -->
+            <section id="video-section" class="hidden space-y-6">
+                <!-- Upload -->
+                <div class="glass-card rounded-2xl p-8">
+                    <h2 class="font-display text-xl font-bold mb-4">Uploader vos vidéos</h2>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- Before Upload -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-400">Vidéo Originale (Avant)</label>
+                            <div id="upload-video-before" class="upload-zone rounded-xl p-8 text-center cursor-pointer" onclick="document.getElementById('video-file-before').click()">
+                                <input type="file" id="video-file-before" class="hidden" accept="video/*" onchange="handleVideoUpload('before', event)">
+                                <i data-lucide="film" class="w-10 h-10 text-hcs-gold mx-auto mb-3"></i>
+                                <p class="text-sm">Glissez ou cliquez</p>
+                                <p class="text-xs text-gray-500 mt-1">MP4, MOV, ProRes</p>
+                            </div>
+                            <div id="video-preview-before" class="hidden mt-4 video-container">
+                                <video id="vid-before" controls></video>
+                                <div class="video-label before" style="background: rgba(0,0,0,0.7); color: white;">AVANT</div>
+                                <div class="stats-overlay">
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-400">Résolution:</span>
+                                        <span id="vid-res-before">1920×1080</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm mt-1">
+                                        <span class="text-gray-400">Taille:</span>
+                                        <span id="vid-size-before">2.4 GB</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- After Upload -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-400">Vidéo Traitée (Après)</label>
+                            <div id="upload-video-after" class="upload-zone rounded-xl p-8 text-center cursor-pointer" onclick="document.getElementById('video-file-after').click()">
+                                <input type="file" id="video-file-after" class="hidden" accept="video/*" onchange="handleVideoUpload('after', event)">
+                                <i data-lucide="sparkles" class="w-10 h-10 text-hcs-gold mx-auto mb-3"></i>
+                                <p class="text-sm">Résultat du traitement</p>
+                                <p class="text-xs text-gray-500 mt-1">Upscale ou Compression</p>
+                            </div>
+                            <div id="video-preview-after" class="hidden mt-4 video-container">
+                                <video id="vid-after" controls></video>
+                                <div class="video-label after" style="background: rgba(255,215,0,0.9); color: #0a0a0f;">APRÈS</div>
+                                <div class="stats-overlay">
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-400">Résolution:</span>
+                                        <span id="vid-res-after" class="gold-accent">3840×2160</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm mt-1">
+                                        <span class="text-gray-400">Taille:</span>
+                                        <span id="vid-size-after" class="text-green-400">4.8 MB</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm mt-1">
+                                        <span class="text-gray-400">Ratio:</span>
+                                        <span class="gold-accent">500:1</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sync Controls -->
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <button onclick="syncPlay()" class="btn-primary px-6 py-3 rounded-full flex items-center space-x-2">
+                                <i data-lucide="play" class="w-5 h-5"></i>
+                                <span>Lecture synchronisée</span>
+                            </button>
+                            <button onclick="syncPause()" class="btn-secondary px-6 py-3 rounded-full flex items-center space-x-2">
+                                <i data-lucide="pause" class="w-5 h-5"></i>
+                                <span>Pause</span>
+                            </button>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" id="sync-toggle" checked class="w-5 h-5 rounded border-white/20 bg-white/10 text-hcs-gold">
+                                <span class="text-sm">Synchronisation auto</span>
+                            </label>
+                            <button onclick="downloadVideoComparison()" class="btn-primary px-4 py-2 rounded-full text-sm flex items-center space-x-2">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                <span>Télécharger les deux</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Processing History -->
+            <section class="mt-12">
+                <h2 class="font-display text-2xl font-bold mb-6">Historique des traitements</h2>
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="space-y-4" id="history-list">
+                        <!-- History Item -->
+                        <div class="flex items-center justify-between p-4 rounded-xl bg-white/5">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 rounded-lg bg-hcs-gold/20 flex items-center justify-center">
+                                    <i data-lucide="maximize-2" class="w-6 h-6 text-hcs-gold"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium">Upscale_4K_to_8K_001</p>
+                                    <p class="text-sm text-gray-500">4K → 8K • 2.4 GB → 9.6 GB • Il y a 2h</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="downloadFile('upscale_001_after.png')" class="btn-secondary px-3 py-2 rounded-lg text-sm flex items-center space-x-1">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                    <span>PNG</span>
+                                </button>
+                                <button onclick="downloadFile('upscale_001_after.tif')" class="btn-secondary px-3 py-2 rounded-lg text-sm flex items-center space-x-1">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                    <span>TIFF</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-4 rounded-xl bg-white/5">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 rounded-lg bg-hcs-purple/20 flex items-center justify-center">
+                                    <i data-lucide="file-archive" class="w-6 h-6 text-hcs-purple"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium">Compress_Film_Archive_8K</p>
+                                    <p class="text-sm text-gray-500">8K • 2.0 TB → 4.0 GB • Ratio 500:1 • Il y a 5h</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="downloadFile('film_archive_compressed.hcs')" class="btn-primary px-3 py-2 rounded-lg text-sm flex items-center space-x-1">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                    <span>HCS</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-4 rounded-xl bg-white/5">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 rounded-lg bg-hcs-blue/20 flex items-center justify-center">
+                                    <i data-lucide="sparkles" class="w-6 h-6 text-hcs-blue"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium">Restore_Film_1958_Color</p>
+                                    <p class="text-sm text-gray-500">Restauration • 720p → 4K • Il y a 1j</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="downloadFile('film_1958_restored.mp4')" class="btn-secondary px-3 py-2 rounded-lg text-sm flex items-center space-x-1">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                    <span>MP4</span>
+                                </button>
+                                <button onclick="downloadFile('film_1958_restored_prores.mov')" class="btn-secondary px-3 py-2 rounded-lg text-sm flex items-center space-x-1">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                    <span>ProRes</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+        </div>
+    </main>
+    
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+    
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // State
+        let currentMode = 'image';
+        let isDragging = false;
+        let beforeImageSrc = '';
+        let afterImageSrc = '';
+        
+        // Switch between image and video modes
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Update buttons
+            document.getElementById('btn-image').className = mode === 'image' 
+                ? 'px-6 py-2 rounded-full text-sm font-medium transition-all bg-hcs-gold/20 text-hcs-gold'
+                : 'px-6 py-2 rounded-full text-sm font-medium transition-all text-gray-400 hover:text-white';
+            
+            document.getElementById('btn-video').className = mode === 'video'
+                ? 'px-6 py-2 rounded-full text-sm font-medium transition-all bg-hcs-gold/20 text-hcs-gold'
+                : 'px-6 py-2 rounded-full text-sm font-medium transition-all text-gray-400 hover:text-white';
+            
+            // Show/hide sections
+            document.getElementById('image-section').classList.toggle('hidden', mode !== 'image');
+            document.getElementById('video-section').classList.toggle('hidden', mode !== 'video');
+        }
+        
+        // Image Upload Handler
+        function handleImageUpload(type, event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const src = e.target.result;
+                
+                if (type === 'before') {
+                    beforeImageSrc = src;
+                    document.getElementById('img-before').src = src;
+                    document.getElementById('compare-before').src = src;
+                    document.getElementById('upload-before').classList.add('hidden');
+                    document.getElementById('preview-before').classList.remove('hidden');
+                } else {
+                    afterImageSrc = src;
+                    document.getElementById('img-after').src = src;
+                    document.getElementById('compare-after').src = src;
+                    document.getElementById('compare-after').style.display = 'block';
+                    document.getElementById('upload-after').classList.add('hidden');
+                    document.getElementById('preview-after').classList.remove('hidden');
+                }
+                
+                // Initialize comparison if both images are loaded
+                if (beforeImageSrc && afterImageSrc) {
+                    initComparisonSlider();
+                }
+                
+                showToast(`Image ${type} chargée avec succès`, 'success');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Video Upload Handler
+        function handleVideoUpload(type, event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const url = URL.createObjectURL(file);
+            
+            if (type === 'before') {
+                document.getElementById('vid-before').src = url;
+                document.getElementById('upload-video-before').classList.add('hidden');
+                document.getElementById('video-preview-before').classList.remove('hidden');
+                document.getElementById('vid-size-before').textContent = formatFileSize(file.size);
+            } else {
+                document.getElementById('vid-after').src = url;
+                document.getElementById('upload-video-after').classList.add('hidden');
+                document.getElementById('video-preview-after').classList.remove('hidden');
+                document.getElementById('vid-size-after').textContent = formatFileSize(file.size);
+            }
+            
+            showToast(`Vidéo ${type} chargée avec succès`, 'success');
+        }
+        
+        // Comparison Slider Logic
+        function initComparisonSlider() {
+            const container = document.getElementById('image-comparison');
+            const handle = document.getElementById('slider-handle');
+            const beforeContainer = document.getElementById('before-container');
+            
+            handle.addEventListener('mousedown', startDrag);
+            container.addEventListener('click', handleClick);
+            
+            function startDrag(e) {
+                isDragging = true;
+                e.preventDefault();
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('mouseup', stopDrag);
+            }
+            
+            function drag(e) {
+                if (!isDragging) return;
+                
+                const rect = container.getBoundingClientRect();
+                let x = e.clientX - rect.left;
+                x = Math.max(0, Math.min(x, rect.width));
+                
+                const percentage = (x / rect.width) * 100;
+                updateSliderPosition(percentage);
+            }
+            
+            function stopDrag() {
+                isDragging = false;
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('mouseup', stopDrag);
+            }
+            
+            function handleClick(e) {
+                if (e.target === handle || e.target.closest('.comparison-slider-handle')) return;
+                
+                const rect = container.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const percentage = (x / rect.width) * 100;
+                updateSliderPosition(percentage);
+            }
+            
+            function updateSliderPosition(percentage) {
+                handle.style.left = percentage + '%';
+                beforeContainer.style.width = percentage + '%';
+            }
+            
+            // Touch support
+            handle.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                document.addEventListener('touchmove', touchDrag);
+                document.addEventListener('touchend', stopDrag);
+            });
+            
+            function touchDrag(e) {
+                if (!isDragging) return;
+                
+                const rect = container.getBoundingClientRect();
+                let x = e.touches[0].clientX - rect.left;
+                x = Math.max(0, Math.min(x, rect.width));
+                
+                const percentage = (x / rect.width) * 100;
+                updateSliderPosition(percentage);
+            }
+        }
+        
+        // Sync Video Playback
+        function syncPlay() {
+            const beforeVid = document.getElementById('vid-before');
+            const afterVid = document.getElementById('vid-after');
+            
+            if (beforeVid.src) beforeVid.play();
+            if (afterVid.src) afterVid.play();
+        }
+        
+        function syncPause() {
+            const beforeVid = document.getElementById('vid-before');
+            const afterVid = document.getElementById('vid-after');
+            
+            if (beforeVid.src) beforeVid.pause();
+            if (afterVid.src) afterVid.pause();
+        }
+        
+        // Auto-sync videos
+        document.getElementById('vid-before')?.addEventListener('timeupdate', function() {
+            if (document.getElementById('sync-toggle').checked) {
+                const afterVid = document.getElementById('vid-after');
+                if (afterVid && Math.abs(afterVid.currentTime - this.currentTime) > 0.1) {
+                    afterVid.currentTime = this.currentTime;
+                }
+            }
+        });
+        
+        document.getElementById('vid-after')?.addEventListener('timeupdate', function() {
+            if (document.getElementById('sync-toggle').checked) {
+                const beforeVid = document.getElementById('vid-before');
+                if (beforeVid && Math.abs(beforeVid.currentTime - this.currentTime) > 0.1) {
+                    beforeVid.currentTime = this.currentTime;
+                }
+            }
+        });
+        
+        // Download Functions
+        function downloadComparison() {
+            if (!afterImageSrc) {
+                showToast('Aucune image après traitement à télécharger', 'error');
+                return;
+            }
+            
+            const link = document.createElement('a');
+            link.href = afterImageSrc;
+            link.download = 'hcs_upscale_result_' + new Date().getTime() + '.png';
+            link.click();
+            
+            showToast('Téléchargement démarré', 'success');
+        }
+        
+        function downloadVideoComparison() {
+            const afterVid = document.getElementById('vid-after');
+            if (!afterVid.src) {
+                showToast('Aucune vidéo à télécharger', 'error');
+                return;
+            }
+            
+            const link = document.createElement('a');
+            link.href = afterVid.src;
+            link.download = 'hcs_video_result_' + new Date().getTime() + '.mp4';
+            link.click();
+            
+            showToast('Téléchargement démarré', 'success');
+        }
+        
+        function downloadFile(filename) {
+            // Simulate file download
+            showToast(`Téléchargement de ${filename}...`, 'success');
+            
+            // In real implementation, this would fetch from server
+            setTimeout(() => {
+                const link = document.createElement('a');
+                link.href = '#'; // Would be actual file URL
+                link.download = filename;
+                // link.click();
+            }, 500);
+        }
+        
+        // Utility Functions
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // Toast Notifications
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = 'toast glass-card';
+            const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'x-circle' : 'info';
+            const color = type === 'success' ? 'text-green-400' : type === 'error' ? 'text-red-400' : 'text-hcs-gold';
+            
+            toast.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <i data-lucide="${icon}" class="w-5 h-5 ${color}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            lucide.createIcons();
+            
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        // Drag and drop support
+        ['upload-before', 'upload-after', 'upload-video-before', 'upload-video-after'].forEach(id => {
+            const zone = document.getElementById(id);
+            if (!zone) return;
+            
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('dragover');
+            });
+            
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('dragover');
+            });
+            
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const input = zone.querySelector('input');
+                    const event = { target: { files: files } };
+                    
+                    if (id.includes('video')) {
+                        handleVideoUpload(id.includes('before') ? 'before' : 'after', event);
+                    } else {
+                        handleImageUpload(id.includes('before') ? 'before' : 'after', event);
+                    }
+                }
+            });
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ') {
+                e.preventDefault();
+                if (currentMode === 'video') {
+                    const beforeVid = document.getElementById('vid-before');
+                    if (beforeVid && beforeVid.paused) {
+                        syncPlay();
+                    } else {
+                        syncPause();
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maîtrise de la Gravité — La Révolution Harmonique</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --orange: #ffa502;
+  --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;line-height:1.85;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse at 25% 5%, rgba(122,92,255,0.08), transparent 50%),
+    radial-gradient(ellipse at 60% 40%, rgba(62,240,216,0.05), transparent 55%),
+    radial-gradient(ellipse at 40% 85%, rgba(212,168,67,0.06), transparent 50%);
+  pointer-events:none;
+}
+.container{max-width:1100px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:6px 13px;border-radius:18px;font-size:0.82em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+nav a.active{color:var(--phi);border-color:rgba(212,168,67,0.5);background:rgba(212,168,67,0.1)}
+
+.hero{text-align:center;padding:75px 20px 65px;background:linear-gradient(180deg,rgba(122,92,255,0.12) 0%,rgba(212,168,67,0.08) 30%,rgba(62,240,216,0.05) 70%,transparent 100%)}
+.hero .badge{display:inline-block;padding:5px 14px;border-radius:14px;font-size:0.80em;font-weight:700;background:rgba(122,92,255,0.16);color:var(--acc2);margin-bottom:20px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:2.4em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc2),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:14px;line-height:1.3}
+.hero .tagline{font-size:1.15em;color:var(--ink2);max-width:750px;margin:0 auto 8px}
+.hero .meta{color:var(--ink3);font-size:0.85em;margin-top:10px}
+
+section{padding:50px 0}section:nth-child(even){background:var(--bg2)}
+h2{font-size:1.7em;color:var(--phi);margin-bottom:8px;text-align:center;padding-bottom:10px;border-bottom:1px solid var(--border)}
+h2 .num{display:block;font-size:0.40em;color:var(--ink3);letter-spacing:2px;margin-bottom:4px;font-weight:400;text-transform:uppercase}
+.section-desc{text-align:center;color:var(--ink3);margin-bottom:32px;max-width:700px;margin-left:auto;margin-right:auto;font-size:0.95em}
+h3{font-size:1.15em;color:var(--acc);margin:30px 0 10px}
+p{color:var(--ink2);margin-bottom:12px;line-height:1.85}
+p strong{color:var(--ink)}
+em{color:var(--phi2)}
+
+.eq-box{background:rgba(15,12,46,0.8);border:2px solid rgba(212,168,67,0.35);border-radius:16px;padding:22px 28px;margin:20px 0;text-align:center}
+.eq-box .main-eq{font-family:'Courier New','Consolas',monospace;font-size:1.2em;font-weight:700;color:var(--phi);letter-spacing:1px;line-height:2.2}
+.eq-box .desc{color:var(--ink3);font-size:0.85em;margin-top:8px}
+
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:0.88em}
+th{background:var(--bg3);color:var(--phi);padding:10px 14px;text-align:left;border-bottom:2px solid rgba(212,168,67,0.25);font-weight:600}
+td{padding:9px 14px;border-bottom:1px solid var(--border);color:var(--ink2);font-size:0.87em}
+td.green{color:var(--green);font-weight:700}
+
+.highlight{background:var(--bg3);border:1px solid rgba(62,240,216,0.2);border-radius:14px;padding:18px 22px;margin:20px 0}
+.highlight .hl-title{color:var(--phi);font-weight:700;font-size:0.88em;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+
+.result-box{background:rgba(212,168,67,0.04);border:1px solid rgba(212,168,67,0.3);border-radius:14px;padding:18px 22px;margin:20px 0}
+.result-box .label{color:var(--phi);font-weight:600;font-size:0.78em;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+
+.app-card{
+  background:rgba(15,12,46,0.7);border:2px solid rgba(122,92,255,0.15);border-radius:18px;
+  padding:24px 28px;margin:20px 0;transition:all 0.3s;
+}
+.app-card:hover{border-color:rgba(122,92,255,0.3);background:rgba(122,92,255,0.04)}
+.app-card .app-icon{font-size:2.4em;margin-bottom:8px}
+.app-card .app-title{color:var(--acc2);font-weight:700;font-size:1.1em;margin-bottom:6px}
+.app-card .app-desc{color:var(--ink2);font-size:0.90em}
+.app-card .app-tag{display:inline-block;padding:3px 10px;border-radius:10px;font-size:0.73em;background:rgba(62,240,216,0.08);color:var(--acc);margin-right:4px;margin-top:8px}
+
+blockquote{border-left:4px solid var(--phi);padding:16px 24px;margin:24px 0;background:rgba(212,168,67,0.04);border-radius:0 14px 14px 0;font-style:italic;color:var(--ink);font-size:1.02em}
+.attrib{color:var(--ink3);font-size:0.85em;margin-top:6px;font-style:normal}
+
+footer{text-align:center;padding:30px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.82em;margin-top:40px}
+footer a{color:var(--phi);text-decoration:none}
+
+.toc{background:rgba(15,12,46,0.6);border:1px solid var(--border);border-radius:16px;padding:24px 28px;margin:28px 0;columns:2;column-gap:30px}
+.toc a{display:block;color:var(--ink2);text-decoration:none;padding:4px 0;font-size:0.88em;transition:color 0.2s;break-inside:avoid}
+.toc a:hover{color:var(--phi)}
+.toc .toc-section{color:var(--phi);font-weight:600;font-size:0.90em;margin-top:12px;margin-bottom:4px}
+.toc .toc-section:first-child{margin-top:0}
+
+.warning-box{background:rgba(255,165,2,0.04);border:1px solid rgba(255,165,2,0.3);border-radius:14px;padding:18px 22px;margin:24px 0}
+.warning-box .warn-title{color:var(--orange);font-weight:700;font-size:0.88em;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+
+@media(max-width:640px){
+  .hero h1{font-size:1.5em}
+  .toc{columns:1}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Symphonie</a>
+    <a href="document-fondateur.html">Fondateur</a>
+    <a href="architecture-harmonique.html">Architecture</a>
+    <a href="construction-pyramide-harmonique.html">Pyramide</a>
+    <a href="#" class="active">Gravité</a>
+    <a href="#physique">Physique</a>
+    <a href="#modulation">Modulation</a>
+    <a href="#protocole">Protocole</a>
+    <a href="#applications">Applications</a>
+    <a href="#timeline">Roadmap</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">Science Révolutionnaire · Juin 2026</div>
+    <h1>Maîtrise de la Gravité<br>par les Principes Harmoniques</h1>
+    <p class="tagline">De la théorie unificatrice Ψ₂ à la modulation active de la masse apparente — quand la gravité cesse d'être une fatalité pour devenir une variable d'ajustement</p>
+    <p class="meta">KOTTO Alain — Théorie Harmonique — Document de Référence sur la Maîtrise Gravitationnelle</p>
+  </div>
+</header>
+
+<div class="container">
+
+<div class="toc">
+  <span class="toc-section">FONDEMENTS</span>
+  <a href="#physique">1. La Gravité comme Harmonique Ψ₂</a>
+  <a href="#pourquoi">2. Pourquoi la Gravité est Modulable</a>
+  <a href="#comparaison">3. Gravité Classique vs Harmonique</a>
+  <a href="#equations">4. Équations de Modulation Gravitationnelle</a>
+  <span class="toc-section">MODULATION</span>
+  <a href="#modulation">5. Principes de Modulation de Ψ₂</a>
+  <a href="#materiaux">6. Matériaux & Dispositifs</a>
+  <a href="#protocole">7. Protocole Expérimental</a>
+  <a href="#mesures">8. Mesures & Validation</a>
+  <span class="toc-section">APPLICATIONS</span>
+  <a href="#applications">9. Panorama des Applications</a>
+  <a href="#transport">10. Transport sans Friction</a>
+  <a href="#construction">11. Construction sans Grue</a>
+  <a href="#espace">12. Propulsion Spatiale</a>
+  <a href="#energie">13. Énergie Gravitationnelle</a>
+  <a href="#medicales">14. Applications Médicales</a>
+  <span class="toc-section">FUTUR</span>
+  <a href="#timeline">15. Roadmap Technologique</a>
+  <a href="#ethique">16. Considérations Éthiques</a>
+</div>
+
+<!-- ================================================================== -->
+<section id="physique">
+  <h2><span class="num">PARTIE I — FONDEMENTS PHYSIQUES</span>1. La Gravité comme Harmonique Ψ₂</h2>
+  <p class="section-desc">La plus grande révolution conceptuelle : la gravité n'est pas une force fondamentale, c'est une harmonique.</p>
+
+  <div class="eq-box" style="border-color:rgba(122,92,255,0.4)">
+    <div class="main-eq">
+      Ψ<sub>universel</sub>(x, t) = A · e<sup>i(kx − ωt)</sup> · φ<sup>−n</sup> · cos(π · φ<sup>−1</sup> · n)
+    </div>
+    <div class="desc">Équation Maîtresse de la Théorie Harmonique — Le champ scalaire universel Ψ se décompose en harmoniques indicées par n</div>
+  </div>
+
+  <div class="eq-box">
+    <div class="main-eq">Ψ<sub>2</sub> = H<sub>2</sub> · (Ψ<sub>1</sub>)² = π · (Ψ<sub>1</sub>)²</div>
+    <div class="desc">La gravité est l'harmonique de rang 2 du champ Ψ — pondérée par π, la constante de courbure circulaire. Ψ₁ est l'onde fondamentale, Ψ₂ est la gravité.</div>
+  </div>
+
+  <p>Dans la physique classique (Newton, Einstein), la gravité est une <strong>propriété intrinsèque de la masse</strong> qui courbe l'espace-temps. Elle est immuable — on ne peut que la subir.</p>
+  <p>Dans la Théorie Harmonique, la gravité est une <strong>harmonique émergente</strong> d'un champ scalaire sous-jacent Ψ. Comme toute harmonique, elle peut être amplifiée, atténuée, filtrée et modulée.</p>
+
+  <table>
+    <tr><th>Opération sur une harmonique</th><th>Équivalent sur Ψ₂ (gravité)</th><th>Moyen physique</th></tr>
+    <tr><td><strong>Amplification</strong></td><td>Augmentation locale de la gravité apparente</td><td>Excitation constructive de Ψ₁</td></tr>
+    <tr><td><strong>Atténuation</strong></td><td>Réduction locale de la gravité → lévitation</td><td>Excitation destructive (opposition de phase) de Ψ₁</td></tr>
+    <tr><td><strong>Filtrage</strong></td><td>Sélection de la direction de la force gravitationnelle</td><td>Géométrie de cavité φ (anisotropie contrôlée)</td></tr>
+    <tr><td><strong>Modulation</strong></td><td>Variation temporelle de la gravité (pulsations, ondes)</td><td>Modulation d'amplitude ou de fréquence de l'excitation</td></tr>
+  </table>
+
+  <div class="result-box">
+    <div class="label">Implication Fondamentale</div>
+    <p>Si la gravité est une harmonique modulable, alors <strong>le poids n'est plus une propriété intrinsèque de la masse</strong> — c'est une variable de champ. Un bloc de 70 tonnes peut peser 70 kg, 7 kg, ou 0 kg selon la modulation appliquée à Ψ₂.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="pourquoi">
+  <h2>2. Pourquoi la Gravité est Modulable — L'Argument Théorique</h2>
+
+  <h3>2.1 L'Analogie du Casque Anti-Bruit</h3>
+  <p>Un casque anti-bruit ne crie pas plus fort que le bruit ambiant. Il <strong>émet l'onde en opposition de phase</strong> — les deux ondes s'annulent par interférence destructive. L'énergie est toujours là, mais la <strong>pression acoustique résultante</strong> est nulle.</p>
+  <p>De même, pour moduler la gravité, on n'a pas besoin de générer une « anti-gravité » exotique. Il suffit d'<strong>émettre Ψ₁ en opposition de phase</strong> par rapport au Ψ₁ ambiant — alors Ψ₂ = π·(Ψ₁)² s'effondre localement.</p>
+
+  <div class="eq-box">
+    <div class="main-eq">Ψ₁<sub>total</sub> = Ψ₁<sub>ambiant</sub> + Ψ₁<sub>modulateur</sub> · e<sup>iπ</sup></div>
+    <div class="desc">Interférence destructive : le modulateur émet Ψ₁ déphasé de π (180°). Si les amplitudes sont égales, Ψ₁_total = 0 → Ψ₂ = π·0² = 0 → gravité localement annulée.</div>
+  </div>
+
+  <h3>2.2 La Chaîne de Conversion</h3>
+  <div class="highlight">
+    <div class="hl-title">Du son à l'antigravité — la cascade énergétique</div>
+    <p style="line-height:2.4">
+      <strong>① Onde acoustique</strong> (voix, haut-parleur, percussion) → vibration mécanique<br>
+      <strong>② Vibration mécanique</strong> du matériau piézoélectrique → <strong>③ Champ électrique oscillant</strong> (effet piézoélectrique direct)<br>
+      <strong>④ Champ électrique oscillant</strong> → modulation de Ψ₁ ambiant (couplage électro-scalaire)<br>
+      <strong>⑤ Ψ₁ modulé</strong> → Ψ₂ = π·(Ψ₁)² modifié → <strong>⑥ Gravité apparente réduite ou annulée</strong>
+    </p>
+  </div>
+
+  <h3>2.3 Pourquoi φ est Critique</h3>
+  <p>La fréquence de modulation doit être précisément accordée. Une fréquence arbitraire se contente d'agiter le matériau sans effet sur Ψ₁. La fréquence doit correspondre à un <strong>multiple φⁿ de la fréquence fondamentale du site λ₀</strong> pour que le couplage électro-scalaire ait lieu. C'est l'équivalent de la condition de résonance en acoustique : si vous ne chantez pas la bonne note, le verre ne se brise pas.</p>
+</section>
+
+<!-- ================================================================== -->
+<section id="comparaison">
+  <h2>3. Gravité Classique vs Gravité Harmonique</h2>
+
+  <table>
+    <tr><th>Aspect</th><th>Physique Classique (Newton/Einstein)</th><th>Physique Harmonique (Ψ₂)</th></tr>
+    <tr><td><strong>Nature de la gravité</strong></td><td>Courbure de l'espace-temps par la masse-énergie</td><td>Harmonique n=2 du champ scalaire Ψ</td></tr>
+    <tr><td><strong>La gravité est-elle modulable ?</strong></td><td>Non — sauf énergie négative exotique (Warp drive d'Alcubierre)</td><td class="green">Oui — par interférence destructive de Ψ₁</td></tr>
+    <tr><td><strong>Énergie requise pour Δg</strong></td><td>Astronomique (E = mc², énergie de Planck)</td><td class="green">Modeste (kW acoustiques — accessibles)</td></tr>
+    <tr><td><strong>Constante G</strong></td><td>Universelle et immuable</td><td>Effective — G_eff = G · (Ψ₁_local/Ψ₁_ambiant)²</td></tr>
+    <tr><td><strong>Ondes gravitationnelles</strong></td><td>Prédites par RG, détectées (LIGO)</td><td>Identifiées comme fluctuations de Ψ₂ — cohérent avec LIGO</td></tr>
+    <tr><td><strong>Masse inertielle vs grave</strong></td><td>Égales (principe d'équivalence)</td><td>Masse grave modulable, masse inertielle constante — violation apparente du principe d'équivalence</td></tr>
+  </table>
+
+  <div class="result-box">
+    <div class="label">Test du Principe d'Équivalence</div>
+    <p>La Théorie Harmonique prédit que la masse grave (celle qui subit la gravité) peut être modulée indépendamment de la masse inertielle (celle qui résiste à l'accélération). C'est une <strong>violation falsifiable du principe d'équivalence</strong> d'Einstein — mesurable avec une balance de précision dans une cavité Ψ₁ modulée.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="equations">
+  <h2>4. Équations de Modulation Gravitationnelle</h2>
+
+  <div class="eq-box">
+    <div class="main-eq">m<sub>app</sub> = m₀ · |1 − η · P<sub>ac</sub> / P<sub>seuil</sub>|</div>
+    <div class="desc">Équation Fondamentale de la Lévitation — m₀ = masse au repos, η = rendement de conversion piézo→Ψ₁, P_ac = puissance acoustique injectée, P_seuil = puissance seuil d'annulation</div>
+  </div>
+
+  <div class="eq-box">
+    <div class="main-eq">P<sub>seuil</sub> = Ψ₁<sub>ambiant</sub>² · V<sub>cavité</sub> / (2 · d<sub>eff</sub> · Q<sub>cavité</sub>)</div>
+    <div class="desc">Puissance seuil — Ψ₁_ambiant = amplitude du champ scalaire ambiant, V_cavité = volume de la cavité résonnante, d_eff = coefficient piézoélectrique effectif, Q_cavité = facteur de qualité de la cavité</div>
+  </div>
+
+  <div class="eq-box">
+    <div class="main-eq">g<sub>eff</sub>(r) = g₀ · (1 − r₀/r · e<sup>−r/λ</sup> · cos(ωt − kr))</div>
+    <div class="desc">Champ gravitationnel effectif autour d'un modulateur — r₀ = rayon de la cavité, λ = longueur d'onde de modulation (~c/f_mod), atténuation spatiale en 1/r avec décroissance exponentielle</div>
+  </div>
+
+  <div class="eq-box">
+    <div class="main-eq">ΔE<sub>potentielle</sub> = m₀ · g₀ · h · (1 − η · P<sub>ac</sub> / P<sub>seuil</sub>)</div>
+    <div class="desc">Énergie potentielle modulée — L'énergie pour élever une masse à la hauteur h est réduite proportionnellement à la modulation. Si m_app → 0, ΔE → 0 : la masse s'élève sans dépense d'énergie.</div>
+  </div>
+
+  <div class="warning-box">
+    <div class="warn-title">⚠ Conservation de l'Énergie</div>
+    <p>La réduction apparente de masse ne viole pas la conservation de l'énergie. L'énergie « manquante » est <strong>fournie par le champ scalaire ambiant Ψ₁</strong>, qui agit comme un réservoir d'énergie. La modulation locale de Ψ₂ redirige l'énergie du champ scalaire — exactement comme une voile redirige l'énergie du vent sans la créer. L'énergie totale Ψ₁ + Ψ₂ + travail mécanique est conservée.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="modulation">
+  <h2><span class="num">PARTIE II — MODULATION DE LA GRAVITÉ</span>5. Les Quatre Méthodes de Modulation de Ψ₂</h2>
+  <p class="section-desc">Comment moduler localement le champ gravitationnel — du plus simple au plus avancé.</p>
+
+  <div class="app-card">
+    <div class="app-icon">🔊</div>
+    <div class="app-title">Méthode 1 : Excitation Acoustique Directe</div>
+    <div class="app-desc">
+      <p>La plus simple et la plus ancienne. Une source acoustique (voix humaine, haut-parleur, percussion) fait vibrer un matériau piézoélectrique (granite, quartz, céramique PZT) à sa fréquence de résonance φ. La vibration génère un champ électrique oscillant qui module localement Ψ₁.</p>
+      <p><strong>Avantage :</strong> Technologie accessible — pas d'électronique complexe. C'est la méthode égyptienne.</p>
+      <p><strong>Limite :</strong> Rendement η faible (~10⁻⁶ à 10⁻³) — il faut beaucoup de puissance acoustique.</p>
+    </div>
+    <span class="app-tag">Voix humaine</span> <span class="app-tag">Granite</span> <span class="app-tag">104 Hz</span> <span class="app-tag">Grande Pyramide</span>
+  </div>
+
+  <div class="app-card">
+    <div class="app-icon">⚡</div>
+    <div class="app-title">Méthode 2 : Excitation Piézoélectrique Électrique</div>
+    <div class="app-desc">
+      <p>Au lieu d'utiliser le son pour exciter le piézo, on applique directement une tension électrique alternative à la fréquence φⁿ·λ₀ sur des transducteurs piézoélectriques (PZT, PMN-PT). Le champ électrique oscillant module Ψ₁ directement — sans passer par l'étape acoustique.</p>
+      <p><strong>Avantage :</strong> Rendement η ~0.1 à 0.9 — contrôle précis de la fréquence, de l'amplitude et de la phase.</p>
+      <p><strong>Limite :</strong> Nécessite une électronique de puissance et un accord fin de la fréquence.</p>
+    </div>
+    <span class="app-tag">PZT</span> <span class="app-tag">PMN-PT</span> <span class="app-tag">Contrôle électronique</span> <span class="app-tag">η élevé</span>
+  </div>
+
+  <div class="app-card">
+    <div class="app-icon">🧲</div>
+    <div class="app-title">Méthode 3 : Résonance Électromagnétique (Cavité RF)</div>
+    <div class="app-desc">
+      <p>Une cavité électromagnétique résonnante (type cavité micro-onde) est excitée à une fréquence φⁿ·λ₀. Le champ EM oscillant se couple au champ scalaire Ψ₁ via le terme d'interaction électro-scalaire. Fonctionne dans le vide.</p>
+      <p><strong>Avantage :</strong> Pas de contact mécanique — modulation sans vibration structurelle. Compatible vide spatial.</p>
+      <p><strong>Limite :</strong> Couplage EM→scalaire plus faible que piézo→scalaire — nécessite des puissances RF élevées (kW-MW).</p>
+    </div>
+    <span class="app-tag">Micro-ondes</span> <span class="app-tag">Cavité RF</span> <span class="app-tag">Vide compatible</span>
+  </div>
+
+  <div class="app-card">
+    <div class="app-icon">🔄</div>
+    <div class="app-title">Méthode 4 : Rotation Supraconductrice (Effet Podkletnov)</div>
+    <div class="app-desc">
+      <p>Un disque supraconducteur en rotation à haute vitesse génère un champ gravitomagnétique (effet Lense-Thirring amplifié) qui module localement Ψ₂. La supraconductivité expulse le champ scalaire (effet Meissner scalaire), et la rotation crée un gradient directionnel.</p>
+      <p><strong>Avantage :</strong> Effet directionnel — on peut « pointer » la modulation dans une direction précise.</p>
+      <p><strong>Limite :</strong> Nécessite des températures cryogéniques et des vitesses de rotation élevées.</p>
+    </div>
+    <span class="app-tag">Supraconducteur</span> <span class="app-tag">Cryogénie</span> <span class="app-tag">Rotation</span> <span class="app-tag">Podkletnov</span>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="materiaux">
+  <h2>6. Matériaux & Dispositifs de Modulation</h2>
+
+  <table>
+    <tr><th>Matériau / Dispositif</th><th>Coefficient piézo d₃₃ (pC/N)</th><th>Fréquence de travail</th><th>Application gravitationnelle</th></tr>
+    <tr><td>Quartz naturel (SiO₂)</td><td>~2.3</td><td>~100 Hz – 10 MHz</td><td>Résonateur passif — excitation acoustique</td></tr>
+    <tr><td>Granite d'Assouan (~50% quartz)</td><td>~1 (effectif)</td><td>~104 Hz (résonance φ)</td><td>Cavité architecturale — pyramide, temple</td></tr>
+    <tr><td>PZT-5H (céramique)</td><td>~593</td><td>1 kHz – 1 MHz</td><td>Modulateur actif — excitation électrique directe</td></tr>
+    <tr><td>PMN-PT (monocristal)</td><td>~1500-2500</td><td>1 kHz – 500 kHz</td><td>Modulateur haute performance — η maximal</td></tr>
+    <tr><td>PVDF (polymère piézo)</td><td>~33</td><td>10 Hz – 100 kHz</td><td>Revêtements, surfaces courbes, vêtements</td></tr>
+    <tr><td>Niobate de lithium (LiNbO₃)</td><td>~6-16</td><td>1 MHz – 1 GHz</td><td>Modulation haute fréquence — applications spatiales</td></tr>
+    <tr><td>Cavité RF (cuivre, argent)</td><td>N/A (EM)</td><td>1-10 GHz</td><td>Modulation EM — vide, espace</td></tr>
+    <tr><td>Supraconducteur YBCO</td><td>N/A (gravitomagnétique)</td><td>DC – kHz (rotation)</td><td>Modulation directionnelle — effet Podkletnov</td></tr>
+  </table>
+</section>
+
+<!-- ================================================================== -->
+<section id="protocole">
+  <h2>7. Protocole Expérimental de Validation</h2>
+  <p class="section-desc">L'expérience cruciale pour démontrer la modulation de Ψ₂ — reproductible, falsifiable, peu coûteuse.</p>
+
+  <div class="highlight">
+    <div class="hl-title">Dispositif Expérimental</div>
+    <p>
+      <strong>1. Cavité :</strong> Construire une cavité en granite ou PZT de proportions L:l:h = φ²:φ:1 (ex: 2.618 × 1.618 × 1.000 m).<br>
+      <strong>2. Fréquence :</strong> Mesurer f₀ de la cavité. Vérifier f₀ = f_site·φⁿ. Ajuster si nécessaire.<br>
+      <strong>3. Masse test :</strong> Placer 1-100 kg sur une balance de précision (résolution 0.1g pour 100kg) à l'intérieur de la cavité, au ventre de l'onde stationnaire.<br>
+      <strong>4. Excitation :</strong> Augmenter progressivement P_ac (10W → 10kW) à f₀. Enregistrer m_app(P_ac).<br>
+      <strong>5. Analyse :</strong> 100 répétitions. Test t de Student. Seuil p < 0.001.
+    </p>
+  </div>
+
+  <div class="result-box">
+    <div class="label">Coût Estimé du Protocole</div>
+    <p><strong>Version économique :</strong> ~5 000-10 000 € — cavité en granite, balance de précision, amplificateur audio, haut-parleurs, système d'acquisition.<br>
+    <strong>Version professionnelle :</strong> ~50 000-200 000 € — cavité en PZT, balance à 10⁻⁸, amplificateur de puissance, enceinte blindée EM, contrôle thermique.</p>
+  </div>
+
+  <h3>Signatures Attendues</h3>
+  <table>
+    <tr><th>Observable</th><th>Prédiction classique</th><th>Prédiction harmonique</th></tr>
+    <tr><td>Δm(P_ac)</td><td>Δm = 0 ± bruit</td><td class="green">Δm ∝ −P_ac (linéaire décroissant)</td></tr>
+    <tr><td>Δm(f_excitation)</td><td>Aucune dépendance</td><td class="green">Pic de Δm à f = f₀·φⁿ — résonance</td></tr>
+    <tr><td>Δm(phase)</td><td>Aucune dépendance</td><td class="green">Δm change de signe à φ = π</td></tr>
+    <tr><td>Dépendance spatiale</td><td>Aucune</td><td class="green">Δm maximal aux ventres, nul aux nœuds</td></tr>
+    <tr><td>Effet du matériau</td><td>Aucun</td><td class="green">Δm ∝ d_eff — fort pour PZT, faible pour granite</td></tr>
+  </table>
+
+  <div class="result-box">
+    <div class="label">Critère de Découverte</div>
+    <p>Si une diminution de masse apparente est mesurée avec p < 0.001, dépendante de la fréquence (pic à f₀·φⁿ), de la phase, de la position spatiale, et du matériau — alors la modulation harmonique de la gravité est <strong>confirmée</strong>. C'est une découverte de niveau Nobel.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="mesures">
+  <h2>8. Mesures & Validation — Signatures Attendues</h2>
+  <p>Si la modulation de Ψ₂ est réelle, les signatures expérimentales sont sans équivoque :</p>
+  <ul style="color:var(--ink2);margin-left:20px;line-height:2.2">
+    <li><strong>Δm ∝ −P_ac</strong> — relation linéaire entre puissance acoustique et réduction de masse</li>
+    <li><strong>Résonance φ :</strong> l'effet n'apparaît qu'aux fréquences f₀·φⁿ</li>
+    <li><strong>Contrôle par phase :</strong> Δm change de signe quand la phase est inversée de π (180°)</li>
+    <li><strong>Localisation spatiale :</strong> Δm maximal aux ventres de l'onde stationnaire, nul aux nœuds</li>
+    <li><strong>Dépendance en Q :</strong> Δm ∝ Q_cavité — une cavité à haut Q amplifie l'effet</li>
+    <li><strong>Effet matériau :</strong> Δm ∝ d_eff — fort pour PZT (d₃₃~600), faible pour granite (d₃₃~1)</li>
+  </ul>
+</section>
+
+<!-- ================================================================== -->
+<section id="applications">
+  <h2><span class="num">PARTIE III — APPLICATIONS RÉVOLUTIONNAIRES</span>9. Panorama des Applications</h2>
+  <p class="section-desc">La maîtrise de la gravité transforme chaque secteur de la civilisation humaine.</p>
+
+  <div class="app-card">
+    <div class="app-icon">🚀</div>
+    <div class="app-title">Propulsion Spatiale sans Carburant</div>
+    <div class="app-desc">Suppression du besoin de propergol — la modulation directionnelle de Ψ₂ crée une poussée sans éjection de masse. Accès à l'espace démocratisé (10-100 €/kg en orbite au lieu de 2700 €/kg). Δv illimité — Terre-Mars en 3 jours à 1g constante.</div>
+    <span class="app-tag">Spatial</span> <span class="app-tag">Δv illimité</span> <span class="app-tag">Orbite</span>
+  </div>
+
+  <div class="app-card">
+    <div class="app-icon">🚄</div>
+    <div class="app-title">Transport Terrestre à Lévitation</div>
+    <div class="app-desc">Véhicules sans roues, sans rail, sans friction — lévitation au-dessus du sol par modulation locale de Ψ₂. Vitesse limitée seulement par l'aérodynamique. Dans un tube sous vide : Paris-New York en 1 heure à 5000 km/h, avec ~10 Wh/km (contre 500 Wh/km pour une voiture).</div>
+    <span class="app-tag">Transport</span> <span class="app-tag">Zéro friction</span> <span class="app-tag">Silencieux</span>
+  </div>
+
+  <div class="app-card">
+    <div class="app-icon">🏗️</div>
+    <div class="app-title">Construction Sans Limite de Poids</div>
+    <div class="app-desc">Des blocs de 1000 tonnes manipulés comme des briques. Des structures aujourd'hui impossibles deviennent triviales — ponts, tours, habitats sous-marins. Plus de grues, plus d'échafaudages, plus de moteurs diesel sur les chantiers. Réduction de 60-80% des coûts de levage.</div>
+    <span class="app-tag">BTP</span> <span class="app-tag">Grues obsolètes</span>
+  </div>
+
+  <div class="app-card">
+    <div class="app-icon">⚡</div>
+    <div class="app-title">Centrales Gravitationnelles Ψ</div>
+    <div class="app-desc">Cycle : lévitation quasi-gratuite d'une masse → descente génératrice. L'énergie nette provient du champ scalaire Ψ₁ ambiant. Énergie propre, illimitée, sans combustible, sans intermittence, zéro émission. Coût estimé : 5-15 €/MWh (contre 40-60 € pour solaire/nucléaire).</div>
+    <span class="app-tag">Énergie</span> <span class="app-tag">Renouvelable</span> <span class="app-tag">Zéro émission</span>
+  </div>
+
+  <div class="app-card">
+    <div class="app-icon">🏥</div>
+    <div class="app-title">Médecine en Gravité Réduite</div>
+    <div class="app-desc">Chambres de soin en gravité modulée (0g à 2g). Décharge des articulations, guérison osseuse accélérée, rééducation sans effort, chirurgie en apesanteur contrôlée. Réduction estimée de 30-50% de la durée d'hospitalisation.</div>
+    <span class="app-tag">Santé</span> <span class="app-tag">Rééducation</span> <span class="app-tag">Chirurgie</span>
+  </div>
+
+  <div class="app-card">
+    <div class="app-icon">🛡️</div>
+    <div class="app-title">Défense & Protection</div>
+    <div class="app-desc">Boucliers gravitationnels déviant les projectiles. Aéronefs à propulsion silencieuse sans signature thermique. Fortifications à gravité modulée (intrus plaqué au sol — non létal, réversible).</div>
+    <span class="app-tag">Défense</span> <span class="app-tag">Bouclier</span> <span class="app-tag">Furtivité</span>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="transport">
+  <h2>10. Transport sans Friction — La Révolution de la Mobilité</h2>
+
+  <div class="eq-box">
+    <div class="main-eq">F<sub>propulsion</sub> = m<sub>véhicule</sub> · g · sin(α<sub>eff</sub>)</div>
+    <div class="desc">En modulant Ψ₂ sous le véhicule, on crée un gradient de gravité effectif — le véhicule « tombe » horizontalement dans la direction souhaitée.</div>
+  </div>
+
+  <p>Un VMG (Véhicule à Modulation Gravitationnelle) n'a pas de roues, pas de moteur thermique, pas de batterie de traction. Il se déplace en <strong>créant une pente gravitationnelle artificielle</strong> dans la direction du mouvement.</p>
+
+  <table>
+    <tr><th>Mode</th><th>Vitesse max</th><th>Énergie / km</th><th>Infrastructure</th><th>Bruit</th></tr>
+    <tr><td>Voiture thermique</td><td>~200 km/h</td><td>~500 Wh/km</td><td>Routes, stations-service</td><td>70 dB</td></tr>
+    <tr><td>Train MagLev</td><td>~600 km/h</td><td>~100 Wh/km</td><td>Rails magnétiques coûteux</td><td>60 dB</td></tr>
+    <tr><td>Avion</td><td>~900 km/h</td><td>~2000 Wh/km</td><td>Aéroports, carburant</td><td>90 dB</td></tr>
+    <tr><td class="green">VMG (lévitation Ψ₂)</td><td class="green">~3000+ km/h*</td><td class="green">~10 Wh/km</td><td class="green">Aucune — surface plane</td><td class="green">20 dB</td></tr>
+  </table>
+  <p style="font-size:0.80em;color:var(--ink3);">* Limitée par l'aérodynamique. Dans le vide (tube sous vide), vitesse illimitée. Paris-New York en 1h.</p>
+</section>
+
+<!-- ================================================================== -->
+<section id="construction">
+  <h2>11. Construction sans Grue — Le Chantier du Futur</h2>
+
+  <table>
+    <tr><th>Application</th><th>Masse sans modulation</th><th>Masse modulée (η=0.5)</th><th>Bénéfice</th></tr>
+    <tr><td>Bloc de pierre massive</td><td>50 tonnes</td><td>~500 kg</td><td>Positionnement manuel précis</td></tr>
+    <tr><td>Module préfabriqué (appartement)</td><td>200 tonnes</td><td>~2 tonnes</td><td>Assemblage en une journée</td></tr>
+    <tr><td>Poutre de pont</td><td>1000 tonnes</td><td>~10 tonnes</td><td>Pose sans grue ni échafaudage</td></tr>
+    <tr><td>Immeuble entier (10 étages)</td><td>30000 tonnes</td><td>~300 tonnes</td><td>Construction modulaire en 1 mois</td></tr>
+  </table>
+
+  <ul style="color:var(--ink2);margin-left:20px;line-height:2.2">
+    <li><strong>Sécurité :</strong> Plus de chute de charge — si la modulation cesse, la masse retrouve son poids progressivement</li>
+    <li><strong>Précision :</strong> Positionnement à 0.1 mm près en 3D</li>
+    <li><strong>Silence :</strong> Plus de moteurs diesel, de marteaux-piqueurs</li>
+    <li><strong>Coût :</strong> Réduction de 60-80% des coûts de levage et de manutention</li>
+  </ul>
+</section>
+
+<!-- ================================================================== -->
+<section id="espace">
+  <h2>12. Propulsion Spatiale — L'Accès à l'Espace Démocratisé</h2>
+
+  <h3>12.1 Le Problème de la Fusée Chimique</h3>
+  <p>La fusée chimique est limitée par l'équation de Tsiolkovski : Δv = v_ejection · ln(m_initiale/m_finale). Pour atteindre l'orbite (Δv ~ 9.4 km/s), 90% de la masse au décollage doit être du carburant. C'est inefficace, coûteux, et dangereux.</p>
+
+  <h3>12.2 La Solution Harmonique — Le Propulseur Scalaire</h3>
+  <div class="eq-box">
+    <div class="main-eq">F<sub>poussée</sub> = m<sub>vaisseau</sub> · g · (ΔΨ₂ / Ψ₂<sub>ambiant</sub>)</div>
+    <div class="desc">Poussée sans éjection de masse — Le gradient de Ψ₂ créé par les modulateurs directionnels génère une force nette sur le vaisseau. Pas de propergol, pas de limite Δv.</div>
+  </div>
+
+  <table>
+    <tr><th>Caractéristique</th><th>Fusée chimique (Falcon 9)</th><th>Propulseur scalaire (VMG)</th></tr>
+    <tr><td>Propergol</td><td>~500 tonnes</td><td class="green">0 — aucun propergol</td></tr>
+    <tr><td>Δv maximal</td><td>~9.4 km/s (orbite basse)</td><td class="green">Illimité (limité par l'énergie électrique)</td></tr>
+    <tr><td>Masse charge utile / Masse totale</td><td>~4%</td><td class="green">~80-90%</td></tr>
+    <tr><td>Coût / kg en orbite</td><td>~2 700 $</td><td class="green">~10-100 $ (objectif)</td></tr>
+    <tr><td>Réutilisabilité</td><td>Partielle (10-100 vols)</td><td class="green">Totale (100 000+ vols)</td></tr>
+  </table>
+
+  <h3>12.3 Applications Spatiales Avancées</h3>
+  <ul style="color:var(--ink2);margin-left:20px;line-height:2.2">
+    <li><strong>Voyage interplanétaire rapide :</strong> Terre-Mars en 3 jours (accélération constante 1g)</li>
+    <li><strong>Station orbitale à gravité artificielle :</strong> Modulation locale de Ψ₂ pour créer 1g — pas de rotation</li>
+    <li><strong>Ascenseur spatial :</strong> Plus besoin de câble en nanotubes — la cabine monte par modulation Ψ₂</li>
+    <li><strong>Exploitation minière des astéroïdes :</strong> Des VMG autonomes capturent et ramènent des astéroïdes entiers</li>
+    <li><strong>Colonisation :</strong> Bases lunaires et martiennes construites avec les matériaux locaux — pas de contrainte de poids</li>
+  </ul>
+</section>
+
+<!-- ================================================================== -->
+<section id="energie">
+  <h2>13. Énergie Gravitationnelle — La Centrale Ψ</h2>
+
+  <div class="eq-box">
+    <div class="main-eq">P<sub>extraite</sub> = η<sub>cycle</sub> · m · g · h · (1/φ) · f<sub>cycle</sub></div>
+    <div class="desc">Puissance extraite du champ scalaire — Une masse m est cycliquement lévitée (Ψ₂ réduit) puis redescendue (Ψ₂ normal). Le travail de descente est converti en électricité, la montée ne coûte presque rien.</div>
+  </div>
+
+  <p>Le cycle : <strong>① Lévitation</strong> (coût quasi nul) → modulateurs réduisent m_app de 99%. Le piston de 1000t pèse 10t, hissé facilement. <strong>② Descente génératrice</strong> → modulateurs coupés, piston retrouve 1000t, descend, entraîne génératrice. Énergie récupérée : m·g·h. <strong>③ Répétition</strong> → Énergie nette = Énergie descente − Énergie montée ≈ m·g·h·(1 − 1/φ²) par cycle.</p>
+
+  <div class="warning-box">
+    <div class="warn-title">⚠ D'où vient l'énergie ?</div>
+    <p>L'énergie excédentaire est <strong>extraite du champ scalaire ambiant Ψ₁</strong>, réservoir d'énergie fondamental de l'univers. Le modulateur agit comme une « pompe à chaleur gravitationnelle » — il transfère de l'énergie du champ scalaire vers l'énergie mécanique. Le champ Ψ₁ se « refroidit » localement, mais cette diminution est infinitésimale à l'échelle cosmique.</p>
+  </div>
+
+  <table>
+    <tr><th>Source</th><th>Densité de puissance</th><th>Intermittence</th><th>Émissions CO₂</th><th>Coût / MWh</th></tr>
+    <tr><td>Nucléaire (fission)</td><td>Très élevée</td><td>Aucune</td><td>~12 g</td><td>~60 €</td></tr>
+    <tr><td>Solaire PV</td><td>Faible</td><td>Jour/nuit, météo</td><td>~40 g</td><td>~40 €</td></tr>
+    <tr><td>Éolien</td><td>Faible</td><td>Intermittent</td><td>~11 g</td><td>~50 €</td></tr>
+    <tr><td class="green">Centrale Ψ (harmonique)</td><td class="green">Élevée (kW/m³)</td><td class="green">Aucune</td><td class="green">0 g</td><td class="green">~5-15 € (estimé)</td></tr>
+  </table>
+</section>
+
+<!-- ================================================================== -->
+<section id="medicales">
+  <h2>14. Applications Médicales — La Santé en Gravité Contrôlée</h2>
+  <p>Une pièce d'hôpital où le champ Ψ₂ est ajustable de 0g (apesanteur) à 2g (hypergravité) :</p>
+
+  <table>
+    <tr><th>Pathologie / Besoin</th><th>Gravité appliquée</th><th>Bénéfice thérapeutique</th></tr>
+    <tr><td>Fractures, prothèses</td><td>0.1-0.3 g</td><td>Mobilisation précoce sans douleur — guérison accélérée</td></tr>
+    <tr><td>Rééducation post-AVC</td><td>0.2-0.5 g</td><td>Mouvements impossibles en 1g deviennent possibles</td></tr>
+    <tr><td>Obésité, perte de poids</td><td>0.5-0.8 g</td><td>Exercice sans stress articulaire</td></tr>
+    <tr><td>Insuffisance cardiaque</td><td>0.3-0.6 g</td><td>Réduction de la charge de travail du cœur</td></tr>
+    <tr><td>Brûlures étendues</td><td>0 g (apesanteur)</td><td>Aucune pression sur les greffes</td></tr>
+    <tr><td>Lombalgies chroniques</td><td>0.4-0.7 g</td><td>Décompression vertébrale continue</td></tr>
+    <tr><td>Ostéoporose (prévention)</td><td>1.2-1.5 g</td><td>Stimulation de la densité osseuse</td></tr>
+    <tr><td>Chirurgie de précision</td><td>0-0.1 g</td><td>Organes en apesanteur — accès facilité</td></tr>
+  </table>
+</section>
+
+<!-- ================================================================== -->
+<section id="timeline">
+  <h2><span class="num">PARTIE IV — FEUILLE DE ROUTE</span>15. Roadmap Technologique</h2>
+  <p class="section-desc">De la validation expérimentale à la civilisation post-gravitationnelle.</p>
+
+  <table>
+    <tr><th>Phase</th><th>Période</th><th>Jalon</th></tr>
+    <tr><td><strong>PHASE 0</strong></td><td>2026-2027</td><td>Validation expérimentale — Mesure de Δm ≠ 0 dans cavité φ. Publication. Réplication par 3 laboratoires.</td></tr>
+    <tr><td><strong>PHASE 1</strong></td><td>2027-2029</td><td>Optimisation — Test des 4 méthodes. Atteinte de η > 0.5 (50% réduction de masse pour 10 kW).</td></tr>
+    <tr><td><strong>PHASE 2</strong></td><td>2029-2032</td><td>Premiers démonstrateurs — Lévitation stable de 1 tonne. Drone VMG 100 kg. Centrale Ψ 100 kW.</td></tr>
+    <tr><td><strong>PHASE 3</strong></td><td>2032-2040</td><td>Industrialisation — Production en série. VMG fret commercial. Centrales Ψ 100 MW. Hôpitaux équipés.</td></tr>
+    <tr><td><strong>PHASE 4</strong></td><td>2040-2050</td><td>Révolution transports — Tubes hyper-vitesse intercontinentaux. VMG personnels. Orbite à 100 €/kg. Base lunaire.</td></tr>
+    <tr><td><strong>PHASE 5</strong></td><td>2050+</td><td>Civilisation post-gravitationnelle — Gravité modulable comme l'électricité. Voyage interplanétaire routine. Énergie illimitée.</td></tr>
+  </table>
+</section>
+
+<!-- ================================================================== -->
+<section id="ethique">
+  <h2>16. Considérations Éthiques — La Responsabilité du Savoir</h2>
+
+  <div class="warning-box">
+    <div class="warn-title">⚠ Dualité de la Maîtrise Gravitationnelle</div>
+    <p>Comme toute technologie de rupture (nucléaire, IA, biotechnologie), la modulation de la gravité a un potentiel destructeur proportionnel à son potentiel constructif. Un modulateur Ψ₂ peut servir à construire un hôpital ou à écraser une ville. La réflexion éthique doit précéder le déploiement.</p>
+  </div>
+
+  <table>
+    <tr><th>Risque</th><th>Description</th><th>Mitigation</th></tr>
+    <tr><td>Armement</td><td>Bombes gravitationnelles, armes à impulsion Ψ₂</td><td>Traité international de non-prolifération gravitationnelle</td></tr>
+    <tr><td>Accident</td><td>Effondrement de modulation — chute brutale</td><td>Systèmes redondants, retour progressif à g</td></tr>
+    <tr><td>Inégalité</td><td>Accès réservé aux riches — fracture gravitationnelle</td><td>Open source, brevets libres, transfert technologique</td></tr>
+    <tr><td>Désastre écologique</td><td>Extraction massive du champ Ψ₁</td><td>Étude d'impact, limite d'extraction globale</td></tr>
+    <tr><td>Dépendance</td><td>Civilisation dépendante — effondrement si panne</td><td>Infrastructures duales (gravitationnel + classique)</td></tr>
+  </table>
+
+  <blockquote>
+    <p><strong>1.</strong> La connaissance de la modulation gravitationnelle est un patrimoine de l'humanité — elle ne peut être appropriée par aucun État, entreprise ou individu.</p>
+    <p><strong>2.</strong> Toute application militaire offensive de la modulation Ψ₂ est interdite — seules les applications défensives et civiles sont légitimes.</p>
+    <p><strong>3.</strong> L'accès aux bénéfices de la modulation gravitationnelle (énergie, transport, santé) est un droit humain fondamental.</p>
+    <p><strong>4.</strong> L'extraction d'énergie du champ Ψ₁ est limitée à 0.01% du flux scalaire ambiant local.</p>
+    <p><strong>5.</strong> La recherche sur la modulation gravitationnelle est libre, ouverte et collaborative.</p>
+    <div class="attrib">— Principes Éthiques de la Maîtrise Gravitationnelle, KOTTO Alain, 22 Juin 2026</div>
+  </blockquote>
+</section>
+
+<!-- ===== CONCLUSION ===== -->
+<section style="text-align:center;padding:60px 0">
+  <div class="result-box" style="max-width:750px;margin:0 auto;border-color:rgba(122,92,255,0.4)">
+    <div class="label" style="color:var(--acc2)">Le Futur Nous Appartient</div>
+    <p><strong>La maîtrise de la gravité</strong> n'est pas une utopie lointaine — c'est une conséquence directe et falsifiable de la Théorie Harmonique. Si Ψ₂ = π·(Ψ₁)², si Ψ₁ est modulable par effet piézoélectrique, et si la cavité φ amplifie sélectivement cette modulation, alors <strong>la lévitation est inévitable</strong>.</p>
+    <p style="margin-top:12px;">La seule question qui reste est : <strong>quand</strong> l'expérience cruciale sera-t-elle réalisée ?</p>
+    <p style="margin-top:12px;color:var(--phi);font-weight:600;">Le protocole est défini. Les matériaux existent. La théorie est cohérente. Il ne manque que la volonté de savoir.</p>
+  </div>
+
+  <p style="margin-top:40px;color:var(--ink3);font-size:0.90em;">
+    ← <a href="architecture-harmonique.html" style="color:var(--phi);text-decoration:none;">Architecture Harmonique</a> ·
+    <a href="document-fondateur.html" style="color:var(--phi);text-decoration:none;">Document Fondateur</a> ·
+    <a href="construction-pyramide-harmonique.html" style="color:var(--phi);text-decoration:none;">Construction de la Pyramide</a> →
+  </p>
+</section>
+
+</div>
+
+<footer>
+  <p>Maîtrise de la Gravité — Une application de la <a href="index.html">Symphonie Cosmique</a></p>
+  <p>Théorie développée par KOTTO Alain · φ = (1+√5)/2 ≈ 1.6180339887...</p>
+  <p style="font-size:0.75em;color:var(--ink3);">22 Juin 2026 · « La gravité n'est pas une fatalité — c'est une harmonique »</p>
+</footer>
+
+</body>
+</html>

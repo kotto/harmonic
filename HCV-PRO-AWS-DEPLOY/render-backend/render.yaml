@@ -1,0 +1,25 @@
+services:
+  # Backend HCV PRO Flask
+  - type: web
+    name: hcv-pro-backend
+    runtime: python
+    runtimeVersion: 3.11.7
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python app.py"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.7"
+      - key: HCV_PRO_SECRET
+        value: "your-secret-key-here"
+      - key: HCV_PRO_API_KEY_REQUIRED
+        value: "true"
+      - key: HCV_PRO_RATE_LIMIT
+        value: "100"
+      - key: FLASK_ENV
+        value: "production"
+      - key: FLASK_DEBUG
+        value: "false"
+      - key: PORT
+        value: "10000"
+    autoDeploy: true

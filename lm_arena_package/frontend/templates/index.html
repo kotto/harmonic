@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmonic AI SaaS Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --dark-bg: #0f172a;
+            --dark-card: #1e293b;
+            --dark-border: #334155;
+            --dark-text: #f1f5f9;
+            --dark-text-secondary: #94a3b8;
+            --light-bg: #f8fafc;
+            --light-card: #ffffff;
+            --light-border: #e2e8f0;
+            --light-text: #1e293b;
+            --light-text-secondary: #64748b;
+            --radius: 12px;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--dark-text);
+            line-height: 1.6;
+            transition: var(--transition);
+        }
+        
+        body.light-mode {
+            background-color: var(--light-bg);
+            color: var(--light-text);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Header */
+        header {
+            background-color: var(--dark-card);
+            padding: 20px 0;
+            border-bottom: 1px solid var(--dark-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: var(--transition);
+        }
+        
+        .light-mode header {
+            background-color: var(--light-card);
+            border-bottom: 1px solid var(--light-border);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+        }
+        
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .user-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--dark-text);
+            font-size: 20px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .light-mode .theme-toggle {
+            color: var(--light-text);
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+        
+        /* Main Content */
+        .main-content {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 30px;
+            padding: 30px 0;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            background-color: var(--dark-card);
+            border-radius: var(--radius);
+            padding: 25px;
+            height: fit-content;
+            transition: var(--transition);
+        }
+        
+        .light-mode .sidebar {
+            background-color: var(--light-card);
+        }
+        
+        .nav-menu {
+            list-style: none;
+        }
+        
+        .nav-item {
+            margin-bottom: 10px;
+        }
+        
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            color: var(--dark-text-secondary);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        
+        .light-mode .nav-link {
+            color: var(--light-text-secondary);
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            background-color: rgba(99, 102, 241, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .nav-link i {
+            width: 20px;
+            text-align: center;
+        }
+        
+        /* Dashboard Content */
+        .dashboard-content {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .welcome-banner {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            border-radius: var(--radius);
+            padding: 30px;
+            color: white;
+            box-shadow: var(--shadow);
+        }
+        
+        .welcome-banner h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .welcome-banner p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .stat-card {
+            background-color: var(--dark-card);
+            border-radius: var(--radius);
+            padding: 25px;
+            transition: var(--transition);
+            border: 1px solid var(--dark-border);
+        }
+        
+        .light-mode .stat-card {
+            background-color: var(--light-card);
+            border: 1px solid var(--light-border);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
+        }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .stat-icon.audio {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--secondary-color);
+        }
+        
+        .stat-icon.video {
+            background-color: rgba(99, 102, 241, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .stat-icon.usage {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--warning-color);
+        }
+        
+        .stat-icon.billing {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: var(--dark-text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .light-mode .stat-label {
+            color: var(--light-text-secondary);
+        }
+        
+        /* Processing Sections */
+        .processing-section {
+            background-color: var(--dark-card);
+            border-radius: var(--radius);
+            padding: 25px;
+            transition: var(--transition);
+        }
+        
+        .light-mode .processing-section {
+            background-color: var(--light-card);
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .section-header h2 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .section-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .btn-secondary {
+            background-color: rgba(99, 102, 241, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .light-mode .btn-secondary {
+            background-color: rgba(99, 102, 241, 0.1);
+        }
+        
+        .btn-secondary:hover {
+            background-color: rgba(99, 102, 241, 0.2);
+        }
+        
+        /* File Upload */
+        .file-upload-area {
+            border: 2px dashed var(--dark-border);
+            border-radius: var(--radius);
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: var(--transition);
+        }
+        
+        .light-mode .file-upload-area {
+            border-color: var(--light-border);
+        }
+        
+        .file-upload-area:hover {
+            border-color: var(--primary-color);
+        }
+        
+        .file-upload-area i {
+            font-size: 48px;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        
+        .file-upload-area p {
+            margin-bottom: 15px;
+            color: var(--dark-text-secondary);
+        }
+        
+        .light-mode .file-upload-area p {
+            color: var(--light-text-secondary);
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .file-label {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: inline-block;
+            transition: var(--transition);
+        }
+        
+        .file-label:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        /* Job List */
+        .job-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .job-item {
+            background-color: rgba(30, 41, 59, 0.5);
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: var(--transition);
+        }
+        
+        .light-mode .job-item {
+            background-color: rgba(248, 250, 252, 0.8);
+        }
+        
+        .job-info h3 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .job-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 14px;
+            color: var(--dark-text-secondary);
+        }
+        
+        .light-mode .job-meta {
+            color: var(--light-text-secondary);
+        }
+        
+        .job-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-pending {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--warning-color);
+        }
+        
+        .status-processing {
+            background-color: rgba(99, 102, 241, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .status-completed {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--secondary-color);
+        }
+        
+        .status-failed {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+        }
+        
+        /* Footer */
+        footer {
+            background-color: var(--dark-card);
+            padding: 30px 0;
+            border-top: 1px solid var(--dark-border);
+            margin-top: 50px;
+            transition: var(--transition);
+        }
+        
+        .light-mode footer {
+            background-color: var(--light-card);
+            border-top: 1px solid var(--light-border);
+        }
+        
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .footer-links {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .footer-link {
+            color: var(--dark-text-secondary);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        
+        .light-mode .footer-link {
+            color: var(--light-text-secondary);
+        }
+        
+        .footer-link:hover {
+            color: var(--primary-color);
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-wave-square"></i>
+                    </div>
+                    <div class="logo-text">Harmonic AI</div>
+                </div>
+                
+                <div class="user-actions">
+                    <button class="theme-toggle" id="themeToggle">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    
+                    <div class="user-profile" id="userProfile">
+                        <div class="avatar">AK</div>
+                        <div class="user-info">
+                            <div class="user-name">Alain KOTTO</div>
+                            <div class="user-role">Administrator</div>
+                        </div>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="container">
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <nav>
+                    <ul class="nav-menu">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link active">
+                                <i class="fas fa-home"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-music"></i>
+                                <span>Audio Processing</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-video"></i>
+                                <span>Video Processing</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-chart-line"></i>
+                                <span>Analytics</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-credit-card"></i>
+                                <span>Billing</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-key"></i>
+                                <span>API Keys</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-cog"></i>
+                                <span>Settings</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </aside>
+            
+            <!-- Dashboard Content -->
+            <div class="dashboard-content">
+                <!-- Welcome Banner -->
+                <section class="welcome-banner">
+                    <h1>Welcome to Harmonic AI SaaS</h1>
+                    <p>Transform your audio and video content with cutting-edge Harmonic AI technology. Process files, monitor usage, and manage your subscription all in one place.</p>
+                </section>
+                
+                <!-- Stats Grid -->
+                <section class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-icon audio">
+                                <i class="fas fa-music"></i>
+                            </div>
+                            <div class="stat-trend positive">
+                                <i class="fas fa-arrow-up"></i> 12%
+                            </div>
+                        </div>
+                        <div class="stat-value" id="audioJobsCount">0</div>
+                        <div class="stat-label">Audio Jobs Processed</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-icon video">
+                                <i class="fas fa-video"></i>
+                            </div>
+                            <div class="stat-trend positive">
+                                <i class="fas fa-arrow-up"></i> 8%
+                            </div>
+                        </div>
+                        <div class="stat-value" id="videoJobsCount">0</div>
+                        <div class="stat-label">Video Jobs Processed</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-icon usage">
+                                <i class="fas fa-chart-pie"></i>
+                            </div>
+                            <div class="stat-trend neutral">
+                                <i class="fas fa-minus"></i> 0%
+                            </div>
+                        </div>
+                        <div class="stat-value" id="monthlyUsage">0%</div>
+                        <div class="stat-label">Monthly Usage</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-icon billing">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="stat-trend positive">
+                                <i class="fas fa-arrow-up"></i> 15%
+                            </div>
+                        </div>
+                        <div class="stat-value" id="currentPlan">Free</div>
+                        <div class="stat-label">Current Plan</div>
+                    </div>
+                </section>
+                
+                <!-- Audio Processing Section -->
+                <section class="processing-section">
+                    <div class="section-header">
+                        <h2>Audio Processing</h2>
+                        <div class="section-actions">
+                            <button class="btn btn-secondary" id="refreshAudioJobs">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                            <button class="btn btn-primary" id="newAudioJob">
+                                <i class="fas fa-plus"></i> New Job
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="file-upload-area" id="audioUploadArea">
+                        <i class="fas fa-file-audio"></i>
+                        <h3>Upload Audio File</h3>
+                        <p>Supported formats: MP3, WAV, FLAC, M4A, AAC</p>
+                        <p>Max file size: 100MB</p>
+                        <input type="file" id="audioFileInput" class="file-input" accept=".mp3,.wav,.flac,.m4a,.aac">
+                        <label for="audioFileInput" class="file-label">
+                            <i class="fas fa-upload"></i> Choose File
+                        </label>
+                    </div>
+                    
+                    <div class="job-list" id="audioJobsList">
+                        <!-- Audio jobs will be loaded here -->
+                        <div class="job-item">
+                            <div class="job-info">
+                                <h3>No audio jobs yet</h3>
+                                <div class="job-meta">
+                                    <span>Upload a file to get started</span>
+                                </div>
+                            </div>
+                            <div class="job-status status-pending">Pending</div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Video Processing Section -->
+                <section class="processing-section">
+                    <div class="section-header">
+                        <h2>Video Processing</h2>
+                        <div class="section-actions">
+                            <button class="btn btn-secondary" id="refreshVideoJobs">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                            <button class="btn btn-primary" id="newVideoJob">
+                                <i class="fas fa-plus"></i> New Job
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="file-upload-area" id="videoUploadArea">
+                        <i class="fas fa-file-video"></i>
+                        <h3>Upload Video File</h3>
+                        <p>Supported formats: MP4, AVI, MOV, MKV, WEBM</p>
+                        <p>Max file size: 100MB</p>
+                        <input type="file" id="videoFileInput" class="file-input" accept=".mp4,.avi,.mov,.mkv,.webm">
+                        <label for="videoFileInput" class="file-label">
+                            <i class="fas fa-upload"></i> Choose File
+                        </label>
+                    </div>
+                    
+                    <div class="job-list" id="videoJobsList">
+                        <!-- Video jobs will be loaded here -->
+                        <div class="job-item">
+                            <div class="job-info">
+                                <h3>No video jobs yet</h3>
+                                <div class="job-meta">
+                                    <span>Upload a file to get started</span>
+                                </div>
+                            </div>
+                            <div class="job-status status-pending">Pending</div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="copyright">
+                    © 2026 Harmonic AI. All rights reserved.
+                </div>
+                
+                <div class="footer-links">
+                    <a href="#" class="footer-link">Privacy Policy</a>
+                    <a href="#" class="footer-link">Terms of Service</a>
+                    <a href="#" class="footer-link">Documentation</a>
+                    <a href="#" class="footer-link">Support</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

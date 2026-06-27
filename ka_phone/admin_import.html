@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KA Phone — Import Hologramme Kemet</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #0d1117; color: #f0f0f5; padding: 24px; }
+    h1 { color: #d4a843; margin-bottom: 8px; font-size: 1.5em; }
+    .subtitle { color: #a0a0b8; margin-bottom: 24px; font-size: 0.9em; }
+    .card { background: #14141e; border: 1px solid #252535; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+    .card h2 { font-size: 1.1em; margin-bottom: 16px; color: #d4a843; }
+    .tabs { display: flex; gap: 0; margin-bottom: 0; }
+    .tab { padding: 12px 24px; background: #14141e; border: 1px solid #252535; border-bottom: none; border-radius: 12px 12px 0 0; cursor: pointer; font-weight: 600; font-size: 0.9em; color: #a0a0b8; margin-right: -1px; }
+    .tab.active { background: #1a1a28; color: #d4a843; border-color: #d4a843; }
+    textarea { width: 100%; padding: 14px; background: #0a0a0f; color: #f0f0f5; border: 1px solid #252535; border-radius: 8px; font-family: monospace; font-size: 0.85em; resize: vertical; min-height: 250px; }
+    textarea:focus { outline: none; border-color: #d4a843; }
+    .btn { padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9em; transition: all 0.2s; }
+    .btn-primary { background: #d4a843; color: #0a0a0f; }
+    .btn-primary:hover { background: #f0c96e; }
+    .btn-outline { background: transparent; border: 1px solid #252535; color: #f0f0f5; }
+    .btn-outline:hover { border-color: #d4a843; color: #d4a843; }
+    .log { background: #0a0a0f; border: 1px solid #252535; border-radius: 8px; padding: 16px; font-family: monospace; font-size: 0.8em; max-height: 400px; overflow-y: auto; white-space: pre-wrap; color: #00c896; }
+    .log .error { color: #ff4757; }
+    .log .warn { color: #ffa502; }
+    .progress { height: 4px; background: #252535; border-radius: 2px; margin: 12px 0; }
+    .progress-fill { height: 100%; background: #d4a843; border-radius: 2px; transition: width 0.3s; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 0.8em; color: #a0a0b8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .form-group input, .form-group textarea, .form-group select {
+        width: 100%; padding: 10px 14px; background: #0a0a0f; color: #f0f0f5;
+        border: 1px solid #252535; border-radius: 8px; font-family: inherit; font-size: 0.9em;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #d4a843; }
+    .tag-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+    .tag { display: inline-block; padding: 2px 8px; background: rgba(212,168,67,0.1); color: #d4a843; border-radius: 4px; font-size: 0.75em; }
+</style>
+</head>
+<body>
+
+<h1>◈ KA Phone — Import Hologramme Kemet</h1>
+<p class="subtitle">Importer massivement des études scientifiques, articles, faits — par lot JSON ou article complet</p>
+
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('json')">📦 Import JSON (lot)</div>
+    <div class="tab" onclick="switchTab('article')">📄 Article / Étude</div>
+    <div class="tab" onclick="switchTab('bulk')">📋 Texte structuré</div>
+</div>
+
+<div class="card" style="border-radius:0 12px 12px 12px">
+    <!-- JSON IMPORT -->
+    <div id="tab-json">
+        <h2>📦 Import par lot (format JSON)</h2>
+        <p style="color:#a0a0b8;font-size:0.85em;margin-bottom:12px">
+            Collez un tableau JSON de faits. Chaque fait doit contenir : <code>question</code>, <code>reponse</code>, et optionnellement <code>categorie</code>, <code>source</code>, <code>image</code>, <code>video</code>, <code>mots_cles</code>.
+        </p>
+        <textarea id="jsonInput" placeholder='[
+  {
+    "categorie": "egypte_ancienne",
+    "question": "Que dit l'UNESCO sur les origines de Kemet ?",
+    "reponse": "L'Histoire Générale de l'Afrique (UNESCO, Vol. II)...",
+    "source": "UNESCO, 1980",
+    "image": "https://...",
+    "mots_cles": ["unesco", "kemet", "afrique", "origine"]
+  }
+]'></textarea>
+        <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-primary" onclick="importJSON()">📦 Importer le lot</button>
+            <span id="jsonCount" style="color:#a0a0b8;display:flex;align-items:center;font-size:0.85em">0 faits détectés</span>
+        </div>
+    </div>
+
+    <!-- ARTICLE IMPORT -->
+    <div id="tab-article" style="display:none">
+        <h2>📄 Importer un article / étude scientifique</h2>
+        <p style="color:#a0a0b8;font-size:0.85em;margin-bottom:12px">
+            Collez le contenu d'un article. KA le découpera automatiquement en faits question/réponse via DeepSeek.
+        </p>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Titre de l'étude / article</label>
+                <input type="text" id="articleTitle" placeholder="Ex: Nations nègres et culture — Cheikh Anta Diop, 1954">
+            </div>
+            <div class="form-group">
+                <label>Source / Référence académique</label>
+                <input type="text" id="articleSource" placeholder="Diop, C.A. (1954). Nations nègres et culture. Présence Africaine.">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>🖼️ Image associée (URL)</label>
+                <input type="text" id="articleImage" placeholder="https://...">
+            </div>
+            <div class="form-group">
+                <label>🎬 Vidéo associée (YouTube)</label>
+                <input type="text" id="articleVideo" placeholder="https://youtube.com/...">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Contenu de l'article (texte complet)</label>
+            <textarea id="articleContent" rows="15" placeholder="Collez ici le texte complet de l'article, l'étude, ou la transcription..."></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="importerArticle()">🧠 Analyser et importer (DeepSeek)</button>
+        <p style="color:#a0a0b8;font-size:0.75em;margin-top:8px">DeepSeek extraira automatiquement les faits clés sous forme de paires question/réponse.</p>
+    </div>
+
+    <!-- BULK TEXT IMPORT -->
+    <div id="tab-bulk" style="display:none">
+        <h2>📋 Import texte structuré</h2>
+        <p style="color:#a0a0b8;font-size:0.85em;margin-bottom:12px">
+            Format attendu : <code>Q: question<br>R: réponse<br><br>Q: question suivante...</code><br>
+            Chaque bloc "Q:/R:" devient un fait dans l'hologramme.
+        </p>
+        <div class="form-group">
+            <label>Catégorie par défaut</label>
+            <select id="bulkCat">
+                <option value="egypte_ancienne">Égypte ancienne (Kemet)</option>
+                <option value="societe_africaine">Société africaine</option>
+                <option value="sciences">Sciences</option>
+                <option value="histoire">Histoire</option>
+                <option value="spiritualite">Spiritualité</option>
+            </select>
+        </div>
+        <textarea id="bulkInput" placeholder="Q: Les pyramides de Gizeh encodent-elles le nombre d'or ?
+R: Oui. La Grande Pyramide encode φ = 1.618... avec le rapport hauteur/demi-base = √φ.
+
+Q: Qu'est-ce que la coudée royale ?
+R: La coudée royale mesure 0.5236m = π/6 mètres. C'était l'unité de mesure des bâtisseurs de Kemet."></textarea>
+        <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-primary" onclick="importBulk()">📋 Importer</button>
+            <span id="bulkCount" style="color:#a0a0b8;display:flex;align-items:center;font-size:0.85em">0 blocs Q/R détectés</span>
+        </div>
+    </div>
+
+    <!-- LOG -->
+    <div class="log" id="log"></div>
+</div>
+
+<script>
+const API = '';
+
+function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`[onclick="switchTab('${name}')"]`).classList.add('active');
+    ['json','article','bulk'].forEach(t => { document.getElementById('tab-'+t).style.display = t===name?'block':'none'; });
+}
+
+// --- JSON IMPORT ---
+document.getElementById('jsonInput').addEventListener('input', function() {
+    try {
+        const parsed = JSON.parse(this.value);
+        const count = Array.isArray(parsed) ? parsed.length : 0;
+        document.getElementById('jsonCount').textContent = count + ' faits détectés';
+    } catch(e) {
+        document.getElementById('jsonCount').textContent = 'JSON invalide';
+    }
+});
+
+async function importJSON() {
+    const log = document.getElementById('log');
+    log.innerHTML = '';
+    let data;
+    try { data = JSON.parse(document.getElementById('jsonInput').value); }
+    catch(e) { log.innerHTML = '<span class="error">JSON invalide: ' + e.message + '</span>'; return; }
+    if (!Array.isArray(data)) { log.innerHTML = '<span class="error">Le JSON doit être un tableau.</span>'; return; }
+
+    log.innerHTML = `Import de ${data.length} faits...\n`;
+    let ok = 0, errors = 0;
+    
+    for (let i = 0; i < data.length; i++) {
+        const f = data[i];
+        if (!f.question || !f.reponse) { log.innerHTML += `<span class="warn">#${i+1}: question ou reponse manquante</span>\n`; errors++; continue; }
+        
+        const fait = {
+            categorie: f.categorie || 'egypte_ancienne',
+            question: f.question,
+            reponse: f.reponse,
+            mots_cles: f.mots_cles || f.question.toLowerCase().replace(/[?.,'']/g,'').split(/\s+/).filter(w => w.length > 3),
+            source: f.source || 'Import JSON',
+            image: f.image || '',
+            video: f.video || '',
+        };
+
+        try {
+            const r = await fetch(API + '/api/hologramme/ajouter', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(fait) });
+            const d = await r.json();
+            if (d.status === 'ok') { log.innerHTML += `[OK] #${i+1}: ${f.question.substring(0,60)}...\n`; ok++; }
+            else { log.innerHTML += `<span class="error">[ERREUR] #${i+1}: ${d.error}</span>\n`; errors++; }
+        } catch(e) { log.innerHTML += `<span class="error">[ERREUR] #${i+1}: ${e.message}</span>\n`; errors++; }
+        
+        document.getElementById('jsonCount').textContent = `${ok+errors}/${data.length} traités`;
+    }
+    log.innerHTML += `\n=== Terminé: ${ok} OK, ${errors} erreurs ===`;
+}
+
+// --- ARTICLE IMPORT ---
+async function importerArticle() {
+    const log = document.getElementById('log');
+    const title = document.getElementById('articleTitle').value.trim();
+    const content = document.getElementById('articleContent').value.trim();
+    const source = document.getElementById('articleSource').value.trim();
+    const image = document.getElementById('articleImage').value.trim();
+    const video = document.getElementById('articleVideo').value.trim();
+    
+    if (!title || !content) { log.innerHTML = '<span class="error">Titre et contenu requis.</span>'; return; }
+    log.innerHTML = '🧠 Analyse par DeepSeek en cours...\n';
+
+    const prompt = `Tu es un expert en histoire africaine (Kemet). Analyse cet article scientifique et extrait 5 à 10 faits clés. Pour chaque fait, formule une question (comme un utilisateur la poserait) et une réponse précise (2-3 phrases). Format obligatoire:\n\nTITRE: ${title}\nSOURCE: ${source}\n\n${content}\n\nRéponds UNIQUEMENT au format:\nQ: [question]\nR: [réponse]\n\nQ: [question suivante]\nR: [réponse suivante]`;
+
+    try {
+        const r = await fetch(API + '/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({prompt: prompt}) });
+        const d = await r.json();
+        const reponse = d.reponse || '';
+        
+        // Parser les paires Q/R
+        const pairs = [];
+        const lines = reponse.split('\n');
+        let currentQ = '', currentR = '';
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('Q: ') || trimmed.startsWith('Q:')) {
+                if (currentQ && currentR) pairs.push({q: currentQ, r: currentR});
+                currentQ = trimmed.replace(/^Q:\s*/, '').trim();
+                currentR = '';
+            } else if (trimmed.startsWith('R: ') || trimmed.startsWith('R:')) {
+                currentR = trimmed.replace(/^R:\s*/, '').trim();
+            } else if (currentR && trimmed) {
+                currentR += ' ' + trimmed;
+            }
+        }
+        if (currentQ && currentR) pairs.push({q: currentQ, r: currentR});
+
+        log.innerHTML += `${pairs.length} faits extraits. Import...\n`;
+        let ok = 0, errors = 0;
+
+        for (let i = 0; i < pairs.length; i++) {
+            const fait = {
+                categorie: 'egypte_ancienne',
+                question: pairs[i].q,
+                reponse: pairs[i].r,
+                mots_cles: pairs[i].q.toLowerCase().replace(/[?.,'']/g,'').split(/\s+/).filter(w => w.length > 3),
+                source: source || title,
+                image: image,
+                video: video,
+            };
+            try {
+                const rr = await fetch(API + '/api/hologramme/ajouter', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(fait) });
+                const dd = await rr.json();
+                if (dd.status === 'ok') { log.innerHTML += `[OK] #${i+1}: ${pairs[i].q.substring(0,60)}...\n`; ok++; }
+                else { log.innerHTML += `<span class="error">[ERREUR] #${i+1}: ${dd.error}</span>\n`; errors++; }
+            } catch(e) { log.innerHTML += `<span class="error">[ERREUR] #${i+1}: ${e.message}</span>\n`; errors++; }
+        }
+        log.innerHTML += `\n=== Terminé: ${ok} OK, ${errors} erreurs ===`;
+    } catch(e) { log.innerHTML = '<span class="error">Erreur: ' + e.message + '</span>'; }
+}
+
+// --- BULK TEXT IMPORT ---
+document.getElementById('bulkInput').addEventListener('input', function() {
+    const blocks = this.value.split(/\n\n+/).filter(b => b.includes('Q:') && b.includes('R:'));
+    document.getElementById('bulkCount').textContent = blocks.length + ' blocs Q/R détectés';
+});
+
+async function importBulk() {
+    const log = document.getElementById('log');
+    const text = document.getElementById('bulkInput').value;
+    const cat = document.getElementById('bulkCat').value;
+    
+    const blocks = text.split(/\n\n+/).filter(b => b.includes('Q:') && b.includes('R:'));
+    if (blocks.length === 0) { log.innerHTML = '<span class="error">Aucun bloc Q:/R: détecté.</span>'; return; }
+
+    log.innerHTML = `Import de ${blocks.length} blocs...\n`;
+    let ok = 0, errors = 0;
+
+    for (let i = 0; i < blocks.length; i++) {
+        const lines = blocks[i].split('\n');
+        let q = '', r = '';
+        for (const line of lines) {
+            if (line.startsWith('Q:')) q = line.replace(/^Q:\s*/, '').trim();
+            if (line.startsWith('R:')) r = line.replace(/^R:\s*/, '').trim();
+            if (r && !line.startsWith('R:') && !line.startsWith('Q:')) r += ' ' + line.trim();
+        }
+        if (!q || !r) { log.innerHTML += `<span class="warn">#${i+1}: Q ou R manquant</span>\n`; errors++; continue; }
+
+        const fait = {
+            categorie: cat,
+            question: q,
+            reponse: r,
+            mots_cles: q.toLowerCase().replace(/[?.,'']/g,'').split(/\s+/).filter(w => w.length > 3),
+            source: 'Import texte structuré',
+        };
+        try {
+            const rr = await fetch(API + '/api/hologramme/ajouter', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(fait) });
+            const dd = await rr.json();
+            if (dd.status === 'ok') { log.innerHTML += `[OK] #${i+1}: ${q.substring(0,60)}...\n`; ok++; }
+            else { log.innerHTML += `<span class="error">[ERREUR] #${i+1}: ${dd.error}</span>\n`; errors++; }
+        } catch(e) { log.innerHTML += `<span class="error">[ERREUR] #${i+1}: ${e.message}</span>\n`; errors++; }
+    }
+    log.innerHTML += `\n=== Terminé: ${ok} OK, ${errors} erreurs ===`;
+}
+</script>
+
+</body>
+</html>

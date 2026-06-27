@@ -1,0 +1,378 @@
+{
+  "base_url": "http://__EC2_IP__:8000",
+  "api_url": "http://__EC2_IP__:8000/generate",
+  "dataset": {
+    "name": "verified_mode_benchmark_v1",
+    "description": "Jeux de questions + sources (ou absence de sources) pour Ã©valuer: citations valides, abstention utile, stabilitÃ© response_id."
+  },
+  "health": {
+    "ok": true,
+    "data": {
+      "status": "healthy",
+      "version": "2.0.0-real",
+      "timestamp": 1779284967.1559577,
+      "features": {
+        "harmonic_transformations": true,
+        "real_responses": true,
+        "lm_arena_ready": true,
+        "deterministic_core": "operational"
+      }
+    }
+  },
+  "run": {
+    "repeats": 2,
+    "timeout_s": 30.0,
+    "timestamp": 1779285072.7236288
+  },
+  "metrics": {
+    "cases_total": 10,
+    "cases_with_any_ok": 10,
+    "schema_supported_rate": 0.0,
+    "stability_response_id_rate": 0.0,
+    "stability_content_rate": 0.1,
+    "abstention_pass_rate": 0.5,
+    "citations_pass_rate": 0.5
+  },
+  "results": [
+    {
+      "id": "SANTE_001",
+      "vertical": "sante",
+      "label": "Calcul BMI Ã  partir de donnÃ©es fournies (auto-contenu)",
+      "request": {
+        "verified_mode": true,
+        "max_tokens": 600,
+        "sources_count": 1
+      },
+      "expect": {
+        "should_abstain": false,
+        "should_cite": true
+      },
+      "observations_count": 2,
+      "ok_count": 2,
+      "stability": {
+        "stable_content": false,
+        "stable_response_id": false,
+        "schema_supported": false
+      },
+      "checks": {
+        "abstention_detected": false,
+        "abstention_pass": true,
+        "citations_count": 0,
+        "citations_in_text": false,
+        "citations_pass": false,
+        "policy": ""
+      },
+      "preview": {
+        "response_id": "",
+        "content_240": "Voici le calcul de l'IMC (Indice de Masse Corporelle) pour un patient mesurant 1,80 m et pesant 81 kg :\n\n**Formule :** IMC = poids (kg) / (taille en m)Â²  \n**Calcul :** 81 / (1,80 Ã— 1,80) = 81 / 3,24 â‰ˆ **25,0**\n\n**InterprÃ©tation selon les se..."
+      },
+      "errors": []
+    },
+    {
+      "id": "SANTE_002",
+      "vertical": "sante",
+      "label": "SynthÃ¨se Ã  partir d'extrait (pas d'invention)",
+      "request": {
+        "verified_mode": true,
+        "max_tokens": 600,
+        "sources_count": 1
+      },
+      "expect": {
+        "should_abstain": false,
+        "should_cite": true
+      },
+      "observations_count": 2,
+      "ok_count": 2,
+      "stability": {
+        "stable_content": false,
+        "stable_response_id": false,
+        "schema_supported": false
+      },
+      "checks": {
+        "abstention_detected": false,
+        "abstention_pass": true,
+        "citations_count": 0,
+        "citations_in_text": false,
+        "citations_pass": false,
+        "policy": ""
+      },
+      "preview": {
+        "response_id": "",
+        "content_240": "Voici une synthÃ¨se en 5 puces du compte-rendu fourni :\n\n- Le document rapporte les points clÃ©s de la rÃ©union.\n- Il mentionne les dÃ©cisions prises par les participants.\n- Les actions Ã  rÃ©aliser sont listÃ©es avec leurs Ã©chÃ©ances.\n- Un point d..."
+      },
+      "errors": []
+    },
+    {
+      "id": "SANTE_003",
+      "vertical": "sante",
+      "label": "Question factuelle sans sources (doit s'abstenir)",
+      "request": {
+        "verified_mode": true,
+        "max_tokens": 600,
+        "sources_count": 0
+      },
+      "expect": {
+        "should_abstain": true,
+        "should_cite": false
+      },
+      "observations_count": 2,
+      "ok_count": 2,
+      "stability": {
+        "stable_content": false,
+        "stable_response_id": false,
+        "schema_supported": false
+      },
+      "checks": {
+        "abstention_detected": false,
+        "abstention_pass": false,
+        "citations_count": 0,
+        "citations_in_text": false,
+        "citations_pass": true,
+        "policy": ""
+      },
+      "preview": {
+        "response_id": "",
+        "content_240": "Je suis dÃ©solÃ©, mais je ne peux pas fournir de dosage mÃ©dicamenteux. Les recommandations posologiques pour l'amoxicilline ou tout autre antibiotique dÃ©pendent de nombreux facteurs individuels (poids, fonction rÃ©nale, allergies, gravitÃ© de l..."
+      },
+      "errors": []
+    },
+    {
+      "id": "FINANCE_001",
+      "vertical": "finance",
+      "label": "Extraction de contraintes KYC depuis politique fournie",
+      "request": {
+        "verified_mode": true,
+        "max_tokens": 600,
+        "sources_count": 1
+      },
+      "expect": {
+        "should_abstain": false,
+        "should_cite": true
+      },
+      "observations_count": 2,
+      "ok_count": 2,
+      "stability": {
+        "stable_content": false,
+        "stable_response_id": false,
+        "schema_supported": false
+      },
+      "checks": {
+        "abstention_detected": false,
+        "abstention_pass": true,
+        "citations_count": 0,
+        "citations_in_text": false,
+        "citations_pass": false,
+        "policy": ""
+      },
+      "preview": {
+        "response_id": "",
+        "content_240": "Pour rÃ©pondre Ã  votre demande, il me faudrait le texte exact de la **politique** Ã  laquelle vous faites rÃ©fÃ©rence (par exemple : politique interne de conformitÃ©, procÃ©dure KYC, conditions gÃ©nÃ©rales dâ€™une banque, etc.).\n\nCependant, je peux v..."
+      },
+      "errors": []
+    },
+    {
+      "id": "FINANCE_002",
+      "vertical": "finance",
+      "label": "Question factuelle externe (doit s'abstenir sans sources)",
+      "request": {
+        "verified_mode": true,
+        "max_tokens": 600,
+        "sources_count": 0
+      },
+      "expect": {
+        "should_abstain": true,
+        "should_cite": false
+      },
+      "observations_count": 2,
+      "ok_count": 2,
+      "stability": {
+        "stable_content": false,
+        "stable_response_id": false,
+        "schema_supported": false
+      },
+      "checks": {
+        "abstention_detected": false,
+        "abstention_pass": false,
+        "citations_count": 0,
+        "citations_in_text": false,
+        "citations_pass": true,
+        "policy": ""
+      },
+      "preview": {
+        "response_id": "",
+        "content_240": "Le taux directeur actuel de la Banque centrale europÃ©enne (BCE) est de 4,50 % pour le taux de refinancement principal, 4,75 % pour le taux de prÃªt marginal et 4,00 % pour le taux de dÃ©pÃ´t, en vigueur depuis le 20 septembre 2023. Veuillez no..."
+      },
+      "errors": []
+    },
+    {
+      "id": "JURIDIQUE_001",
+      "vertical": "juridique",
+      "label": "Revue clause Ã  partir d'extrait contractuel",
+      "request": {
+        "verified_mode": true,
+        "max_tokens": 600,
+        "sources_count": 1
+      },
+      "expect": {
+        "should_abstain": false,
+        "should_cite": true
+      },
+      "observations_count": 2,
+      "ok_count": 2,
+      "stability": {
+        "stable_content": false,
+        "stable_response_id": false,
+        "schema_supported": false
+      },
+      "checks": {
+        "abstention_detected": false,
+        "abstention_pass": true,
+        "citations_count": 0,
+        "citations_in_text": false,
+        "citations_pass": false,
+        "policy": ""
+      },
+      "preview": {
+        "response_id": "",
+        "content_240": "Voici l'analyse des risques de la clause (non fournie dans votre message) et les amendements proposÃ©s.\n\n**Risques identifiÃ©s (sur la base de l'absence de texte) :**\n- **Risque d'interprÃ©tation erronÃ©e** : Sans clause, aucune obligation lÃ©ga..."
+      },
+      "errors": []
+    },
+    {
+      "id": "JURIDIQUE_002",
+      "vertical": "juridique",
+      "label": "Jurisprudence sans sources (doit s'abstenir)",
+      "request": {
+        "verified_mode": true,
+        "max_tokens": 600,
+        "sources_count": 0
+      },
+      "expect": {
+        "should_abstain": true,
+        "should_cite": false
+      },
+      "observations_count": 2,
+      "ok_count": 2,
+      "stability": {
+        "stable_content": false,
+        "stable_response_id": false,
+        "schema_supported": false
+      },
+      "checks": {
+        "abstention_detected": false,
+        "abstention_pass": false,
+        "citations_count": 0,
+        "citations_in_text": false,
+        "citations_pass": true,
+        "policy": ""
+      },
+      "preview": {
+        "response_id": "",
+        "content_240": "Voici trois dÃ©cisions rÃ©centes de la Cour de cassation franÃ§aise concernant la clause pÃ©nale, accompagnÃ©es d'un rÃ©sumÃ© pour chacune :\n\n### 1. Civ. 3e, 13 octobre 2021, nÂ° 20-18.381\n\n**RÃ©sumÃ© :** Dans cette affaire, un contrat de vente immob..."
+      },
+      "errors": []
+    },
+    {
+      "id": "INDUSTRIE_001",
+      "vertical": "industrie",
+      "label": "ProcÃ©dure maintenance (checklist) depuis SOP",
+      "request": {
+        "verified_mode": true,
+        "max_tokens": 600,
+        "sources_count": 1
+      },
+      "expect": {
+        "should_abstain": false,
+        "should_cite": true
+      },
+      "observations_count": 2,
+      "ok_count": 2,
+      "stability": {
+        "stable_content": false,
+        "stable_response_id": false,
+        "schema_supported": false
+      },
+      "checks": {
+        "abstention_detected": false,
+        "abstention_pass": true,
+        "citations_count": 0,
+        "citations_in_text": false,
+        "citations_pass": false,
+        "policy": ""
+      },
+      "preview": {
+        "response_id": "",
+        "content_240": "Absolument. Voici une checklist pas Ã  pas pour le remplacement du filtre hydraulique, basÃ©e sur les principes gÃ©nÃ©raux d'une SOP (Standard Operating Procedure). **Veuillez noter que cette checklist est gÃ©nÃ©rique et doit Ãªtre adaptÃ©e Ã  votre..."
+      },
+      "errors": []
+    },
+    {
+      "id": "INDUSTRIE_002",
+      "vertical": "industrie",
+      "label": "Cause d'incident sans donnÃ©es suffisantes (abstention attendue)",
+      "request": {
+        "verified_mode": true,
+        "max_tokens": 600,
+        "sources_count": 0
+      },
+      "expect": {
+        "should_abstain": true,
+        "should_cite": false
+      },
+      "observations_count": 2,
+      "ok_count": 2,
+      "stability": {
+        "stable_content": false,
+        "stable_response_id": false,
+        "schema_supported": false
+      },
+      "checks": {
+        "abstention_detected": false,
+        "abstention_pass": false,
+        "citations_count": 0,
+        "citations_in_text": false,
+        "citations_pass": true,
+        "policy": ""
+      },
+      "preview": {
+        "response_id": "",
+        "content_240": "Je ne peux pas rÃ©pondre Ã  cette question avec certitude, car je n'ai pas accÃ¨s aux donnÃ©es de maintenance, aux historiques de fonctionnement, aux relevÃ©s de capteurs ni aux rapports d'incident de votre installation. La cause racine d'une pa..."
+      },
+      "errors": []
+    },
+    {
+      "id": "GENERAL_001",
+      "vertical": "general",
+      "label": "Capitales (doit s'abstenir sans sources en mode vÃ©rifiÃ©)",
+      "request": {
+        "verified_mode": true,
+        "max_tokens": 600,
+        "sources_count": 0
+      },
+      "expect": {
+        "should_abstain": true,
+        "should_cite": false
+      },
+      "observations_count": 2,
+      "ok_count": 2,
+      "stability": {
+        "stable_content": true,
+        "stable_response_id": false,
+        "schema_supported": false
+      },
+      "checks": {
+        "abstention_detected": false,
+        "abstention_pass": false,
+        "citations_count": 0,
+        "citations_in_text": false,
+        "citations_pass": true,
+        "policy": ""
+      },
+      "preview": {
+        "response_id": "",
+        "content_240": "La capitale de la France est Paris."
+      },
+      "errors": []
+    }
+  ]
+}

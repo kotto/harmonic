@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KA-Next v3 — Interface Holographique</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a1a; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+.container { max-width: 800px; width: 100%; }
+h1 { text-align: center; color: #00d4ff; margin-bottom: 10px; font-size: 2em; text-shadow: 0 0 20px rgba(0,212,255,0.3); }
+.subtitle { text-align: center; color: #888; margin-bottom: 30px; font-size: 0.9em; }
+.query-box { display: flex; gap: 10px; margin-bottom: 10px; }
+#prompt { flex: 1; padding: 15px; border-radius: 8px; border: 2px solid #333; background: #111;
+  color: #fff; font-size: 1.1em; resize: vertical; min-height: 60px; }
+#prompt:focus { border-color: #00d4ff; outline: none; box-shadow: 0 0 15px rgba(0,212,255,0.2); }
+.btn-row { display: flex; gap: 10px; margin-bottom: 20px; }
+button { padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer; font-size: 1em; font-weight: 600; transition: all 0.2s; }
+.btn-ask { background: linear-gradient(135deg, #00d4ff, #0088cc); color: #000; flex: 2; }
+.btn-ask:hover { box-shadow: 0 0 25px rgba(0,212,255,0.5); transform: translateY(-1px); }
+.btn-reason { background: #1a1a3a; color: #ffd700; border: 1px solid #ffd700; flex: 1; }
+.btn-reason:hover { background: #2a2a4a; }
+.btn-creative { background: #1a1a3a; color: #ff6b9d; border: 1px solid #ff6b9d; flex: 1; }
+.btn-creative:hover { background: #2a2a4a; }
+.response { background: #111; border-radius: 8px; padding: 20px; min-height: 100px; border: 1px solid #222; white-space: pre-wrap; line-height: 1.6; }
+.meta { display: flex; gap: 20px; margin-top: 10px; font-size: 0.85em; color: #666; }
+.meta span { background: #1a1a2e; padding: 5px 12px; border-radius: 20px; }
+.loading { display: none; color: #ffd700; text-align: center; }
+.facts { margin-top: 15px; font-size: 0.85em; }
+.fact-item { background: #1a1a2e; padding: 8px 12px; margin: 4px 0; border-radius: 6px; border-left: 3px solid #00d4ff; color: #aaa; }
+.status-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #0d0d22; border-radius: 8px; margin-bottom: 20px; border: 1px solid #222; }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; background: #00ff88; display: inline-block; margin-right: 8px; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.status-text { color: #888; font-size: 0.85em; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="status-bar">
+    <span><span class="status-dot"></span><strong>KA-Next v3</strong> — En ligne</span>
+    <span class="status-text" id="statusInfo">7 domaines · 16K faits · ~100ms</span>
+  </div>
+  
+  <div class="query-box">
+    <textarea id="prompt" placeholder="Posez votre question..." rows="2"></textarea>
+  </div>
+  
+  <div class="btn-row">
+    <button class="btn-ask" onclick="query('auto')">🔍 Demander</button>
+    <button class="btn-reason" onclick="query('reason')">🧠 Raisonner</button>
+    <button class="btn-creative" onclick="query('creative')">✨ Créer</button>
+  </div>
+  
+  <div id="loading" class="loading">Recherche holographique en cours...</div>
+  <div id="response" class="response" style="color:#666;">La réponse apparaîtra ici...</div>
+  <div id="facts" class="facts"></div>
+</div>
+
+<script>
+async function query(mode) {
+  const prompt = document.getElementById('prompt').value.trim();
+  if (!prompt) return;
+  
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('response').textContent = '';
+  document.getElementById('facts').innerHTML = '';
+  
+  const start = performance.now();
+  try {
+    const res = await fetch('/query', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({prompt, mode})
+    });
+    const data = await res.json();
+    const elapsed = Math.round(performance.now() - start);
+    
+    document.getElementById('response').textContent = data.text || 'Aucune réponse';
+    document.getElementById('response').style.color = '#e0e0e0';
+    
+    // Afficher les meta-infos
+    document.getElementById('statusInfo').textContent = 
+      `${data.source || '?'} · ${data.temps_ms || elapsed}ms · confiance ${(data.confidence*100).toFixed(0)}% · ${data.facts_used || 0} faits`;
+    
+    // Afficher les faits
+    const factsDiv = document.getElementById('facts');
+    if (data.top_facts) {
+      data.top_facts.forEach(f => {
+        const div = document.createElement('div');
+        div.className = 'fact-item';
+        div.textContent = `[${(f.score*100).toFixed(0)}%] ${f.text} (${f.domain_name || '?'})`;
+        factsDiv.appendChild(div);
+      });
+    }
+  } catch(e) {
+    document.getElementById('response').textContent = 'Erreur: ' + e.message;
+    document.getElementById('response').style.color = '#ff4444';
+  }
+  document.getElementById('loading').style.display = 'none';
+}
+
+// Raccourci Entrée
+document.getElementById('prompt').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); query('auto'); }
+});
+
+// Exemples rapides
+const examples = [
+  "Quelle est la capitale du Senegal ?",
+  "Qui a decouvert l'ADN ?",
+  "Quand a debute la Revolution francaise ?",
+  "Qu'est-ce que le stoicisme ?",
+  "Quelle est la vitesse de la lumiere ?"
+];
+document.getElementById('prompt').placeholder = 'Ex: ' + examples[Math.floor(Math.random()*examples.length)];
+</script>
+</body>
+</html>

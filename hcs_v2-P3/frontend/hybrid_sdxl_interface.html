@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCS V2 - IA Générative Hybride SDXL + Harmonique</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --hcs-purple: #8B5CF6;
+            --hcs-gold: #FFD700;
+            --hcs-blue: #3B82F6;
+            --hcs-dark: #1F2937;
+            --hcs-darker: #111827;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+            color: white;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        
+        .hcs-gradient {
+            background: linear-gradient(135deg, var(--hcs-purple), var(--hcs-gold));
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid var(--hcs-gold);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .metric-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-2px);
+        }
+        
+        .preview-image {
+            max-width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--hcs-purple), var(--hcs-gold));
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Header -->
+    <header class="glass-effect sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 hcs-gradient rounded-lg flex items-center justify-center">
+                        <i data-lucide="sparkles" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-yellow-400 bg-clip-text text-transparent">
+                            HCS V2 Hybrid SDXL
+                        </h1>
+                        <p class="text-xs text-gray-400">IA Générative + Théorie Harmonique</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="loadSystemInfo()" class="btn-secondary">
+                        <i data-lucide="info" class="w-4 h-4 mr-2"></i>
+                        Info
+                    </button>
+                    <button onclick="loadPresets()" class="btn-secondary">
+                        <i data-lucide="bookmark" class="w-4 h-4 mr-2"></i>
+                        Presets
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left Panel - Controls -->
+            <div class="lg:col-span-1 space-y-6">
+                
+                <!-- Mode Selection -->
+                <div class="glass-effect rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i data-lucide="settings" class="w-5 h-5 mr-2 text-hcs-gold"></i>
+                        Mode de Génération
+                    </h3>
+                    <div class="space-y-3">
+                        <label class="flex items-center space-x-3 cursor-pointer">
+                            <input type="radio" name="mode" value="text-to-image" checked class="w-4 h-4">
+                            <span>Texte → Image</span>
+                        </label>
+                        <label class="flex items-center space-x-3 cursor-pointer">
+                            <input type="radio" name="mode" value="image-to-image" class="w-4 h-4">
+                            <span>Image → Image</span>
+                        </label>
+                        <label class="flex items-center space-x-3 cursor-pointer">
+                            <input type="radio" name="mode" value="reference" class="w-4 h-4">
+                            <span>Avec Référence</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Prompt Input -->
+                <div class="glass-effect rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i data-lucide="edit-3" class="w-5 h-5 mr-2 text-hcs-gold"></i>
+                        Prompt
+                    </h3>
+                    <textarea 
+                        id="prompt" 
+                        rows="4" 
+                        class="w-full bg-gray-800 rounded-lg p-3 text-white border border-gray-700 focus:border-hcs-purple focus:outline-none"
+                        placeholder="Décrivez l'image que vous voulez générer..."
+                    ></textarea>
+                    <input 
+                        type="text" 
+                        id="negativePrompt" 
+                        class="w-full mt-3 bg-gray-800 rounded-lg p-3 text-white border border-gray-700 focus:border-hcs-purple focus:outline-none"
+                        placeholder="Prompt négatif (optionnel)..."
+                    >
+                </div>
+
+                <!-- Reference Upload (Hidden by default) -->
+                <div id="referenceUpload" class="glass-effect rounded-xl p-6 hidden">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i data-lucide="image" class="w-5 h-5 mr-2 text-hcs-gold"></i>
+                        Image de Référence
+                    </h3>
+                    <div class="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
+                        <input type="file" id="referenceFile" accept="image/*" class="hidden">
+                        <label for="referenceFile" class="cursor-pointer">
+                            <i data-lucide="upload" class="w-8 h-8 mx-auto mb-2 text-gray-400"></i>
+                            <p class="text-sm text-gray-400">Cliquez pour uploader une référence</p>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Harmonic Settings -->
+                <div class="glass-effect rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i data-lucide="sliders" class="w-5 h-5 mr-2 text-hcs-gold"></i>
+                        Paramètres Harmoniques
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Niveau d'Énergie</label>
+                            <select id="energyLevel" class="w-full bg-gray-800 rounded-lg p-2 text-white border border-gray-700 focus:border-hcs-purple focus:outline-none">
+                                <option value="classique">Classique</option>
+                                <option value="harmonique" selected>Harmonique</option>
+                                <option value="quantum">Quantique</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Force Harmonique: <span id="harmonicStrengthValue">0.8</span></label>
+                            <input type="range" id="harmonicStrength" min="0" max="1" step="0.1" value="0.8" 
+                                   class="w-full" oninput="document.getElementById('harmonicStrengthValue').textContent = this.value">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Facteur d'Upscale: <span id="upscaleFactorValue">2.0</span>x</label>
+                            <input type="range" id="upscaleFactor" min="1" max="4" step="0.5" value="2.0" 
+                                   class="w-full" oninput="document.getElementById('upscaleFactorValue').textContent = this.value">
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" id="temporalCoherence" checked class="w-4 h-4">
+                                <span>Cohérence Temporelle</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Generate Button -->
+                <button onclick="generateImage()" class="w-full btn-primary text-lg py-4">
+                    <i data-lucide="sparkles" class="w-5 h-5 mr-2"></i>
+                    Générer avec HCS Hybrid
+                </button>
+            </div>
+
+            <!-- Center Panel - Preview -->
+            <div class="lg:col-span-1 space-y-6">
+                
+                <!-- Loading -->
+                <div id="loading" class="glass-effect rounded-xl p-8 text-center hidden">
+                    <div class="loading-spinner mx-auto mb-4"></div>
+                    <p class="text-lg font-medium">Génération en cours...</p>
+                    <p class="text-sm text-gray-400">Application des principes harmoniques</p>
+                </div>
+
+                <!-- Original Preview -->
+                <div id="originalPreview" class="glass-effect rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i data-lucide="image" class="w-5 h-5 mr-2 text-hcs-gold"></i>
+                        Image Originale
+                    </h3>
+                    <div id="originalImageContainer" class="text-center text-gray-400">
+                        <i data-lucide="image" class="w-16 h-16 mx-auto mb-2"></i>
+                        <p>Aucune image</p>
+                    </div>
+                </div>
+
+                <!-- Generated Preview -->
+                <div id="generatedPreview" class="glass-effect rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i data-lucide="sparkles" class="w-5 h-5 mr-2 text-hcs-gold"></i>
+                        Image Générée (Hybrid)
+                    </h3>
+                    <div id="generatedImageContainer" class="text-center text-gray-400">
+                        <i data-lucide="sparkles" class="w-16 h-16 mx-auto mb-2"></i>
+                        <p>En attente de génération</p>
+                    </div>
+                </div>
+
+                <!-- Download Buttons -->
+                <div id="downloadButtons" class="glass-effect rounded-xl p-6 hidden">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i data-lucide="download" class="w-5 h-5 mr-2 text-hcs-gold"></i>
+                        Téléchargement
+                    </h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="downloadImage('png')" class="btn-secondary">
+                            <i data-lucide="file-image" class="w-4 h-4 mr-2"></i>
+                            PNG
+                        </button>
+                        <button onclick="downloadImage('jpg')" class="btn-secondary">
+                            <i data-lucide="file-image" class="w-4 h-4 mr-2"></i>
+                            JPG
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Metrics -->
+            <div class="lg:col-span-1 space-y-6">
+                
+                <!-- Generation Metrics -->
+                <div id="generationMetrics" class="glass-effect rounded-xl p-6 hidden">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i data-lucide="bar-chart-3" class="w-5 h-5 mr-2 text-hcs-gold"></i>
+                        Métriques Harmoniques
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="metric-card">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">Score d'Harmonie</span>
+                                <span id="harmonyScore" class="font-mono text-hcs-gold">--</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">Équilibre φ</span>
+                                <span id="phiBalance" class="font-mono text-hcs-gold">--</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">Cohérence Chromatique</span>
+                                <span id="chromaticConsistency" class="font-mono text-hcs-gold">--</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">PSNR</span>
+                                <span id="generationPsnr" class="font-mono text-hcs-gold">--</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">SSIM Harmonique</span>
+                                <span id="harmonicSsim" class="font-mono text-hcs-gold">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Processing Info -->
+                <div id="processingInfo" class="glass-effect rounded-xl p-6 hidden">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i data-lucide="cpu" class="w-5 h-5 mr-2 text-hcs-gold"></i>
+                        Informations de Traitement
+                    </h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span>Temps de traitement:</span>
+                            <span id="processingTime" class="font-mono">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Niveau d'énergie:</span>
+                            <span id="usedEnergyLevel" class="font-mono">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Facteur d'upscale:</span>
+                            <span id="usedUpscaleFactor" class="font-mono">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Référence utilisée:</span>
+                            <span id="referenceUsed" class="font-mono">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chromatic Profile -->
+                <div id="chromaticProfile" class="glass-effect rounded-xl p-6 hidden">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i data-lucide="palette" class="w-5 h-5 mr-2 text-hcs-gold"></i>
+                        Profil Chromatique
+                    </h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span>Moyenne RGB:</span>
+                            <span id="meanRgb" class="font-mono">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Écart-type RGB:</span>
+                            <span id="stdRgb" class="font-mono">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Signature Chromatique:</span>
+                            <span id="chromaticSignature" class="font-mono">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Status -->
+                <div class="glass-effect rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i data-lucide="activity" class="w-5 h-5 mr-2 text-hcs-gold"></i>
+                        État du Système
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <span class="text-sm">SDXL Hybrid: Actif</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <span class="text-sm">Moteur Harmonique: Prêt</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                            <span class="text-sm">GPU: Simulation</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Message Area -->
+    <div id="messageArea" class="fixed bottom-4 right-4 max-w-md z-50"></div>
+
+    <script>
+        class HybridSDXLInterface {
+            constructor() {
+                this.currentResult = null;
+                this.referenceFile = null;
+                this.init();
+            }
+
+            init() {
+                // Mode selection listeners
+                document.querySelectorAll('input[name="mode"]').forEach(radio => {
+                    radio.addEventListener('change', (e) => this.onModeChange(e.target.value));
+                });
+
+                // File upload listener
+                document.getElementById('referenceFile').addEventListener('change', (e) => {
+                    this.handleReferenceFile(e.target.files[0]);
+                });
+
+                // Load system info
+                this.loadSystemInfo();
+
+                // Initialize Lucide icons
+                lucide.createIcons();
+            }
+
+            onModeChange(mode) {
+                const referenceUpload = document.getElementById('referenceUpload');
+                
+                if (mode === 'reference' || mode === 'image-to-image') {
+                    referenceUpload.classList.remove('hidden');
+                } else {
+                    referenceUpload.classList.add('hidden');
+                    this.referenceFile = null;
+                }
+            }
+
+            handleReferenceFile(file) {
+                if (file) {
+                    this.referenceFile = file;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const container = document.getElementById('originalImageContainer');
+                        container.innerHTML = `<img src="${e.target.result}" class="preview-image" alt="Référence">`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+
+            async generateImage() {
+                const mode = document.querySelector('input[name="mode"]:checked').value;
+                const prompt = document.getElementById('prompt').value;
+                
+                if (!prompt) {
+                    this.showMessage('Veuillez entrer un prompt', 'error');
+                    return;
+                }
+
+                this.showLoading(true);
+                this.showMessage('Génération hybride en cours...', 'info');
+
+                try {
+                    let result;
+                    
+                    if (mode === 'text-to-image') {
+                        result = await this.generateTextToImage(prompt);
+                    } else if (mode === 'image-to-image') {
+                        result = await this.generateImageToImage(prompt);
+                    } else if (mode === 'reference') {
+                        result = await this.generateWithReference(prompt);
+                    }
+
+                    if (result.success) {
+                        this.currentResult = result;
+                        this.displayResult(result);
+                        this.showMessage('Génération hybride terminée avec succès !', 'success');
+                    } else {
+                        this.showMessage(`Erreur: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    this.showMessage(`Erreur réseau: ${error.message}`, 'error');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            async generateTextToImage(prompt) {
+                const formData = {
+                    prompt: prompt,
+                    negative_prompt: document.getElementById('negativePrompt').value,
+                    width: 1024,
+                    height: 1024,
+                    energy_level: document.getElementById('energyLevel').value,
+                    harmonic_strength: parseFloat(document.getElementById('harmonicStrength').value),
+                    upscale_factor: parseFloat(document.getElementById('upscaleFactor').value),
+                    temporal_coherence: document.getElementById('temporalCoherence').checked
+                };
+
+                const response = await fetch('http://localhost:8011/api/v2/hybrid/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                return await response.json();
+            }
+
+            async generateImageToImage(prompt) {
+                if (!this.referenceFile) {
+                    this.showMessage('Veuillez uploader une image source', 'error');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('source_image', this.referenceFile);
+                formData.append('prompt', prompt);
+                formData.append('energy_level', document.getElementById('energyLevel').value);
+                formData.append('harmonic_strength', document.getElementById('harmonicStrength').value);
+                formData.append('upscale_factor', document.getElementById('upscaleFactor').value);
+
+                const response = await fetch('http://localhost:8011/api/v2/hybrid/image-to-image', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                return await response.json();
+            }
+
+            async generateWithReference(prompt) {
+                if (!this.referenceFile) {
+                    this.showMessage('Veuillez uploader une image de référence', 'error');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('reference_image', this.referenceFile);
+                formData.append('prompt', prompt);
+                formData.append('width', 1024);
+                formData.append('height', 1024);
+                formData.append('energy_level', document.getElementById('energyLevel').value);
+                formData.append('harmonic_strength', document.getElementById('harmonicStrength').value);
+                formData.append('upscale_factor', document.getElementById('upscaleFactor').value);
+                formData.append('temporal_coherence', document.getElementById('temporalCoherence').checked);
+
+                const response = await fetch('http://localhost:8011/api/v2/hybrid/generate-with-reference', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                return await response.json();
+            }
+
+            displayResult(result) {
+                // Display generated image
+                const container = document.getElementById('generatedImageContainer');
+                container.innerHTML = `<img src="data:image/png;base64,${result.generated_image_base64}" class="preview-image" alt="Générée">`;
+
+                // Display metrics
+                this.displayMetrics(result.metrics);
+
+                // Display processing info
+                this.displayProcessingInfo(result);
+
+                // Display chromatic profile if available
+                if (result.chromatic_profile) {
+                    this.displayChromaticProfile(result.chromatic_profile);
+                }
+
+                // Show download buttons
+                document.getElementById('downloadButtons').classList.remove('hidden');
+                document.getElementById('generationMetrics').classList.remove('hidden');
+                document.getElementById('processingInfo').classList.remove('hidden');
+
+                // Reinitialize icons
+                lucide.createIcons();
+            }
+
+            displayMetrics(metrics) {
+                document.getElementById('harmonyScore').textContent = metrics.harmony_score?.toFixed(3) || '--';
+                document.getElementById('phiBalance').textContent = metrics.phi_balance?.toFixed(3) || '--';
+                document.getElementById('chromaticConsistency').textContent = metrics.chromatic_consistency?.toFixed(3) || '--';
+                document.getElementById('generationPsnr').textContent = metrics.generation_psnr?.toFixed(1) + ' dB' || '--';
+                document.getElementById('harmonicSsim').textContent = metrics.harmonic_ssim?.toFixed(3) || '--';
+            }
+
+            displayProcessingInfo(result) {
+                document.getElementById('processingTime').textContent = result.processing_time?.toFixed(2) + 's' || '--';
+                document.getElementById('usedEnergyLevel').textContent = result.config?.energy_level || '--';
+                document.getElementById('usedUpscaleFactor').textContent = result.config?.upscale_factor + 'x' || '--';
+                document.getElementById('referenceUsed').textContent = result.config?.reference_used ? 'Oui' : 'Non';
+            }
+
+            displayChromaticProfile(profile) {
+                document.getElementById('meanRgb').textContent = 
+                    profile.mean_rgb ? profile.mean_rgb.map(v => v.toFixed(1)).join(', ') : '--';
+                document.getElementById('stdRgb').textContent = 
+                    profile.std_rgb ? profile.std_rgb.map(v => v.toFixed(1)).join(', ') : '--';
+                document.getElementById('chromaticSignature').textContent = 
+                    profile.chromatic_signature ? profile.chromatic_signature.slice(0, 3).map(v => v.toFixed(3)).join(', ') : '--';
+
+                document.getElementById('chromaticProfile').classList.remove('hidden');
+            }
+
+            showLoading(show) {
+                const loading = document.getElementById('loading');
+                if (show) {
+                    loading.classList.remove('hidden');
+                } else {
+                    loading.classList.add('hidden');
+                }
+            }
+
+            showMessage(message, type = 'info') {
+                const messageArea = document.getElementById('messageArea');
+                const className = type === 'error' ? 'bg-red-500' : 
+                                 type === 'success' ? 'bg-green-500' : 'bg-blue-500';
+                
+                const messageEl = document.createElement('div');
+                messageEl.className = `${className} text-white px-4 py-3 rounded-lg mb-2 shadow-lg`;
+                messageEl.textContent = message;
+                
+                messageArea.appendChild(messageEl);
+                
+                setTimeout(() => {
+                    messageEl.remove();
+                }, 5000);
+            }
+
+            async downloadImage(format) {
+                if (!this.currentResult || !this.currentResult.generated_image_base64) {
+                    this.showMessage('Aucune image à télécharger', 'error');
+                    return;
+                }
+
+                try {
+                    const imageBlob = await this.convertBase64ToBlob(
+                        this.currentResult.generated_image_base64, 
+                        format
+                    );
+                    
+                    const url = URL.createObjectURL(imageBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                    link.download = `hcs_hybrid_${timestamp}.${format}`;
+                    
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    URL.revokeObjectURL(url);
+                    
+                    this.showMessage(`Image téléchargée en ${format.toUpperCase()}`, 'success');
+                } catch (error) {
+                    this.showMessage('Erreur lors du téléchargement', 'error');
+                }
+            }
+
+            async convertBase64ToBlob(base64Data, format) {
+                const byteCharacters = atob(base64Data);
+                const byteNumbers = new Array(byteCharacters.length);
+                
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                
+                const byteArray = new Uint8Array(byteNumbers);
+                
+                if (format === 'png') {
+                    return new Blob([byteArray], { type: 'image/png' });
+                }
+                
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        
+                        canvas.toBlob((blob) => {
+                            if (blob) {
+                                resolve(blob);
+                            } else {
+                                reject(new Error('Erreur de conversion'));
+                            }
+                        }, `image/${format}`, format === 'jpg' ? 0.95 : 0.9);
+                    };
+                    img.onerror = () => reject(new Error('Erreur de chargement'));
+                    img.src = `data:image/png;base64,${base64Data}`;
+                });
+            }
+
+            async loadSystemInfo() {
+                try {
+                    const response = await fetch('http://localhost:8011/api/v2/hybrid/info');
+                    const info = await response.json();
+                    console.log('Hybrid SDXL System Info:', info);
+                } catch (error) {
+                    console.warn('Impossible de charger les informations système:', error);
+                }
+            }
+
+            async loadPresets() {
+                try {
+                    const response = await fetch('http://localhost:8011/api/v2/hybrid/presets');
+                    const presets = await response.json();
+                    console.log('Available presets:', presets);
+                    // TODO: Display presets in a modal
+                } catch (error) {
+                    console.warn('Impossible de charger les presets:', error);
+                }
+            }
+        }
+
+        // Initialize interface
+        document.addEventListener('DOMContentLoaded', () => {
+            new HybridSDXLInterface();
+        });
+
+        // Global function for button onclick
+        function generateImage() {
+            window.interface.generateImage();
+        }
+
+        function loadSystemInfo() {
+            window.interface.loadSystemInfo();
+        }
+
+        function loadPresets() {
+            window.interface.loadPresets();
+        }
+
+        function downloadImage(format) {
+            window.interface.downloadImage(format);
+        }
+
+        // Store interface instance globally
+        window.addEventListener('DOMContentLoaded', () => {
+            window.interface = new HybridSDXLInterface();
+        });
+    </script>
+</body>
+</html>

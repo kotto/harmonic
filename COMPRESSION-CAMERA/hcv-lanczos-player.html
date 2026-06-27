@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HCV Player with Lanczos Upscaling</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --card: #111113;
+      --border: #27272a;
+      --text: #fafafa;
+      --muted: #71717a;
+      --accent: #3b82f6;
+      --success: #10b981;
+      --warning: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      padding: 32px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+    h1 { color: var(--accent); margin-bottom: 8px; font-size: 24px; }
+    .subtitle { color: var(--muted); margin-bottom: 32px; font-size: 14px; }
+    
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 1200px) {
+      .comparison { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-title {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .panel-badge {
+      background: var(--accent);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    canvas {
+      width: 100%;
+      display: block;
+      background: #000;
+    }
+
+    .controls {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .controls h3 {
+      font-size: 14px;
+      margin-bottom: 16px;
+      color: var(--success);
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 12px;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    select, input[type="range"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px;
+      color: var(--text);
+    }
+
+    input[type="range"] {
+      padding: 0;
+      height: 6px;
+      -webkit-appearance: none;
+      background: var(--border);
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      background: var(--accent);
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .value-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--accent);
+      margin-top: 4px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .metric-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .metric-card h4 {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .metric-row:last-child { border-bottom: none; }
+    .metric-label { color: var(--muted); font-size: 13px; }
+    .metric-value { 
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .success { color: var(--success); }
+    .warning { color: var(--warning); }
+    .accent { color: var(--accent); }
+    .large { font-size: 24px; }
+
+    .btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 20px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-right: 8px;
+    }
+
+    .btn:hover { background: #2563eb; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    #output {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    .log-info { color: #60a5fa; }
+    .log-success { color: var(--success); }
+    .log-warning { color: var(--warning); }
+  </style>
+</head>
+<body>
+  <h1>🎬 HCV Player with Lanczos Upscaling</h1>
+  <div class="subtitle">Compressed low-res → Lanczos upscale → Compare with original quality</div>
+
+  <input type="file" id="fileInput" accept="video/*" style="margin-bottom: 20px;">
+
+  <div class="controls">
+    <h3>⚙️ Upscaling Settings</h3>
+    <div class="control-grid">
+      <div>
+        <label>Upscale Algorithm</label>
+        <select id="upscaleAlgo">
+          <option value="nearest">Nearest Neighbor (Pixelated)</option>
+          <option value="bilinear">Bilinear (Basic)</option>
+          <option value="bicubic">Bicubic (Good)</option>
+          <option value="lanczos" selected>Lanczos (Best)</option>
+        </select>
+      </div>
+      <div>
+        <label>Downscale Factor (compression)</label>
+        <select id="downscaleFactor">
+          <option value="0.5">50%</option>
+          <option value="0.35">35%</option>
+          <option value="0.25" selected>25%</option>
+          <option value="0.2">20%</option>
+        </select>
+      </div>
+      <div>
+        <label>Sharpness</label>
+        <input type="range" id="sharpness" min="0" max="100" value="50">
+        <div class="value-display" id="sharpnessValue">50%</div>
+      </div>
+    </div>
+    <div>
+      <button class="btn" id="btnCompare" disabled>🔍 Compare Frames</button>
+      <button class="btn" id="btnPlay" disabled>▶️ Play Comparison</button>
+    </div>
+  </div>
+
+  <div class="comparison" id="comparison" style="display:none;">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">📹 Original (Full Resolution)</span>
+        <span class="panel-badge">REFERENCE</span>
+      </div>
+      <canvas id="canvasOrig"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">⬆️ Upscaled (from compressed)</span>
+        <span class="panel-badge" id="upscaleBadge">Lanczos</span>
+      </div>
+      <canvas id="canvasUpscaled"></canvas>
+    </div>
+  </div>
+
+  <div class="metrics" id="metrics" style="display:none;">
+    <div class="metric-card">
+      <h4>📊 Compression Info</h4>
+      <div class="metric-row">
+        <span class="metric-label">Original Resolution</span>
+        <span class="metric-value accent" id="origRes">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Compressed Resolution</span>
+        <span class="metric-value" id="compRes">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Upscaled Resolution</span>
+        <span class="metric-value success" id="upsRes">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Pixel Loss</span>
+        <span class="metric-value warning" id="pixelLoss">—</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <h4>📈 Quality Metrics</h4>
+      <div class="metric-row">
+        <span class="metric-label">PSNR</span>
+        <span class="metric-value success" id="psnr">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">SSIM</span>
+        <span class="metric-value success" id="ssim">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Quality Rating</span>
+        <span class="metric-value" id="qualityRating">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Is it Lossless?</span>
+        <span class="metric-value warning" id="isLossless">—</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <h4>💾 File Size</h4>
+      <div class="metric-row">
+        <span class="metric-label">Original (H.264)</span>
+        <span class="metric-value" id="origSize">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">HCV Compressed</span>
+        <span class="metric-value success" id="hcvSize">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Compression Ratio</span>
+        <span class="metric-value accent large" id="compRatio">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Under 11 MB?</span>
+        <span class="metric-value success large" id="underTarget">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="output" style="margin-top: 24px;"></div>
+
+  <script>
+    const fmtSize = bytes => {
+      if (!bytes) return '—';
+      if (bytes < 1024) return bytes + 'B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + 'KB';
+      return (bytes / 1048576).toFixed(2) + 'MB';
+    };
+
+    function log(msg, type = '') {
+      const el = document.createElement('div');
+      el.className = type ? 'log-' + type : '';
+      el.textContent = msg;
+      document.getElementById('output').appendChild(el);
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Lanczos upscaling
+    function lanczosUpscale(srcData, srcW, srcH, dstW, dstH, sharpness = 3) {
+      const dst = new Uint8ClampedArray(dstW * dstH * 4);
+      const src = new Uint8Array(srcData.buffer);
+
+      function lanczos(x, a = sharpness) {
+        if (x === 0) return 1;
+        if (Math.abs(x) >= a) return 0;
+        const pix = Math.PI * x;
+        return (Math.sin(pix) / pix) * (Math.sin(pix / a) / (pix / a));
+      }
+
+      const xRatio = srcW / dstW;
+      const yRatio = srcH / dstH;
+
+      for (let y = 0; y < dstH; y++) {
+        const srcY = y * yRatio;
+        for (let x = 0; x < dstW; x++) {
+          const srcX = x * xRatio;
+          
+          let r = 0, g = 0, b = 0, a_val = 0, weightSum = 0;
+
+          for (let ky = -sharpness; ky <= sharpness; ky++) {
+            for (let kx = -sharpness; kx <= sharpness; kx++) {
+              const srcPixelX = Math.floor(srcX + kx);
+              const srcPixelY = Math.floor(srcY + ky);
+
+              if (srcPixelX >= 0 && srcPixelX < srcW && srcPixelY >= 0 && srcPixelY < srcH) {
+                const srcIdx = (srcPixelY * srcW + srcPixelX) * 4;
+                const weight = lanczos(srcX - srcPixelX) * lanczos(srcY - srcPixelY);
+
+                r += src[srcIdx] * weight;
+                g += src[srcIdx + 1] * weight;
+                b += src[srcIdx + 2] * weight;
+                a_val += src[srcIdx + 3] * weight;
+                weightSum += weight;
+              }
+            }
+          }
+
+          const dstIdx = (y * dstW + x) * 4;
+          dst[dstIdx] = Math.max(0, Math.min(255, Math.round(r / weightSum)));
+          dst[dstIdx + 1] = Math.max(0, Math.min(255, Math.round(g / weightSum)));
+          dst[dstIdx + 2] = Math.max(0, Math.min(255, Math.round(b / weightSum)));
+          dst[dstIdx + 3] = Math.max(0, Math.min(255, Math.round(a_val / weightSum)));
+        }
+      }
+
+      return dst;
+    }
+
+    // Fast bilinear upscale
+    function bilinearUpscale(srcData, srcW, srcH, dstW, dstH) {
+      const dst = new Uint8ClampedArray(dstW * dstH * 4);
+      const src = new Uint8Array(srcData.buffer);
+
+      const xRatio = (srcW - 1) / (dstW - 1);
+      const yRatio = (srcH - 1) / (dstH - 1);
+
+      for (let y = 0; y < dstH; y++) {
+        for (let x = 0; x < dstW; x++) {
+          const srcX = x * xRatio;
+          const srcY = y * yRatio;
+          const x0 = Math.floor(srcX);
+          const y0 = Math.floor(srcY);
+          const x1 = Math.min(x0 + 1, srcW - 1);
+          const y1 = Math.min(y0 + 1, srcH - 1);
+          const dx = srcX - x0;
+          const dy = srcY - y0;
+
+          const idx00 = (y0 * srcW + x0) * 4;
+          const idx10 = (y0 * srcW + x1) * 4;
+          const idx01 = (y1 * srcW + x0) * 4;
+          const idx11 = (y1 * srcW + x1) * 4;
+          const dstIdx = (y * dstW + x) * 4;
+
+          for (let c = 0; c < 4; c++) {
+            const top = src[idx00 + c] * (1 - dx) + src[idx10 + c] * dx;
+            const bottom = src[idx01 + c] * (1 - dx) + src[idx11 + c] * dx;
+            dst[dstIdx + c] = Math.round(top * (1 - dy) + bottom * dy);
+          }
+        }
+      }
+
+      return dst;
+    }
+
+    function calcPSNR(orig, recon, length) {
+      let mse = 0;
+      for (let i = 0; i < length; i++) {
+        const diff = orig[i] - recon[i];
+        mse += diff * diff;
+      }
+      mse /= length;
+      return mse < 0.001 ? Infinity : 20 * Math.log10(255 / Math.sqrt(mse));
+    }
+
+    function calcSSIM(orig, recon, length) {
+      let mean1 = 0, mean2 = 0;
+      for (let i = 0; i < length; i++) { mean1 += orig[i]; mean2 += recon[i]; }
+      mean1 /= length; mean2 /= length;
+      let var1 = 0, var2 = 0, cov = 0;
+      for (let i = 0; i < length; i++) {
+        var1 += (orig[i] - mean1) ** 2;
+        var2 += (recon[i] - mean2) ** 2;
+        cov += (orig[i] - mean1) * (recon[i] - mean2);
+      }
+      var1 /= length; var2 /= length; cov /= length;
+      const C1 = 6.5025, C2 = 58.5225;
+      return ((2 * mean1 * mean2 + C1) * (2 * cov + C2)) / ((mean1**2 + mean2**2 + C1) * (var1 + var2 + C2));
+    }
+
+    document.getElementById('sharpness').addEventListener('input', (e) => {
+      document.getElementById('sharpnessValue').textContent = e.target.value + '%';
+    });
+
+    let videoState = null;
+
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      log('📁 Loading: ' + file.name, 'info');
+      log('📊 File size: ' + fmtSize(file.size), 'info');
+
+      const video = document.createElement('video');
+      video.preload = 'auto';
+      video.src = URL.createObjectURL(file);
+
+      await new Promise(resolve => {
+        video.onloadedmetadata = resolve;
+        setTimeout(resolve, 5000);
+      });
+
+      const origWidth = video.videoWidth;
+      const origHeight = video.videoHeight;
+      const duration = video.duration;
+      const fps = 25;
+      const totalFrames = Math.round(duration * fps);
+
+      log('✅ Video: ' + origWidth + '×' + origHeight + ' · ' + fmtTime(duration) + ' · ' + totalFrames + ' frames', 'success');
+
+      videoState = { video, origWidth, origHeight, duration, totalFrames, file };
+
+      document.getElementById('btnCompare').disabled = false;
+      document.getElementById('btnPlay').disabled = false;
+
+      document.getElementById('comparison').style.display = 'grid';
+      document.getElementById('metrics').style.display = 'grid';
+      document.getElementById('origRes').textContent = origWidth + '×' + origHeight;
+      document.getElementById('origSize').textContent = fmtSize(file.size);
+      document.getElementById('upsRes').textContent = origWidth + '×' + origHeight;
+    });
+
+    function fmtTime(secs) {
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60);
+      return m + ':' + s.toString().padStart(2, '0');
+    }
+
+    async function compareFrame(time) {
+      if (!videoState) return;
+
+      const { video, origWidth, origHeight, file } = videoState;
+      const downscaleFactor = parseFloat(document.getElementById('downscaleFactor').value);
+      const upscaleAlgo = document.getElementById('upscaleAlgo').value;
+      const sharpness = parseInt(document.getElementById('sharpness').value) / 10;
+
+      const lowWidth = Math.round(origWidth * downscaleFactor);
+      const lowHeight = Math.round(origHeight * downscaleFactor);
+
+      document.getElementById('compRes').textContent = lowWidth + '×' + lowHeight;
+      document.getElementById('pixelLoss').textContent = '-' + ((1 - downscaleFactor ** 2) * 100).toFixed(1) + '%';
+      document.getElementById('upscaleBadge').textContent = upscaleAlgo.toUpperCase();
+
+      video.currentTime = time;
+      await new Promise(resolve => {
+        video.onseeked = resolve;
+        setTimeout(resolve, 1000);
+      });
+
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+
+      // Original frame
+      tempCanvas.width = origWidth;
+      tempCanvas.height = origHeight;
+      tempCtx.drawImage(video, 0, 0, origWidth, origHeight);
+      const origData = tempCtx.getImageData(0, 0, origWidth, origHeight);
+
+      // Downscale
+      tempCanvas.width = lowWidth;
+      tempCanvas.height = lowHeight;
+      tempCtx.drawImage(video, 0, 0, lowWidth, lowHeight);
+      const lowData = tempCtx.getImageData(0, 0, lowWidth, lowHeight);
+
+      // Show original
+      const canvasOrig = document.getElementById('canvasOrig');
+      canvasOrig.width = origWidth;
+      canvasOrig.height = origHeight;
+      const ctxOrig = canvasOrig.getContext('2d');
+      ctxOrig.putImageData(origData, 0, 0);
+
+      // Upscale
+      let upscaledData;
+      if (upscaleAlgo === 'lanczos') {
+        upscaledData = lanczosUpscale(lowData.data, lowWidth, lowHeight, origWidth, origHeight, Math.round(sharpness * 5));
+      } else if (upscaleAlgo === 'bicubic') {
+        tempCanvas.width = lowWidth;
+        tempCanvas.height = lowHeight;
+        tempCtx.putImageData(lowData, 0, 0);
+        const upscaledCanvas = document.createElement('canvas');
+        upscaledCanvas.width = origWidth;
+        upscaledCanvas.height = origHeight;
+        const upscaledCtx = upscaledCanvas.getContext('2d');
+        upscaledCtx.imageSmoothingEnabled = true;
+        upscaledCtx.imageSmoothingQuality = 'high';
+        upscaledCtx.drawImage(tempCanvas, 0, 0, origWidth, origHeight);
+        upscaledData = upscaledCtx.getImageData(0, 0, origWidth, origHeight).data;
+      } else { // bilinear or nearest
+        upscaledData = bilinearUpscale(lowData.data, lowWidth, lowHeight, origWidth, origHeight);
+      }
+
+      // Show upscaled
+      const canvasUpscaled = document.getElementById('canvasUpscaled');
+      canvasUpscaled.width = origWidth;
+      canvasUpscaled.height = origHeight;
+      const ctxUpscaled = canvasUpscaled.getContext('2d');
+      const upscaledImageData = new ImageData(upscaledData, origWidth, origHeight);
+      ctxUpscaled.putImageData(upscaledImageData, 0, 0);
+
+      // Calculate metrics
+      const origPixels = origWidth * origHeight;
+      const origRGB = new Uint8Array(origPixels * 3);
+      const upscaledRGB = new Uint8Array(origPixels * 3);
+
+      for (let p = 0; p < origPixels; p++) {
+        origRGB[p * 3] = origData.data[p * 4];
+        origRGB[p * 3 + 1] = origData.data[p * 4 + 1];
+        origRGB[p * 3 + 2] = origData.data[p * 4 + 2];
+        upscaledRGB[p * 3] = upscaledData[p * 4];
+        upscaledRGB[p * 3 + 1] = upscaledData[p * 4 + 1];
+        upscaledRGB[p * 3 + 2] = upscaledData[p * 4 + 2];
+      }
+
+      const psnr = calcPSNR(origRGB, upscaledRGB, origPixels * 3);
+      const ssim = calcSSIM(origRGB, upscaledRGB, origPixels * 3);
+
+      document.getElementById('psnr').textContent = psnr > 100 ? '∞' : psnr.toFixed(2) + ' dB';
+      document.getElementById('ssim').textContent = ssim.toFixed(6);
+
+      let rating, color;
+      if (psnr > 45) { rating = 'Excellent (Near-perfect)'; color = 'var(--success)'; }
+      else if (psnr > 35) { rating = 'Very Good (Minor differences)'; color = 'var(--success)'; }
+      else if (psnr > 30) { rating = 'Good (Acceptable)'; color = 'var(--accent)'; }
+      else if (psnr > 25) { rating = 'Fair (Visible differences)'; color = 'var(--warning)'; }
+      else { rating = 'Poor (Significant loss)'; color = 'var(--warning)'; }
+
+      document.getElementById('qualityRating').textContent = rating;
+      document.getElementById('qualityRating').style.color = color;
+
+      document.getElementById('isLossless').textContent = '❌ NO - Information permanently lost';
+      document.getElementById('isLossless').style.color = 'var(--warning)';
+
+      // Estimate HCV size
+      const bytesPerPixel = 2.0; // 8-bit
+      const rawPerFrame = lowWidth * lowHeight * bytesPerPixel * 3;
+      const totalRaw = rawPerFrame * videoState.totalFrames;
+      const temporalRatio = 8; // With temporal compression
+      const hcvEstimated = totalRaw / temporalRatio;
+
+      document.getElementById('hcvSize').textContent = '~' + fmtSize(hcvEstimated);
+      document.getElementById('compRatio').textContent = (file.size / hcvEstimated).toFixed(2) + '×';
+      document.getElementById('underTarget').textContent = hcvEstimated < 11 * 1048576 ? '✅ YES' : '❌ NO';
+      document.getElementById('underTarget').style.color = hcvEstimated < 11 * 1048576 ? 'var(--success)' : 'var(--warning)';
+
+      log('Frame at ' + time.toFixed(1) + 's: PSNR=' + (psnr > 100 ? '∞' : psnr.toFixed(2) + 'dB') + ' · SSIM=' + ssim.toFixed(6) + ' · ' + rating, 'success');
+    }
+
+    document.getElementById('btnCompare').addEventListener('click', () => {
+      if (!videoState) return;
+      const midTime = videoState.duration / 2;
+      compareFrame(midTime);
+    });
+
+    document.getElementById('btnPlay').addEventListener('click', async () => {
+      if (!videoState) return;
+      log('▶️ Playing comparison...', 'info');
+      
+      const steps = 10;
+      for (let i = 0; i <= steps; i++) {
+        const time = (videoState.duration * i) / steps;
+        await compareFrame(time);
+        await new Promise(r => setTimeout(r, 200));
+      }
+      
+      log('✅ Comparison complete!', 'success');
+    });
+
+    document.getElementById('upscaleAlgo').addEventListener('change', () => {
+      document.getElementById('btnCompare').click();
+    });
+
+    document.getElementById('downscaleFactor').addEventListener('change', () => {
+      document.getElementById('btnCompare').click();
+    });
+
+    document.getElementById('sharpness').addEventListener('change', () => {
+      document.getElementById('btnCompare').click();
+    });
+  </script>
+</body>
+</html>

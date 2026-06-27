@@ -1,0 +1,37 @@
+#!/bin/bash
+echo "🚀 DÉPLOIEMENT AWS HCV PRO - Compte: kingue 3260-9571-2935"
+echo "-----------------------------------------------------------"
+
+export AWS_ACCOUNT_ID=326095712935
+export AWS_REGION=eu-west-3
+
+echo "✅ Compte AWS configuré: $AWS_ACCOUNT_ID"
+echo "✅ Région: $AWS_REGION"
+echo ""
+
+echo "📋 ÉTAPES À EXÉCUTER:"
+echo ""
+echo "1️⃣  CONFIGURATION CREDENTIALS:"
+echo "   aws configure"
+echo "   -> Entrer Access Key ID"
+echo "   -> Entrer Secret Access Key"
+echo "   -> Région: eu-west-3"
+echo ""
+echo "2️⃣  DÉPLOIEMENT BACKEND:"
+echo "   cd render-backend"
+echo "   aws ecr create-repository --repository-name hcv-pro-backend"
+echo "   docker build -t hcv-pro-backend ."
+echo "   docker tag hcv-pro-backend:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/hcv-pro-backend:latest"
+echo "   aws ecr get-login-password | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+echo "   docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/hcv-pro-backend:latest"
+echo ""
+echo "3️⃣  CRÉATION SERVICE APP RUNNER:"
+echo "   aws apprunner create-service --service-name hcv-pro-backend ..."
+echo ""
+echo "4️⃣  DÉPLOIEMENT FRONTEND:"
+echo "   cd ../render-frontend"
+echo "   aws s3 mb s3://hcv-pro-frontend-$AWS_ACCOUNT_ID"
+echo "   aws s3 sync ./ s3://hcv-pro-frontend-$AWS_ACCOUNT_ID/ --delete"
+echo "   aws cloudfront create-distribution ..."
+echo ""
+echo "✅ Déploiement complet prêt. Vous devez maintenant fournir votre Access Key et Secret Key AWS."

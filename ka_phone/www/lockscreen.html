@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>KA PHONE — Lock Screen</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Manrope:wght@300;400;500&family=JetBrains+Mono:wght@200;400&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-0: #070514;
+            --bg-1: #0a0820;
+            --bg-2: #140c2e;
+            --ink-0: #eaf6ff;
+            --ink-1: #b8c6dc;
+            --ink-2: #7a86a8;
+            --accent-a: #3ef0d8;
+            --accent-b: #7a5cff;
+            --accent-c: #c59cff;
+            --font-display: 'Space Grotesk', system-ui, sans-serif;
+            --font-ui: 'Manrope', 'Inter', system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: var(--font-ui);
+            background: var(--bg-0);
+            color: var(--ink-0);
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+        }
+        
+        /* Background */
+        .bg-gradient {
+            position: fixed; inset: 0; z-index: 0;
+            background: linear-gradient(180deg, #020713 0%, #0a0820 50%, #050B20 100%);
+        }
+        
+        .bg-neural-glow {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(122,92,255,0.15), rgba(62,240,216,0.06), transparent 70%);
+            z-index: 0;
+            animation: neuralPulse 6s ease-in-out infinite;
+        }
+        
+        @keyframes neuralPulse {
+            0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+        }
+        
+        /* Particles */
+        .particles-container {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 2px; height: 2px;
+            background: var(--accent-a);
+            border-radius: 50%;
+            box-shadow: 0 0 6px rgba(62,240,216,0.2);
+            animation: floatUp linear infinite;
+            opacity: 0;
+        }
+        
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 0.8; }
+            90% { opacity: 0.3; }
+            100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
+        }
+        
+        /* Lock Screen Layout */
+        .lock-screen {
+            position: relative; z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100vh; height: 100dvh;
+            padding: 60px 28px 40px;
+        }
+        
+        /* Clock — Date ABOVE Time */
+        .clock-container {
+            text-align: center; z-index: 2;
+        }
+        
+        .clock-date {
+            font-family: var(--font-ui);
+            font-size: 15px;
+            font-weight: 400;
+            color: var(--ink-1);
+            opacity: 0.7;
+            margin-bottom: 4px;
+            letter-spacing: 0.3px;
+        }
+        
+        .clock-time {
+            font-family: var(--font-mono);
+            font-size: 82px;
+            font-weight: 200;
+            color: var(--ink-0);
+            letter-spacing: -2px;
+            line-height: 1;
+        }
+        
+        /* Neural Orb — SVG Heart from reference design */
+        .neural-orb {
+            position: relative;
+            display: inline-block;
+            width: 300px;
+            height: 300px;
+            z-index: 2;
+            transition: transform 500ms cubic-bezier(.2,.7,.2,1);
+        }
+        
+        .no-svg {
+            width: 100%; height: 100%;
+            position: relative; z-index: 2;
+            filter: drop-shadow(0 30px 50px rgba(0,0,0,0.6));
+        }
+        
+        .no-halo {
+            position: absolute;
+            inset: -20%;
+            border-radius: 50%;
+            pointer-events: none; z-index: 1;
+            filter: blur(40px);
+        }
+        
+        .no-halo-1 {
+            background: radial-gradient(circle at 50% 50%, rgba(122,92,255,0.55), transparent 55%);
+            animation: no-breath 5s ease-in-out infinite;
+        }
+        
+        .no-halo-2 {
+            background: radial-gradient(circle at 50% 60%, rgba(62,240,216,0.18), transparent 55%);
+            animation: no-breath 7s ease-in-out infinite reverse;
+        }
+        
+        .no-swirl {
+            transform-origin: 100px 100px;
+            animation: no-spin 24s linear infinite;
+        }
+        
+        .no-swirl ellipse {
+            animation: no-wobble 6s ease-in-out infinite;
+            transform-origin: 100px 100px;
+        }
+        
+        .no-core {
+            animation: no-core-pulse 3s ease-in-out infinite;
+            transform-origin: 100px 100px;
+        }
+        
+        .no-core-pt {
+            animation: no-core-pulse 2s ease-in-out infinite reverse;
+            transform-origin: 100px 100px;
+        }
+        
+        @keyframes no-breath {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.12); opacity: 1; }
+        }
+        
+        @keyframes no-spin {
+            from { transform: rotate(0); }
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes no-wobble {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.2); }
+        }
+        
+        @keyframes no-core-pulse {
+            0%, 100% { transform: scale(1); opacity: 0.95; }
+            50% { transform: scale(1.25); opacity: 1; }
+        }
+        
+        /* Unlock */
+        .unlock-area {
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        
+        .unlock-icon {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            border: 1px solid rgba(62,240,216,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-a);
+            font-size: 18px;
+            animation: unlockPulse 2.5s ease-in-out infinite;
+            box-shadow: 0 0 20px rgba(62,240,216,0.2);
+        }
+        
+        @keyframes unlockPulse {
+            0%, 100% { opacity: 0.5; box-shadow: 0 0 15px rgba(62,240,216,0.1); }
+            50% { opacity: 1; box-shadow: 0 0 30px rgba(62,240,216,0.35); }
+        }
+        
+        .unlock-text {
+            font-family: var(--font-ui);
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--ink-1);
+            opacity: 0.5;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+    <div class="bg-neural-glow"></div>
+    <div class="particles-container" id="particles"></div>
+    
+    <div class="lock-screen" id="lockScreen">
+        
+        <!-- Clock — Date ABOVE Time -->
+        <div class="clock-container">
+            <div class="clock-date" id="clockDate">Samedi 6 Juin</div>
+            <div class="clock-time" id="clockTime">14:03</div>
+        </div>
+        
+        <!-- Neural Orb — SVG from reference design -->
+        <div class="neural-orb" id="neuralOrb">
+            <div class="no-halo no-halo-1"></div>
+            <div class="no-halo no-halo-2"></div>
+            <svg viewBox="0 0 200 200" class="no-svg">
+                <defs>
+                    <radialGradient id="orbBody" cx="35%" cy="30%" r="75%">
+                        <stop offset="0%" stop-color="#5e4a9a"/>
+                        <stop offset="30%" stop-color="#2a1d54"/>
+                        <stop offset="65%" stop-color="#0c0822"/>
+                        <stop offset="100%" stop-color="#050311"/>
+                    </radialGradient>
+                    <radialGradient id="swirlA" cx="55%" cy="45%" r="55%">
+                        <stop offset="0%" stop-color="rgba(62,240,216,0.95)"/>
+                        <stop offset="20%" stop-color="rgba(150,200,255,0.6)"/>
+                        <stop offset="60%" stop-color="rgba(80,60,150,0.3)"/>
+                        <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+                    </radialGradient>
+                    <linearGradient id="swirlStroke" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="rgba(200,140,100,0.9)"/>
+                        <stop offset="50%" stop-color="rgba(90,50,140,0.8)"/>
+                        <stop offset="100%" stop-color="rgba(20,15,50,0.6)"/>
+                    </linearGradient>
+                    <radialGradient id="orbGloss" cx="30%" cy="22%" r="40%">
+                        <stop offset="0%" stop-color="rgba(255,255,255,0.55)"/>
+                        <stop offset="40%" stop-color="rgba(255,255,255,0.12)"/>
+                        <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+                    </radialGradient>
+                    <radialGradient id="orbRim" cx="50%" cy="50%" r="50%">
+                        <stop offset="85%" stop-color="rgba(122,92,255,0)"/>
+                        <stop offset="97%" stop-color="rgba(122,92,255,0.6)"/>
+                        <stop offset="100%" stop-color="rgba(62,240,216,0.2)"/>
+                    </radialGradient>
+                    <filter id="orbBlur"><feGaussianBlur stdDeviation="0.8"/></filter>
+                    <clipPath id="orbClip"><circle cx="100" cy="100" r="78"/></clipPath>
+                </defs>
+                <circle cx="100" cy="100" r="78" fill="url(#orbBody)"/>
+                <g clip-path="url(#orbClip)">
+                    <g class="no-swirl">
+                        <ellipse cx="100" cy="100" rx="68" ry="22" fill="none" stroke="url(#swirlStroke)" stroke-width="1.8" opacity="0.85" transform="rotate(0 100 100)" filter="url(#orbBlur)"/>
+                        <ellipse cx="100" cy="100" rx="60" ry="19.8" fill="none" stroke="url(#swirlStroke)" stroke-width="1.2" opacity="0.77" transform="rotate(14 100 100)" filter="url(#orbBlur)"/>
+                        <ellipse cx="100" cy="100" rx="52" ry="17.6" fill="none" stroke="url(#swirlStroke)" stroke-width="1.2" opacity="0.69" transform="rotate(28 100 100)" filter="url(#orbBlur)"/>
+                        <ellipse cx="100" cy="100" rx="44" ry="15.4" fill="none" stroke="url(#swirlStroke)" stroke-width="1.2" opacity="0.61" transform="rotate(42 100 100)" filter="url(#orbBlur)"/>
+                        <ellipse cx="100" cy="100" rx="36" ry="13.2" fill="none" stroke="url(#swirlStroke)" stroke-width="1.2" opacity="0.53" transform="rotate(56 100 100)" filter="url(#orbBlur)"/>
+                        <ellipse cx="100" cy="100" rx="28" ry="11" fill="none" stroke="url(#swirlStroke)" stroke-width="1.2" opacity="0.45" transform="rotate(70 100 100)" filter="url(#orbBlur)"/>
+                        <ellipse cx="100" cy="100" rx="20" ry="8.8" fill="none" stroke="url(#swirlStroke)" stroke-width="1.2" opacity="0.37" transform="rotate(84 100 100)" filter="url(#orbBlur)"/>
+                    </g>
+                    <circle cx="100" cy="100" r="24" fill="url(#swirlA)" class="no-core"/>
+                    <circle cx="100" cy="100" r="6" fill="rgba(220,255,250,0.95)" class="no-core-pt"/>
+                </g>
+                <circle cx="100" cy="100" r="78" fill="url(#orbRim)"/>
+                <ellipse cx="82" cy="72" rx="32" ry="18" fill="url(#orbGloss)" opacity="0.9"/>
+                <circle cx="100" cy="100" r="79" fill="none" stroke="rgba(0,0,0,0.6)" stroke-width="1"/>
+            </svg>
+        </div>
+        
+        <!-- Unlock -->
+        <div class="unlock-area" id="unlockArea">
+            <div class="unlock-icon">⌃</div>
+            <div class="unlock-text">glisser pour entrer</div>
+        </div>
+    </div>
+    
+    <script>
+        // Live clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clockTime').textContent = 
+                String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+            const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+            const months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+            document.getElementById('clockDate').textContent = 
+                days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
+        }
+        updateClock();
+        setInterval(updateClock, 10000);
+        
+        // Particles
+        (function(){
+            const c = document.getElementById('particles');
+            for(let i=0;i<20;i++){
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random()*100+'%';
+                p.style.animationDuration = (Math.random()*10+15)+'s';
+                p.style.animationDelay = (Math.random()*25)+'s';
+                c.appendChild(p);
+            }
+        })();
+        
+        // Unlock swipe
+        const unlockArea = document.getElementById('unlockArea');
+        const lockScreen = document.getElementById('lockScreen');
+        let startY, currentY, unlocking;
+        
+        unlockArea.addEventListener('touchstart', e => { startY = e.touches[0].clientY; unlocking = true; });
+        unlockArea.addEventListener('touchmove', e => {
+            if(!unlocking) return;
+            currentY = e.touches[0].clientY;
+            const delta = startY - currentY;
+            if(delta > 0) {
+                lockScreen.style.transform = `translateY(${-delta}px)`;
+                lockScreen.style.opacity = 1 - delta/300;
+            }
+        });
+        unlockArea.addEventListener('touchend', () => {
+            if(!unlocking) return;
+            unlocking = false;
+            const delta = startY - currentY;
+            lockScreen.style.transition = delta > 100 ? 'all .4s cubic-bezier(.4,0,.2,1)' : 'all .5s cubic-bezier(.4,0,.2,1)';
+            lockScreen.style.transform = delta > 100 ? 'translateY(-120vh)' : 'translateY(0)';
+            lockScreen.style.opacity = delta > 100 ? '0' : '1';
+        });
+        
+        // Click fallback
+        unlockArea.addEventListener('click', () => {
+            lockScreen.style.transition = 'all .4s cubic-bezier(.4,0,.2,1)';
+            lockScreen.style.transform = 'translateY(-120vh)';
+            lockScreen.style.opacity = '0';
+        });
+    </script>
+</body>
+</html>

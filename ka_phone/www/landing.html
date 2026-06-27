@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover, maximum-scale=1.0">
+    <title>KA Phone — L'IA qui ne ment jamais</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Manrope:wght@200;300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #070514; --bg2: #0a0820; --ink: #eaf6ff; --ink2: #b8c6dc;
+            --accent: #3ef0d8; --accent2: #7a5cff; --gold: #c59cff;
+        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{
+            font-family:'Manrope','Inter',system-ui,sans-serif;
+            background:var(--bg);color:var(--ink);min-height:100vh;
+            display:flex;flex-direction:column;align-items:center;
+            padding:40px 20px;
+        }
+        .hero{text-align:center;max-width:650px;margin-bottom:60px}
+        .hero h1{font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(2rem,6vw,3.5rem);font-weight:700;line-height:1.15;margin-bottom:16px}
+        .hero h1 span{color:var(--accent)}
+        .hero .sub{font-size:clamp(1rem,2.5vw,1.25rem);color:var(--ink2);font-weight:300;line-height:1.6;margin-bottom:30px}
+        .hero .tag{display:inline-block;background:rgba(62,240,216,0.1);color:var(--accent);padding:6px 16px;border-radius:20px;font-size:13px;font-weight:500;margin-bottom:20px}
+        .demo-box{width:100%;max-width:560px;background:rgba(10,8,32,0.7);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(200,220,255,0.1);border-radius:20px;padding:24px;margin-bottom:50px}
+        .demo-box .ask{display:flex;gap:10px;margin-bottom:16px}
+        .demo-box input{flex:1;background:rgba(20,12,46,0.5);border:1px solid rgba(200,220,255,0.1);border-radius:14px;padding:14px 18px;color:var(--ink);font-family:inherit;font-size:16px;outline:none}
+        .demo-box input:focus{border-color:var(--accent);box-shadow:0 0 20px rgba(62,240,216,0.1)}
+        .demo-box input::placeholder{color:rgba(180,190,210,0.4)}
+        .demo-box button{background:var(--accent);color:var(--bg);border:none;border-radius:14px;padding:14px 24px;font-family:'Space Grotesk',system-ui;font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap;transition:all .2s}
+        .demo-box button:hover{box-shadow:0 0 25px rgba(62,240,216,0.3)}
+        .demo-box button:disabled{opacity:.5}
+        .response-box{display:none;background:rgba(20,12,46,0.4);border:1px solid rgba(200,220,255,0.08);border-radius:14px;padding:18px;margin-top:12px;font-size:15px;line-height:1.7;color:var(--ink2);word-break:break-word}
+        .response-box.show{display:block}
+        .response-box .source{font-size:11px;color:rgba(180,190,210,0.4);margin-top:10px;font-family:'Space Grotesk',monospace}
+        .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;max-width:560px;width:100%;margin-bottom:50px}
+        .stat{background:rgba(10,8,32,0.5);border:1px solid rgba(200,220,255,0.06);border-radius:16px;padding:20px;text-align:center}
+        .stat .val{font-family:'Space Grotesk',system-ui;font-size:2rem;font-weight:700;color:var(--accent);line-height:1}
+        .stat .lbl{font-size:12px;color:var(--ink2);margin-top:8px;font-weight:300;line-height:1.4}
+        .principles{max-width:650px;width:100%;margin-bottom:50px}
+        .principles h2{font-family:'Space Grotesk',system-ui;font-size:1.4rem;margin-bottom:20px;color:var(--accent2)}
+        .principles .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+        .pcard{background:rgba(10,8,32,0.4);border:1px solid rgba(200,220,255,0.06);border-radius:14px;padding:16px}
+        .pcard .pn{font-family:'Space Grotesk',system-ui;font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px}
+        .pcard .pd{font-size:13px;color:var(--ink2);line-height:1.5;font-weight:300}
+        .footer{text-align:center;color:rgba(180,190,210,0.3);font-size:12px;margin-top:40px}
+        .footer a{color:var(--accent);text-decoration:none}
+        .loading{display:inline-block;width:16px;height:16px;border:2px solid var(--bg);border-top:2px solid var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+    </style>
+</head>
+<body>
+<div class="hero">
+    <div class="tag">Nouveau paradigme</div>
+    <h1>L'IA qui <span>ne ment jamais</span></h1>
+    <p class="sub">KA Phone n'est pas un assistant qui devine le prochain mot.<br>C'est un <strong>oracle déterministe</strong> : il sait, ou il dit "je ne sais pas".<br><strong>15 Mo. 0% d'hallucination. Sur votre téléphone.</strong></p>
+</div>
+
+<div class="demo-box">
+    <div class="ask">
+        <input type="text" id="askInput" placeholder="Posez une question... (ex: capitale du Sénégal, 15×7+3)" autocomplete="off">
+        <button id="askBtn" onclick="ask()">Demander</button>
+    </div>
+    <div class="response-box" id="responseBox">
+        <div id="responseText"></div>
+        <div class="source" id="responseSource"></div>
+    </div>
+</div>
+
+<div class="stats">
+    <div class="stat"><div class="val">0%</div><div class="lbl">Hallucination<br>Structurellement impossible</div></div>
+    <div class="stat"><div class="val">15 Mo</div><div class="lbl">Taille totale<br>vs 1 700 000 Mo (GPT-4)</div></div>
+    <div class="stat"><div class="val">100%</div><div class="lbl">Local & Privé<br>Rien ne quitte l'appareil</div></div>
+</div>
+
+<div class="principles">
+    <h2>Comment ça marche — Les 5 Piliers</h2>
+    <div class="cards">
+        <div class="pcard"><div class="pn">φ, π — Constantes</div><div class="pd">Les mêmes nombres qui gouvernent les galaxies, les tournesols et votre main. KA les utilise pour répartir la connaissance sans conflit.</div></div>
+        <div class="pcard"><div class="pn">Fourier — Ondes</div><div class="pd">Votre question est transformée en onde. Elle interfère avec l'hologramme de connaissance. Ce qui résonne émerge.</div></div>
+        <div class="pcard"><div class="pn">ABC — Mémoire</div><div class="pd">Dérivée fractionnaire : le passé n'est jamais oublié. Les souvenirs s'estompent mais ne disparaissent pas.</div></div>
+        <div class="pcard"><div class="pn">GAGUT — Échelle</div><div class="pd">Dr. Oyibo : une équation d'onde pour tout. KA donne la même réponse quelle que soit la formulation.</div></div>
+        <div class="pcard"><div class="pn">Einstein — Vérité</div><div class="pd">L'univers est déterministe. KA aussi. Même question = même réponse. Toujours.</div></div>
+    </div>
+</div>
+
+<div class="footer">
+    <p><strong>KA Phone</strong> — Une implémentation de la <a href="#">Théorie Harmonique de l'Univers</a></p>
+    <p>Fourier (1822) → Einstein (1935) → Oyibo (1990s) → Atangana (2016) → KA Phone (2026)</p>
+</div>
+
+<script>
+var API='http://localhost:8420/api/ask';
+function ask(){
+    var inp=document.getElementById('askInput'),txt=inp.value.trim();
+    if(!txt)return;
+    var box=document.getElementById('responseBox'),btext=document.getElementById('responseText'),bsrc=document.getElementById('responseSource'),btn=document.getElementById('askBtn');
+    box.classList.add('show');btext.innerHTML='<span class="loading"></span> KA reflechit...';bsrc.textContent='';
+    btn.disabled=true;
+    fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:txt})})
+    .then(function(r){return r.json()})
+    .then(function(d){
+        btext.textContent=d.text;
+        bsrc.textContent='Source: '+d.source+' | Confiance: '+(d.confidence*100).toFixed(0)+'%';
+        btn.disabled=false;
+    }).catch(function(){
+        btext.textContent='Serveur non connecte. Lancez: python ka_phone/unified_server.py';
+        bsrc.textContent='Erreur de connexion';
+        btn.disabled=false;
+    });
+}
+document.getElementById('askInput').addEventListener('keydown',function(e){if(e.key==='Enter')ask()});
+</script>
+</body>
+</html>

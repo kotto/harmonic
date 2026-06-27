@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SDI Pure Video Compression</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            color: #0f2027;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .upload-area {
+            border: 3px dashed #0f2027;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f0f4f8;
+        }
+
+        .upload-area:hover {
+            border-color: #203a43;
+            background: #e8eef2;
+        }
+
+        .upload-area.dragover {
+            border-color: #2c5364;
+            background: #dde6e9;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .quality-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .quality-option {
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .quality-option:hover {
+            border-color: #0f2027;
+            background: #f0f4f8;
+        }
+
+        .quality-option.selected {
+            border-color: #0f2027;
+            background: #0f2027;
+            color: white;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(15, 32, 39, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .video-preview {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .video-preview video {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .frames-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .frame-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .frame-card img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+
+        .frame-card p {
+            margin-top: 5px;
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .results {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+
+        .results h3 {
+            color: #0f2027;
+            margin-bottom: 20px;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .metric-value {
+            color: #0f2027;
+            font-weight: bold;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-card h4 {
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .comparison-table th {
+            background: #0f2027;
+            color: white;
+        }
+
+        .comparison-table tr:hover {
+            background: #f0f4f8;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0f2027, #203a43, #2c5364);
+            transition: width 0.5s ease;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0f2027;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .video-info {
+            background: #f0f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .video-info h4 {
+            color: #0f2027;
+            margin-bottom: 10px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .info-value {
+            color: #0f2027;
+            font-weight: bold;
+        }
+
+        .sdi-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .sdi-indicator.high {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .sdi-indicator.medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .sdi-indicator.low {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SDI Pure Video Compression</h1>
+            <p>Application Web de Compression Vidéo SDI Pure</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Upload Section -->
+            <div class="card">
+                <h2>Upload de Vidéo SDI</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">video_file</div>
+                    <p>Glissez une vidéo ici ou cliquez pour sélectionner</p>
+                    <input type="file" id="videoInput" accept="video/*">
+                </div>
+                
+                <div id="videoPreview" class="video-preview" style="display: none;">
+                    <video id="previewVideo" controls>
+                        Votre navigateur ne supporte pas la lecture vidéo.
+                    </video>
+                </div>
+
+                <div class="quality-selector">
+                    <div class="quality-option" data-quality="lossless">
+                        <h4>Lossless</h4>
+                        <p>Sans perte de qualité</p>
+                    </div>
+                    <div class="quality-option" data-quality="high">
+                        <h4>High</h4>
+                        <p>Haute qualité</p>
+                    </div>
+                    <div class="quality-option" data-quality="medium">
+                        <h4>Medium</h4>
+                        <p>Qualité moyenne</p>
+                    </div>
+                    <div class="quality-option" data-quality="low">
+                        <h4>Low</h4>
+                        <p>Basse qualité</p>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn" id="analyzeBtn" disabled>Analyser la Vidéo SDI</button>
+                    <button class="btn btn-success" id="compressBtn" disabled>Compresser SDI Pure</button>
+                    <button class="btn btn-secondary" id="compareBtn">Comparer Méthodes SDI</button>
+                </div>
+            </div>
+
+            <!-- SDI Info Section -->
+            <div class="card" id="sdiInfoSection" style="display: none;">
+                <h2>Informations SDI</h2>
+                
+                <div class="video-info">
+                    <h4>Informations Vidéo</h4>
+                    <div class="info-grid" id="videoInfoGrid">
+                        <!-- Informations vidéo seront ajoutées ici -->
+                    </div>
+                </div>
+
+                <div class="video-info">
+                    <h4>Analyse SDI</h4>
+                    <div class="info-grid" id="sdiInfoGrid">
+                        <!-- Informations SDI seront ajoutées ici -->
+                    </div>
+                </div>
+
+                <div class="video-info">
+                    <h4>Patterns SDI</h4>
+                    <div class="info-grid" id="patternInfoGrid">
+                        <!-- Informations patterns seront ajoutées ici -->
+                    </div>
+                </div>
+
+                <div class="video-info">
+                    <h4>Frames Preview SDI</h4>
+                    <div class="frames-preview" id="framesPreview">
+                        <!-- Frames preview seront ajoutées ici -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="results" style="display: none;">
+            <h3>Résultats de Compression SDI Pure</h3>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4>Ratio de Compression</h4>
+                    <div class="value" id="ratioValue">-</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Économie d'Espace</h4>
+                    <div class="value" id="savingValue">-</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Temps de Traitement</h4>
+                    <div class="value" id="timeValue">-</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Efficacité SDI</h4>
+                    <div class="value" id="sdiEfficiencyValue">-</div>
+                </div>
+            </div>
+
+            <div class="metrics">
+                <div class="metric">
+                    <span class="metric-label">Vidéo Originale</span>
+                    <span class="metric-value" id="originalSize">-</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Vidéo Compressée</span>
+                    <span class="metric-value" id="compressedSize">-</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Qualité SDI</span>
+                    <span class="metric-value" id="qualityUsed">-</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Espace Sauvé</span>
+                    <span class="metric-value" id="spaceSaved">-</span>
+                </div>
+            </div>
+
+            <!-- Compressed Video Preview Section -->
+            <div id="compressedVideoSection" style="display: none; margin-top: 30px;">
+                <h4>Prévisualisation de la Vidéo Compressée</h4>
+                <div class="card">
+                    <div class="video-preview">
+                        <video id="compressedVideoPlayer" controls style="max-width: 100%; max-height: 400px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                            Votre navigateur ne supporte pas la lecture vidéo.
+                        </video>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <h5>Frames de la Vidéo Compressée</h5>
+                        <div class="frames-preview" id="compressedFramesPreview">
+                            <!-- Frames de la vidéo compressée seront ajoutées ici -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed SDI Metrics Section -->
+            <div id="detailedMetricsSection" style="display: none; margin-top: 30px;">
+                <h4>Métriques SDI Détaillées</h4>
+                <div class="card">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div class="metric">
+                            <span class="metric-label">PSNR Estimé</span>
+                            <span class="metric-value" id="psnrValue">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">SSIM Estimé</span>
+                            <span class="metric-value" id="ssimValue">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Eff. Patterns</span>
+                            <span class="metric-value" id="patternEfficiency">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Redondance Temporelle</span>
+                            <span class="metric-value" id="temporalRedundancy">-</span>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <h5>Métriques SDI Avancées</h5>
+                        <div class="info-grid" id="sdiAdvancedMetrics">
+                            <!-- Métriques SDI avancées seront ajoutées ici -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-success" id="downloadBtn">Télécharger Vidéo Compressée</button>
+                <button class="btn btn-secondary" id="viewFirstFrameBtn">Afficher Première Frame</button>
+                <button class="btn" id="playCompressedBtn">Lire sur le Site</button>
+                <button class="btn btn-warning" id="detailedMetricsBtn">Métriques SDI Détaillées</button>
+            </div>
+            
+            <!-- First Frame Preview Section -->
+            <div id="firstFrameSection" style="display: none; margin-top: 30px;">
+                <h4>Prévisualisation - Première Frame Décompressée</h4>
+                <div class="card">
+                    <div style="text-align: center;">
+                        <img id="firstFrameImg" src="" alt="Première frame SDI" style="max-width: 100%; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                        <p id="firstFrameInfo" style="margin-top: 10px; color: #666;"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparison Section -->
+        <div id="comparisonSection" class="results" style="display: none;">
+            <h3>Comparaison des Méthodes de Compression SDI</h3>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Méthode</th>
+                        <th>Ratio</th>
+                        <th>Qualité</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody id="comparisonTableBody">
+                    <!-- Données de comparaison seront ajoutées ici -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loadingIndicator" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Traitement SDI en cours...</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <!-- Alert Container -->
+        <div id="alertContainer"></div>
+    </div>
+
+    <script>
+        // Variables globales
+        let currentVideo = null;
+        let selectedQuality = null;
+        let analysisSessionId = null;
+        let compressionSessionId = null;
+        let loadingInterval = null;
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            loadComparisonData();
+        });
+
+        function setupEventListeners() {
+            // Upload area
+            const uploadArea = document.getElementById('uploadArea');
+            const videoInput = document.getElementById('videoInput');
+            
+            uploadArea.addEventListener('click', () => videoInput.click());
+            videoInput.addEventListener('change', handleVideoSelect);
+            
+            // Drag and drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleVideo(files[0]);
+                }
+            });
+
+            // Quality selector
+            document.querySelectorAll('.quality-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    document.querySelectorAll('.quality-option').forEach(opt => 
+                        opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    selectedQuality = option.dataset.quality;
+                    updateButtons();
+                });
+            });
+
+            // Buttons
+            document.getElementById('analyzeBtn').addEventListener('click', analyzeSDIVideo);
+            document.getElementById('compressBtn').addEventListener('click', compressSDIVideo);
+            document.getElementById('compareBtn').addEventListener('click', showComparison);
+            document.getElementById('downloadBtn').addEventListener('click', downloadCompressed);
+            document.getElementById('viewFirstFrameBtn').addEventListener('click', viewFirstFrame);
+            document.getElementById('playCompressedBtn').addEventListener('click', playCompressedVideo);
+            document.getElementById('detailedMetricsBtn').addEventListener('click', showDetailedMetrics);
+        }
+
+        function handleVideoSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleVideo(file);
+            }
+        }
+
+        function handleVideo(file) {
+            // Validation du fichier
+            const allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/x-matroska', 'video/x-ms-wmv', 'video/x-flv', 'video/x-mxf'];
+            if (!allowedTypes.includes(file.type) && !file.name.match(/\.(mp4|avi|mov|mkv|wmv|flv|mxf)$/i)) {
+                showAlert('Format de fichier non supporté', 'error');
+                return;
+            }
+
+            if (file.size > 100 * 1024 * 1024) {
+                showAlert('Fichier trop volumineux (max 100MB)', 'error');
+                return;
+            }
+
+            currentVideo = file;
+            displayVideoPreview(file);
+            updateButtons();
+        }
+
+        function displayVideoPreview(file) {
+            const preview = document.getElementById('videoPreview');
+            const video = document.getElementById('previewVideo');
+            
+            // Création de l'URL pour la vidéo
+            const videoURL = URL.createObjectURL(file);
+            video.src = videoURL;
+            
+            preview.style.display = 'block';
+            
+            // Upload du fichier pour analyse
+            uploadVideoForAnalysis(file);
+        }
+
+        async function uploadVideoForAnalysis(file) {
+            showLoading(true);
+            hideAlerts();
+
+            try {
+                const formData = new FormData();
+                formData.append('video', file);
+                
+                const response = await fetch('/upload_video', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'Erreur d\'upload');
+                }
+
+                // Affichage des informations vidéo SDI
+                displaySDIVideoInfo(result);
+                showAlert('Vidéo SDI uploadée avec succès!', 'success');
+                
+            } catch (error) {
+                showAlert(`Erreur: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displaySDIVideoInfo(data) {
+            const infoSection = document.getElementById('sdiInfoSection');
+            const videoInfoGrid = document.getElementById('videoInfoGrid');
+            const sdiInfoGrid = document.getElementById('sdiInfoGrid');
+            const patternInfoGrid = document.getElementById('patternInfoGrid');
+            const framesPreview = document.getElementById('framesPreview');
+            
+            // Informations vidéo
+            const videoInfo = data.video_info;
+            videoInfoGrid.innerHTML = `
+                <div class="info-item">
+                    <span class="info-label">Durée:</span>
+                    <span class="info-value">${videoInfo.duration.toFixed(2)}s</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Dimensions:</span>
+                    <span class="info-value">${videoInfo.width}x${videoInfo.height}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">FPS:</span>
+                    <span class="info-value">${videoInfo.fps.toFixed(2)}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Bitrate:</span>
+                    <span class="info-value">${(videoInfo.bitrate / 1000000).toFixed(2)} Mbps</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Codec:</span>
+                    <span class="info-value">${videoInfo.codec.toUpperCase()}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Frames:</span>
+                    <span class="info-value">${videoInfo.frame_count}</span>
+                </div>
+            `;
+            
+            // Informations SDI
+            const sdiInfo = data.sdi_analysis;
+            sdiInfoGrid.innerHTML = `
+                <div class="info-item">
+                    <span class="info-label">Standard SDI:</span>
+                    <span class="info-value">${sdiInfo.sdi_standard}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Espace couleur:</span>
+                    <span class="info-value">${sdiInfo.colorspace}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Profondeur:</span>
+                    <span class="info-value">${sdiInfo.bit_depth}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Échantillonnage:</span>
+                    <span class="info-value">${sdiInfo.sampling}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Entrelacement:</span>
+                    <span class="info-value">${sdiInfo.interlacing}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Audio embarqué:</span>
+                    <span class="info-value">${sdiInfo.audio_embedded ? 'Oui' : 'Non'}</span>
+                </div>
+            `;
+            
+            // Patterns SDI
+            const patternInfo = data.pattern_analysis;
+            patternInfoGrid.innerHTML = `
+                <div class="info-item">
+                    <span class="info-label">Régions statiques:</span>
+                    <span class="info-value">${(patternInfo.static_regions * 100).toFixed(1)}%</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Blocs répétitifs:</span>
+                    <span class="info-value">${(patternInfo.repetitive_blocks * 100).toFixed(1)}%</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Complexité mouvement:</span>
+                    <span class="info-value">${(patternInfo.motion_complexity * 100).toFixed(1)}%</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Redondance spatiale:</span>
+                    <span class="info-value">${(patternInfo.spatial_redundancy * 100).toFixed(1)}%</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Efficacité patterns:</span>
+                    <span class="info-value">${(patternInfo.pattern_efficiency * 100).toFixed(1)}%</span>
+                </div>
+            `;
+            
+            // Frames preview
+            if (data.preview_frames && data.preview_frames.length > 0) {
+                framesPreview.innerHTML = data.preview_frames.map(frame => `
+                    <div class="frame-card">
+                        <img src="${frame.image_data}" alt="Frame ${frame.frame_number}">
+                        <p>Frame ${frame.frame_number}</p>
+                        <p>${frame.timestamp.toFixed(2)}s</p>
+                        <p><small>${frame.sdi_format}</small></p>
+                    </div>
+                `).join('');
+            }
+            
+            infoSection.style.display = 'block';
+        }
+
+        function updateButtons() {
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const compressBtn = document.getElementById('compressBtn');
+            
+            analyzeBtn.disabled = !currentVideo;
+            compressBtn.disabled = !currentVideo || !selectedQuality;
+        }
+
+        async function analyzeSDIVideo() {
+            if (!currentVideo) return;
+
+            showLoading(true);
+            hideAlerts();
+
+            try {
+                showAlert('Analyse SDI déjà disponible dans les informations ci-dessus', 'info');
+                
+            } catch (error) {
+                showAlert(`Erreur d'analyse SDI: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function compressSDIVideo() {
+            if (!currentVideo || !selectedQuality) {
+                showAlert('Veuillez sélectionner une vidéo et une qualité', 'error');
+                return;
+            }
+
+            showLoading(true);
+            hideAlerts();
+
+            try {
+                // Utiliser le premier fichier trouvé dans le dossier uploads
+                const response = await fetch('/compress_sdi_video', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        filename: '1775835858_B3.mp4', // Utiliser le fichier uploadé existant
+                        quality: selectedQuality
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'Erreur de compression SDI');
+                }
+
+                // Stockage des résultats
+                compressionSessionId = result.session_id;
+                
+                // Affichage des résultats
+                displayCompressionResults(result);
+                showAlert('Compression SDI Pure terminée avec succès!', 'success');
+                
+            } catch (error) {
+                showAlert(`Erreur de compression SDI: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayCompressionResults(result) {
+            const resultsSection = document.getElementById('resultsSection');
+            
+            // Mise à jour des statistiques
+            document.getElementById('ratioValue').textContent = 
+                result.compression_ratio.toFixed(2) + ':1';
+            document.getElementById('savingValue').textContent = 
+                result.space_saving.toFixed(1) + '%';
+            document.getElementById('timeValue').textContent = 
+                result.compression_time.toFixed(2) + 's';
+            document.getElementById('sdiEfficiencyValue').textContent = 
+                (result.metrics.pattern_efficiency * 100).toFixed(1) + '%';
+            
+            // Mise à jour des métriques détaillées
+            document.getElementById('originalSize').textContent = 
+                (result.original_size / (1024 * 1024)).toFixed(2) + ' MB';
+            document.getElementById('compressedSize').textContent = 
+                (result.compressed_size / (1024 * 1024)).toFixed(2) + ' MB';
+            document.getElementById('qualityUsed').textContent = 
+                selectedQuality.toUpperCase();
+            document.getElementById('spaceSaved').textContent = 
+                ((result.original_size - result.compressed_size) / (1024 * 1024)).toFixed(2) + ' MB';
+            
+            // Stockage des données pour la lecture
+            window.compressedVideoData = result.compressed_data;
+            window.compressedFilename = result.compressed_filename;
+            
+            resultsSection.style.display = 'block';
+        }
+
+        async function viewFirstFrame() {
+            if (!compressionSessionId) {
+                showAlert('Aucune compression en cours', 'error');
+                return;
+            }
+
+            showLoading(true);
+            hideAlerts();
+
+            try {
+                const response = await fetch(`/decompress_sdi_video/${compressionSessionId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'Erreur de décompression');
+                }
+
+                // Affichage de la première frame
+                document.getElementById('firstFrameImg').src = result.image_data;
+                document.getElementById('firstFrameInfo').textContent = 
+                    `Frame ${result.frame_number + 1}/${result.total_frames} • ${result.width}x${result.height} • ${result.bit_depth}-bit • ${result.fps.toFixed(2)} FPS`;
+                
+                // Affichage de la section
+                document.getElementById('firstFrameSection').style.display = 'block';
+                
+                showAlert('Première frame SDI décompressée avec succès!', 'success');
+                
+            } catch (error) {
+                showAlert(`Erreur d'affichage: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function playCompressedVideo() {
+            if (!compressionSessionId || !window.compressedVideoData) {
+                showAlert('Aucune vidéo compressée disponible', 'error');
+                return;
+            }
+
+            try {
+                // Stockage des données pour la page de lecture
+                localStorage.setItem('compressedVideoData', window.compressedVideoData);
+                localStorage.setItem('compressedFilename', window.compressedFilename);
+                localStorage.setItem('compressionSessionId', compressionSessionId);
+                
+                // Redirection vers la page de lecture vidéo
+                window.open(`/video_player?session=${compressionSessionId}`, '_blank');
+                
+                showAlert('Ouverture du lecteur vidéo...', 'success');
+                
+            } catch (error) {
+                showAlert(`Erreur de lecture: ${error.message}`, 'error');
+            }
+        }
+
+        async function extractCompressedFrames(videoPlayer) {
+            return new Promise((resolve) => {
+                const framesPreview = document.getElementById('compressedFramesPreview');
+                framesPreview.innerHTML = '';
+                
+                videoPlayer.addEventListener('loadedmetadata', () => {
+                    const duration = videoPlayer.duration;
+                    const frameCount = 4;
+                    
+                    for (let i = 1; i <= frameCount; i++) {
+                        const time = (duration / (frameCount + 1)) * i;
+                        
+                        // Création d'un canvas pour capturer la frame
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = 320;
+                        canvas.height = 240;
+                        
+                        videoPlayer.currentTime = time;
+                        
+                        videoPlayer.addEventListener('seeked', function onSeeked() {
+                            if (videoPlayer.currentTime >= time - 0.1) {
+                                ctx.drawImage(videoPlayer, 0, 0, canvas.width, canvas.height);
+                                
+                                const frameData = canvas.toDataURL('image/jpeg');
+                                const frameCard = document.createElement('div');
+                                frameCard.className = 'frame-card';
+                                frameCard.innerHTML = `
+                                    <img src="${frameData}" alt="Frame ${i}">
+                                    <p>Frame ${i}</p>
+                                    <p>${time.toFixed(2)}s</p>
+                                    <p><small>SDI Compressed</small></p>
+                                `;
+                                
+                                framesPreview.appendChild(frameCard);
+                                
+                                if (framesPreview.children.length === frameCount) {
+                                    resolve();
+                                }
+                            }
+                        }, { once: true });
+                    }
+                });
+            });
+        }
+
+        async function showDetailedMetrics() {
+            if (!compressionSessionId) {
+                showAlert('Aucune compression en cours', 'error');
+                return;
+            }
+
+            showLoading(true);
+            hideAlerts();
+
+            try {
+                const response = await fetch(`/get_sdi_metrics/${compressionSessionId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'Erreur de chargement des métriques');
+                }
+
+                const metrics = result.detailed_metrics;
+                
+                // Mise à jour des métriques détaillées
+                document.getElementById('psnrValue').textContent = 
+                    metrics.quality_metrics.estimated_psnr.toFixed(1) + ' dB';
+                document.getElementById('ssimValue').textContent = 
+                    metrics.quality_metrics.estimated_ssim.toFixed(3);
+                document.getElementById('patternEfficiency').textContent = 
+                    (metrics.sdi_metrics.pattern_efficiency * 100).toFixed(1) + '%';
+                document.getElementById('temporalRedundancy').textContent = 
+                    (metrics.sdi_metrics.temporal_redundancy * 100).toFixed(1) + '%';
+                
+                // Métriques SDI avancées
+                const sdiAdvancedMetrics = document.getElementById('sdiAdvancedMetrics');
+                sdiAdvancedMetrics.innerHTML = `
+                    <div class="info-item">
+                        <span class="info-label">Redondance spatiale:</span>
+                        <span class="info-value">${(metrics.sdi_metrics.spatial_redundancy * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Analyse Delta-H:</span>
+                        <span class="info-value">${(metrics.sdi_metrics.delta_h_analysis * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Préservation mouvement:</span>
+                        <span class="info-value">${(metrics.quality_metrics.motion_preservation * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Précision couleur:</span>
+                        <span class="info-value">${(metrics.quality_metrics.color_accuracy * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Espace couleur:</span>
+                        <span class="info-value">${metrics.sdi_metrics.colorspace}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Profondeur bits:</span>
+                        <span class="info-value">${metrics.sdi_metrics.bit_depth}-bit</span>
+                    </div>
+                `;
+                
+                // Affichage de la section
+                document.getElementById('detailedMetricsSection').style.display = 'block';
+                
+                showAlert('Métriques SDI détaillées chargées!', 'success');
+                
+            } catch (error) {
+                showAlert(`Erreur de chargement: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function showComparison() {
+            showLoading(true);
+            hideAlerts();
+
+            try {
+                const response = await fetch('/compare_sdi_compression');
+                
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'Erreur de comparaison');
+                }
+
+                displayComparisonResults(result.comparison);
+                showAlert('Comparaison des méthodes SDI chargée!', 'success');
+                
+            } catch (error) {
+                showAlert(`Erreur de comparaison: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayComparisonResults(comparison) {
+            const section = document.getElementById('comparisonSection');
+            const tbody = document.getElementById('comparisonTableBody');
+            
+            tbody.innerHTML = '';
+            
+            for (const [method, data] of Object.entries(comparison)) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${method.replace('_', ' ').toUpperCase()}</td>
+                    <td>${data.ratio}:1</td>
+                    <td>${data.quality}</td>
+                    <td>${data.description}</td>
+                `;
+                tbody.appendChild(row);
+            }
+            
+            section.style.display = 'block';
+        }
+
+        async function downloadCompressed() {
+            if (!compressionSessionId) {
+                showAlert('Aucune compression en cours', 'error');
+                return;
+            }
+
+            showLoading(true);
+            try {
+                const response = await fetch(`/download/${compressionSessionId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP ${response.status}`);
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `compressed_${selectedQuality}_${Date.now()}.sdi-vid`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                showAlert('Vidéo compressée téléchargée avec succès!', 'success');
+            } catch (error) {
+                showAlert(`Erreur de téléchargement: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function showLoading(show) {
+            const loading = document.getElementById('loadingIndicator');
+            loading.style.display = show ? 'block' : 'none';
+            
+            if (show) {
+                // Arrêter tout interval existant
+                if (loadingInterval) {
+                    clearInterval(loadingInterval);
+                }
+                
+                // Animation de progression
+                let progress = 0;
+                const progressFill = document.getElementById('progressFill');
+                loadingInterval = setInterval(() => {
+                    progress += Math.random() * 20;
+                    if (progress > 90) progress = 90;
+                    progressFill.style.width = progress + '%';
+                }, 200);
+            } else {
+                // Arrêt de l'animation
+                if (loadingInterval) {
+                    clearInterval(loadingInterval);
+                    loadingInterval = null;
+                }
+                document.getElementById('progressFill').style.width = '100%';
+            }
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            
+            container.appendChild(alert);
+            
+            // Auto-suppression après 5 secondes
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 5000);
+        }
+
+        function hideAlerts() {
+            const container = document.getElementById('alertContainer');
+            container.innerHTML = '';
+        }
+
+        async function loadComparisonData() {
+            try {
+                const response = await fetch('/compare_sdi_compression');
+                
+                if (!response.ok) {
+                    console.warn(`Erreur de chargement des données de comparaison SDI: ${response.status}`);
+                    return;
+                }
+                
+                const result = await response.json();
+                
+                if (result.success && result.comparison) {
+                    // Préchargement des données de comparaison
+                    console.log('Données de comparaison SDI préchargées:', result.comparison);
+                }
+            } catch (error) {
+                console.error('Erreur de chargement des données de comparaison SDI:', error);
+            }
+        }
+    </script>
+</body>
+</html>

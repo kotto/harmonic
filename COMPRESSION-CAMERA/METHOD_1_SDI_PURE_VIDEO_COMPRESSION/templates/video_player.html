@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecteur de Vidéo Compressée SDI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .video-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .video-player {
+            width: 100%;
+            max-height: 600px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(15, 32, 39, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .info-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            color: #333;
+        }
+
+        .info-panel h2 {
+            color: #0f2027;
+            margin-bottom: 20px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .info-item {
+            padding: 15px;
+            background: #f0f4f8;
+            border-radius: 8px;
+            border-left: 4px solid #0f2027;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            color: #0f2027;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .frames-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .frame-card {
+            background: #f0f4f8;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            color: #333;
+        }
+
+        .frame-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .frame-card p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0f2027;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .back-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(15, 32, 39, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Lecteur de Vidéo Compressée SDI</h1>
+            <p>Lecture et analyse des vidéos compressées SDI Pure</p>
+        </header>
+
+        <div id="loadingSection" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Chargement de la vidéo compressée...</p>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <div id="videoSection" style="display: none;">
+            <div class="video-container">
+                <video id="videoPlayer" class="video-player" controls>
+                    Votre navigateur ne supporte pas la lecture vidéo.
+                </video>
+                
+                <div class="controls">
+                    <button class="btn" id="playBtn">Lire</button>
+                    <button class="btn btn-secondary" id="pauseBtn">Pause</button>
+                    <button class="btn btn-success" id="downloadBtn">Télécharger</button>
+                    <button class="btn" id="backBtn">Retour</button>
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <h2>Informations sur la Vidéo Compressée</h2>
+                <div class="info-grid" id="videoInfo">
+                    <!-- Informations vidéo seront ajoutées ici -->
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <h2>Frames de la Vidéo Compressée</h2>
+                <div class="frames-grid" id="framesGrid">
+                    <!-- Frames seront ajoutées ici -->
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center;">
+            <a href="/" class="back-link">Retour à l'application principale</a>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let videoData = null;
+        let videoInfo = null;
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            loadVideoData();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('playBtn').addEventListener('click', playVideo);
+            document.getElementById('pauseBtn').addEventListener('click', pauseVideo);
+            document.getElementById('downloadBtn').addEventListener('click', downloadVideo);
+            document.getElementById('backBtn').addEventListener('click', () => window.history.back());
+        }
+
+        function loadVideoData() {
+            // Récupération des données depuis localStorage ou URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('session');
+            
+            if (sessionId) {
+                loadVideoFromServer(sessionId);
+            } else {
+                // Tentative de récupération depuis localStorage
+                const storedData = localStorage.getItem('compressedVideoData');
+                if (storedData) {
+                    videoData = JSON.parse(storedData);
+                    displayVideo();
+                } else {
+                    showAlert('Aucune vidéo compressée trouvée', 'error');
+                }
+            }
+        }
+
+        async function loadVideoFromServer(sessionId) {
+            showLoading(true);
+            
+            try {
+                const response = await fetch(`/get_sdi_metrics/${sessionId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Récupération du fichier vidéo
+                    const downloadResponse = await fetch(`/download/${sessionId}`);
+                    const blob = await downloadResponse.blob();
+                    
+                    const videoURL = URL.createObjectURL(blob);
+                    videoData = {
+                        url: videoURL,
+                        info: result.detailed_metrics
+                    };
+                    
+                    displayVideo();
+                } else {
+                    showAlert('Erreur de chargement de la vidéo', 'error');
+                }
+            } catch (error) {
+                showAlert(`Erreur: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayVideo() {
+            if (!videoData) return;
+
+            const videoSection = document.getElementById('videoSection');
+            const videoPlayer = document.getElementById('videoPlayer');
+            
+            // Configuration du lecteur vidéo
+            videoPlayer.src = videoData.url;
+            videoPlayer.load();
+            
+            // Affichage des informations
+            displayVideoInfo();
+            
+            // Extraction des frames
+            extractFrames();
+            
+            videoSection.style.display = 'block';
+            showAlert('Vidéo compressée chargée avec succès!', 'success');
+        }
+
+        function displayVideoInfo() {
+            const infoGrid = document.getElementById('videoInfo');
+            const metrics = videoData.info.performance_metrics;
+            const sdiMetrics = videoData.info.sdi_metrics;
+            const qualityMetrics = videoData.info.quality_metrics;
+            
+            infoGrid.innerHTML = `
+                <div class="info-item">
+                    <div class="info-label">Taille Originale</div>
+                    <div class="info-value">${metrics.original_size_mb} MB</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Taille Compressée</div>
+                    <div class="info-value">${metrics.compressed_size_mb} MB</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Ratio de Compression</div>
+                    <div class="info-value">${metrics.compression_ratio.toFixed(2)}:1</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Économie d'Espace</div>
+                    <div class="info-value">${metrics.space_saving_percent.toFixed(1)}%</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Espace Couleur</div>
+                    <div class="info-value">${sdiMetrics.colorspace}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Profondeur Bits</div>
+                    <div class="info-value">${sdiMetrics.bit_depth}-bit</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">PSNR Estimé</div>
+                    <div class="info-value">${qualityMetrics.estimated_psnr.toFixed(1)} dB</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">SSIM Estimé</div>
+                    <div class="info-value">${qualityMetrics.estimated_ssim.toFixed(3)}</div>
+                </div>
+            `;
+        }
+
+        function extractFrames() {
+            const videoPlayer = document.getElementById('videoPlayer');
+            const framesGrid = document.getElementById('framesGrid');
+            
+            videoPlayer.addEventListener('loadedmetadata', () => {
+                const duration = videoPlayer.duration;
+                const frameCount = 6;
+                
+                for (let i = 1; i <= frameCount; i++) {
+                    const time = (duration / (frameCount + 1)) * i;
+                    
+                    // Création d'un canvas pour capturer la frame
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 320;
+                    canvas.height = 240;
+                    
+                    videoPlayer.currentTime = time;
+                    
+                    videoPlayer.addEventListener('seeked', function onSeeked() {
+                        if (videoPlayer.currentTime >= time - 0.1) {
+                            ctx.drawImage(videoPlayer, 0, 0, canvas.width, canvas.height);
+                            
+                            const frameData = canvas.toDataURL('image/jpeg');
+                            const frameCard = document.createElement('div');
+                            frameCard.className = 'frame-card';
+                            frameCard.innerHTML = `
+                                <img src="${frameData}" alt="Frame ${i}">
+                                <p><strong>Frame ${i}</strong></p>
+                                <p>${time.toFixed(2)}s</p>
+                                <p><small>SDI Compressed</small></p>
+                            `;
+                            
+                            framesGrid.appendChild(frameCard);
+                        }
+                    }, { once: true });
+                }
+            });
+        }
+
+        function playVideo() {
+            const videoPlayer = document.getElementById('videoPlayer');
+            videoPlayer.play();
+        }
+
+        function pauseVideo() {
+            const videoPlayer = document.getElementById('videoPlayer');
+            videoPlayer.pause();
+        }
+
+        function downloadVideo() {
+            if (videoData && videoData.url) {
+                const a = document.createElement('a');
+                a.href = videoData.url;
+                a.download = 'compressed_sdi_video.mp4';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                showAlert('Téléchargement démarré!', 'success');
+            } else {
+                showAlert('Vidéo non disponible pour le téléchargement', 'error');
+            }
+        }
+
+        function showLoading(show) {
+            const loading = document.getElementById('loadingSection');
+            loading.style.display = show ? 'block' : 'none';
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            
+            container.appendChild(alert);
+            
+            // Auto-suppression après 5 secondes
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

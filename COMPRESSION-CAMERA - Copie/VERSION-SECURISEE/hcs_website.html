@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HCS — Harmonic Compressor System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#060608;--ink2:#0d0d10;--ink3:#14141a;--ink4:#1c1c24;--ink5:#27272f;
+  --red:#E8002D;--red-d:#B50023;--red-l:#FF1A42;--red-dim:rgba(232,0,45,.12);
+  --wht:#F5F4F0;--owh:#CCCAC4;--sil:#8A8880;--fog:#4A4848;--sla:#2A2A30;
+  --mono:'IBM Plex Mono',monospace;--display:'Bebas Neue',sans-serif;--body:'IBM Plex Sans',sans-serif;
+  --bds:rgba(255,255,255,.055);--bdr:rgba(232,0,45,.18);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--owh);font-family:var(--body);font-size:15px;line-height:1.6;overflow-x:hidden}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--ink)}::-webkit-scrollbar-thumb{background:var(--red-d)}
+a{color:inherit;text-decoration:none}
+
+/* NAV */
+nav{position:fixed;inset:0 0 auto;height:58px;display:flex;align-items:center;padding:0 32px;background:rgba(6,6,8,.95);border-bottom:1px solid var(--bds);z-index:200;backdrop-filter:blur(20px)}
+.nav-in{width:100%;max-width:1320px;margin:0 auto;display:flex;align-items:center;gap:36px}
+.logo-mark{display:flex;align-items:baseline;gap:6px}
+.logo-hcs{font-family:var(--display);font-size:26px;letter-spacing:4px;color:var(--wht);line-height:1}
+.logo-hcs span{color:var(--red)}
+.logo-sub{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--fog);align-self:center}
+.nav-links{display:flex;gap:24px;margin-left:auto}
+.nl{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--sil);transition:color .15s;cursor:pointer}
+.nl:hover{color:var(--red)}
+.nav-dl{background:var(--red);color:var(--wht);padding:8px 18px;font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .2s;border:none;margin-left:12px}
+.nav-dl:hover{background:var(--red-l);letter-spacing:3px}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;align-items:center;padding:80px 32px 60px;position:relative;overflow:hidden}
+/* Grille signal derrière */
+.hero::before{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--bds) 1px,transparent 1px),linear-gradient(90deg,var(--bds) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 70% 70% at 60% 40%,#000,transparent);pointer-events:none}
+/* Diagonale rouge */
+.hero::after{content:'';position:absolute;top:0;right:0;width:2px;height:100%;background:linear-gradient(180deg,transparent,var(--red),transparent);opacity:.4}
+
+.hero-in{max-width:1320px;margin:0 auto;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+@media(max-width:900px){.hero-in{grid-template-columns:1fr}.hero-right{display:none}}
+
+.pre-tag{font-family:var(--mono);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--red);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.pre-tag::before{content:'';width:20px;height:1px;background:var(--red)}
+
+h1{font-family:var(--display);font-size:clamp(64px,8vw,110px);line-height:.95;letter-spacing:2px;color:var(--wht);margin-bottom:12px}
+h1 .r{color:var(--red)}.h1-sub{color:var(--sil)}
+
+.hero-desc{font-size:16px;color:var(--sil);max-width:480px;margin:24px 0 40px;line-height:1.75}
+.hero-desc strong{color:var(--owh);font-weight:400}
+
+.btn-row{display:flex;gap:12px;flex-wrap:wrap}
+.btn-primary{background:var(--red);color:var(--wht);padding:13px 32px;font-family:var(--mono);font-size:12px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border:none;transition:all .2s;display:flex;align-items:center;gap:8px}
+.btn-primary:hover{background:var(--red-l);transform:translateY(-1px)}
+.btn-secondary{background:transparent;color:var(--owh);padding:12px 28px;font-family:var(--mono);font-size:12px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border:1px solid var(--bds);transition:all .2s}
+.btn-secondary:hover{border-color:var(--red);color:var(--red)}
+
+.hero-stats{display:flex;gap:0;margin-top:60px;border-top:1px solid var(--bds);padding-top:36px}
+.hs{flex:1;padding-right:28px;border-right:1px solid var(--bds)}
+.hs:last-child{border-right:none;padding-left:28px;padding-right:0}
+.hs-v{font-family:var(--display);font-size:40px;color:var(--wht);line-height:1;margin-bottom:4px}
+.hs-v .u{color:var(--red);font-size:24px}
+.hs-l{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--fog)}
+
+/* Signal monitor (hero right) */
+.signal-monitor{background:var(--ink2);border:1px solid var(--bds);padding:24px;position:relative}
+.signal-monitor::before{content:'HCS CORE MONITOR';position:absolute;top:-1px;left:16px;font-family:var(--mono);font-size:9px;letter-spacing:2px;background:var(--red);color:var(--wht);padding:2px 10px}
+.monitor-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--bds)}
+.mg-item{background:var(--ink2);padding:16px}
+.mg-lbl{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--fog);margin-bottom:6px}
+.mg-val{font-family:var(--display);font-size:28px;color:var(--wht);line-height:1}
+.mg-val.red{color:var(--red)}
+.mg-sub{font-family:var(--mono);font-size:10px;color:var(--sil);margin-top:3px}
+.signal-bar{height:2px;background:var(--bds);margin:20px 0 16px;position:relative;overflow:hidden}
+.signal-bar::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,var(--red),transparent);animation:scanR 3s ease-in-out infinite}
+@keyframes scanR{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
+.monitor-log{font-family:var(--mono);font-size:10px;color:var(--sil);line-height:2}
+.log-ok::before{content:'✓ ';color:var(--red)}
+.log-info::before{content:'→ ';color:var(--fog)}
+
+/* SECTIONS */
+section{padding:100px 32px}
+.sec-in{max-width:1320px;margin:0 auto}
+.sec-label{font-family:var(--mono);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--red);margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.sec-label::before{content:'';width:20px;height:1px;background:var(--red)}
+h2{font-family:var(--display);font-size:clamp(36px,5vw,72px);color:var(--wht);line-height:.95;letter-spacing:1px;margin-bottom:16px}
+h2 em{font-style:normal;color:var(--red)}
+.sec-desc{font-size:16px;color:var(--sil);max-width:540px;line-height:1.75}
+
+/* ARCHITECTURE */
+.arch-sec{background:var(--ink2);border-top:1px solid var(--bds);border-bottom:1px solid var(--bds)}
+.arch-grid{display:grid;grid-template-columns:1fr 2px 1fr;gap:0;margin-top:56px}
+.arch-col{padding:32px}
+.arch-divider{background:linear-gradient(180deg,transparent,var(--red),transparent);opacity:.3}
+.arch-title{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid var(--bds)}
+.arch-title.pub{color:var(--sil)}
+.arch-title.sec{color:var(--red)}
+.arch-item{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.arch-ico{width:22px;height:22px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px}
+.arch-ico.ok{color:var(--red);border:1px solid var(--bdr)}
+.arch-ico.no{color:var(--fog);border:1px solid var(--bds)}
+.arch-txt{font-size:13px;color:var(--sil);line-height:1.5}
+.arch-txt strong{color:var(--owh);font-weight:400;font-family:var(--mono);font-size:12px}
+
+/* FEATURES */
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--bds);margin-top:56px}
+@media(max-width:900px){.features-grid{grid-template-columns:1fr}}
+.feat{background:var(--ink2);padding:36px 32px;position:relative;overflow:hidden;transition:background .2s}
+.feat::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:var(--red);transform:scaleX(0);transform-origin:left;transition:transform .3s}
+.feat:hover{background:var(--ink3)}.feat:hover::after{transform:scaleX(1)}
+.feat-num{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--red);margin-bottom:20px}
+.feat-title{font-family:var(--display);font-size:26px;color:var(--wht);letter-spacing:1px;margin-bottom:10px;line-height:1.1}
+.feat-desc{font-size:13px;color:var(--sil);line-height:1.7}
+.feat-metric{margin-top:22px;padding-top:18px;border-top:1px solid var(--bds);display:flex;align-items:baseline;gap:6px}
+.feat-mv{font-family:var(--display);font-size:30px;color:var(--red)}
+.feat-ml{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--fog)}
+
+/* SECURITY */
+.security-sec{background:var(--ink)}
+.sec-badges{display:flex;flex-wrap:wrap;gap:8px;margin:32px 0}
+.sbdg{border:1px solid var(--bds);padding:6px 14px;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--sil)}
+.sbdg.active{border-color:var(--bdr);color:var(--red);background:var(--red-dim)}
+.threat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:40px}
+@media(max-width:760px){.threat-grid{grid-template-columns:1fr}}
+.threat-item{background:var(--ink2);border:1px solid var(--bds);padding:22px 24px;border-left:2px solid var(--red)}
+.threat-title{font-family:var(--mono);font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--red);margin-bottom:8px}
+.threat-desc{font-size:13px;color:var(--sil);line-height:1.65}
+
+/* PRICING */
+.pricing-sec{background:var(--ink2);border-top:1px solid var(--bds)}
+.plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--bds);margin-top:56px}
+@media(max-width:760px){.plan-grid{grid-template-columns:1fr}}
+.plan{background:var(--ink2);padding:36px 28px;position:relative}
+.plan.featured{background:var(--ink3);border-top:2px solid var(--red)}
+.plan-badge{position:absolute;top:0;right:24px;background:var(--red);color:var(--wht);font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:3px 12px;transform:translateY(-50%)}
+.plan-name{font-family:var(--mono);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--sil);margin-bottom:16px}
+.plan-price{font-family:var(--display);font-size:52px;color:var(--wht);line-height:1;margin-bottom:4px}
+.plan-price sub{font-size:20px;color:var(--sil)}
+.plan-bill{font-family:var(--mono);font-size:10px;color:var(--fog);margin-bottom:28px}
+.plan-sep{height:1px;background:var(--bds);margin:20px 0}
+.plan-features{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
+.plan-feature{font-size:13px;color:var(--sil);display:flex;gap:10px;align-items:flex-start}
+.plan-feature::before{content:'—';color:var(--red);flex-shrink:0;font-family:var(--mono)}
+
+/* DOWNLOAD CTA */
+.dl-cta{background:var(--red);padding:80px 32px;text-align:center;position:relative;overflow:hidden}
+.dl-cta::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:40px 40px}
+.dl-cta-in{position:relative;max-width:700px;margin:0 auto}
+.dl-cta h2{font-family:var(--display);font-size:clamp(48px,7vw,90px);color:var(--wht);line-height:.95;letter-spacing:2px;margin-bottom:20px}
+.dl-cta p{font-size:16px;color:rgba(255,255,255,.7);margin-bottom:36px;line-height:1.7}
+.dl-btn{display:inline-flex;align-items:center;gap:12px;background:var(--wht);color:var(--red);padding:16px 40px;font-family:var(--mono);font-size:13px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border:none;transition:all .2s;font-weight:600}
+.dl-btn:hover{background:var(--ink);color:var(--wht);gap:16px}
+.dl-info{margin-top:20px;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.45);letter-spacing:1px}
+
+/* FOOTER */
+footer{background:var(--ink);border-top:1px solid var(--bds);padding:48px 32px 32px}
+.foot-in{max-width:1320px;margin:0 auto}
+.foot-top{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px}
+@media(max-width:768px){.foot-top{grid-template-columns:1fr 1fr}}
+.foot-brand-desc{font-size:13px;color:var(--fog);line-height:1.7;margin-top:12px;max-width:260px}
+.fc-t{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--sil);margin-bottom:14px}
+.fc-l{list-style:none;display:flex;flex-direction:column;gap:8px}
+.fc-l li a{font-size:13px;color:var(--fog);transition:color .15s}
+.fc-l li a:hover{color:var(--red)}
+.foot-bot{display:flex;justify-content:space-between;align-items:center;padding-top:24px;border-top:1px solid rgba(255,255,255,.04);flex-wrap:wrap;gap:10px}
+.foot-copy{font-family:var(--mono);font-size:10px;color:var(--fog);letter-spacing:1px}
+.foot-legal{display:flex;gap:20px}
+.foot-legal a{font-family:var(--mono);font-size:10px;color:var(--fog);transition:color .15s}
+.foot-legal a:hover{color:var(--sil)}
+
+/* ANIM */
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.fi{animation:fadeUp .6s ease both}
+.fi1{animation-delay:.1s}.fi2{animation-delay:.2s}.fi3{animation-delay:.3s}.fi4{animation-delay:.45s}.fi5{animation-delay:.6s}
+
+/* Scan ligne hero */
+.scan-line{position:fixed;top:0;left:0;right:0;height:1px;background:rgba(232,0,45,.15);animation:scanV 8s linear infinite;pointer-events:none;z-index:999}
+@keyframes scanV{0%{top:0;opacity:0}5%{opacity:1}95%{opacity:1}100%{top:100vh;opacity:0}}
+</style>
+</head>
+<body>
+<div class="scan-line"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-in">
+    <div class="logo-mark">
+      <div class="logo-hcs">H<span>C</span>S</div>
+      <div class="logo-sub">Harmonic Compressor System</div>
+    </div>
+    <div class="nav-links">
+      <a class="nl" href="#arch">Architecture</a>
+      <a class="nl" href="#features">Fonctionnalités</a>
+      <a class="nl" href="#security">Sécurité</a>
+      <a class="nl" href="#pricing">Licences</a>
+    </div>
+    <button class="nav-dl" onclick="downloadPlayer()">↓ Player</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-in">
+    <div class="hero-left">
+      <div class="pre-tag fi">Broadcast Lossless · API Sécurisée · Cloud Native</div>
+      <h1 class="fi fi1">
+        HAR<span class="r">MONIC</span><br>
+        COMPRES<span class="r">SOR</span><br>
+        <span class="h1-sub">SYSTEM</span>
+      </h1>
+      <p class="hero-desc fi fi2">
+        Le seul codec broadcast lossless atteignant <strong>11,85×</strong> de compression sur signal SDI YCbCr 4:2:2. Upscaling ×8 <strong>PSNR infini garanti</strong>. Core propriétaire 100% cloud. Impossible à extraire.
+      </p>
+      <div class="btn-row fi fi3">
+        <button class="btn-primary" onclick="downloadPlayer()">
+          ↓ Télécharger le Player
+        </button>
+        <button class="btn-secondary" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">
+          Voir les licences
+        </button>
+      </div>
+      <div class="hero-stats fi fi4">
+        <div class="hs">
+          <div class="hs-v">11<span class="u">.85×</span></div>
+          <div class="hs-l">Ratio lossless SDI</div>
+        </div>
+        <div class="hs">
+          <div class="hs-v">∞<span class="u"> dB</span></div>
+          <div class="hs-l">PSNR garanti</div>
+        </div>
+        <div class="hs">
+          <div class="hs-v">×8</div>
+          <div class="hs-l">Upscaling sans hallucination</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-right fi fi5">
+      <div class="signal-monitor">
+        <div class="monitor-grid">
+          <div class="mg-item">
+            <div class="mg-lbl">Ratio actif</div>
+            <div class="mg-val red">11.85<span style="font-size:14px">×</span></div>
+            <div class="mg-sub">SDI YCbCr 4:2:2</div>
+          </div>
+          <div class="mg-item">
+            <div class="mg-lbl">PSNR</div>
+            <div class="mg-val">∞</div>
+            <div class="mg-sub">Lossless exact</div>
+          </div>
+          <div class="mg-item">
+            <div class="mg-lbl">BPP mesuré</div>
+            <div class="mg-val red">1.69</div>
+            <div class="mg-sub">bits/pixel</div>
+          </div>
+          <div class="mg-item">
+            <div class="mg-lbl">Grain/frame</div>
+            <div class="mg-val">0</div>
+            <div class="mg-sub">bytes transmis</div>
+          </div>
+        </div>
+        <div class="signal-bar"></div>
+        <div class="monitor-log">
+          <div class="log-ok">Core engine v3.2 · opérationnel</div>
+          <div class="log-ok">DWT CDF 5/3 · ×8 upscaling ready</div>
+          <div class="log-ok">API gateway · 99.99% uptime</div>
+          <div class="log-info">Session AES-GCM-256 · clé ECDH éphémère</div>
+          <div class="log-info">Débit: 336 Mbps @HD60 · 246 Mbps @ARCH</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section class="arch-sec" id="arch">
+  <div class="sec-in">
+    <div class="sec-label">Architecture</div>
+    <h2>Core 100% Cloud.<br><em>Player = interface pure.</em></h2>
+    <p class="sec-desc">Le cœur algorithmique ne quitte jamais nos serveurs. Le player distribué est une coquille sécurisée qui communique uniquement par API chiffrée.</p>
+    <div class="arch-grid">
+      <div class="arch-col">
+        <div class="arch-title pub">Player distribué — code public</div>
+        <div class="arch-item"><div class="arch-ico ok">✓</div><div class="arch-txt"><strong>UI Controls</strong> · Lecteur, timeline, upscale selector</div></div>
+        <div class="arch-item"><div class="arch-ico ok">✓</div><div class="arch-txt"><strong>Auth ECDH</strong> · Échange de clés, JWT session, fingerprint</div></div>
+        <div class="arch-item"><div class="arch-ico ok">✓</div><div class="arch-txt"><strong>AES-GCM decrypt</strong> · Dans Web Worker isolé uniquement</div></div>
+        <div class="arch-item"><div class="arch-ico ok">✓</div><div class="arch-txt"><strong>Canvas render</strong> · Watermark LSB invisible injecté</div></div>
+        <div class="arch-item"><div class="arch-ico no">✗</div><div class="arch-txt" style="color:var(--fog)">Aucune logique de compression</div></div>
+        <div class="arch-item"><div class="arch-ico no">✗</div><div class="arch-txt" style="color:var(--fog)">Aucun code DWT / Delta-H</div></div>
+        <div class="arch-item"><div class="arch-ico no">✗</div><div class="arch-txt" style="color:var(--fog)">Aucun détail format HCS</div></div>
+        <div class="arch-item"><div class="arch-ico no">✗</div><div class="arch-txt" style="color:var(--fog)">Aucune clé de déchiffrement</div></div>
+      </div>
+      <div class="arch-divider"></div>
+      <div class="arch-col">
+        <div class="arch-title sec">Core serveur — jamais exposé</div>
+        <div class="arch-item"><div class="arch-ico ok" style="color:var(--red);border-color:var(--bdr)">▲</div><div class="arch-txt"><strong>DWT CDF 5/3</strong> · Lossless upscaling ×2 ×4 ×8</div></div>
+        <div class="arch-item"><div class="arch-ico ok" style="color:var(--red);border-color:var(--bdr)">▲</div><div class="arch-txt"><strong>Delta-H + zstd</strong> · Compression R,G,B 11,85×</div></div>
+        <div class="arch-item"><div class="arch-ico ok" style="color:var(--red);border-color:var(--bdr)">▲</div><div class="arch-txt"><strong>Grain Synthesis v2</strong> · Sigma curve 32 bytes/séquence</div></div>
+        <div class="arch-item"><div class="arch-ico ok" style="color:var(--red);border-color:var(--bdr)">▲</div><div class="arch-txt"><strong>HCS container</strong> · Format binaire propriétaire v2</div></div>
+        <div class="arch-item"><div class="arch-ico ok" style="color:var(--red);border-color:var(--bdr)">▲</div><div class="arch-txt"><strong>KMS séparé</strong> · Clés de fichiers sur AWS KMS dédié</div></div>
+        <div class="arch-item"><div class="arch-ico ok" style="color:var(--red);border-color:var(--bdr)">▲</div><div class="arch-txt"><strong>Frames re-chiffrées</strong> · AES-GCM-256 par session ECDH</div></div>
+        <div class="arch-item"><div class="arch-ico ok" style="color:var(--red);border-color:var(--bdr)">▲</div><div class="arch-txt"><strong>Audit logs</strong> · Chaque accès, IP, frame, timestamp</div></div>
+        <div class="arch-item"><div class="arch-ico ok" style="color:var(--red);border-color:var(--bdr)">▲</div><div class="arch-txt"><strong>Rate limiting</strong> · Redis · 100 req/min par token</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="sec-in">
+    <div class="sec-label">Fonctionnalités Core</div>
+    <h2>La compression.<br><em>Réimaginée.</em></h2>
+    <p class="sec-desc">Chaque algorithme est développé depuis les principes mathématiques. Rien n'est emprunté.</p>
+    <div class="features-grid">
+      <div class="feat">
+        <div class="feat-num">01</div>
+        <div class="feat-title">Compression Lossless SDI</div>
+        <div class="feat-desc">Signal YCbCr 4:2:2 10bit. Prédicteur Delta-H horizontal + zstd-19. Séparation grain/signal par filtre médian. 0 octet de grain transmis par frame.</div>
+        <div class="feat-metric"><div class="feat-mv">11.85×</div><div class="feat-ml">ratio lossless mesuré</div></div>
+      </div>
+      <div class="feat">
+        <div class="feat-num">02</div>
+        <div class="feat-title">Upscaling ×8 PSNR ∞</div>
+        <div class="feat-desc">DWT CDF 5/3 lifting scheme (ISO 15444-1). 3 niveaux → ×2, ×4, ×8. Coefficients HF stockés dans le container. Reconstruction bit-exacte garantie.</div>
+        <div class="feat-metric"><div class="feat-mv">0</div><div class="feat-ml">détail inventé · MSE = 0</div></div>
+      </div>
+      <div class="feat">
+        <div class="feat-num">03</div>
+        <div class="feat-title">Container HCS v2</div>
+        <div class="feat-desc">Format binaire propriétaire. Header 64B + sigma_curve 32B + bloc DWT + index frames O(1). Magic "HCS2". CRC32 fin de fichier. Seek instantané.</div>
+        <div class="feat-metric"><div class="feat-mv">O(1)</div><div class="feat-ml">accès aléatoire seek</div></div>
+      </div>
+      <div class="feat">
+        <div class="feat-num">04</div>
+        <div class="feat-title">Watermark LSB Invisible</div>
+        <div class="feat-desc">Fingerprint session encodé en stéganographie LSB dans chaque frame déchiffrée. Traceable par utilisateur. Intercepte toDataURL() et toBlob().</div>
+        <div class="feat-metric"><div class="feat-mv">±0</div><div class="feat-ml">PSNR dégradation visuelle</div></div>
+      </div>
+      <div class="feat">
+        <div class="feat-num">05</div>
+        <div class="feat-title">Session AES-GCM-256</div>
+        <div class="feat-desc">ECDH P-256 éphémère à chaque session. Shared secret → HKDF → AES-GCM-256. IV unique par chunk. Token JWT lié au fingerprint navigateur. Exp 1h.</div>
+        <div class="feat-metric"><div class="feat-mv">256</div><div class="feat-ml">bits AES-GCM par frame</div></div>
+      </div>
+      <div class="feat">
+        <div class="feat-num">06</div>
+        <div class="feat-title">Ingest SDI Live</div>
+        <div class="feat-desc">Ingestion temps réel depuis équipements Sony HDC, Grass Valley, Ikegami. YCbCr 4:2:2 → HCS sur serveur dédié. GOP configurable. Audio DPCM lossless.</div>
+        <div class="feat-metric"><div class="feat-mv">4K</div><div class="feat-ml">60fps temps réel</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECURITY -->
+<section class="security-sec" id="security">
+  <div class="sec-in">
+    <div class="sec-label">Sécurité</div>
+    <h2>Impossible à extraire.<br><em>Conçu pour résister.</em></h2>
+    <p class="sec-desc">7 couches de protection contre le reverse engineering, l'extraction de code et la copie non autorisée.</p>
+    <div class="sec-badges">
+      <div class="sbdg active">ECDH P-256</div>
+      <div class="sbdg active">AES-GCM-256</div>
+      <div class="sbdg active">HKDF-SHA256</div>
+      <div class="sbdg active">JWT + Device FP</div>
+      <div class="sbdg active">Web Worker isolé</div>
+      <div class="sbdg active">Watermark LSB</div>
+      <div class="sbdg active">Anti-debugging</div>
+      <div class="sbdg">Cert Pinning</div>
+      <div class="sbdg">WASM Decrypt</div>
+      <div class="sbdg">Code Integrity</div>
+    </div>
+    <div class="threat-grid">
+      <div class="threat-item">
+        <div class="threat-title">Reverse engineering player</div>
+        <div class="threat-desc">Le player ne contient aucun algorithme de compression ni de format HCS. Obfuscation JS + identifier mangling. Même en le lisant entièrement, aucune propriété intellectuelle n'est exposée.</div>
+      </div>
+      <div class="threat-item">
+        <div class="threat-title">Interception réseau (MITM)</div>
+        <div class="threat-desc">TLS 1.3 + certificate pinning (hash hardcodé). Frames AES-GCM-256 avec IV unique. HMAC-SHA256 sur chaque payload. Replay impossible (nonce + timestamp validés).</div>
+      </div>
+      <div class="threat-item">
+        <div class="threat-title">Extraction depuis canvas</div>
+        <div class="threat-desc">toDataURL() et toBlob() interceptés. Chaque frame porte un watermark LSB encodant l'ID de session, le timestamp et l'IP. Toute extraction est traçable jusqu'à l'utilisateur.</div>
+      </div>
+      <div class="threat-item">
+        <div class="threat-title">Vol de token JWT</div>
+        <div class="threat-desc">JWT lié au fingerprint navigateur (canvas FP + UA hash + timezone + GPU). Expiration 1h. Refresh token via re-authentification ECDH. Révocation instantanée côté serveur.</div>
+      </div>
+      <div class="threat-item">
+        <div class="threat-title">Accès non autorisé aux fichiers</div>
+        <div class="threat-desc">Fichiers HCS stockés chiffrés AES-256 sur S3. Clés sur AWS KMS dédié, jamais sur le serveur principal. Fichiers jamais servis bruts : déchiffrés + re-chiffrés par session à la volée.</div>
+      </div>
+      <div class="threat-item">
+        <div class="threat-title">Décompilation du Worker</div>
+        <div class="threat-desc">Le Web Worker ne contient que le déchiffrement AES-GCM (Web Crypto API native). La clé dérivée n'est jamais accessible depuis le thread principal. Même en inspectant le Worker, aucun algo propriétaire.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing-sec" id="pricing">
+  <div class="sec-in">
+    <div class="sec-label">Licences</div>
+    <h2>Choisissez votre accès.</h2>
+    <p class="sec-desc">Accès API mesuré. Déploiement on-premise disponible. SDK OEM sur devis.</p>
+    <div class="plan-grid">
+      <div class="plan">
+        <div class="plan-name">Studio</div>
+        <div class="plan-price"><sub>€</sub>490<sub style="font-size:14px">/mois</sub></div>
+        <div class="plan-bill">Annuel · 1 flux SDI · 100K appels API</div>
+        <div class="plan-sep"></div>
+        <ul class="plan-features">
+          <li class="plan-feature">1 canal SDI jusqu'à 4K 60fps</li>
+          <li class="plan-feature">Modes HCS_FAST et HCS_SDI</li>
+          <li class="plan-feature">Upscaling ×4 (2 niveaux DWT)</li>
+          <li class="plan-feature">100 000 appels API/mois</li>
+          <li class="plan-feature">Player téléchargeable inclus</li>
+          <li class="plan-feature">Support email · 5j ouvrés</li>
+        </ul>
+        <button class="btn-secondary" style="width:100%;justify-content:center">Commencer →</button>
+      </div>
+      <div class="plan featured">
+        <div class="plan-badge">Le plus choisi</div>
+        <div class="plan-name">Enterprise</div>
+        <div class="plan-price"><sub>€</sub>1 490<sub style="font-size:14px">/mois</sub></div>
+        <div class="plan-bill">Annuel · 4 flux SDI · appels illimités</div>
+        <div class="plan-sep"></div>
+        <ul class="plan-features">
+          <li class="plan-feature">4 canaux SDI jusqu'à 8K</li>
+          <li class="plan-feature">Tous modes HCS (FAST/SDI/ARCH)</li>
+          <li class="plan-feature">Upscaling ×8 (3 niveaux DWT)</li>
+          <li class="plan-feature">Appels API illimités</li>
+          <li class="plan-feature">Watermark personnalisé</li>
+          <li class="plan-feature">SLA 99,9% · Support 24h dédié</li>
+          <li class="plan-feature">Multi-destination (S3/On-Prem/LTO)</li>
+          <li class="plan-feature">Formation technique 2 jours</li>
+        </ul>
+        <button class="btn-primary" style="width:100%;justify-content:center">Contacter l'équipe →</button>
+      </div>
+      <div class="plan">
+        <div class="plan-name">OEM / SDK</div>
+        <div class="plan-price" style="font-size:36px">Sur devis</div>
+        <div class="plan-bill">Intégration constructeur · canaux illimités</div>
+        <div class="plan-sep"></div>
+        <ul class="plan-features">
+          <li class="plan-feature">API privée dédiée (VPC)</li>
+          <li class="plan-feature">Player white-label</li>
+          <li class="plan-feature">Déploiement on-premise possible</li>
+          <li class="plan-feature">FPGA roadmap incluse</li>
+          <li class="plan-feature">Licence redistribution OEM</li>
+          <li class="plan-feature">Ingénieur dédié + SLA custom</li>
+        </ul>
+        <button class="btn-secondary" style="width:100%;justify-content:center">Nous écrire →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DOWNLOAD CTA -->
+<section class="dl-cta">
+  <div class="dl-cta-in">
+    <h2>TÉLÉCHARGER<br>LE PLAYER</h2>
+    <p>Interface de lecture HCS. Fonctionne uniquement avec une clé API valide. Aucun core algorithmique inclus. Compatible Windows · macOS · Linux.</p>
+    <button class="dl-btn" onclick="downloadPlayer()">
+      ↓ HCS Player v3.2.0
+    </button>
+    <div class="dl-info">SHA-256 · Signé · 2.4 MB · Licence d'évaluation 30 jours incluse</div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-in">
+    <div class="foot-top">
+      <div>
+        <div class="logo-mark"><div class="logo-hcs" style="font-size:22px">H<span>C</span>S</div><div class="logo-sub">Harmonic Compressor System</div></div>
+        <p class="foot-brand-desc">Le codec broadcast lossless le plus efficace au monde. Core 100% cloud. Impossible à reverse-engineer.</p>
+      </div>
+      <div><div class="fc-t">Produit</div><ul class="fc-l"><li><a href="#">Architecture</a></li><li><a href="#">Fonctionnalités</a></li><li><a href="#">Sécurité</a></li><li><a href="#">Feuille de route</a></li></ul></div>
+      <div><div class="fc-t">Documentation</div><ul class="fc-l"><li><a href="#">API Reference</a></li><li><a href="#">Player SDK</a></li><li><a href="#">Format HCS v2</a></li><li><a href="#">Sécurité & Audit</a></li></ul></div>
+      <div><div class="fc-t">Entreprise</div><ul class="fc-l"><li><a href="#">À propos</a></li><li><a href="#">Contact</a></li><li><a href="#">Partenaires</a></li><li><a href="#">Presse</a></li></ul></div>
+    </div>
+    <div class="foot-bot">
+      <div class="foot-copy">© 2025 HCS — Harmonic Compressor System. Tous droits réservés.</div>
+      <div class="foot-legal"><a href="#">Mentions légales</a><a href="#">Confidentialité</a><a href="#">CGU</a><a href="#">Brevets</a></div>
+    </div>
+  </div>
+</footer>
+
+<script>
+function downloadPlayer(){
+  const a=document.createElement('a');
+  a.href='hcs_player.html';
+  a.download='HCS_Player_v3.2.0.html';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();const t=document.querySelector(a.getAttribute('href'));
+    if(t)t.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+});
+</script>
+</body>
+</html>

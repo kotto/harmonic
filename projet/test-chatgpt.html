@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>HCV16 Video Compression</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; background: #f9f9f9; }
+input, button { margin: 0.5rem 0; }
+table { border-collapse: collapse; margin-top: 1rem; }
+th, td { border: 1px solid #999; padding: 0.5rem 1rem; }
+</style>
+</head>
+<body>
+
+<h1>HCV16 Video Compression Demo</h1>
+
+<input type="file" id="videoInput" accept="video/*"><br>
+<label for="modeSelect">Mode:</label>
+<select id="modeSelect">
+  <option value="LOSSLESS">LOSSLESS</option>
+  <option value="GRAIN_SYNTH">GRAIN_SYNTH</option>
+  <option value="SIGNAL_ONLY">SIGNAL_ONLY</option>
+</select>
+<br>
+<button id="compressBtn">Compresser avec HCV16</button>
+
+<h2>Métriques</h2>
+<table>
+<tr>
+  <th>Nom fichier</th>
+  <th>Original (MB)</th>
+  <th>Compressé (MB)</th>
+  <th>Ratio</th>
+  <th>PSNR (dB)</th>
+</tr>
+<tbody id="metricsTable"></tbody>
+</table>
+
+<script type="module">
+// ─── Import du module HCV16 WASM ──────────────────────────────
+// ATTENTION: remplace 'hcv16_wasm.js' par ton vrai chemin de bundle WASM
+import initHCV16, { compressVideo, calculatePSNR } from './hcv16_wasm.js';
+
+let HCV16 = null;
+initHCV16().then(mod => {
+    HCV16 = mod;
+    console.log("Module HCV16 prêt !");
+});
+
+document.getElementById('compressBtn').addEventListener('click', async () => {
+    const fileInput = document.getElementById('videoInput');
+    const mode = document.getElementById('modeSelect').value;
+
+    if (!fileInput.files.length) {
+        alert("Choisis une vidéo !");
+        return;
+    }
+    if (!HCV16) {
+        alert("Module HCV16 pas encore chargé !");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const arrayBuffer = await file.arrayBuffer();
+    const originalMB = (arrayBuffer.byteLength / 1024 / 1024).toFixed(2);
+
+    // ── Compression réelle avec HCV16 ──────────────────────────
+    const start = performance.now();
+    const compressedArray = await compressVideo(arrayBuffer, mode);
+    const end = performance.now();
+    const compressedMB = (compressedArray.byteLength / 1024 / 1024).toFixed(2);
+
+    // ── Calcul PSNR réel entre original et reconstruit (via HCV16) ─
+    const psnrValue = await calculatePSNR(arrayBuffer, compressedArray);
+
+    // ── Affichage métriques ─────────────────────────────────────
+    const ratio = (arrayBuffer.byteLength / compressedArray.byteLength).toFixed(2);
+    const tbody = document.getElementById('metricsTable');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>${file.name}</td>
+        <td>${originalMB}</td>
+        <td>${compressedMB}</td>
+        <td>${ratio}×</td>
+        <td>${psnrValue.toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
+
+    console.log(`Compression terminée en ${(end-start).toFixed(1)} ms`);
+});
+</script>
+
+</body>
+</html>

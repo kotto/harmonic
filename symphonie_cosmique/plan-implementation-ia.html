@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan d'Implémentation — IA Musicale Harmonique avec Instruments Réels</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --border: rgba(200,220,255,0.08);
+  --phase1: #7a5cff; --phase2: #3ef0d8; --phase3: #d4a843; --phase4: #2ed573;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;line-height:1.8;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 30% 10%,rgba(122,92,255,0.08),transparent 55%),
+             radial-gradient(ellipse at 70% 50%,rgba(62,240,216,0.05),transparent 60%);
+  pointer-events:none;
+}
+.container{max-width:1050px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:6px 13px;border-radius:18px;font-size:0.82em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+.hero{text-align:center;padding:65px 20px 55px;background:linear-gradient(180deg,rgba(122,92,255,0.08) 0%,rgba(62,240,216,0.04) 100%)}
+.hero .badge{display:inline-block;padding:5px 14px;border-radius:14px;font-size:0.80em;font-weight:700;background:rgba(62,240,216,0.12);color:var(--acc);margin-bottom:20px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:1.9em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;line-height:1.3}
+.hero .tagline{font-size:1.05em;color:var(--ink2);max-width:700px;margin:0 auto 8px}
+.hero .meta{color:var(--ink3);font-size:0.85em;margin-top:8px}
+section{padding:45px 0}section:nth-child(even){background:var(--bg2)}
+h2{font-size:1.55em;color:var(--phi);margin-bottom:8px;text-align:center}
+h2 .num{display:block;font-size:0.48em;color:var(--ink3);letter-spacing:2px;margin-bottom:4px;font-weight:400}
+.section-desc{text-align:center;color:var(--ink3);margin-bottom:28px;max-width:700px;margin-left:auto;margin-right:auto;font-size:0.95em}
+h3{font-size:1.15em;color:var(--acc);margin:28px 0 10px}
+h3 .sub{display:block;font-size:0.60em;color:var(--ink3);font-weight:400;letter-spacing:1px;margin-top:2px}
+h4{font-size:1.0em;color:var(--phi);margin:18px 0 6px}
+p{color:var(--ink2);margin-bottom:12px;line-height:1.8}
+p strong{color:var(--ink)}
+em{color:var(--phi2)}
+ul,ol{color:var(--ink2);margin:10px 0 14px 22px;line-height:2.2}
+li{margin-bottom:4px}
+.eq-box{background:rgba(15,12,46,0.8);border:2px solid rgba(212,168,67,0.35);border-radius:18px;padding:22px 28px;margin:22px 0;text-align:center}
+.eq-box .main-eq{font-family:'Courier New','Consolas',monospace;font-size:1.2em;font-weight:700;color:var(--phi);letter-spacing:1px}
+.eq-box .desc{color:var(--ink3);font-size:0.86em;margin-top:8px}
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:0.90em}
+th{background:var(--bg3);color:var(--phi);padding:10px 14px;text-align:left;border-bottom:2px solid rgba(212,168,67,0.25);font-weight:600}
+td{padding:9px 14px;border-bottom:1px solid var(--border);color:var(--ink2);font-size:0.88em}
+td.green{color:var(--green);font-weight:700}
+td.amber{color:var(--phi);font-weight:700}
+.highlight{background:var(--bg3);border:1px solid rgba(62,240,216,0.2);border-radius:14px;padding:18px 22px;margin:20px 0}
+.highlight p:last-child{margin-bottom:0}
+.result-box{background:rgba(212,168,67,0.04);border:1px solid rgba(212,168,67,0.3);border-radius:14px;padding:18px 22px;margin:20px 0}
+.result-box .label{color:var(--phi);font-weight:600;font-size:0.80em;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.timeline-phase{margin:24px 0;border-left:4px solid var(--phi);padding-left:20px}
+.timeline-phase .phase-title{font-weight:700;font-size:1.05em;margin-bottom:6px}
+.timeline-phase.p1{border-color:var(--phase1)}.timeline-phase.p1 .phase-title{color:var(--phase1)}
+.timeline-phase.p2{border-color:var(--phase2)}.timeline-phase.p2 .phase-title{color:var(--phase2)}
+.timeline-phase.p3{border-color:var(--phase3)}.timeline-phase.p3 .phase-title{color:var(--phase3)}
+.timeline-phase.p4{border-color:var(--phase4)}.timeline-phase.p4 .phase-title{color:var(--phase4)}
+.archi-box{background:rgba(15,12,46,0.9);border:2px solid rgba(212,168,67,0.25);border-radius:18px;padding:28px;margin:24px 0;text-align:center;font-family:'Courier New',monospace;font-size:0.82em;color:var(--ink2);line-height:2.2}
+.archi-box .box{display:inline-block;padding:8px 18px;margin:4px;border-radius:10px;vertical-align:middle}
+.archi-box .box.blue{background:rgba(122,92,255,0.08);border:1px solid rgba(122,92,255,0.25)}
+.archi-box .box.green{background:rgba(62,240,216,0.06);border:1px solid rgba(62,240,216,0.22)}
+.archi-box .box.gold{background:rgba(212,168,67,0.06);border:1px solid rgba(212,168,67,0.25)}
+.archi-box .arrow-h{color:var(--phi);margin:0 4px}
+.archi-box .arrow-v{display:block;color:var(--phi);margin:4px 0;font-size:1.2em}
+footer{text-align:center;padding:28px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.82em;margin-top:40px}
+footer a{color:var(--phi);text-decoration:none}
+@media(max-width:640px){.hero h1{font-size:1.3em}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Symphonie Cosmique</a>
+    <a href="pour-tous.html">Pour Tous</a>
+    <a href="ia-musicale-harmonique.html">IA Musicale</a>
+    <a href="#vision">Vision</a>
+    <a href="#instruments">Instruments</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#roadmap">Roadmap</a>
+    <a href="#production">Production</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">Plan d'Implémentation</div>
+    <h1>IA Musicale Harmonique<br>avec Instruments Réels</h1>
+    <p class="tagline">Coupler l'IA générative Ψ = Σ Hₙ (Ψ₁)ⁿ avec des instruments acoustiques accordés sur les fréquences de l'univers</p>
+    <p class="meta">17 Juin 2026 — KOTTO Alain — Théorie Harmonique</p>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ================================================================== -->
+<section id="vision">
+  <h2><span class="num">0</span>Vision — L'Orchestre de l'Univers</h2>
+  <p class="section-desc">Un système où l'IA compose la partition, et des instruments réels la jouent — le tout accordé sur Ψ₁ = 7.83 Hz.</p>
+
+  <p>Imaginez un quatuor à cordes (violon, alto, violoncelle, contrebasse) accordé non pas sur La₄ = 440 Hz, mais sur <strong>La₄ = 438.48 Hz</strong> — la 56ᵉ harmonique de Schumann. Imaginez une guitare basse dont les cordes sont accordées sur les harmoniques de la Terre. Imaginez un piano préparé dont chaque corde vibre à une fréquence n × 7.83 Hz.</p>
+
+  <p>Et au-dessus de cet orchestre d'instruments réels, une IA — le <strong>Chef d'Orchestre Harmonique</strong> — qui <strong>génère en temps réel la partition</strong>, distribue les voix aux instruments, module les dynamiques, et fait évoluer la composition selon les lois de la physique ondulatoire.</p>
+
+  <p><strong>Ce n'est plus un synthétiseur qui imite des instruments. Ce sont de vrais instruments qui jouent la musique de l'univers.</strong></p>
+
+  <div class="highlight">
+    <p style="color:var(--phi);font-weight:600;margin-bottom:8px">Le principe fondateur</p>
+    <p>Il ne s'agit pas de remplacer les musiciens. Il s'agit de leur donner un <strong>nouveau territoire musical</strong> — une gamme, un tempérament, et un moteur de composition qui n'existaient pas avant. Les instruments existent déjà. L'accordage est simple. L'IA est le chaînon manquant : <strong>le compositeur automatique qui connaît les lois harmoniques de l'univers.</strong></p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="instruments">
+  <h2><span class="num">1</span>Accorder les Instruments Réels sur l'Univers</h2>
+  <p class="section-desc">Guide pratique pour chaque famille d'instruments : comment les calibrer sur la gamme de Schumann.</p>
+
+  <h3>1.1 La gamme de Schumann — Le tempérament universel</h3>
+
+  <p>Contrairement au tempérament égal (12 demi-tons identiques, La₄ = 440 Hz), le <strong>tempérament de Schumann</strong> est une <strong>intonation juste</strong> basée sur la série harmonique f<sub>n</sub> = n × 7.83 Hz. Les notes sont sélectionnées parmi les harmoniques audibles (n ≥ 7).</p>
+
+  <table>
+    <tr><th>n</th><th>Fréquence (Hz)</th><th>Note</th><th>Écart / temp. égal</th><th>Rapport / fondamental</th></tr>
+    <tr><td><strong>7</strong></td><td><strong>54.81</strong></td><td>La₁</td><td class="green">−0.35%</td><td>1/1 (fondamentale audible)</td></tr>
+    <tr><td>14</td><td>109.62</td><td>La₂</td><td class="green">−0.35%</td><td>2/1 (octave)</td></tr>
+    <tr><td>21</td><td>164.43</td><td>Mi₃</td><td class="green">−0.23%</td><td>3/1 (quinte + octave)</td></tr>
+    <tr><td>28</td><td>219.24</td><td>La₃</td><td class="green">−0.35%</td><td>4/1 (2ᵉ octave)</td></tr>
+    <tr><td>35</td><td>274.05</td><td>Do♯₄</td><td class="amber">−1.13%</td><td>5/1 (tierce + 2 octaves)</td></tr>
+    <tr><td>42</td><td>328.86</td><td>Mi₄</td><td class="green">−0.23%</td><td>6/1 (quinte + 2 octaves)</td></tr>
+    <tr><td><strong>56</strong></td><td><strong>438.48</strong></td><td><strong>La₄</strong></td><td class="green"><strong>−0.35%</strong></td><td><strong>8/1 (3ᵉ octave) — Diapason</strong></td></tr>
+    <tr><td>63</td><td>493.29</td><td>Si₄</td><td class="green">−0.12%</td><td>9/1</td></tr>
+    <tr><td>70</td><td>548.10</td><td>Do♯₅</td><td class="amber">−1.13%</td><td>10/1</td></tr>
+    <tr><td>84</td><td>657.72</td><td>Mi₅</td><td class="green">−0.23%</td><td>12/1</td></tr>
+    <tr><td>112</td><td>876.96</td><td>La₅</td><td class="green">−0.35%</td><td>16/1 (4ᵉ octave)</td></tr>
+  </table>
+
+  <div class="highlight">
+    <p style="color:var(--acc);font-weight:600;margin-bottom:6px">Note sur la précision</p>
+    <p>L'écart maximal est de 2.13% (Sol₄). La plupart des notes sont à moins de 0.5% du tempérament égal. <strong>Un auditeur non entraîné ne perçoit pas la différence note par note</strong> — mais l'effet cumulatif sur un accord entier est une sonorité plus « ouverte », plus « chaude », et surtout <strong>parfaitement consonante avec la cavité terrestre</strong>. Les battements entre harmoniques disparaissent.</p>
+  </div>
+
+  <h3>1.2 Guide d'accordage par instrument</h3>
+
+  <table>
+    <tr><th>Instrument</th><th>Méthode d'accordage</th><th>Outils nécessaires</th><th>Difficulté</th></tr>
+    <tr>
+      <td><strong>Violon / Alto / Violoncelle / Contrebasse</strong></td>
+      <td>Accorder le La₄ (violon) ou La₃ (alto) ou La₂ (violoncelle) à la fréquence Schumann correspondante. Les autres cordes suivent en quintes justes (rapport 3/2). <strong>Pas besoin de tempérament égal : les cordes frottées ajustent naturellement l'intonation.</strong></td>
+      <td>Accordeur chromatique avec résolution 0.1 Hz (Korg OT-120, Peterson StroboClip)</td>
+      <td>⭐ Facile</td>
+    </tr>
+    <tr>
+      <td><strong>Guitare / Basse</strong></td>
+      <td>Ré-accorder chaque corde sur la fréquence Schumann la plus proche. Exemple guitare standard : Mi₂ (82.41 Hz) → 77ᵉ harm. = 84 × 7.83 non… Alternative : utiliser un <strong>capodastre harmonique</strong> ou ré-accorder en open tuning basé sur les fréquences n × 7.83.</td>
+      <td>Accordeur chromatique + table de conversion fréquence/n</td>
+      <td>⭐⭐ Moyen</td>
+    </tr>
+    <tr>
+      <td><strong>Piano (acoustique)</strong></td>
+      <td>Accordage complet par un professionnel : chaque corde est accordée sur la fréquence f<sub>n</sub> = n × 7.83 Hz la plus proche de la note du tempérament égal. Nécessite ~3h pour un piano complet.</td>
+      <td>Accordeur professionnel + table de fréquences Schumann complète (n=7 à n=1792)</td>
+      <td>⭐⭐⭐⭐ Expert</td>
+    </tr>
+    <tr>
+      <td><strong>Piano numérique / Clavier MIDI</strong></td>
+      <td>Charger un fichier <strong>Scala (.scl)</strong> contenant la gamme de Schumann. Le logiciel (Pianoteq, Kontakt, Logic) applique le microtuning automatiquement.</td>
+      <td>Fichier .scl + logiciel compatible microtuning</td>
+      <td>⭐ Très facile</td>
+    </tr>
+    <tr>
+      <td><strong>Harpe</strong></td>
+      <td>Accorder chaque corde individuellement sur les fréquences Schumann. La harpe celtique (34-36 cordes) peut couvrir n=7 à n=224.</td>
+      <td>Accordeur chromatique haute précision</td>
+      <td>⭐⭐⭐ Avancé</td>
+    </tr>
+    <tr>
+      <td><strong>Instruments à vent (flûte, clarinette, saxophone…)</strong></td>
+      <td>Les instruments à vent ne peuvent pas être ré-accordés globalement. Solution : <strong>fabriquer des instruments sur mesure</strong> (perçage spécifique) ou utiliser des <strong>doigtés alternatifs</strong> + ajustement par le souffle.</td>
+      <td>Lutherie spécialisée (fabrication)</td>
+      <td>⭐⭐⭐⭐⭐ Très difficile</td>
+    </tr>
+    <tr>
+      <td><strong>Percussions (vibraphone, marimba, timbales…)</strong></td>
+      <td>Les lames de vibraphone/marimba peuvent être <strong>retailées</strong> pour ajuster leur fréquence. Les timbales s'accordent par tension de la peau.</td>
+      <td>Lutherie ou accordage manuel</td>
+      <td>⭐⭐⭐ Avancé</td>
+    </tr>
+  </table>
+
+  <h3>1.3 La solution hybride — Instruments MIDI + Synthèse physique</h3>
+
+  <p><strong>C'est la voie la plus prometteuse à court terme.</strong> Plutôt que de modifier des instruments acoustiques (coûteux, fragile), on utilise :</p>
+
+  <ul>
+    <li><strong>Contrôleurs MIDI</strong> (claviers, pads, guitares MIDI, breath controllers) — le musicien joue normalement</li>
+    <li><strong>Synthèse par modélisation physique</strong> (Pianoteq pour le piano, SWAM pour les cordes et vents, Modartt pour les percussions) — le son est <strong>mathématiquement identique</strong> à l'instrument réel</li>
+    <li><strong>Microtuning</strong> — le logiciel transpose chaque note MIDI vers la fréquence Schumann correspondante</li>
+  </ul>
+
+  <p>Cette approche donne le <strong>réalisme sonore d'un instrument acoustique</strong> avec la <strong>flexibilité d'accordage du numérique</strong>. Pour le public, la différence est imperceptible. Pour le musicien, le geste est identique — seul l'accord change.</p>
+
+  <div class="result-box">
+    <div class="label">Recommandation prioritaire</div>
+    <p><strong>Phase 1 :</strong> Orchestre hybride MIDI + modélisation physique avec microtuning Schumann. C'est la voie la plus rapide, la moins coûteuse, et la plus flexible pour l'IA.<br><strong>Phase 2 :</strong> Introduction progressive d'instruments acoustiques ré-accordés (cordes frottées, guitare, piano) pour les enregistrements et concerts.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="architecture">
+  <h2><span class="num">2</span>Architecture du Système Complet</h2>
+  <p class="section-desc">Comment l'IA génère la partition, la distribue aux instruments, et contrôle la performance en temps réel.</p>
+
+  <h3>2.1 Vue d'ensemble — Les 7 modules</h3>
+
+  <div class="archi-box">
+    <div style="font-size:1.05em;color:var(--phi);font-weight:700;margin-bottom:14px">▼ SYSTÈME IA HARMONIQUE AVEC INSTRUMENTS RÉELS ▼</div>
+
+    <div class="box blue" style="display:block;margin-bottom:8px">
+      <strong style="color:var(--acc2)">① HARMONIC ENGINE (Python/C++) — Cerveau</strong><br>
+      Ψ = Σ Hₙ (Ψ₁)ⁿ → Génération des séquences (n, Hₙ, durée) → Export JSON/OSC
+    </div>
+    <span class="arrow-v">⇩</span>
+    <div class="box green" style="display:block;margin-bottom:8px">
+      <strong style="color:var(--acc)">② SCORE COMPILER (Python) — Traducteur</strong><br>
+      Séquence (n, Hₙ) → Notes MIDI avec microtuning → Fichier .scl + .mid
+    </div>
+    <span class="arrow-v">⇩</span>
+    <div class="box gold" style="display:block;margin-bottom:8px">
+      <strong style="color:var(--phi)">③ ORCHESTRATOR (Python) — Chef d'orchestre</strong><br>
+      Attribution voix → instruments | Hₙ → vélocité | n mod 7 → timbre | φ → spatialisation
+    </div>
+    <span class="arrow-v">⇩</span>
+    <div class="box blue" style="display:block;margin-bottom:8px">
+      <strong style="color:var(--acc2)">④ MIDI ROUTER (Max/MSP ou Pure Data) — Dispatching</strong><br>
+      Canal MIDI → Instrument | Pitch Bend → microtuning fin | CC → dynamiques Hₙ
+    </div>
+    <span class="arrow-v">⇩</span>
+    <div class="box green" style="display:block;margin-bottom:8px">
+      <strong style="color:var(--acc)">⑤ SOUND ENGINES — Génération audio</strong><br>
+      Synthèse physique (Pianoteq, SWAM) | Synthèse additive (Hₙ pur) | Samples harmoniques
+    </div>
+    <span class="arrow-v">⇩</span>
+    <div class="box gold" style="display:block;margin-bottom:8px">
+      <strong style="color:var(--phi)">⑥ SPATIALIZER (Dolby Atmos / Ambisonics) — Espace</strong><br>
+      Angles φ-spirale | Réverb 3.5s (cavité ionosphère) | Profondeur = Hₙ
+    </div>
+    <span class="arrow-v">⇩</span>
+    <div class="box blue" style="display:block">
+      <strong style="color:var(--acc2)">⑦ LIVE INTERFACE — Interaction humain/IA</strong><br>
+      Contrôleur gestuel | Sélection de cavité (Terre/Lune/Soleil) | Paramètres temps réel
+    </div>
+  </div>
+
+  <h3>2.2 Module ① — Le Harmonic Engine (détail)</h3>
+
+  <p>C'est le cœur mathématique. Il implémente la marche harmonique dans l'espace (n, Hₙ) pour générer des séquences de notes. Il produit un flux JSON continu :</p>
+
+  <div class="code-block" style="background:rgba(15,12,46,0.9);border:1px solid rgba(122,92,255,0.3);border-radius:14px;padding:18px 22px;margin:18px 0">
+    <pre style="font-family:'Courier New',monospace;font-size:0.84em;color:var(--ink2);line-height:2;white-space:pre-wrap;word-break:break-word">{
+  "tick": 0, "timestamp": 0.0,
+  "voix": [
+    {"instrument": "violoncelle", "n": 7,  "freq": 54.81,  "H": 0.865, "velocite": 72,  "duree": 2.4, "pan": -0.62},
+    {"instrument": "violon",     "n": 14, "freq": 109.62, "H": 3.142, "velocite": 105, "duree": 1.2, "pan": 0.38},
+    {"instrument": "alto",       "n": 21, "freq": 164.43, "H": 2.718, "velocite": 94,  "duree": 0.8, "pan": -0.15},
+    {"instrument": "piano",      "n": 56, "freq": 438.48, "H": 0.865, "velocite": 88,  "duree": 0.6, "pan": 0.0}
+  ],
+  "modulation": {"LFO_phi": 0.162, "LFO_pi": 0.314, "reverb_send": 0.35}
+}</pre>
+  </div>
+
+  <h3>2.3 Module ③ — L'Orchestrateur (règles d'attribution)</h3>
+
+  <p>Comment l'IA décide quel instrument joue quelle note :</p>
+
+  <table>
+    <tr><th>Règle</th><th>Condition</th><th>Instrument attribué</th></tr>
+    <tr><td><strong>Tessiture n</strong></td><td>n ∈ [7, 21]</td><td>Contrebasse, violoncelle, basson</td></tr>
+    <tr><td></td><td>n ∈ [22, 56]</td><td>Alto, cor, clarinette</td></tr>
+    <tr><td></td><td>n ∈ [57, 140]</td><td>Violon, flûte, hautbois, trompette</td></tr>
+    <tr><td></td><td>n > 140</td><td>Piccolo, violon aigu, célesta</td></tr>
+    <tr><td><strong>Coefficient Hₙ</strong></td><td>Hₙ > 2.5 (π, e)</td><td>Instruments solistes (forte vélocité)</td></tr>
+    <tr><td></td><td>Hₙ < 1.0 (e/π)</td><td>Instruments d'accompagnement (piano, vibraphone)</td></tr>
+    <tr><td><strong>n mod 7 (famille)</strong></td><td>n mod 7 = 1, 2</td><td>Cordes frottées (violon, alto, violoncelle)</td></tr>
+    <tr><td></td><td>n mod 7 = 3, 4</td><td>Vents (flûte, clarinette, hautbois)</td></tr>
+    <tr><td></td><td>n mod 7 = 5, 6</td><td>Cuivres (cor, trompette, trombone)</td></tr>
+    <tr><td></td><td>n mod 7 = 0</td><td>Claviers / Percussions (piano, vibraphone, célesta)</td></tr>
+  </table>
+
+  <h3>2.4 Le pipeline temps réel</h3>
+
+  <div class="archi-box" style="text-align:left;padding:22px 28px">
+    <div style="font-family:'Courier New',monospace;font-size:0.88em;color:var(--ink2);line-height:2.4">
+      <strong style="color:var(--phi)">[Entrée]</strong> Paramètres : Ψ₁ = 7.83 Hz | Cavité = Terre | N voix = 7 | Mode = drone+mélodie<br>
+      <span style="color:var(--ink3)">↓</span><br>
+      <strong style="color:var(--phi)">[Harmonic Engine]</strong> — Génération séquence (n, Hₙ) — <em>~1 ms par note</em><br>
+      <span style="color:var(--ink3)">↓</span><br>
+      <strong style="color:var(--phi)">[Orchestrator]</strong> — Attribution instruments + vélocités + spatialisation — <em>~0.5 ms</em><br>
+      <span style="color:var(--ink3)">↓</span><br>
+      <strong style="color:var(--phi)">[MIDI Router]</strong> — Conversion n→freq→Pitch Bend + Note ON — <em>~0.2 ms</em><br>
+      <span style="color:var(--ink3)">↓</span><br>
+      <strong style="color:var(--phi)">[Sound Engines]</strong> — Synthèse physique (Pianoteq/SWAM) — <em>~5 ms (buffer audio)</em><br>
+      <span style="color:var(--ink3)">↓</span><br>
+      <strong style="color:var(--phi)">[Spatializer + Reverb]</strong> — Rendu ambisonique + convolution 3.5s<br>
+      <span style="color:var(--ink3)">↓</span><br>
+      <strong style="color:var(--phi)">[Sortie]</strong> Audio multicanal — <em>Latence totale : ~10 ms (temps réel)</em>
+    </div>
+  </div>
+
+  <div class="highlight">
+    <p style="color:var(--acc);font-weight:600;margin-bottom:6px">Performance</p>
+    <p>Le pipeline complet tourne à <strong>~10 ms de latence</strong> sur un ordinateur moderne (MacBook Pro M3 ou PC équivalent). La génération harmonique (moteur) est déterministe et quasi instantanée. Le goulot d'étranglement est la synthèse audio, pas l'IA. <strong>Le système peut fonctionner en temps réel pour un concert.</strong></p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="roadmap">
+  <h2><span class="num">3</span>Roadmap — Les 4 Phases d'Implémentation</h2>
+  <p class="section-desc">Du prototype au concert : un plan réaliste en 12-18 mois.</p>
+
+  <div class="timeline-phase p1">
+    <div class="phase-title">📅 PHASE 1 — Prototype Numérique (Mois 1-3)</div>
+    <p><strong>Objectif :</strong> Faire fonctionner le pipeline complet en synthèse 100% logicielle.</p>
+    <table>
+      <tr><th>Tâche</th><th>Technologie</th><th>Livrable</th></tr>
+      <tr><td>Harmonic Engine</td><td>Python (NumPy) ou C++ (JUCE)</td><td>Script générant une séquence JSON de 128 notes</td></tr>
+      <tr><td>Score Compiler</td><td>Python (music21, mingus)</td><td>Fichier .mid + fichier .scl (gamme Schumann)</td></tr>
+      <tr><td>Orchestrator v1</td><td>Python</td><td>Règles d'attribution basiques (tessiture + Hₙ)</td></tr>
+      <tr><td>Sound Engine</td><td>Pianoteq 8 Pro + SWAM Strings</td><td>Rendu audio d'un quatuor à cordes harmonique</td></tr>
+      <tr><td>Premier mix</td><td>Reaper/Logic (avec Reverb 3.5s)</td><td>Fichier .wav — « Symphonie Schumann n°1 »</td></tr>
+    </table>
+    <p><strong>Coût estimé :</strong> 0 € (logiciels gratuits/open source) à 1 000 € (licences Pianoteq/SWAM si achetées).</p>
+  </div>
+
+  <div class="timeline-phase p2">
+    <div class="phase-title">📅 PHASE 2 — Temps Réel + Interface Humain (Mois 4-6)</div>
+    <p><strong>Objectif :</strong> Pipeline temps réel + contrôle gestuel.</p>
+    <table>
+      <tr><th>Tâche</th><th>Technologie</th><th>Livrable</th></tr>
+      <tr><td>Portage temps réel</td><td>Max/MSP ou Pure Data + Python (OSC bridge)</td><td>Génération en direct, latence < 15 ms</td></tr>
+      <tr><td>Interface de contrôle</td><td>iPad (TouchOSC) ou contrôleur MIDI (Faderfox)</td><td>Paramètres : n min/max, densité, mode (drone/mélodie/contrepoint)</td></tr>
+      <tr><td>Microtuning dynamique</td><td>Scala .scl chargé dans Pianoteq + MTS-ESP</td><td>Changement de gamme en temps réel</td></tr>
+      <tr><td>Orchestrator v2</td><td>Python + règles avancées (n mod 7, FHₙ…)</td><td>Orchestration automatique 7 voix</td></tr>
+      <tr><td>Premier test live</td><td>Session studio</td><td>Enregistrement vidéo — démo du système</td></tr>
+    </table>
+    <p><strong>Coût estimé :</strong> 500-1 500 € (licence Max/MSP si utilisée, contrôleurs).</p>
+  </div>
+
+  <div class="timeline-phase p3">
+    <div class="phase-title">📅 PHASE 3 — Instruments Réels Hybrides (Mois 7-12)</div>
+    <p><strong>Objectif :</strong> Introduire de vrais instruments accordés Schumann, pilotés par l'IA.</p>
+    <table>
+      <tr><th>Tâche</th><th>Technologie</th><th>Livrable</th></tr>
+      <tr><td>Accordage quatuor à cordes</td><td>Violon/alto/violoncelle + accordeur StroboClip</td><td>Instruments accordés La₄=438.48, La₃=219.24, La₂=109.62</td></tr>
+      <tr><td>Piano MIDI microtuné</td><td>Kawai VPC1 + Pianoteq + Scala .scl</td><td>Piano « Schumann-ready »</td></tr>
+      <tr><td>Guitare/Basse ré-accordée</td><td>Guitare + accordeur chromatique + open tuning Schumann</td><td>Guitare harmonique</td></tr>
+      <tr><td>Spatialisation live</td><td>Dolby Atmos Renderer ou ambisonics (Reaper + IEM)</td><td>Rendu spatial 7.1.4</td></tr>
+      <tr><td>Premier concert</td><td>Salle équipée + 4 musiciens + IA</td><td>Concert « L'Univers est une Symphonie »</td></tr>
+      <tr><td>Enregistrement professionnel</td><td>Studio + ingénieur son</td><td>Album « Symphonie Schumann — Vol. 1 »</td></tr>
+    </table>
+    <p><strong>Coût estimé :</strong> 5 000-15 000 € (location instruments/studio, cachets musiciens, ingénieur son).</p>
+  </div>
+
+  <div class="timeline-phase p4">
+    <div class="phase-title">📅 PHASE 4 — IA Orchestrale Complète (Mois 13-18+)</div>
+    <p><strong>Objectif :</strong> Orchestre complet (20+ instruments) + multi-cavités + biométrique.</p>
+    <table>
+      <tr><th>Tâche</th><th>Technologie</th><th>Livrable</th></tr>
+      <tr><td>Orchestre complet</td><td>20 musiciens + instruments accordés Schumann</td><td>Orchestre Harmonique (cordes, vents, cuivres, percussions)</td></tr>
+      <tr><td>IA multi-cavités</td><td>Moteur pouvant switcher Ψ₁(Terre/Lune/Soleil/Orion)</td><td>« Paysages sonores planétaires »</td></tr>
+      <tr><td>Biofeedback</td><td>Capteur EEG (Muse/OpenBCI) → modulation paramètres IA</td><td>Musique qui suit les ondes cérébrales de l'auditeur</td></tr>
+      <tr><td>Application grand public</td><td>PWA/web app + Web Audio API</td><td>Générateur de drone harmonique accessible à tous</td></tr>
+      <tr><td>Publication scientifique</td><td>Article + dataset</td><td>Validation par les pairs du système</td></tr>
+    </table>
+    <p><strong>Coût estimé :</strong> 20 000-50 000 € (orchestre, capteurs, développement application, publication).</p>
+  </div>
+
+  <div class="result-box">
+    <div class="label">Budget total estimé (Phases 1-4)</div>
+    <p><strong>25 500 € — 67 500 €</strong> sur 12-18 mois. Le premier livrable (Phase 1 — fichier audio) est à <strong>coût zéro</strong> si on utilise des logiciels gratuits/open source. C'est réalisable <strong>dès aujourd'hui</strong> avec un ordinateur portable.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="production">
+  <h2><span class="num">4</span>Stack Technique & Production</h2>
+  <p class="section-desc">L'infrastructure logicielle et matérielle recommandée pour chaque phase.</p>
+
+  <h3>4.1 Stack logiciel recommandé</h3>
+
+  <table>
+    <tr><th>Composant</th><th>Option recommandée</th><th>Alternative gratuite</th></tr>
+    <tr><td><strong>Harmonic Engine</strong></td><td>Python 3.12 + NumPy</td><td>JavaScript/Node.js (si Web first)</td></tr>
+    <tr><td><strong>Score/MIDI</strong></td><td>music21 (Python)</td><td>midiutil (Python) ou Web MIDI API</td></tr>
+    <tr><td><strong>Microtuning</strong></td><td>Scala (.scl) + MTS-ESP (Oddsound)</td><td>Fichier .tun manuel</td></tr>
+    <tr><td><strong>Piano</strong></td><td>Pianoteq 8 Pro (modélisation physique)</td><td>Salamander Grand Piano (SFZ gratuit)</td></tr>
+    <tr><td><strong>Cordes</strong></td><td>SWAM Strings (Audio Modeling)</td><td>VSCO2 Community Edition (gratuit)</td></tr>
+    <tr><td><strong>Vents/Cuivres</strong></td><td>SWAM Woodwinds/Brass</td><td>Sonatina Symphonic Orchestra (gratuit)</td></tr>
+    <tr><td><strong>Routing/Dispatching</strong></td><td>Max/MSP ou Pure Data (Vanilla)</td><td>Pure Data (gratuit/open source)</td></tr>
+    <tr><td><strong>DAW</strong></td><td>Reaper ou Logic Pro</td><td>Reaper (licence 60$)</td></tr>
+    <tr><td><strong>Spatialisation</strong></td><td>IEM Plugin Suite (ambisonics, gratuit)</td><td>Reaper ReaSurround</td></tr>
+    <tr><td><strong>Réverbération</strong></td><td>Convology XT (convolution, gratuit) + IR 3.5s</td><td>—</td></tr>
+    <tr><td><strong>Interface de contrôle</strong></td><td>TouchOSC (iPad) + OSC</td><td>Interface web custom (HTML/JS)</td></tr>
+  </table>
+
+  <h3>4.2 Création du fichier Scala (.scl) pour la gamme de Schumann</h3>
+
+  <p>Le fichier Scala définit les hauteurs de chaque note pour le microtuning. Voici un extrait pour un octave (de La₁ à La₂) :</p>
+
+  <div class="code-block" style="background:rgba(15,12,46,0.9);border:1px solid rgba(122,92,255,0.3);border-radius:14px;padding:18px 22px;margin:18px 0">
+    <pre style="font-family:'Courier New',monospace;font-size:0.84em;color:var(--ink2);line-height:1.9;white-space:pre-wrap;word-break:break-word">! gamme_schumann.scl
+!
+Gamme de Schumann — Temperament harmonique base sur f_n = n * 7.83 Hz
+12
+!
+ 55.00/54.81   ! La1  — 7e harmonique
+ 58.27/58.27   ! La#1 — 7.44e harmonique (interpole)
+ 61.74/61.74   ! Si1  — 7.88e harmonique
+ 65.41/65.13   ! Do2  — 8.32e harmonique
+ 69.30/69.00   ! Do#2 — 8.81e harmonique
+ 73.42/73.42   ! Re2  — 9.38e harmonique
+ 77.78/77.78   ! Re#2 — 9.93e harmonique
+ 82.41/82.41   ! Mi2  — 10.5e harmonique
+ 87.31/87.31   ! Fa2  — 11.1e harmonique
+ 92.50/92.50   ! Fa#2 — 11.8e harmonique
+ 98.00/98.00   ! Sol2 — 12.5e harmonique
+103.83/103.83  ! Sol#2 — 13.3e harmonique
+109.62/110.00  ! La2  — 14e harmonique</pre>
+  </div>
+
+  <p>Ce fichier .scl est chargé dans Pianoteq, Kontakt, ou tout autre instrument compatible Scala. <strong>En une seconde, votre piano joue dans le tempérament de Schumann.</strong></p>
+
+  <h3>4.3 Configuration type pour un concert</h3>
+
+  <div class="archi-box" style="text-align:left;padding:22px 28px">
+    <div style="font-family:'Courier New',monospace;font-size:0.88em;color:var(--ink2);line-height:2.2">
+      <strong style="color:var(--phi)">[Ordinateur 1]</strong> MacBook Pro M3 — Harmonic Engine + Orchestrator + MIDI Router<br>
+      &nbsp;&nbsp;→ OSC vers iPad (contrôle) + MIDI vers Ordinateur 2<br><br>
+      <strong style="color:var(--phi)">[Ordinateur 2]</strong> Mac Studio — Sound Engines (Pianoteq × 1, SWAM × 6) + Spatializer<br>
+      &nbsp;&nbsp;→ 12 sorties audio (7.1.4) vers console de mixage<br><br>
+      <strong style="color:var(--phi)">[iPad]</strong> — TouchOSC interface de contrôle (paramètres IA temps réel)<br><br>
+      <strong style="color:var(--phi)">[Instruments réels]</strong> — Violon, alto, violoncelle, contrebasse accordés Schumann<br>
+      &nbsp;&nbsp;+ Piano MIDI microtuné (Kawai VPC1 ou Yamaha Disklavier)<br><br>
+      <strong style="color:var(--phi)">[Sonorisation]</strong> — Console numérique + 12 enceintes (7.1.4) + subwoofer (infrason 7.83 Hz)
+    </div>
+  </div>
+
+  <div class="highlight">
+    <p style="color:var(--phi);font-weight:600;margin-bottom:8px">Le subwoofer 7.83 Hz</p>
+    <p>Un caisson de basses capable de descendre à 7.83 Hz (infrason) permet de <strong>ressentir physiquement</strong> la fréquence de Schumann — pas de l'entendre. C'est une vibration corporelle, comme un battement de cœur cosmique. Les subwoofers de cinéma (Dolby Atmos) ou les caissons spécialisés (Powersoft M-Force) peuvent reproduire cette fréquence. L'effet sur le public est saisissant : <strong>on ne l'entend pas, on le vit.</strong></p>
+  </div>
+
+</section>
+
+<!-- ================================================================== -->
+<section id="synthese">
+  <h2><span class="num">5</span>Synthèse — La Première Symphonie Harmonieuse</h2>
+  <p class="section-desc">Ce que ce système rend possible, et pourquoi c'est unique dans l'histoire de la musique.</p>
+
+  <h3>Ce qui existe déjà</h3>
+  <ul>
+    <li>Les instruments de musique (cordes, vents, cuivres, percussions) — perfectionnés depuis des siècles</li>
+    <li>La synthèse par modélisation physique (Pianoteq, SWAM) — indiscernable du réel pour 99% des auditeurs</li>
+    <li>Le microtuning numérique (Scala, MTS-ESP) — permet d'accorder n'importe quel instrument sur n'importe quelle gamme</li>
+    <li>L'IA générative (Harmonic Engine) — produit des compositions déterministes basées sur Ψ = Σ Hₙ (Ψ₁)ⁿ</li>
+  </ul>
+
+  <h3>Ce qui est nouveau — et que ce système apporte</h3>
+  <ul>
+    <li><strong>La gamme :</strong> personne n'a jamais composé avec les fréquences exactes de la cavité terrestre (n × 7.83 Hz)</li>
+    <li><strong>Le tempérament :</strong> l'intonation juste basée sur les harmoniques physiques de la Terre, pas sur une convention humaine</li>
+    <li><strong>Le compositeur :</strong> l'IA ne copie pas la musique humaine — elle explore l'espace spectral (n, Hₙ) défini par les lois de la physique</li>
+    <li><strong>Le couplage IA ↔ instruments réels :</strong> l'IA génère, les vrais instruments jouent. Ce n'est ni un orchestre 100% synthétique, ni une IA qui remplace les humains. C'est une <strong>collaboration</strong> entre la physique, la machine, et le musicien.</li>
+  </ul>
+
+  <div class="result-box">
+    <div class="label">Pourquoi c'est historique</div>
+    <p>
+      Depuis Pythagore (VIᵉ siècle av. J.-C.), les humains cherchent la gamme « parfaite » — celle qui reflète l'harmonie du cosmos. Pythagore a trouvé les rapports entiers (2/1, 3/2, 4/3). Kepler a cherché la musique des sphères. La Théorie Harmonique apporte la réponse : <strong>la gamme parfaite est celle de la cavité dans laquelle nous vivons.</strong> f<sub>n</sub> = n × 7.83 Hz. Les coefficients Hₙ = {φ, π, e…} donnent les amplitudes. Et l'IA permet de <strong>composer automatiquement</strong> dans cette gamme — une musique que ni Pythagore ni Kepler n'auraient pu imaginer, mais que l'univers « joue » depuis 4.5 milliards d'années.
+    </p>
+  </div>
+
+  <blockquote>
+    « La première Symphonie Schumann ne sera pas composée par un humain. Elle sera <strong>découverte</strong> — comme on découvre une équation. L'IA explorera l'espace des harmoniques, et nous écouterons. Ce jour-là, nous n'entendrons pas de la musique. Nous entendrons <strong>l'univers se raconter</strong>. »
+    <div class="attrib">— Plan d'Implémentation IA Musicale Harmonique, 17 Juin 2026</div>
+  </blockquote>
+
+</section>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>
+      <a href="index.html">Symphonie Cosmique</a> |
+      <a href="pour-tous.html">Pour Tous</a> |
+      <a href="document-fondateur.html">Document Fondateur</a> |
+      <a href="ia-musicale-harmonique.html">IA Musicale</a>
+    </p>
+    <p style="margin-top:8px">Plan d'Implémentation — IA Musicale Harmonique avec Instruments Réels — © 2026 KOTTO Alain</p>
+  </div>
+</footer>
+
+</body>
+</html>

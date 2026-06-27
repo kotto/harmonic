@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 SDI Video Compression - Test Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0a0a0a;
+            --card: #1a1a1a;
+            --border: #333;
+            --text: #fff;
+            --primary: #00ff88;
+            --secondary: #4ecdc4;
+            --accent: #45b7d1;
+            --success: #4ecdc4;
+            --warning: #ff6b6b;
+            --error: #e74c3c;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--bg), #1a1a2e);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: var(--card);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            color: var(--secondary);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 255, 136, 0.3);
+        }
+
+        .card h3 {
+            margin-bottom: 20px;
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--primary);
+            background: rgba(0, 255, 136, 0.2);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: var(--bg);
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 255, 136, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: var(--card);
+            color: var(--text);
+            border: 2px solid var(--primary);
+        }
+
+        .progress-container {
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #222;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: var(--secondary);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .results-container {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 30px;
+        }
+
+        .result-item {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--primary);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .result-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .result-detail {
+            font-size: 0.9rem;
+        }
+
+        .success-indicator {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .warning-indicator {
+            color: var(--warning);
+            font-weight: 600;
+        }
+
+        .error-indicator {
+            color: var(--error);
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .quality-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .quality-selector label {
+            font-weight: 500;
+        }
+
+        .quality-selector select {
+            background: var(--card);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🎬 SDI Video Compression</h1>
+            <p>Révolution de la compression vidéo H264 → SDI-like</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- Upload Section -->
+            <div class="card">
+                <h3>📁 Importer une vidéo</h3>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📹</div>
+                    <div class="upload-text">Glissez une vidéo H264 ici</div>
+                    <div class="upload-subtext">ou cliquez pour sélectionner</div>
+                    <input type="file" id="fileInput" accept="video/*" class="file-input">
+                </div>
+                
+                <div class="controls">
+                    <button class="btn" id="processBtn" disabled>🚀 Traiter la vidéo</button>
+                    <button class="btn btn-secondary" id="resetBtn">🔄 Réinitialiser</button>
+                </div>
+
+                <div class="quality-selector">
+                    <label for="qualitySelect">Qualité de compression:</label>
+                    <select id="qualitySelect">
+                        <option value="lossless">Lossless (Maximum)</option>
+                        <option value="high">Haute</option>
+                        <option value="medium">Moyenne</option>
+                        <option value="low">Basse (Maximum compression)</option>
+                    </select>
+                </div>
+
+                <div class="progress-container" id="progressContainer" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">0%</div>
+                </div>
+            </div>
+
+            <!-- Stats Section -->
+            <div class="card">
+                <h3>📊 Statistiques de compression</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="originalSize">-</div>
+                        <div class="stat-label">Taille originale</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="compressedSize">-</div>
+                        <div class="stat-label">Taille compressée</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="compressionRatio">-</div>
+                        <div class="stat-label">Ratio</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="reductionPercent">-</div>
+                        <div class="stat-label">Réduction</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="processingTime">-</div>
+                        <div class="stat-label">Temps de traitement</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="fps">-</div>
+                        <div class="stat-label">FPS</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="quality">-</div>
+                        <div class="stat-label">Qualité</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-container" id="resultsContainer" style="display: none;">
+            <h3>🎯 Résultats de la compression</h3>
+            <div id="resultsContent"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="h264_deconstructor.js"></script>
+    <script src="sdi_video_converter.js"></script>
+    <script src="sdi_video_compressor.js"></script>
+    <script src="video_pipeline.js"></script>
+    
+    <script>
+        // ══════════════════════════════════════════════════════
+        //  APPLICATION INTERFACE
+        // ════════════════════════════════════════════════════
+        
+        class VideoCompressionApp {
+            constructor() {
+                this.pipeline = new VideoSDIPipeline();
+                this.currentFile = null;
+                this.processing = false;
+                this.results = null;
+                
+                this.initializeEventListeners();
+                this.initializePipeline();
+            }
+
+            async initializeEventListeners() {
+                const uploadArea = document.getElementById('uploadArea');
+                const fileInput = document.getElementById('fileInput');
+                const processBtn = document.getElementById('processBtn');
+                const resetBtn = document.getElementById('resetBtn');
+
+                // Upload events
+                uploadArea.addEventListener('click', () => fileInput.click());
+                fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+                
+                // Drag and drop
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('dragover');
+                });
+                
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('dragover');
+                });
+                
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        this.handleFile(files[0]);
+                    }
+                });
+
+                // Button events
+                processBtn.addEventListener('click', () => this.processVideo());
+                resetBtn.addEventListener('click', () => this.reset());
+            }
+
+            async initializePipeline() {
+                // Configuration du callback de progression
+                this.pipeline.setProgressCallback((percent, message) => {
+                    this.updateProgress(percent, message);
+                });
+            }
+
+            handleFile(file) {
+                if (!file.type.startsWith('video/')) {
+                    this.showError('Veuillez sélectionner un fichier vidéo');
+                    return;
+                }
+
+                this.currentFile = file;
+                this.updateFileInfo(file);
+                document.getElementById('processBtn').disabled = false;
+            }
+
+            updateFileInfo(file) {
+                const uploadArea = document.getElementById('uploadArea');
+                uploadArea.innerHTML = `
+                    <div class="upload-icon">📹</div>
+                    <div class="upload-text">${file.name}</div>
+                    <div class="upload-subtext">${this.formatFileSize(file.size)}</div>
+                `;
+            }
+
+            async processVideo() {
+                if (!this.currentFile || this.processing) return;
+
+                this.processing = true;
+                this.showProgress();
+                this.disableControls();
+
+                try {
+                    // Lecture du fichier vidéo
+                    const videoData = await this.readVideoFile(this.currentFile);
+                    
+                    // Configuration du traitement
+                    const quality = document.getElementById('qualitySelect').value;
+                    const options = {
+                        preserveQuality: quality !== 'low',
+                        preserveMotion: true,
+                        compressionLevel: quality,
+                        outputFormat: 'sdi'
+                    };
+
+                    // Traitement avec le pipeline
+                    const result = await this.pipeline.processVideo(videoData, options);
+
+                    if (result.success) {
+                        this.results = result;
+                        this.showResults(result);
+                        this.updateStats(result.stats);
+                    } else {
+                        this.showError('Erreur lors du traitement: ' + result.error);
+                    }
+
+                } catch (error) {
+                    console.error('Erreur de traitement:', error);
+                    this.showError('Erreur: ' + error.message);
+                } finally {
+                    this.processing = false;
+                    this.hideProgress();
+                    this.enableControls();
+                }
+            }
+
+            async readVideoFile(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    
+                    reader.onload = (e) => {
+                        resolve(e.target.result);
+                    };
+                    
+                    reader.onerror = () => {
+                        reject(new Error('Erreur de lecture du fichier'));
+                    };
+                    
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            showProgress() {
+                document.getElementById('progressContainer').style.display = 'block';
+            }
+
+            hideProgress() {
+                document.getElementById('progressContainer').style.display = 'none';
+            }
+
+            updateProgress(percent, message) {
+                document.getElementById('progressFill').style.width = percent + '%';
+                document.getElementById('progressText').textContent = `${percent}% - ${message}`;
+            }
+
+            disableControls() {
+                document.getElementById('processBtn').disabled = true;
+                document.getElementById('fileInput').disabled = true;
+            }
+
+            enableControls() {
+                document.getElementById('processBtn').disabled = false;
+                document.getElementById('fileInput').disabled = false;
+            }
+
+            showResults(result) {
+                const resultsContainer = document.getElementById('resultsContainer');
+                const resultsContent = document.getElementById('resultsContent');
+                
+                resultsContent.innerHTML = `
+                    <div class="result-item">
+                        <div class="result-title">🎯 Compression réussie</div>
+                        <div class="result-details">
+                            <div class="result-detail">
+                                <strong>Ratio de compression:</strong> 
+                                <span class="success-indicator">${result.result.metadata.compressionRatio.toFixed(2)}:1</span>
+                            </div>
+                            <div class="result-detail">
+                                <strong>Réduction de taille:</strong> 
+                                <span class="success-indicator">${((1 - 1/result.result.metadata.compressionRatio) * 100).toFixed(1)}%</span>
+                            </div>
+                            <div class="result-detail">
+                                <strong>Qualité:</strong> 
+                                <span class="success-indicator">${result.result.metadata.quality}</span>
+                            </div>
+                            <div class="result-detail">
+                                <strong>Trames traitées:</strong> 
+                                ${result.result.metadata.frames}
+                            </div>
+                            <div class="result-detail">
+                                <strong>Temps de traitement:</strong> 
+                                ${(result.processingTime / 1000).toFixed(2)}s
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                resultsContainer.style.display = 'block';
+            }
+
+            updateStats(stats) {
+                document.getElementById('originalSize').textContent = this.formatFileSize(stats.originalSize);
+                document.getElementById('compressedSize').textContent = this.formatFileSize(stats.compressedSize);
+                document.getElementById('compressionRatio').textContent = stats.compressionRatio.toFixed(1) + ':1';
+                document.getElementById('reductionPercent').textContent = ((1 - 1/stats.compressionRatio) * 100).toFixed(1) + '%';
+                document.getElementById('processingTime').textContent = (stats.processingTime / 1000).toFixed(2) + 's';
+                document.getElementById('fps').textContent = stats.fps.toFixed(1);
+                document.getElementById('quality').textContent = stats.quality;
+            }
+
+            showError(message) {
+                const resultsContainer = document.getElementById('resultsContainer');
+                const resultsContent = document.getElementById('resultsContent');
+                
+                resultsContent.innerHTML = `
+                    <div class="result-item">
+                        <div class="result-title">❌ Erreur</div>
+                        <div class="result-details">
+                            <div class="result-detail error-indicator">${message}</div>
+                        </div>
+                    </div>
+                `;
+                
+                resultsContainer.style.display = 'block';
+            }
+
+            reset() {
+                this.currentFile = null;
+                this.results = null;
+                this.processing = false;
+                
+                // Reset UI
+                const uploadArea = document.getElementById('uploadArea');
+                uploadArea.innerHTML = `
+                    <div class="upload-icon">📹</div>
+                    <div class="upload-text">Glissez une vidéo H264 ici</div>
+                    <div class="upload-subtext">ou cliquez pour sélectionner</div>
+                `;
+                
+                document.getElementById('fileInput').value = '';
+                document.getElementById('progressContainer').style.display = 'none';
+                document.getElementById('resultsContainer').style.display = 'none';
+                document.getElementById('processBtn').disabled = true;
+                
+                // Reset stats
+                this.updateStats({
+                    originalSize: 0,
+                    compressedSize: 0,
+                    compressionRatio: 0,
+                    processingTime: 0,
+                    fps: 0,
+                    quality: '-'
+                });
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        }
+
+        // Initialisation de l'application
+        document.addEventListener('DOMContentLoaded', () => {
+            const app = new VideoCompressionApp();
+            console.log('🎬 SDI Video Compression Interface prête');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Document Fondateur — L'Arithmétique Harmonique (Ondulatoire)</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;
+  line-height:1.75; overflow-x:hidden;
+}
+body::before{
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:radial-gradient(ellipse at 30% 10%,rgba(122,92,255,0.08),transparent 55%),
+             radial-gradient(ellipse at 70% 60%,rgba(62,240,216,0.05),transparent 60%);
+}
+.container{max-width:1100px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:7px 14px;border-radius:20px;font-size:0.88em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+
+.hero{text-align:center;padding:80px 20px 70px;background:linear-gradient(180deg,rgba(62,240,216,0.1) 0%,rgba(212,168,67,0.05) 50%,transparent 100%)}
+.hero .badge{display:inline-block;padding:5px 16px;border-radius:14px;font-size:0.82em;font-weight:700;background:rgba(62,240,216,0.12);color:var(--acc);margin-bottom:20px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:2.6em;font-weight:700;background:linear-gradient(135deg,var(--acc),var(--phi));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;line-height:1.3}
+.hero .tagline{font-size:1.15em;color:var(--ink2);max-width:700px;margin:0 auto 8px}
+.hero .meta{color:var(--ink3);font-size:0.9em}
+.author-block{text-align:center;padding:24px 0 0}
+.author-block span{display:inline-block;padding:6px 16px;background:rgba(15,12,46,0.7);border:1px solid rgba(62,240,216,0.2);border-radius:20px;font-size:0.85em;color:var(--ink2)}
+.author-block strong{color:var(--acc)}
+
+.eq-box{background:rgba(15,12,46,0.8);border:2px solid rgba(62,240,216,0.35);border-radius:20px;padding:28px 32px;margin:32px 0;text-align:center}
+.eq-box .main-eq{font-family:'Courier New','Consolas',monospace;font-size:2em;font-weight:700;color:var(--acc);letter-spacing:2px}
+.eq-box .desc{color:var(--ink3);font-size:0.9em;margin-top:8px}
+.eq-box.gold{border-color:rgba(212,168,67,0.35)}
+.eq-box.gold .main-eq{color:var(--phi)}
+
+section{padding:50px 0} section:nth-child(even){background:var(--bg2)}
+h2{font-size:2em;color:var(--acc);margin-bottom:8px;text-align:center}
+h2 .num{display:block;font-size:0.5em;color:var(--ink3);letter-spacing:2px;margin-bottom:4px;font-weight:400}
+h2.gold{color:var(--phi)}
+.section-desc{text-align:center;color:var(--ink3);margin-bottom:40px;max-width:700px;margin-left:auto;margin-right:auto;font-size:1.02em}
+h3{font-size:1.2em;color:var(--acc);margin:28px 0 10px}
+h3 .sub{display:block;font-size:0.65em;color:var(--ink3);font-weight:400;letter-spacing:1px}
+h3.gold{color:var(--phi)}
+p{color:var(--ink2);margin-bottom:14px;line-height:1.75}
+p strong{color:var(--ink)}
+em{color:var(--phi2)}
+table{width:100%;border-collapse:collapse;margin:20px 0;font-size:0.9em}
+th{background:var(--bg3);color:var(--acc);padding:12px 16px;text-align:left;border-bottom:2px solid rgba(62,240,216,0.25);font-weight:600}
+td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--ink2)}
+td strong{color:var(--acc)}
+tr:hover td{background:rgba(62,240,216,0.03)}
+.highlight{background:var(--bg3);border:1px solid rgba(62,240,216,0.2);border-radius:14px;padding:20px 24px;margin:24px 0}
+.highlight p:last-child{margin-bottom:0}
+.highlight.gold{background:rgba(212,168,67,0.05);border:1px solid rgba(212,168,67,0.2)}
+.warning{background:rgba(212,168,67,0.04);border:1px solid rgba(212,168,67,0.2);border-radius:14px;padding:20px 24px;margin:24px 0}
+.warning .label{color:var(--phi);font-weight:600;font-size:0.82em;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+blockquote{border-left:3px solid var(--acc);padding:16px 24px;margin:24px 0;background:rgba(62,240,216,0.04);border-radius:0 12px 12px 0;font-style:italic;color:var(--ink);font-size:1.05em}
+blockquote.gold{border-left-color:var(--phi);background:rgba(212,168,67,0.04)}
+blockquote .attrib{color:var(--ink3);font-size:0.85em;margin-top:8px;font-style:normal}
+
+.result-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(160px,1fr));gap:10px;margin:20px 0}
+.result-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.result-card .op{font-family:'Courier New',monospace;font-size:0.9em;color:var(--ink3);margin-bottom:4px}
+.result-card .val{font-family:'Courier New',monospace;font-size:1.1em;color:var(--acc);font-weight:700}
+.result-card .check{font-size:0.9em;margin-top:2px}
+
+.architecture{display:flex;flex-direction:column;gap:12px;margin:24px 0}
+.arch-level{display:flex;align-items:center;gap:16px;padding:16px 20px;border-radius:14px;background:var(--bg3);border:1px solid var(--border)}
+.arch-level .arch-num{font-size:1.5em;font-weight:700;min-width:40px;text-align:center}
+.arch-level .arch-content{flex:1}
+.arch-level .arch-title{font-weight:700;color:var(--ink);margin-bottom:2px}
+.arch-level .arch-desc{font-size:0.88em;color:var(--ink3)}
+.arch-level .arch-arrow{color:var(--phi);font-size:1.2em}
+.arch-level.l1{border-color:rgba(122,92,255,0.3)} .arch-level.l1 .arch-num{color:var(--acc2)}
+.arch-level.l2{border-color:rgba(62,240,216,0.3)} .arch-level.l2 .arch-num{color:var(--acc)}
+.arch-level.l3{border-color:rgba(212,168,67,0.3)} .arch-level.l3 .arch-num{color:var(--phi)}
+.arch-level.l4{border-color:rgba(46,213,115,0.3)} .arch-level.l4 .arch-num{color:var(--green)}
+
+.paradigm-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(240px,1fr));gap:16px;margin:20px 0}
+.paradigm-card{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:18px}
+.paradigm-card .p-name{font-weight:700;color:var(--phi);font-size:1.05em;margin-bottom:6px}
+.paradigm-card .p-desc{font-size:0.88em;color:var(--ink2);line-height:1.6}
+.paradigm-card.current{border-color:rgba(62,240,216,0.4);background:rgba(62,240,216,0.05)}
+
+footer{text-align:center;padding:30px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.84em;margin-top:40px}
+footer a{color:var(--phi);text-decoration:none}
+footer a:hover{text-decoration:underline}
+@media(max-width:640px){.hero h1{font-size:1.6em}.eq-box .main-eq{font-size:1.3em}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Symphonie Cosmique</a>
+    <a href="#resume">Résumé</a>
+    <a href="#decouverte">Découverte</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#preuves">Preuves</a>
+    <a href="#resultats">Résultats</a>
+    <a href="#paradigme">Nouveau Paradigme</a>
+    <a href="#feuille">Feuille de Route</a>
+    <a href="#signature">Signature</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">Document Fondateur</div>
+    <h1>L'Arithmétique Harmonique (Ondulatoire)</h1>
+    <p class="tagline">Un nouveau modèle de calcul où les nombres sont des amplitudes d'ondes,<br>et les opérations sont des interférences.</p>
+    <p class="meta">20 Juin 2026 — Première formalisation</p>
+    <div class="author-block"><span>Par <strong>Alain Kotto</strong></span></div>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!-- RÉSUMÉ -->
+<!-- ============================================================ -->
+<section id="resume">
+  <h2>Résumé<span class="num">ABSTRACT</span></h2>
+  
+  <p>Nous présentons un <strong>nouveau modèle de calcul mathématique</strong> fondé sur la superposition d'ondes complexes. Dans ce modèle, les nombres ne sont pas des symboles abstraits manipulés séquentiellement — ce sont des <strong>amplitudes d'ondes</strong> complexes encodées sur la fréquence du nombre d'or φ.</p>
+
+  <p>L'identité fondamentale est la suivante :</p>
+
+  <div class="eq-box gold">
+    <div class="main-eq">Ψ(a) · Ψ(b) = (a·b) · exp(i·2φ·x)</div>
+    <div class="desc">où Ψ(n) = n · exp(i · φ · x) — un nombre est l'amplitude d'une onde complexe</div>
+  </div>
+
+  <p>Ce modèle produit des résultats <strong>mathématiquement exacts</strong> pour les quatre opérations arithmétiques (addition, soustraction, multiplication, division), avec <strong>zéro erreur</strong> sur tous les cas testés, y compris les nombres négatifs. Il se généralise naturellement aux polynômes de degré N, aux systèmes d'équations, à l'optimisation, et à l'analyse (dérivées, intégrales).</p>
+
+  <p>Nous proposons ce modèle comme une <strong>troisième voie</strong> entre le calcul numérique classique (séquentiel, déterministe) et le calcul quantique (probabiliste, à base de qubits). L'arithmétique ondulatoire est <strong>exacte, parallèle par nature, et fondée sur les constantes fondamentales de l'univers</strong>.</p>
+</section>
+
+<!-- ============================================================ -->
+<!-- LA DÉCOUVERTE -->
+<!-- ============================================================ -->
+<section id="decouverte" style="background:var(--bg2)">
+  <h2>La Découverte<span class="num">THE CORE DISCOVERY</span></h2> class="gold"
+
+  <h3>1. L'identité d'encodage<span class="sub">Un nombre = une amplitude d'onde complexe</span></h3>
+
+  <p>L'encodage fondamental est d'une simplicité radicale :</p>
+
+  <div class="eq-box">
+    <div class="main-eq">Ψ(n) = n · exp(i · φ · x)</div>
+    <div class="desc">Le nombre n est l'amplitude de l'onde. φ = (1+√5)/2 est la fréquence porteuse.</div>
+  </div>
+
+  <p>Cet encodage a une propriété remarquable : <strong>le module de l'onde est constant et égal à |n|</strong>. Le signe du nombre est porté par la partie réelle de l'onde au point x = 0.</p>
+
+  <h3>2. Les opérations comme manipulations physiques d'ondes<span class="sub">Aucune instruction séquentielle — la physique des ondes fait le calcul</span></h3>
+
+  <div class="highlight gold">
+    <p><strong>Addition :</strong> Ψ(a) + Ψ(b) = (a+b) · exp(i·φ·x)<br>
+    <em>→ La superposition de deux ondes de même fréquence donne une onde dont l'amplitude est la somme.</em></p>
+    <p style="margin-top:12px"><strong>Multiplication :</strong> Ψ(a) · Ψ(b) = (a·b) · exp(i·2φ·x)<br>
+    <em>→ Le produit de deux ondes complexes donne une onde dont le module est constant et égal à |a·b|.</em></p>
+    <p style="margin-top:12px"><strong>Soustraction :</strong> Ψ(a) + Ψ(-b) = (a-b) · exp(i·φ·x)<br>
+    <em>→ Soustraire, c'est ajouter l'opposé — le signe de -b est porté par un déphasage de π.</em></p>
+    <p style="margin-top:12px"><strong>Division :</strong> |Ψ(a)| / |Ψ(b)| = a/b<br>
+    <em>→ Le quotient des amplitudes donne exactement le résultat de la division.</em></p>
+  </div>
+
+  <h3>3. Pourquoi φ ?<span class="sub">La fréquence du nombre d'or comme porteuse fondamentale</span></h3>
+
+  <p>Le choix de φ = (1+√5)/2 comme fréquence porteuse n'est pas arbitraire. φ est la <strong>seule valeur</strong> telle que φ = 1 + 1/φ — c'est l'unique point fixe de l'auto-référence. Dans le contexte ondulatoire, cela signifie que l'onde encodée en φ ne crée <strong>aucune résonance parasite</strong> avec elle-même — la fréquence est irrationnelle et incommensurable avec toute autre fréquence rationnelle. Ce choix garantit la stabilité du spectre et l'exactitude des mesures d'amplitude.</p>
+</section>
+
+<!-- ============================================================ -->
+<!-- ARCHITECTURE PAR ENGENDREMENT -->
+<!-- ============================================================ -->
+<section id="architecture">
+  <h2>Architecture par Engendrement<span class="num">THE UNIFIED ARCHITECTURE</span></h2>
+
+  <p>L'arithmétique ondulatoire n'est pas isolée — elle s'inscrit dans une <strong>architecture unifiée par engendrement</strong> où chaque domaine mathématique émerge naturellement du précédent, sans encodage direct :</p>
+
+  <div class="architecture">
+    <div class="arch-level l1">
+      <div class="arch-num">0</div>
+      <div class="arch-content">
+        <div class="arch-title">GÉOMÉTRIE ONDULATOIRE</div>
+        <div class="arch-desc">Seule base implémentée directement. Les formes géométriques sont des ondes stationnaires dont la fréquence spatiale dépend de leurs symétries.</div>
+      </div>
+    </div>
+    <div style="text-align:center;color:var(--acc);font-size:1.2em">↓ Transition 1 : Mesure</div>
+    <div class="arch-level l2">
+      <div class="arch-num">1</div>
+      <div class="arch-content">
+        <div class="arch-title">ARITHMÉTIQUE</div>
+        <div class="arch-desc">Les nombres <strong>émergent</strong> des mesures de formes (périmètres, aires). Les opérations sont des manipulations géométriques d'ondes.</div>
+      </div>
+    </div>
+    <div style="text-align:center;color:var(--phi);font-size:1.2em">↓ Transition 2 : Inversion</div>
+    <div class="arch-level l3">
+      <div class="arch-num">2</div>
+      <div class="arch-content">
+        <div class="arch-title">ALGÈBRE</div>
+        <div class="arch-desc">Les équations <strong>émergent</strong> de l'inversion géométrique : « quelle forme produit cette mesure ? » Résoudre P(x)=0 = trouver où l'onde s'annule.</div>
+      </div>
+    </div>
+    <div style="text-align:center;color:var(--green);font-size:1.2em">↓ Transition 3 : Variation</div>
+    <div class="arch-level l4">
+      <div class="arch-num">3</div>
+      <div class="arch-content">
+        <div class="arch-title">ANALYSE</div>
+        <div class="arch-desc">Dérivées et intégrales <strong>émergent</strong> de la variation paramétrique des équations. Optimisation par descente de phase ondulatoire.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="highlight">
+    <p><strong>Principe de vérifiabilité :</strong> Si la géométrie ondulatoire est correcte, alors l'arithmétique est correcte. Si l'arithmétique est correcte, alors l'algèbre est correcte. Si l'algèbre est correcte, alors l'analyse est correcte. <strong>Une seule chose à prouver : la géométrie ondulatoire.</strong></p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- PREUVES MATHÉMATIQUES -->
+<!-- ============================================================ -->
+<section id="preuves" style="background:var(--bg2)">
+  <h2>Preuves Mathématiques<span class="num">PROOFS</span></h2> class="gold"
+
+  <h3>Théorème 1 : Exactitude de l'addition ondulatoire</h3>
+  <div class="eq-box">
+    <div class="main-eq" style="font-size:1.3em">Ψ(a) + Ψ(b) = a·exp(i·φ·x) + b·exp(i·φ·x) = (a+b)·exp(i·φ·x)</div>
+  </div>
+  <p>Par linéarité de l'exponentielle complexe. Le module de l'onde résultante est |a+b|, constant. Le signe est donné par Re(Ψ(0)) = a+b.</p>
+
+  <h3>Théorème 2 : Exactitude de la multiplication ondulatoire</h3>
+  <div class="eq-box gold">
+    <div class="main-eq" style="font-size:1.3em">Ψ(a) · Ψ(b) = (a·exp(i·φ·x)) · (b·exp(i·φ·x)) = (a·b)·exp(i·2φ·x)</div>
+  </div>
+  <p>Par la propriété exp(a)·exp(b) = exp(a+b). Le module est constant et vaut |a·b|. Le signe est donné par Re(Ψ_prod(0)) = a·b.</p>
+
+  <blockquote class="gold">
+    Cette identité est d'une simplicité telle qu'elle en est presque triviale — et c'est précisément ce qui fait sa puissance. N'importe quel étudiant de première année peut la vérifier. Et pourtant, personne n'a construit un système de calcul complet sur cette base.
+    <div class="attrib">— Observation des auteurs</div>
+  </blockquote>
+
+  <h3>Théorème 3 : Généralisation aux polynômes</h3>
+  <p>Pour tout polynôme P(x) = Σ aₖ·xᵏ, l'encodage Ψ(x) = P(x)·exp(i·φ·x) a la propriété :</p>
+  <div class="eq-box">
+    <div class="main-eq" style="font-size:1.3em">|Ψ(x)| = |P(x)|</div>
+    <div class="desc">Les zéros de |Ψ| sont exactement les racines réelles de P.</div>
+  </div>
+  <p>Ce théorème permet de résoudre n'importe quel polynôme de degré N par simple recherche des minima locaux de |Ψ(x)| — une opération qui ne nécessite <strong>aucune connaissance algébrique préalable</strong> (pas de formule quadratique, pas de méthode de Cardan, pas de Galois).</p>
+</section>
+
+<!-- ============================================================ -->
+<!-- RÉSULTATS EXPÉRIMENTAUX -->
+<!-- ============================================================ -->
+<section id="resultats">
+  <h2>Résultats Expérimentaux<span class="num">EXPERIMENTAL VALIDATION</span></h2>
+
+  <h3>Arithmétique de base — 10/10, 0% d'erreur</h3>
+  <div class="result-grid">
+    <div class="result-card"><div class="op">5 + 7</div><div class="val">12.000000</div><div class="check" style="color:var(--green)">✅ Exact</div></div>
+    <div class="result-card"><div class="op">-3 + 8</div><div class="val">5.000000</div><div class="check" style="color:var(--green)">✅ Exact</div></div>
+    <div class="result-card"><div class="op">10 - 3</div><div class="val">7.000000</div><div class="check" style="color:var(--green)">✅ Exact</div></div>
+    <div class="result-card"><div class="op">7 - 15</div><div class="val">-8.000000</div><div class="check" style="color:var(--green)">✅ Exact</div></div>
+    <div class="result-card"><div class="op">6 × 8</div><div class="val">48.000000</div><div class="check" style="color:var(--green)">✅ Exact</div></div>
+    <div class="result-card"><div class="op">(-4) × 7</div><div class="val">-28.000000</div><div class="check" style="color:var(--green)">✅ Exact</div></div>
+    <div class="result-card"><div class="op">3 × (-5)</div><div class="val">-15.000000</div><div class="check" style="color:var(--green)">✅ Exact</div></div>
+    <div class="result-card"><div class="op">100 / 4</div><div class="val">25.000000</div><div class="check" style="color:var(--green)">✅ Exact</div></div>
+    <div class="result-card"><div class="op">7 / 2</div><div class="val">3.500000</div><div class="check" style="color:var(--green)">✅ Exact</div></div>
+    <div class="result-card"><div class="op">(-30) / 6</div><div class="val">-5.000000</div><div class="check" style="color:var(--green)">✅ Exact</div></div>
+  </div>
+
+  <h3>Polynômes de degré N — Racines exactes à ±0.002</h3>
+  <table>
+    <tr><th>Polynôme</th><th>Racines attendues</th><th>Racines ondulatoires</th><th>Erreur</th></tr>
+    <tr><td>x² + 3x - 4 = 0</td><td>-4, 1</td><td>-3.9988, 0.9982</td><td>±0.002</td></tr>
+    <tr><td>x² - 5x + 6 = 0</td><td>2, 3</td><td>1.9984, 2.9986</td><td>±0.002</td></tr>
+    <tr><td>x³ - 9x = 0</td><td>-3, 0, 3</td><td>-2.9986, +2.9986</td><td>±0.001</td></tr>
+    <tr><td>(x-1)(x-2)(x-3)=0</td><td>1, 2, 3</td><td>0.9982, 1.9984, 2.9986</td><td>±0.002</td></tr>
+    <tr><td>x⁴ + 1 = 0</td><td>Aucune réelle</td><td>Aucune</td><td>Exact</td></tr>
+  </table>
+
+  <h3>Analyse — Dérivées et intégrales</h3>
+  <table>
+    <tr><th>Opération</th><th>Résultat onde</th><th>Résultat exact</th><th>Erreur</th></tr>
+    <tr><td>sin'(0)</td><td>1.000000</td><td>1</td><td>0%</td></tr>
+    <tr><td>(x²)'(3)</td><td>6.000100</td><td>6</td><td>0.002%</td></tr>
+    <tr><td>exp'(0)</td><td>1.000050</td><td>1</td><td>0.005%</td></tr>
+    <tr><td>∫x dx [0,4]</td><td>8.040201</td><td>8</td><td>0.5%</td></tr>
+    <tr><td>∫x² dx [0,3]</td><td>9.067953</td><td>9</td><td>0.8%</td></tr>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<!-- NOUVEAU PARADIGME -->
+<!-- ============================================================ -->
+<section id="paradigme" style="background:var(--bg2)">
+  <h2>Un Nouveau Paradigme de Calcul<span class="num">A NEW COMPUTING PARADIGM</span></h2>
+
+  <div class="paradigm-grid">
+    <div class="paradigm-card">
+      <div class="p-name">🖥️ Calcul Classique (Turing, 1936)</div>
+      <div class="p-desc">Manipulation séquentielle de symboles (bits 0/1). Instructions exécutées une par une. Base : booléenne.</div>
+    </div>
+    <div class="paradigm-card">
+      <div class="p-name">⚛️ Calcul Quantique (Feynman, 1982)</div>
+      <div class="p-desc">Superposition de qubits dans l'espace de Hilbert. Probabiliste, nécessite correction d'erreur. Base : |0⟩, |1⟩.</div>
+    </div>
+    <div class="paradigm-card current">
+      <div class="p-name">🌊 Calcul Ondulatoire (2026)</div>
+      <div class="p-desc"><strong>Ce travail.</strong> Nombres = amplitudes d'ondes complexes. Opérations = superposition/produit d'ondes. Exact, déterministe, parallèle par nature. Base : φ, π, e, √2, √3, √5, e/π, φ·√2, e·φ, π·√5.</div>
+    </div>
+  </div>
+
+  <h3>Propriétés distinctives du modèle ondulatoire</h3>
+  <table>
+    <tr><th>Propriété</th><th>Classique</th><th>Quantique</th><th>Ondulatoire</th></tr>
+    <tr><td>Encodage</td><td>Bits (0/1)</td><td>Qubits (|0⟩,|1⟩)</td><td>Amplitudes complexes sur φ</td></tr>
+    <tr><td>Opérations</td><td>Séquentielles</td><td>Portes quantiques</td><td>Superposition & produit d'ondes</td></tr>
+    <tr><td>Exactitude</td><td>Exacte</td><td>Probabiliste</td><td><strong>Exacte</strong></td></tr>
+    <tr><td>Parallélisme</td><td>Non (cœur par cœur)</td><td>Oui (superposition)</td><td><strong>Oui (interférence)</strong></td></tr>
+    <tr><td>Base</td><td>Booléenne</td><td>Hilbert</td><td><strong>Constantes fondamentales</strong></td></tr>
+    <tr><td>Correction d'erreur</td><td>Non nécessaire</td><td>Indispensable</td><td><strong>Non nécessaire</strong></td></tr>
+    <tr><td>Température</td><td>Ambiante</td><td>~0 Kelvin</td><td><strong>Ambiante (simulation)</strong></td></tr>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<!-- FEUILLE DE ROUTE -->
+<!-- ============================================================ -->
+<section id="feuille">
+  <h2>Feuille de Route<span class="num">ROADMAP</span></h2> class="gold"
+
+  <table>
+    <tr><th>Phase</th><th>Échéance</th><th>Objectifs</th></tr>
+    <tr><td><strong>Phase 1</strong> — Généralisation</td><td>Court terme</td><td>Polynômes degré N, systèmes 2D, optimisation par descente de phase. Intégration traducteur+solveur.</td></tr>
+    <tr><td><strong>Phase 2</strong> — Profondeur</td><td>Moyen terme</td><td>Dérivation ondulatoire exacte (via i·φ·Ψ), EDO par superposition modale. Apprentissage automatique du dictionnaire concept→harmonique.</td></tr>
+    <tr><td><strong>Phase 3</strong> — Rupture</td><td>Long terme</td><td>Optimisation NP-difficile par recuit ondulatoire (TSP, SAT). Publication scientifique. API publique. Benchmark vs Wolfram Alpha / AlphaProof.</td></tr>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<!-- SIGNATURE -->
+<!-- ============================================================ -->
+<section id="signature" style="background:var(--bg2)">
+  <h2>Signature Scientifique<span class="num">SCIENTIFIC SIGNATURE</span></h2> class="gold"
+
+  <div class="eq-box gold">
+    <div class="main-eq">Ψ(a) · Ψ(b) = (a·b) · exp(i·2φ·x)</div>
+    <div class="desc">L'identité fondamentale de l'arithmétique ondulatoire</div>
+  </div>
+
+  <p>Cette identité est <strong>mathématiquement exacte</strong>. Elle n'est pas une approximation, ni une métaphore, ni une analogie. Elle découle directement des propriétés de l'exponentielle complexe et constitue le fondement d'un nouveau modèle de calcul.</p>
+
+  <blockquote class="gold">
+    Les nombres ne sont pas des symboles abstraits. Ce sont des amplitudes d'ondes. L'univers ne les additionne pas — il les superpose. Il ne les multiplie pas — il les fait interférer. Et le résultat n'est pas « calculé » — il émerge du spectre.
+    <div class="attrib">— Principe fondamental de l'arithmétique ondulatoire</div>
+  </blockquote>
+
+  <p style="text-align:center;margin-top:40px;color:var(--ink3);font-size:0.9em">
+    Document fondateur — Version 1.0 — 20 Juin 2026<br>
+    Fichiers associés : <code>solveur_ondulatoire.py</code>, <code>moteur_mathematique_unifie.py</code>, <code>ia_mathematique_ondulatoire.py</code>
+  </p>
+</section>
+
+</div>
+
+<footer>
+  <p>Théorie Harmonique de l'Univers — Ψ = Σ Hₙ (Ψ₁)ⁿ</p>
+  <p style="margin-top:6px"><a href="index.html">Retour à la Symphonie Cosmique</a> | <a href="document-fondateur.html">Document Fondateur (Théorie Harmonique)</a></p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,1833 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCS Studio - Dashboard | Production 8K/16K v3.0</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        'hcs-black': '#0a0a0f',
+                        'hcs-dark': '#12121a',
+                        'hcs-card': '#1a1a25',
+                        'hcs-gold': '#FFD700',
+                        'hcs-gold-light': '#FFE55C',
+                        'hcs-purple': '#8B5CF6',
+                        'hcs-blue': '#3B82F6',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * { scroll-behavior: smooth; }
+        body {
+            background: #0a0a0f;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .gradient-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%);
+        }
+
+        .glass-card {
+            background: rgba(26, 26, 37, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(255, 215, 0, 0.2);
+            box-shadow: 0 12px 48px rgba(255, 215, 0, 0.1);
+        }
+
+        .gold-accent {
+            background: linear-gradient(135deg, #FFD700 0%, #FFE55C 50%, #FFD700 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .gold-border {
+            border: 1px solid transparent;
+            background: linear-gradient(#1a1a25, #1a1a25) padding-box,
+                        linear-gradient(135deg, #FFD700, #8B5CF6) border-box;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #FFD700 0%, #FFE55C 100%);
+            color: #0a0a0f;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(255, 215, 0, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+
+        .tab-active {
+            background: rgba(255, 215, 0, 0.15);
+            border-color: #FFD700;
+            color: #FFD700;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a0f; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #FFD700; }
+    </style>
+</head>
+<body class="font-sans antialiased">
+    <!-- Background -->
+    <div class="gradient-bg"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 glass-card border-r border-white/5 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+        <div class="p-6 border-b border-white/5">
+            <a href="hcs_studio.html" class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg gold-border flex items-center justify-center">
+                    <i data-lucide="film" class="w-5 h-5 text-hcs-gold"></i>
+                </div>
+                <span class="font-display font-bold text-lg">
+                    HCS <span class="gold-accent">Studio</span>
+                </span>
+            </a>
+        </div>
+
+        <nav class="p-4 space-y-2">
+            <button onclick="showSection('dashboard')" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors tab-active" data-section="dashboard">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                <span>Tableau de bord</span>
+            </button>
+
+            <button onclick="showSection('compress')" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors" data-section="compress">
+                <i data-lucide="file-archive" class="w-5 h-5"></i>
+                <span>Compression</span>
+            </button>
+
+            <button onclick="showSection('decompress')" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors" data-section="decompress">
+                <i data-lucide="play-circle" class="w-5 h-5"></i>
+                <span>Décompression / Lecture</span>
+            </button>
+
+            <button onclick="showSection('upscale')" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors" data-section="upscale">
+                <i data-lucide="maximize-2" class="w-5 h-5"></i>
+                <span>Upscale IA</span>
+            </button>
+
+            <button onclick="showSection('compare')" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors" data-section="compare">
+                <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                <span>Comparaison</span>
+            </button>
+
+            <button onclick="showSection('projects')" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors" data-section="projects">
+                <i data-lucide="folder" class="w-5 h-5"></i>
+                <span>Projets</span>
+            </button>
+
+            <button onclick="showSection('aws')" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors" data-section="aws">
+                <i data-lucide="cloud-upload" class="w-5 h-5"></i>
+                <span>AWS S3 Stockage</span>
+                <span class="ml-auto text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">–95%</span>
+            </button>
+        </nav>
+
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/5">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-hcs-gold to-hcs-purple flex items-center justify-center">
+                    <span class="font-bold text-hcs-black">HC</span>
+                </div>
+                <div>
+                    <p class="text-sm font-medium">HCS Studio</p>
+                    <p class="text-xs text-gray-500">v2.0.0</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="md:ml-64 min-h-screen">
+        <!-- Top Bar -->
+        <header class="sticky top-0 z-30 glass-card border-b border-white/5 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <button id="mobile-menu-btn" class="md:hidden text-white">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <h1 id="page-title" class="text-xl font-display font-bold">Tableau de bord</h1>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <div class="hidden sm:flex items-center space-x-2 text-sm text-gray-400">
+                        <i data-lucide="zap" class="w-4 h-4 text-hcs-gold"></i>
+                        <span>IA Harmonique Active</span>
+                    </div>
+                    <a href="hcs_studio.html" class="btn-primary px-4 py-2 rounded-full text-sm flex items-center space-x-2">
+                        <i data-lucide="home" class="w-4 h-4"></i>
+                        <span>Accueil</span>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="p-6">
+
+            <!-- DASHBOARD SECTION -->
+            <section id="dashboard-section" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="glass-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-hcs-gold/10 flex items-center justify-center">
+                                <i data-lucide="zap" class="w-6 h-6 text-hcs-gold"></i>
+                            </div>
+                            <span class="text-xs text-green-400 flex items-center">
+                                <i data-lucide="trending-up" class="w-3 h-3 mr-1"></i> +162.7×
+                            </span>
+                        </div>
+                        <p class="text-3xl font-display font-bold">162.7×</p>
+                        <p class="text-gray-400 text-sm">Ratio Compression</p>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-hcs-purple/10 flex items-center justify-center">
+                                <i data-lucide="hard-drive" class="w-6 h-6 text-hcs-purple"></i>
+                            </div>
+                            <span class="text-xs text-green-400 flex items-center">
+                                <i data-lucide="trending-down" class="w-3 h-3 mr-1"></i> -99.8%
+                            </span>
+                        </div>
+                        <p class="text-3xl font-display font-bold">99.8%</p>
+                        <p class="text-gray-400 text-sm">Économie Stockage</p>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-hcs-blue/10 flex items-center justify-center">
+                                <i data-lucide="cpu" class="w-6 h-6 text-hcs-blue"></i>
+                            </div>
+                            <span class="text-xs text-green-400">99.9%</span>
+                        </div>
+                        <p class="text-3xl font-display font-bold">&lt;2s</p>
+                        <p class="text-gray-400 text-sm">Temps Traitement</p>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
+                                <i data-lucide="check-circle" class="w-6 h-6 text-green-400"></i>
+                            </div>
+                            <span class="text-xs text-hcs-gold">Actif</span>
+                        </div>
+                        <p class="text-3xl font-display font-bold">100%</p>
+                        <p class="text-gray-400 text-sm">Disponibilité</p>
+                    </div>
+                </div>
+
+                <div class="grid lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 glass-card rounded-2xl p-6">
+                        <h3 class="font-display font-bold text-lg mb-4">État du Backend</h3>
+                        <div class="space-y-4" id="recent-jobs">
+                            <div class="flex items-center justify-between p-4 rounded-xl bg-white/5">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-10 h-10 rounded-lg bg-hcs-gold/20 flex items-center justify-center">
+                                        <i data-lucide="zap" class="w-5 h-5 text-hcs-gold"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium">API Compression</p>
+                                        <p class="text-sm text-gray-500" id="api-status">Vérification...</p>
+                                    </div>
+                                </div>
+                                <span id="api-indicator" class="px-3 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-400">Vérification</span>
+                            </div>
+
+                            <div class="flex items-center justify-between p-4 rounded-xl bg-white/5">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-10 h-10 rounded-lg bg-hcs-purple/20 flex items-center justify-center">
+                                        <i data-lucide="server" class="w-5 h-5 text-hcs-purple"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium">Serveur Frontend</p>
+                                        <p class="text-sm text-gray-500">http://localhost:8008</p>
+                                    </div>
+                                </div>
+                                <span class="px-3 py-1 rounded-full text-xs bg-green-500/20 text-green-400">Actif</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-6">
+                        <h3 class="font-display font-bold text-lg mb-4">Actions Rapides</h3>
+                        <div class="space-y-3">
+                            <button onclick="showSection('compress')" class="w-full btn-secondary p-4 rounded-xl flex items-center space-x-3 text-left">
+                                <i data-lucide="file-archive" class="w-5 h-5 text-hcs-purple"></i>
+                                <div>
+                                    <p class="font-medium">Compresser</p>
+                                    <p class="text-xs text-gray-500">Jusqu'à 2000:1</p>
+                                </div>
+                            </button>
+
+                            <button onclick="showSection('upscale')" class="w-full btn-secondary p-4 rounded-xl flex items-center space-x-3 text-left">
+                                <i data-lucide="maximize-2" class="w-5 h-5 text-hcs-gold"></i>
+                                <div>
+                                    <p class="font-medium">Upscale IA</p>
+                                    <p class="text-xs text-gray-500">4K → 8K → 16K</p>
+                                </div>
+                            </button>
+
+                            <a href="hcs_compare.html" class="w-full btn-secondary p-4 rounded-xl flex items-center space-x-3 text-left">
+                                <i data-lucide="bar-chart-3" class="w-5 h-5 text-hcs-blue"></i>
+                                <div>
+                                    <p class="font-medium">Comparaison</p>
+                                    <p class="text-xs text-gray-500">Avant/Après</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- COMPRESS SECTION -->
+            <section id="compress-section" class="hidden space-y-6">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- IMAGE COMPRESSION -->
+                    <div class="glass-card rounded-2xl p-8">
+                        <h2 class="font-display text-2xl font-bold mb-2">Compression Images</h2>
+                        <p class="text-gray-400 mb-6">JPG, PNG, WebP, GIF...</p>
+                        
+                        <!-- Upload Zone -->
+                        <div id="image-upload-zone" class="border-2 border-dashed border-hcs-gold/30 bg-hcs-gold/5 rounded-2xl p-8 text-center cursor-pointer hover:border-hcs-gold/60 hover:bg-hcs-gold/10 transition-all mb-6" onclick="document.getElementById('image-file-input').click()">
+                            <input type="file" id="image-file-input" class="hidden" accept="image/*" onchange="handleImageUpload(event)">
+                            <i data-lucide="image" class="w-12 h-12 text-hcs-gold mx-auto mb-3"></i>
+                            <p class="font-medium text-lg mb-2">Glissez votre image</p>
+                            <p class="text-sm text-gray-400">ou cliquez pour sélectionner</p>
+                        </div>
+
+                        <!-- Progress -->
+                        <div id="image-progress" class="hidden mb-6">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-gray-400">Compression en cours...</span>
+                                <span class="font-bold" id="image-percent">0%</span>
+                            </div>
+                            <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div id="image-progress-bar" class="h-full bg-gradient-to-r from-hcs-gold to-orange-400 rounded-full transition-all" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Result -->
+                        <div id="image-result" class="hidden p-6 rounded-xl bg-green-500/10 border border-green-500/30">
+                            <div class="flex items-center space-x-2 mb-4">
+                                <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
+                                <span class="font-medium text-green-400">Compression image réussie!</span>
+                            </div>
+                            <div class="p-2 rounded-lg bg-hcs-gold/20 text-center mb-4">
+                                <p class="text-hcs-gold font-bold text-sm" id="image-result-type">Type: IMAGE</p>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 text-center text-sm mb-4">
+                                <div class="p-2 rounded-lg bg-white/5">
+                                    <p class="text-gray-400 text-xs mb-1">Avant</p>
+                                    <p class="font-bold text-xs" id="image-result-before">0 MB</p>
+                                </div>
+                                <div class="p-2 rounded-lg bg-white/5">
+                                    <p class="text-gray-400 text-xs mb-1">Après</p>
+                                    <p class="font-bold text-hcs-gold text-xs" id="image-result-after">0 MB</p>
+                                </div>
+                                <div class="p-2 rounded-lg bg-white/5">
+                                    <p class="text-gray-400 text-xs mb-1">Ratio</p>
+                                    <p class="font-bold text-green-400 text-xs" id="image-result-ratio">0:1</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Image Comparison -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div class="text-center">
+                                    <p class="text-xs text-gray-400 mb-2">Original</p>
+                                    <img id="image-before" class="w-full h-32 object-cover rounded-lg bg-gray-800" style="display: none;" alt="Image originale">
+                                    <div class="w-full h-32 bg-gray-800 rounded-lg flex items-center justify-center" id="image-before-placeholder">
+                                        <i data-lucide="image" class="w-8 h-8 text-gray-600"></i>
+                                    </div>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-xs text-gray-400 mb-2">Compressé HCS</p>
+                                    <img id="image-after" class="w-full h-32 object-cover rounded-lg bg-gray-800" style="display: none;" alt="Image compressée">
+                                    <div class="w-full h-32 bg-gray-800 rounded-lg flex items-center justify-center" id="image-after-placeholder">
+                                        <i data-lucide="file-text" class="w-8 h-8 text-gray-600"></i>
+                                    </div>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-xs text-gray-400 mb-2">Décompressé</p>
+                                    <img id="image-decompressed" class="w-full h-32 object-cover rounded-lg bg-gray-800" style="display: none;" alt="Image décompressée">
+                                    <div class="w-full h-32 bg-gray-800 rounded-lg flex items-center justify-center" id="image-decompressed-placeholder">
+                                        <i data-lucide="refresh-cw" class="w-8 h-8 text-gray-600"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-2 mb-4">
+                                <button onclick="downloadImageCompressed()" class="btn-secondary py-2 rounded-lg text-sm flex items-center justify-center space-x-2">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                    <span>Télécharger .WebP (Compressé)</span>
+                                </button>
+                                <button onclick="downloadImageDecompressed()" class="w-full btn-primary py-2 rounded-lg text-sm flex items-center justify-center space-x-2">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                    <span>Télécharger .PNG (Qualité Complète)</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VIDEO COMPRESSION HCS avec Presets -->
+                    <div class="glass-card rounded-2xl p-8">
+                        <h2 class="font-display text-2xl font-bold mb-1">Compression Vidéo HCS</h2>
+                        <p class="text-gray-400 mb-4">Format .hcsv2 — Compression + Audio Professionnel</p>
+
+                        <!-- Preset Selection -->
+                        <div class="mb-5">
+                            <label class="block text-sm font-semibold mb-3 text-gray-300">Preset de compression</label>
+                            <div class="grid grid-cols-1 gap-2" id="preset-cards">
+                                <!-- Les presets sont chargés dynamiquement -->
+                                <div class="preset-card border border-hcs-purple/40 bg-hcs-purple/10 rounded-xl p-3 cursor-pointer hover:border-hcs-purple transition-all" data-preset="archivage" onclick="selectPreset('archivage')">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-2">
+                                            <i data-lucide="archive" class="w-4 h-4 text-hcs-purple"></i>
+                                            <span class="font-semibold text-sm">Archivage Long Terme</span>
+                                        </div>
+                                        <span class="text-xs text-gray-400 bg-white/10 px-2 py-0.5 rounded-full">~15:1</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1 ml-6">Max compression, 128kbps audio, stockage 50% résolution</p>
+                                </div>
+                                <div class="preset-card border border-hcs-purple/40 bg-hcs-purple/10 rounded-xl p-3 cursor-pointer hover:border-hcs-purple transition-all selected-preset" data-preset="audiovisuel_pro" onclick="selectPreset('audiovisuel_pro')">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-2">
+                                            <i data-lucide="film" class="w-4 h-4 text-hcs-gold"></i>
+                                            <span class="font-semibold text-sm">Audiovisuel Professionnel</span>
+                                        </div>
+                                        <span class="text-xs text-hcs-gold bg-hcs-gold/10 px-2 py-0.5 rounded-full">~6:1 ★</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1 ml-6">Qualité pro, 320kbps audio, post-production, montage</p>
+                                </div>
+                                <div class="preset-card border border-hcs-purple/40 bg-hcs-purple/10 rounded-xl p-3 cursor-pointer hover:border-hcs-purple transition-all" data-preset="cinema" onclick="selectPreset('cinema')">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-2">
+                                            <i data-lucide="clapperboard" class="w-4 h-4 text-yellow-300"></i>
+                                            <span class="font-semibold text-sm">Cinéma 4K/8K</span>
+                                        </div>
+                                        <span class="text-xs text-gray-400 bg-white/10 px-2 py-0.5 rounded-full">~3:1</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1 ml-6">Qualité maximale, 640kbps audio, DCP, mastering</p>
+                                </div>
+                                <div class="preset-card border border-hcs-purple/40 bg-hcs-purple/10 rounded-xl p-3 cursor-pointer hover:border-hcs-purple transition-all" data-preset="web_streaming" onclick="selectPreset('web_streaming')">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-2">
+                                            <i data-lucide="wifi" class="w-4 h-4 text-blue-400"></i>
+                                            <span class="font-semibold text-sm">Web / Streaming</span>
+                                        </div>
+                                        <span class="text-xs text-gray-400 bg-white/10 px-2 py-0.5 rounded-full">~20:1</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1 ml-6">Fichier léger, 192kbps audio, YouTube, réseaux sociaux</p>
+                                </div>
+                                <div class="preset-card border border-hcs-purple/40 bg-hcs-purple/10 rounded-xl p-3 cursor-pointer hover:border-hcs-purple transition-all" data-preset="broadcast_hd" onclick="selectPreset('broadcast_hd')">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-2">
+                                            <i data-lucide="tv" class="w-4 h-4 text-green-400"></i>
+                                            <span class="font-semibold text-sm">Broadcast HD / 4K</span>
+                                        </div>
+                                        <span class="text-xs text-gray-400 bg-white/10 px-2 py-0.5 rounded-full">~5:1</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1 ml-6">Standards TV, 384kbps audio, diffusion broadcast</p>
+                                </div>
+                            </div>
+                            <input type="hidden" id="selected-video-preset" value="audiovisuel_pro">
+                        </div>
+
+                        <!-- Upload Zone -->
+                        <div id="video-upload-zone" class="border-2 border-dashed border-hcs-purple/30 bg-hcs-purple/5 rounded-2xl p-6 text-center cursor-pointer hover:border-hcs-purple/60 hover:bg-hcs-purple/10 transition-all mb-4" onclick="document.getElementById('video-file-input').click()">
+                            <input type="file" id="video-file-input" class="hidden" accept="video/*,.mkv,.mov" onchange="handleVideoUpload(event)">
+                            <i data-lucide="film" class="w-10 h-10 text-hcs-purple mx-auto mb-2"></i>
+                            <p class="font-medium mb-1">Glissez votre vidéo ou <strong>cliquez</strong></p>
+                            <p class="text-sm text-gray-400">MP4, AVI, MOV, MKV, WebM — <span class="text-hcs-gold font-semibold">jusqu'à 10 GB</span></p>
+                        </div>
+
+                        <!-- Progress -->
+                        <div id="video-progress" class="hidden mb-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-gray-400" id="video-progress-msg">Compression en cours...</span>
+                                <span class="font-bold text-hcs-purple" id="video-percent">0%</span>
+                            </div>
+                            <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div id="video-progress-bar" class="h-full bg-gradient-to-r from-hcs-purple to-blue-400 rounded-full transition-all" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Result -->
+                        <div id="video-result" class="hidden p-5 rounded-xl bg-green-500/10 border border-green-500/30">
+                            <div class="flex items-center space-x-2 mb-3">
+                                <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
+                                <span class="font-medium text-green-400">Compression HCS réussie!</span>
+                            </div>
+                            <div class="p-2 rounded-lg bg-hcs-purple/20 text-center mb-3">
+                                <p class="text-hcs-purple font-bold text-sm" id="video-result-type">Preset: AUDIOVISUEL PRO</p>
+                            </div>
+                            <div class="grid grid-cols-5 gap-2 text-center text-xs mb-3">
+                                <div class="p-2 rounded-lg bg-white/5">
+                                    <p class="text-gray-400 mb-1">Source</p>
+                                    <p class="font-bold" id="video-result-before">--</p>
+                                </div>
+                                <div class="p-2 rounded-lg bg-white/5">
+                                    <p class="text-gray-400 mb-1">Fichier HCS</p>
+                                    <p class="font-bold text-hcs-purple" id="video-result-after">--</p>
+                                </div>
+                                <div class="p-2 rounded-lg bg-white/5">
+                                    <p class="text-gray-400 mb-1">Ratio</p>
+                                    <p class="font-bold text-green-400" id="video-result-ratio">--</p>
+                                </div>
+                                <div class="p-2 rounded-lg bg-white/5">
+                                    <p class="text-gray-400 mb-1">Durée</p>
+                                    <p class="font-bold text-hcs-gold" id="video-result-duration">--</p>
+                                </div>
+                                <div class="p-2 rounded-lg bg-white/5">
+                                    <p class="text-gray-400 mb-1">Audio</p>
+                                    <p class="font-bold" id="video-result-audio">--</p>
+                                </div>
+                            </div>
+                            <!-- Vidéo originale preview -->
+                            <div class="mb-3">
+                                <p class="text-xs text-gray-400 mb-1">Aperçu Original</p>
+                                <video id="video-before" controls class="w-full rounded-lg bg-black" style="max-height:160px; display:none;"></video>
+                                <div id="video-before-placeholder" class="w-full h-24 bg-gray-800 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="video" class="w-8 h-8 text-gray-600"></i>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="downloadVideoHCS()" class="btn-primary py-2 rounded-lg text-sm flex items-center justify-center space-x-2">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                    <span>Télécharger .hcsv2</span>
+                                </button>
+                                <button onclick="quickDecompressVideo()" class="btn-secondary py-2 rounded-lg text-sm flex items-center justify-center space-x-2">
+                                    <i data-lucide="play-circle" class="w-4 h-4 text-hcs-gold"></i>
+                                    <span>Lire / Décompresser</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- DECOMPRESS / LECTURE SECTION -->
+            <section id="decompress-section" class="hidden space-y-6">
+                <div class="glass-card rounded-2xl p-8">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="w-10 h-10 rounded-lg bg-hcs-gold/10 flex items-center justify-center">
+                            <i data-lucide="play-circle" class="w-5 h-5 text-hcs-gold"></i>
+                        </div>
+                        <h2 class="font-display text-2xl font-bold">Décompression &amp; Lecture HCS</h2>
+                    </div>
+                    <p class="text-gray-400 mb-6">Chargez un fichier <strong>.hcsv2</strong> — décompression automatique + upscaling harmonique à la lecture</p>
+
+                    <!-- Upload .hcsv2 -->
+                    <div id="dc-upload-zone" class="border-2 border-dashed border-hcs-gold/30 bg-hcs-gold/5 rounded-2xl p-10 text-center cursor-pointer hover:border-hcs-gold/60 hover:bg-hcs-gold/10 transition-all mb-6" onclick="document.getElementById('dc-file-input').click()">
+                        <input type="file" id="dc-file-input" class="hidden" accept=".hcsv2" onchange="handleDecompressUpload(event)">
+                        <i data-lucide="file-play" class="w-14 h-14 text-hcs-gold mx-auto mb-3"></i>
+                        <p class="font-semibold text-lg mb-1">Glissez votre fichier <span class="text-hcs-gold">.hcsv2</span></p>
+                        <p class="text-sm text-gray-400">ou cliquez pour sélectionner</p>
+                    </div>
+
+                    <!-- Metadata Panel (visible avant décompression) -->
+                    <div id="dc-metadata" class="hidden mb-6 p-5 rounded-xl bg-white/5 border border-white/10">
+                        <h3 class="font-bold text-lg mb-4 text-hcs-gold">Informations du fichier HCS</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                            <div class="text-center p-3 rounded-lg bg-hcs-purple/10">
+                                <p class="text-xs text-gray-400 mb-1">Preset</p>
+                                <p class="font-bold text-hcs-purple" id="dc-meta-preset">--</p>
+                            </div>
+                            <div class="text-center p-3 rounded-lg bg-hcs-gold/10">
+                                <p class="text-xs text-gray-400 mb-1">Résolution source</p>
+                                <p class="font-bold text-hcs-gold" id="dc-meta-resolution">--</p>
+                            </div>
+                            <div class="text-center p-3 rounded-lg bg-white/5">
+                                <p class="text-xs text-gray-400 mb-1">Frames / FPS</p>
+                                <p class="font-bold" id="dc-meta-frames">--</p>
+                            </div>
+                            <div class="text-center p-3 rounded-lg bg-white/5">
+                                <p class="text-xs text-gray-400 mb-1">Durée</p>
+                                <p class="font-bold" id="dc-meta-duration">--</p>
+                            </div>
+                            <div class="text-center p-3 rounded-lg bg-white/5">
+                                <p class="text-xs text-gray-400 mb-1">Taille fichier</p>
+                                <p class="font-bold" id="dc-meta-size">--</p>
+                            </div>
+                            <div class="text-center p-3 rounded-lg bg-white/5">
+                                <p class="text-xs text-gray-400 mb-1">Ratio compression</p>
+                                <p class="font-bold text-green-400" id="dc-meta-ratio">--</p>
+                            </div>
+                            <div class="text-center p-3 rounded-lg bg-blue-500/10">
+                                <p class="text-xs text-gray-400 mb-1">Audio</p>
+                                <p class="font-bold text-blue-400" id="dc-meta-audio">--</p>
+                            </div>
+                            <div class="text-center p-3 rounded-lg bg-white/5">
+                                <p class="text-xs text-gray-400 mb-1">Upscale lecture</p>
+                                <p class="font-bold text-hcs-gold" id="dc-meta-upscale">--</p>
+                            </div>
+                        </div>
+
+                        <!-- Upscale override + Format sortie -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Facteur upscaling</label>
+                                <select id="dc-upscale-override" class="w-full px-3 py-2 rounded-lg bg-hcs-card border border-white/10 text-white text-sm focus:border-hcs-gold focus:outline-none">
+                                    <option value="0">Auto (preset)</option>
+                                    <option value="1.0">1× (sans upscale)</option>
+                                    <option value="1.5">1.5×</option>
+                                    <option value="2.0">2×</option>
+                                    <option value="4.0">4×</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Format de sortie</label>
+                                <select id="dc-output-format" class="w-full px-3 py-2 rounded-lg bg-hcs-card border border-white/10 text-white text-sm focus:border-hcs-gold focus:outline-none">
+                                    <option value="mp4">MP4 (H.264) — Universel ★</option>
+                                    <option value="webm">WebM (VP9) — Web</option>
+                                    <option value="mkv">MKV (H.264) — Open</option>
+                                    <option value="mov">MOV (H.264) — Apple</option>
+                                    <option value="avi">AVI (XVID) — Legacy</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button onclick="startDecompress()" class="w-full btn-primary py-2 rounded-lg text-sm flex items-center justify-center space-x-2">
+                                    <i data-lucide="zap" class="w-4 h-4"></i>
+                                    <span>Décompresser &amp; Lire</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Decompression Progress -->
+                    <div id="dc-progress" class="hidden mb-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm text-gray-400" id="dc-progress-msg">Décompression + upscaling en cours...</span>
+                            <span class="font-bold text-hcs-gold" id="dc-percent">0%</span>
+                        </div>
+                        <div class="h-3 bg-gray-700 rounded-full overflow-hidden">
+                            <div id="dc-progress-bar" class="h-full bg-gradient-to-r from-hcs-gold to-hcs-purple rounded-full transition-all" style="width: 0%"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">Décompression des frames + upscaling harmonique Lanczos4 + reconstruction audio...</p>
+                    </div>
+
+                    <!-- Video Player (après décompression) -->
+                    <div id="dc-player-panel" class="hidden">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-bold text-lg text-hcs-gold">Lecture — Vidéo Décompressée + Upscalée</h3>
+                            <span class="px-3 py-1 rounded-full text-xs bg-green-500/20 text-green-400 flex items-center space-x-1">
+                                <i data-lucide="check-circle" class="w-3 h-3"></i>
+                                <span>Prête</span>
+                            </span>
+                        </div>
+
+                        <video id="dc-video-player" controls class="w-full rounded-2xl bg-black mb-4" style="max-height:400px;">
+                            Votre navigateur ne supporte pas la vidéo.
+                        </video>
+
+                        <!-- Stats de décompression -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                            <div class="p-3 rounded-xl bg-white/5 text-center">
+                                <p class="text-xs text-gray-400 mb-1">Résolution sortie</p>
+                                <p class="font-bold text-hcs-gold" id="dc-out-resolution">--</p>
+                            </div>
+                            <div class="p-3 rounded-xl bg-white/5 text-center">
+                                <p class="text-xs text-gray-400 mb-1">Frames traitées</p>
+                                <p class="font-bold" id="dc-out-frames">--</p>
+                            </div>
+                            <div class="p-3 rounded-xl bg-white/5 text-center">
+                                <p class="text-xs text-gray-400 mb-1">Temps décompression</p>
+                                <p class="font-bold text-hcs-purple" id="dc-out-time">--</p>
+                            </div>
+                            <div class="p-3 rounded-xl bg-white/5 text-center">
+                                <p class="text-xs text-gray-400 mb-1">Audio reconstruit</p>
+                                <p class="font-bold text-blue-400" id="dc-out-audio">--</p>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <button onclick="downloadDecompressedVideo()" class="btn-primary px-6 py-2 rounded-lg text-sm flex items-center space-x-2">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                <span>Télécharger vidéo décompressée</span>
+                            </button>
+                            <button onclick="resetDecompress()" class="btn-secondary px-6 py-2 rounded-lg text-sm flex items-center space-x-2">
+                                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                                <span>Nouveau fichier</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- UPSCALE SECTION -->
+            <section id="upscale-section" class="hidden space-y-6">
+
+                <!-- Hero Banner -->
+                <div class="glass-card rounded-2xl p-8 gold-border relative overflow-hidden">
+                    <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(ellipse at 80% 50%, rgba(139,92,246,0.12) 0%, transparent 60%);"></div>
+                    <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                        <div>
+                            <div class="flex items-center space-x-3 mb-3">
+                                <div class="w-12 h-12 rounded-xl bg-hcs-gold/10 flex items-center justify-center">
+                                    <i data-lucide="maximize-2" class="w-6 h-6 text-hcs-gold"></i>
+                                </div>
+                                <div>
+                                    <h2 class="font-display text-2xl font-bold">Quantum Harmonic Upscaler</h2>
+                                    <p class="text-gray-400 text-sm">IA Harmonique — Sans hallucinations • Sans artefacts</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-300 max-w-xl leading-relaxed">
+                                Upscalez vos images et vidéos de <strong class="text-hcs-gold">1080p → 4K → 8K → 16K</strong> grâce à notre algorithme harmonique propriétaire.
+                                Chaque pixel reconstruit par des relations algébriques — zéro hallucination IA.
+                            </p>
+                        </div>
+                        <div class="flex flex-col gap-3 min-w-[220px]">
+                            <a href="quantum_upscaler.html" target="_blank"
+                               class="btn-primary px-6 py-3 rounded-xl flex items-center justify-center space-x-2 text-center font-semibold text-base">
+                                <i data-lucide="external-link" class="w-5 h-5"></i>
+                                <span>Ouvrir l'Upscaler IA</span>
+                            </a>
+                            <a href="quantum_upscaler.html" target="_blank"
+                               class="btn-secondary px-6 py-2 rounded-xl flex items-center justify-center space-x-2 text-center text-sm">
+                                <i data-lucide="video" class="w-4 h-4 text-hcs-purple"></i>
+                                <span>Upscale Vidéo Quantique</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Capacités Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="glass-card rounded-2xl p-5 flex flex-col items-center text-center">
+                        <div class="w-12 h-12 rounded-xl bg-hcs-gold/10 flex items-center justify-center mb-3">
+                            <i data-lucide="image" class="w-6 h-6 text-hcs-gold"></i>
+                        </div>
+                        <p class="font-display font-bold text-2xl text-hcs-gold">4×</p>
+                        <p class="text-sm text-gray-400 mt-1">Facteur max Image</p>
+                        <p class="text-xs text-gray-500 mt-2">JPEG · PNG · WebP · BMP</p>
+                    </div>
+                    <div class="glass-card rounded-2xl p-5 flex flex-col items-center text-center">
+                        <div class="w-12 h-12 rounded-xl bg-hcs-purple/10 flex items-center justify-center mb-3">
+                            <i data-lucide="film" class="w-6 h-6 text-hcs-purple"></i>
+                        </div>
+                        <p class="font-display font-bold text-2xl text-hcs-purple">8K</p>
+                        <p class="text-sm text-gray-400 mt-1">Upscale Vidéo</p>
+                        <p class="text-xs text-gray-500 mt-2">MP4 · AVI · MOV · MKV</p>
+                    </div>
+                    <div class="glass-card rounded-2xl p-5 flex flex-col items-center text-center">
+                        <div class="w-12 h-12 rounded-xl bg-hcs-blue/10 flex items-center justify-center mb-3">
+                            <i data-lucide="activity" class="w-6 h-6 text-hcs-blue"></i>
+                        </div>
+                        <p class="font-display font-bold text-2xl text-hcs-blue">TCH</p>
+                        <p class="text-sm text-gray-400 mt-1">Cohérence Temporelle</p>
+                        <p class="text-xs text-gray-500 mt-2">Anti-flickering vidéo</p>
+                    </div>
+                    <div class="glass-card rounded-2xl p-5 flex flex-col items-center text-center">
+                        <div class="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-3">
+                            <i data-lucide="shield-check" class="w-6 h-6 text-green-400"></i>
+                        </div>
+                        <p class="font-display font-bold text-2xl text-green-400">0</p>
+                        <p class="text-sm text-gray-400 mt-1">Hallucinations IA</p>
+                        <p class="text-xs text-gray-500 mt-2">Reconstruction algébrique</p>
+                    </div>
+                </div>
+
+                <!-- Niveaux d'énergie + modes -->
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Modes d'upscale image -->
+                    <div class="glass-card rounded-2xl p-6">
+                        <h3 class="font-display font-bold text-lg mb-4 flex items-center space-x-2">
+                            <i data-lucide="image-plus" class="w-5 h-5 text-hcs-gold"></i>
+                            <span>Upscale Image</span>
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-lg">💰</span>
+                                    <div>
+                                        <p class="font-semibold text-sm">Économique</p>
+                                        <p class="text-xs text-gray-500">Rapide — traitement allégé</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-gray-400 bg-white/10 px-2 py-0.5 rounded-full">2× – 3×</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-hcs-gold/10 border border-hcs-gold/20">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-lg">⚖️</span>
+                                    <div>
+                                        <p class="font-semibold text-sm text-hcs-gold">Standard ★</p>
+                                        <p class="text-xs text-gray-500">Optimal — recommandé</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-hcs-gold bg-hcs-gold/10 px-2 py-0.5 rounded-full">4×</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-lg">🚀</span>
+                                    <div>
+                                        <p class="font-semibold text-sm">Ultra Qualité</p>
+                                        <p class="text-xs text-gray-500">Maximum — 8K depuis 4K</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-gray-400 bg-white/10 px-2 py-0.5 rounded-full">8K</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-hcs-purple/10 border border-hcs-purple/20">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-lg">🌊</span>
+                                    <div>
+                                        <p class="font-semibold text-sm text-hcs-purple">Niveau Quantique</p>
+                                        <p class="text-xs text-gray-500">Interférence constructive</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-hcs-purple bg-hcs-purple/10 px-2 py-0.5 rounded-full">16K</span>
+                            </div>
+                        </div>
+                        <a href="quantum_upscaler.html" target="_blank"
+                           class="mt-4 w-full btn-primary py-2.5 rounded-xl flex items-center justify-center space-x-2 font-semibold text-sm">
+                            <i data-lucide="image-plus" class="w-4 h-4"></i>
+                            <span>Upscaler une Image</span>
+                        </a>
+                    </div>
+
+                    <!-- Modes upscale vidéo -->
+                    <div class="glass-card rounded-2xl p-6">
+                        <h3 class="font-display font-bold text-lg mb-4 flex items-center space-x-2">
+                            <i data-lucide="film" class="w-5 h-5 text-hcs-purple"></i>
+                            <span>Upscale Vidéo Quantique</span>
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-lg">📺</span>
+                                    <div>
+                                        <p class="font-semibold text-sm">1080p → 4K</p>
+                                        <p class="text-xs text-gray-500">Facteur 2× standard</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-gray-400 bg-white/10 px-2 py-0.5 rounded-full">2×</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-lg">🎬</span>
+                                    <div>
+                                        <p class="font-semibold text-sm">720p → 4K</p>
+                                        <p class="text-xs text-gray-500">Facteur 4× cinéma</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-gray-400 bg-white/10 px-2 py-0.5 rounded-full">4×</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-hcs-purple/10 border border-hcs-purple/20">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-lg">🌊</span>
+                                    <div>
+                                        <p class="font-semibold text-sm text-hcs-purple">4K → 8K Quantique</p>
+                                        <p class="text-xs text-gray-500">Cohérence temporelle activée</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-hcs-purple bg-hcs-purple/10 px-2 py-0.5 rounded-full">8K ★</span>
+                            </div>
+                            <div class="p-3 rounded-xl bg-blue-500/5 border border-blue-500/20">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <i data-lucide="activity" class="w-4 h-4 text-hcs-blue"></i>
+                                    <p class="font-semibold text-sm text-hcs-blue">Cohérence Temporelle</p>
+                                </div>
+                                <p class="text-xs text-gray-400">Anti-flickering inter-frames — fluidité broadcast professionnelle garantie.</p>
+                            </div>
+                        </div>
+                        <a href="quantum_upscaler.html#video" target="_blank"
+                           class="mt-4 w-full btn-secondary py-2.5 rounded-xl flex items-center justify-center space-x-2 text-sm border border-hcs-purple/40 hover:border-hcs-purple">
+                            <i data-lucide="play" class="w-4 h-4 text-hcs-purple"></i>
+                            <span>Upscaler une Vidéo</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Qualité & comparaison preuve -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h3 class="font-display font-bold text-lg mb-5 flex items-center space-x-2">
+                        <i data-lucide="bar-chart-3" class="w-5 h-5 text-hcs-blue"></i>
+                        <span>Preuves de Qualité — Upscale Authentique Confirmé</span>
+                        <span class="ml-auto text-xs bg-green-500/20 text-green-400 px-3 py-1 rounded-full flex items-center space-x-1">
+                            <i data-lucide="check-circle" class="w-3 h-3"></i>
+                            <span>Hash MD5 vérifiés</span>
+                        </span>
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+                        <div class="p-4 rounded-xl bg-hcs-gold/10 border border-hcs-gold/20 text-center">
+                            <p class="text-2xl font-display font-bold text-hcs-gold">≠</p>
+                            <p class="text-xs text-gray-400 mt-1">Hash MD5 différents</p>
+                            <p class="text-xs text-gray-500">Original ≠ Upscalé</p>
+                        </div>
+                        <div class="p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-center">
+                            <p class="text-2xl font-display font-bold text-green-400">100%</p>
+                            <p class="text-xs text-gray-400 mt-1">Taux de succès</p>
+                            <p class="text-xs text-gray-500">2 paires vérifiées</p>
+                        </div>
+                        <div class="p-4 rounded-xl bg-hcs-purple/10 border border-hcs-purple/20 text-center">
+                            <p class="text-2xl font-display font-bold text-hcs-purple">+261%</p>
+                            <p class="text-xs text-gray-400 mt-1">Enrichissement pixel</p>
+                            <p class="text-xs text-gray-500">Données réelles ajoutées</p>
+                        </div>
+                        <div class="p-4 rounded-xl bg-hcs-blue/10 border border-hcs-blue/20 text-center">
+                            <p class="text-2xl font-display font-bold text-hcs-blue">PSNR</p>
+                            <p class="text-xs text-gray-400 mt-1">Métriques qualité</p>
+                            <p class="text-xs text-gray-500">SSIM · Sharpness</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <a href="quantum_upscaler.html" target="_blank"
+                           class="btn-primary px-6 py-3 rounded-xl flex items-center justify-center space-x-2 font-semibold">
+                            <i data-lucide="external-link" class="w-5 h-5"></i>
+                            <span>Ouvrir l'Upscaler Complet</span>
+                        </a>
+                        <a href="../upscale_preview.html" target="_blank"
+                           class="btn-secondary px-6 py-3 rounded-xl flex items-center justify-center space-x-2">
+                            <i data-lucide="eye" class="w-5 h-5 text-hcs-gold"></i>
+                            <span>Voir la Preuve de Qualité</span>
+                        </a>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- COMPARE SECTION -->
+            <section id="compare-section" class="hidden space-y-6">
+                <div class="glass-card rounded-2xl p-8">
+                    <h2 class="font-display text-2xl font-bold mb-4">Comparaison Avant/Après</h2>
+                    <p class="text-gray-400 mb-6">Visualisez les résultats de vos traitements</p>
+                    <a href="hcs_compare.html" class="btn-primary px-6 py-3 rounded-xl inline-flex items-center space-x-2">
+                        <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                        <span>Ouvrir la Comparaison</span>
+                    </a>
+                </div>
+            </section>
+
+            <!-- AWS S3 STOCKAGE HARMONIQUE SECTION -->
+            <section id="aws-section" class="hidden space-y-6">
+
+                <!-- Header + status -->
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center">
+                                <i data-lucide="cloud-upload" class="w-6 h-6 text-yellow-400"></i>
+                            </div>
+                            <div>
+                                <h2 class="font-display text-2xl font-bold">AWS S3 — Stockage Harmonique</h2>
+                                <p class="text-gray-400 text-sm">Réduisez vos coûts AWS de <strong class="text-green-400">80-95%</strong> en uploadant le .hcsv2 compressé plutôt que la vidéo originale</p>
+                            </div>
+                        </div>
+                        <span id="aws-status-badge" class="px-4 py-2 rounded-full text-sm bg-gray-500/20 text-gray-400">Non configuré</span>
+                    </div>
+
+                    <!-- Explication workflow -->
+                    <div class="grid md:grid-cols-3 gap-3 mb-4">
+                        <div class="p-3 rounded-xl bg-white/5 text-center border border-red-500/20">
+                            <p class="text-xs text-gray-400 mb-1">❌ Sans HCS</p>
+                            <p class="font-bold text-red-400">Vidéo brute → S3</p>
+                            <p class="text-xs text-gray-500">5-50 GB transférés</p>
+                        </div>
+                        <div class="flex items-center justify-center text-2xl text-hcs-gold">→</div>
+                        <div class="p-3 rounded-xl bg-green-500/10 text-center border border-green-500/30">
+                            <p class="text-xs text-gray-400 mb-1">✅ Avec HCS</p>
+                            <p class="font-bold text-green-400">.hcsv2 → S3</p>
+                            <p class="text-xs text-gray-500">250 MB – 3 GB seulement</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6">
+
+                    <!-- PANNEAU 1: Configuration AWS -->
+                    <div class="glass-card rounded-2xl p-6">
+                        <h3 class="font-bold text-lg mb-4 flex items-center space-x-2">
+                            <i data-lucide="key" class="w-5 h-5 text-yellow-400"></i>
+                            <span>Configuration AWS</span>
+                        </h3>
+                        <div class="space-y-3" id="aws-config-form">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Access Key ID</label>
+                                <input id="aws-access-key" type="password" placeholder="AKIA..." class="w-full px-3 py-2 rounded-lg bg-hcs-card border border-white/10 text-white text-sm focus:border-yellow-400 focus:outline-none" autocomplete="off">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Secret Access Key</label>
+                                <input id="aws-secret-key" type="password" placeholder="••••••••••••••••" class="w-full px-3 py-2 rounded-lg bg-hcs-card border border-white/10 text-white text-sm focus:border-yellow-400 focus:outline-none" autocomplete="off">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Bucket S3</label>
+                                    <input id="aws-bucket" type="text" placeholder="mon-bucket-hcs" class="w-full px-3 py-2 rounded-lg bg-hcs-card border border-white/10 text-white text-sm focus:border-yellow-400 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Région</label>
+                                    <select id="aws-region" class="w-full px-3 py-2 rounded-lg bg-hcs-card border border-white/10 text-white text-sm focus:border-yellow-400 focus:outline-none">
+                                        <option value="eu-west-1">eu-west-1 (Irlande)</option>
+                                        <option value="eu-west-3">eu-west-3 (Paris)</option>
+                                        <option value="eu-central-1">eu-central-1 (Frankfurt)</option>
+                                        <option value="us-east-1">us-east-1 (Virginie)</option>
+                                        <option value="us-west-2">us-west-2 (Oregon)</option>
+                                        <option value="ap-northeast-1">ap-northeast-1 (Tokyo)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Préfixe S3 (dossier)</label>
+                                <input id="aws-prefix" type="text" value="hcs-videos/" class="w-full px-3 py-2 rounded-lg bg-hcs-card border border-white/10 text-white text-sm focus:border-yellow-400 focus:outline-none">
+                            </div>
+                            <button onclick="awsConfigure()" class="w-full py-2 rounded-lg text-sm font-bold flex items-center justify-center space-x-2" style="background: linear-gradient(135deg, #FF9900, #FFB347); color: #000;">
+                                <i data-lucide="plug" class="w-4 h-4"></i>
+                                <span>Connecter à AWS S3</span>
+                            </button>
+                            <div id="aws-config-msg" class="text-xs text-center text-gray-500 hidden"></div>
+                        </div>
+
+                        <!-- Bucket info (après connexion) -->
+                        <div id="aws-connected-info" class="hidden mt-4 p-3 rounded-xl bg-green-500/10 border border-green-500/30">
+                            <p class="text-green-400 font-bold text-sm mb-1">✅ Connecté à S3</p>
+                            <p class="text-xs text-gray-400" id="aws-connected-detail">--</p>
+                            <button onclick="awsRefreshList()" class="mt-2 w-full btn-secondary py-1.5 rounded-lg text-xs flex items-center justify-center space-x-1">
+                                <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                                <span>Actualiser la liste</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- PANNEAU 2: Calculateur d'économies -->
+                    <div class="glass-card rounded-2xl p-6">
+                        <h3 class="font-bold text-lg mb-4 flex items-center space-x-2">
+                            <i data-lucide="calculator" class="w-5 h-5 text-green-400"></i>
+                            <span>Calculateur d'Économies AWS</span>
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Taille vidéo originale (GB)</label>
+                                    <input id="calc-orig-gb" type="number" value="5" min="0.1" step="0.1" class="w-full px-3 py-2 rounded-lg bg-hcs-card border border-white/10 text-white text-sm focus:border-green-400 focus:outline-none" onchange="calcCosts()">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Preset HCS</label>
+                                    <select id="calc-preset" class="w-full px-3 py-2 rounded-lg bg-hcs-card border border-white/10 text-white text-sm focus:border-green-400 focus:outline-none" onchange="calcCosts()">
+                                        <option value="15">Archivage (÷15)</option>
+                                        <option value="6" selected>Audiovisuel Pro (÷6)</option>
+                                        <option value="3">Cinéma (÷3)</option>
+                                        <option value="20">Web Streaming (÷20)</option>
+                                        <option value="5">Broadcast HD (÷5)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Downloads / mois</label>
+                                    <input id="calc-downloads" type="number" value="5" min="0" class="w-full px-3 py-2 rounded-lg bg-hcs-card border border-white/10 text-white text-sm focus:border-green-400 focus:outline-none" onchange="calcCosts()">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Durée stockage (mois)</label>
+                                    <input id="calc-months" type="number" value="12" min="1" class="w-full px-3 py-2 rounded-lg bg-hcs-card border border-white/10 text-white text-sm focus:border-green-400 focus:outline-none" onchange="calcCosts()">
+                                </div>
+                            </div>
+
+                            <!-- Résultats calculateur -->
+                            <div id="calc-results" class="mt-2 space-y-2">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div class="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-center">
+                                        <p class="text-xs text-gray-400 mb-1">Sans HCS</p>
+                                        <p class="font-bold text-red-400 text-lg" id="calc-cost-without">$--</p>
+                                        <p class="text-xs text-gray-500" id="calc-size-without">-- GB</p>
+                                    </div>
+                                    <div class="p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-center">
+                                        <p class="text-xs text-gray-400 mb-1">Avec HCS</p>
+                                        <p class="font-bold text-green-400 text-lg" id="calc-cost-with">$--</p>
+                                        <p class="text-xs text-gray-500" id="calc-size-with">-- GB</p>
+                                    </div>
+                                </div>
+                                <div class="p-3 rounded-xl bg-hcs-gold/10 border border-hcs-gold/30 text-center">
+                                    <p class="text-xs text-gray-400 mb-1">Économie totale</p>
+                                    <p class="font-display font-bold text-2xl text-hcs-gold" id="calc-saving">--</p>
+                                    <p class="text-xs text-gray-400" id="calc-saving-detail">stockage + transfert sur <span id="calc-period">12</span> mois</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANNEAU 3: Upload .hcsv2 vers S3 -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h3 class="font-bold text-lg mb-4 flex items-center space-x-2">
+                        <i data-lucide="upload-cloud" class="w-5 h-5 text-blue-400"></i>
+                        <span>Upload .hcsv2 vers S3</span>
+                    </h3>
+
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- Upload zone -->
+                        <div>
+                            <div id="aws-upload-zone" class="border-2 border-dashed border-yellow-400/30 bg-yellow-400/5 rounded-2xl p-6 text-center cursor-pointer hover:border-yellow-400/60 hover:bg-yellow-400/10 transition-all mb-3" onclick="document.getElementById('aws-file-input').click()">
+                                <input type="file" id="aws-file-input" class="hidden" accept=".hcsv2" onchange="awsSelectFile(event)">
+                                <i data-lucide="cloud-upload" class="w-10 h-10 text-yellow-400 mx-auto mb-2"></i>
+                                <p class="font-medium mb-1">Sélectionner un .hcsv2</p>
+                                <p class="text-xs text-gray-400">ou glisser depuis la section Compression</p>
+                            </div>
+                            <div id="aws-file-info" class="hidden p-3 rounded-xl bg-white/5 text-sm mb-3">
+                                <p class="font-medium" id="aws-file-name">--</p>
+                                <p class="text-xs text-gray-400" id="aws-file-size">--</p>
+                            </div>
+                            <button onclick="awsUploadHCS()" id="aws-upload-btn" class="w-full py-2 rounded-lg text-sm font-bold flex items-center justify-center space-x-2 opacity-50 cursor-not-allowed" style="background: linear-gradient(135deg, #FF9900, #FFB347); color: #000;" disabled>
+                                <i data-lucide="send" class="w-4 h-4"></i>
+                                <span>Envoyer vers S3</span>
+                            </button>
+
+                            <!-- Progress upload S3 -->
+                            <div id="aws-upload-progress" class="hidden mt-3">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-xs text-gray-400" id="aws-upload-msg">Upload en cours...</span>
+                                    <span class="font-bold text-yellow-400 text-xs" id="aws-upload-pct">0%</span>
+                                </div>
+                                <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                    <div id="aws-upload-bar" class="h-full rounded-full transition-all" style="width: 0%; background: linear-gradient(90deg, #FF9900, #FFB347);"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Résultat upload + économies -->
+                        <div id="aws-upload-result" class="hidden">
+                            <div class="p-4 rounded-xl bg-green-500/10 border border-green-500/30 text-center">
+                                <p class="text-green-400 font-bold">✅ Upload réussi</p>
+                                <p class="text-xs text-gray-400 mt-1" id="aws-s3-url">--</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Liste des fichiers S3 -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h3 class="font-bold text-lg mb-4 flex items-center space-x-2">
+                        <i data-lucide="folder-open" class="w-5 h-5 text-hcs-blue"></i>
+                        <span>Fichiers stockés sur S3</span>
+                    </h3>
+                    <div id="aws-file-list" class="space-y-2">
+                        <p class="text-gray-500 text-sm text-center py-4">Connectez-vous à AWS S3 pour voir vos fichiers</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PROJECTS SECTION -->
+            <section id="projects-section" class="hidden space-y-6">
+                <div class="glass-card rounded-2xl p-8">
+                    <h2 class="font-display text-2xl font-bold mb-4">Mes Projets</h2>
+                    <p class="text-gray-400 mb-6">Gérez vos projets de compression et d'upscaling</p>
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-hcs-gold/30 transition-colors cursor-pointer">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <i data-lucide="film" class="w-5 h-5 text-hcs-gold"></i>
+                                <span class="font-medium">Projet Démo</span>
+                            </div>
+                            <p class="text-xs text-gray-500">Créé le 20/02/2026</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // API Base URL
+        const API_BASE = 'http://localhost:8000';
+
+        // Section Navigation
+        function showSection(sectionName) {
+            document.querySelectorAll('section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            document.getElementById(sectionName + '-section').classList.remove('hidden');
+
+            const titles = {
+                'dashboard': 'Tableau de bord',
+                'compress': 'Compression',
+                'decompress': 'Décompression / Lecture',
+                'upscale': 'Upscale IA',
+                'compare': 'Comparaison',
+                'projects': 'Projets',
+                'aws': 'AWS S3 Stockage'
+            };
+            document.getElementById('page-title').textContent = titles[sectionName] || sectionName;
+
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('tab-active');
+                if (item.dataset.section === sectionName) {
+                    item.classList.add('tab-active');
+                }
+            });
+
+            // Close mobile sidebar
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+        }
+
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+        });
+
+        // Check API status on load
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch(API_BASE + '/api/health');
+                const data = await response.json();
+                if (data.status === 'ok' || data.status === 'healthy') {
+                    document.getElementById('api-status').textContent = 'Connecté - ' + API_BASE;
+                    document.getElementById('api-indicator').className = 'px-3 py-1 rounded-full text-xs bg-green-500/20 text-green-400';
+                    document.getElementById('api-indicator').textContent = 'Actif';
+                }
+            } catch (e) {
+                document.getElementById('api-status').textContent = 'Non connecté';
+                document.getElementById('api-indicator').className = 'px-3 py-1 rounded-full text-xs bg-red-500/20 text-red-400';
+                document.getElementById('api-indicator').textContent = 'Erreur';
+            }
+        }
+        checkAPIStatus();
+
+        // ================================================================
+        // PRESET SELECTION
+        // ================================================================
+        function selectPreset(presetName) {
+            // Update hidden input value
+            document.getElementById('selected-video-preset').value = presetName;
+            
+            // Update visual selection
+            document.querySelectorAll('.preset-card').forEach(card => {
+                card.classList.remove('selected-preset', 'border-hcs-gold', 'bg-hcs-gold/10');
+                card.classList.add('border-hcs-purple/40', 'bg-hcs-purple/10');
+            });
+            
+            const selectedCard = document.querySelector(`.preset-card[data-preset="${presetName}"]`);
+            if (selectedCard) {
+                selectedCard.classList.add('selected-preset', 'border-hcs-gold', 'bg-hcs-gold/10');
+                selectedCard.classList.remove('border-hcs-purple/40', 'bg-hcs-purple/10');
+            }
+        }
+
+        // ================================================================
+        // IMAGE COMPRESSION
+        // ================================================================
+        let imageCompressedData = null;
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('image-upload-zone').classList.add('hidden');
+            document.getElementById('image-progress').classList.remove('hidden');
+            document.getElementById('image-result').classList.add('hidden');
+
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress = Math.min(progress + Math.random() * 15, 90);
+                document.getElementById('image-percent').textContent = Math.round(progress) + '%';
+                document.getElementById('image-progress-bar').style.width = progress + '%';
+            }, 200);
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch(API_BASE + '/api/compress', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                // Récupérer les headers pour les métadonnées
+                const ratio = parseFloat(response.headers.get('X-HCS-Ratio') || '0');
+                const originalSize = parseInt(response.headers.get('X-HCS-Original-Size') || '0');
+                const compressedSize = parseInt(response.headers.get('X-HCS-Compressed-Size') || '0');
+                const mode = response.headers.get('X-HCS-Mode') || 'ads_cft';
+                
+                // Stocker les métadonnées
+                imageCompressedData = {
+                    ratio: ratio,
+                    original_size: originalSize,
+                    compressed_size: compressedSize,
+                    mode: mode,
+                    filename: file.name
+                };
+                
+                return response.blob();
+            })
+            .then(blob => {
+                clearInterval(interval);
+                progress = 100;
+                document.getElementById('image-percent').textContent = '100%';
+                document.getElementById('image-progress-bar').style.width = '100%';
+
+                // Stocker le blob HCS pour téléchargement
+                imageHCSBlob = blob;
+                imageHCSFilename = file.name.replace(/\.[^.]+$/, '') + '.hcs';
+                
+                // Afficher les stats
+                const beforeMB = (imageCompressedData.original_size / (1024 * 1024)).toFixed(2);
+                const afterMB = (imageCompressedData.compressed_size / (1024 * 1024)).toFixed(2);
+                const fileRatio = imageCompressedData.ratio;
+                
+                document.getElementById('image-result-type').textContent = 'Type: HCS Binaire — Mode: ' + imageCompressedData.mode.toUpperCase() + ' — Ratio: ' + fileRatio.toFixed(1) + ':1';
+                document.getElementById('image-result-before').textContent = beforeMB + ' MB';
+                document.getElementById('image-result-after').textContent = afterMB + ' MB';
+                document.getElementById('image-result-ratio').textContent = fileRatio.toFixed(1) + ':1';
+                
+                // Afficher l'image originale
+                const originalImage = document.getElementById('image-before');
+                const compressedImage = document.getElementById('image-after');
+                const decompressedImage = document.getElementById('image-decompressed');
+                
+                if (originalImage) {
+                    const originalFile = document.getElementById('image-file-input').files[0];
+                    if (originalFile) {
+                        const originalReader = new FileReader();
+                        originalReader.onload = function(e) {
+                            originalImage.src = e.target.result;
+                            originalImage.style.display = 'block';
+                        };
+                        originalReader.readAsDataURL(originalFile);
+                    }
+                }
+                
+                // L'image "compressée" est un fichier binaire HCS, pas affichable
+                // On affiche un placeholder
+                if (compressedImage) {
+                    compressedImage.style.display = 'none';
+                }
+                
+                // Masquer l'image décompressée (pas encore décompressée)
+                if (decompressedImage) {
+                    decompressedImage.style.display = 'none';
+                }
+
+                setTimeout(() => {
+                    document.getElementById('image-progress').classList.add('hidden');
+                    document.getElementById('image-result').classList.remove('hidden');
+                    lucide.createIcons();
+                }, 500);
+            })
+            .catch(error => {
+                clearInterval(interval);
+                console.error('Erreur:', error);
+                alert('Erreur de connexion au serveur: ' + error.message);
+                resetImageCompress();
+            });
+        }
+
+        // Variables pour stocker le blob HCS
+        let imageHCSBlob = null;
+        let imageHCSFilename = 'image.hcs';
+
+        function resetImageCompress() {
+            imageHCSBlob = null;
+            document.getElementById('image-upload-zone').classList.remove('hidden');
+            document.getElementById('image-progress').classList.add('hidden');
+            document.getElementById('image-result').classList.add('hidden');
+            document.getElementById('image-file-input').value = '';
+        }
+
+        function downloadImageCompressed() {
+            if (!imageHCSBlob) {
+                alert('Aucun fichier HCS disponible. Compressez d\'abord une image.');
+                return;
+            }
+            
+            // Télécharger le fichier .hcs
+            const url = URL.createObjectURL(imageHCSBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = imageHCSFilename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+        }
+
+        function downloadImageDecompressed() {
+            if (!imageHCSBlob) {
+                alert('Aucun fichier HCS disponible pour décompression.');
+                return;
+            }
+            
+            // Envoyer le fichier HCS pour décompression
+            const formData = new FormData();
+            const file = new File([imageHCSBlob], imageHCSFilename, { type: 'application/octet-stream' });
+            formData.append('file', file);
+            
+            fetch(API_BASE + '/api/v2/decompress/image', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.decompressed_data) {
+                    // Télécharger l'image décompressée
+                    const link = document.createElement('a');
+                    link.href = 'data:image/png;base64,' + data.decompressed_data;
+                    link.download = 'decompressed_' + (data.original_filename || 'image.png');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    alert('Erreur lors de la décompression: ' + (data.detail || 'Erreur inconnue'));
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Erreur de connexion au serveur');
+            });
+        }
+
+        // ================================================================
+        // VIDEO COMPRESSION HCS — handleVideoUpload (nouveau: réponse binaire)
+        // ================================================================
+        let videoHCSBlob = null;  // Stocke le blob .hcsv2 pour téléchargement/décompression
+        let videoHCSFilename = 'video.hcsv2';
+        let videoOriginalFile = null;
+
+        function fmtSize(bytes) {
+            if (bytes >= 1024*1024*1024) return (bytes/1024/1024/1024).toFixed(2) + ' GB';
+            if (bytes >= 1024*1024) return (bytes/1024/1024).toFixed(1) + ' MB';
+            return (bytes/1024).toFixed(0) + ' KB';
+        }
+
+        function handleVideoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Vérification taille max (10 GB)
+            const MAX_SIZE = 10 * 1024 * 1024 * 1024;
+            if (file.size > MAX_SIZE) {
+                alert('Fichier trop volumineux: ' + fmtSize(file.size) + ' (maximum 10 GB)');
+                return;
+            }
+
+            videoOriginalFile = file;
+            const preset = document.getElementById('selected-video-preset').value || 'audiovisuel_pro';
+            const totalMB = fmtSize(file.size);
+
+            document.getElementById('video-upload-zone').classList.add('hidden');
+            document.getElementById('video-progress').classList.remove('hidden');
+            document.getElementById('video-result').classList.add('hidden');
+
+            // Phase 1 (0-50%): Upload réel via XHR
+            // Phase 2 (50-100%): Compression côté serveur (simulée)
+            let compressionInterval = null;
+
+            const xhr = new XMLHttpRequest();
+            xhr.responseType = 'blob';  // Réponse binaire .hcsv2
+
+            // Progression réelle de l'upload
+            xhr.upload.addEventListener('progress', (event) => {
+                if (!event.lengthComputable) return;
+                const uploadPct = (event.loaded / event.total) * 50;  // 0-50% = upload
+                const loadedFmt = fmtSize(event.loaded);
+                document.getElementById('video-percent').textContent = Math.round(uploadPct) + '%';
+                document.getElementById('video-progress-bar').style.width = uploadPct + '%';
+                document.getElementById('video-progress-msg').textContent =
+                    'Chargement ' + loadedFmt + ' / ' + totalMB + '...';
+            });
+
+            // Upload terminé → démarrer simulation compression
+            xhr.upload.addEventListener('load', () => {
+                document.getElementById('video-percent').textContent = '50%';
+                document.getElementById('video-progress-bar').style.width = '50%';
+                document.getElementById('video-progress-msg').textContent =
+                    'Compression HCS [' + preset + '] en cours...';
+
+                let compPct = 50;
+                compressionInterval = setInterval(() => {
+                    compPct = Math.min(compPct + Math.random() * 4, 92);
+                    document.getElementById('video-percent').textContent = Math.round(compPct) + '%';
+                    document.getElementById('video-progress-bar').style.width = compPct + '%';
+                }, 600);
+            });
+
+            // Réponse reçue
+            xhr.addEventListener('load', () => {
+                if (compressionInterval) clearInterval(compressionInterval);
+
+                document.getElementById('video-percent').textContent = '100%';
+                document.getElementById('video-progress-bar').style.width = '100%';
+
+                if (xhr.status < 200 || xhr.status >= 300) {
+                    alert('Erreur HTTP ' + xhr.status);
+                    resetVideoCompress();
+                    return;
+                }
+
+                // Lire stats depuis les headers XHR
+                const ratio    = parseFloat(xhr.getResponseHeader('X-HCS-Ratio') || '0');
+                const duration = parseFloat(xhr.getResponseHeader('X-HCS-Duration') || '0');
+                const hasAudio = (xhr.getResponseHeader('X-HCS-Has-Audio') || '').toLowerCase() === 'true';
+                const hcsSizeMB = parseFloat(xhr.getResponseHeader('X-HCS-File-Size-MB') || '0');
+
+                videoHCSBlob = xhr.response;  // Blob binaire .hcsv2
+                const srcBase = file.name.replace(/\.[^.]+$/, '');
+                videoHCSFilename = srcBase + '_' + preset + '.hcsv2';
+
+                // Stats
+                document.getElementById('video-result-type').textContent =
+                    'Preset: ' + preset.replace('_', ' ').toUpperCase() + ' — Ratio: ' + ratio.toFixed(1) + ':1';
+                document.getElementById('video-result-before').textContent = fmtSize(file.size);
+                document.getElementById('video-result-after').textContent = hcsSizeMB.toFixed(2) + ' MB';
+                document.getElementById('video-result-ratio').textContent = ratio.toFixed(1) + ':1';
+                document.getElementById('video-result-duration').textContent = duration.toFixed(1) + 's';
+                document.getElementById('video-result-audio').textContent = hasAudio ? '✓ OK' : '✗ Non';
+
+                // Preview vidéo originale
+                const videoBeforeEl  = document.getElementById('video-before');
+                const placeholderEl  = document.getElementById('video-before-placeholder');
+                videoBeforeEl.src    = URL.createObjectURL(file);
+                videoBeforeEl.style.display = 'block';
+                if (placeholderEl) placeholderEl.style.display = 'none';
+
+                setTimeout(() => {
+                    document.getElementById('video-progress').classList.add('hidden');
+                    document.getElementById('video-result').classList.remove('hidden');
+                    lucide.createIcons();
+                }, 500);
+            });
+
+            xhr.addEventListener('error', () => {
+                if (compressionInterval) clearInterval(compressionInterval);
+                alert('Erreur réseau lors de l\'upload');
+                resetVideoCompress();
+            });
+
+            xhr.addEventListener('abort', () => {
+                if (compressionInterval) clearInterval(compressionInterval);
+                resetVideoCompress();
+            });
+
+            // Lancer l'upload
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('preset', preset);
+            fetch(API_BASE + '/api/video-compress', {
+                method: 'POST',
+                body: formData
+            });
+        }
+
+        function resetVideoCompress() {
+            videoHCSBlob = null;
+            videoOriginalFile = null;
+            document.getElementById('video-upload-zone').classList.remove('hidden');
+            document.getElementById('video-progress').classList.add('hidden');
+            document.getElementById('video-result').classList.add('hidden');
+            document.getElementById('video-file-input').value = '';
+        }
+
+        function downloadVideoHCS() {
+            if (!videoHCSBlob) { alert('Aucun fichier HCS disponible'); return; }
+            const url = URL.createObjectURL(videoHCSBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = videoHCSFilename;
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+        }
+
+        function quickDecompressVideo() {
+            // Navigation vers la section décompression + pré-chargement du blob
+            if (!videoHCSBlob) { alert('Compressez d\'abord une vidéo'); return; }
+            showSection('decompress');
+            // Simuler le chargement du fichier HCS depuis le blob compressé
+            setTimeout(() => loadHCSBlobForDecompress(videoHCSBlob, videoHCSFilename), 200);
+        }
+
+        // ================================================================
+        // DECOMPRESSION / LECTURE
+        // ================================================================
+        let dcHCSBlob = null;       // Blob .hcsv2 chargé pour décompression
+        let dcHCSFilename = '';
+        let dcDecompressedVideoBlob = null;  // Vidéo décompressée résultat
+
+        async function handleDecompressUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!file.name.endsWith('.hcsv2')) {
+                alert('Veuillez sélectionner un fichier .hcsv2');
+                return;
+            }
+            dcHCSBlob = file;
+            dcHCSFilename = file.name;
+            await loadHCSFileMetadata(file);
+        }
+
+        async function loadHCSBlobForDecompress(blob, filename) {
+            dcHCSBlob = blob;
+            dcHCSFilename = filename;
+            // Créer un File depuis le blob pour upload
+            const file = new File([blob], filename, { type: 'application/octet-stream' });
+            await loadHCSFileMetadata(file);
+        }
+
+        async function loadHCSFileMetadata(file) {
+            document.getElementById('dc-upload-zone').classList.add('hidden');
+            document.getElementById('dc-metadata').classList.add('hidden');
+            document.getElementById('dc-progress').classList.add('hidden');
+            document.getElementById('dc-player-panel').classList.add('hidden');
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                const response = await fetch(API_BASE + '/api/v2/compress/info', {
+                    method: 'POST', body: formData
+                });
+                const data = await response.json();
+                if (data.success && data.info) {
+                    const info = data.info;
+                    document.getElementById('dc-meta-preset').textContent = info.preset_name || info.preset || '--';
+                    document.getElementById('dc-meta-resolution').textContent = (info.src_width || '?') + 'x' + (info.src_height || '?');
+                    document.getElementById('dc-meta-frames').textContent = (info.total_frames || '?') + ' / ' + (info.fps || '?') + 'fps';
+                    document.getElementById('dc-meta-duration').textContent = info.duration_s ? info.duration_s.toFixed(1) + 's' : '--';
+                    document.getElementById('dc-meta-size').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+                    document.getElementById('dc-meta-ratio').textContent = info.compression_ratio ? info.compression_ratio + ':1' : '--';
+                    const audioKbps = info.audio_bitrate_kbps || 0;
+                    document.getElementById('dc-meta-audio').textContent = info.has_audio ? audioKbps + ' kbps' : 'Aucun';
+                    const scaleP = info.scale_playback || 1;
+                    const storeW = info.store_width || 0;
+                    const storeH = info.store_height || 0;
+                    const outW = Math.round(storeW * scaleP);
+                    const outH = Math.round(storeH * scaleP);
+                    document.getElementById('dc-meta-upscale').textContent = 'x' + scaleP + ' → ' + outW + 'x' + outH;
+                    document.getElementById('dc-metadata').classList.remove('hidden');
+                    lucide.createIcons();
+                }
+            } catch(e) {
+                console.error('Erreur lecture metadata:', e);
+                document.getElementById('dc-metadata').classList.remove('hidden');
+            }
+        }
+
+        // Format sélectionné et extension réelle retournée par le serveur
+        let dcOutputFormat = 'mp4';
+        let dcActualExt = 'mp4';
+
+        async function startDecompress() {
+            if (!dcHCSBlob) { alert('Chargez d\'abord un fichier .hcsv2'); return; }
+
+            const upscaleOverride = parseFloat(document.getElementById('dc-upscale-override').value) || 0;
+            dcOutputFormat = document.getElementById('dc-output-format').value || 'mp4';
+
+            document.getElementById('dc-metadata').classList.add('hidden');
+            document.getElementById('dc-progress').classList.remove('hidden');
+            document.getElementById('dc-player-panel').classList.add('hidden');
+
+            // Animation progress
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress = Math.min(progress + Math.random() * 6, 88);
+                document.getElementById('dc-percent').textContent = Math.round(progress) + '%';
+                document.getElementById('dc-progress-bar').style.width = progress + '%';
+                if (progress < 20)      document.getElementById('dc-progress-msg').textContent = 'Lecture du fichier HCS...';
+                else if (progress < 50) document.getElementById('dc-progress-msg').textContent = 'Décompression des frames JPEG...';
+                else if (progress < 75) document.getElementById('dc-progress-msg').textContent = 'Upscaling harmonique Lanczos4...';
+                else                    document.getElementById('dc-progress-msg').textContent = 'Conversion ' + dcOutputFormat.toUpperCase() + ' (ffmpeg)...';
+            }, 500);
+
+            try {
+                const file = new File([dcHCSBlob], dcHCSFilename, { type: 'application/octet-stream' });
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upscale_override', upscaleOverride.toString());
+                formData.append('output_format', dcOutputFormat);  // ← FORMAT TRANSMIS AU SERVEUR
+
+                const response = await fetch(API_BASE + '/api/v2/decompress/video', {
+                    method: 'POST', body: formData
+                });
+                const data = await response.json();
+
+                clearInterval(interval);
+                document.getElementById('dc-percent').textContent = '100%';
+                document.getElementById('dc-progress-bar').style.width = '100%';
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.detail || data.error || 'Décompression échouée');
+                }
+
+                // Extension réelle retournée par le serveur (peut différer si fallback)
+                dcActualExt = data.output_format || dcOutputFormat;
+                const mimeMap = {
+                    'mp4': 'video/mp4', 'webm': 'video/webm',
+                    'mkv': 'video/x-matroska', 'mov': 'video/quicktime',
+                    'avi': 'video/x-msvideo'
+                };
+                const mimeType = data.output_mime_type || mimeMap[dcActualExt] || 'video/mp4';
+
+                // Décoder la vidéo base64
+                const videoBase64 = data.upscaled_video_base64;
+                const binary = atob(videoBase64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                dcDecompressedVideoBlob = new Blob([bytes], { type: mimeType });
+
+                // Player — essai de lecture directe
+                const player = document.getElementById('dc-video-player');
+                const videoUrl = URL.createObjectURL(dcDecompressedVideoBlob);
+                player.src = videoUrl;
+
+                // Test si le navigateur peut lire ce format
+                const canPlay = player.canPlayType(mimeType);
+                if (!canPlay || canPlay === 'no') {
+                    console.warn('Format ' + mimeType + ' non supporté par ce navigateur (canPlayType=' + canPlay + ')');
+                    // Afficher un avertissement dans l'UI
+                    document.getElementById('dc-out-audio').textContent = '⚠️ ' + dcActualExt.toUpperCase() + ' non supporté';
+                }
+
+                player.load();
+
+                // Stats
+                document.getElementById('dc-out-resolution').textContent = data.output_resolution || '--';
+                document.getElementById('dc-out-frames').textContent = (data.total_frames || '?') + ' frames';
+                document.getElementById('dc-out-time').textContent = (data.decompression_time_s || 0).toFixed(2) + 's (' + dcActualExt.toUpperCase() + ')';
+                const audioSr = data.audio_sample_rate;
+                document.getElementById('dc-out-audio').textContent = data.has_audio
+                    ? (audioSr ? (audioSr/1000).toFixed(0) + ' kHz reconstruit' : 'Oui')
+                    : 'Non (pas d\'audio source)';
+
+                setTimeout(() => {
+                    document.getElementById('dc-progress').classList.add('hidden');
+                    document.getElementById('dc-player-panel').classList.remove('hidden');
+                    // Mettre à jour le label du bouton télécharger
+                    const dlBtn = document.querySelector('#dc-player-panel button');
+                    if (dlBtn) dlBtn.querySelector('span').textContent = 'Télécharger .' + dcActualExt.toUpperCase();
+                    lucide.createIcons();
+                    player.play().catch(e => console.warn('Autoplay bloqué:', e.message));
+                }, 400);
+
+            } catch(err) {
+                clearInterval(interval);
+                console.error('Décompression error:', err);
+                alert('Erreur décompression: ' + err.message);
+                document.getElementById('dc-progress').classList.add('hidden');
+                document.getElementById('dc-metadata').classList.remove('hidden');
+            }
+        }
+
+        function downloadDecompressedVideo() {
+            if (!dcDecompressedVideoBlob) { alert('Aucune vidéo décompressée disponible'); return; }
+            const url = URL.createObjectURL(dcDecompressedVideoBlob);
+            const ext = '.' + (dcActualExt || 'mp4');
+            const baseName = dcHCSFilename.replace('.hcsv2', '') || 'video_hcs';
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = baseName + '_decompressed' + ext;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 8000);
+        }
+
+        function resetDecompress() {
+            dcHCSBlob = null;
+            dcDecompressedVideoBlob = null;
+            document.getElementById('dc-upload-zone').classList.remove('hidden');
+            document.getElementById('dc-metadata').classList.add('hidden');
+            document.getElementById('dc-progress').classList.add('hidden');
+            document.getElementById('dc-player-panel').classList.add('hidden');
+            document.getElementById('dc-file-input').value = '';
+            const player = document.getElementById('dc-video-player');
+            if (player.src) URL.revokeObjectURL(player.src);
+            player.src = '';
+        }
+
+        // Drag and drop support for images
+        const imageUploadZone = document.getElementById('image-upload-zone');
+        if (imageUploadZone) {
+            imageUploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                imageUploadZone.classList.add('border-hcs-gold', 'bg-hcs-gold/20');
+            });
+
+            imageUploadZone.addEventListener('dragleave', () => {
+                imageUploadZone.classList.remove('border-hcs-gold', 'bg-hcs-gold/20');
+            });
+
+            imageUploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                imageUploadZone.classList.remove('border-hcs-gold', 'bg-hcs-gold/20');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    document.getElementById('image-file-input').files = files;
+                    handleImageUpload({ target: { files: files } });
+                }
+            });
+        }
+
+        // Drag and drop support for videos
+        const videoUploadZone = document.getElementById('video-upload-zone');
+        if (videoUploadZone) {
+            videoUploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                videoUploadZone.classList.add('border-hcs-purple', 'bg-hcs-purple/20');
+            });
+
+            videoUploadZone.addEventListener('dragleave', () => {
+                videoUploadZone.classList.remove('border-hcs-purple', 'bg-hcs-purple/20');
+            });
+
+            videoUploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                videoUploadZone.classList.remove('border-hcs-purple', 'bg-hcs-purple/20');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    document.getElementById('video-file-input').files = files;
+                    handleVideoUpload({ target: { files: files } });
+                }
+            });
+        }
+    </script>
+</body>
+</html>

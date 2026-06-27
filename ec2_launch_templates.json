@@ -1,0 +1,291 @@
+{
+  "qwen35_ec2_templates": {
+    "description": "Templates de lancement EC2 pour Qwen3.5-9B-DeepSeek-V4-Flash-BF16",
+    "version": "1.0.0",
+    "date_created": "$(Get-Date -Format 'yyyy-MM-dd')",
+    "author": "Harmonic AI Team",
+    
+    "templates": {
+      "development": {
+        "name": "qwen35-dev",
+        "description": "Template de développement pour tests et développement",
+        "instance_type": "g5.xlarge",
+        "v_cpus": 4,
+        "memory_gb": 16,
+        "gpu": "NVIDIA A10G (12GB VRAM)",
+        "storage": {
+          "root_volume": {
+            "size_gb": 50,
+            "type": "gp3",
+            "iops": 3000,
+            "throughput_mbps": 125
+          },
+          "data_volume": {
+            "size_gb": 100,
+            "type": "gp3",
+            "iops": 3000,
+            "throughput_mbps": 125,
+            "device_name": "/dev/sdb"
+          }
+        },
+        "ami": "ami-0c55b159cbfafe1f0",
+        "ami_description": "Ubuntu 22.04 LTS avec support GPU",
+        "security_groups": ["qwen35-security-group"],
+        "key_pair": "qwen35-keypair",
+        "iam_role": "qwen35-ec2-role",
+        "user_data": "IyEvYmluL2Jhc2gKIyBTY3JpcHQgZCd
+        "estimated_cost_per_hour": "$0.526",
+        "estimated_cost_per_month": "$378.72",
+        "recommended_use": "Développement, tests unitaires, POC"
+      },
+      
+      "production_small": {
+        "name": "qwen35-prod-small",
+        "description": "Template de production pour charges de travail légères",
+        "instance_type": "g5.2xlarge",
+        "v_cpus": 8,
+        "memory_gb": 32,
+        "gpu": "NVIDIA A10G (24GB VRAM)",
+        "storage": {
+          "root_volume": {
+            "size_gb": 100,
+            "type": "gp3",
+            "iops": 3000,
+            "throughput_mbps": 125
+          },
+          "data_volume": {
+            "size_gb": 500,
+            "type": "gp3",
+            "iops": 3000,
+            "throughput_mbps": 125,
+            "device_name": "/dev/sdb"
+          }
+        },
+        "ami": "ami-0c55b159cbfafe1f0",
+        "ami_description": "Ubuntu 22.04 LTS avec support GPU",
+        "security_groups": ["qwen35-security-group"],
+        "key_pair": "qwen35-keypair",
+        "iam_role": "qwen35-ec2-role",
+        "user_data": "IyEvYmluL2Jhc2gKIyBTY3JpcHQgZCd
+        "estimated_cost_per_hour": "$1.212",
+        "estimated_cost_per_month": "$872.64",
+        "recommended_use": "Production légère, API avec trafic modéré"
+      },
+      
+      "production_medium": {
+        "name": "qwen35-prod-medium",
+        "description": "Template de production pour charges de travail moyennes",
+        "instance_type": "g5.4xlarge",
+        "v_cpus": 16,
+        "memory_gb": 64,
+        "gpu": "NVIDIA A10G (24GB VRAM) x2",
+        "storage": {
+          "root_volume": {
+            "size_gb": 100,
+            "type": "gp3",
+            "iops": 3000,
+            "throughput_mbps": 125
+          },
+          "data_volume": {
+            "size_gb": 1000,
+            "type": "gp3",
+            "iops": 3000,
+            "throughput_mbps": 125,
+            "device_name": "/dev/sdb"
+          },
+          "cache_volume": {
+            "size_gb": 500,
+            "type": "io2",
+            "iops": 16000,
+            "throughput_mbps": 1000,
+            "device_name": "/dev/sdc"
+          }
+        },
+        "ami": "ami-0c55b159cbfafe1f0",
+        "ami_description": "Ubuntu 22.04 LTS avec support GPU",
+        "security_groups": ["qwen35-security-group"],
+        "key_pair": "qwen35-keypair",
+        "iam_role": "qwen35-ec2-role",
+        "user_data": "IyEvYmluL2Jhc2gKIyBTY3JpcHQgZCd
+        "estimated_cost_per_hour": "$2.424",
+        "estimated_cost_per_month": "$1745.28",
+        "recommended_use": "Production moyenne, API avec trafic élevé"
+      },
+      
+      "production_large": {
+        "name": "qwen35-prod-large",
+        "description": "Template de production pour charges de travail lourdes",
+        "instance_type": "g5.12xlarge",
+        "v_cpus": 48,
+        "memory_gb": 192,
+        "gpu": "NVIDIA A10G (24GB VRAM) x4",
+        "storage": {
+          "root_volume": {
+            "size_gb": 100,
+            "type": "gp3",
+            "iops": 3000,
+            "throughput_mbps": 125
+          },
+          "data_volume": {
+            "size_gb": 2000,
+            "type": "gp3",
+            "iops": 3000,
+            "throughput_mbps": 125,
+            "device_name": "/dev/sdb"
+          },
+          "cache_volume": {
+            "size_gb": 1000,
+            "type": "io2",
+            "iops": 32000,
+            "throughput_mbps": 1000,
+            "device_name": "/dev/sdc"
+          }
+        },
+        "ami": "ami-0c55b159cbfafe1f0",
+        "ami_description": "Ubuntu 22.04 LTS avec support GPU",
+        "security_groups": ["qwen35-security-group"],
+        "key_pair": "qwen35-keypair",
+        "iam_role": "qwen35-ec2-role",
+        "user_data": "IyEvYmluL2Jhc2gKIyBTY3JpcHQgZCd
+        "estimated_cost_per_hour": "$5.672",
+        "estimated_cost_per_month": "$4083.84",
+        "recommended_use": "Production lourde, traitement par lots, inférence haute performance"
+      },
+      
+      "inference_optimized": {
+        "name": "qwen35-inference-opt",
+        "description": "Template optimisé pour l'inférence avec batching",
+        "instance_type": "inf2.8xlarge",
+        "v_cpus": 32,
+        "memory_gb": 64,
+        "accelerator": "Inferentia2 x1",
+        "accelerator_memory": "32GB",
+        "storage": {
+          "root_volume": {
+            "size_gb": 100,
+            "type": "gp3",
+            "iops": 3000,
+            "throughput_mbps": 125
+          },
+          "model_volume": {
+            "size_gb": 500,
+            "type": "gp3",
+            "iops": 3000,
+            "throughput_mbps": 125,
+            "device_name": "/dev/sdb"
+          }
+        },
+        "ami": "ami-0c55b159cbfafe1f0",
+        "ami_description": "Ubuntu 22.04 LTS",
+        "security_groups": ["qwen35-security-group"],
+        "key_pair": "qwen35-keypair",
+        "iam_role": "qwen35-ec2-role",
+        "user_data": "IyEvYmluL2Jhc2gKIyBTY3JpcHQgZCd
+        "estimated_cost_per_hour": "$1.967",
+        "estimated_cost_per_month": "$1416.24",
+        "recommended_use": "Inférence optimisée, coût réduit, latence prédictible"
+      }
+    },
+    
+    "launch_configurations": {
+      "development_launch": {
+        "template_name": "development",
+        "region": "us-east-1",
+        "min_count": 1,
+        "max_count": 1,
+        "subnet_id": "",
+        "enable_public_ip": true,
+        "monitoring": {
+          "enabled": true,
+          "detailed": false
+        },
+        "tags": [
+          {"Key": "Name", "Value": "qwen35-dev-instance"},
+          {"Key": "Environment", "Value": "Development"},
+          {"Key": "Project", "Value": "Harmonic-AI"},
+          {"Key": "ManagedBy", "Value": "Terraform/Ansible"}
+        ]
+      },
+      
+      "production_launch": {
+        "template_name": "production_medium",
+        "region": "us-east-1",
+        "min_count": 2,
+        "max_count": 2,
+        "subnet_id": "",
+        "enable_public_ip": true,
+        "monitoring": {
+          "enabled": true,
+          "detailed": true
+        },
+        "load_balancer": {
+          "enabled": true,
+          "type": "application",
+          "health_check_path": "/health"
+        },
+        "auto_scaling": {
+          "enabled": true,
+          "min_size": 2,
+          "max_size": 10,
+          "desired_capacity": 2,
+          "scaling_policies": [
+            {
+              "metric": "CPUUtilization",
+              "threshold": 70,
+              "adjustment": "+1"
+            },
+            {
+              "metric": "CPUUtilization",
+              "threshold": 30,
+              "adjustment": "-1"
+            }
+          ]
+        },
+        "tags": [
+          {"Key": "Name", "Value": "qwen35-prod-instance"},
+          {"Key": "Environment", "Value": "Production"},
+          {"Key": "Project", "Value": "Harmonic-AI"},
+          {"Key": "ManagedBy", "Value": "Terraform/Ansible"},
+          {"Key": "CostCenter", "Value": "AI-Research"}
+        ]
+      }
+    },
+    
+    "best_practices": {
+      "security": [
+        "Utiliser des groupes de sécurité avec des règles minimales",
+        "Restreindre l'accès SSH aux IPs autorisées uniquement",
+        "Activer les logs VPC Flow Logs",
+        "Utiliser des rôles IAM au lieu de credentials statiques",
+        "Chiffrer les volumes EBS avec KMS"
+      ],
+      "performance": [
+        "Utiliser des instances GPU (g5) pour l'inférence LLM",
+        "Configurer le stockage gp3 avec IOPS adaptés",
+        "Mettre en cache les modèles en mémoire GPU",
+        "Utiliser le batching pour optimiser l'utilisation GPU",
+        "Surveiller l'utilisation GPU avec nvtop"
+      ],
+      "cost_optimization": [
+        "Utiliser des instances Spot pour les charges non critiques",
+        "Arrêter les instances de développement hors heures de travail",
+        "Configurer des politiques d'auto-scaling",
+        "Surveiller les coûts avec AWS Cost Explorer",
+        "Utiliser des réservations pour les instances de production"
+      ],
+      "monitoring": [
+        "Activer CloudWatch detailed monitoring",
+        "Configurer des dashboards pour les métriques GPU",
+        "Mettre en place des alertes pour les seuils critiques",
+        "Loguer les requêtes API pour le débogage",
+        "Surveiller la latence des réponses API"
+      ]
+    },
+    
+    "deployment_scripts": {
+      "create_launch_template": "aws ec2 create-launch-template --launch-template-name qwen35-template --launch-template-data file://launch-template-data.json",
+      "launch_instance": "aws ec2 run-instances --launch-template LaunchTemplateName=qwen35-template --count 1",
+      "create_auto_scaling_group": "aws autoscaling create-auto-scaling-group --auto-scaling-group-name qwen35-asg --launch-template LaunchTemplateName=qwen35-template --min-size 2 --max-size 10 --desired-capacity 2 --vpc-zone-identifier subnet-xxx,subnet-yyy"
+    }
+  }
+}

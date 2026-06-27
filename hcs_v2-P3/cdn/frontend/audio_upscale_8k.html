@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCS CDN - Audio Upscaling 8K</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: #fff; min-height: 100vh; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); }
+        .stat-label { font-size: 0.9em; opacity: 0.8; margin-bottom: 10px; }
+        .stat-value { font-size: 2em; font-weight: bold; color: #d8b4fe; }
+        .audio-player { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 30px; margin-bottom: 30px; }
+        .player-display { text-align: center; margin-bottom: 20px; }
+        .player-icon { font-size: 3em; margin-bottom: 10px; }
+        .track-title { font-size: 1.3em; font-weight: bold; margin-bottom: 5px; }
+        .track-artist { font-size: 0.95em; opacity: 0.8; margin-bottom: 20px; }
+        .waveform { width: 100%; height: 60px; background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 50%, #7c3aed 100%); border-radius: 5px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-around; padding: 0 10px; }
+        .wave-bar { width: 3px; height: 40px; background: rgba(255,255,255,0.6); border-radius: 2px; }
+        .controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .btn { padding: 10px 20px; background: #d8b4fe; color: #000; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: all 0.3s; }
+        .btn:hover { background: #e9d5ff; transform: translateY(-2px); }
+        .btn.secondary { background: #06b6d4; color: #fff; }
+        .btn.secondary:hover { background: #0891b2; }
+        .quality-selector { background: rgba(0,0,0,0.3); padding: 20px; border-radius: 10px; margin-bottom: 30px; }
+        .quality-title { font-weight: bold; margin-bottom: 15px; }
+        .quality-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+        .quality-option { padding: 15px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer; transition: all 0.3s; text-align: center; }
+        .quality-option:hover { border-color: #d8b4fe; background: rgba(216,180,254,0.1); }
+        .quality-option.active { border-color: #d8b4fe; background: rgba(216,180,254,0.2); }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .info-item { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border-left: 3px solid #d8b4fe; }
+        .info-label { font-size: 0.85em; opacity: 0.7; margin-bottom: 5px; }
+        .info-value { font-size: 1.2em; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 Audio Upscaling 8K</h1>
+            <p>Service d'amélioration audio haute fidélité avec upscaling spatial</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">Fréquence Max</div>
+                <div class="stat-value">192 kHz</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Débit Bitrate</div>
+                <div class="stat-value">320 kbps</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">SLA</div>
+                <div class="stat-value">99.95%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Canaux</div>
+                <div class="stat-value">7.1.4 (Spatial)</div>
+            </div>
+        </div>
+
+        <div class="audio-player">
+            <div class="player-display">
+                <div class="player-icon">🎧</div>
+                <div class="track-title">Symphonie Harmonique</div>
+                <div class="track-artist">Orchestre Philharmonique</div>
+            </div>
+            <div class="waveform">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+            </div>
+            <div class="controls">
+                <button class="btn">⏮ Précédent</button>
+                <button class="btn">▶ Lecture</button>
+                <button class="btn">⏸ Pause</button>
+                <button class="btn">⏭ Suivant</button>
+                <button class="btn secondary">🔊 Volume</button>
+            </div>
+        </div>
+
+        <div class="quality-selector">
+            <div class="quality-title">Qualité Audio</div>
+            <div class="quality-options">
+                <div class="quality-option">
+                    <div>🎵 Standard</div>
+                    <div style="font-size: 0.85em; opacity: 0.7;">128 kbps</div>
+                </div>
+                <div class="quality-option">
+                    <div>🎶 Haute</div>
+                    <div style="font-size: 0.85em; opacity: 0.7;">256 kbps</div>
+                </div>
+                <div class="quality-option active">
+                    <div>🎼 Lossless</div>
+                    <div style="font-size: 0.85em; opacity: 0.7;">320 kbps</div>
+                </div>
+                <div class="quality-option">
+                    <div>🎹 Studio</div>
+                    <div style="font-size: 0.85em; opacity: 0.7;">192 kHz</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Port Service</div>
+                <div class="info-value">9019</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Codec Audio</div>
+                <div class="info-value">FLAC / AAC</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Profondeur Bit</div>
+                <div class="info-value">24-bit</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Upscaling</div>
+                <div class="info-value">AI-Powered</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Latence</div>
+                <div class="info-value">&lt; 100ms</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Compression</div>
+                <div class="info-value">2:1</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

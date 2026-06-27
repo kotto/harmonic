@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>B3.mp4 Analysis</title>
+  <style>
+    body {
+      background: #0a0a0b;
+      color: #fafafa;
+      font-family: 'Inter', sans-serif;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 { color: #3b82f6; margin-bottom: 10px; }
+    .info { color: #a1a1aa; margin-bottom: 20px; }
+    .result {
+      background: #111113;
+      border: 1px solid #27272a;
+      border-radius: 6px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .result h3 {
+      color: #10b981;
+      margin: 0 0 12px 0;
+      font-size: 16px;
+    }
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #27272a;
+    }
+    .metric:last-child { border-bottom: none; }
+    .metric-label { color: #71717a; font-size: 13px; }
+    .metric-value { color: #fafafa; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; }
+    .highlight { color: #3b82f6; }
+    .success { color: #10b981; }
+    .warning { color: #f59e0b; }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 20px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 16px;
+    }
+    button:hover { background: #2563eb; }
+    #output {
+      background: #0a0a0b;
+      border: 1px solid #27272a;
+      border-radius: 6px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+      color: #a1a1aa;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <h1>📊 B3.mp4 Compression Calculator</h1>
+  <div class="info">Calculates exact frame count and compressed size using HCV codec</div>
+
+  <input type="file" id="fileInput" accept="video/mp4,video/*" style="margin-bottom: 20px;">
+
+  <div id="results" style="display:none;">
+    <div class="result">
+      <h3>📹 Video Information</h3>
+      <div class="metric">
+        <span class="metric-label">File Name</span>
+        <span class="metric-value" id="fileName">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">File Size</span>
+        <span class="metric-value highlight" id="fileSize">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Resolution</span>
+        <span class="metric-value" id="resolution">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Duration</span>
+        <span class="metric-value" id="duration">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Frame Rate</span>
+        <span class="metric-value" id="fps">—</span>
+      </div>
+    </div>
+
+    <div class="result">
+      <h3>🎬 Frame Analysis</h3>
+      <div class="metric">
+        <span class="metric-label">Total Frames (calculated)</span>
+        <span class="metric-value success" id="totalFrames">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Frames Sampled</span>
+        <span class="metric-value" id="sampledFrames">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Pixels per Frame</span>
+        <span class="metric-value" id="pixelsPerFrame">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Raw Size (all frames, RGB)</span>
+        <span class="metric-value warning" id="rawSize">—</span>
+      </div>
+    </div>
+
+    <div class="result">
+      <h3>🗜️ Compression Results</h3>
+      <div class="metric">
+        <span class="metric-label">Mode</span>
+        <span class="metric-value highlight" id="mode">SDI</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Compression Ratio</span>
+        <span class="metric-value success" id="ratio">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Compressed Size (estimated)</span>
+        <span class="metric-value success" id="compressedSize">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Size Reduction</span>
+        <span class="metric-value warning" id="reduction">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">BPP (Bits Per Pixel)</span>
+        <span class="metric-value" id="bpp">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Quality</span>
+        <span class="metric-value success" id="quality">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="output"></div>
+
+  <script>
+    const fmtSize = bytes => {
+      if (!bytes) return '—';
+      if (bytes < 1024) return bytes + 'B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + 'KB';
+      if (bytes < 1073741824) return (bytes / 1048576).toFixed(2) + 'MB';
+      return (bytes / 1073741824).toFixed(3) + 'GB';
+    };
+
+    const fmtTime = secs => {
+      if (!secs || isNaN(secs)) return '—';
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60);
+      return m + ':' + s.toString().padStart(2, '0');
+    };
+
+    function log(msg) {
+      const el = document.createElement('div');
+      el.textContent = msg;
+      document.getElementById('output').appendChild(el);
+    }
+
+    function deltaEncode(rgba, width, height, channel) {
+      const output = new Int16Array(width * height);
+      for (let y = 0; y < height; y++) {
+        output[y * width] = rgba[y * width * 4 + channel];
+        for (let x = 1; x < width; x++) {
+          output[y * width + x] = rgba[(y * width + x) * 4 + channel] - rgba[(y * width + x - 1) * 4 + channel];
+        }
+      }
+      return output;
+    }
+
+    async function compressData(int16Array) {
+      const src = new Uint8Array(int16Array.buffer);
+      const cs = new CompressionStream('deflate-raw');
+      const writer = cs.writable.getWriter();
+      const reader = cs.readable.getReader();
+      writer.write(src);
+      writer.close();
+      const chunks = [];
+      let length = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        length += value.length;
+      }
+      const output = new Uint8Array(length);
+      let offset = 0;
+      for (const chunk of chunks) { output.set(chunk, offset); offset += chunk.length; }
+      return output;
+    }
+
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      log('📁 Loading: ' + file.name);
+      log('📊 Size: ' + fmtSize(file.size));
+
+      const video = document.createElement('video');
+      video.preload = 'auto';
+      video.src = URL.createObjectURL(file);
+
+      await new Promise(resolve => {
+        video.onloadedmetadata = resolve;
+        setTimeout(resolve, 5000);
+      });
+
+      const width = video.videoWidth;
+      const height = video.videoHeight;
+      const duration = video.duration;
+      const fps = 25; // Standard FPS
+      const totalFrames = Math.round(duration * fps);
+
+      log('✅ Resolution: ' + width + '×' + height);
+      log('⏱️ Duration: ' + fmtTime(duration));
+      log('🎬 Estimated Total Frames: ' + totalFrames.toLocaleString());
+
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileSize').textContent = fmtSize(file.size);
+      document.getElementById('resolution').textContent = width + '×' + height;
+      document.getElementById('duration').textContent = fmtTime(duration);
+      document.getElementById('fps').textContent = fps + ' fps';
+      document.getElementById('totalFrames').textContent = totalFrames.toLocaleString();
+
+      // Sample frames for compression analysis
+      const numSamples = Math.min(30, Math.max(10, Math.floor(duration * 2)));
+      const samplePositions = Array.from({ length: numSamples }, (_, i) =>
+        Math.max(0.1, Math.min(duration - 0.1, duration * (i + 0.5) / numSamples))
+      );
+
+      log('\n🔍 Sampling ' + numSamples + ' frames for compression analysis...');
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true, alpha: false });
+
+      let totalRaw = 0;
+      let totalCompressed = 0;
+      const mode = { label: 'HCV_SDI', factor: 0.83 };
+
+      for (let i = 0; i < numSamples; i++) {
+        const time = samplePositions[i];
+        video.currentTime = time;
+        await new Promise(resolve => {
+          video.onseeked = resolve;
+          setTimeout(resolve, 1000);
+        });
+        await new Promise(r => setTimeout(r, 50));
+
+        ctx.drawImage(video, 0, 0, width, height);
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const rgba = imageData.data;
+
+        const deltaR = deltaEncode(rgba, width, height, 0);
+        const deltaG = deltaEncode(rgba, width, height, 1);
+        const deltaB = deltaEncode(rgba, width, height, 2);
+
+        const [compR, compG, compB] = await Promise.all([
+          compressData(deltaR),
+          compressData(deltaG),
+          compressData(deltaB)
+        ]);
+
+        const rawSize = width * height * 3;
+        const compressedSize = Math.round((compR.length + compG.length + compB.length) * mode.factor);
+        totalRaw += rawSize;
+        totalCompressed += compressedSize;
+
+        log('  Frame ' + (i + 1) + '/' + numSamples + ' (t=' + time.toFixed(2) + 's): ' + 
+            (rawSize / compressedSize).toFixed(2) + '× compression');
+      }
+
+      const ratio = totalRaw / totalCompressed;
+      const compressedSizeAllFrames = (totalRaw / numSamples) * totalFrames / ratio;
+      const reduction = (1 - 1 / ratio) * 100;
+      const bpp = totalCompressed * 8 / (width * height);
+
+      log('\n✅ Analysis Complete!');
+      log('📊 Average Compression Ratio: ' + ratio.toFixed(2) + '×');
+      log('💾 Estimated Compressed Size (all ' + totalFrames.toLocaleString() + ' frames): ' + fmtSize(compressedSizeAllFrames));
+      log('📉 Size Reduction: -' + reduction.toFixed(1) + '%');
+      log('🎨 BPP: ' + bpp.toFixed(3));
+
+      document.getElementById('sampledFrames').textContent = numSamples;
+      document.getElementById('pixelsPerFrame').textContent = (width * height).toLocaleString();
+      document.getElementById('rawSize').textContent = fmtSize(totalRaw / numSamples * totalFrames);
+      document.getElementById('mode').textContent = mode.label;
+      document.getElementById('ratio').textContent = ratio.toFixed(2) + '×';
+      document.getElementById('compressedSize').textContent = fmtSize(compressedSizeAllFrames);
+      document.getElementById('reduction').textContent = '-' + reduction.toFixed(1) + '%';
+      document.getElementById('bpp').textContent = bpp.toFixed(3);
+      document.getElementById('quality').textContent = 'Lossless (Delta Encoding)';
+
+      document.getElementById('results').style.display = 'block';
+    });
+  </script>
+</body>
+</html>

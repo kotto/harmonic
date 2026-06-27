@@ -1,0 +1,205 @@
+openapi: 3.0.0
+info:
+  title: Harmonic AI API
+  description: 100% Deterministic AI with Zero Hallucinations
+  version: 2.0.0
+  contact:
+    name: Alain KOTTO
+    email: alain.kotto@harmonica.ai
+    url: https://harmonica.ai
+
+servers:
+  - url: http://__EC2_IP__:8000
+    description: Production server
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Check if the API is healthy and get version information
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  
+  /generate:
+    post:
+      summary: Generate text
+      description: Generate deterministic text with optional verified mode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateRequest'
+      responses:
+        '200':
+          description: Successful generation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateResponse'
+        '400':
+          description: Invalid request parameters
+        '500':
+          description: Internal server error
+  
+  /info:
+    get:
+      summary: System information
+      description: Get detailed system and model information
+      responses:
+        '200':
+          description: System information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfoResponse'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "healthy"
+        version:
+          type: string
+          example: "2.0.0-real"
+        timestamp:
+          type: number
+          example: 1778908039.1848667
+        features:
+          type: object
+          properties:
+            harmonic_transform:
+              type: boolean
+              example: true
+            deterministic_cache:
+              type: boolean
+              example: true
+            verified_mode:
+              type: boolean
+              example: true
+    
+    GenerateRequest:
+      type: object
+      required:
+        - prompt
+      properties:
+        prompt:
+          type: string
+          description: The input text prompt
+          example: "Explain quantum computing in simple terms."
+        max_tokens:
+          type: integer
+          description: Maximum number of tokens to generate
+          minimum: 1
+          maximum: 4096
+          default: 512
+          example: 500
+        temperature:
+          type: number
+          description: Sampling temperature (0.0 for deterministic)
+          minimum: 0.0
+          maximum: 2.0
+          default: 0.0
+          example: 0.0
+        verified_mode:
+          type: boolean
+          description: Enable verified mode with citations
+          default: false
+          example: true
+        require_citations:
+          type: boolean
+          description: Require citations for factual claims
+          default: false
+          example: true
+    
+    GenerateResponse:
+      type: object
+      properties:
+        text:
+          type: string
+          description: Generated text
+          example: "Quantum computing uses quantum bits (qubits) that can exist in multiple states simultaneously..."
+        tokens_generated:
+          type: integer
+          description: Number of tokens generated
+          example: 150
+        response_time_ms:
+          type: number
+          description: Response time in milliseconds
+          example: 2450.5
+        deterministic:
+          type: boolean
+          description: Whether the response is deterministic
+          example: true
+        response_id:
+          type: string
+          description: SHA256 hash identifying this specific response
+          example: "sha256:abc123def456..."
+        model:
+          type: string
+          description: Model name and version
+          example: "Qwen3.5-9B-DeepSeek-V4-Flash-BF16.gguf"
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO timestamp of generation
+          example: "2026-05-16T07:10:00.123456"
+        harmonic_transform:
+          type: boolean
+          description: Whether harmonic transformation was applied
+          example: true
+        zero_hallucination:
+          type: boolean
+          description: Whether zero hallucination was enforced
+          example: true
+        verified_mode:
+          type: boolean
+          description: Whether verified mode was used
+          example: false
+        citations:
+          type: array
+          description: Citations for factual claims (verified mode only)
+          items:
+            type: string
+          example: ["Medical Journal 2025", "Clinical Guidelines v3.0"]
+    
+    InfoResponse:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Harmonic AI"
+        version:
+          type: string
+          example: "2.0.0"
+        mode:
+          type: string
+          example: "deterministic"
+        model:
+          type: string
+          example: "Qwen3.5-9B-DeepSeek-V4-Flash-BF16.gguf"
+        architecture:
+          type: string
+          example: "Hybrid Qwen3.5 + DeepSeek V4 with 384 MoE experts"
+        deterministic_cache_size:
+          type: integer
+          example: 2048
+        features:
+          type: array
+          items:
+            type: string
+          example: ["harmonic_transform", "verified_mode", "zero_hallucination"]
+        uptime_seconds:
+          type: number
+          example: 86400.5
+        requests_served:
+          type: integer
+          example: 1250

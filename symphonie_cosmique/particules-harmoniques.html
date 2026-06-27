@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Particules Harmoniques — Le Modèle Standard comme Spectre de Ψ</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --orange: #ffa502; --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;line-height:1.85;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 30% 10%,rgba(122,92,255,0.06),transparent 55%),
+             radial-gradient(ellipse at 60% 60%,rgba(62,240,216,0.04),transparent 60%),
+             radial-gradient(ellipse at 80% 30%,rgba(212,168,67,0.04),transparent 50%);
+  pointer-events:none;
+}
+.container{max-width:1100px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:5px 12px;border-radius:15px;font-size:0.78em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+
+.hero{text-align:center;padding:60px 20px 50px;background:linear-gradient(180deg,rgba(212,168,67,0.1) 0%,rgba(62,240,216,0.04) 50%,transparent 100%)}
+.hero .badge{display:inline-block;padding:5px 14px;border-radius:14px;font-size:0.80em;font-weight:700;background:rgba(212,168,67,0.14);color:var(--phi);margin-bottom:20px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:1.9em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:14px;line-height:1.3}
+.hero .tagline{font-size:1em;color:var(--ink2);max-width:800px;margin:0 auto 8px}
+.hero .meta{color:var(--ink3);font-size:0.85em;margin-top:10px}
+
+section{padding:45px 0}section:nth-child(even){background:var(--bg2)}
+h2{font-size:1.5em;color:var(--phi);margin-bottom:8px;text-align:center;padding-bottom:10px;border-bottom:1px solid var(--border)}
+h2 .num{display:block;font-size:0.42em;color:var(--ink3);letter-spacing:2px;margin-bottom:4px;font-weight:400;text-transform:uppercase}
+.section-desc{text-align:center;color:var(--ink3);margin-bottom:25px;max-width:700px;margin-left:auto;margin-right:auto;font-size:0.93em}
+h3{font-size:1.1em;color:var(--acc);margin:30px 0 10px}
+p{color:var(--ink2);margin-bottom:12px;line-height:1.85}
+p strong{color:var(--ink)}
+em{color:var(--phi2)}
+
+.eq-box{background:rgba(15,12,46,0.8);border:2px solid rgba(212,168,67,0.35);border-radius:16px;padding:20px 26px;margin:20px 0;text-align:center}
+.eq-box .main-eq{font-family:'Courier New','Consolas',monospace;font-size:1.2em;font-weight:700;color:var(--phi);letter-spacing:1px;line-height:2.2}
+.eq-box .desc{color:var(--ink3);font-size:0.85em;margin-top:6px}
+
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:0.88em}
+th{background:var(--bg3);color:var(--phi);padding:10px 14px;text-align:center;border-bottom:2px solid rgba(212,168,67,0.25);font-weight:600}
+td{padding:9px 14px;border-bottom:1px solid var(--border);color:var(--ink2);font-size:0.85em;text-align:center;font-family:'Courier New',monospace}
+td.left{text-align:left}
+td.green{color:var(--green);font-weight:700}
+td.amber{color:var(--orange)}
+td.red{color:var(--red)}
+td.phi{color:var(--phi);font-weight:700}
+td.note{font-size:0.78em;color:var(--ink3);text-align:left;font-family:'Segoe UI',sans-serif}
+
+.highlight{background:var(--bg3);border:1px solid rgba(62,240,216,0.2);border-radius:14px;padding:18px 22px;margin:20px 0}
+.result-box{background:rgba(212,168,67,0.04);border:1px solid rgba(212,168,67,0.3);border-radius:14px;padding:18px 22px;margin:20px 0}
+.result-box .label{color:var(--phi);font-weight:600;font-size:0.78em;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+
+.particle-card{background:var(--bg3);border:2px solid var(--border);border-radius:18px;padding:20px 24px;margin:16px 0;display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.particle-card .p-symbol{font-size:2em;font-weight:700;color:var(--phi);min-width:60px;text-align:center;padding-top:4px}
+.particle-card .p-info{flex:1;min-width:250px}
+.particle-card .p-name{font-size:1.1em;font-weight:600;color:var(--ink);margin-bottom:4px}
+.particle-card .p-hn{font-family:'Courier New',monospace;font-size:0.85em;color:var(--acc);margin-bottom:6px}
+.particle-card .p-desc{font-size:0.85em;color:var(--ink2)}
+
+blockquote{border-left:3px solid var(--phi);padding:14px 22px;margin:20px 0;background:rgba(212,168,67,0.04);border-radius:0 12px 12px 0;font-style:italic;color:var(--ink);font-size:1.02em}
+.attrib{color:var(--ink3);font-size:0.85em;margin-top:6px;font-style:normal}
+
+footer{text-align:center;padding:30px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.82em;margin-top:40px}
+footer a{color:var(--phi);text-decoration:none}
+footer a:hover{text-decoration:underline}
+
+@media(max-width:640px){
+  .hero h1{font-size:1.3em}
+  .particle-card{flex-direction:column;text-align:center}
+  .particle-card .p-symbol{margin:0 auto}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Symphonie</a>
+    <a href="document-fondateur.html">Document Fondateur</a>
+    <a href="fermions-harmoniques.html">Fréquences Fermions</a>
+    <a href="forces-particules-harmoniques.html">Forces</a>
+    <a href="#proton">Proton H₁</a>
+    <a href="#fermions">Fermions</a>
+    <a href="#bosons">Bosons</a>
+    <a href="#koide">Koide</a>
+    <a href="#tableau">Tableau Complet</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">Spectre des Particules</div>
+    <h1>Le Modèle Standard<br>comme Spectre Harmonique de Ψ</h1>
+    <p class="tagline">Chaque particule est une harmonique du champ Ψ. Le proton est H₁ = φ. Les fermions sont les harmoniques supérieures. Les bosons sont les résonances.</p>
+    <p class="meta">18 Juin 2026 — KOTTO Alain — Théorie Harmonique</p>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ================================================================== -->
+<section id="principe">
+  <h2><span class="num">Section 0</span>Principe — Les Particules comme Projections de Ψ</h2>
+  <p class="section-desc">La Théorie Harmonique postule que toutes les particules du Modèle Standard ne sont pas des entités fondamentales distinctes, mais des <strong>modes propres</strong> du champ scalaire Ψ.</p>
+
+  <div class="eq-box">
+    <div class="main-eq">Ψ = Σ<sub>n=1</sub><sup>n(R)</sup> H<sub>n</sub> · (Ψ<sub>1</sub>)<sup>n</sup></div>
+    <div class="desc">
+      Ψ₁ = fréquence de Schumann (7.83 Hz) pour la cavité terrestre<br>
+      H₁=φ, H₂=π, H₃=e, H₄=√2, H₅=√3, H₆=√5, H₇=e/π<br>
+      Chaque particule correspond à une <strong>combinaison spécifique des Hₙ</strong>
+    </div>
+  </div>
+
+  <p>Dans ce cadre, <strong>le proton n'est pas « une particule parmi d'autres » — c'est la première harmonique du champ</strong>. Sa masse émerge de H₁ = φ. L'électron correspond à une structure où π domine. Les quarks lourds (top) mobilisent des puissances élevées de e et φ. Les bosons de jauge (W, Z, Higgs) sont des résonances de couplage.</p>
+</section>
+
+<!-- ================================================================== -->
+<section id="proton">
+  <h2><span class="num">Section 1</span>Le Proton — H₁ = φ, la Première Harmonique</h2>
+
+  <div class="particle-card" style="border:2px solid rgba(212,168,67,0.4);background:rgba(212,168,67,0.04)">
+    <div class="p-symbol">p⁺</div>
+    <div class="p-info">
+      <div class="p-name">Proton — La Note Fondamentale de la Matière</div>
+      <div class="p-hn">H₁ = φ ≈ 1.618034 — Masse ≈ 938.272 MeV</div>
+      <div class="p-desc">
+        <p>Le proton est la <strong>première harmonique du champ Ψ</strong>. Sa masse est codée dans H₁ = φ, le nombre d'or. Il est le baryon fondamental — la « note do » de la symphonie hadronique.</p>
+        <p><strong>Ratio proton/électron ≈ 1836.15</strong> — ce nombre n'est pas arbitraire. Dans le cadre harmonique, il s'exprime comme une combinaison de φ, π, e — le calcul exact reste un problème ouvert.</p>
+        <p><strong>Pourquoi le proton est-il stable ?</strong> Parce que H₁ = φ est le <strong>point fixe</strong> de la transformation récursive R(α)=1−α². La stabilité du proton est la manifestation hadronique de la stabilité du nombre d'or.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="eq-box" style="background:rgba(212,168,67,0.04)">
+    <div class="main-eq">m<sub>p</sub> ≈ H₁ · m<sub>ref</sub> &nbsp;où&nbsp; H₁ = φ</div>
+    <div class="desc">La masse du proton est proportionnelle à φ, le premier coefficient spectral</div>
+  </div>
+
+  <h3>1.1 Le Proton et le Nombre d'Or — Une Convergence Révélatrice</h3>
+  <p>Le nombre d'or apparaît <strong>trois fois</strong> en lien avec le proton :</p>
+
+  <table>
+    <tr><th>Manifestation</th><th>Lien avec φ</th><th>Signification</th></tr>
+    <tr><td>H₁ = φ</td><td class="phi">φ = 1.618</td><td class="left">Le proton est la première harmonique — son coefficient spectral est le nombre d'or</td></tr>
+    <tr><td>Ordre fractionnaire α = 1/φ</td><td class="phi">1/φ = 0.618</td><td class="left">L'opérateur d'évolution du champ Ψ a pour ordre l'inverse du nombre d'or — le proton « hérite » de cette structure</td></tr>
+    <tr><td>Point fixe R(α) = α</td><td class="phi">α²+α−1=0 → φ</td><td class="left">La stabilité du proton reflète la stabilité du point fixe — il ne se désintègre pas parce que φ est le seul point fixe stable</td></tr>
+  </table>
+
+  <blockquote>
+    « Le proton ne se désintègre pas parce que φ ne change pas. La stabilité de la matière est la stabilité du nombre d'or. »
+    <div class="attrib">— Principe de stabilité hadronique, Théorie Harmonique</div>
+  </blockquote>
+</section>
+
+<!-- ================================================================== -->
+<section id="fermions">
+  <h2><span class="num">Section 2</span>Les Fermions — Leptons et Quarks</h2>
+  <p class="section-desc">Les 12 fermions du Modèle Standard (3 générations × 2 secteurs) forment une <strong>structure harmonique</strong> où les ratios de masse inter-générationnels sont des produits des Hₙ.</p>
+
+  <h3>2.1 Tableau Complet des Fermions</h3>
+
+  <div style="overflow-x:auto">
+  <table>
+    <thead>
+    <tr>
+      <th>Fermion</th><th>Symbole</th><th>Gén.</th><th>Charge</th><th>Masse (MeV)</th>
+      <th>Ψ₁ = mc²/h (Hz)</th><th>Hₙ dominant</th><th>Note harmonique</th>
+    </tr>
+    </thead>
+    <tbody>
+    <!-- Leptons -->
+    <tr><td colspan="8" style="background:var(--bg3);color:var(--acc);font-weight:600;text-align:center;font-family:'Segoe UI',sans-serif">LEPTONS</td></tr>
+    <tr>
+      <td class="left"><strong>Électron</strong></td><td>e⁻</td><td>1</td><td>−1</td><td>0.511</td>
+      <td>1.24×10²⁰</td><td>π (H₂)</td><td class="note">Fondamentale leptonique — la plus légère particule chargée</td>
+    </tr>
+    <tr>
+      <td class="left"><strong>Muon</strong></td><td>μ⁻</td><td>2</td><td>−1</td><td>105.66</td>
+      <td>2.55×10²²</td><td>φ⁻³π³e¹</td><td class="note">m_μ/m_e = φ⁻³π³e¹√2²√3³ — erreur 0.001%</td>
+    </tr>
+    <tr>
+      <td class="left"><strong>Tau</strong></td><td>τ⁻</td><td>3</td><td>−1</td><td>1776.86</td>
+      <td>4.30×10²³</td><td>φ¹π³e²</td><td class="note">m_τ/m_μ = φ¹π³e²√2⁻¹√3⁻⁵ — erreur 0.008%</td>
+    </tr>
+    <tr>
+      <td class="left"><strong>Neutrino e</strong></td><td>ν_e</td><td>1</td><td>0</td><td>< 10⁻⁹</td>
+      <td>~10¹¹</td><td>—</td><td class="note">Masse non mesurée précisément — prédiction harmonique attendue</td>
+    </tr>
+    <tr>
+      <td class="left"><strong>Neutrino μ</strong></td><td>ν_μ</td><td>2</td><td>0</td><td>< 0.17</td>
+      <td>~10¹³</td><td>—</td><td class="note">Oscillations mesurées, masses absolues inconnues</td>
+    </tr>
+    <tr>
+      <td class="left"><strong>Neutrino τ</strong></td><td>ν_τ</td><td>3</td><td>0</td><td>< 18.2</td>
+      <td>~10¹⁵</td><td>—</td><td class="note">Problème ouvert — masses absolues des neutrinos</td>
+    </tr>
+
+    <!-- Quarks -->
+    <tr><td colspan="8" style="background:var(--bg3);color:var(--acc2);font-weight:600;text-align:center;font-family:'Segoe UI',sans-serif">QUARKS</td></tr>
+    <tr>
+      <td class="left"><strong>Up</strong></td><td>u</td><td>1</td><td>+2/3</td><td>2.2</td>
+      <td>5.32×10²⁰</td><td>π (H₂)</td><td class="note">Quark le plus léger avec down — constitue le proton (uud)</td>
+    </tr>
+    <tr>
+      <td class="left"><strong>Down</strong></td><td>d</td><td>1</td><td>−1/3</td><td>4.7</td>
+      <td>1.14×10²¹</td><td>π (H₂)</td><td class="note">Deuxième quark de 1ʳᵉ génération — constitue le proton (uud)</td>
+    </tr>
+    <tr>
+      <td class="left"><strong>Strange</strong></td><td>s</td><td>2</td><td>−1/3</td><td>96</td>
+      <td>2.32×10²²</td><td>e (H₃)</td><td class="note">m_s/m_d — ratio à explorer (problème ouvert)</td>
+    </tr>
+    <tr>
+      <td class="left"><strong>Charm</strong></td><td>c</td><td>2</td><td>+2/3</td><td>1275</td>
+      <td>3.08×10²³</td><td>φ⁻¹π⁻²e⁵</td><td class="note">m_c/m_u = φ⁻¹π⁻²e⁵√2⁴√3⁵ — erreur 0.009%</td>
+    </tr>
+    <tr>
+      <td class="left"><strong>Bottom</strong></td><td>b</td><td>3</td><td>−1/3</td><td>4180</td>
+      <td>1.01×10²⁴</td><td>—</td><td class="note">m_b/m_s — ratio à explorer (problème ouvert)</td>
+    </tr>
+    <tr>
+      <td class="left"><strong>Top</strong></td><td>t</td><td>3</td><td>+2/3</td><td>173 000</td>
+      <td>4.18×10²⁵</td><td>φ⁵π³e³</td><td class="note">m_t/m_c = φ⁵π³e³√2⁻⁵√3⁻⁴ — erreur 0.019%</td>
+    </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>2.2 La Structure en Générations — Un Phénomène Harmonique</h3>
+
+  <div class="eq-box">
+    <div class="main-eq">m<sub>génération N+1</sub> / m<sub>génération N</sub> = Π H<sub>n</sub><sup>k<sub>n</sub></sup></div>
+    <div class="desc">Les sauts de masse entre générations sont des produits stricts des Hₙ avec exposants entiers</div>
+  </div>
+
+  <table>
+    <tr><th>Secteur</th><th>Ratio</th><th>Formule</th><th>Erreur</th></tr>
+    <tr><td>Leptons chargés</td><td class="phi">m_μ/m_e</td><td>φ⁻³π³e¹√2²√3³</td><td class="green">0.001%</td></tr>
+    <tr><td>Leptons chargés</td><td class="phi">m_τ/m_μ</td><td>φ¹π³e²√2⁻¹√3⁻⁵</td><td class="green">0.008%</td></tr>
+    <tr><td>Leptons chargés</td><td class="phi">m_τ/m_e</td><td>φ²π³e⁵√2⁻²√3⁻¹</td><td class="green">0.017%</td></tr>
+    <tr><td>Quarks up-type</td><td class="phi">m_c/m_u</td><td>φ⁻¹π⁻²e⁵√2⁴√3⁵</td><td class="green">0.009%</td></tr>
+    <tr><td>Quarks up-type</td><td class="phi">m_t/m_c</td><td>φ⁵π³e³√2⁻⁵√3⁻⁴</td><td class="green">0.019%</td></tr>
+    <tr><td>Quarks down-type</td><td>m_s/m_d</td><td colspan="2" style="color:var(--orange)">⚠️ Problème ouvert — nécessite H₈, H₉…</td></tr>
+    <tr><td>Quarks down-type</td><td>m_b/m_s</td><td colspan="2" style="color:var(--orange)">⚠️ Problème ouvert — nécessite H₈, H₉…</td></tr>
+  </table>
+
+  <div class="result-box">
+    <div class="label">Observation — Le rôle universel de π³</div>
+    <p>
+      <strong>L'exposant de π est +3 dans 4 des 5 ratios confirmés.</strong> Ceci suggère que <strong>π³ est une constante de structure universelle pour les sauts générationnels</strong> — comme si le « pas » entre générations était gouverné par π³, et que les autres Hₙ modulaient ce pas selon le secteur (leptons vs quarks, up-type vs down-type).
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="bosons">
+  <h2><span class="num">Section 3</span>Les Bosons de Jauge et le Higgs</h2>
+  <p class="section-desc">Les bosons ne sont pas des « particules » au même titre que les fermions — ce sont des <strong>résonances de couplage</strong>, des manifestations des forces elles-mêmes.</p>
+
+  <table>
+    <thead>
+    <tr>
+      <th>Boson</th><th>Symbole</th><th>Force</th><th>Masse (GeV)</th><th>Nature harmonique</th><th>Statut de dérivation</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td class="left"><strong>Photon</strong></td><td>γ</td><td>EM</td><td>0</td>
+      <td class="note">Masse nulle = pas de fréquence propre. Le photon est la <strong>porteuse pure</strong> — il ne correspond pas à une harmonique massive mais à une excitation du vide.</td>
+      <td class="green">✓ Établi</td>
+    </tr>
+    <tr>
+      <td class="left"><strong>Gluon</strong></td><td>g</td><td>Forte</td><td>0</td>
+      <td class="note">Masse nulle. Confiné — n'existe pas à l'état libre. Les gluons sont les <strong>modes de vibration</strong> du champ de couleur.</td>
+      <td class="green">✓ Établi</td>
+    </tr>
+    <tr>
+      <td class="left"><strong>W±</strong></td><td>W⁺,W⁻</td><td>Faible</td><td>80.38</td>
+      <td class="note">La masse du W est liée à la brisure électrofaible. Pourrait s'exprimer en fonction de v (vev du Higgs) et des couplages de jauge — eux-mêmes dérivables des Hₙ.</td>
+      <td class="amber">⚠️ À dériver</td>
+    </tr>
+    <tr>
+      <td class="left"><strong>Z⁰</strong></td><td>Z</td><td>Faible</td><td>91.19</td>
+      <td class="note">m_Z = m_W / cos θ_W. Si sin²θ_W = φ³π⁻⁴e¹√2⁵√3⁻² (erreur 3.59%), alors m_Z est indirectement prédite.</td>
+      <td class="amber">⚠️ Indirect</td>
+    </tr>
+    <tr>
+      <td class="left"><strong>Higgs</strong></td><td>H⁰</td><td>Masse</td><td>125.10</td>
+      <td class="note">Le Higgs est la <strong>résonance du champ scalaire Ψ lui-même</strong>. Sa masse devrait émerger directement de la structure des Hₙ. Problème ouvert central.</td>
+      <td class="red">❌ Problème ouvert</td>
+    </tr>
+    <tr>
+      <td class="left"><strong>Graviton</strong></td><td>G</td><td>Gravité</td><td>0</td>
+      <td class="note">Hypothétique. Dans la TH, la gravité est émergente (Conséquence C1). Le graviton n'est peut-être pas une particule fondamentale.</td>
+      <td class="amber">⚠️ Spéculatif</td>
+    </tr>
+    </tbody>
+  </table>
+
+  <div class="highlight">
+    <p style="color:var(--phi);font-weight:600;margin-bottom:6px">Le Higgs — Le Graal Harmonique</p>
+    <p>
+      <strong>La masse du Higgs (125.10 GeV) est le nombre le plus important à dériver.</strong> Si la TH peut prédire m_H à partir des Hₙ sans paramètre libre, ce sera la confirmation la plus spectaculaire possible. Le Higgs est l'excitation du champ Ψ lui-même — sa masse devrait être la <strong>fréquence propre</strong> de la série harmonique.
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="koide">
+  <h2><span class="num">Section 4</span>La Formule de Koide — L'Émergence du 3/2</h2>
+
+  <div class="eq-box">
+    <div class="main-eq">(√m<sub>e</sub> + √m<sub>μ</sub> + √m<sub>τ</sub>)² / (m<sub>e</sub> + m<sub>μ</sub> + m<sub>τ</sub>) = <strong>3/2</strong></div>
+    <div class="desc">Koide (1981) — Énigme : pourquoi exactement 3/2 ?</div>
+  </div>
+
+  <p>Dans le cadre harmonique, <strong>3/2 émerge naturellement</strong> :</p>
+
+  <table>
+    <tr><th>Interprétation</th><th>Valeur</th></tr>
+    <tr><td>Nombre de générations de fermions</td><td>3</td></tr>
+    <tr><td>Nombre de secteurs (up/down ou lepton/quark)</td><td>2</td></tr>
+    <tr><td>Ratio générations / secteurs</td><td class="phi">3/2</td></tr>
+    <tr><td>Valeur mesurée</td><td class="green">1.500017 (erreur 0.001%)</td></tr>
+  </table>
+
+  <p>La formule de Koide n'est pas une coïncidence — c'est une <strong>contrainte topologique</strong> sur la somme des amplitudes harmoniques des trois générations de leptons chargés. Dans la série Ψ = Σ Hₙ (Ψ₁)ⁿ, les leptons chargés occupent des positions spécifiques dans le spectre, et la somme de leurs racines carrées est contrainte par la structure de la série.</p>
+
+  <blockquote>
+    « La formule de Koide est à la Théorie Harmonique ce que la loi de Balmer était à la mécanique quantique : une régularité empirique qui attendait sa dérivation théorique. 3/2 n'est pas un hasard — c'est le nombre de générations divisé par le nombre de secteurs. »
+    <div class="attrib">— Théorie Harmonique, 18 Juin 2026</div>
+  </blockquote>
+</section>
+
+<!-- ================================================================== -->
+<section id="tableau">
+  <h2><span class="num">Section 5</span>Tableau Récapitulatif — Toutes les Particules</h2>
+
+  <div style="overflow-x:auto">
+  <table>
+    <thead>
+    <tr>
+      <th>Particule</th><th>Hₙ associé</th><th>Ratio de masse</th><th>Formule</th><th>Erreur</th><th>Statut</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr style="background:rgba(212,168,67,0.06)">
+      <td class="left"><strong>Proton</strong></td><td class="phi">H₁ = φ</td><td>m_p (absolu)</td><td>—</td><td>—</td><td class="note">Première harmonique — dérivation absolue ouverte</td>
+    </tr>
+    <tr>
+      <td class="left">Électron</td><td>H₂ = π</td><td>m_e (référence)</td><td>—</td><td>—</td><td class="note">Référence de masse pour le secteur leptonique</td>
+    </tr>
+    <tr style="background:rgba(46,213,115,0.04)">
+      <td class="left">Muon / Électron</td><td>φ,π,e,√2,√3</td><td>m_μ/m_e</td><td>φ⁻³π³e¹√2²√3³</td><td class="green">0.001%</td><td class="green">✓ Confirmé</td>
+    </tr>
+    <tr style="background:rgba(46,213,115,0.04)">
+      <td class="left">Tau / Muon</td><td>φ,π,e,√2,√3</td><td>m_τ/m_μ</td><td>φ¹π³e²√2⁻¹√3⁻⁵</td><td class="green">0.008%</td><td class="green">✓ Confirmé</td>
+    </tr>
+    <tr style="background:rgba(46,213,115,0.04)">
+      <td class="left">Tau / Électron</td><td>φ,π,e,√2,√3</td><td>m_τ/m_e</td><td>φ²π³e⁵√2⁻²√3⁻¹</td><td class="green">0.017%</td><td class="green">✓ Confirmé</td>
+    </tr>
+    <tr style="background:rgba(46,213,115,0.04)">
+      <td class="left">Charm / Up</td><td>φ,π,e,√2,√3</td><td>m_c/m_u</td><td>φ⁻¹π⁻²e⁵√2⁴√3⁵</td><td class="green">0.009%</td><td class="green">✓ Confirmé</td>
+    </tr>
+    <tr style="background:rgba(46,213,115,0.04)">
+      <td class="left">Top / Charm</td><td>φ,π,e,√2,√3</td><td>m_t/m_c</td><td>φ⁵π³e³√2⁻⁵√3⁻⁴</td><td class="green">0.019%</td><td class="green">✓ Confirmé</td>
+    </tr>
+    <tr>
+      <td class="left">Strange / Down</td><td>—</td><td>m_s/m_d</td><td>—</td><td>—</td><td class="amber">⚠️ Ouvert</td>
+    </tr>
+    <tr>
+      <td class="left">Bottom / Strange</td><td>—</td><td>m_b/m_s</td><td>—</td><td>—</td><td class="amber">⚠️ Ouvert</td>
+    </tr>
+    <tr>
+      <td class="left">Masses des neutrinos</td><td>—</td><td>m_ν (absolu)</td><td>—</td><td>—</td><td class="red">❌ Ouvert</td>
+    </tr>
+    <tr>
+      <td class="left">Masse du Higgs</td><td>—</td><td>m_H = 125.10 GeV</td><td>—</td><td>—</td><td class="red">❌ Problème central</td>
+    </tr>
+    <tr>
+      <td class="left">Masses W, Z</td><td>—</td><td>m_W, m_Z</td><td>Via α, sin²θ_W</td><td class="amber">~3.6%</td><td class="amber">⚠️ Indirect</td>
+    </tr>
+    <tr>
+      <td class="left">Constante de structure fine</td><td>π,e,φ,√2,√3</td><td>α</td><td>π⁴e⁻⁴φ⁻⁵√2⁻¹√3⁻⁵</td><td class="green">0.000024%</td><td class="green">✓ Confirmé</td>
+    </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="result-box">
+    <div class="label">Bilan — 7 grandeurs dérivées, 4 problèmes ouverts</div>
+    <p>
+      <strong>7 ratios/pseudo-observables</strong> sont dérivés avec une précision remarquable (erreur < 0.02%) à partir du seul alphabet {φ,π,e,√2,√3,√5}.<br><br>
+      <strong>4 problèmes ouverts :</strong> masses absolues (m_p, m_e en unités de Planck), ratios s/d et b/s, masses des neutrinos, masse du Higgs.<br><br>
+      <strong>Le test ultime :</strong> si la TH peut prédire m_H = 125.10 GeV à partir de la structure des Hₙ, elle aura démontré sa capacité à unifier le secteur de Higgs avec le secteur de Yukawa dans un seul cadre sans paramètre libre.
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="perspectives">
+  <h2><span class="num">Section 6</span>Perspectives — Vers le Spectre Complet</h2>
+
+  <h3>6.1 Problèmes Ouverts Prioritaires</h3>
+
+  <table>
+    <tr><th>Priorité</th><th>Problème</th><th>Approche suggérée</th><th>Impact si résolu</th></tr>
+    <tr>
+      <td class="phi">1</td>
+      <td class="left"><strong>Masse du Higgs (125.10 GeV)</strong></td>
+      <td class="left">Exprimer m_H comme une combinaison des Hₙ (n=1..7 ou au-delà). Le Higgs est l'excitation du champ Ψ — sa masse est la fréquence propre de la série.</td>
+      <td class="green">Validation décisive</td>
+    </tr>
+    <tr>
+      <td class="phi">2</td>
+      <td class="left"><strong>Ratios s/d et b/s (quarks down-type)</strong></td>
+      <td class="left">Étendre l'alphabet à H₈, H₉, H₁₀… ou explorer les exposants fractionnaires issus de la convergence de la série.</td>
+      <td class="green">Complétion du secteur des quarks</td>
+    </tr>
+    <tr>
+      <td class="phi">3</td>
+      <td class="left"><strong>Masse absolue du proton (m_p/m_Planck)</strong></td>
+      <td class="left">Le proton = H₁ = φ. Il faut déterminer l'échelle de masse de référence (m_ref) pour passer de φ à 938 MeV.</td>
+      <td class="green">Ancre la TH dans les unités de Planck</td>
+    </tr>
+    <tr>
+      <td class="phi">4</td>
+      <td class="left"><strong>Masses des neutrinos</strong></td>
+      <td class="left">Les neutrinos sont les harmoniques les plus faibles — leurs masses minuscules pourraient coder des Hₙ très élevés ou des relations de type see-saw.</td>
+      <td class="amber">Test de cohérence</td>
+    </tr>
+    <tr>
+      <td class="phi">5</td>
+      <td class="left"><strong>Masses W, Z (bosons de jauge)</strong></td>
+      <td class="left">m_W = g·v/2, m_Z = m_W/cos θ_W. Si α et sin²θ_W sont dérivés, m_W et m_Z le sont indirectement.</td>
+      <td class="amber">Cohérence interne</td>
+    </tr>
+  </table>
+
+  <blockquote>
+    « Le Modèle Standard compte 19 paramètres libres. La Théorie Harmonique en a déjà dérivé 7 avec une précision exceptionnelle. Il en reste 12. Chaque paramètre dérivé est une confirmation. Le jour où les 19 seront dérivés, le Modèle Standard ne sera plus le Modèle Standard — il sera le Spectre Harmonique. »
+    <div class="attrib">— Théorie Harmonique, 18 Juin 2026</div>
+  </blockquote>
+</section>
+
+</div><!-- .container -->
+
+<footer>
+  <div class="container">
+    <p>
+      <a href="index.html">Symphonie Cosmique</a> |
+      <a href="document-fondateur.html">Document Fondateur</a> |
+      <a href="fermions-harmoniques.html">Fréquences Fermions</a> |
+      <a href="forces-particules-harmoniques.html">Forces</a> |
+      <a href="synthese-harmonique.html">Synthèse</a>
+    </p>
+    <p style="margin-top:8px">Particules Harmoniques — Le Modèle Standard comme Spectre de Ψ — © 2026 KOTTO Alain</p>
+  </div>
+</footer>
+
+</body>
+</html>

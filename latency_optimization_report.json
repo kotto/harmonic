@@ -1,0 +1,129 @@
+{
+  "metadata": {
+    "report_id": "LATENCY_OPT_20260516_074656",
+    "generation_date": "2026-05-16T07:46:56.319163",
+    "current_latency": 4.39,
+    "target_latency": 2.0,
+    "reduction_needed": 2.39
+  },
+  "optimization_plan": {
+    "phase_1": {
+      "name": "Optimisations Rapides (1-2 jours)",
+      "steps": [
+        {
+          "name": "Quantisation INT8",
+          "description": "R\u00e9duction mod\u00e8le 17GB \u2192 9GB",
+          "expected_gain": "0.8s",
+          "priority": "\u2b50\u2b50\u2b50\u2b50\u2b50",
+          "effort": "Moyen",
+          "files": [
+            "quantization_int8_plan.json",
+            "quantize_int8.sh"
+          ]
+        },
+        {
+          "name": "Param\u00e8tres optimis\u00e9s",
+          "description": "max_tokens: 512\u2192256, top_p: 1.0\u21920.95, etc.",
+          "expected_gain": "0.5s",
+          "priority": "\u2b50\u2b50\u2b50\u2b50\u2b50",
+          "effort": "Faible",
+          "files": [
+            "optimized_inference_params.json",
+            "apply_optimizations_ssh.sh"
+          ]
+        },
+        {
+          "name": "Cache pr\u00e9-chargement",
+          "description": "Keep-alive mod\u00e8le en m\u00e9moire",
+          "expected_gain": "0.3s",
+          "priority": "\u2b50\u2b50\u2b50\u2b50",
+          "effort": "Faible"
+        }
+      ],
+      "total_expected_gain": "1.6s",
+      "estimated_latency_after": "2.79s"
+    },
+    "phase_2": {
+      "name": "Optimisations Moyennes (3-7 jours)",
+      "steps": [
+        {
+          "name": "Upgrade instance g5.8xlarge",
+          "description": "4x NVIDIA A10G (96GB VRAM)",
+          "expected_gain": "0.6s",
+          "priority": "\u2b50\u2b50\u2b50\u2b50\u2b50",
+          "effort": "Moyen",
+          "files": [
+            "aws_instance_upgrade_plan.json",
+            "aws_instance_migration_plan.sh"
+          ]
+        },
+        {
+          "name": "Flash Attention v2",
+          "description": "Optimisation kernels GPU",
+          "expected_gain": "0.4s",
+          "priority": "\u2b50\u2b50\u2b50\u2b50",
+          "effort": "\u00c9lev\u00e9"
+        }
+      ],
+      "total_expected_gain": "1.0s",
+      "estimated_latency_after": "1.79s"
+    },
+    "phase_3": {
+      "name": "Optimisations Avanc\u00e9es (1-2 semaines)",
+      "steps": [
+        {
+          "name": "Format EXL2",
+          "description": "Conversion pour inference plus rapide",
+          "expected_gain": "0.5s",
+          "priority": "\u2b50\u2b50\u2b50\u2b50",
+          "effort": "\u00c9lev\u00e9"
+        },
+        {
+          "name": "Custom CUDA kernels",
+          "description": "Optimisations sp\u00e9cifiques architecture",
+          "expected_gain": "0.3s",
+          "priority": "\u2b50\u2b50\u2b50",
+          "effort": "Tr\u00e8s \u00e9lev\u00e9"
+        }
+      ],
+      "total_expected_gain": "0.8s",
+      "estimated_latency_after": "0.99s"
+    }
+  },
+  "cost_analysis": {
+    "current_monthly_cost": "$1,900 (estim\u00e9)",
+    "additional_investment": {
+      "quantization_tools": "$200",
+      "instance_upgrade": "+$1,900/mois",
+      "expert_consulting": "$5,000 (one-time)"
+    },
+    "total_investment_month1": "$7,100",
+    "expected_roi": "7-14x (visibilit\u00e9 \u00e9quivalente $50k-100k)",
+    "payback_period": "2-3 mois"
+  },
+  "impact_lm_arena": {
+    "current_score": "89.8 points",
+    "target_score": "92.8 points",
+    "score_increase": "+3.0 points",
+    "current_position": "Top 4-5",
+    "target_position": "Top 2-3",
+    "position_improvement": "+2-3 positions"
+  },
+  "files_generated": [
+    "optimized_inference_params.json",
+    "apply_optimizations_ssh.sh",
+    "quantization_int8_plan.json",
+    "quantize_int8.sh",
+    "aws_instance_upgrade_plan.json",
+    "aws_instance_migration_plan.sh",
+    "performance_monitoring_config.json"
+  ],
+  "next_steps": [
+    "1. Ex\u00e9cuter quantisation INT8 (jour 1)",
+    "2. Appliquer param\u00e8tres optimis\u00e9s (jour 1)",
+    "3. Upgrader instance AWS (jour 2)",
+    "4. Impl\u00e9menter pipeline parall\u00e8le (jour 2-3)",
+    "5. Tester performance optimis\u00e9e (jour 3)",
+    "6. Soumettre r\u00e9sultats LM Arena (jour 4)"
+  ]
+}

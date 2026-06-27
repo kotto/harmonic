@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCV Compression — Démo Interactive</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f4ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ecff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            color: #333;
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .upload-hint {
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .options {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .option-group {
+            margin-bottom: 20px;
+        }
+
+        .option-label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            display: none;
+            font-size: 0.95em;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .results {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .result-row:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .result-value {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .demo-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            color: #1976d2;
+            border-left: 4px solid #1976d2;
+        }
+
+        .demo-info strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab-btn {
+                width: 100%;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 HCV Compression — Démo Interactive</h1>
+            <p>Explorez les méthodes de compression développées</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="mobile">📱 Mobile</button>
+            <button class="tab-btn" data-tab="images">🖼️ Images</button>
+            <button class="tab-btn" data-tab="video">🎥 Vidéo</button>
+            <button class="tab-btn" data-tab="info">ℹ️ Infos</button>
+        </div>
+
+        <!-- Tab: Mobile -->
+        <div id="mobile" class="tab-content active">
+            <div class="card">
+                <h2>📱 Compression Mobile</h2>
+                
+                <div class="demo-info">
+                    <strong>Mode Démo</strong>
+                    Cette interface simule la compression mobile. Les fichiers ne sont pas réellement compressés.
+                </div>
+
+                <div class="upload-area" id="uploadAreaMobile">
+                    <div class="upload-icon">📱</div>
+                    <div class="upload-text">Glissez-déposez votre photo/vidéo ici</div>
+                    <div class="upload-hint">ou cliquez pour sélectionner (JPEG, HEIC, MP4, MOV)</div>
+                    <input type="file" id="fileInputMobile" accept=".jpg,.jpeg,.heic,.heif,.mp4,.mov,.m4v,.png,.webp">
+                </div>
+
+                <div class="options">
+                    <div class="option-group">
+                        <label class="option-label">📊 Formats Supportés</label>
+                        <p style="color: #666; margin-bottom: 10px;">
+                            <strong>Photos:</strong> HEIC (iPhone), JPEG (Android), PNG, WebP<br>
+                            <strong>Vidéos:</strong> MP4, MOV (H.264, H.265)
+                        </p>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" id="compressMobileBtn" disabled>🚀 Simuler Compression</button>
+                    <button class="btn-secondary" id="resetMobileBtn">🔄 Réinitialiser</button>
+                </div>
+
+                <div class="status-message" id="statusMobile"></div>
+
+                <div class="results" id="resultsMobile">
+                    <h3>📊 Résultats Simulés</h3>
+                    <div class="result-row">
+                        <span class="result-label">Format:</span>
+                        <span class="result-value" id="resultFormatMobile">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Taille Originale:</span>
+                        <span class="result-value" id="resultOriginalMobile">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Taille Compressée (Estimée):</span>
+                        <span class="result-value" id="resultCompressedMobile">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Ratio:</span>
+                        <span class="result-value" id="resultRatioMobile">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Économies:</span>
+                        <span class="result-value" id="resultSavingsMobile">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Images -->
+        <div id="images" class="tab-content">
+            <div class="card">
+                <h2>🖼️ Compression d'Images</h2>
+                
+                <div class="demo-info">
+                    <strong>Mode Démo</strong>
+                    Simulation de compression pour images pré-compressées et RAW.
+                </div>
+
+                <div class="upload-area" id="uploadAreaImages">
+                    <div class="upload-icon">🖼️</div>
+                    <div class="upload-text">Glissez-déposez votre image ici</div>
+                    <div class="upload-hint">ou cliquez pour sélectionner (JPEG, PNG, WebP, GIF)</div>
+                    <input type="file" id="fileInputImages" accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.tiff">
+                </div>
+
+                <div class="options">
+                    <div class="option-group">
+                        <label class="option-label">📊 Méthodes Disponibles</label>
+                        <p style="color: #666; margin-bottom: 10px;">
+                            <strong>Pré-Compressées:</strong> JPEG, PNG, WebP, GIF (Ratio: 1.1-8:1)<br>
+                            <strong>RAW:</strong> Images non-compressées (Ratio: 8-12:1)<br>
+                            <strong>Binary Lossless:</strong> Données binaires (Ratio: 2-4:1)
+                        </p>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" id="compressImagesBtn" disabled>🚀 Simuler Compression</button>
+                    <button class="btn-secondary" id="resetImagesBtn">🔄 Réinitialiser</button>
+                </div>
+
+                <div class="status-message" id="statusImages"></div>
+
+                <div class="results" id="resultsImages">
+                    <h3>📊 Résultats Simulés</h3>
+                    <div class="result-row">
+                        <span class="result-label">Format:</span>
+                        <span class="result-value" id="resultFormatImages">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Taille Originale:</span>
+                        <span class="result-value" id="resultOriginalImages">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Taille Compressée (Estimée):</span>
+                        <span class="result-value" id="resultCompressedImages">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Ratio:</span>
+                        <span class="result-value" id="resultRatioImages">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Économies:</span>
+                        <span class="result-value" id="resultSavingsImages">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Vidéo -->
+        <div id="video" class="tab-content">
+            <div class="card">
+                <h2>🎥 Compression Vidéo</h2>
+                
+                <div class="demo-info">
+                    <strong>Mode Démo</strong>
+                    Simulation de compression pour vidéos professionnelles.
+                </div>
+
+                <div class="upload-area" id="uploadAreaVideo">
+                    <div class="upload-icon">🎥</div>
+                    <div class="upload-text">Glissez-déposez votre vidéo ici</div>
+                    <div class="upload-hint">ou cliquez pour sélectionner (MP4, MOV, MKV)</div>
+                    <input type="file" id="fileInputVideo" accept=".mp4,.mov,.mkv,.avi,.webm">
+                </div>
+
+                <div class="options">
+                    <div class="option-group">
+                        <label class="option-label">📊 Formats Supportés</label>
+                        <p style="color: #666; margin-bottom: 10px;">
+                            <strong>H.264:</strong> Ratio 6.92-8.35:1<br>
+                            <strong>H.265:</strong> Ratio 8-12:1<br>
+                            <strong>SDI 4:2:2:</strong> Ratio 8-12:1 (Broadcast)<br>
+                            <strong>Broadcast Archive:</strong> Ratio 8-15:1 (Archivage)
+                        </p>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" id="compressVideoBtn" disabled>🚀 Simuler Compression</button>
+                    <button class="btn-secondary" id="resetVideoBtn">🔄 Réinitialiser</button>
+                </div>
+
+                <div class="status-message" id="statusVideo"></div>
+
+                <div class="results" id="resultsVideo">
+                    <h3>📊 Résultats Simulés</h3>
+                    <div class="result-row">
+                        <span class="result-label">Format:</span>
+                        <span class="result-value" id="resultFormatVideo">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Taille Originale:</span>
+                        <span class="result-value" id="resultOriginalVideo">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Taille Compressée (Estimée):</span>
+                        <span class="result-value" id="resultCompressedVideo">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Ratio:</span>
+                        <span class="result-value" id="resultRatioVideo">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Économies:</span>
+                        <span class="result-value" id="resultSavingsVideo">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Info -->
+        <div id="info" class="tab-content">
+            <div class="card">
+                <h2>ℹ️ À Propos</h2>
+                
+                <div style="color: #666; line-height: 1.8;">
+                    <h3 style="color: #333; margin-top: 20px; margin-bottom: 10px;">🎬 HCV Studio</h3>
+                    <p>Plateforme complète de compression multimédia avec 7 méthodes différentes.</p>
+
+                    <h3 style="color: #333; margin-top: 20px; margin-bottom: 10px;">📊 Statistiques</h3>
+                    <ul style="margin-left: 20px;">
+                        <li>7 méthodes de compression</li>
+                        <li>15+ formats supportés</li>
+                        <li>Ratio moyen: 8-12:1</li>
+                        <li>100% lossless</li>
+                    </ul>
+
+                    <h3 style="color: #333; margin-top: 20px; margin-bottom: 10px;">🔧 Méthodes</h3>
+                    <ul style="margin-left: 20px;">
+                        <li>📱 Mobile Camera Codec</li>
+                        <li>🖼️ Pré-Compressées</li>
+                        <li>📷 Images RAW</li>
+                        <li>🔢 Binary Lossless</li>
+                        <li>🎬 H.264 / H.265</li>
+                        <li>📡 SDI 4:2:2</li>
+                        <li>🏛️ Broadcast Archive</li>
+                    </ul>
+
+                    <h3 style="color: #333; margin-top: 20px; margin-bottom: 10px;">📚 Documentation</h3>
+                    <p>Consultez les fichiers de documentation pour plus de détails sur chaque méthode.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(tabName).classList.add('active');
+            });
+        });
+
+        // Utility functions
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function showStatus(message, type, elementId) {
+            const statusMessage = document.getElementById(elementId);
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message show ${type}`;
+        }
+
+        // Mobile compression
+        const uploadAreaMobile = document.getElementById('uploadAreaMobile');
+        const fileInputMobile = document.getElementById('fileInputMobile');
+        let selectedFileMobile = null;
+
+        uploadAreaMobile.addEventListener('click', () => fileInputMobile.click());
+        uploadAreaMobile.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadAreaMobile.classList.add('dragover');
+        });
+        uploadAreaMobile.addEventListener('dragleave', () => {
+            uploadAreaMobile.classList.remove('dragover');
+        });
+        uploadAreaMobile.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadAreaMobile.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                selectedFileMobile = e.dataTransfer.files[0];
+                document.getElementById('compressMobileBtn').disabled = false;
+            }
+        });
+
+        fileInputMobile.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                selectedFileMobile = e.target.files[0];
+                document.getElementById('compressMobileBtn').disabled = false;
+            }
+        });
+
+        document.getElementById('compressMobileBtn').addEventListener('click', () => {
+            if (!selectedFileMobile) return;
+
+            const ext = selectedFileMobile.name.split('.').pop().toLowerCase();
+            let ratio = 1.5;
+            let format = ext.toUpperCase();
+
+            if (['heic', 'heif'].includes(ext)) {
+                ratio = 4;
+                format = 'HEIC';
+            } else if (['jpg', 'jpeg'].includes(ext)) {
+                ratio = 1.3;
+                format = 'JPEG';
+            } else if (['mp4', 'mov'].includes(ext)) {
+                ratio = 1.5;
+                format = 'MP4/MOV';
+            }
+
+            const compressedSize = Math.round(selectedFileMobile.size / ratio);
+            const savings = Math.round((1 - compressedSize / selectedFileMobile.size) * 100);
+
+            document.getElementById('resultFormatMobile').textContent = format;
+            document.getElementById('resultOriginalMobile').textContent = formatBytes(selectedFileMobile.size);
+            document.getElementById('resultCompressedMobile').textContent = formatBytes(compressedSize);
+            document.getElementById('resultRatioMobile').textContent = ratio.toFixed(2) + ':1';
+            document.getElementById('resultSavingsMobile').textContent = savings + '%';
+            document.getElementById('resultsMobile').classList.add('show');
+            showStatus('✅ Simulation réussie!', 'success', 'statusMobile');
+        });
+
+        document.getElementById('resetMobileBtn').addEventListener('click', () => {
+            selectedFileMobile = null;
+            fileInputMobile.value = '';
+            document.getElementById('compressMobileBtn').disabled = true;
+            document.getElementById('statusMobile').classList.remove('show');
+            document.getElementById('resultsMobile').classList.remove('show');
+        });
+
+        // Images compression
+        const uploadAreaImages = document.getElementById('uploadAreaImages');
+        const fileInputImages = document.getElementById('fileInputImages');
+        let selectedFileImages = null;
+
+        uploadAreaImages.addEventListener('click', () => fileInputImages.click());
+        uploadAreaImages.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadAreaImages.classList.add('dragover');
+        });
+        uploadAreaImages.addEventListener('dragleave', () => {
+            uploadAreaImages.classList.remove('dragover');
+        });
+        uploadAreaImages.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadAreaImages.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                selectedFileImages = e.dataTransfer.files[0];
+                document.getElementById('compressImagesBtn').disabled = false;
+            }
+        });
+
+        fileInputImages.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                selectedFileImages = e.target.files[0];
+                document.getElementById('compressImagesBtn').disabled = false;
+            }
+        });
+
+        document.getElementById('compressImagesBtn').addEventListener('click', () => {
+            if (!selectedFileImages) return;
+
+            const ext = selectedFileImages.name.split('.').pop().toLowerCase();
+            let ratio = 1.3;
+            let format = ext.toUpperCase();
+
+            if (['jpg', 'jpeg'].includes(ext)) {
+                ratio = 1.5;
+                format = 'JPEG';
+            } else if (ext === 'png') {
+                ratio = 1.2;
+                format = 'PNG';
+            } else if (ext === 'webp') {
+                ratio = 1.2;
+                format = 'WebP';
+            }
+
+            const compressedSize = Math.round(selectedFileImages.size / ratio);
+            const savings = Math.round((1 - compressedSize / selectedFileImages.size) * 100);
+
+            document.getElementById('resultFormatImages').textContent = format;
+            document.getElementById('resultOriginalImages').textContent = formatBytes(selectedFileImages.size);
+            document.getElementById('resultCompressedImages').textContent = formatBytes(compressedSize);
+            document.getElementById('resultRatioImages').textContent = ratio.toFixed(2) + ':1';
+            document.getElementById('resultSavingsImages').textContent = savings + '%';
+            document.getElementById('resultsImages').classList.add('show');
+            showStatus('✅ Simulation réussie!', 'success', 'statusImages');
+        });
+
+        document.getElementById('resetImagesBtn').addEventListener('click', () => {
+            selectedFileImages = null;
+            fileInputImages.value = '';
+            document.getElementById('compressImagesBtn').disabled = true;
+            document.getElementById('statusImages').classList.remove('show');
+            document.getElementById('resultsImages').classList.remove('show');
+        });
+
+        // Video compression
+        const uploadAreaVideo = document.getElementById('uploadAreaVideo');
+        const fileInputVideo = document.getElementById('fileInputVideo');
+        let selectedFileVideo = null;
+
+        uploadAreaVideo.addEventListener('click', () => fileInputVideo.click());
+        uploadAreaVideo.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadAreaVideo.classList.add('dragover');
+        });
+        uploadAreaVideo.addEventListener('dragleave', () => {
+            uploadAreaVideo.classList.remove('dragover');
+        });
+        uploadAreaVideo.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadAreaVideo.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                selectedFileVideo = e.dataTransfer.files[0];
+                document.getElementById('compressVideoBtn').disabled = false;
+            }
+        });
+
+        fileInputVideo.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                selectedFileVideo = e.target.files[0];
+                document.getElementById('compressVideoBtn').disabled = false;
+            }
+        });
+
+        document.getElementById('compressVideoBtn').addEventListener('click', () => {
+            if (!selectedFileVideo) return;
+
+            const ext = selectedFileVideo.name.split('.').pop().toLowerCase();
+            let ratio = 7;
+            let format = ext.toUpperCase();
+
+            if (['mp4', 'mov'].includes(ext)) {
+                ratio = 7.5;
+                format = 'H.264/H.265';
+            } else if (ext === 'mkv') {
+                ratio = 8;
+                format = 'MKV';
+            }
+
+            const compressedSize = Math.round(selectedFileVideo.size / ratio);
+            const savings = Math.round((1 - compressedSize / selectedFileVideo.size) * 100);
+
+            document.getElementById('resultFormatVideo').textContent = format;
+            document.getElementById('resultOriginalVideo').textContent = formatBytes(selectedFileVideo.size);
+            document.getElementById('resultCompressedVideo').textContent = formatBytes(compressedSize);
+            document.getElementById('resultRatioVideo').textContent = ratio.toFixed(2) + ':1';
+            document.getElementById('resultSavingsVideo').textContent = savings + '%';
+            document.getElementById('resultsVideo').classList.add('show');
+            showStatus('✅ Simulation réussie!', 'success', 'statusVideo');
+        });
+
+        document.getElementById('resetVideoBtn').addEventListener('click', () => {
+            selectedFileVideo = null;
+            fileInputVideo.value = '';
+            document.getElementById('compressVideoBtn').disabled = true;
+            document.getElementById('statusVideo').classList.remove('show');
+            document.getElementById('resultsVideo').classList.remove('show');
+        });
+    </script>
+</body>
+</html>

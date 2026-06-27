@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCV Pro — Upload Vidéo Professionnelle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .format-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .format-badge {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f9f9f9;
+        }
+
+        .format-badge:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .format-badge.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .format-badge .icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .format-badge .name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .format-badge .desc {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        .upload-section {
+            margin-bottom: 30px;
+        }
+
+        .upload-section h2 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f4ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ecff;
+            transform: scale(1.02);
+        }
+
+        .upload-area input[type="file"] {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            color: #333;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .upload-hint {
+            color: #999;
+            font-size: 14px;
+        }
+
+        .options-section {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .option-group {
+            margin-bottom: 20px;
+        }
+
+        .option-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .option-label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .option-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .radio-option:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .radio-option input[type="radio"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .radio-option label {
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .sdi-params {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .param-input {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .param-input label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .param-input input,
+        .param-input select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .file-info {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .file-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 14px;
+        }
+
+        .file-info-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .file-info-value {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .progress-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .progress-section.show {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .format-info {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .format-info h3 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .format-info ul {
+            margin-left: 20px;
+        }
+
+        .format-info li {
+            margin-bottom: 4px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .format-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .upload-area {
+                padding: 30px 20px;
+            }
+
+            .upload-icon {
+                font-size: 36px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 HCV Pro Upload</h1>
+            <p>Compressez vos vidéos professionnelles H264, H265, SDI 4:2:2 et YUV</p>
+        </div>
+
+        <!-- Format Selection -->
+        <div class="upload-section">
+            <h2>📋 Sélectionnez le format</h2>
+            <div class="format-grid">
+                <div class="format-badge active" data-format="h264">
+                    <div class="icon">🎥</div>
+                    <div class="name">H.264</div>
+                    <div class="desc">AVC/MPEG-4</div>
+                </div>
+                <div class="format-badge" data-format="h265">
+                    <div class="icon">🎬</div>
+                    <div class="name">H.265</div>
+                    <div class="desc">HEVC</div>
+                </div>
+                <div class="format-badge" data-format="sdi">
+                    <div class="icon">📡</div>
+                    <div class="name">SDI 4:2:2</div>
+                    <div class="desc">Broadcast</div>
+                </div>
+                <div class="format-badge" data-format="yuv">
+                    <div class="icon">🎨</div>
+                    <div class="name">YUV Raw</div>
+                    <div class="desc">I420/NV12</div>
+                </div>
+                <div class="format-badge" data-format="mp4">
+                    <div class="icon">📹</div>
+                    <div class="name">MP4/MOV</div>
+                    <div class="desc">Conteneur</div>
+                </div>
+                <div class="format-badge" data-format="mxf">
+                    <div class="icon">🎞️</div>
+                    <div class="name">MXF</div>
+                    <div class="desc">Professionnel</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Area -->
+        <div class="upload-section">
+            <h2>📤 Téléchargez votre fichier</h2>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">Glissez-déposez votre fichier ici</div>
+                <div class="upload-hint">ou cliquez pour sélectionner</div>
+                <input type="file" id="fileInput" accept=".h264,.h265,.hevc,.sdi,.yuv,.mp4,.mov,.avi,.ts,.mxf,.hcv16">
+            </div>
+        </div>
+
+        <!-- File Info -->
+        <div class="file-info" id="fileInfo">
+            <div class="file-info-row">
+                <span class="file-info-label">Fichier:</span>
+                <span class="file-info-value" id="fileName">-</span>
+            </div>
+            <div class="file-info-row">
+                <span class="file-info-label">Taille:</span>
+                <span class="file-info-value" id="fileSize">-</span>
+            </div>
+            <div class="file-info-row">
+                <span class="file-info-label">Format:</span>
+                <span class="file-info-value" id="fileFormat">-</span>
+            </div>
+        </div>
+
+        <!-- Options -->
+        <div class="options-section">
+            <div class="option-group">
+                <label class="option-label">🎯 Mode de compression</label>
+                <div class="option-row">
+                    <div class="radio-option">
+                        <input type="radio" id="modeFast" name="mode" value="fast" checked>
+                        <label for="modeFast">Rapide (Lossless)</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="modeSdi" name="mode" value="sdi">
+                        <label for="modeSdi">SDI (Grain Synth)</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="modeArch" name="mode" value="arch">
+                        <label for="modeArch">Archive (Signal Only)</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SDI Parameters -->
+            <div class="option-group" id="sdiParams" style="display: none;">
+                <label class="option-label">⚙️ Paramètres SDI 4:2:2</label>
+                <div class="sdi-params">
+                    <div class="param-input">
+                        <label for="sdiWidth">Largeur (pixels)</label>
+                        <input type="number" id="sdiWidth" value="1920" min="320" step="2">
+                    </div>
+                    <div class="param-input">
+                        <label for="sdiHeight">Hauteur (pixels)</label>
+                        <input type="number" id="sdiHeight" value="1080" min="240" step="2">
+                    </div>
+                    <div class="param-input">
+                        <label for="sdiFps">FPS</label>
+                        <select id="sdiFps">
+                            <option value="23.976">23.976</option>
+                            <option value="24">24</option>
+                            <option value="25" selected>25</option>
+                            <option value="29.97">29.97</option>
+                            <option value="30">30</option>
+                            <option value="50">50</option>
+                            <option value="59.94">59.94</option>
+                            <option value="60">60</option>
+                        </select>
+                    </div>
+                    <div class="param-input">
+                        <label for="sdiBits">Profondeur (bits)</label>
+                        <select id="sdiBits">
+                            <option value="10" selected>10-bit</option>
+                            <option value="12">12-bit</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="button-group">
+            <button class="btn-primary" id="uploadBtn" disabled>🚀 Compresser</button>
+            <button class="btn-secondary" id="resetBtn">🔄 Réinitialiser</button>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-section" id="progressSection">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text">
+                <span id="progressPercent">0%</span>
+                <span id="progressTime">--:--</span>
+            </div>
+        </div>
+
+        <!-- Status Message -->
+        <div class="status-message" id="statusMessage"></div>
+
+        <!-- Format Info -->
+        <div class="format-info" id="formatInfo">
+            <h3>ℹ️ À propos du format H.264</h3>
+            <ul>
+                <li><strong>Codec:</strong> AVC/MPEG-4 Part 10</li>
+                <li><strong>Profondeur:</strong> 8-bit (upscalé à 12-bit)</li>
+                <li><strong>Colorspace:</strong> YUV 4:2:0 → RGB</li>
+                <li><strong>Ratio attendu:</strong> 8-12× avec HCV Pro</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        let selectedFormat = 'h264';
+
+        // Format selection
+        document.querySelectorAll('.format-badge').forEach(badge => {
+            badge.addEventListener('click', () => {
+                document.querySelectorAll('.format-badge').forEach(b => b.classList.remove('active'));
+                badge.classList.add('active');
+                selectedFormat = badge.dataset.format;
+                updateFormatInfo();
+                updateSDIParams();
+            });
+        });
+
+        // Upload area
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            selectedFile = file;
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatBytes(file.size);
+            document.getElementById('fileFormat').textContent = file.type || 'Inconnu';
+            document.getElementById('fileInfo').classList.add('show');
+            document.getElementById('uploadBtn').disabled = false;
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function updateFormatInfo() {
+            const info = {
+                h264: {
+                    title: 'À propos du format H.264',
+                    items: [
+                        '<strong>Codec:</strong> AVC/MPEG-4 Part 10',
+                        '<strong>Profondeur:</strong> 8-bit (upscalé à 12-bit)',
+                        '<strong>Colorspace:</strong> YUV 4:2:0 → RGB',
+                        '<strong>Ratio attendu:</strong> 8-12× avec HCV Pro'
+                    ]
+                },
+                h265: {
+                    title: 'À propos du format H.265',
+                    items: [
+                        '<strong>Codec:</strong> HEVC/H.265',
+                        '<strong>Profondeur:</strong> 8-10 bit',
+                        '<strong>Colorspace:</strong> YUV 4:2:0 → RGB',
+                        '<strong>Ratio attendu:</strong> 10-15× avec HCV Pro'
+                    ]
+                },
+                sdi: {
+                    title: 'À propos du format SDI 4:2:2',
+                    items: [
+                        '<strong>Standard:</strong> SMPTE 292M / 424M',
+                        '<strong>Profondeur:</strong> 10-bit ou 12-bit',
+                        '<strong>Sampling:</strong> YUV 4:2:2',
+                        '<strong>Ratio attendu:</strong> 11-15× avec HCV Pro',
+                        '<strong>Note:</strong> Configurez la résolution et les paramètres ci-dessus'
+                    ]
+                },
+                yuv: {
+                    title: 'À propos du format YUV Raw',
+                    items: [
+                        '<strong>Format:</strong> I420 (YUV 4:2:0)',
+                        '<strong>Profondeur:</strong> 8-bit',
+                        '<strong>Colorspace:</strong> YUV → RGB',
+                        '<strong>Ratio attendu:</strong> 8-10× avec HCV Pro'
+                    ]
+                },
+                mp4: {
+                    title: 'À propos du format MP4/MOV',
+                    items: [
+                        '<strong>Conteneur:</strong> ISO Base Media File Format',
+                        '<strong>Codecs:</strong> H.264, H.265, ProRes, etc.',
+                        '<strong>Colorspace:</strong> Détecté automatiquement',
+                        '<strong>Ratio attendu:</strong> 8-12× avec HCV Pro'
+                    ]
+                },
+                mxf: {
+                    title: 'À propos du format MXF',
+                    items: [
+                        '<strong>Standard:</strong> SMPTE 377M',
+                        '<strong>Codecs:</strong> DNxHD, ProRes, DV, etc.',
+                        '<strong>Colorspace:</strong> Détecté automatiquement',
+                        '<strong>Ratio attendu:</strong> 9-14× avec HCV Pro',
+                        '<strong>Note:</strong> Format professionnel d\'archivage'
+                    ]
+                }
+            };
+
+            const formatData = info[selectedFormat] || info.h264;
+            const formatInfoDiv = document.getElementById('formatInfo');
+            formatInfoDiv.innerHTML = `
+                <h3>ℹ️ ${formatData.title}</h3>
+                <ul>
+                    ${formatData.items.map(item => `<li>${item}</li>`).join('')}
+                </ul>
+            `;
+        }
+
+        function updateSDIParams() {
+            const sdiParamsDiv = document.getElementById('sdiParams');
+            sdiParamsDiv.style.display = selectedFormat === 'sdi' ? 'block' : 'none';
+        }
+
+        // Upload
+        document.getElementById('uploadBtn').addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            const formData = new FormData();
+            formData.append('video', selectedFile);
+            formData.append('mode', document.querySelector('input[name="mode"]:checked').value);
+
+            if (selectedFormat === 'sdi') {
+                formData.append('sdi_width', document.getElementById('sdiWidth').value);
+                formData.append('sdi_height', document.getElementById('sdiHeight').value);
+                formData.append('sdi_fps', document.getElementById('sdiFps').value);
+                formData.append('sdi_bits', document.getElementById('sdiBits').value);
+            }
+
+            const progressSection = document.getElementById('progressSection');
+            const statusMessage = document.getElementById('statusMessage');
+            progressSection.classList.add('show');
+            statusMessage.classList.remove('show');
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.ok) {
+                    showStatus('✅ Compression réussie!', 'success');
+                    progressSection.classList.remove('show');
+                } else {
+                    showStatus('❌ Erreur: ' + (data.error || 'Erreur inconnue'), 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Erreur réseau: ' + error.message, 'error');
+            }
+        });
+
+        // Reset
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            selectedFile = null;
+            fileInput.value = '';
+            document.getElementById('fileInfo').classList.remove('show');
+            document.getElementById('uploadBtn').disabled = true;
+            document.getElementById('progressSection').classList.remove('show');
+            document.getElementById('statusMessage').classList.remove('show');
+        });
+
+        function showStatus(message, type) {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message show ${type}`;
+        }
+
+        // Initialize
+        updateFormatInfo();
+    </script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCS CDN - WebRTC Signaling</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #ec4899 0%, #be185d 100%); color: #fff; min-height: 100vh; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); }
+        .stat-label { font-size: 0.9em; opacity: 0.8; margin-bottom: 10px; }
+        .stat-value { font-size: 2em; font-weight: bold; color: #f472b6; }
+        .network-diagram { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 30px; margin-bottom: 30px; }
+        .diagram-title { font-weight: bold; margin-bottom: 20px; text-align: center; }
+        .nodes { display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 20px; }
+        .node { text-align: center; }
+        .node-icon { font-size: 2.5em; margin-bottom: 10px; }
+        .node-label { font-size: 0.9em; opacity: 0.8; }
+        .connection { flex: 1; height: 2px; background: linear-gradient(90deg, transparent, #f472b6, transparent); min-width: 50px; }
+        .status-panel { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 20px; margin-bottom: 30px; }
+        .status-title { font-weight: bold; margin-bottom: 15px; }
+        .status-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .status-item:last-child { border-bottom: none; }
+        .status-label { opacity: 0.8; }
+        .status-value { font-weight: bold; color: #f472b6; }
+        .controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px; }
+        .btn { padding: 10px 20px; background: #f472b6; color: #000; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: all 0.3s; }
+        .btn:hover { background: #f9a8d4; transform: translateY(-2px); }
+        .btn.secondary { background: #06b6d4; color: #fff; }
+        .btn.secondary:hover { background: #0891b2; }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .info-item { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border-left: 3px solid #f472b6; }
+        .info-label { font-size: 0.85em; opacity: 0.7; margin-bottom: 5px; }
+        .info-value { font-size: 1.2em; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌐 WebRTC Signaling</h1>
+            <p>Service de signalisation pour communications pair-à-pair en temps réel</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">Connexions Actives</div>
+                <div class="stat-value">50,000+</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Latence Signalisation</div>
+                <div class="stat-value">&lt; 100ms</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">SLA</div>
+                <div class="stat-value">99.99%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Débit Max</div>
+                <div class="stat-value">1 Gbps</div>
+            </div>
+        </div>
+
+        <div class="network-diagram">
+            <div class="diagram-title">Architecture Réseau P2P</div>
+            <div class="nodes">
+                <div class="node">
+                    <div class="node-icon">👤</div>
+                    <div class="node-label">Client 1</div>
+                </div>
+                <div class="connection"></div>
+                <div class="node">
+                    <div class="node-icon">🔗</div>
+                    <div class="node-label">Signaling</div>
+                </div>
+                <div class="connection"></div>
+                <div class="node">
+                    <div class="node-icon">👤</div>
+                    <div class="node-label">Client 2</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-panel">
+            <div class="status-title">État du Service</div>
+            <div class="status-item">
+                <span class="status-label">Serveurs Actifs</span>
+                <span class="status-value">✅ 21/21</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Connexions Établies</span>
+                <span class="status-value">✅ 50,234</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Latence Moyenne</span>
+                <span class="status-value">✅ 45ms</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Taux de Succès</span>
+                <span class="status-value">✅ 99.98%</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Bande Passante Utilisée</span>
+                <span class="status-value">✅ 850 Gbps</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn">🔌 Connecter</button>
+            <button class="btn secondary">📊 Statistiques</button>
+            <button class="btn secondary">🔧 Configuration</button>
+            <button class="btn secondary">📋 Logs</button>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Port Service</div>
+                <div class="info-value">9021</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Protocole</div>
+                <div class="info-value">WebRTC / STUN / TURN</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Chiffrement</div>
+                <div class="info-value">DTLS-SRTP</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Codecs Supportés</div>
+                <div class="info-value">VP8, VP9, H.264</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Nœuds Edge</div>
+                <div class="info-value">21 emplacements</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Compression</div>
+                <div class="info-value">Variable</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

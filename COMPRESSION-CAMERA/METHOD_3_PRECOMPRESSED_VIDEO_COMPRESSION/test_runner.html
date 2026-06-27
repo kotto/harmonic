@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Validation - Pipeline Vidéo SDI-like</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0a0a0a;
+            --card: #1a1a1a;
+            --border: #333;
+            --text: #fff;
+            --primary: #00ff88;
+            --secondary: #4ecdc4;
+            --accent: #45b7d1;
+            --success: #4ecdc4;
+            --warning: #ff6b6b;
+            --error: #e74c3c;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--bg), #1a1a2e);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: var(--card);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            color: var(--secondary);
+        }
+
+        .test-controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: var(--bg);
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 255, 136, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .test-results {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .result-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .result-card.success {
+            border-color: var(--success);
+            box-shadow: 0 0 20px rgba(78, 205, 196, 0.2);
+        }
+
+        .result-card.error {
+            border-color: var(--error);
+            box-shadow: 0 0 20px rgba(231, 76, 60, 0.2);
+        }
+
+        .result-card h3 {
+            margin-bottom: 15px;
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+
+        .result-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .result-status.success {
+            background: rgba(78, 205, 196, 0.2);
+            color: var(--success);
+        }
+
+        .result-status.error {
+            background: rgba(231, 76, 60, 0.2);
+            color: var(--error);
+        }
+
+        .result-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .metric {
+            font-size: 0.9rem;
+        }
+
+        .metric-label {
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        .metric-value {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .overall-results {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .overall-results h2 {
+            margin-bottom: 20px;
+            color: var(--primary);
+            font-size: 1.8rem;
+        }
+
+        .score-display {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: conic-gradient(var(--primary) 0deg, var(--primary) calc(var(--score) * 3.6deg), #333 calc(var(--score) * 3.6deg));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .score-circle::before {
+            content: '';
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--card);
+        }
+
+        .score-text {
+            position: relative;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .conclusions {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--primary);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .conclusions h3 {
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+
+        .conclusion-item {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .conclusion-item:last-child {
+            border-bottom: none;
+        }
+
+        .progress-container {
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #222;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: var(--secondary);
+        }
+
+        @media (max-width: 768px) {
+            .test-results {
+                grid-template-columns: 1fr;
+            }
+            
+            .result-metrics {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Test de Validation - Pipeline Vidéo SDI-like</h1>
+            <p>Validation complète du système de compression vidéo révolutionnaire</p>
+        </header>
+
+        <div class="test-controls">
+            <button class="btn" id="runTestBtn">Lancer le Test de Validation</button>
+            <button class="btn" id="resetBtn">Réinitialiser</button>
+        </div>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">Initialisation...</div>
+        </div>
+
+        <div class="test-results" id="testResults" style="display: none;">
+            <div class="result-card" id="deconstructionResult">
+                <h3>Test 1: Déconstruction H264</h3>
+                <div class="result-status" id="deconstructionStatus">En attente</div>
+                <div class="result-metrics" id="deconstructionMetrics"></div>
+            </div>
+
+            <div class="result-card" id="conversionResult">
+                <h3>Test 2: Conversion SDI-like</h3>
+                <div class="result-status" id="conversionStatus">En attente</div>
+                <div class="result-metrics" id="conversionMetrics"></div>
+            </div>
+
+            <div class="result-card" id="compressionResult">
+                <h3>Test 3: Compression SDI-like</h3>
+                <div class="result-status" id="compressionStatus">En attente</div>
+                <div class="result-metrics" id="compressionMetrics"></div>
+            </div>
+
+            <div class="result-card" id="pipelineResult">
+                <h3>Test 4: Pipeline Complet</h3>
+                <div class="result-status" id="pipelineStatus">En attente</div>
+                <div class="result-metrics" id="pipelineMetrics"></div>
+            </div>
+        </div>
+
+        <div class="overall-results" id="overallResults" style="display: none;">
+            <h2>Résultats Globaux</h2>
+            <div class="score-display">
+                <div class="score-circle" id="scoreCircle" style="--score: 0;">
+                    <div class="score-text" id="scoreText">0/100</div>
+                </div>
+            </div>
+            <div class="result-metrics" id="overallMetrics"></div>
+            <div class="conclusions" id="conclusions"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="h264_deconstructor.js"></script>
+    <script src="sdi_video_converter.js"></script>
+    <script src="sdi_video_compressor.js"></script>
+    <script src="video_pipeline.js"></script>
+    <script src="validation_test.js"></script>
+    
+    <script>
+        class TestRunnerApp {
+            constructor() {
+                this.test = null;
+                this.results = null;
+                this.running = false;
+                
+                this.initializeEventListeners();
+            }
+
+            initializeEventListeners() {
+                document.getElementById('runTestBtn').addEventListener('click', () => this.runTest());
+                document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+            }
+
+            async runTest() {
+                if (this.running) return;
+                
+                this.running = true;
+                this.disableControls();
+                this.showProgress();
+                
+                try {
+                    console.log('Démarrage du test de validation...');
+                    
+                    // Création et exécution du test
+                    this.test = new VideoValidationTest();
+                    
+                    // Configuration du callback de progression
+                    this.test.onProgress = (percent, message) => {
+                        this.updateProgress(percent, message);
+                    };
+                    
+                    // Exécution du test
+                    this.results = await this.test.runFullValidation();
+                    
+                    // Affichage des résultats
+                    this.displayResults();
+                    
+                    console.log('Test terminé avec succès!');
+                    
+                } catch (error) {
+                    console.error('Erreur lors du test:', error);
+                    this.showError('Erreur: ' + error.message);
+                } finally {
+                    this.running = false;
+                    this.hideProgress();
+                    this.enableControls();
+                }
+            }
+
+            updateProgress(percent, message) {
+                document.getElementById('progressFill').style.width = percent + '%';
+                document.getElementById('progressText').textContent = `${percent}% - ${message}`;
+            }
+
+            showProgress() {
+                document.getElementById('progressContainer').style.display = 'block';
+            }
+
+            hideProgress() {
+                document.getElementById('progressContainer').style.display = 'none';
+            }
+
+            disableControls() {
+                document.getElementById('runTestBtn').disabled = true;
+            }
+
+            enableControls() {
+                document.getElementById('runTestBtn').disabled = false;
+            }
+
+            displayResults() {
+                const results = this.results;
+                
+                // Affichage des résultats détaillés
+                this.displayDeconstructionResults(results.deconstruction);
+                this.displayConversionResults(results.conversion);
+                this.displayCompressionResults(results.compression);
+                this.displayPipelineResults(results.pipeline);
+                
+                // Affichage des résultats globaux
+                this.displayOverallResults(results.overall);
+                
+                // Affichage de la section des résultats
+                document.getElementById('testResults').style.display = 'grid';
+                document.getElementById('overallResults').style.display = 'block';
+            }
+
+            displayDeconstructionResults(result) {
+                const card = document.getElementById('deconstructionResult');
+                const status = document.getElementById('deconstructionStatus');
+                const metrics = document.getElementById('deconstructionMetrics');
+                
+                if (result.success) {
+                    card.classList.add('success');
+                    status.textContent = 'SUCCÈS';
+                    status.className = 'result-status success';
+                    
+                    metrics.innerHTML = `
+                        <div class="metric">
+                            <div class="metric-label">Trames traitées</div>
+                            <div class="metric-value">${result.framesProcessed}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Précision</div>
+                            <div class="metric-value">${(result.frameAccuracy * 100).toFixed(1)}%</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Temps</div>
+                            <div class="metric-value">${result.processingTime.toFixed(1)}ms</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">NAL Units</div>
+                            <div class="metric-value">${result.nalUnits}</div>
+                        </div>
+                    `;
+                } else {
+                    card.classList.add('error');
+                    status.textContent = 'ÉCHEC';
+                    status.className = 'result-status error';
+                    metrics.innerHTML = `<div class="metric">Erreur: ${result.error}</div>`;
+                }
+            }
+
+            displayConversionResults(result) {
+                const card = document.getElementById('conversionResult');
+                const status = document.getElementById('conversionStatus');
+                const metrics = document.getElementById('conversionMetrics');
+                
+                if (result.success) {
+                    card.classList.add('success');
+                    status.textContent = 'SUCCÈS';
+                    status.className = 'result-status success';
+                    
+                    metrics.innerHTML = `
+                        <div class="metric">
+                            <div class="metric-label">Trames converties</div>
+                            <div class="metric-value">${result.framesConverted}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Ratio conversion</div>
+                            <div class="metric-value">${result.conversionRatio.toFixed(2)}:1</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Qualité</div>
+                            <div class="metric-value">${result.quality}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Temps</div>
+                            <div class="metric-value">${result.processingTime.toFixed(1)}ms</div>
+                        </div>
+                    `;
+                } else {
+                    card.classList.add('error');
+                    status.textContent = 'ÉCHEC';
+                    status.className = 'result-status error';
+                    metrics.innerHTML = `<div class="metric">Erreur: ${result.error}</div>`;
+                }
+            }
+
+            displayCompressionResults(result) {
+                const card = document.getElementById('compressionResult');
+                const status = document.getElementById('compressionStatus');
+                const metrics = document.getElementById('compressionMetrics');
+                
+                if (result.success) {
+                    card.classList.add('success');
+                    status.textContent = 'SUCCÈS';
+                    status.className = 'result-status success';
+                    
+                    metrics.innerHTML = `
+                        <div class="metric">
+                            <div class="metric-label">Ratio compression</div>
+                            <div class="metric-value">${result.compressionRatio.toFixed(2)}:1</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Taille originale</div>
+                            <div class="metric-value">${this.formatFileSize(result.originalSize)}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Taille compressée</div>
+                            <div class="metric-value">${this.formatFileSize(result.compressedSize)}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">FPS</div>
+                            <div class="metric-value">${result.fps.toFixed(1)}</div>
+                        </div>
+                    `;
+                } else {
+                    card.classList.add('error');
+                    status.textContent = 'ÉCHEC';
+                    status.className = 'result-status error';
+                    metrics.innerHTML = `<div class="metric">Erreur: ${result.error}</div>`;
+                }
+            }
+
+            displayPipelineResults(result) {
+                const card = document.getElementById('pipelineResult');
+                const status = document.getElementById('pipelineStatus');
+                const metrics = document.getElementById('pipelineMetrics');
+                
+                if (result.success) {
+                    card.classList.add('success');
+                    status.textContent = 'SUCCÈS';
+                    status.className = 'result-status success';
+                    
+                    metrics.innerHTML = `
+                        <div class="metric">
+                            <div class="metric-label">Ratio total</div>
+                            <div class="metric-value">${result.compressionRatio.toFixed(2)}:1</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Réduction</div>
+                            <div class="metric-value">${((1 - 1/result.compressionRatio) * 100).toFixed(1)}%</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Temps total</div>
+                            <div class="metric-value">${(result.processingTime / 1000).toFixed(2)}s</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">FPS moyen</div>
+                            <div class="metric-value">${result.fps.toFixed(1)}</div>
+                        </div>
+                    `;
+                } else {
+                    card.classList.add('error');
+                    status.textContent = 'ÉCHEC';
+                    status.className = 'result-status error';
+                    metrics.innerHTML = `<div class="metric">Erreur: ${result.error}</div>`;
+                }
+            }
+
+            displayOverallResults(result) {
+                const scoreCircle = document.getElementById('scoreCircle');
+                const scoreText = document.getElementById('scoreText');
+                const overallMetrics = document.getElementById('overallMetrics');
+                const conclusions = document.getElementById('conclusions');
+                
+                // Score
+                scoreCircle.style.setProperty('--score', result.score);
+                scoreText.textContent = `${result.score}/100`;
+                
+                // Métriques globales
+                overallMetrics.innerHTML = `
+                    <div class="metric">
+                        <div class="metric-label">Succès global</div>
+                        <div class="metric-value">${result.success ? 'OUI' : 'NON'}</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Ratio de compression</div>
+                        <div class="metric-value">${result.compressionRatio.toFixed(2)}:1</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Temps de traitement</div>
+                        <div class="metric-value">${(result.processingTime / 1000).toFixed(2)}s</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">FPS moyen</div>
+                        <div class="metric-value">${result.fps.toFixed(1)}</div>
+                    </div>
+                `;
+                
+                // Conclusions
+                const conclusionsList = this.generateConclusions(result);
+                conclusions.innerHTML = `
+                    <h3>Conclusions</h3>
+                    ${conclusionsList.map(conclusion => 
+                        `<div class="conclusion-item">${conclusion}</div>`
+                    ).join('')}
+                `;
+            }
+
+            generateConclusions(result) {
+                let conclusions = [];
+                
+                if (result.success) {
+                    conclusions.push('Test de validation RÉUSSI');
+                    conclusions.push('Pipeline vidéo SDI-like fonctionnel');
+                    
+                    if (result.compressionRatio >= 50) {
+                        conclusions.push('Ratio de compression EXCEPTIONNEL (>50:1)');
+                    } else if (result.compressionRatio >= 20) {
+                        conclusions.push('Ratio de compression EXCELLENT (>20:1)');
+                    } else if (result.compressionRatio >= 10) {
+                        conclusions.push('Ratio de compression BON (>10:1)');
+                    }
+                    
+                    if (result.fps >= 30) {
+                        conclusions.push('Performance temps réel atteinte');
+                    } else if (result.fps >= 15) {
+                        conclusions.push('Performance acceptable');
+                    }
+                    
+                    if (result.score >= 90) {
+                        conclusions.push('Score EXCELLENT - Système prêt pour production');
+                    } else if (result.score >= 70) {
+                        conclusions.push('Score BON - Système fonctionnel');
+                    } else {
+                        conclusions.push('Score FAIBLE - Améliorations nécessaires');
+                    }
+                } else {
+                    conclusions.push('Test de validation ÉCHOUÉ');
+                    conclusions.push('Vérifier les composants du pipeline');
+                }
+                
+                return conclusions;
+            }
+
+            showError(message) {
+                const overallResults = document.getElementById('overallResults');
+                overallResults.style.display = 'block';
+                overallResults.innerHTML = `
+                    <h2>Erreur</h2>
+                    <div class="result-card error">
+                        <div class="result-status error">ÉCHEC</div>
+                        <div class="metric">${message}</div>
+                    </div>
+                `;
+            }
+
+            reset() {
+                this.test = null;
+                this.results = null;
+                this.running = false;
+                
+                // Reset UI
+                document.getElementById('testResults').style.display = 'none';
+                document.getElementById('overallResults').style.display = 'none';
+                document.getElementById('progressContainer').style.display = 'none';
+                
+                // Reset result cards
+                const cards = ['deconstruction', 'conversion', 'compression', 'pipeline'];
+                cards.forEach(id => {
+                    const card = document.getElementById(id + 'Result');
+                    card.className = 'result-card';
+                    document.getElementById(id + 'Status').textContent = 'En attente';
+                    document.getElementById(id + 'Status').className = 'result-status';
+                    document.getElementById(id + 'Metrics').innerHTML = '';
+                });
+                
+                // Reset score
+                document.getElementById('scoreCircle').style.setProperty('--score', 0);
+                document.getElementById('scoreText').textContent = '0/100';
+                
+                console.log('Interface réinitialisée');
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            const app = new TestRunnerApp();
+            console.log('Test Runner prêt');
+        });
+    </script>
+</body>
+</html>

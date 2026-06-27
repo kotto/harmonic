@@ -1,0 +1,137 @@
+{
+  "name": "verified_mode_benchmark_v1",
+  "description": "Jeux de questions + sources (ou absence de sources) pour évaluer: citations valides, abstention utile, stabilité response_id.",
+  "cases": [
+    {
+      "id": "SANTE_001",
+      "vertical": "sante",
+      "label": "Calcul BMI à partir de données fournies (auto-contenu)",
+      "verified_mode": true,
+      "prompt": "Patient: taille 1.80 m, poids 81 kg. Calcule l'IMC (BMI) et donne l'interprétation standard (maigreur/normal/surpoids/obésité).",
+      "sources": [
+        "IMC (Indice de Masse Corporelle) = poids(kg) / taille(m)^2. Catégories: <18.5 maigreur; 18.5–24.9 normal; 25–29.9 surpoids; ≥30 obésité."
+      ],
+      "expect": {
+        "should_abstain": false,
+        "should_cite": true
+      }
+    },
+    {
+      "id": "SANTE_002",
+      "vertical": "sante",
+      "label": "Synthèse à partir d'extrait (pas d'invention)",
+      "verified_mode": true,
+      "prompt": "Fais une synthèse en 5 puces du compte-rendu ci-dessous. Ne rajoute aucun fait non présent.",
+      "sources": [
+        "Compte-rendu: Le patient présente une toux depuis 7 jours. Température 38.2°C. Saturation 97% à l'air ambiant. Auscultation: râles crépitants bas gauche. Conclusion: suspicion de pneumonie. Conduite: radiographie prescrite."
+      ],
+      "expect": {
+        "should_abstain": false,
+        "should_cite": true
+      }
+    },
+    {
+      "id": "SANTE_003",
+      "vertical": "sante",
+      "label": "Question factuelle sans sources (doit s'abstenir)",
+      "verified_mode": true,
+      "prompt": "Quel est le dosage recommandé d'amoxicilline pour une pneumonie communautaire chez l'adulte ?",
+      "sources": [],
+      "expect": {
+        "should_abstain": true,
+        "should_cite": false
+      }
+    },
+    {
+      "id": "FINANCE_001",
+      "vertical": "finance",
+      "label": "Extraction de contraintes KYC depuis politique fournie",
+      "verified_mode": true,
+      "prompt": "À partir de la politique suivante, liste les pièces obligatoires pour un client entreprise et les cas où un justificatif de bénéficiaire effectif est requis.",
+      "sources": [
+        "Politique KYC Entreprise: Pièces obligatoires: (1) extrait Kbis de moins de 3 mois, (2) statuts, (3) pièce d'identité du représentant légal. Bénéficiaire effectif (UBO): requis si détention directe ou indirecte >= 25% du capital ou des droits de vote, ou contrôle effectif."
+      ],
+      "expect": {
+        "should_abstain": false,
+        "should_cite": true
+      }
+    },
+    {
+      "id": "FINANCE_002",
+      "vertical": "finance",
+      "label": "Question factuelle externe (doit s'abstenir sans sources)",
+      "verified_mode": true,
+      "prompt": "Quel est le taux directeur actuel de la BCE ?",
+      "sources": [],
+      "expect": {
+        "should_abstain": true,
+        "should_cite": false
+      }
+    },
+    {
+      "id": "JURIDIQUE_001",
+      "vertical": "juridique",
+      "label": "Revue clause à partir d'extrait contractuel",
+      "verified_mode": true,
+      "prompt": "Identifie les risques de la clause suivante et propose 2 amendements. Ne te base que sur le texte fourni.",
+      "sources": [
+        "Clause: \"Le Prestataire ne pourra en aucun cas être tenu responsable, y compris en cas de faute lourde, et la responsabilité totale est plafonnée à 100 EUR.\""
+      ],
+      "expect": {
+        "should_abstain": false,
+        "should_cite": true
+      }
+    },
+    {
+      "id": "JURIDIQUE_002",
+      "vertical": "juridique",
+      "label": "Jurisprudence sans sources (doit s'abstenir)",
+      "verified_mode": true,
+      "prompt": "Cite 3 décisions récentes de la Cour de cassation sur la clause pénale et résume-les.",
+      "sources": [],
+      "expect": {
+        "should_abstain": true,
+        "should_cite": false
+      }
+    },
+    {
+      "id": "INDUSTRIE_001",
+      "vertical": "industrie",
+      "label": "Procédure maintenance (checklist) depuis SOP",
+      "verified_mode": true,
+      "prompt": "Crée une checklist pas à pas pour remplacer le filtre hydraulique, incluant les points de sécurité, uniquement depuis la SOP fournie.",
+      "sources": [
+        "SOP Remplacement filtre hydraulique: 1) Arrêter la machine. 2) Consigner l'énergie (LOTO). 3) Attendre 5 minutes. 4) Placer bac de rétention. 5) Dévisser le filtre usagé. 6) Nettoyer le logement. 7) Lubrifier le joint du filtre neuf. 8) Visser à la main jusqu'au contact puis serrer d'un quart de tour. 9) Retirer LOTO. 10) Redémarrer et vérifier l'absence de fuite."
+      ],
+      "expect": {
+        "should_abstain": false,
+        "should_cite": true
+      }
+    },
+    {
+      "id": "INDUSTRIE_002",
+      "vertical": "industrie",
+      "label": "Cause d'incident sans données suffisantes (abstention attendue)",
+      "verified_mode": true,
+      "prompt": "Pourquoi la pompe P-103 a-t-elle cassé hier à 14h32 ? Donne la cause racine.",
+      "sources": [],
+      "expect": {
+        "should_abstain": true,
+        "should_cite": false
+      }
+    },
+    {
+      "id": "GENERAL_001",
+      "vertical": "general",
+      "label": "Capitales (doit s'abstenir sans sources en mode vérifié)",
+      "verified_mode": true,
+      "prompt": "Quelle est la capitale de la France ?",
+      "sources": [],
+      "expect": {
+        "should_abstain": true,
+        "should_cite": false
+      }
+    }
+  ]
+}
+

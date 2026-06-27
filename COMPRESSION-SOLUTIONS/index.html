@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCV Studio — Toutes les Méthodes de Compression</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+            margin-bottom: 20px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .methods-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .method-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .method-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .method-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .method-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .method-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .method-subtitle {
+            font-size: 0.85em;
+            opacity: 0.9;
+        }
+
+        .method-body {
+            padding: 20px;
+        }
+
+        .method-description {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+
+        .method-features {
+            list-style: none;
+            margin-bottom: 15px;
+        }
+
+        .method-features li {
+            padding: 5px 0;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        .method-features li:before {
+            content: "✓ ";
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .method-stats {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 0.85em;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            color: #666;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .method-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .category {
+            margin-bottom: 50px;
+        }
+
+        .category-title {
+            color: white;
+            font-size: 1.8em;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            padding: 30px 0;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            margin-top: 50px;
+        }
+
+        .footer p {
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .footer-links a {
+            color: white;
+            text-decoration: none;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .footer-links a:hover {
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .methods-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎬 HCV Studio</h1>
+            <p>Toutes les Méthodes de Compression Développées</p>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">7</div>
+                <div class="stat-label">Méthodes de Compression</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">15+</div>
+                <div class="stat-label">Formats Supportés</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">8-12:1</div>
+                <div class="stat-label">Ratio Moyen</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">100%</div>
+                <div class="stat-label">Lossless</div>
+            </div>
+        </div>
+
+        <!-- Category 1: Mobile Compression -->
+        <div class="category">
+            <div class="category-title">📱 Compression Mobile</div>
+            <div class="methods-grid">
+                <!-- Method 1: Mobile Camera Codec -->
+                <div class="method-card">
+                    <div class="method-header">
+                        <div class="method-icon">📱</div>
+                        <div class="method-title">Mobile Camera Codec</div>
+                        <div class="method-subtitle">Photos & Vidéos Smartphone</div>
+                    </div>
+                    <div class="method-body">
+                        <div class="method-description">
+                            Compression optimisée pour photos et vidéos de smartphone avec détection automatique de format et sélection de stratégie.
+                        </div>
+                        <ul class="method-features">
+                            <li>HEIC/HEIF (iPhone)</li>
+                            <li>JPEG (Android)</li>
+                            <li>MP4/MOV (Vidéos)</li>
+                            <li>Stratégie AUTO</li>
+                        </ul>
+                        <div class="method-stats">
+                            <div class="stat-row">
+                                <span>HEIC:</span>
+                                <span class="stat-value">3-5:1</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>JPEG:</span>
+                                <span class="stat-value">1.2-1.5:1</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Vidéos:</span>
+                                <span class="stat-value">1.05-3:1</span>
+                            </div>
+                        </div>
+                        <div class="method-buttons">
+                            <a href="/compression" class="btn btn-primary">Utiliser</a>
+                            <a href="#" class="btn btn-secondary">Docs</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category 2: Image Compression -->
+        <div class="category">
+            <div class="category-title">🖼️ Compression d'Images</div>
+            <div class="methods-grid">
+                <!-- Method 2: Pre-Compressed Images -->
+                <div class="method-card">
+                    <div class="method-header">
+                        <div class="method-icon">🖼️</div>
+                        <div class="method-title">Pré-Compressées</div>
+                        <div class="method-subtitle">JPEG, PNG, WebP, GIF</div>
+                    </div>
+                    <div class="method-body">
+                        <div class="method-description">
+                            Compression intelligente pour images déjà compressées avec stratégies DIRECT, HYBRID, TRANSCODE.
+                        </div>
+                        <ul class="method-features">
+                            <li>Détection de qualité</li>
+                            <li>Stratégie AUTO</li>
+                            <li>Pas d'expansion</li>
+                            <li>Préservation qualité</li>
+                        </ul>
+                        <div class="method-stats">
+                            <div class="stat-row">
+                                <span>DIRECT:</span>
+                                <span class="stat-value">1.1-1.3:1</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>HYBRID:</span>
+                                <span class="stat-value">2-3:1</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>TRANSCODE:</span>
+                                <span class="stat-value">8:1</span>
+                            </div>
+                        </div>
+                        <div class="method-buttons">
+                            <a href="/compression" class="btn btn-primary">Utiliser</a>
+                            <a href="#" class="btn btn-secondary">Docs</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Method 3: RAW Images -->
+                <div class="method-card">
+                    <div class="method-header">
+                        <div class="method-icon">📷</div>
+                        <div class="method-title">Images RAW</div>
+                        <div class="method-subtitle">Non-Compressées</div>
+                    </div>
+                    <div class="method-body">
+                        <div class="method-description">
+                            Compression optimale pour images RAW avec ratio exceptionnel et préservation complète de la qualité.
+                        </div>
+                        <ul class="method-features">
+                            <li>Ratio 8-12:1</li>
+                            <li>Lossless 100%</li>
+                            <li>Toutes résolutions</li>
+                            <li>Métadonnées préservées</li>
+                        </ul>
+                        <div class="method-stats">
+                            <div class="stat-row">
+                                <span>Ratio:</span>
+                                <span class="stat-value">8-12:1</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Qualité:</span>
+                                <span class="stat-value">100%</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Temps:</span>
+                                <span class="stat-value">Rapide</span>
+                            </div>
+                        </div>
+                        <div class="method-buttons">
+                            <a href="#" class="btn btn-primary">Utiliser</a>
+                            <a href="#" class="btn btn-secondary">Docs</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Method 4: Binary Lossless -->
+                <div class="method-card">
+                    <div class="method-header">
+                        <div class="method-icon">🔢</div>
+                        <div class="method-title">Binary Lossless</div>
+                        <div class="method-subtitle">Données Binaires</div>
+                    </div>
+                    <div class="method-body">
+                        <div class="method-description">
+                            Compression lossless pour données binaires avec algorithmes optimisés pour patterns répétitifs.
+                        </div>
+                        <ul class="method-features">
+                            <li>Lossless 100%</li>
+                            <li>Données binaires</li>
+                            <li>Compression adaptative</li>
+                            <li>Très rapide</li>
+                        </ul>
+                        <div class="method-stats">
+                            <div class="stat-row">
+                                <span>Ratio:</span>
+                                <span class="stat-value">2-4:1</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Vitesse:</span>
+                                <span class="stat-value">Très rapide</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Qualité:</span>
+                                <span class="stat-value">100%</span>
+                            </div>
+                        </div>
+                        <div class="method-buttons">
+                            <a href="#" class="btn btn-primary">Utiliser</a>
+                            <a href="#" class="btn btn-secondary">Docs</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category 3: Video Compression -->
+        <div class="category">
+            <div class="category-title">🎥 Compression Vidéo</div>
+            <div class="methods-grid">
+                <!-- Method 5: H264/H265 -->
+                <div class="method-card">
+                    <div class="method-header">
+                        <div class="method-icon">🎬</div>
+                        <div class="method-title">H.264 / H.265</div>
+                        <div class="method-subtitle">Vidéos Compressées</div>
+                    </div>
+                    <div class="method-body">
+                        <div class="method-description">
+                            Compression pour vidéos H.264 et H.265 avec détection de codec et stratégie optimale.
+                        </div>
+                        <ul class="method-features">
+                            <li>H.264 support</li>
+                            <li>H.265 support</li>
+                            <li>Détection codec</li>
+                            <li>Ré-encodage optionnel</li>
+                        </ul>
+                        <div class="method-stats">
+                            <div class="stat-row">
+                                <span>H.264:</span>
+                                <span class="stat-value">6.92-8.35:1</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>H.265:</span>
+                                <span class="stat-value">8-12:1</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Qualité:</span>
+                                <span class="stat-value">Préservée</span>
+                            </div>
+                        </div>
+                        <div class="method-buttons">
+                            <a href="/compression" class="btn btn-primary">Utiliser</a>
+                            <a href="#" class="btn btn-secondary">Docs</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Method 6: SDI 4:2:2 -->
+                <div class="method-card">
+                    <div class="method-header">
+                        <div class="method-icon">📡</div>
+                        <div class="method-title">SDI 4:2:2</div>
+                        <div class="method-subtitle">Vidéo Professionnelle</div>
+                    </div>
+                    <div class="method-body">
+                        <div class="method-description">
+                            Compression pour vidéo SDI 4:2:2 professionnelle avec support complet des formats broadcast.
+                        </div>
+                        <ul class="method-features">
+                            <li>SDI 4:2:2</li>
+                            <li>Broadcast quality</li>
+                            <li>Métadonnées</li>
+                            <li>Lossless</li>
+                        </ul>
+                        <div class="method-stats">
+                            <div class="stat-row">
+                                <span>Ratio:</span>
+                                <span class="stat-value">8-12:1</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Qualité:</span>
+                                <span class="stat-value">100%</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Format:</span>
+                                <span class="stat-value">Broadcast</span>
+                            </div>
+                        </div>
+                        <div class="method-buttons">
+                            <a href="/compression" class="btn btn-primary">Utiliser</a>
+                            <a href="#" class="btn btn-secondary">Docs</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Method 7: Broadcast Archive -->
+                <div class="method-card">
+                    <div class="method-header">
+                        <div class="method-icon">🏛️</div>
+                        <div class="method-title">Broadcast Archive</div>
+                        <div class="method-subtitle">Archivage Professionnel</div>
+                    </div>
+                    <div class="method-body">
+                        <div class="method-description">
+                            Compression optimisée pour archivage broadcast avec métadonnées complètes et récupération garantie.
+                        </div>
+                        <ul class="method-features">
+                            <li>Archivage long terme</li>
+                            <li>Métadonnées complètes</li>
+                            <li>Vérification intégrité</li>
+                            <li>Récupération garantie</li>
+                        </ul>
+                        <div class="method-stats">
+                            <div class="stat-row">
+                                <span>Ratio:</span>
+                                <span class="stat-value">8-15:1</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Durabilité:</span>
+                                <span class="stat-value">50+ ans</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Intégrité:</span>
+                                <span class="stat-value">Vérifiée</span>
+                            </div>
+                        </div>
+                        <div class="method-buttons">
+                            <a href="#" class="btn btn-primary">Utiliser</a>
+                            <a href="#" class="btn btn-secondary">Docs</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category 4: Advanced -->
+        <div class="category">
+            <div class="category-title">⚙️ Méthodes Avancées</div>
+            <div class="methods-grid">
+                <!-- Method 8: Harmonic Codec V16 -->
+                <div class="method-card">
+                    <div class="method-header">
+                        <div class="method-icon">🎵</div>
+                        <div class="method-title">Harmonic Codec V16</div>
+                        <div class="method-subtitle">Compression Universelle</div>
+                    </div>
+                    <div class="method-body">
+                        <div class="method-description">
+                            Codec universel pour tous types de médias avec compression adaptative et qualité optimale.
+                        </div>
+                        <ul class="method-features">
+                            <li>Tous formats</li>
+                            <li>Compression adaptative</li>
+                            <li>Qualité optimale</li>
+                            <li>Très rapide</li>
+                        </ul>
+                        <div class="method-stats">
+                            <div class="stat-row">
+                                <span>Ratio:</span>
+                                <span class="stat-value">6-12:1</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Formats:</span>
+                                <span class="stat-value">15+</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Vitesse:</span>
+                                <span class="stat-value">Rapide</span>
+                            </div>
+                        </div>
+                        <div class="method-buttons">
+                            <a href="#" class="btn btn-primary">Utiliser</a>
+                            <a href="#" class="btn btn-secondary">Docs</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>🎬 HCV Studio — Plateforme Complète de Compression Multimédia</p>
+            <p>Développé avec les meilleures technologies de compression</p>
+            <div class="footer-links">
+                <a href="/api/info">API Info</a>
+                <a href="/api/health">Santé Serveur</a>
+                <a href="DOCUMENTATION_INDEX.md">Documentation</a>
+                <a href="README_MOBILE_INTEGRATION.md">Mobile</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

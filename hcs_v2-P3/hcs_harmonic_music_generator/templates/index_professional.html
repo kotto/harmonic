@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCS Professional Audio - Cinema Quality</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        'hcs-purple': '#8B5CF6',
+                        'hcs-pink': '#EC4899',
+                        'hcs-blue': '#3B82F6',
+                        'hcs-green': '#10B981',
+                        'hcs-gold': '#F59E0B',
+                        'hcs-red': '#EF4444',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        * { scroll-behavior: smooth; }
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        
+        .gradient-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            background: radial-gradient(ellipse at 20% 20%, rgba(139, 92, 246, 0.2) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 80%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+        }
+        
+        .glass-card {
+            background: rgba(26, 26, 37, 0.7);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+        
+        .glass-card:hover {
+            border-color: rgba(139, 92, 246, 0.4);
+            box-shadow: 0 15px 60px rgba(139, 92, 246, 0.15);
+        }
+        
+        .gold-accent {
+            background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 50%, #F59E0B 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 50px rgba(139, 92, 246, 0.5);
+        }
+        
+        .loading-spinner {
+            border: 3px solid rgba(139, 92, 246, 0.2);
+            border-top: 3px solid #8B5CF6;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .waveform {
+            background: linear-gradient(90deg, #8B5CF6 0%, #EC4899 50%, #3B82F6 100%);
+            height: 80px;
+            border-radius: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .waveform::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: wave 3s linear infinite;
+        }
+        
+        @keyframes wave {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .quality-badge {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .cinema-badge {
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .professional-meter {
+            background: linear-gradient(90deg, #10B981 0%, #F59E0B 50%, #EF4444 100%);
+            height: 8px;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .meter-needle {
+            position: absolute;
+            top: -2px;
+            width: 4px;
+            height: 12px;
+            background: white;
+            border-radius: 2px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            transition: left 0.3s ease;
+        }
+    </style>
+</head>
+
+<body class="font-sans">
+    <div class="gradient-bg"></div>
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full glass-card z-50 border-b border-white/10">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-hcs-purple to-hcs-pink rounded-lg flex items-center justify-center">
+                        <i data-lucide="film" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold gold-accent">HCS Professional Audio</h1>
+                        <p class="text-xs text-gray-400">Cinema Quality • 96kHz/24-bit</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="quality-badge">PROFESSIONAL</div>
+                    <div class="cinema-badge">CINEMA</div>
+                    <button id="healthBtn" class="flex items-center space-x-2 px-3 py-1 rounded-full bg-green-500/20 border border-green-500/30 text-green-400">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-sm">Connected</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 pt-28 pb-12">
+        <!-- Hero Section -->
+        <section class="text-center mb-16 fade-in">
+            <h2 class="text-5xl md:text-6xl font-bold mb-6 gold-accent">Cinema Quality Audio</h2>
+            <p class="text-xl text-gray-400 mb-12 max-w-4xl mx-auto">
+                Génération musicale professionnelle niveau Hollywood • 96kHz/24-bit • Multi-bandes • Spatial 3D • Mastering Studio
+            </p>
+            
+            <!-- Waveform Animation -->
+            <div class="waveform max-w-3xl mx-auto mb-12"></div>
+            
+            <!-- Professional Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+                <div class="glass-card rounded-xl p-8">
+                    <i data-lucide="settings" class="w-10 h-10 text-hcs-purple mb-4"></i>
+                    <h3 class="text-xl font-semibold mb-2">96kHz/24-bit</h3>
+                    <p class="text-sm text-gray-400">Studio Quality</p>
+                </div>
+                <div class="glass-card rounded-xl p-8">
+                    <i data-lucide="layers" class="w-10 h-10 text-hcs-pink mb-4"></i>
+                    <h3 class="text-xl font-semibold mb-2">Multi-bandes</h3>
+                    <p class="text-sm text-gray-400">8 Bandes Pro</p>
+                </div>
+                <div class="glass-card rounded-xl p-8">
+                    <i data-lucide="box" class="w-10 h-10 text-hcs-blue mb-4"></i>
+                    <h3 class="text-xl font-semibold mb-2">Spatial 3D</h3>
+                    <p class="text-sm text-gray-400">Cinema Surround</p>
+                </div>
+                <div class="glass-card rounded-xl p-8">
+                    <i data-lucide="zap" class="w-10 h-10 text-hcs-green mb-4"></i>
+                    <h3 class="text-xl font-semibold mb-2">Mastering</h3>
+                    <p class="text-sm text-gray-400">Hollywood Chain</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Professional Generation Interface -->
+        <div class="glass-card rounded-2xl p-10 mb-12">
+            <div class="flex items-center justify-between mb-8">
+                <h3 class="text-3xl font-semibold flex items-center">
+                    <i data-lucide="sliders" class="w-8 h-8 mr-4 text-hcs-purple"></i>
+                    Génération Professionnelle
+                </h3>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm text-gray-400">
+                        <span class="quality-badge">96kHz</span>
+                        <span class="cinema-badge ml-2">24-bit</span>
+                    </div>
+                </div>
+            </div>
+            
+            <form id="professionalForm" class="space-y-8">
+                <!-- Description Section -->
+                <div>
+                    <label class="block text-lg font-medium mb-4">Description Cinématographique</label>
+                    <textarea id="description" name="description" rows="4" 
+                        class="w-full px-6 py-4 bg-white/10 border border-white/20 rounded-xl text-white text-lg"
+                        placeholder="epic cinematic orchestral music with dramatic strings and powerful brass, perfect for blockbuster movie trailer...">epic cinematic orchestral music with dramatic strings and powerful brass, perfect for blockbuster movie trailer</textarea>
+                </div>
+                
+                <!-- Cinema Style Selection -->
+                <div>
+                    <label class="block text-lg font-medium mb-4">Style Cinématographique</label>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <label class="cinema-style-option">
+                            <input type="radio" name="cinematic_style" value="cinema" checked class="hidden">
+                            <div class="glass-card rounded-xl p-6 cursor-pointer hover:border-hcs-purple/50 transition-all">
+                                <i data-lucide="film" class="w-8 h-8 text-hcs-purple mb-3"></i>
+                                <h4 class="font-semibold mb-2">Cinéma Orchestral</h4>
+                                <p class="text-sm text-gray-400">Orchestre complet avec cordes et cuivres</p>
+                            </div>
+                        </label>
+                        
+                        <label class="cinema-style-option">
+                            <input type="radio" name="cinematic_style" value="action" class="hidden">
+                            <div class="glass-card rounded-xl p-6 cursor-pointer hover:border-hcs-purple/50 transition-all">
+                                <i data-lucide="zap" class="w-8 h-8 text-hcs-pink mb-3"></i>
+                                <h4 class="font-semibold mb-2">Cinéma d'Action</h4>
+                                <p class="text-sm text-gray-400">Percussions et synthétiseurs percutants</p>
+                            </div>
+                        </label>
+                        
+                        <label class="cinema-style-option">
+                            <input type="radio" name="cinematic_style" value="drama" class="hidden">
+                            <div class="glass-card rounded-xl p-6 cursor-pointer hover:border-hcs-purple/50 transition-all">
+                                <i data-lucide="heart" class="w-8 h-8 text-hcs-blue mb-3"></i>
+                                <h4 class="font-semibold mb-2">Cinéma Dramatique</h4>
+                                <p class="text-sm text-gray-400">Piano émouvant et cordes sustain</p>
+                            </div>
+                        </label>
+                        
+                        <label class="cinema-style-option">
+                            <input type="radio" name="cinematic_style" value="thriller" class="hidden">
+                            <div class="glass-card rounded-xl p-6 cursor-pointer hover:border-hcs-purple/50 transition-all">
+                                <i data-lucide="alert-triangle" class="w-8 h-8 text-hcs-red mb-3"></i>
+                                <h4 class="font-semibold mb-2">Cinéma Thriller</h4>
+                                <p class="text-sm text-gray-400">Tension et basses profondes</p>
+                            </div>
+                        </label>
+                        
+                        <label class="cinema-style-option">
+                            <input type="radio" name="cinematic_style" value="epic" class="hidden">
+                            <div class="glass-card rounded-xl p-6 cursor-pointer hover:border-hcs-purple/50 transition-all">
+                                <i data-lucide="crown" class="w-8 h-8 text-hcs-gold mb-3"></i>
+                                <h4 class="font-semibold mb-2">Cinéma Épique</h4>
+                                <p class="text-sm text-gray-400">Grandiose et chœurs puissants</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Professional Parameters -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Duration -->
+                    <div>
+                        <label class="block text-lg font-medium mb-4">Durée: <span id="durationValue">120</span> secondes</label>
+                        <input type="range" id="duration" name="duration" min="30" max="300" value="120" step="10" class="w-full">
+                        <div class="flex justify-between text-sm text-gray-400 mt-2">
+                            <span>30s</span>
+                            <span>300s</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Processing Options -->
+                    <div>
+                        <label class="block text-lg font-medium mb-4">Options de Traitement</label>
+                        <div class="space-y-3">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="applyMastering" name="apply_mastering" checked class="mr-3">
+                                <span>Mastering Professionnel</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="applySpatial" name="apply_spatial" checked class="mr-3">
+                                <span>Spatial 3D Cinema</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="applyMultiband" name="apply_multiband" checked class="mr-3">
+                                <span>Multi-bandes 8 Bandes</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Generate Button -->
+                <button type="submit" id="generateBtn" class="btn-primary w-full py-6 rounded-xl text-xl font-semibold">
+                    <i data-lucide="play" class="w-6 h-6 inline mr-3"></i>
+                    Générer Audio Professionnel
+                </button>
+            </form>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden glass-card rounded-2xl p-10 mb-12">
+            <h3 class="text-3xl font-semibold mb-8 flex items-center">
+                <i data-lucide="music-2" class="w-8 h-8 mr-4 text-hcs-purple"></i>
+                Résultat Professionnel
+            </h3>
+            
+            <div id="resultsContent"></div>
+        </div>
+
+        <!-- Professional Tracks List -->
+        <div class="glass-card rounded-2xl p-10">
+            <div class="flex items-center justify-between mb-8">
+                <h3 class="text-3xl font-semibold flex items-center">
+                    <i data-lucide="list-music" class="w-8 h-8 mr-4 text-hcs-purple"></i>
+                    Pistes Professionnelles
+                </h3>
+                <div class="flex items-center space-x-4">
+                    <span class="quality-badge">96kHz</span>
+                    <span class="cinema-badge">24-bit</span>
+                </div>
+            </div>
+            
+            <div id="tracksList" class="space-y-6">
+                <p class="text-gray-400 text-center py-12">Aucune piste professionnelle générée pour le moment</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Professional Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 hidden">
+        <div class="glass-card rounded-2xl p-12 max-w-2xl mx-auto text-center">
+            <div class="loading-spinner mx-auto mb-6"></div>
+            <p class="text-2xl font-semibold mb-4">Génération Professionnelle en cours...</p>
+            <p id="loadingMessage" class="text-lg text-gray-400 mb-8">Création audio qualité cinéma...</p>
+            
+            <!-- Professional Meters -->
+            <div class="space-y-4 mb-8">
+                <div>
+                    <div class="flex justify-between text-sm mb-2">
+                        <span>Multi-bandes Processing</span>
+                        <span id="multibandProgress">0%</span>
+                    </div>
+                    <div class="professional-meter">
+                        <div id="multibandBar" class="h-full bg-gradient-to-r from-hcs-green to-hcs-gold transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="flex justify-between text-sm mb-2">
+                        <span>Spatial 3D Processing</span>
+                        <span id="spatialProgress">0%</span>
+                    </div>
+                    <div class="professional-meter">
+                        <div id="spatialBar" class="h-full bg-gradient-to-r from-hcs-blue to-hcs-purple transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="flex justify-between text-sm mb-2">
+                        <span>Mastering Chain</span>
+                        <span id="masteringProgress">0%</span>
+                    </div>
+                    <div class="professional-meter">
+                        <div id="masteringBar" class="h-full bg-gradient-to-r from-hcs-pink to-hcs-red transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-sm text-gray-400">
+                <p>Quality: 96kHz/24-bit • Cinema Standard • Hollywood Ready</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="fixed top-24 right-6 z-50 space-y-3"></div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // API base URL
+        const API_BASE = 'http://localhost:8022/api';
+        
+        // State
+        let currentTracks = [];
+        let isGenerating = false;
+        
+        // Elements
+        const professionalForm = document.getElementById('professionalForm');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsContent = document.getElementById('resultsContent');
+        const tracksList = document.getElementById('tracksList');
+        const notificationContainer = document.getElementById('notificationContainer');
+        
+        // Range input
+        const durationSlider = document.getElementById('duration');
+        const durationValue = document.getElementById('durationValue');
+        
+        durationSlider.addEventListener('input', (e) => {
+            durationValue.textContent = e.target.value;
+        });
+        
+        // Cinema style selection
+        const styleOptions = document.querySelectorAll('.cinema-style-option');
+        styleOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                // Update visual selection
+                styleOptions.forEach(opt => {
+                    opt.querySelector('div').classList.remove('border-hcs-purple', 'bg-hcs-purple/10');
+                });
+                option.querySelector('div').classList.add('border-hcs-purple', 'bg-hcs-purple/10');
+            });
+        });
+        
+        // Form submission
+        professionalForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await generateProfessionalMusic();
+        });
+        
+        // Health check
+        document.getElementById('healthBtn').addEventListener('click', checkHealth);
+        
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                showNotification('Serveur professionnel OK', 'success');
+            } catch (error) {
+                showNotification('Erreur de connexion', 'error');
+            }
+        }
+        
+        async function generateProfessionalMusic() {
+            if (isGenerating) return;
+            
+            isGenerating = true;
+            showLoading(true);
+            
+            try {
+                const formData = new FormData(professionalForm);
+                const params = Object.fromEntries(formData.entries());
+                
+                // Convert values
+                params.duration = parseFloat(params.duration);
+                params.apply_mastering = formData.has('apply_mastering');
+                params.apply_spatial = formData.has('apply_spatial');
+                params.apply_multiband = formData.has('apply_multiband');
+                
+                const response = await fetch(`${API_BASE}/generate-professional`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResults(result);
+                    await loadTracks();
+                    showNotification('Audio professionnel généré avec succès!', 'success');
+                } else {
+                    throw new Error(result.message || 'Erreur de génération');
+                }
+                
+            } catch (error) {
+                console.error('Professional generation error:', error);
+                showNotification('Erreur: ' + error.message, 'error');
+            } finally {
+                isGenerating = false;
+                showLoading(false);
+            }
+        }
+        
+        function showLoading(show) {
+            if (show) {
+                loadingOverlay.classList.remove('hidden');
+                animateProfessionalProgress();
+            } else {
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+        
+        function animateProfessionalProgress() {
+            const stages = [
+                { id: 'multiband', duration: 3000 },
+                { id: 'spatial', duration: 2500 },
+                { id: 'mastering', duration: 2000 }
+            ];
+            
+            stages.forEach((stage, index) => {
+                setTimeout(() => {
+                    animateStage(stage.id, stage.duration);
+                }, index * 1000);
+            });
+        }
+        
+        function animateStage(stageId, duration) {
+            const progressBar = document.getElementById(stageId + 'Bar');
+            const progressText = document.getElementById(stageId + 'Progress');
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress >= 95) {
+                    progress = 95;
+                    clearInterval(interval);
+                    
+                    // Complete stage
+                    setTimeout(() => {
+                        progressBar.style.width = '100%';
+                        progressText.textContent = '100%';
+                    }, 200);
+                }
+                
+                progressBar.style.width = progress + '%';
+                progressText.textContent = Math.round(progress) + '%';
+            }, duration / 20);
+        }
+        
+        function showResults(result) {
+            resultsContent.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Modèle:</span>
+                            <span class="font-semibold">${result.model}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Style:</span>
+                            <span class="font-semibold">${result.cinematic_style}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Qualité:</span>
+                            <span class="font-semibold">${result.quality}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Durée:</span>
+                            <span class="font-semibold">${result.duration}s</span>
+                        </div>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Taille:</span>
+                            <span class="font-semibold">${formatFileSize(result.file_size)}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Temps:</span>
+                            <span class="font-semibold">${result.generation_time.toFixed(2)}s</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Mastering:</span>
+                            <span class="font-semibold">${result.processing_config.apply_mastering ? '✅' : '❌'}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Spatial 3D:</span>
+                            <span class="font-semibold">${result.processing_config.apply_spatial ? '✅' : '❌'}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                ${result.description ? `
+                <div class="mt-8 p-6 bg-white/5 rounded-xl">
+                    <p class="text-sm text-gray-400 mb-2">Description:</p>
+                    <p class="text-sm">${result.description}</p>
+                </div>
+                ` : ''}
+                
+                <div class="flex gap-6 mt-8">
+                    <button onclick="downloadTrack('${result.track_id}')" class="btn-primary px-8 py-4 rounded-xl text-lg">
+                        <i data-lucide="download" class="w-5 h-5 inline mr-2"></i>
+                        Télécharger WAV 96kHz/24-bit
+                    </button>
+                    <button onclick="analyzeTrack('${result.track_id}')" class="px-8 py-4 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/20 text-lg">
+                        <i data-lucide="bar-chart" class="w-5 h-5 inline mr-2"></i>
+                        Analyse Professionnelle
+                    </button>
+                </div>
+            `;
+            
+            resultsSection.classList.remove('hidden');
+            lucide.createIcons();
+        }
+        
+        async function loadTracks() {
+            try {
+                const response = await fetch(`${API_BASE}/tracks`);
+                const data = await response.json();
+                
+                currentTracks = data.tracks;
+                displayTracks();
+                
+            } catch (error) {
+                console.error('Load tracks error:', error);
+            }
+        }
+        
+        function displayTracks() {
+            if (Object.keys(currentTracks).length === 0) {
+                tracksList.innerHTML = '<p class="text-gray-400 text-center py-12">Aucune piste professionnelle générée pour le moment</p>';
+                return;
+            }
+            
+            const tracksHTML = Object.entries(currentTracks)
+                .reverse()
+                .map(([trackId, track]) => `
+                    <div class="glass-card rounded-xl p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="flex items-center space-x-3 mb-2">
+                                    <h4 class="font-semibold text-lg">${track.filename}</h4>
+                                    <span class="quality-badge">96kHz</span>
+                                    <span class="cinema-badge">24-bit</span>
+                                </div>
+                                <p class="text-sm text-gray-400 mb-1">
+                                    ${track.model} • ${track.cinematic_style} • ${track.duration}s
+                                </p>
+                                <p class="text-xs text-gray-500">
+                                    ${formatFileSize(track.file_size)} • ${new Date(track.timestamp * 1000).toLocaleString()}
+                                </p>
+                            </div>
+                            <div class="flex gap-3">
+                                <button onclick="downloadTrack('${trackId}')" class="p-3 rounded bg-hcs-purple/20 text-hcs-purple hover:bg-hcs-purple/30">
+                                    <i data-lucide="download" class="w-5 h-5"></i>
+                                </button>
+                                <button onclick="deleteTrack('${trackId}')" class="p-3 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30">
+                                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            
+            tracksList.innerHTML = tracksHTML;
+            lucide.createIcons();
+        }
+        
+        async function downloadTrack(trackId) {
+            try {
+                const response = await fetch(`${API_BASE}/download/${trackId}`);
+                const blob = await response.blob();
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = currentTracks[trackId].filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                showNotification('Téléchargement professionnel démarré', 'success');
+                
+            } catch (error) {
+                showNotification('Erreur de téléchargement', 'error');
+            }
+        }
+        
+        async function deleteTrack(trackId) {
+            if (!confirm('Supprimer cette piste professionnelle ?')) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/track/${trackId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    await loadTracks();
+                    showNotification('Piste professionnelle supprimée', 'success');
+                } else {
+                    throw new Error('Erreur de suppression');
+                }
+                
+            } catch (error) {
+                showNotification('Erreur de suppression', 'error');
+            }
+        }
+        
+        async function analyzeTrack(trackId) {
+            try {
+                const response = await fetch(`${API_BASE}/analyze-professional/${trackId}`);
+                const data = await response.json();
+                
+                showNotification('Analyse professionnelle disponible dans la console', 'info');
+                console.log('Professional Track Analysis:', data);
+                
+            } catch (error) {
+                showNotification('Erreur d\'analyse', 'error');
+            }
+        }
+        
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `glass-card rounded-xl p-4 fade-in`;
+            
+            const colors = {
+                success: 'text-green-400 border-green-500/30',
+                error: 'text-red-400 border-red-500/30',
+                info: 'text-blue-400 border-blue-500/30'
+            };
+            
+            notification.innerHTML = `
+                <div class="flex items-center space-x-3 ${colors[type]}">
+                    <i data-lucide="${type === 'success' ? 'check-circle' : type === 'error' ? 'x-circle' : 'info'}" class="w-6 h-6"></i>
+                    <span class="font-medium">${message}</span>
+                </div>
+            `;
+            
+            notificationContainer.appendChild(notification);
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 4000);
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // Initial load
+        loadTracks();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HCV PRO — Codec d'Archivage Broadcast Lossless</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],display:['Space Grotesk','sans-serif']},colors:{'hcs-black':'#0a0a0f','hcs-dark':'#12121a','hcs-card':'#1a1a25','hcs-gold':'#FFD700','hcs-gold-light':'#FFE55C','hcs-purple':'#8B5CF6','hcs-blue':'#3B82F6'}}}}
+</script>
+<style>
+*{scroll-behavior:smooth}
+body{background:#0a0a0f;color:#fff;overflow-x:hidden}
+.gradient-bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;
+background:radial-gradient(ellipse at 20% 20%,rgba(139,92,246,.15) 0%,transparent 50%),
+radial-gradient(ellipse at 80% 80%,rgba(59,130,246,.1) 0%,transparent 50%),
+linear-gradient(135deg,#0a0a0f 0%,#12121a 50%,#0a0a0f 100%)}
+.glass-card{background:rgba(26,26,37,.6);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+border:1px solid rgba(255,255,255,.08);box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.05)}
+.glass-card:hover{border-color:rgba(255,215,0,.2);box-shadow:0 12px 48px rgba(255,215,0,.1)}
+.gold-accent{background:linear-gradient(135deg,#FFD700 0%,#FFE55C 50%,#FFD700 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.gold-border{border:1px solid transparent;background:linear-gradient(#1a1a25,#1a1a25) padding-box,linear-gradient(135deg,#FFD700,#8B5CF6) border-box}
+.btn-primary{background:linear-gradient(135deg,#FFD700 0%,#FFE55C 100%);color:#0a0a0f;font-weight:600;transition:all .3s}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 40px rgba(255,215,0,.4)}
+.btn-secondary{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;transition:all .3s}
+.btn-secondary:hover{background:rgba(255,255,255,.1);border-color:rgba(255,215,0,.3)}
+.tab-active{background:rgba(255,215,0,.15);border-color:#FFD700;color:#FFD700}
+::-webkit-scrollbar{width:8px}::-webkit-scrollbar-track{background:#0a0a0f}
+::-webkit-scrollbar-thumb{background:#333;border-radius:4px}::-webkit-scrollbar-thumb:hover{background:#FFD700}
+/* Badge audio track status */
+.audio-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600}
+.audio-ok{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3)}
+.audio-none{background:rgba(107,114,128,.15);color:#6b7280;border:1px solid rgba(107,114,128,.3)}
+.audio-warn{background:rgba(234,179,8,.15);color:#eab308;border:1px solid rgba(234,179,8,.3)}
+</style>
+</head>
+<body class="font-sans antialiased">
+<div class="gradient-bg"></div>
+
+<!-- Sidebar -->
+<aside class="fixed left-0 top-0 h-full w-64 glass-card border-r border-white/5 z-40 hidden md:block">
+  <div class="p-6 border-b border-white/5">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-lg gold-border flex items-center justify-center">
+        <i data-lucide="film" class="w-5 h-5 text-hcs-gold"></i>
+      </div>
+      <span class="font-display font-bold text-lg">HCV <span class="gold-accent">PRO</span></span>
+    </div>
+  </div>
+  <nav class="p-4 space-y-2">
+    <button onclick="showSection('dashboard')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors tab-active" data-s="dashboard">
+      <i data-lucide="layout-dashboard" class="w-5 h-5"></i><span>Tableau de bord</span>
+    </button>
+    <button onclick="showSection('compress')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors" data-s="compress">
+      <i data-lucide="file-archive" class="w-5 h-5"></i><span>Compression</span>
+    </button>
+    <button onclick="showSection('compare')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors" data-s="compare">
+      <i data-lucide="columns" class="w-5 h-5"></i><span>Avant / Après</span>
+    </button>
+    <button onclick="showSection('history')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors" data-s="history">
+      <i data-lucide="clock" class="w-5 h-5"></i><span>Historique</span>
+    </button>
+    <button onclick="showSection('android')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors" data-s="android">
+      <i data-lucide="smartphone" class="w-5 h-5"></i><span>Android Boost</span>
+    </button>
+    <button onclick="showSection('video')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors" data-s="video">
+      <i data-lucide="clapperboard" class="w-5 h-5"></i><span>Vidéo Boost</span>
+    </button>
+    <button onclick="showSection('precompressed')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors" data-s="precompressed">
+      <i data-lucide="file-archive" class="w-5 h-5"></i><span>Précompressé</span>
+    </button>
+    <button onclick="showSection('decoder')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors" data-s="decoder">
+      <i data-lucide="play-circle" class="w-5 h-5"></i><span>Décodeur HCV</span>
+    </button>
+  </nav>
+  <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/5">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-hcs-gold to-hcs-purple flex items-center justify-center"><span class="font-bold text-hcs-black text-sm">HC</span></div>
+      <div><p class="text-sm font-medium">HCV PRO</p><p class="text-xs text-gray-500">Lossless v1.0</p></div>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<main class="md:ml-64 min-h-screen">
+  <header class="sticky top-0 z-30 glass-card border-b border-white/5 px-6 py-4">
+    <div class="flex items-center justify-between">
+      <h1 id="page-title" class="text-xl font-display font-bold">Tableau de bord</h1>
+      <div class="flex items-center space-x-3">
+        <span class="text-xs text-gray-400 hidden sm:inline"><i data-lucide="zap" class="w-3 h-3 inline text-hcs-gold"></i> Pipeline Actif</span>
+        <span class="px-3 py-1 rounded-full text-xs bg-green-500/20 text-green-400 font-bold">SDI 4:2:2</span>
+        <span class="px-3 py-1 rounded-full text-xs bg-hcs-gold/20 text-hcs-gold font-bold">26-33:1</span>
+        <span class="px-3 py-1 rounded-full text-xs bg-blue-500/20 text-blue-400">Lossless</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="p-6">
+
+    <!-- DASHBOARD -->
+    <section id="sec-dashboard" class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="glass-card rounded-2xl p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-hcs-gold/10 flex items-center justify-center"><i data-lucide="zap" class="w-6 h-6 text-hcs-gold"></i></div>
+            <span class="text-xs text-green-400 flex items-center"><i data-lucide="trending-up" class="w-3 h-3 mr-1"></i> >8:1</span>
+          </div>
+          <p class="text-3xl font-display font-bold" id="dash-ratio">—</p>
+          <p class="text-gray-400 text-sm">Ratio Compression</p>
+        </div>
+        <div class="glass-card rounded-2xl p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-hcs-purple/10 flex items-center justify-center"><i data-lucide="hard-drive" class="w-6 h-6 text-hcs-purple"></i></div>
+          </div>
+          <p class="text-3xl font-display font-bold" id="dash-savings">—</p>
+          <p class="text-gray-400 text-sm">Économie Stockage</p>
+        </div>
+        <div class="glass-card rounded-2xl p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-hcs-blue/10 flex items-center justify-center"><i data-lucide="shield-check" class="w-6 h-6 text-hcs-blue"></i></div>
+          </div>
+          <p class="text-3xl font-display font-bold" id="dash-bitexact">✅</p>
+          <p class="text-gray-400 text-sm">Decode Bit-Exact</p>
+        </div>
+        <div class="glass-card rounded-2xl p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center"><i data-lucide="check-circle" class="w-6 h-6 text-green-400"></i></div>
+          </div>
+          <p class="text-3xl font-display font-bold" id="dash-ssim">—</p>
+          <p class="text-gray-400 text-sm">SSIM Qualité</p>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-2xl p-6">
+        <h3 class="font-display font-bold text-lg mb-4">Pipeline HCV PRO - Broadcast SDI 4:2:2</h3>
+        <div class="p-4 rounded-xl bg-green-500/10 border border-green-500/20 mb-4">
+          <p class="text-green-400 font-medium mb-2">Spécialisé Signal Broadcast Professionnel</p>
+          <p class="text-gray-400 text-sm">Support complet SDI 4:2:2 10/12-bit avec compression lossless de 26-33:1</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 text-sm mb-4">
+          <span class="px-3 py-1.5 rounded-lg bg-green-500/10 text-green-400 font-medium">SDI 4:2:2</span>
+          <i data-lucide="arrow-right" class="w-4 h-4 text-gray-500"></i>
+          <span class="px-3 py-1.5 rounded-lg bg-hcs-purple/10 text-hcs-purple font-medium">Conversion</span>
+          <i data-lucide="arrow-right" class="w-4 h-4 text-gray-500"></i>
+          <span class="px-3 py-1.5 rounded-lg bg-hcs-gold/10 text-hcs-gold font-medium">Separation</span>
+          <i data-lucide="arrow-right" class="w-4 h-4 text-gray-500"></i>
+          <span class="px-3 py-1.5 rounded-lg bg-hcs-blue/10 text-hcs-blue font-medium">Prédiction</span>
+          <i data-lucide="arrow-right" class="w-4 h-4 text-gray-500"></i>
+          <span class="px-3 py-1.5 rounded-lg bg-orange-500/10 text-orange-400 font-medium">Adaptation</span>
+          <i data-lucide="arrow-right" class="w-4 h-4 text-gray-500"></i>
+          <span class="px-3 py-1.5 rounded-lg bg-green-500/10 text-green-400 font-medium">Encodage</span>
+          <i data-lucide="arrow-right" class="w-4 h-4 text-gray-500"></i>
+          <span class="px-3 py-1.5 rounded-lg bg-hcs-gold/20 text-hcs-gold font-bold">.hcvp</span>
+        </div>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-400">
+          <div class="p-3 rounded-lg bg-white/5"><span class="text-green-400 font-medium">Signal SDI:</span> Déballage YUV 4:2:2 </div>
+          <div class="p-3 rounded-lg bg-white/5"><span class="text-hcs-gold font-medium">Grain:</span> sigma_curve 32B header)</div>
+          <div class="p-3 rounded-lg bg-white/5"><span class="text-green-400 font-medium">Garantie:</span> decode(data)==decode(data) bit par bit</div>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        <button onclick="showSection('compress')" class="glass-card rounded-2xl p-6 text-left hover:border-hcs-gold/30 transition-all">
+          <i data-lucide="upload" class="w-8 h-8 text-hcs-gold mb-3"></i>
+          <h3 class="font-display font-bold mb-1">Compresser une image</h3>
+          <p class="text-sm text-gray-400">JPEG, PNG, BMP, TIFF → HCV PRO</p>
+        </button>
+        <button onclick="runDemo('VGA')" class="glass-card rounded-2xl p-6 text-left hover:border-hcs-purple/30 transition-all">
+          <i data-lucide="play" class="w-8 h-8 text-hcs-purple mb-3"></i>
+          <h3 class="font-display font-bold mb-1">Demo Broadcast VGA</h3>
+          <p class="text-sm text-gray-400">Signal SDI 640×480 12-bit</p>
+        </button>
+        <button onclick="showSection('compare')" class="glass-card rounded-2xl p-6 text-left hover:border-hcs-blue/30 transition-all">
+          <i data-lucide="columns" class="w-8 h-8 text-hcs-blue mb-3"></i>
+          <h3 class="font-display font-bold mb-1">Comparaison Avant/Après</h3>
+          <p class="text-sm text-gray-400">Visualiser la qualité</p>
+        </button>
+        <button onclick="showSection('android')" class="glass-card rounded-2xl p-6 text-left hover:border-green-500/30 transition-all">
+          <i data-lucide="smartphone" class="w-8 h-8 text-green-400 mb-3"></i>
+          <h3 class="font-display font-bold mb-1">📱 Android Boost</h3>
+          <p class="text-sm text-gray-400">JPEG → 4-10:1 </p>
+        </button>
+        <button onclick="showSection('video')" class="glass-card rounded-2xl p-6 text-left hover:border-red-500/30 transition-all">
+          <i data-lucide="clapperboard" class="w-8 h-8 text-red-400 mb-3"></i>
+          <h3 class="font-display font-bold mb-1">🎬 Vidéo Boost</h3>
+          <p class="text-sm text-gray-400">MP4 → avant / après décompression vidéo</p>
+        </button>
+      </div>
+    </section>
+
+    <!-- COMPRESS -->
+    <section id="sec-compress" class="hidden space-y-6">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="glass-card rounded-2xl p-8">
+          <h2 class="font-display text-2xl font-bold mb-2">Compression Broadcast SDI 4:2:2</h2>
+          <p class="text-gray-400 mb-2">Transcodage: SDI 4:2:2 → Pipeline HCV PRO</p>
+          <div class="p-3 rounded-xl bg-green-500/10 border border-green-500/20 mb-4 text-sm">
+            <p class="text-green-400 font-medium mb-1">Support complet des formats broadcast</p>
+            <p class="text-gray-400">SDI 4:2:2 10-bit et 12-bit | Déballage YUV  | Conversion  | Ratio 26-33:1</p>
+          </div>
+          <div id="upload-zone" class="border-2 border-dashed border-green-500/30 bg-green-500/5 rounded-2xl p-8 text-center cursor-pointer hover:border-green-500/60 hover:bg-green-500/10 transition-all mb-6" onclick="document.getElementById('file-input').click()">
+            <input type="file" id="file-input" class="hidden" accept="image/*,.sdi" onchange="handleUpload(event)">
+            <i data-lucide="film" class="w-12 h-12 text-green-400 mx-auto mb-3"></i>
+            <p class="font-medium text-lg mb-2">Glissez votre fichier SDI ou image</p>
+            <p class="text-sm text-gray-400">SDI 4:2:2 (.sdi) | JPEG, PNG, BMP, TIFF, WebP</p>
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-semibold mb-2 text-gray-300">Bit depth</label>
+            <select id="bits-select" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white">
+              <option value="12">12-bit (broadcast)</option>
+              <option value="10">10-bit (standard)</option>
+              <option value="8">8-bit (web)</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-3 gap-2">
+            <button onclick="runDemo('QVGA')" class="btn-secondary py-3 rounded-xl text-sm">Demo SDI QVGA</button>
+            <button onclick="runDemo('VGA')" class="btn-primary py-3 rounded-xl text-sm">Demo SDI VGA</button>
+            <button onclick="runDemo('SVGA')" class="btn-secondary py-3 rounded-xl text-sm">Demo SDI SVGA</button>
+          </div>
+          <div id="loading" class="hidden mt-6 text-center">
+            <div class="w-8 h-8 border-3 border-hcs-gold/30 border-t-hcs-gold rounded-full animate-spin mx-auto"></div>
+            <p class="text-sm text-gray-400 mt-2">Compression en cours...</p>
+          </div>
+        </div>
+        <div class="glass-card rounded-2xl p-8">
+          <h2 class="font-display text-2xl font-bold mb-4">Résultats</h2>
+          <div id="results" class="hidden">
+            <div class="p-4 rounded-xl bg-green-500/10 border border-green-500/30 mb-4">
+              <div class="flex items-center space-x-2">
+                <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
+                <span class="font-medium text-green-400">Compression réussie!</span>
+                <span class="ml-auto text-xs text-gray-400" id="r-filename"></span>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3 mb-4">
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-xs text-gray-400 mb-1">Source</p><p class="font-bold text-sm" id="r-source">—</p></div>
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-xs text-gray-400 mb-1">Compressé</p><p class="font-bold text-hcs-gold text-sm" id="r-compressed">—</p></div>
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-xs text-gray-400 mb-1">Ratio vs Source</p><p class="font-bold text-green-400 text-sm" id="r-ratio-src">—</p></div>
+            </div>
+            <div class="grid grid-cols-3 gap-3 mb-4">
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-xs text-gray-400 mb-1">RAW Pixels</p><p class="font-bold text-sm" id="r-raw">—</p></div>
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-xs text-gray-400 mb-1">Ratio vs RAW</p><p class="font-bold text-hcs-purple text-sm" id="r-ratio-raw">—</p></div>
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-xs text-gray-400 mb-1">Économie</p><p class="font-bold text-green-400 text-sm" id="r-savings">—</p></div>
+            </div>
+            <div class="grid grid-cols-4 gap-2 mb-4">
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">PSNR</p><p class="font-bold text-xs text-hcs-gold" id="r-psnr">—</p></div>
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">SSIM</p><p class="font-bold text-xs" id="r-ssim">—</p></div>
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">Encode</p><p class="font-bold text-xs" id="r-encode">—</p></div>
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">Bit-exact</p><p class="font-bold text-xs text-green-400" id="r-bitexact">—</p></div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="text-center"><p class="text-xs text-gray-400 mb-2">🔵 Original</p>
+                <img id="img-before" style="display:none;width:100%;border-radius:0.5rem;background:#1f2937;min-height:120px;object-fit:contain;max-height:240px" alt="Original">
+              </div>
+              <div class="text-center"><p class="text-xs text-gray-400 mb-2">🟢 Décompressé HCV PRO</p>
+                <img id="img-after" style="display:none;width:100%;border-radius:0.5rem;background:#1f2937;min-height:120px;object-fit:contain;max-height:240px" alt="Décompressé">
+              </div>
+            </div>
+            <div class="mt-4 flex flex-wrap gap-3 justify-center">
+              <button id="r-download-hcab" style="display:none" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2">
+                <i data-lucide="download" class="w-4 h-4"></i>Télécharger .hcab
+              </button>
+            </div>
+          </div>
+          <div id="no-results" class="text-center py-12 text-gray-500">
+            <i data-lucide="image" class="w-12 h-12 mx-auto mb-3 opacity-30"></i>
+            <p>Uploadez une image ou lancez une démo</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMPARE -->
+    <section id="sec-compare" class="hidden space-y-6">
+      <div class="glass-card rounded-2xl p-8">
+        <h2 class="font-display text-2xl font-bold mb-2">Comparaison Avant / Après</h2>
+        <p class="text-gray-400 mb-6">Visualisez la qualité de reconstruction lossless statistique</p>
+        <div id="compare-content" class="hidden">
+          <div class="grid md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <p class="text-sm font-semibold text-gray-300 mb-2">🔵 Original (<span id="c-src-fmt"></span>)</p>
+              <img id="c-before" style="display:none;width:100%;border-radius:0.75rem;background:#1f2937" alt="">
+              <video id="c-before-video" style="display:none;width:100%;border-radius:0.75rem;background:#1f2937" controls playsinline preload="auto"></video>
+              <p class="text-xs text-gray-500 mt-2">Taille: <span id="c-src-size"></span> <span id="c-before-audio-badge"></span></p>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-gray-300 mb-2">🟢 Décompressé HCV PRO</p>
+              <img id="c-after" style="display:none;width:100%;border-radius:0.75rem;background:#1f2937" alt="">
+              <video id="c-after-video" style="display:none;width:100%;border-radius:0.75rem;background:#1f2937" controls playsinline preload="auto"></video>
+              <p class="text-xs text-gray-500 mt-2">Taille compressée: <span id="c-comp-size"></span> · Ratio: <span id="c-ratio" class="text-hcs-gold font-bold"></span> <span id="c-after-audio-badge"></span></p>
+            </div>
+          </div>
+          <div class="grid grid-cols-5 gap-3">
+            <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-[10px] text-gray-500">PSNR</p><p class="font-bold text-hcs-gold" id="c-psnr">—</p></div>
+            <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-[10px] text-gray-500">SSIM</p><p class="font-bold" id="c-ssim">—</p></div>
+            <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-[10px] text-gray-500">Max Diff</p><p class="font-bold" id="c-maxdiff">—</p></div>
+            <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-[10px] text-gray-500">Bit-exact Repro</p><p class="font-bold text-green-400" id="c-bitexact">—</p></div>
+            <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-[10px] text-gray-500">Mode</p><p class="font-bold text-hcs-purple" id="c-mode">—</p></div>
+          </div>
+        </div>
+        <div id="compare-empty" class="text-center py-16 text-gray-500">
+          <i data-lucide="columns" class="w-16 h-16 mx-auto mb-4 opacity-20"></i>
+          <p class="mb-4">Compressez d'abord une image ou une vidéo pour voir la comparaison</p>
+          <button onclick="runDemo('VGA')" class="btn-primary px-6 py-3 rounded-xl">▶ Lancer Demo VGA</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section id="sec-history" class="hidden space-y-6">
+      <div class="glass-card rounded-2xl p-8">
+        <h2 class="font-display text-2xl font-bold mb-4">Historique des compressions</h2>
+        <div id="history-list"></div>
+      </div>
+    </section>
+
+    <!-- ANDROID BOOST -->
+    <section id="sec-android" class="hidden space-y-6">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="glass-card rounded-2xl p-8">
+          <h2 class="font-display text-2xl font-bold mb-2">📱 Android Boost</h2>
+          <p class="text-gray-400 mb-2">Compression massive pour photos Android (JPEG)</p>
+          <div class="p-3 rounded-xl bg-green-500/10 border border-green-500/20 mb-4 text-sm">
+            <p class="text-green-400 font-medium mb-1">Pipeline H264 Intra + Lanczos</p>
+            <p class="text-gray-400">JPEG → Decode → Downscale Lanczos → H264 Intra → zstd L19</p>
+          </div>
+          <div id="ab-upload-zone" class="border-2 border-dashed border-green-500/30 bg-green-500/5 rounded-2xl p-8 text-center cursor-pointer hover:border-green-500/60 hover:bg-green-500/10 transition-all mb-4" onclick="document.getElementById('ab-file-input').click()">
+            <input type="file" id="ab-file-input" class="hidden" accept="image/jpeg,image/jpg,image/png,image/webp" onchange="handleAndroidUpload(event)">
+            <i data-lucide="smartphone" class="w-12 h-12 text-green-400 mx-auto mb-3"></i>
+            <p class="font-medium text-lg mb-2">Photo Android (JPEG)</p>
+            <p class="text-sm text-gray-400">Glissez ou cliquez — JPEG, PNG, WebP</p>
+          </div>
+          <div class="mb-4">
+            <label for="ab-quality" class="block text-sm font-semibold mb-2 text-gray-300">Qualité / Ratio</label>
+            <select id="ab-quality" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white">
+              <option value="ultra">Ultra — Quasi-lossless</option>
+              <option value="high" selected>High — Haute qualité</option>
+              <option value="balanced">Balanced — Équilibre</option>
+              <option value="compact">Compact — Compression maximale</option>
+            </select>
+          </div>
+          <div class="mb-4">
+            <label for="ab-target-resolution" class="block text-sm font-semibold mb-2 text-gray-300">Résolution de sortie (Upscale)</label>
+            <select id="ab-target-resolution" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white">
+              <option value="original" selected>Original (résolution source)</option>
+              <option value="4K">4K (3840x2160) — Ultra HD</option>
+              <option value="8K">8K (7680x4320) — 8K Ultra HD</option>
+            </select>
+            <p class="text-xs text-gray-400 mt-2">💡 L'upscale Lanczos restaure la résolution avec qualité supérieure</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2 mb-4">
+            <button type="button" onclick="runAndroidDemo('VGA')" class="btn-secondary py-3 rounded-xl text-sm">Demo VGA</button>
+            <button type="button" onclick="runAndroidDemo('1MP')" class="btn-primary py-3 rounded-xl text-sm">Demo 1MP</button>
+          </div>
+          <div id="ab-loading" class="hidden mt-4 text-center">
+            <div class="w-8 h-8 border-3 border-green-500/30 border-t-green-500 rounded-full animate-spin mx-auto"></div>
+            <p class="text-sm text-gray-400 mt-2">Compression Android Boost...</p>
+          </div>
+        </div>
+        <div class="glass-card rounded-2xl p-8">
+          <h2 class="font-display text-2xl font-bold mb-4">Résultats Android Boost</h2>
+          <div id="ab-results" class="hidden">
+            <div class="p-4 rounded-xl bg-green-500/10 border border-green-500/30 mb-4">
+              <div class="flex items-center space-x-2">
+                <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
+                <span class="font-medium text-green-400">Compression réussie!</span>
+                <span class="ml-auto text-xs text-gray-400" id="ab-filename"></span>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <div class="p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-center">
+                <p class="text-xs text-gray-400 mb-1">Ratio vs JPEG</p>
+                <p class="text-2xl font-display font-bold text-green-400" id="ab-ratio-jpeg">—</p>
+              </div>
+              <div class="p-4 rounded-xl bg-hcs-gold/10 border border-hcs-gold/20 text-center">
+                <p class="text-xs text-gray-400 mb-1">Économie vs JPEG</p>
+                <p class="text-2xl font-display font-bold text-hcs-gold" id="ab-savings-jpeg">—</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2 mb-4">
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-[10px] text-gray-500">Source JPEG</p><p class="font-bold text-sm" id="ab-source">—</p></div>
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-[10px] text-gray-500">Compressé</p><p class="font-bold text-green-400 text-sm" id="ab-compressed">—</p></div>
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-[10px] text-gray-500">RAW Pixels</p><p class="font-bold text-sm" id="ab-raw">—</p></div>
+            </div>
+            <div class="grid grid-cols-4 gap-2 mb-4">
+              <div class="p-3 rounded-xl bg-hcs-purple/10 text-center"><p class="text-[10px] text-gray-500">Résolution orig.</p><p class="font-bold text-sm" id="ab-orig-res">—</p></div>
+              <div class="p-3 rounded-xl bg-hcs-purple/10 text-center"><p class="text-[10px] text-gray-500">Downscaled</p><p class="font-bold text-hcs-purple text-sm" id="ab-ds-res">—</p></div>
+              <div class="p-3 rounded-xl bg-green-500/10 text-center"><p class="text-[10px] text-gray-500">Sortie (Upscale)</p><p class="font-bold text-green-400 text-sm" id="ab-target-res">—</p></div>
+              <div class="p-3 rounded-xl bg-hcs-purple/10 text-center"><p class="text-[10px] text-gray-500">Pixels réduits</p><p class="font-bold text-hcs-purple text-sm" id="ab-px-red">—</p></div>
+            </div>
+            <div class="grid grid-cols-4 gap-2 mb-4">
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">PSNR</p><p class="font-bold text-xs text-hcs-gold" id="ab-psnr">—</p></div>
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">SSIM</p><p class="font-bold text-xs" id="ab-ssim">—</p></div>
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">Encode</p><p class="font-bold text-xs" id="ab-encode">—</p></div>
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">Bit-exact</p><p class="font-bold text-xs text-green-400" id="ab-bitexact">—</p></div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="text-center"><p class="text-xs text-gray-400 mb-2">🔵 Original JPEG</p>
+                <img id="ab-img-before" style="display:none;width:100%;border-radius:0.5rem;background:#1f2937;min-height:120px;object-fit:contain;max-height:240px" alt="Original">
+              </div>
+              <div class="text-center"><p class="text-xs text-gray-400 mb-2">🟢 Décompressé (Lanczos upscale)</p>
+                <img id="ab-img-after" style="display:none;width:100%;border-radius:0.5rem;background:#1f2937;min-height:120px;object-fit:contain;max-height:240px" alt="Décompressé">
+              </div>
+            </div>
+          </div>
+          <div id="ab-no-results" class="text-center py-12 text-gray-500">
+            <i data-lucide="smartphone" class="w-12 h-12 mx-auto mb-3 opacity-30"></i>
+            <p class="mb-2">Uploadez une photo Android ou lancez une démo</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIDEO BOOST -->
+    <section id="sec-video" class="hidden space-y-6">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="glass-card rounded-2xl p-8">
+          <h2 class="font-display text-2xl font-bold mb-2">🎬 Vidéo Boost</h2>
+          <p class="text-gray-400 mb-2">Compression vidéo H264/H265 avec prévisualisation avant / après décompression</p>
+
+          <!-- Audio pipeline info -->
+          <div class="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 mb-3 text-sm">
+            <p class="text-orange-400 font-medium mb-1">🎵 Pipeline Audio — Conservation Natif</p>
+            <div class="flex flex-wrap gap-1 text-xs mt-1">
+              <span class="px-2 py-1 rounded bg-orange-500/20 text-orange-400">Audio source</span>
+              <span class="text-gray-600">→</span>
+              <span class="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">Extrait (ffmpeg -vn)</span>
+              <span class="text-gray-600">→</span>
+              <span class="px-2 py-1 rounded bg-green-500/20 text-green-400">AAC-LC 192k copy</span>
+              <span class="text-gray-600">→</span>
+              <span class="px-2 py-1 rounded bg-green-500/20 text-green-400 font-bold">Réintégré .hcvb</span>
+            </div>
+            <p class="text-gray-500 text-xs mt-2">Si source AAC/MP3 → stream copy (0% perte). Sinon → transcode AAC-LC 192kbps.</p>
+          </div>
+          <div class="p-3 rounded-xl bg-red-500/10 border border-red-500/20 mb-4 text-sm">
+            <p class="text-red-400 font-medium mb-1">Pipeline Vidéo</p>
+            <p class="text-gray-400">Source → Downscale Lanczos → Re-encode H264 → Mux audio → Container HCVB</p>
+          </div>
+
+          <div id="vb-upload-zone" class="border-2 border-dashed border-red-500/30 bg-red-500/5 rounded-2xl p-8 text-center cursor-pointer hover:border-red-500/60 hover:bg-red-500/10 transition-all mb-4" onclick="document.getElementById('vb-file-input').click()">
+            <input type="file" id="vb-file-input" class="hidden" accept="video/mp4,video/webm,video/quicktime,video/x-matroska,.mp4,.mov,.mkv,.webm" onchange="handleVideoUpload(event)">
+            <i data-lucide="clapperboard" class="w-12 h-12 text-red-400 mx-auto mb-3"></i>
+            <p class="font-medium text-lg mb-2">Vidéo source</p>
+            <p class="text-sm text-gray-400">MP4, MOV, MKV, WebM — avec ou sans audio</p>
+          </div>
+          <div class="mb-4">
+            <label for="vb-quality" class="block text-sm font-semibold mb-2 text-gray-300">Qualité / Ratio</label>
+            <select id="vb-quality" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white">
+              <option value="ultra">Ultra — Quasi-transparent</option>
+              <option value="high" selected>High — Haute qualité</option>
+              <option value="balanced">Balanced — Équilibre ratio/qualité</option>
+              <option value="compact">Compact — Compression maximale</option>
+            </select>
+          </div>
+          <div class="mb-4">
+            <label for="vb-audio-bitrate" class="block text-sm font-semibold mb-2 text-gray-300">Bitrate Audio (kbps)</label>
+            <select id="vb-audio-bitrate" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white">
+              <option value="48">48 kbps — Parole (très compressé)</option>
+              <option value="64">64 kbps — Parole/Musique (bon compromis)</option>
+              <option value="96" selected>96 kbps — Musique (recommandé)</option>
+              <option value="128">128 kbps — Haute qualité</option>
+              <option value="192">192 kbps — Très haute qualité</option>
+            </select>
+          </div>
+          <div class="mb-4">
+            <label for="vb-target-resolution" class="block text-sm font-semibold mb-2 text-gray-300">Résolution de sortie (Upscale)</label>
+            <select id="vb-target-resolution" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white">
+              <option value="original" selected>Original (résolution source)</option>
+              <option value="1080p">1080p (1920x1080) — Full HD</option>
+              <option value="4K">4K (3840x2160) — Ultra HD</option>
+              <option value="8K">8K (7680x4320) — 8K Ultra HD</option>
+            </select>
+            <p class="text-xs text-gray-400 mt-2">💡 L'upscale Lanczos restaure la résolution avec qualité supérieure</p>
+          </div>
+          <div id="vb-loading" class="hidden mt-4 text-center">
+            <div class="w-8 h-8 border-3 border-red-500/30 border-t-red-500 rounded-full animate-spin mx-auto"></div>
+            <p class="text-sm text-gray-400 mt-2">Compression + extraction audio en cours...</p>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-8">
+          <h2 class="font-display text-2xl font-bold mb-4">Résultats Vidéo Boost</h2>
+          <div id="vb-results" class="hidden">
+            <div class="p-4 rounded-xl bg-red-500/10 border border-red-500/30 mb-4">
+              <div class="flex items-center space-x-2">
+                <i data-lucide="check-circle" class="w-5 h-5 text-red-400"></i>
+                <span class="font-medium text-red-400">Compression vidéo réussie!</span>
+                <span class="ml-auto" id="vb-audio-status-badge"></span>
+                <span class="text-xs text-gray-400" id="vb-filename"></span>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <div class="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-center">
+                <p class="text-xs text-gray-400 mb-1">Ratio vs Source</p>
+                <p class="text-2xl font-display font-bold text-red-400" id="vb-ratio">—</p>
+              </div>
+              <div class="p-4 rounded-xl bg-hcs-gold/10 border border-hcs-gold/20 text-center">
+                <p class="text-xs text-gray-400 mb-1">Économie</p>
+                <p class="text-2xl font-display font-bold text-hcs-gold" id="vb-savings">—</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2 mb-3">
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-[10px] text-gray-500">Source</p><p class="font-bold text-sm" id="vb-source">—</p></div>
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-[10px] text-gray-500">Compressé</p><p class="font-bold text-red-400 text-sm" id="vb-compressed">—</p></div>
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-[10px] text-gray-500">Payload vidéo</p><p class="font-bold text-sm" id="vb-payload">—</p></div>
+            </div>
+
+            <!-- Audio track details -->
+            <div class="grid grid-cols-4 gap-2 mb-3">
+              <div class="p-2 rounded-lg bg-orange-500/10 text-center"><p class="text-[10px] text-gray-500">Audio codec</p><p class="font-bold text-xs text-orange-400" id="vb-audio-codec">—</p></div>
+              <div class="p-2 rounded-lg bg-orange-500/10 text-center"><p class="text-[10px] text-gray-500">Bitrate audio</p><p class="font-bold text-xs text-orange-400" id="vb-audio-bitrate">—</p></div>
+              <div class="p-2 rounded-lg bg-orange-500/10 text-center"><p class="text-[10px] text-gray-500">Canaux</p><p class="font-bold text-xs text-orange-400" id="vb-audio-channels">—</p></div>
+              <div class="p-2 rounded-lg bg-orange-500/10 text-center"><p class="text-[10px] text-gray-500">Méthode</p><p class="font-bold text-xs text-yellow-400" id="vb-audio-method">—</p></div>
+            </div>
+
+            <div class="grid grid-cols-5 gap-2 mb-4">
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">Source</p><p class="font-bold text-xs" id="vb-orig-res">—</p></div>
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">Compressé</p><p class="font-bold text-xs text-hcs-purple" id="vb-comp-res">—</p></div>
+              <div class="p-2 rounded-lg bg-green-500/10 text-center"><p class="text-[10px] text-gray-500">Sortie (Upscale)</p><p class="font-bold text-xs text-green-400" id="vb-target-res">—</p></div>
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">Durée</p><p class="font-bold text-xs" id="vb-duration">—</p></div>
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">Encode</p><p class="font-bold text-xs" id="vb-encode">—</p></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="text-center">
+                <p class="text-xs text-gray-400 mb-1">🔵 Vidéo originale</p>
+                <p class="text-[10px] text-gray-600 mb-2" id="vb-before-audio-info"></p>
+                <!-- FIX: preload="auto" pour charger l'audio dès le début -->
+                <video id="vb-before-video" style="display:none;width:100%;border-radius:0.5rem;background:#1f2937" controls playsinline preload="auto"></video>
+              </div>
+              <div class="text-center">
+                <p class="text-xs text-gray-400 mb-1">🟢 Vidéo restaurée</p>
+                <p class="text-[10px] text-gray-600 mb-2" id="vb-after-audio-info"></p>
+                <video id="vb-after-video" style="display:none;width:100%;border-radius:0.5rem;background:#1f2937" controls playsinline preload="auto"></video>
+              </div>
+            </div>
+
+            <div class="mt-4 flex flex-wrap gap-3 justify-center">
+              <button id="vb-download-hcvb" style="display:none" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2">
+                <i data-lucide="download" class="w-4 h-4"></i>Télécharger .hcvb
+              </button>
+              <button id="vb-decode-locally" style="display:none" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2">
+                <i data-lucide="terminal" class="w-4 h-4"></i>Ouvrir Décodeur
+              </button>
+            </div>
+          </div>
+          <div id="vb-no-results" class="text-center py-12 text-gray-500">
+            <i data-lucide="clapperboard" class="w-12 h-12 mx-auto mb-3 opacity-30"></i>
+            <p class="mb-2">Uploadez une vidéo pour voir l'avant / après décompression</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRECOMPRESSED -->
+    <section id="sec-precompressed" class="hidden space-y-6">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="glass-card rounded-2xl p-8">
+          <h2 class="font-display text-2xl font-bold mb-2">Compression Précompressée</h2>
+          <p class="text-gray-400 mb-2">Optimisation avancée pour fichiers déjà compressés (JPEG/PNG/WebP/GIF)</p>
+          <div class="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 mb-4 text-sm">
+            <p class="text-blue-400 font-medium mb-1">Stratégies Universelles</p>
+            <p class="text-gray-400">AUTO / DIRECT / HYBRID / TRANSCODE</p>
+          </div>
+          <div id="pc-upload-zone" class="border-2 border-dashed border-blue-500/30 bg-blue-500/5 rounded-2xl p-8 text-center cursor-pointer hover:border-blue-500/60 hover:bg-blue-500/10 transition-all mb-4" onclick="document.getElementById('pc-file-input').click()">
+            <input type="file" id="pc-file-input" class="hidden" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/bmp,image/tiff" onchange="handlePrecompressedUpload(event)">
+            <i data-lucide="file-archive" class="w-12 h-12 text-blue-400 mx-auto mb-3"></i>
+            <p class="font-medium text-lg mb-2">Fichier précompressé</p>
+            <p class="text-sm text-gray-400">JPEG, PNG, WebP, GIF, BMP, TIFF</p>
+          </div>
+          <div class="mb-4">
+            <label for="pc-strategy" class="block text-sm font-semibold mb-2 text-gray-300">Stratégie</label>
+            <select id="pc-strategy" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white">
+              <option value="AUTO" selected>AUTO - Détection automatique</option>
+              <option value="DIRECT">DIRECT - Préservation qualité</option>
+              <option value="HYBRID">HYBRID - Équilibre optimal</option>
+              <option value="TRANSCODE">TRANSCODE - Amélioration qualité</option>
+            </select>
+          </div>
+          <div class="mb-4">
+            <label for="pc-target-resolution" class="block text-sm font-semibold mb-2 text-gray-300">Résolution de sortie (Upscale)</label>
+            <select id="pc-target-resolution" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white">
+              <option value="original" selected>Original (résolution source)</option>
+              <option value="4K">4K (3840x2160) — Ultra HD</option>
+              <option value="8K">8K (7680x4320) — 8K Ultra HD</option>
+            </select>
+            <p class="text-xs text-gray-400 mt-2">💡 L'upscale Lanczos restaure la résolution avec qualité supérieure</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2 mb-4">
+            <button type="button" onclick="runPrecompressedDemo('JPEG')" class="btn-secondary py-3 rounded-xl text-sm">Demo JPEG</button>
+            <button type="button" onclick="runPrecompressedDemo('PNG')" class="btn-primary py-3 rounded-xl text-sm">Demo PNG</button>
+          </div>
+          <div id="pc-loading" class="hidden mt-4 text-center">
+            <div class="w-8 h-8 border-3 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto"></div>
+            <p class="text-sm text-gray-400 mt-2">Compression précompressée...</p>
+          </div>
+        </div>
+        <div class="glass-card rounded-2xl p-8">
+          <h2 class="font-display text-2xl font-bold mb-4">Résultats Précompressé</h2>
+          <div id="pc-results" class="hidden">
+            <div class="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 mb-4">
+              <div class="flex items-center space-x-2">
+                <i data-lucide="check-circle" class="w-5 h-5 text-blue-400"></i>
+                <span class="font-medium text-blue-400">Compression réussie!</span>
+                <span class="ml-auto text-xs text-gray-400" id="pc-filename"></span>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <div class="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-center">
+                <p class="text-xs text-gray-400 mb-1">Ratio vs Source</p>
+                <p class="text-2xl font-display font-bold text-blue-400" id="pc-ratio-src">-</p>
+              </div>
+              <div class="p-4 rounded-xl bg-hcs-gold/10 border border-hcs-gold/20 text-center">
+                <p class="text-xs text-gray-400 mb-1">Économie vs Source</p>
+                <p class="text-2xl font-display font-bold text-hcs-gold" id="pc-savings-src">-</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-xs text-gray-500">Stratégie utilisée</p><p class="font-bold text-sm text-blue-400" id="pc-strategy-used">-</p></div>
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-xs text-gray-500">Recommandée</p><p class="font-bold text-sm text-hcs-purple" id="pc-strategy-rec">-</p></div>
+            </div>
+            <div class="grid grid-cols-3 gap-2 mb-4">
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-[10px] text-gray-500">Source</p><p class="font-bold text-sm" id="pc-source">-</p></div>
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-[10px] text-gray-500">Compressé</p><p class="font-bold text-blue-400 text-sm" id="pc-compressed">-</p></div>
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-[10px] text-gray-500">RAW Pixels</p><p class="font-bold text-sm" id="pc-raw">-</p></div>
+            </div>
+            <div class="grid grid-cols-4 gap-2 mb-4">
+              <div class="p-3 rounded-xl bg-hcs-purple/10 text-center"><p class="text-[10px] text-gray-500">Résolution orig.</p><p class="font-bold text-sm" id="pc-orig-res">-</p></div>
+              <div class="p-3 rounded-xl bg-hcs-purple/10 text-center"><p class="text-[10px] text-gray-500">Downscaled</p><p class="font-bold text-hcs-purple text-sm" id="pc-ds-res">-</p></div>
+              <div class="p-3 rounded-xl bg-green-500/10 text-center"><p class="text-[10px] text-gray-500">Sortie (Upscale)</p><p class="font-bold text-green-400 text-sm" id="pc-target-res">-</p></div>
+              <div class="p-3 rounded-xl bg-hcs-purple/10 text-center"><p class="text-[10px] text-gray-500">Pixels réduits</p><p class="font-bold text-hcs-purple text-sm" id="pc-px-red">-</p></div>
+            </div>
+            <div class="grid grid-cols-4 gap-2 mb-4">
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">PSNR</p><p class="font-bold text-xs text-hcs-gold" id="pc-psnr">-</p></div>
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">SSIM</p><p class="font-bold text-xs" id="pc-ssim">-</p></div>
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">Encode</p><p class="font-bold text-xs" id="pc-encode">-</p></div>
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">Bit-exact</p><p class="font-bold text-xs text-green-400" id="pc-bitexact">-</p></div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="text-center"><p class="text-xs text-gray-400 mb-2">Original</p>
+                <img id="pc-img-before" style="display:none;width:100%;border-radius:0.5rem;background:#1f2937;min-height:120px;object-fit:contain;max-height:240px" alt="Original">
+              </div>
+              <div class="text-center"><p class="text-xs text-gray-400 mb-2">Décompressé HCV</p>
+                <img id="pc-img-after" style="display:none;width:100%;border-radius:0.5rem;background:#1f2937;min-height:120px;object-fit:contain;max-height:240px" alt="Décompressé">
+              </div>
+            </div>
+          </div>
+          <div id="pc-no-results" class="text-center py-12 text-gray-500">
+            <i data-lucide="file-archive" class="w-12 h-12 mx-auto mb-3 opacity-30"></i>
+            <p class="mb-2">Uploadez un fichier ou lancez une démo</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DECODER HCV -->
+    <section id="sec-decoder" class="hidden space-y-6">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="glass-card rounded-2xl p-8">
+          <h2 class="font-display text-2xl font-bold mb-2">Décodeur HCV Vidéo</h2>
+          <p class="text-gray-400 mb-4">Uploadez un fichier <span class="text-hcs-gold font-bold">.hcvb</span> pour le décoder en MP4 avec audio</p>
+
+          <!-- Audio decode pipeline -->
+          <div class="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 mb-3 text-sm">
+            <p class="text-orange-400 font-medium mb-1">🎵 Pipeline Audio — Décodage</p>
+            <div class="flex flex-wrap gap-1 text-xs mt-1">
+              <span class="px-2 py-1 rounded bg-red-500/20 text-red-400 font-bold">.hcvb</span>
+              <span class="text-gray-600">→</span>
+              <span class="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">Demux audio</span>
+              <span class="text-gray-600">→</span>
+              <span class="px-2 py-1 rounded bg-orange-500/20 text-orange-400">AAC stream copy</span>
+              <span class="text-gray-600">→</span>
+              <span class="px-2 py-1 rounded bg-green-500/20 text-green-400 font-bold">Mux → .mp4</span>
+            </div>
+            <p class="text-gray-500 text-xs mt-2">L'audio est extrait du container .hcvb et remuxé directement dans le MP4 sans re-encodage (0 génération de perte).</p>
+          </div>
+
+          <div class="p-3 rounded-xl bg-red-500/10 border border-red-500/20 mb-4 text-sm">
+            <p class="text-red-400 font-medium mb-1">Pipeline Vidéo — Décodage</p>
+            <div class="flex flex-wrap items-center gap-1 text-xs mt-1">
+              <span class="px-2 py-1 rounded bg-red-500/20 text-red-400 font-bold">.hcvb</span>
+              <span class="text-gray-600">→</span>
+              <span class="px-2 py-1 rounded bg-hcs-purple/20 text-hcs-purple">↑ Lanczos</span>
+              <span class="text-gray-600">→</span>
+              <span class="px-2 py-1 rounded bg-orange-500/20 text-orange-400">Sharpen</span>
+              <span class="text-gray-600">→</span>
+              <span class="px-2 py-1 rounded bg-green-500/20 text-green-400 font-bold">.mp4 + audio</span>
+            </div>
+          </div>
+
+          <div id="dec-upload-zone" class="border-2 border-dashed border-red-500/30 bg-red-500/5 rounded-2xl p-8 text-center cursor-pointer hover:border-red-500/60 hover:bg-red-500/10 transition-all mb-4" onclick="document.getElementById('dec-file-input').click()">
+            <input type="file" id="dec-file-input" class="hidden" accept=".hcvb" onchange="handleDecodeUpload(event)">
+            <i data-lucide="upload" class="w-12 h-12 text-red-400 mx-auto mb-3"></i>
+            <p class="text-lg font-semibold text-gray-200">Glissez un fichier .hcvb ici</p>
+            <p class="text-sm text-gray-400 mt-1">ou cliquez pour sélectionner</p>
+          </div>
+          <div id="dec-loading" class="hidden text-center py-8">
+            <div class="animate-spin w-8 h-8 border-2 border-red-400 border-t-transparent rounded-full mx-auto mb-3"></div>
+            <p class="text-gray-400">Décodage vidéo + remux audio...</p>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-8">
+          <h2 class="font-display text-2xl font-bold mb-4">Résultat Décodage</h2>
+          <div id="dec-results" class="hidden">
+            <div class="p-4 rounded-xl bg-green-500/10 border border-green-500/30 mb-4">
+              <div class="flex items-center space-x-2">
+                <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
+                <span class="font-medium text-green-400">Décodage réussi!</span>
+                <span class="ml-auto" id="dec-audio-badge"></span>
+                <span class="text-xs text-gray-400 ml-2" id="dec-filename"></span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-[10px] text-gray-500">Fichier .hcvb</p><p class="font-bold text-red-400 text-sm" id="dec-hcvb-size">—</p></div>
+              <div class="p-3 rounded-xl bg-white/5 text-center"><p class="text-[10px] text-gray-500">MP4 restauré</p><p class="font-bold text-green-400 text-sm" id="dec-mp4-size">—</p></div>
+            </div>
+
+            <!-- Audio info block -->
+            <div class="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 mb-3">
+              <p class="text-xs font-semibold text-orange-400 mb-2">🎵 Audio restauré</p>
+              <div class="grid grid-cols-3 gap-2">
+                <div class="text-center"><p class="text-[10px] text-gray-500">Codec</p><p class="font-bold text-xs text-orange-400" id="dec-audio-codec">—</p></div>
+                <div class="text-center"><p class="text-[10px] text-gray-500">Bitrate</p><p class="font-bold text-xs text-orange-400" id="dec-audio-bitrate">—</p></div>
+                <div class="text-center"><p class="text-[10px] text-gray-500">Canaux</p><p class="font-bold text-xs text-orange-400" id="dec-audio-channels">—</p></div>
+              </div>
+              <p class="text-[10px] text-gray-500 mt-2" id="dec-audio-method-info"></p>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 mb-4">
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">Résolution</p><p class="font-bold text-xs" id="dec-resolution">—</p></div>
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">Qualité</p><p class="font-bold text-xs text-hcs-purple" id="dec-quality">—</p></div>
+              <div class="p-2 rounded-lg bg-white/5 text-center"><p class="text-[10px] text-gray-500">Temps décode</p><p class="font-bold text-xs" id="dec-time">—</p></div>
+            </div>
+
+            <div class="text-center mb-4">
+              <p class="text-xs text-gray-400 mb-2">🎬 Vidéo restaurée (avec audio)</p>
+              <!-- FIX: preload="auto" pour garantir chargement complet audio+video -->
+              <video id="dec-video" style="display:none;width:100%;border-radius:0.5rem;background:#1f2937" controls playsinline preload="auto"></video>
+            </div>
+            <div class="flex justify-center">
+              <a id="dec-download-mp4" href="#" style="display:none" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2" download>
+                <i data-lucide="download" class="w-4 h-4"></i>Télécharger MP4 (avec audio)
+              </a>
+            </div>
+          </div>
+          <div id="dec-no-results" class="text-center py-12 text-gray-500">
+            <i data-lucide="play-circle" class="w-12 h-12 mx-auto mb-3 opacity-30"></i>
+            <p class="mb-2">Uploadez un fichier .hcvb pour le décoder</p>
+            <p class="text-xs text-gray-600">L'audio est remuxé sans re-encodage depuis le container.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+// const HCV_BACKEND_URL = 'http://localhost:5000';
+const HCV_BACKEND_URL = 'https://dyduk9w8br.us-east-1.awsapprunner.com';
+const HCV_API_KEY = 'demo-key-2024';
+
+const $ = id => document.getElementById(id);
+
+function fmtB(b) {
+  if (!b || b < 0) return '—';
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(2) + ' MB';
+}
+
+function fmtDuration(s) {
+  if (s == null || Number.isNaN(Number(s))) return '—';
+  const t = Math.max(0, Number(s));
+  const m = Math.floor(t / 60);
+  const sec = (t % 60).toFixed(1).padStart(4, '0');
+  return `${m}:${sec}`;
+}
+
+// ─── Normalise le mime type image ─────────────────────────────────────
+function normMime(fmt) {
+  if (!fmt) return 'png';
+  const f = fmt.toLowerCase().trim();
+  if (f === 'jpg') return 'jpeg';
+  if (f === 'tif') return 'tiff';
+  return f;
+}
+
+// ─── Image helpers ────────────────────────────────────────────────────
+function setImage(id, b64, fmt) {
+  const el = $(id);
+  if (!el || !b64) return;
+  const mime = normMime(fmt);
+  el.src = `data:image/${mime};base64,${b64}`;
+  el.style.display = 'block';
+  el.onerror = () => {
+    console.error(`[HCV] setImage error #${id} mime=${mime}`);
+    if (mime !== 'png') el.src = `data:image/png;base64,${b64}`;
+  };
+}
+
+function clearImage(id) {
+  const el = $(id);
+  if (!el) return;
+  el.style.display = 'none';
+  el.src = '';
+}
+
+// ─── Video helpers — FIX COMPLET AUDIO ────────────────────────────────
+// Construit un <source> correctement typé plutôt que d'assigner .type sur <video>
+// Cela permet au browser de sélectionner le bon décodeur audio
+function setVideo(id, url, mimeType) {
+  const el = $(id);
+  if (!el || !url) return;
+
+  // 1. Arrêter et libérer proprement
+  try { el.pause(); } catch(e) {}
+
+  // 2. Supprimer toutes les sources existantes
+  while (el.firstChild) el.removeChild(el.firstChild);
+  el.removeAttribute('src');
+
+  // 3. Créer un élément <source> avec le bon type MIME
+  //    video/mp4;codecs="avc1.42E01E,mp4a.40.2" couvre H.264+AAC-LC
+  //    Si le backend retourne du WebM avec Opus audio, utiliser video/webm;codecs="vp8,opus"
+  const mime = mimeType || detectMimeFromUrl(url);
+  const src = document.createElement('source');
+  src.src = url;
+  src.type = mime;
+  el.appendChild(src);
+
+  // 4. Ajouter un fallback sans type (laisse le browser négocier)
+  const srcFallback = document.createElement('source');
+  srcFallback.src = url;
+  el.appendChild(srcFallback);
+
+  // 5. Event handlers pour diagnostiquer les erreurs audio
+  el.onerror = (e) => {
+    console.error(`[HCV] Video error #${id}:`, el.error?.code, el.error?.message);
+  };
+  el.oncanplay = () => {
+    console.log(`[HCV] Video #${id} canplay — audioTracks:`, el.audioTracks?.length ?? 'API N/A');
+  };
+  // Vérification audio après métadonnées chargées
+  el.onloadedmetadata = () => {
+    const hasAudio = checkVideoHasAudio(el);
+    console.log(`[HCV] Video #${id} metadata loaded — hasAudio:`, hasAudio,
+      '— duration:', el.duration, '— videoWidth:', el.videoWidth);
+  };
+
+  el.style.display = 'block';
+  // 6. Charger la nouvelle source
+  el.load();
+
+  console.log(`[HCV] setVideo #${id} url=${url} mime=${mime}`);
+  return el;
+}
+
+function clearVideo(id) {
+  const el = $(id);
+  if (!el) return;
+  try { el.pause(); } catch(e) {}
+  while (el.firstChild) el.removeChild(el.firstChild);
+  el.removeAttribute('src');
+  el.style.display = 'none';
+  el.load();
+}
+
+// Détecte le MIME type à partir de l'extension URL
+function detectMimeFromUrl(url) {
+  const u = url.toLowerCase().split('?')[0];
+  if (u.endsWith('.webm')) return 'video/webm;codecs="vp9,opus"';
+  if (u.endsWith('.mov')) return 'video/mp4'; // QuickTime remuxé en MP4
+  if (u.endsWith('.mkv')) return 'video/webm';
+  // Par défaut MP4 avec H.264 + AAC-LC (le plus compatible)
+  return 'video/mp4;codecs="avc1.42E01E,mp4a.40.2"';
+}
+
+// Détecte si une vidéo a une piste audio (API HTMLMediaElement)
+function checkVideoHasAudio(videoEl) {
+  // audioTracks API (Chrome/Edge)
+  if (videoEl.audioTracks && videoEl.audioTracks.length > 0) return true;
+  // webkitAudioDecodedByteCount (Safari)
+  if (videoEl.webkitAudioDecodedByteCount !== undefined) return videoEl.webkitAudioDecodedByteCount > 0;
+  // mozHasAudio (Firefox)
+  if (videoEl.mozHasAudio !== undefined) return videoEl.mozHasAudio;
+  return null; // indéterminé
+}
+
+// ─── Badge audio ──────────────────────────────────────────────────────
+function makeAudioBadge(hasAudio, method) {
+  if (hasAudio === false || hasAudio === 'none') {
+    return `<span class="audio-badge audio-none">🔇 Sans audio</span>`;
+  }
+  if (method === 'copy' || method === 'stream_copy') {
+    return `<span class="audio-badge audio-ok">🎵 Audio natif (copy)</span>`;
+  }
+  if (method === 'transcode') {
+    return `<span class="audio-badge audio-warn">🎵 Audio recodé AAC</span>`;
+  }
+  if (hasAudio) {
+    return `<span class="audio-badge audio-ok">🎵 Audio présent</span>`;
+  }
+  return `<span class="audio-badge audio-none">🔇 Sans audio</span>`;
+}
+
+let lastResult = null;
+
+function showSection(s) {
+  document.querySelectorAll('[id^="sec-"]').forEach(el => el.classList.add('hidden'));
+  $('sec-' + s).classList.remove('hidden');
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.remove('tab-active');
+    if (b.dataset.s === s) b.classList.add('tab-active');
+  });
+  const titles = {
+    dashboard: 'Tableau de bord', compress: 'Compression', compare: 'Avant / Après',
+    history: 'Historique', android: 'Android Boost', video: 'Vidéo Boost',
+    precompressed: 'Compression Précompressée', decoder: 'Décodeur HCV'
+  };
+  $('page-title').textContent = titles[s] || s;
+}
+
+// ─── Compression image ────────────────────────────────────────────────
+function handleUpload(e) {
+  if (!e.target.files.length) return;
+  const fd = new FormData();
+  fd.append('file', e.target.files[0]);
+  fd.append('bit_depth', $('bits-select').value);
+  doCompress('/api/compress', fd);
+}
+
+async function runDemo(res) {
+  showSection('compress');
+  const fd = new FormData();
+  fd.append('resolution', res);
+  doCompress('/api/demo', fd);
+}
+
+async function doCompress(url, fd) {
+  $('loading').classList.remove('hidden');
+  $('results').classList.add('hidden');
+  $('no-results').classList.add('hidden');
+  clearImage('img-before');
+  clearImage('img-after');
+  
+  let fileSize = 1048576;
+  let fileName = null;
+  
+  // Extraction vrai taille fichier si upload
+  if (fd.has('file')) {
+    const file = fd.get('file');
+    if (file && file.size) {
+      fileSize = file.size;
+      fileName = file.name;
+    }
+  }
+
+  try {
+    // Gestion Cold Start Render (plan gratuit se met en veille)
+    let r;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        r = await fetch(HCV_BACKEND_URL + '/compress/broadcast', {
+          method: 'POST',
+          mode: 'cors',
+          headers: {
+            'Authorization': 'Bearer ' + HCV_API_KEY,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            file_size: fileSize,
+            file_name: fileName
+          }),
+          signal: AbortSignal.timeout(30000)
+        });
+        break;
+      } catch (e) {
+        if (attempt === 3) throw new Error('Serveur en réveil, réessayez dans 10 secondes');
+        // Attendre et réessayer (Render met ~15s pour réveiller le conteneur)
+        await new Promise(res => setTimeout(res, 8000 * attempt));
+      }
+    }
+    
+    if (!r.ok) { const e = await r.json(); throw new Error(e.error || 'Erreur API'); }
+    const d = await r.json();
+    
+    if (!d.success) {
+      throw new Error(d.error || 'Erreur compression');
+    }
+    const dr = d.result;
+    d.ratio_vs_raw = dr.ratio;
+    d.savings_vs_raw = dr.savings_percent;
+    d.psnr = dr.psnr;
+    d.ssim = dr.ssim;
+    d.encode_ms = dr.processing_time_ms;
+    d.bitexact_reproducible = dr.bitexact;
+    
+    lastResult = d;
+    showResults(d);
+    updateDashboard(d);
+    updateCompare(d);
+  } catch (e) { alert('Erreur: ' + e.message); }
+  finally { $('loading').classList.add('hidden'); }
+}
+
+function showResults(d) {
+  $('results').classList.remove('hidden');
+  $('no-results').classList.add('hidden');
+  $('r-filename').textContent = d.filename || '';
+  $('r-source').textContent = fmtB(d.source_size);
+  $('r-compressed').textContent = fmtB(d.compressed_size);
+  $('r-ratio-src').textContent = d.ratio_vs_source + ':1';
+  $('r-raw').textContent = fmtB(d.raw_size);
+  $('r-ratio-raw').textContent = d.ratio_vs_raw + ':1';
+  $('r-savings').textContent = d.savings_vs_raw + '%';
+  $('r-psnr').textContent = d.psnr === 'Infinity' ? '∞' : d.psnr + ' dB';
+  $('r-ssim').textContent = d.ssim;
+  $('r-encode').textContent = d.encode_ms + 'ms';
+  $('r-bitexact').textContent = d.bitexact_reproducible ? '✅ OUI' : '❌';
+  if (d.img_before) setImage('img-before', d.img_before, d.img_format);
+  if (d.img_after) setImage('img-after', d.img_after, d.img_format);
+  if (d.hcab_url) {
+    $('r-download-hcab').style.display = 'inline-flex';
+    $('r-download-hcab').onclick = () => { window.location.href = d.hcab_url; };
+  }
+}
+
+function updateDashboard(d) {
+  $('dash-ratio').textContent = d.ratio_vs_raw + ':1';
+  $('dash-savings').textContent = d.savings_vs_raw + '%';
+  $('dash-bitexact').textContent = d.bitexact_reproducible ? '✅ Oui' : '❌';
+  $('dash-ssim').textContent = d.ssim;
+}
+
+function updateCompare(d) {
+  $('compare-content').classList.remove('hidden');
+  $('compare-empty').classList.add('hidden');
+  clearImage('c-before'); clearImage('c-after');
+  clearVideo('c-before-video'); clearVideo('c-after-video');
+  // Clear audio badges
+  $('c-before-audio-badge').innerHTML = '';
+  $('c-after-audio-badge').innerHTML = '';
+
+  if (d.media_type === 'video') {
+    if (d.video_before_url) {
+      setVideo('c-before-video', d.video_before_url);
+      $('c-before-audio-badge').innerHTML = makeAudioBadge(d.has_audio, null);
+    }
+    if (d.video_after_url) {
+      setVideo('c-after-video', d.video_after_url);
+      $('c-after-audio-badge').innerHTML = makeAudioBadge(d.has_audio, d.audio_method);
+    }
+  } else {
+    if (d.img_before) setImage('c-before', d.img_before, d.img_format || 'png');
+    if (d.img_after) setImage('c-after', d.img_after, d.img_format || 'png');
+  }
+
+  $('c-src-fmt').textContent = d.source_format || (d.media_type === 'video' ? 'VIDEO' : 'RAW');
+  $('c-src-size').textContent = fmtB(d.source_size);
+  $('c-comp-size').textContent = fmtB(d.compressed_size);
+  const ratio = d.ratio_vs_raw ?? d.ratio_vs_source;
+  $('c-ratio').textContent = ratio != null ? ratio + ':1' : '—';
+  $('c-psnr').textContent = d.psnr == null ? '—' : (d.psnr === 'Infinity' ? '∞' : d.psnr + ' dB');
+  $('c-ssim').textContent = d.ssim ?? '—';
+  $('c-maxdiff').textContent = d.max_pixel_diff ?? '—';
+  $('c-bitexact').textContent = d.bitexact_reproducible ? '✅ OUI' : '❌';
+  $('c-mode').textContent = d.mode ?? '—';
+}
+
+async function loadHistory() {
+  try {
+    const r = await fetch(HCV_BACKEND_URL + '/api/history');
+    const d = await r.json();
+    const list = $('history-list');
+    list.innerHTML = '';
+    if (!d.history?.length) {
+      list.innerHTML = '<p class="text-gray-500 text-center py-8">Aucune compression</p>';
+      return;
+    }
+    d.history.reverse().forEach(h => {
+      const el = document.createElement('div');
+      el.className = 'flex items-center justify-between p-4 rounded-xl bg-white/5 mb-2';
+      el.innerHTML = `<div class="flex items-center space-x-4">
+        <div class="w-10 h-10 rounded-lg bg-hcs-gold/20 flex items-center justify-center"><i data-lucide="zap" class="w-5 h-5 text-hcs-gold"></i></div>
+        <div><p class="font-medium text-sm">${h.filename || 'demo'}</p><p class="text-xs text-gray-500">${h.resolution || ''} · ${h.mode || ''}</p></div>
+      </div>
+      <div class="text-right"><p class="font-bold text-hcs-gold">${h.ratio_vs_raw}:1</p><p class="text-xs text-gray-500">${h.savings_vs_raw}% saved</p></div>`;
+      list.appendChild(el);
+    });
+    lucide.createIcons();
+  } catch (e) {}
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  lucide.createIcons();
+  loadHistory();
+
+  // Drag & drop — Broadcast
+  const uz = $('upload-zone');
+  if (uz) {
+    uz.ondragover = e => { e.preventDefault(); uz.style.borderColor = '#FFD700'; };
+    uz.ondragleave = () => uz.style.borderColor = '';
+    uz.ondrop = e => { e.preventDefault(); uz.style.borderColor = '';
+      if (e.dataTransfer.files.length) { const fd = new FormData(); fd.append('file', e.dataTransfer.files[0]); fd.append('bit_depth', $('bits-select').value); doCompress('/api/compress', fd); }
+    };
+  }
+  // Drag & drop — Android
+  const abuz = $('ab-upload-zone');
+  if (abuz) {
+    abuz.ondragover = e => { e.preventDefault(); abuz.style.borderColor = '#22c55e'; };
+    abuz.ondragleave = () => abuz.style.borderColor = '';
+    abuz.ondrop = e => { e.preventDefault(); abuz.style.borderColor = '';
+      if (e.dataTransfer.files.length) { const fd = new FormData(); fd.append('file', e.dataTransfer.files[0]); fd.append('quality', $('ab-quality').value); doAndroidBoost(fd); }
+    };
+  }
+  // Drag & drop — Vidéo
+  const vbuz = $('vb-upload-zone');
+  if (vbuz) {
+    vbuz.ondragover = e => { e.preventDefault(); vbuz.style.borderColor = '#f87171'; };
+    vbuz.ondragleave = () => vbuz.style.borderColor = '';
+    vbuz.ondrop = e => { e.preventDefault(); vbuz.style.borderColor = '';
+      if (e.dataTransfer.files.length) { const fd = new FormData(); fd.append('file', e.dataTransfer.files[0]); fd.append('quality', $('vb-quality').value); fd.append('audio_bitrate', $('vb-audio-bitrate').value); doVideoBoost(fd); }
+    };
+  }
+  // Drag & drop — Précompressé
+  const pcuz = $('pc-upload-zone');
+  if (pcuz) {
+    pcuz.ondragover = e => { e.preventDefault(); pcuz.style.borderColor = '#3b82f6'; };
+    pcuz.ondragleave = () => pcuz.style.borderColor = '';
+    pcuz.ondrop = e => { e.preventDefault(); pcuz.style.borderColor = '';
+      if (e.dataTransfer.files.length) { const fd = new FormData(); fd.append('file', e.dataTransfer.files[0]); fd.append('strategy', $('pc-strategy').value); doPrecompressed(fd); }
+    };
+  }
+  // Drag & drop — Décodeur
+  const decZone = $('dec-upload-zone');
+  if (decZone) {
+    decZone.ondragover = e => { e.preventDefault(); decZone.style.borderColor = '#f87171'; };
+    decZone.ondragleave = () => decZone.style.borderColor = '';
+    decZone.ondrop = e => { e.preventDefault(); decZone.style.borderColor = '';
+      if (e.dataTransfer.files.length) { const fd = new FormData(); fd.append('file', e.dataTransfer.files[0]); showSection('decoder'); doDecodeHcvb(fd); }
+    };
+  }
+});
+
+// ─── Android Boost ────────────────────────────────────────────────────
+function handleAndroidUpload(e) {
+  if (!e.target.files.length) return;
+  const fd = new FormData(); 
+  fd.append('file', e.target.files[0]); 
+  fd.append('quality', $('ab-quality').value);
+  fd.append('target_resolution', $('ab-target-resolution').value);
+  doAndroidBoost(fd);
+}
+async function runAndroidDemo(res) {
+  showSection('android');
+  const fd = new FormData(); 
+  fd.append('resolution', res); 
+  fd.append('quality', $('ab-quality').value);
+  fd.append('target_resolution', $('ab-target-resolution').value);
+  doAndroidBoost(fd);
+}
+async function doAndroidBoost(fd) {
+  $('ab-loading').classList.remove('hidden'); $('ab-results').classList.add('hidden'); $('ab-no-results').classList.add('hidden');
+  clearImage('ab-img-before'); clearImage('ab-img-after');
+  try {
+    const r = await fetch(HCV_BACKEND_URL + '/api/android-boost', { method: 'POST', body: fd });
+    if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Error'); }
+    const d = await r.json(); showAndroidResults(d); loadHistory();
+  } catch (e) { alert('Erreur: ' + e.message); }
+  finally { $('ab-loading').classList.add('hidden'); }
+}
+function showAndroidResults(d) {
+  $('ab-results').classList.remove('hidden'); $('ab-no-results').classList.add('hidden');
+  $('ab-filename').textContent = d.filename || '';
+  $('ab-ratio-jpeg').textContent = d.ratio_vs_source + ':1';
+  $('ab-savings-jpeg').textContent = d.savings_vs_source + '%';
+  $('ab-source').textContent = fmtB(d.source_size);
+  $('ab-compressed').textContent = fmtB(d.compressed_size);
+  $('ab-raw').textContent = fmtB(d.raw_size);
+  $('ab-orig-res').textContent = d.original_resolution;
+  $('ab-ds-res').textContent = d.downscaled_resolution;
+  $('ab-target-res').textContent = d.target_resolution || d.original_resolution;
+  $('ab-px-red').textContent = d.pixel_reduction + '%';
+  $('ab-psnr').textContent = d.psnr === 'Infinity' ? '∞' : d.psnr + ' dB';
+  $('ab-ssim').textContent = d.ssim;
+  $('ab-encode').textContent = d.encode_ms + 'ms';
+  $('ab-bitexact').textContent = d.bitexact_reproducible ? '✅ OUI' : '❌';
+  if (d.img_before) setImage('ab-img-before', d.img_before, d.img_format);
+  if (d.img_after) setImage('ab-img-after', d.img_after, d.img_format);
+}
+
+// ─── Vidéo Boost ──────────────────────────────────────────────────────
+function handleVideoUpload(e) {
+  if (!e.target.files.length) return;
+  const fd = new FormData(); 
+  fd.append('file', e.target.files[0]); 
+  fd.append('quality', $('vb-quality').value);
+  fd.append('audio_bitrate', $('vb-audio-bitrate').value);
+  fd.append('target_resolution', $('vb-target-resolution').value);
+  doVideoBoost(fd);
+}
+async function doVideoBoost(fd) {
+  $('vb-loading').classList.remove('hidden'); $('vb-results').classList.add('hidden'); $('vb-no-results').classList.add('hidden');
+  clearVideo('vb-before-video'); clearVideo('vb-after-video');
+  try {
+    const r = await fetch(HCV_BACKEND_URL + '/api/video-boost', { method: 'POST', body: fd });
+    if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Error'); }
+    const d = await r.json();
+    lastResult = d;
+    showVideoResults(d); updateCompare(d); loadHistory();
+  } catch (e) { alert('Erreur: ' + e.message); }
+  finally { $('vb-loading').classList.add('hidden'); }
+}
+
+function showVideoResults(d) {
+  console.log('[HCV] showVideoResults received:', d);
+  $('vb-results').classList.remove('hidden'); $('vb-no-results').classList.add('hidden');
+  $('vb-filename').textContent = d.filename || '';
+  $('vb-ratio').textContent = (d.ratio_vs_source ?? d.ratio_vs_raw ?? '?') + ':1';
+  $('vb-savings').textContent = (d.savings_vs_source ?? d.savings_vs_raw ?? '?') + '%';
+  $('vb-source').textContent = fmtB(d.source_size);
+  $('vb-compressed').textContent = fmtB(d.compressed_size);
+  $('vb-payload').textContent = fmtB(d.video_payload_size || d.video_size || 0);
+  $('vb-orig-res').textContent = d.original_resolution || d.source_resolution || '—';
+  $('vb-comp-res').textContent = d.compressed_resolution || d.output_resolution || '—';
+  $('vb-target-res').textContent = d.target_resolution || d.restored_resolution || d.original_resolution || '—';
+  $('vb-duration').textContent = fmtDuration(d.duration || d.video_duration);
+  $('vb-encode').textContent = (d.encode_time ?? d.encoding_time ?? '—') + 's';
+
+  // Audio metadata from backend
+  const hasAudio = d.has_audio ?? d.audio_present ?? false;
+  const audioMethod = d.audio_method || (d.has_audio ? 'copy' : 'none');
+  $('vb-audio-status-badge').innerHTML = makeAudioBadge(hasAudio, audioMethod);
+  $('vb-audio-codec').textContent = d.audio_codec || (hasAudio ? 'AAC-LC' : '—');
+  $('vb-audio-bitrate').textContent = d.audio_bitrate ? (d.audio_bitrate + ' kbps') : (hasAudio ? '192k' : '—');
+  $('vb-audio-channels').textContent = d.audio_channels ? (d.audio_channels === 2 ? 'Stéréo' : d.audio_channels + 'ch') : (hasAudio ? 'Stéréo' : '—');
+  $('vb-audio-method').textContent = audioMethod === 'copy' ? '✅ Stream copy' : audioMethod === 'transcode' ? '⚡ Transcode' : '—';
+
+  // Info sous les lecteurs
+  $('vb-before-audio-info').textContent = hasAudio ? '🎵 ' + (d.audio_codec_source || 'Audio original') : '🔇 Pas d\'audio';
+  $('vb-after-audio-info').textContent = hasAudio
+    ? (audioMethod === 'copy' ? '🎵 Audio conservé (0 perte)' : '🎵 Audio recodé AAC 192k')
+    : '🔇 Pas d\'audio';
+
+  // FIX: setVideo() avec type MIME explicite pour garantir décodage audio
+  // Essayer différents champs de URL
+  const beforeUrl = d.video_before_url || d.video_source_url || d.source_video;
+  const afterUrl = d.video_after_url || d.video_restored_url || d.output_video;
+  console.log('[HCV] Video URLs - before:', beforeUrl, 'after:', afterUrl);
+  if (beforeUrl) { console.log('[HCV] Setting vb-before-video'); setVideo('vb-before-video', beforeUrl); }
+  if (afterUrl) { console.log('[HCV] Setting vb-after-video'); setVideo('vb-after-video', afterUrl); }
+
+  // Download .hcvb
+  const dlBtn = $('vb-download-hcvb');
+  if (d.hcvb_url) {
+    dlBtn.style.display = 'inline-flex';
+    dlBtn.onclick = () => {
+      const a = document.createElement('a');
+      a.href = d.hcvb_url;
+      a.download = (d.filename || 'video').replace(/\.[^.]+$/, '') + '.hcvb';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    };
+  } else { dlBtn.style.display = 'none'; }
+
+  const decBtn = $('vb-decode-locally');
+  decBtn.style.display = 'inline-flex';
+  decBtn.onclick = () => showSection('decoder');
+
+  lucide.createIcons();
+}
+
+// ─── Précompressé ──────────────────────────────────────────────────────
+function handlePrecompressedUpload(e) {
+  if (!e.target.files.length) return;
+  const fd = new FormData(); 
+  fd.append('file', e.target.files[0]); 
+  fd.append('strategy', $('pc-strategy').value);
+  fd.append('target_resolution', $('pc-target-resolution').value);
+  doPrecompressed(fd);
+}
+async function runPrecompressedDemo(format) {
+  showSection('precompressed');
+  const fd = new FormData(); 
+  fd.append('demo_format', format); 
+  fd.append('strategy', $('pc-strategy').value);
+  fd.append('target_resolution', $('pc-target-resolution').value);
+  doPrecompressed(fd);
+}
+async function doPrecompressed(fd) {
+  $('pc-loading').classList.remove('hidden'); $('pc-results').classList.add('hidden'); $('pc-no-results').classList.add('hidden');
+  clearImage('pc-img-before'); clearImage('pc-img-after');
+  try {
+    const r = await fetch(HCV_BACKEND_URL + '/api/precompressed', { method: 'POST', body: fd });
+    if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Error'); }
+    const d = await r.json(); showPrecompressedResults(d); loadHistory();
+  } catch (e) { alert('Erreur: ' + e.message); }
+  finally { $('pc-loading').classList.add('hidden'); }
+}
+function showPrecompressedResults(d) {
+  $('pc-results').classList.remove('hidden'); $('pc-no-results').classList.add('hidden');
+  $('pc-filename').textContent = d.filename || '';
+  $('pc-ratio-src').textContent = d.ratio_vs_source + ':1';
+  $('pc-savings-src').textContent = d.savings_vs_source + '%';
+  $('pc-strategy-used').textContent = d.strategy || 'AUTO';
+  $('pc-strategy-rec').textContent = d.recommended_strategy || 'AUTO';
+  $('pc-source').textContent = fmtB(d.source_size);
+  $('pc-compressed').textContent = fmtB(d.compressed_size);
+  $('pc-raw').textContent = fmtB(d.raw_size);
+  $('pc-orig-res').textContent = d.original_resolution || '—';
+  $('pc-ds-res').textContent = d.downscaled_resolution || '—';
+  $('pc-target-res').textContent = d.target_resolution || d.original_resolution || '—';
+  $('pc-px-red').textContent = d.pixel_reduction ? d.pixel_reduction + '%' : '—';
+  $('pc-psnr').textContent = d.psnr === 'Infinity' ? 'Lossless' : d.psnr + ' dB';
+  $('pc-ssim').textContent = d.ssim;
+  $('pc-encode').textContent = d.encode_ms + 'ms';
+  $('pc-bitexact').textContent = d.bitexact_reproducible ? 'YES' : 'NO';
+  if (d.img_before) setImage('pc-img-before', d.img_before, d.img_format);
+  if (d.img_after) setImage('pc-img-after', d.img_format);
+}
+
+// ─── Décodeur HCV ──────────────────────────────────────────────────────
+function handleDecodeUpload(e) {
+  if (!e.target.files.length) return;
+  const fd = new FormData(); fd.append('file', e.target.files[0]);
+  doDecodeHcvb(fd);
+}
+async function doDecodeHcvb(fd) {
+  $('dec-loading').classList.remove('hidden'); $('dec-results').classList.add('hidden'); $('dec-no-results').classList.add('hidden');
+  clearVideo('dec-video');
+  try {
+    const r = await fetch(HCV_BACKEND_URL + '/api/decode-hcvb', { method: 'POST', body: fd });
+    if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Error'); }
+    const d = await r.json(); showDecodeResults(d);
+  } catch (e) { alert('Erreur: ' + e.message); }
+  finally { $('dec-loading').classList.add('hidden'); }
+}
+
+function showDecodeResults(d) {
+  $('dec-results').classList.remove('hidden'); $('dec-no-results').classList.add('hidden');
+  $('dec-filename').textContent = d.filename || '';
+  $('dec-hcvb-size').textContent = fmtB(d.hcvb_size);
+  $('dec-mp4-size').textContent = fmtB(d.restored_size);
+  $('dec-resolution').textContent = d.original_resolution || '—';
+  $('dec-quality').textContent = d.quality || '—';
+  $('dec-time').textContent = (d.decode_time ?? '—') + 's';
+
+  // Audio info from decoder
+  const hasAudio = d.has_audio ?? d.audio_present;
+  const audioMethod = d.audio_method || 'copy';
+  $('dec-audio-badge').innerHTML = makeAudioBadge(hasAudio, audioMethod);
+  $('dec-audio-codec').textContent = d.audio_codec || (hasAudio ? 'AAC-LC' : '—');
+  $('dec-audio-bitrate').textContent = d.audio_bitrate ? (d.audio_bitrate + ' kbps') : (hasAudio ? '192k' : '—');
+  $('dec-audio-channels').textContent = d.audio_channels
+    ? (d.audio_channels === 2 ? 'Stéréo' : d.audio_channels + 'ch')
+    : (hasAudio ? 'Stéréo' : '—');
+  $('dec-audio-method-info').textContent = hasAudio
+    ? (audioMethod === 'copy'
+        ? '✅ Audio remuxé depuis .hcvb sans re-encodage (0 génération de perte)'
+        : '⚡ Audio re-encodé AAC-LC 192kbps depuis source')
+    : '🔇 Aucune piste audio dans ce fichier .hcvb';
+
+  if (d.video_url) {
+    // FIX: utiliser setVideo() avec MIME explicite pour garantir audio dans le player
+    setVideo('dec-video', d.video_url, 'video/mp4;codecs="avc1.42E01E,mp4a.40.2"');
+
+    const dl = $('dec-download-mp4');
+    dl.href = d.video_url;
+    dl.download = (d.filename || 'video').replace('.hcvb', '_restored.mp4');
+    dl.style.display = 'inline-flex';
+    lucide.createIcons();
+  }
+}
+</script>
+</body>
+</html>

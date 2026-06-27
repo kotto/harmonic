@@ -1,0 +1,84 @@
+# CODE LAMBDA DIRECT POUR AWS CONSOLE
+# Copiez-collez ce code directement dans l'éditeur Lambda
+
+import json
+import boto3
+from datetime import datetime
+
+def lambda_handler(event, context):
+    """
+    Qwen3.5 Lambda function - Mock Implementation
+    Ready for HTTP requests via API Gateway
+    """
+    try:
+        # Handle different input formats
+        if 'body' in event:
+            if isinstance(event['body'], str):
+                body = json.loads(event['body'])
+            else:
+                body = event['body']
+        else:
+            body = event
+        
+        # Extract parameters
+        prompt = body.get('prompt', 'Hello from Qwen3.5!')
+        max_length = body.get('max_length', 100)
+        temperature = body.get('temperature', 0.7)
+        
+        # Generate mock response
+        response_text = f"""Qwen3.5 Response:
+        
+Prompt: {prompt}
+
+This is a mock response from Qwen3.5-7B-Instruct. 
+The actual model integration requires S3 access and proper IAM permissions.
+
+Generated with parameters:
+- Max length: {max_length}
+- Temperature: {temperature}
+- Timestamp: {datetime.utcnow().isoformat()}
+
+Status: Ready for model integration 🚀"""
+        
+        # Create response
+        response = {
+            'generated_text': response_text,
+            'model_name': 'Qwen3.5-7B-Instruct-Mock',
+            'timestamp': datetime.utcnow().isoformat(),
+            'parameters': {
+                'max_length': max_length,
+                'temperature': temperature
+            },
+            'status': 'success',
+            'deployment_status': 'mock_ready'
+        }
+        
+        # Return API Gateway compatible response
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Methods': 'POST, GET, OPTIONS'
+            },
+            'body': json.dumps(response, indent=2)
+        }
+        
+    except Exception as e:
+        # Error handling
+        error_response = {
+            'error': str(e),
+            'message': 'Qwen3.5 Lambda function encountered an error',
+            'timestamp': datetime.utcnow().isoformat(),
+            'function': 'qwen35-simple'
+        }
+        
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps(error_response, indent=2)
+        }

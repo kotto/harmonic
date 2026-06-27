@@ -1,0 +1,125 @@
+{
+  "version": "3.0.0",
+  "name": "KA Phone — Ton Double Numérique",
+  "canonical_server": "unified_server.py",
+  
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8420,
+    "debug": false,
+    "endpoint_chat": "/api/ask",
+    "endpoint_speech": "/api/speech"
+  },
+  
+  "llm": {
+    "model_path": "models/qwen2.5-3b-instruct-q4_k_m.gguf",
+    "context_size": 2048,
+    "threads": 4,
+    "gpu_layers": 0,
+    "temperature": 0.7,
+    "max_tokens": 256,
+    "note": "Qwen2.5-3B-Instruct Q4_K_M — 2 Go, compatible RAM 4 Go. Seulement 3 couches chargées (précision limitée). Legacy — conservé pour référence."
+  },
+
+  "phi3": {
+    "enabled": true,
+    "model_path": "models/phi-3-mini-4k-instruct-q4_k_m.gguf",
+    "context_size": 2048,
+    "threads": 4,
+    "gpu_layers": 0,
+    "temperature_creative": 0.7,
+    "temperature_conversation": 0.5,
+    "max_tokens_creative": 200,
+    "max_tokens_conversation": 150,
+    "ram_required_gb": 3.7,
+    "download_url": "https://huggingface.co/bartowski/Phi-3-mini-4k-instruct-GGUF",
+    "note": "Phi-3-mini (3.8B) Q4_K_M ~2.4 Go. Necessite ~3.7 Go de RAM libre (CX32 8 Go recommande). Le modele est contraint par la banque d images — il assemble, n invente pas. Fallback automatique vers templates purs si indisponible."
+  },
+
+  "deployment": {
+    "recommended_vps": "Hetzner CX32",
+    "vps_ram": "8 Go",
+    "vps_cpu": "4 vCPU",
+    "vps_storage": "80 Go SSD",
+    "estimated_monthly_cost_eur": 9,
+    "models_mounted_as_volume": true,
+    "note": "Les modeles GGUF sont montes en volume Docker (./models:/app/ka_phone/models) pour ne pas alourdir l image. Le telechargement se fait directement sur le VPS."
+  },
+  
+  "hologramme": {
+    "savoir": "../ka_knowledge_base/hologramme.npy",
+    "langage": "../mgh_data/mgh_langage.npy",
+    "taille": "32 Ko chacun",
+    "tokens_ingérés": 11995000,
+    "note": "12M tokens one-pass CPU, 14 spécialités médicales, histoire UNESCO, sciences, droit, etc."
+  },
+  
+  "voice": {
+    "stt_engine": "faster-whisper",
+    "stt_model": "models/ggml-tiny.bin",
+    "stt_langues": ["fr", "en", "sw", "wo", "bm", "ha", "yo", "ln", "am", "ar", "pt", "es"],
+    "tts_engine": "edge-tts",
+    "tts_fallback": "piper",
+    "tts_voice": "models/fr_FR-siwis-medium.onnx",
+    "tts_speed": 1.0,
+    "note": "Edge-TTS prioritaire (Microsoft Neural, 5 voix FR), fallback Piper (50 Mo), fallback Browser Web Speech API"
+  },
+  
+  "vision": {
+    "upscaling": {
+      "enabled": true,
+      "method": "hcv",
+      "factor": 4,
+      "psnr_attendu": "50-60 dB"
+    },
+    "compression": {
+      "enabled": true,
+      "method": "hcv",
+      "ratio_photo": 40,
+      "ratio_video": 45,
+      "qualite": "quasi-sans perte"
+    }
+  },
+  
+  "navigation": {
+    "type": "gestuelle + holographique",
+    "recherche": "par concepts (résonance holographique)",
+    "hors_ligne": true
+  },
+  
+  "architecture": {
+    "canonical_server": "unified_server.py",
+    "port": 8420,
+    "endpoint": "/api/ask",
+    "legacy_servers": {
+      "ka_phone_server.py": "v3 — Qwen 2.5-3B + MGH (port 8900, endpoint /api/chat)",
+      "ka_phone_harmonic_server.py": "v4 — Moteur Harmonique + Calculateur (port 8900, endpoint /api/chat)",
+      "ka_phone_unified_server.py": "v5 — Fusion v3+v4 (port 8900, endpoint /api/chat)",
+      "light_server.py": "Light — ParametricKB + FrequencyReasoner (port 8420, endpoint /api/ask)"
+    },
+    "note": "unified_server.py (port 8420, /api/ask) est le serveur canonique. Les serveurs legacy sont conservés pour référence et tests isolés."
+  },
+  
+  "pwa": {
+    "enabled": true,
+    "name": "KA Phone",
+    "short_name": "KA",
+    "theme_color": "#070514",
+    "background_color": "#070514",
+    "display": "standalone",
+    "orientation": "portrait"
+  },
+  
+  "mobile_android": {
+    "min_sdk": 24,
+    "target_sdk": 34,
+    "package": "ai.harmonic.kaphone",
+    "permissions": ["INTERNET", "CAMERA", "RECORD_AUDIO", "READ_EXTERNAL_STORAGE"],
+    "note": "Déployable via Termux ou APK native (Chaquopy/WebView)"
+  },
+  
+  "mobile_ios": {
+    "note": "Version Web progressive (PWA) compatible Safari/iOS. Application native possible via Capacitor/Cordova.",
+    "pwa_ready": true
+  }
+}

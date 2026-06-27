@@ -1,0 +1,40 @@
+# ==============================================
+# DOCKERFILE DEEPSEEK HARMONIQUE AWS APP RUNNER
+# ==============================================
+# Basé sur la configuration fonctionnelle hcv-prof
+
+# CUDA Runtime image pour GPU
+FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
+
+WORKDIR /app
+
+# Installation dépendances système
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 \
+    python3-pip \
+    python3-dev \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copie requirements
+COPY requirements_deepseek.txt .
+
+# Installation dépendances Python
+RUN pip3 install --no-cache-dir --upgrade pip
+RUN pip3 install --no-cache-dir -r requirements_deepseek.txt
+
+# Copie du script de transformation
+COPY deepseek_harmonic_patch.py .
+
+# Configuration environnement
+ENV PYTHONUNBUFFERED=1
+ENV CUDA_VISIBLE_DEVICES=0
+ENV TRANSFORMERS_VERBOSITY=error
+
+# Configuration S3 pour chargement direct du modèle Deepseek V4 Pro
+ENV S3_BUCKET=deepseek-models-326095712935
+ENV S3_MODEL_PATH=deepseek-v4-pro
+
+# Exécution automatique au démarrage
+CMD ["python3", "deepseek_harmonic_patch.py", "--from-s3", "--model=v4"]

@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCS Studio - Dashboard | Production 8K/16K</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        'hcs-black': '#0a0a0f',
+                        'hcs-dark': '#12121a',
+                        'hcs-card': '#1a1a25',
+                        'hcs-gold': '#FFD700',
+                        'hcs-gold-light': '#FFE55C',
+                        'hcs-purple': '#8B5CF6',
+                        'hcs-blue': '#3B82F6',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        * { scroll-behavior: smooth; }
+        body {
+            background: #0a0a0f;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        
+        .gradient-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(255, 215, 0, 0.05) 0%, transparent 70%),
+                linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%);
+        }
+        
+        .glass-card {
+            background: rgba(26, 26, 37, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+        
+        .glass-card:hover {
+            border-color: rgba(255, 215, 0, 0.2);
+            box-shadow: 0 12px 48px rgba(255, 215, 0, 0.1);
+        }
+        
+        .gold-accent {
+            background: linear-gradient(135deg, #FFD700 0%, #FFE55C 50%, #FFD700 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .gold-border {
+            border: 1px solid transparent;
+            background: linear-gradient(#1a1a25, #1a1a25) padding-box,
+                        linear-gradient(135deg, #FFD700, #8B5CF6) border-box;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #FFD700 0%, #FFE55C 100%);
+            color: #0a0a0f;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(255, 215, 0, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+        
+        .upload-zone {
+            border: 2px dashed rgba(255, 215, 0, 0.3);
+            background: rgba(255, 215, 0, 0.02);
+            transition: all 0.3s ease;
+        }
+        
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #FFD700;
+            background: rgba(255, 215, 0, 0.05);
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, #FFD700 0%, #FFE55C 100%);
+            transition: width 0.3s ease;
+        }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a0f; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #FFD700; }
+        
+        .tab-active {
+            background: rgba(255, 215, 0, 0.15);
+            border-color: #FFD700;
+            color: #FFD700;
+        }
+        
+        /* COMPARISON SLIDER STYLES */
+        .comparison-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            overflow: hidden;
+            border-radius: 12px;
+        }
+        
+        .comparison-container img, .comparison-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .comparison-container .before-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 50%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 2;
+        }
+        
+        .comparison-container .before-layer img,
+        .comparison-container .before-layer video {
+            width: 200%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .comparison-slider-handle {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background: #FFD700;
+            z-index: 10;
+            cursor: ew-resize;
+            transform: translateX(-50%);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+        
+        .comparison-slider-handle::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 48px;
+            height: 48px;
+            background: #FFD700;
+            border-radius: 50%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .comparison-slider-handle::after {
+            content: '↔';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #0a0a0f;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .comparison-label {
+            position: absolute;
+            top: 16px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 12px;
+            z-index: 5;
+        }
+        
+        .comparison-label.before {
+            left: 16px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+        }
+        
+        .comparison-label.after {
+            right: 16px;
+            background: rgba(255, 215, 0, 0.9);
+            color: #0a0a0f;
+        }
+        
+        .video-compare-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .video-box {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #1a1a25;
+        }
+        
+        .video-box video {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+        }
+        
+        .video-label {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 12px;
+            z-index: 10;
+        }
+        
+        .spinner {
+            border: 3px solid rgba(255, 215, 0, 0.2);
+            border-top-color: #FFD700;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="font-sans antialiased">
+    <!-- Background -->
+    <div class="gradient-bg"></div>
+    
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 glass-card border-r border-white/5 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+        <div class="p-6 border-b border-white/5">
+            <a href="hcs_studio.html" class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg gold-border flex items-center justify-center">
+                    <i data-lucide="film" class="w-5 h-5 text-hcs-gold"></i>
+                </div>
+                <span class="font-display font-bold text-lg">
+                    HCS <span class="gold-accent">Studio</span>
+                </span>
+            </a>
+        </div>
+        
+        <nav class="p-4 space-y-2">
+            <button onclick="showSection('dashboard')" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors tab-active" data-section="dashboard">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                <span>Tableau de bord</span>
+            </button>
+            
+            <button onclick="showSection('compress')" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors" data-section="compress">
+                <i data-lucide="file-archive" class="w-5 h-5"></i>
+                <span>Compression</span>
+            </button>
+            
+            <button onclick="showSection('upscale')" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors" data-section="upscale">
+                <i data-lucide="maximize-2" class="w-5 h-5"></i>
+                <span>Upscale IA</span>
+            </button>
+            
+            <button onclick="showSection('restore')" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors" data-section="restore">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+                <span>Restauration</span>
+            </button>
+            
+            <button onclick="showSection('projects')" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors" data-section="projects">
+                <i data-lucide="folder" class="w-5 h-5"></i>
+                <span>Projets</span>
+            </button>
+        </nav>
+        
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/5">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-hcs-gold to-hcs-purple flex items-center justify-center">
+                    <span class="font-bold text-hcs-black">JD</span>
+                </div>
+                <div>
+                    <p class="text-sm font-medium">John Doe</p>
+                    <p class="text-xs text-gray-500">Studio Premium</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="md:ml-64 min-h-screen">
+        <!-- Top Bar -->
+        <header class="sticky top-0 z-30 glass-card border-b border-white/5 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <button id="mobile-menu-btn" class="md:hidden text-white">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <h1 id="page-title" class="text-xl font-display font-bold">Tableau de bord</h1>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <div class="hidden sm:flex items-center space-x-2 text-sm text-gray-400">
+                        <i data-lucide="zap" class="w-4 h-4 text-hcs-gold"></i>
+                        <span>IA Harmonique Active</span>
+                    </div>
+                    <button class="btn-primary px-4 py-2 rounded-full text-sm flex items-center space-x-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>Nouveau Projet</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Content Area -->
+        <div class="p-6">
+            
+            <!-- DASHBOARD SECTION -->
+            <section id="dashboard-section" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="glass-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-hcs-gold/10 flex items-center justify-center">
+                                <i data-lucide="film" class="w-6 h-6 text-hcs-gold"></i>
+                            </div>
+                            <span class="text-xs text-green-400 flex items-center">
+                                <i data-lucide="trending-up" class="w-3 h-3 mr-1"></i> +12%
+                            </span>
+                        </div>
+                        <p class="text-3xl font-display font-bold">47</p>
+                        <p class="text-gray-400 text-sm">Projets actifs</p>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-hcs-purple/10 flex items-center justify-center">
+                                <i data-lucide="hard-drive" class="w-6 h-6 text-hcs-purple"></i>
+                            </div>
+                            <span class="text-xs text-green-400 flex items-center">
+                                <i data-lucide="trending-down" class="w-3 h-3 mr-1"></i> -85%
+                            </span>
+                        </div>
+                        <p class="text-3xl font-display font-bold">2.4 TB</p>
+                        <p class="text-gray-400 text-sm">Stockage utilisé</p>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-hcs-blue/10 flex items-center justify-center">
+                                <i data-lucide="zap" class="w-6 h-6 text-hcs-blue"></i>
+                            </div>
+                            <span class="text-xs text-green-400">99.9%</span>
+                        </div>
+                        <p class="text-3xl font-display font-bold">1,284</p>
+                        <p class="text-gray-400 text-sm">Rendus ce mois</p>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
+                                <i data-lucide="wallet" class="w-6 h-6 text-green-400"></i>
+                            </div>
+                            <span class="text-xs text-hcs-gold">Économisé</span>
+                        </div>
+                        <p class="text-3xl font-display font-bold">$12.4k</p>
+                        <p class="text-gray-400 text-sm">vs stockage standard</p>
+                    </div>
+                </div>
+                
+                <div class="grid lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 glass-card rounded-2xl p-6">
+                        <h3 class="font-display font-bold text-lg mb-4">Travaux récents</h3>
+                        <div class="space-y-4" id="recent-jobs">
+                            <div class="flex items-center justify-between p-4 rounded-xl bg-white/5">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-10 h-10 rounded-lg bg-hcs-gold/20 flex items-center justify-center">
+                                        <i data-lucide="maximize-2" class="w-5 h-5 text-hcs-gold"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium">Upscale Documentaire_4K</p>
+                                        <p class="text-sm text-gray-500">4K → 8K • Il y a 2h</p>
+                                    </div>
+                                </div>
+                                <span class="px-3 py-1 rounded-full text-xs bg-green-500/20 text-green-400">Terminé</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-4 rounded-xl bg-white/5">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-10 h-10 rounded-lg bg-hcs-purple/20 flex items-center justify-center">
+                                        <i data-lucide="file-archive" class="w-5 h-5 text-hcs-purple"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium">Compression Film_Archive</p>
+                                        <p class="text-sm text-gray-500">500:1 • Il y a 5h</p>
+                                    </div>
+                                </div>
+                                <span class="px-3 py-1 rounded-full text-xs bg-green-500/20 text-green-400">Terminé</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-6">
+                        <h3 class="font-display font-bold text-lg mb-4">Actions rapides</h3>
+                        <div class="space-y-3">
+                            <button onclick="showSection('compress')" class="w-full btn-secondary p-4 rounded-xl flex items-center space-x-3 text-left">
+                                <i data-lucide="file-archive" class="w-5 h-5 text-hcs-purple"></i>
+                                <div>
+                                    <p class="font-medium">Compresser vidéo</p>
+                                    <p class="text-xs text-gray-500">Jusqu'à 2000:1</p>
+                                </div>
+                            </button>
+                            
+                            <button onclick="showSection('upscale')" class="w-full btn-secondary p-4 rounded-xl flex items-center space-x-3 text-left">
+                                <i data-lucide="maximize-2" class="w-5 h-5 text-hcs-gold"></i>
+                                <div>
+                                    <p class="font-medium">Upscale IA</p>
+                                    <p class="text-xs text-gray-500">4K → 8K → 16K</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- COMPRESSION SECTION AVEC COMPARAISON -->
+            <section id="compress-section" class="hidden space-y-6">
+                <div class="grid lg:grid-cols-2 gap-6">
+                    <!-- Left: Upload & Settings -->
+                    <div class="glass-card rounded-2xl p-6">
+                        <h2 class="font-display text-xl font-bold mb-4">Compression Holographique</h2>
+                        
+                        <!-- Upload Zone -->
+                        <div id="compress-upload-zone" class="upload-zone rounded-2xl p-8 text-center cursor-pointer mb-6" onclick="document.getElementById('compress-file').click()">
+                            <input type="file" id="compress-file" class="hidden" accept="video/*" onchange="handleCompressUpload(event)">
+                            <i data-lucide="upload-cloud" class="w-12 h-12 text-hcs-gold mx-auto mb-3"></i>
+                            <p class="font-medium">Glissez-déposez votre vidéo</p>
+                            <p class="text-sm text-gray-500">MP4, MOV, ProRes jusqu'à 10GB</p>
+                        </div>
+                        
+                        <!-- Settings -->
+                        <div id="compress-settings" class="hidden space-y-4">
+                            <div class="p-3 rounded-xl bg-white/5 flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <i data-lucide="film" class="w-6 h-6 text-hcs-gold"></i>
+                                    <div>
+                                        <p class="font-medium text-sm" id="compress-filename">video.mp4</p>
+                                        <p class="text-xs text-gray-500" id="compress-filesize">2.4 GB</p>
+                                    </div>
+                                </div>
+                                <button onclick="resetCompress()" class="text-gray-500 hover:text-red-400">
+                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Mode de compression</label>
+                                <div class="grid grid-cols-3 gap-2 mb-3">
+                                    <button class="compress-mode p-2 rounded-lg border border-white/10 text-center text-sm hover:border-hcs-gold/50" data-mode="production">
+                                        <p class="font-bold text-hcs-gold">120:1</p>
+                                        <p class="text-xs text-gray-400">Production</p>
+                                    </button>
+                                    <button class="compress-mode p-2 rounded-lg border border-hcs-gold/50 bg-hcs-gold/10 text-center text-sm" data-mode="archive">
+                                        <p class="font-bold text-hcs-gold">500:1</p>
+                                        <p class="text-xs text-gray-400">Archive</p>
+                                    </button>
+                                    <button class="compress-mode p-2 rounded-lg border border-white/10 text-center text-sm hover:border-hcs-gold/50" data-mode="deep_storage">
+                                        <p class="font-bold text-hcs-gold">2000:1</p>
+                                        <p class="text-xs text-gray-400">Deep</p>
+                                    </button>
+                                </div>
+                                
+                                <!-- HCS V2 Custom Ratio -->
+                                <div class="mt-3">
+                                    <label class="block text-xs font-medium mb-1">Ratio cible (optionnel)</label>
+                                    <input type="number" id="compression-ratio" placeholder="ex: 1000" 
+                                           class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm focus:outline-none focus:border-hcs-gold/50">
+                                    <p class="text-xs text-gray-500 mt-1">Laissez vide pour optimisation automatique</p>
+                                </div>
+                            </div>
+                            
+                            <button onclick="startCompression()" class="w-full btn-primary py-3 rounded-xl font-medium flex items-center justify-center space-x-2">
+                                <i data-lucide="play" class="w-5 h-5"></i>
+                                <span>Lancer la compression</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Progress -->
+                        <div id="compress-progress" class="hidden mt-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-gray-400">Compression...</span>
+                                <span class="font-bold" id="compress-percent">0%</span>
+                            </div>
+                            <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div id="compress-progress-bar" class="progress-bar h-full rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Result Info -->
+                        <div id="compress-result" class="hidden mt-4 p-4 rounded-xl bg-green-500/10 border border-green-500/30">
+                            <div class="flex items-center space-x-2 mb-3">
+                                <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
+                                <span class="font-bold text-green-400">Compression HCS V2 réussie!</span>
+                            </div>
+                            
+                            <!-- HCS V2 Results -->
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div class="text-center p-3 rounded-lg bg-white/5">
+                                    <p class="text-2xl font-bold text-hcs-gold" id="compression-ratio-display">0:1</p>
+                                    <p class="text-xs text-gray-400">Ratio Total</p>
+                                </div>
+                                <div class="text-center p-3 rounded-lg bg-white/5">
+                                    <p class="text-2xl font-bold text-green-400" id="compression-savings">0%</p>
+                                    <p class="text-xs text-gray-400">Économie</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Detailed Breakdown -->
+                            <div class="space-y-2 mb-4">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-400">K=0.02:</span>
+                                    <span class="font-bold" id="k-ratio-display">0:1</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-400">WebP:</span>
+                                    <span class="font-bold" id="webp-ratio-display">0:1</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-400">Performance:</span>
+                                    <span class="font-bold text-hcs-gold" id="performance-level">-</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-400">Temps:</span>
+                                    <span class="font-bold" id="compression-time">0ms</span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-between mt-1">
+                                <span class="text-gray-400">Ratio Final:</span>
+                                <span class="gold-accent font-bold" id="final-ratio-display">0:1</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right: Comparison Video -->
+                    <div class="glass-card rounded-2xl p-6">
+                        <h3 class="font-display font-bold mb-4">Comparaison Avant/Après</h3>
+                        
+                        <!-- Video Comparison -->
+                        <div id="video-comparison" class="video-compare-container">
+                            <!-- Before Video -->
+                            <div class="video-box">
+                                <video id="video-before" controls poster=""></video>
+                                <div class="video-label" style="background: rgba(0,0,0,0.7); color: white;">AVANT</div>
+                                <div class="absolute bottom-3 left-3 right-3 p-3 bg-black/70 rounded-lg text-xs">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Taille:</span>
+                                        <span id="video-before-size">2.4 GB</span>
+                                    </div>
+                                    <div class="flex justify-between mt-1">
+                                        <span class="text-gray-400">Codec:</span>
+                                        <span>ProRes 422</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- After Video -->
+                            <div class="video-box">
+                                <video id="video-after" controls poster=""></video>
+                                <div class="video-label" style="background: rgba(255,215,0,0.9); color: #0a0a0f;">APRÈS</div>
+                                <div class="absolute bottom-3 left-3 right-3 p-3 bg-black/70 rounded-lg text-xs">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Taille:</span>
+                                        <span id="video-after-size" class="text-hcs-gold">4.8 MB</span>
+                                    </div>
+                                    <div class="flex justify-between mt-1">
+                                        <span class="text-gray-400">Ratio:</span>
+                                        <span class="gold-accent font-bold">500:1</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sync Controls -->
+                        <div id="video-controls" class="hidden mt-4 flex items-center justify-between">
+                            <div class="flex space-x-2">
+                                <button onclick="syncPlayCompress()" class="btn-primary px-4 py-2 rounded-lg text-sm flex items-center space-x-1">
+                                    <i data-lucide="play" class="w-4 h-4"></i>
+                                    <span>Lecture</span>
+                                </button>
+                                <button onclick="syncPauseCompress()" class="btn-secondary px-4 py-2 rounded-lg text-sm flex items-center space-x-1">
+                                    <i data-lucide="pause" class="w-4 h-4"></i>
+                                    <span>Pause</span>
+                                </button>
+                            </div>
+                            <button onclick="downloadCompressed()" class="btn-secondary px-4 py-2 rounded-lg text-sm flex items-center space-x-1">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                <span>Télécharger</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Empty State -->
+                        <div id="video-empty-state" class="flex items-center justify-center h-64 text-gray-500">
+                            <div class="text-center">
+                                <i data-lucide="film" class="w-16 h-16 mx-auto mb-3 opacity-30"></i>
+                                <p>Chargez une vidéo pour voir la comparaison</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- UPSCALE SECTION AVEC COMPARAISON -->
+            <section id="upscale-section" class="hidden space-y-6">
+                <div class="grid lg:grid-cols-2 gap-6">
+                    <!-- Left: Upload & Settings -->
+                    <div class="glass-card rounded-2xl p-6">
+                        <h2 class="font-display text-xl font-bold mb-4">Upscale IA Harmonique</h2>
+                        
+                        <!-- Upload Zone -->
+                        <div id="upscale-upload-zone" class="upload-zone rounded-2xl p-8 text-center cursor-pointer mb-6" onclick="document.getElementById('upscale-file').click()">
+                            <input type="file" id="upscale-file" class="hidden" accept="image/*" onchange="handleUpscaleUpload(event)">
+                            <i data-lucide="image-plus" class="w-12 h-12 text-hcs-gold mx-auto mb-3"></i>
+                            <p class="font-medium">Choisir une image</p>
+                            <p class="text-sm text-gray-500">JPG, PNG, TIFF jusqu'à 50MB</p>
+                        </div>
+                        
+                        <!-- Settings -->
+                        <div id="upscale-settings" class="hidden space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Facteur d'échelle</label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button class="upscale-scale p-2 rounded-lg border border-white/10 text-center text-sm hover:border-hcs-gold/50" data-scale="2">
+                                        <p class="font-bold">2×</p>
+                                        <p class="text-xs text-gray-400">HD → 4K</p>
+                                    </button>
+                                    <button class="upscale-scale p-2 rounded-lg border border-hcs-gold/50 bg-hcs-gold/10 text-center text-sm" data-scale="4">
+                                        <p class="font-bold text-hcs-gold">4×</p>
+                                        <p class="text-xs text-gray-400">4K → 16K</p>
+                                    </button>
+                                    <button class="upscale-scale p-2 rounded-lg border border-white/10 text-center text-sm hover:border-hcs-gold/50" data-scale="8">
+                                        <p class="font-bold">8×</p>
+                                        <p class="text-xs text-gray-400">HD → 8K</p>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Mode</label>
+                                <select class="w-full p-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:border-hcs-gold/50 focus:outline-none">
+                                    <option value="modern">Moderne - Contenu récent</option>
+                                    <option value="cinematic">Cinéma - Look Hollywood</option>
+                                    <option value="classical">Classique - Films anciens</option>
+                                </select>
+                            </div>
+                            
+                            <button onclick="startUpscale()" class="w-full btn-primary py-3 rounded-xl font-medium flex items-center justify-center space-x-2">
+                                <i data-lucide="wand-2" class="w-5 h-5"></i>
+                                <span>Lancer l'upscale</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Progress -->
+                        <div id="upscale-progress" class="hidden mt-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-gray-400">Upscale en cours...</span>
+                                <span class="font-bold" id="upscale-percent">0%</span>
+                            </div>
+                            <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div id="upscale-progress-bar" class="progress-bar h-full rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Result Info -->
+                        <div id="upscale-result" class="hidden mt-4 p-4 rounded-xl bg-green-500/10 border border-green-500/30">
+                            <div class="flex items-center space-x-2 mb-3">
+                                <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
+                                <span class="font-medium text-green-400">Upscale terminé!</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-center text-sm">
+                                <div class="p-2 rounded-lg bg-white/5">
+                                    <p class="text-gray-400 text-xs">Avant</p>
+                                    <p class="font-medium">1920×1080</p>
+                                </div>
+                                <div class="p-2 rounded-lg bg-white/5">
+                                    <p class="text-gray-400 text-xs">Après</p>
+                                    <p class="font-bold text-hcs-gold">7680×4320</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right: Comparison Image with Slider -->
+                    <div class="glass-card rounded-2xl p-6">
+                        <h3 class="font-display font-bold mb-4">Comparaison Avant/Après</h3>
+                        
+                        <!-- Image Comparison Slider -->
+                        <div id="image-comparison-container" class="comparison-container hidden">
+                            <div class="comparison-label before">AVANT</div>
+                            <div class="comparison-label after">APRÈS</div>
+                            
+                            <!-- After Image (Full) -->
+                            <img id="compare-after-img" src="" alt="After">
+                            
+                            <!-- Before Image (Clipped) -->
+                            <div class="before-layer" id="before-layer">
+                                <img id="compare-before-img" src="" alt="Before">
+                            </div>
+                            
+                            <!-- Slider Handle -->
+                            <div class="comparison-slider-handle" id="slider-handle"></div>
+                        </div>
+                        
+                        <!-- Download Button -->
+                        <div id="image-download" class="hidden mt-4">
+                            <button onclick="downloadUpscaled()" class="w-full btn-primary py-3 rounded-xl font-medium flex items-center justify-center space-x-2">
+                                <i data-lucide="download" class="w-5 h-5"></i>
+                                <span>Télécharger l'image (24.8 MB)</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Empty State -->
+                        <div id="image-empty-state" class="flex items-center justify-center h-96 text-gray-500">
+                            <div class="text-center">
+                                <i data-lucide="image" class="w-16 h-16 mx-auto mb-3 opacity-30"></i>
+                                <p>Chargez une image pour voir la comparaison</p>
+                                <p class="text-sm text-gray-600 mt-2">Faites glisser le curseur pour comparer</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- RESTORE SECTION -->
+            <section id="restore-section" class="hidden space-y-6">
+                <div class="glass-card rounded-2xl p-6">
+                    <h2 class="font-display text-2xl font-bold mb-4">Restauration de Films</h2>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <div id="restore-upload-zone" class="upload-zone rounded-2xl p-8 text-center cursor-pointer h-56 flex flex-col items-center justify-center" onclick="document.getElementById('restore-file').click()">
+                                <input type="file" id="restore-file" class="hidden" accept="video/*" onchange="handleRestoreUpload(event)">
+                                <i data-lucide="film" class="w-16 h-16 text-hcs-gold mb-4"></i>
+                                <p class="font-medium">Importer un film</p>
+                                <p class="text-sm text-gray-500">MP4, MOV, AVI, MKV</p>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Année du film</label>
+                                <input type="number" value="1960" min="1900" max="2024" class="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:border-hcs-gold/50 focus:outline-none">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Corrections</label>
+                                <div class="space-y-2">
+                                    <label class="flex items-center space-x-3 p-3 rounded-xl bg-white/5 cursor-pointer text-sm">
+                                        <input type="checkbox" checked class="w-4 h-4 rounded border-white/20 bg-white/10 text-hcs-gold">
+                                        <span>Poussière et rayures</span>
+                                    </label>
+                                    <label class="flex items-center space-x-3 p-3 rounded-xl bg-white/5 cursor-pointer text-sm">
+                                        <input type="checkbox" checked class="w-4 h-4 rounded border-white/20 bg-white/10 text-hcs-gold">
+                                        <span>Décoloration</span>
+                                    </label>
+                                    <label class="flex items-center space-x-3 p-3 rounded-xl bg-white/5 cursor-pointer text-sm">
+                                        <input type="checkbox" checked class="w-4 h-4 rounded border-white/20 bg-white/10 text-hcs-gold">
+                                        <span>Upscale vers 4K</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <button onclick="startRestoration()" class="w-full btn-primary py-3 rounded-xl font-medium flex items-center justify-center space-x-2">
+                                <i data-lucide="sparkles" class="w-5 h-5"></i>
+                                <span>Lancer la restauration</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- PROJECTS SECTION -->
+            <section id="projects-section" class="hidden space-y-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="font-display text-2xl font-bold">Mes Projets</h2>
+                    <button class="btn-primary px-4 py-2 rounded-full text-sm flex items-center space-x-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>Nouveau projet</span>
+                    </button>
+                </div>
+                
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="glass-card rounded-2xl overflow-hidden">
+                        <div class="h-32 bg-gradient-to-br from-hcs-purple/30 to-hcs-blue/30 flex items-center justify-center">
+                            <i data-lucide="film" class="w-12 h-12 text-white/30"></i>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex items-center justify-between mb-1">
+                                <h3 class="font-bold text-sm">Documentaire_Nature</h3>
+                                <span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">Actif</span>
+                            </div>
+                            <p class="text-xs text-gray-500">8K • 24fps • HDR</p>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl overflow-hidden">
+                        <div class="h-32 bg-gradient-to-br from-hcs-gold/30 to-orange-500/30 flex items-center justify-center">
+                            <i data-lucide="clapperboard" class="w-12 h-12 text-white/30"></i>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex items-center justify-between mb-1">
+                                <h3 class="font-bold text-sm">Pub_Commerciale</h3>
+                                <span class="px-2 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-400">En cours</span>
+                            </div>
+                            <p class="text-xs text-gray-500">4K → 8K Upscale</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+        </div>
+    </main>
+    
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+    
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Section Navigation
+        function showSection(sectionName) {
+            document.querySelectorAll('section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            document.getElementById(sectionName + '-section').classList.remove('hidden');
+            
+            const titles = {
+                'dashboard': 'Tableau de bord',
+                'compress': 'Compression',
+                'upscale': 'Upscale IA',
+                'restore': 'Restauration',
+                'projects': 'Mes Projets'
+            };
+            document.getElementById('page-title').textContent = titles[sectionName];
+            
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('tab-active');
+                if (item.dataset.section === sectionName) {
+                    item.classList.add('tab-active');
+                }
+            });
+            
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+        }
+        
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+        });
+        
+        // COMPRESSION FUNCTIONS
+        function handleCompressUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate file type
+            if (!file.type.startsWith('video/')) {
+                showToast('Veuillez sélectionner un fichier vidéo', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const src = e.target.result;
+                
+                document.getElementById('compress-upload-zone').classList.add('hidden');
+                document.getElementById('compress-settings').classList.remove('hidden');
+                document.getElementById('video-empty-state').classList.add('hidden');
+                document.getElementById('video-comparison').classList.remove('hidden');
+                document.getElementById('video-controls').classList.remove('hidden');
+                
+                // Set original video
+                document.getElementById('video-before').src = src;
+                
+                showToast('Vidéo chargée', 'success');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function resetCompress() {
+            document.getElementById('compress-upload-zone').classList.remove('hidden');
+            document.getElementById('compress-settings').classList.add('hidden');
+            document.getElementById('compress-progress').classList.add('hidden');
+            document.getElementById('compress-result').classList.add('hidden');
+            document.getElementById('compress-file').value = '';
+            
+            document.getElementById('video-empty-state').classList.remove('hidden');
+            document.getElementById('video-comparison').classList.add('hidden');
+            document.getElementById('video-controls').classList.add('hidden');
+            
+            compressionResult = null;
+        }
+        
+        async function startCompression() {
+            const fileInput = document.getElementById('compress-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showToast('Veuillez sélectionner un fichier', 'error');
+                return;
+            }
+            
+            document.getElementById('compress-settings').classList.add('hidden');
+            document.getElementById('compress-progress').classList.remove('hidden');
+            
+            try {
+                // Create FormData for API
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                // Get compression settings
+                const targetRatio = document.getElementById('compression-ratio')?.value;
+                if (targetRatio) {
+                    formData.append('target_ratio', targetRatio);
+                }
+                
+                // Call HCS V2 API
+                const response = await fetch('http://localhost:8004/api/v2/compress/video', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    compressionResult = result;
+                    
+                    // Simulate progress for UX
+                    let progress = 0;
+                    const interval = setInterval(() => {
+                        progress += Math.random() * 15;
+                        if (progress >= 100) {
+                            progress = 100;
+                            clearInterval(interval);
+                            setTimeout(() => {
+                                showCompressionResult(result);
+                            }, 500);
+                        }
+                        document.getElementById('compress-percent').textContent = Math.round(progress) + '%';
+                        document.getElementById('compress-progress-bar').style.width = progress + '%';
+                    }, 200);
+                } else {
+                    throw new Error(result.detail || 'Échec de la compression');
+                }
+            } catch (error) {
+                console.error('Compression error:', error);
+                showToast('Erreur: ' + error.message, 'error');
+                resetCompress();
+            }
+        }
+        
+        function showCompressionResult(result) {
+            document.getElementById('compress-progress').classList.add('hidden');
+            document.getElementById('compress-result').classList.remove('hidden');
+            
+            // Update result display with HCS V2 data
+            document.getElementById('compression-ratio-display').textContent = result.compression_ratio.toFixed(1) + ':1';
+            document.getElementById('compression-savings').textContent = result.space_saved_percent.toFixed(1) + '%';
+            document.getElementById('compression-time').textContent = (result.processing_time * 1000).toFixed(0) + 'ms';
+            
+            // Show detailed breakdown
+            document.getElementById('k-ratio-display').textContent = result.k_ratio.toFixed(1) + ':1';
+            document.getElementById('webp-ratio-display').textContent = result.webp_ratio.toFixed(1) + ':1';
+            document.getElementById('performance-level').textContent = result.performance_level;
+            document.getElementById('final-ratio-display').textContent = result.compression_ratio.toFixed(1) + ':1';
+            
+            // Update file info
+            const fileSize = (result.original_size / (1024 * 1024)).toFixed(1);
+            const compressedSize = (result.estimated_compressed_size / (1024 * 1024)).toFixed(1);
+            document.getElementById('compress-filename').textContent = result.original_filename;
+            document.getElementById('compress-filesize').textContent = `${fileSize} MB → ${compressedSize} MB`;
+            
+            // Set compressed video (using original for demo, would be actual compressed file)
+            const beforeSrc = document.getElementById('video-before').src;
+            document.getElementById('video-after').src = beforeSrc;
+            
+            showToast('Compression HCS V2 terminée!', 'success');
+        }
+        
+        function syncPlayCompress() {
+            document.getElementById('video-before').play();
+            document.getElementById('video-after').play();
+        }
+        
+        function syncPauseCompress() {
+            document.getElementById('video-before').pause();
+            document.getElementById('video-after').pause();
+        }
+        
+        async function downloadCompressed() {
+            if (!compressionResult) {
+                showToast('Aucun résultat à télécharger', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:8004${compressionResult.download_url}`);
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `hcs_compressed_${compressionResult.original_filename}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    showToast('Téléchargement démarré', 'success');
+                } else {
+                    throw new Error('Échec du téléchargement');
+                }
+            } catch (error) {
+                console.error('Download error:', error);
+                showToast('Erreur: ' + error.message, 'error');
+            }
+        }
+        
+        // UPSCALE FUNCTIONS
+        let isDragging = false;
+        
+        function handleUpscaleUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const src = e.target.result;
+                
+                document.getElementById('upscale-upload-zone').classList.add('hidden');
+                document.getElementById('upscale-settings').classList.remove('hidden');
+                document.getElementById('image-empty-state').classList.add('hidden');
+                document.getElementById('image-comparison-container').classList.remove('hidden');
+                
+                // Set both images (same for demo, would be different after processing)
+                document.getElementById('compare-before-img').src = src;
+                document.getElementById('compare-after-img').src = src;
+                
+                // Initialize slider
+                initComparisonSlider();
+            };
+            reader.readAsDataURL(file);
+            
+            showToast('Image chargée', 'success');
+        }
+        
+        function initComparisonSlider() {
+            const container = document.getElementById('image-comparison-container');
+            const handle = document.getElementById('slider-handle');
+            const beforeLayer = document.getElementById('before-layer');
+            
+            handle.addEventListener('mousedown', startDrag);
+            container.addEventListener('click', handleClick);
+            
+            function startDrag(e) {
+                isDragging = true;
+                e.preventDefault();
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('mouseup', stopDrag);
+            }
+            
+            function drag(e) {
+                if (!isDragging) return;
+                
+                const rect = container.getBoundingClientRect();
+                let x = e.clientX - rect.left;
+                x = Math.max(0, Math.min(x, rect.width));
+                
+                const percentage = (x / rect.width) * 100;
+                updateSliderPosition(percentage);
+            }
+            
+            function stopDrag() {
+                isDragging = false;
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('mouseup', stopDrag);
+            }
+            
+            function handleClick(e) {
+                if (e.target === handle || e.target.closest('.comparison-slider-handle')) return;
+                
+                const rect = container.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const percentage = (x / rect.width) * 100;
+                updateSliderPosition(percentage);
+            }
+            
+            function updateSliderPosition(percentage) {
+                handle.style.left = percentage + '%';
+                beforeLayer.style.width = percentage + '%';
+            }
+            
+            // Touch support
+            handle.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                document.addEventListener('touchmove', touchDrag);
+                document.addEventListener('touchend', stopDrag);
+            });
+            
+            function touchDrag(e) {
+                if (!isDragging) return;
+                
+                const rect = container.getBoundingClientRect();
+                let x = e.touches[0].clientX - rect.left;
+                x = Math.max(0, Math.min(x, rect.width));
+                
+                const percentage = (x / rect.width) * 100;
+                updateSliderPosition(percentage);
+            }
+        }
+        
+        function startUpscale() {
+            document.getElementById('upscale-progress').classList.remove('hidden');
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 8;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        document.getElementById('upscale-progress').classList.add('hidden');
+                        document.getElementById('upscale-result').classList.remove('hidden');
+                        document.getElementById('image-download').classList.remove('hidden');
+                        showToast('Upscale terminé!', 'success');
+                    }, 500);
+                }
+                document.getElementById('upscale-percent').textContent = Math.round(progress) + '%';
+                document.getElementById('upscale-progress-bar').style.width = progress + '%';
+            }, 150);
+        }
+        
+        function downloadUpscaled() {
+            showToast('Téléchargement démarré', 'success');
+        }
+        
+        // RESTORE FUNCTIONS
+        function handleRestoreUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            showToast('Film chargé', 'success');
+        }
+        
+        function startRestoration() {
+            showToast('Restauration lancée', 'success');
+        }
+        
+        // TOAST
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = 'toast glass-card';
+            const icon = type === 'success' ? 'check-circle' : 'info';
+            const color = type === 'success' ? 'text-green-400' : 'text-hcs-gold';
+            
+            toast.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <i data-lucide="${icon}" class="w-5 h-5 ${color}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            lucide.createIcons();
+            
+            setTimeout(() => toast.remove(), 3000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HCV Studio - Cascade + IA</title>
+  <style>
+    :root {
+      --primary: #667eea;
+      --primary-dark: #5a6fd8;
+      --secondary: #764ba2;
+      --success: #00c851;
+      --warning: #ffbb33;
+      --error: #ff4444;
+      --bg: #0a0a0a;
+      --bg2: #1a1a1a;
+      --bg3: #2a2a2a;
+      --text: #ffffff;
+      --text2: #cccccc;
+      --text3: #888888;
+      --border: #333333;
+      --r1: 8px;
+      --r2: 12px;
+      --r3: 16px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 0;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      border-radius: var(--r1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    .logo-text {
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .logo-subtitle {
+      font-size: 14px;
+      color: var(--text3);
+    }
+
+    .main {
+      padding: 40px 0;
+    }
+
+    .upload-section {
+      text-align: center;
+      padding: 60px 20px;
+      background: var(--bg2);
+      border-radius: var(--r2);
+      border: 2px dashed var(--border);
+      margin-bottom: 30px;
+      transition: all 0.3s ease;
+    }
+
+    .upload-section.dragover {
+      border-color: var(--primary);
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    .upload-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+
+    .upload-title {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .upload-subtitle {
+      color: var(--text3);
+      margin-bottom: 30px;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: var(--r1);
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .options-grid {
+      display: none;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .option-card {
+      background: var(--bg2);
+      padding: 30px;
+      border-radius: var(--r2);
+      border: 2px solid var(--border);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .option-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-5px);
+    }
+
+    .option-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .option-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: var(--r1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .native-icon {
+      background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    }
+
+    .cascade-icon {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    }
+
+    .option-title {
+      font-size: 20px;
+      margin-bottom: 5px;
+    }
+
+    .performance-badge {
+      background: var(--success);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .enhancement-badge {
+      background: var(--primary);
+    }
+
+    .option-description {
+      color: var(--text2);
+      margin-bottom: 20px;
+    }
+
+    .option-features {
+      list-style: none;
+      margin-bottom: 20px;
+    }
+
+    .option-features li {
+      padding: 5px 0;
+      color: var(--text3);
+    }
+
+    .option-features li:before {
+      content: "✓";
+      color: var(--success);
+      margin-right: 10px;
+    }
+
+    .video-preview {
+      display: none;
+      margin-bottom: 30px;
+    }
+
+    .video-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .video-container {
+      position: relative;
+      background: #000;
+      border-radius: var(--r1);
+      overflow: hidden;
+    }
+
+    .video-container video,
+    .video-container canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .video-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text3);
+      font-size: 18px;
+    }
+
+    .video-overlay.hidden {
+      display: none;
+    }
+
+    .processing-panel {
+      display: none;
+      background: var(--bg2);
+      padding: 30px;
+      border-radius: var(--r2);
+      margin-bottom: 30px;
+    }
+
+    .processing-panel.active {
+      display: block;
+    }
+
+    .progress-container {
+      margin: 20px 0;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--bg3);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .processing-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .info-item {
+      text-align: center;
+    }
+
+    .info-label {
+      color: var(--text3);
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .info-value {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .results-section {
+      display: none;
+      background: var(--bg2);
+      padding: 30px;
+      border-radius: var(--r2);
+    }
+
+    .results-section.active {
+      display: block;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .result-card {
+      background: var(--bg3);
+      padding: 20px;
+      border-radius: var(--r1);
+      text-align: center;
+    }
+
+    .result-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--primary);
+      margin-bottom: 5px;
+    }
+
+    .result-label {
+      color: var(--text3);
+      font-size: 14px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 768px) {
+      .video-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .processing-info {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <div class="logo">
+          <div class="logo-icon">H</div>
+          <div>
+            <span class="logo-text">HCV Studio</span>
+            <div class="logo-subtitle">Cascade + IA</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+      <!-- Section d'upload -->
+      <div class="upload-section" id="uploadSection">
+        <div class="upload-icon">📁</div>
+        <h2 class="upload-title">Sélectionnez votre vidéo</h2>
+        <p class="upload-subtitle">Glissez-déposez ou cliquez pour choisir un fichier H.264/MP4</p>
+        <input type="file" id="fileInput" accept="video/*" style="display: none;">
+        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+          Choisir un fichier
+        </button>
+      </div>
+
+      <!-- Grille d'options -->
+      <div class="options-grid" id="optionsGrid">
+        <div class="option-card" onclick="selectOption('native')">
+          <div class="option-header">
+            <div class="option-icon native-icon">🎯</div>
+            <div>
+              <h3 class="option-title">HCV16 Natif</h3>
+              <div class="performance-badge">Rapide</div>
+            </div>
+          </div>
+          <p class="option-description">
+            Compression directe sans traitement préalable
+          </p>
+          <ul class="option-features">
+            <li>Traitement rapide</li>
+            <li>Qualité standard</li>
+            <li>Compatible toutes résolutions</li>
+          </ul>
+          <button class="btn btn-secondary" style="width: 100%;">Compression Standard</button>
+        </div>
+
+        <div class="option-card" onclick="selectOption('cascade')">
+          <div class="option-header">
+            <div class="option-icon cascade-icon">🧠</div>
+            <div>
+              <h3 class="option-title">Cascade + IA</h3>
+              <div class="performance-badge enhancement-badge">+52% gains</div>
+            </div>
+          </div>
+          <p class="option-description">
+            Pipeline intelligent avec débruitage IA et upscaling
+          </p>
+          <ul class="option-features">
+            <li>Débruitage IA avancé</li>
+            <li>Upscaling intelligent</li>
+            <li>Qualité supérieure</li>
+          </ul>
+          <button class="btn btn-primary" style="width: 100%;">Traitement IA</button>
+        </div>
+      </div>
+
+      <!-- Prévisualisation vidéo -->
+      <div class="video-preview" id="videoPreview">
+        <h3>Prévisualisation</h3>
+        <div class="video-grid">
+          <div>
+            <h4>Vidéo originale</h4>
+            <div class="video-container">
+              <video id="originalVideo" controls></video>
+              <div class="video-overlay" id="originalOverlay">
+                Vidéo originale
+              </div>
+            </div>
+          </div>
+          <div>
+            <h4>Aperçu HCV16</h4>
+            <div class="video-container">
+              <canvas id="hcvCanvas" width="640" height="360"></canvas>
+              <div class="video-overlay" id="hcvOverlay">
+                Aperçu après traitement
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+          <button class="btn btn-primary" onclick="startProcessing()">
+            Démarrer le traitement
+          </button>
+        </div>
+      </div>
+
+      <!-- Panneau de traitement -->
+      <div class="processing-panel" id="processingPanel">
+        <h3>Traitement en cours...</h3>
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+        </div>
+        <div id="processingStatus">Initialisation...</div>
+        <div class="processing-info">
+          <div class="info-item">
+            <div class="info-label">Étape</div>
+            <div class="info-value" id="currentStep">1</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Temps écoulé</div>
+            <div class="info-value" id="processingTime">0s</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Temps estimé</div>
+            <div class="info-value" id="estimatedGain">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section des résultats -->
+      <div class="results-section" id="resultsSection">
+        <h3>Résultats du traitement</h3>
+        <div class="results-grid">
+          <div class="result-card">
+            <div class="result-value" id="originalSize">—</div>
+            <div class="result-label">Taille originale</div>
+          </div>
+          <div class="result-card">
+            <div class="result-value" id="compressedSize">—</div>
+            <div class="result-label">Taille compressée</div>
+          </div>
+          <div class="result-card">
+            <div class="result-value" id="compressionRatio">—</div>
+            <div class="result-label">Ratio de compression</div>
+          </div>
+        </div>
+
+        <div style="text-align: center;">
+          <button class="btn btn-primary" onclick="downloadHCVFile()">
+            Télécharger le fichier HCV16
+          </button>
+          <button class="btn btn-secondary" onclick="resetInterface()" style="margin-left: 10px;">
+            Nouveau traitement
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let selectedMode = 'cascade';
+    let selectedUpscale = 'native';
+    let currentFile = null;
+    let currentFileId = null;
+
+    // Initialisation des événements
+    document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+    const uploadSection = document.getElementById('uploadSection');
+    uploadSection.addEventListener('dragover', handleDragOver);
+    uploadSection.addEventListener('dragleave', handleDragLeave);
+    uploadSection.addEventListener('drop', handleDrop);
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        processFileSelection(file);
+      }
+    }
+
+    function handleDragOver(event) {
+      event.preventDefault();
+      uploadSection.classList.add('dragover');
+    }
+
+    function handleDragLeave(event) {
+      event.preventDefault();
+      uploadSection.classList.remove('dragover');
+    }
+
+    function handleDrop(event) {
+      event.preventDefault();
+      uploadSection.classList.remove('dragover');
+      const files = event.dataTransfer.files;
+      if (files.length > 0) {
+        processFileSelection(files[0]);
+      }
+    }
+
+    async function processFileSelection(file) {
+      currentFile = file;
+
+      // Afficher la prévisualisation
+      const originalVideo = document.getElementById('originalVideo');
+      originalVideo.src = URL.createObjectURL(file);
+
+      document.getElementById('uploadSection').style.display = 'none';
+      document.getElementById('optionsGrid').style.display = 'grid';
+      document.getElementById('videoPreview').style.display = 'block';
+      document.getElementById('originalOverlay').classList.add('hidden');
+
+      try {
+        currentFileId = await uploadFile(file);
+      } catch (err) {
+        console.error('Erreur upload:', err);
+        alert('Erreur lors de l\'upload du fichier');
+        resetInterface();
+      }
+    }
+
+    async function uploadFile(file) {
+      const formData = new FormData();
+      formData.append('video', file);
+
+      const response = await fetch('/api/upload_real', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur upload');
+      }
+
+      return result.file_id;
+    }
+
+    function selectOption(mode) {
+      selectedMode = mode;
+      // Pas de démarrage automatique, l'utilisateur doit cliquer sur "Démarrer le traitement"
+    }
+
+    async function startProcessing() {
+      if (!currentFileId) {
+        alert('Veuillez d\'abord sélectionner un fichier');
+        return;
+      }
+
+      document.getElementById('videoPreview').style.display = 'none';
+      document.getElementById('processingPanel').classList.add('active');
+
+      try {
+        const results = await processWithRealAPI(currentFileId, selectedMode, selectedUpscale);
+        displayRealResults(results);
+      } catch (err) {
+        console.error('Erreur traitement:', err);
+        document.getElementById('processingStatus').textContent = `Erreur: ${err.message}`;
+        document.getElementById('processingStatus').style.color = 'var(--error)';
+      }
+    }
+
+    async function processWithRealAPI(fileId, mode, upscaleTarget) {
+      const response = await fetch('/api/process_cascade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          file_id: fileId,
+          mode: mode,
+          upscale_target: upscaleTarget
+        })
+      });
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur traitement');
+      }
+
+      return await monitorRealJob(result.job_id);
+    }
+
+    async function monitorRealJob(jobId) {
+      return new Promise((resolve, reject) => {
+        const interval = setInterval(async () => {
+          try {
+            const response = await fetch(`/api/process_cascade?job_id=${jobId}`);
+            const job = await response.json();
+
+            updateRealProgress(job);
+
+            if (job.status === 'completed') {
+              clearInterval(interval);
+              resolve(job.results);
+            } else if (job.status === 'error') {
+              clearInterval(interval);
+              reject(new Error(job.error || 'Erreur de traitement'));
+            }
+          } catch (err) {
+            clearInterval(interval);
+            reject(err);
+          }
+        }, 1000);
+      });
+    }
+
+    function updateRealProgress(job) {
+      const progressFill = document.getElementById('progressFill');
+      const processingStatus = document.getElementById('processingStatus');
+      const currentStep = document.getElementById('currentStep');
+      const processingTime = document.getElementById('processingTime');
+
+      if (progressFill) progressFill.style.width = `${job.progress || 0}%`;
+      if (processingStatus) processingStatus.textContent = job.current_step || 'Traitement...';
+      if (currentStep) currentStep.textContent = Math.ceil((job.progress || 0) / 20);
+
+      if (processingTime) {
+        const elapsed = (Date.now() - new Date(job.start_time).getTime()) / 1000;
+        processingTime.textContent = `${elapsed.toFixed(0)}s`;
+      }
+    }
+
+    function displayRealResults(results) {
+      const originalSize = document.getElementById('originalSize');
+      const compressedSize = document.getElementById('compressedSize');
+      const compressionRatio = document.getElementById('compressionRatio');
+
+      if (originalSize) originalSize.textContent = `${results.original_size_mb.toFixed(1)} MB`;
+      if (compressedSize) compressedSize.textContent = `${results.compressed_size_mb.toFixed(1)} MB`;
+      if (compressionRatio) compressionRatio.textContent = `${results.compression_ratio.toFixed(1)}× plus petit`;
+
+      document.getElementById('resultsSection').classList.add('active');
+      document.getElementById('processingPanel').classList.remove('active');
+    }
+
+    function downloadHCVFile() {
+      if (!currentFileId) {
+        alert('Aucun fichier à télécharger');
+        return;
+      }
+      window.location.href = `/api/download/${currentFileId}`;
+    }
+
+    function resetInterface() {
+      currentFile = null;
+      currentFileId = null;
+      selectedMode = 'cascade';
+      selectedUpscale = 'native';
+
+      document.getElementById('uploadSection').style.display = 'block';
+      document.getElementById('optionsGrid').style.display = 'none';
+      document.getElementById('videoPreview').style.display = 'none';
+      document.getElementById('processingPanel').classList.remove('active');
+      document.getElementById('resultsSection').classList.remove('active');
+      document.getElementById('fileInput').value = '';
+
+      const video = document.getElementById('originalVideo');
+      video.src = '';
+      document.getElementById('originalOverlay').classList.remove('hidden');
+      document.getElementById('hcvOverlay').classList.remove('hidden');
+    }
+  </script>
+</body>
+
+</html>

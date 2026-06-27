@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan Interactif — Architecture Harmonique</title>
+<style>
+:root{--bg:#070514;--bg2:#0a0820;--bg3:#0f0c2e;--ink:#eaf6ff;--ink2:#b8c6dc;--ink3:#7a86a8;--phi:#d4a843;--phi2:#f0c96e;--acc:#3ef0d8;--acc2:#7a5cff;--green:#2ed573;--red:#ff4757;--border:rgba(200,220,255,0.08)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.7;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse at 30% 20%,rgba(122,92,255,0.07),transparent 55%),radial-gradient(ellipse at 70% 60%,rgba(62,240,216,0.04),transparent 60%);pointer-events:none}
+.container{max-width:960px;margin:0 auto;padding:0 20px;position:relative;z-index:1}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(7,5,20,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:7px 14px;border-radius:20px;font-size:0.88em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+
+.hero{text-align:center;padding:60px 20px 50px;background:linear-gradient(180deg,rgba(212,168,67,0.1) 0%,transparent 100%)}
+.hero .badge{display:inline-block;padding:5px 16px;border-radius:14px;font-size:0.8em;font-weight:600;background:rgba(62,240,216,0.12);color:var(--acc);margin-bottom:16px;letter-spacing:1px;text-transform:uppercase}
+.hero h1{font-size:2.4em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.hero .tagline{color:var(--ink2);font-size:1.05em}
+
+.legend{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin:20px 0 30px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:0.82em;color:var(--ink3)}
+.legend-dot{width:10px;height:10px;border-radius:50%}
+.legend-dot.page{background:var(--phi)}
+.legend-dot.section{background:var(--acc)}
+.legend-dot.doc{background:var(--acc2)}
+.legend-dot.saas{background:var(--green)}
+
+/* Tree structure */
+.tree{padding:10px 0 40px}
+.tree ul{list-style:none;position:relative;padding-left:28px}
+.tree ul::before{content:'';position:absolute;left:10px;top:0;bottom:0;width:1px;background:rgba(212,168,67,0.12)}
+.tree li{position:relative;margin:8px 0}
+.tree li::before{content:'';position:absolute;left:-18px;top:18px;width:18px;height:1px;background:rgba(212,168,67,0.12)}
+
+.tree-node{display:block;padding:12px 18px;border-radius:14px;text-decoration:none;transition:all 0.25s;position:relative;border:1px solid transparent}
+.tree-node:hover{transform:translateX(4px)}
+.tree-node .node-icon{font-size:1.3em;margin-right:8px;vertical-align:middle}
+.tree-node .node-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:0.7em;font-weight:600;margin-left:8px;vertical-align:middle}
+
+/* Page node */
+.node-page{background:rgba(212,168,67,0.07);border-color:rgba(212,168,67,0.2);color:var(--ink)}
+.node-page:hover{background:rgba(212,168,67,0.12);border-color:rgba(212,168,67,0.35);box-shadow:0 4px 20px rgba(212,168,67,0.08)}
+.node-page .node-badge{background:rgba(212,168,67,0.15);color:var(--phi)}
+.node-page strong{color:var(--phi)}
+
+/* Section node */
+.node-section{background:rgba(62,240,216,0.04);border-color:rgba(62,240,216,0.12);color:var(--ink2);font-size:0.92em}
+.node-section:hover{background:rgba(62,240,216,0.08);border-color:rgba(62,240,216,0.2)}
+.node-section .node-badge{background:rgba(62,240,216,0.12);color:var(--acc)}
+
+/* Doc node */
+.node-doc{background:rgba(122,92,255,0.04);border-color:rgba(122,92,255,0.12);color:var(--ink2);font-size:0.9em}
+.node-doc:hover{background:rgba(122,92,255,0.08);border-color:rgba(122,92,255,0.2)}
+.node-doc .node-badge{background:rgba(122,92,255,0.12);color:var(--acc2)}
+
+/* SaaS node */
+.node-saas{background:rgba(46,213,115,0.04);border-color:rgba(46,213,115,0.12);color:var(--ink2)}
+.node-saas:hover{background:rgba(46,213,115,0.08);border-color:rgba(46,213,115,0.2)}
+.node-saas .node-badge{background:rgba(46,213,115,0.12);color:var(--green)}
+
+.node-desc{display:block;font-size:0.85em;color:var(--ink3);margin-top:2px}
+
+/* Highlight the formula */
+.formula-highlight{display:inline-block;font-family:'Courier New',monospace;background:rgba(212,168,67,0.1);color:var(--phi);padding:2px 8px;border-radius:6px;font-size:0.95em;font-weight:700;letter-spacing:1px}
+
+footer{text-align:center;padding:30px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.84em;margin-top:30px}
+footer a{color:var(--phi);text-decoration:none}
+footer a:hover{text-decoration:underline}
+
+@media(max-width:640px){
+  .hero h1{font-size:1.5em}
+  .tree ul{padding-left:16px}
+  .tree li::before{left:-10px;width:10px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Hub Projets</a>
+    <a href="theorie-harmonique.html">Théorie</a>
+    <a href="v2/">Architecture v2</a>
+    <a href="documents/conscience-ondulatoire.html">Documents</a>
+    <a href="#arborescence">Plan</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">Navigation</div>
+    <h1>🗺️ Plan Interactif du Site</h1>
+    <p class="tagline">L'architecture complète du site — cliquez sur n'importe quelle page pour y accéder</p>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot page"></span> Page principale</span>
+      <span class="legend-item"><span class="legend-dot section"></span> Section / Sous-page</span>
+      <span class="legend-item"><span class="legend-dot doc"></span> Document</span>
+      <span class="legend-item"><span class="legend-dot saas"></span> Service SaaS</span>
+    </div>
+  </div>
+</header>
+
+<div class="container" id="arborescence">
+
+<div class="tree">
+
+<!-- ===== NIVEAU 1 : HUB ===== -->
+<ul>
+  <li>
+    <a href="index.html" class="tree-node node-page">
+      <span class="node-icon">🏠</span>
+      <strong>Hub Projets</strong> <span class="node-badge">Accueil</span>
+      <span class="node-desc">Point d'entrée — Par Alain Kotto — Inventeur</span>
+    </a>
+
+    <!-- ===== NIVEAU 2 : FORMULE FONDATRICE ===== -->
+    <ul>
+      <li>
+        <a href="theorie-harmonique.html" class="tree-node node-page">
+          <span class="node-icon">🌟</span>
+          <strong>Théorie Harmonique</strong> <span class="formula-highlight">Ψ = Σ Hₙ (Ψ₁)ⁿ</span>
+          <span class="node-desc">Explication complète, symbole par symbole, pour les néophytes et les experts</span>
+        </a>
+
+        <!-- SECTIONS DE LA PAGE THÉORIE -->
+        <ul>
+          <li><a href="theorie-harmonique.html#symboles" class="tree-node node-section"><span class="node-icon">🔤</span> Symboles — Ψ, =, Σ, Hₙ, (Ψ₁)ⁿ, n <span class="node-badge">10 sections</span></a></li>
+          <li><a href="theorie-harmonique.html#comment" class="tree-node node-section"><span class="node-icon">🔄</span> Comment ça marche — 6 étapes pas à pas</a></li>
+          <li><a href="theorie-harmonique.html#hn" class="tree-node node-section"><span class="node-icon">🔢</span> Les 7 constantes Hₙ (φ, π, e, √2, √3, √5, e/π)</a></li>
+          <li><a href="theorie-harmonique.html#gagut" class="tree-node node-section"><span class="node-icon">🔗</span> Lien avec G<sub>ij,j</sub> = 0 — GAGUT (Oyibo) + ABC (Atangana)</a></li>
+          <li><a href="theorie-harmonique.html#derivation" class="tree-node node-section"><span class="node-icon">🔍</span> Dérivation — Comment on trouve l'équation (4 étapes)</a></li>
+          <li><a href="theorie-harmonique.html#preuve" class="tree-node node-section"><span class="node-icon">📐</span> Démonstration rigoureuse — Théorème complet</a></li>
+          <li><a href="theorie-harmonique.html#briques" class="tree-node node-section"><span class="node-icon">🧱</span> Les Briques de l'Univers — Métaphore culinaire 🧈🥚🌿🧂🧊🌶️🍯</a></li>
+          <li><a href="theorie-harmonique.html#applications" class="tree-node node-section"><span class="node-icon">🚀</span> Applications — Compression, IA, Audio, Télécoms, Physique</a></li>
+          <li><a href="theorie-harmonique.html#pourquoi" class="tree-node node-section"><span class="node-icon">💡</span> Pourquoi c'est révolutionnaire</a></li>
+          <li><a href="theorie-harmonique.html#resume" class="tree-node node-section"><span class="node-icon">✨</span> Résumé — La formule en un coup d'œil</a></li>
+        </ul>
+      </li>
+
+      <!-- ===== NIVEAU 2 : ARCHITECTURE V2 ===== -->
+      <li>
+        <a href="v2/" class="tree-node node-page">
+          <span class="node-icon">🌊</span>
+          <strong>Architecture Harmonique v2</strong> <span class="node-badge">V2 — Actuelle</span>
+          <span class="node-desc">Théorie • Conscience Ondulatoire • IA Services • Ordinateur Harmonique • Emoto Resonator • HCV PRO</span>
+          <span class="node-desc" style="color:var(--phi);font-size:0.8em;margin-top:4px">Filiation : Schrödinger (1926) → Gabor (1948) → Oyibo (1990) → Atangana (2016) → Kotto (2026)</span>
+        </a>
+        <ul>
+          <li><a href="v2/#theorie" class="tree-node node-section"><span class="node-icon">📖</span> La Théorie Harmonique de l'Univers</a></li>
+          <li><a href="v2/#conscience" class="tree-node node-section"><span class="node-icon">🧠</span> Conscience Ondulatoire</a></li>
+          <li><a href="v2/#ia" class="tree-node node-section"><span class="node-icon">🤖</span> Services d'IA — S1 à S6</a></li>
+          <li><a href="v2/#hpu" class="tree-node node-section"><span class="node-icon">🌊</span> Ordinateur Harmonique (HPU)</a></li>
+          <li><a href="v2/#emoto" class="tree-node node-section"><span class="node-icon">💧</span> Interaction Pensée-Matière — Emoto Resonator</a></li>
+          <li><a href="v2/#compression" class="tree-node node-section"><span class="node-icon">🎬</span> Compression & Upscaling HCV PRO</a></li>
+          <li><a href="v2/#formation" class="tree-node node-section"><span class="node-icon">🎓</span> Formation & Entraînement IA</a></li>
+          <li><a href="v2/#benchmarks" class="tree-node node-section"><span class="node-icon">📊</span> Benchmarks</a></li>
+          <li><a href="v2/#contact" class="tree-node node-section"><span class="node-icon">📞</span> Contact</a></li>
+        </ul>
+      </li>
+
+      <!-- ===== NIVEAU 2 : HCV PRO SaaS ===== -->
+      <li>
+        <a href="hcv_pro_saas.html" class="tree-node node-page">
+          <span class="node-icon">🎬</span>
+          <strong>HCV PRO SaaS</strong> <span class="node-badge" style="background:rgba(46,213,115,0.15);color:var(--green)">⭐ NOUVEAU</span>
+          <span class="node-desc">API REST professionnelle. 33:1 Broadcast · 85:1 Streaming · PSNR 47 dB · SSIM 0.9999</span>
+        </a>
+      </li>
+
+      <!-- ===== NIVEAU 2 : DOCUMENTS ===== -->
+      <li>
+        <span class="tree-node node-page" style="cursor:default;opacity:0.9">
+          <span class="node-icon">📚</span>
+          <strong>Documents Fondateurs</strong> <span class="node-badge" style="background:rgba(122,92,255,0.12);color:var(--acc2)">5 pages</span>
+          <span class="node-desc">Théorie physique de la conscience + 7 questions fondamentales</span>
+        </span>
+        <ul>
+          <li>
+            <a href="documents/conscience-ondulatoire.html" class="tree-node node-doc">
+              <span class="node-icon">🌊</span>
+              <strong>Document Fondateur — Conscience Ondulatoire</strong>
+              <span class="node-desc">Pensée, ressenti, conscience : chaîne d'émergence complète. ConsciousHPU, AIMER-HPU, Emoto Resonator.</span>
+            </a>
+          </li>
+          <li>
+            <a href="documents/reflexions.html" class="tree-node node-doc">
+              <span class="node-icon">📖</span>
+              <strong>7 Documents de Réflexion</strong>
+              <span class="node-desc">L'Onde Primordiale • Preuve de la Pensée • Pensée Artificielle • Conscience de l'IA • Proximité AGI • Ressenti • Cohabitation des Deux IA</span>
+            </a>
+          </li>
+        </ul>
+      </li>
+
+      <!-- ===== NIVEAU 2 : SERVICES SaaS EXTERNES ===== -->
+      <li>
+        <span class="tree-node node-saas" style="cursor:default;opacity:0.9">
+          <span class="node-icon">🛍️</span>
+          <strong>Services SaaS</strong> <span class="node-badge" style="background:rgba(46,213,115,0.12);color:var(--green)">6 services</span>
+          <span class="node-desc">Services d'intelligence artificielle harmonique</span>
+        </span>
+        <ul>
+          <li><a href="../www_saas/api-raisonnement/" class="tree-node node-saas"><span class="node-icon">S1</span> API Raisonnement — 0% hallucination</a></li>
+          <li><a href="../www_saas/assistant-mobile/" class="tree-node node-saas"><span class="node-icon">S2</span> Assistant Mobile — Zéro cloud</a></li>
+          <li><a href="../www_saas/verification-anti-hallucination/" class="tree-node node-saas"><span class="node-icon">S3</span> Vérification LLM — Double-check</a></li>
+          <li><a href="../www_saas/calculateur-np-complet/" class="tree-node node-saas"><span class="node-icon">S4</span> Calculateur NP — SAT, TSP</a></li>
+          <li><a href="../www_saas/enrichisseur-connaissances/" class="tree-node node-saas"><span class="node-icon">S5</span> Enrichisseur O(1) — Apprentissage</a></li>
+          <li><a href="../www_saas/audit-ethique-maat/" class="tree-node node-saas"><span class="node-icon">S6</span> Audit Maât — 7 principes</a></li>
+        </ul>
+      </li>
+
+      <!-- ===== NIVEAU 2 : V1 HÉRITAGE ===== -->
+      <li>
+        <a href="v1/" class="tree-node node-page" style="background:rgba(212,168,67,0.03);border-color:rgba(212,168,67,0.1)">
+          <span class="node-icon">📦</span>
+          <strong>HCV PRO v1 — Héritage</strong> <span class="node-badge" style="background:rgba(212,168,67,0.12);color:var(--phi)">2025-2026</span>
+          <span class="node-desc">Codec de Compression Holographique — Projet Fondateur. 40:1 sans perte visible, PSNR 50-60 dB.</span>
+        </a>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+</div><!-- .tree -->
+
+<!-- Résumé stats -->
+<div style="text-align:center;padding:30px;background:var(--bg3);border:1px solid var(--border);border-radius:16px;margin:20px 0">
+  <h3 style="color:var(--phi);margin-bottom:16px">📊 Statistiques du Site</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:14px">
+    <div style="text-align:center"><div style="font-size:2em;font-weight:700;color:var(--phi)">5</div><div style="color:var(--ink3);font-size:0.82em">Pages principales</div></div>
+    <div style="text-align:center"><div style="font-size:2em;font-weight:700;color:var(--acc)">10</div><div style="color:var(--ink3);font-size:0.82em">Sections Théorie</div></div>
+    <div style="text-align:center"><div style="font-size:2em;font-weight:700;color:var(--acc2)">2</div><div style="color:var(--ink3);font-size:0.82em">Documents fondateurs</div></div>
+    <div style="text-align:center"><div style="font-size:2em;font-weight:700;color:var(--green)">6</div><div style="color:var(--ink3);font-size:0.82em">Services SaaS</div></div>
+    <div style="text-align:center"><div style="font-size:2em;font-weight:700;color:var(--phi2)">9</div><div style="color:var(--ink3);font-size:0.82em">Sections v2</div></div>
+    <div style="text-align:center"><div style="font-size:2em;font-weight:700;color:var(--ink3)">7</div><div style="color:var(--ink3);font-size:0.82em">Documents réflexion</div></div>
+  </div>
+</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>
+      <a href="index.html">← Hub Projets</a> &nbsp;|&nbsp;
+      <a href="theorie-harmonique.html">Théorie Harmonique</a> &nbsp;|&nbsp;
+      <a href="v2/">Architecture v2</a>
+    </p>
+    <p style="margin-top:8px">Architecture Harmonique © 2026 — Alain Kotto — Ψ = Σ Hₙ (Ψ₁)ⁿ</p>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌌 Naissance des Galaxies — Approche Harmonique — JWST Anomalies</title>
+<style>
+:root {
+  --bg: #000010;
+  --phi: #d4a843;
+  --acc: #3ef0d8;
+  --warn: #ff5e6d;
+  --panel-bg: rgba(6,4,24,0.92);
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  background:var(--bg);
+  color:#eaf6ff;
+  font-family:'Segoe UI',system-ui,sans-serif;
+  overflow:hidden;
+  height:100vh;
+  user-select:none;
+}
+
+canvas#cosmos{
+  position:fixed;inset:0;z-index:0;
+}
+
+/* ── Top bar ── */
+.top-bar{
+  position:fixed;top:0;left:0;right:0;z-index:20;
+  padding:10px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(180deg,rgba(4,2,20,0.95) 50%,transparent);
+  pointer-events:none;
+}
+.top-bar > *{pointer-events:auto}
+
+.eq-tag{
+  font-family:'Courier New',monospace;
+  font-size:1.15em;font-weight:700;
+  color:var(--phi);
+  padding:8px 20px;
+  background:rgba(8,4,32,0.85);
+  border:1px solid rgba(212,168,67,0.18);
+  border-radius:24px;
+  backdrop-filter:blur(12px);
+  letter-spacing:1px;
+  text-shadow:0 0 20px rgba(212,168,67,0.4);
+}
+
+.phi-badge{
+  font-size:0.85em;color:#b8a0d8;
+  padding:6px 16px;
+  background:rgba(60,40,100,0.4);
+  border:1px solid rgba(180,160,220,0.15);
+  border-radius:20px;
+  backdrop-filter:blur(8px);
+}
+
+/* ── Legend panel ── */
+.legend{
+  position:fixed;top:140px;right:16px;z-index:20;
+  padding:14px 18px;
+  background:var(--panel-bg);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:14px;
+  backdrop-filter:blur(16px);
+  font-size:0.82em;line-height:1.6;
+  min-width:220px;
+}
+.legend .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+.legend .dot.harm{background:radial-gradient(circle,#3ef0d8,#3ef0d880);box-shadow:0 0 10px #3ef0d8}
+.legend .dot.anom{background:radial-gradient(circle,#ff5e6d,#ff5e6d80);box-shadow:0 0 14px #ff5e6d;animation:pulse-bright 1s infinite}
+.legend .dot.std{background:radial-gradient(circle,#8899cc,#55668880)}
+.legend .dot.field{background:radial-gradient(circle,rgba(212,168,67,0.6),transparent)}
+@keyframes pulse-bright{0%,100%{box-shadow:0 0 8px #ff5e6d}50%{box-shadow:0 0 24px #ff5e6d,0 0 40px #ff3344}}
+
+/* ── Bottom info panel ── */
+.info-panel{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  z-index:20;width:min(1000px,95vw);
+  padding:16px 22px;
+  background:var(--panel-bg);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:16px;
+  backdrop-filter:blur(18px);
+  display:flex;gap:20px;align-items:center;flex-wrap:wrap;
+}
+.info-panel .galaxy-card{
+  flex:1;min-width:200px;
+  padding:12px 16px;
+  background:rgba(255,94,109,0.07);
+  border:1px solid rgba(255,94,109,0.2);
+  border-radius:12px;
+}
+.galaxy-card.anomaly{
+  background:rgba(255,94,109,0.12);
+  border-color:rgba(255,94,109,0.35);
+  animation:glow-border 2s infinite;
+}
+@keyframes glow-border{
+  0%,100%{border-color:rgba(255,94,109,0.35);box-shadow:0 0 20px rgba(255,94,109,0.1)}
+  50%{border-color:rgba(255,94,109,0.7);box-shadow:0 0 40px rgba(255,94,109,0.3)}
+}
+.galaxy-card h3{font-size:0.9em;color:var(--phi);margin-bottom:4px}
+.galaxy-card .mass{font-size:1.4em;font-weight:700;color:var(--acc)}
+.galaxy-card .label{font-size:0.7em;color:#8899bb}
+.galaxy-card.anomaly .mass{color:var(--warn);font-size:1.6em}
+
+/* ── Controls ── */
+.controls{
+  position:fixed;bottom:140px;left:50%;transform:translateX(-50%);
+  z-index:20;display:flex;gap:12px;
+}
+.controls button{
+  padding:8px 20px;
+  background:rgba(8,4,32,0.85);
+  border:1px solid rgba(212,168,67,0.2);
+  border-radius:22px;
+  color:#c8d8f0;
+  font-size:0.85em;
+  cursor:pointer;
+  backdrop-filter:blur(12px);
+  transition:all 0.3s;
+}
+.controls button:hover{
+  background:rgba(212,168,67,0.15);
+  border-color:rgba(212,168,67,0.5);
+  color:var(--phi);
+}
+.controls button.active{
+  background:rgba(212,168,67,0.2);
+  border-color:var(--phi);
+  color:var(--phi);
+}
+
+.announce{
+  position:fixed;top:100px;left:50%;transform:translateX(-50%);
+  z-index:25;
+  font-size:0.78em;color:var(--warn);
+  text-align:center;
+  text-shadow:0 0 18px rgba(255,94,109,0.5);
+  pointer-events:none;
+}
+
+/* ── Mobile ── */
+@media(max-width:680px){
+  .eq-tag{font-size:0.85em;padding:6px 12px}
+  .legend{top:120px;right:8px;font-size:0.7em;min-width:170px}
+  .info-panel{flex-direction:column;gap:8px;padding:12px}
+  .galaxy-card{min-width:100%}
+}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <span class="eq-tag">M<sub>n</sub> = M<sub>0</sub> · φ<sup>n</sup></span>
+  <span class="phi-badge">φ = 1.6180339...</span>
+</div>
+
+<div class="announce" id="announce"></div>
+
+<div class="legend">
+  <div><span class="dot harm"></span> Galaxie harmonique (φⁿ)</div>
+  <div><span class="dot anom"></span> Galaxie « impossible » JWST</div>
+  <div><span class="dot std"></span> Galaxie standard LCDM</div>
+  <div><span class="dot field"></span> Résonance du champ Ψ</div>
+  <div style="margin-top:8px;font-size:0.7em;color:#8899bb">
+    n = <span id="nValue">6</span> · M₀ = 10⁸ M<sub>⊙</sub>
+  </div>
+</div>
+
+<div class="controls" id="controlsBox">
+  <button onclick="setView('free')" class="active" id="btnFree">🌐 Libre</button>
+  <button onclick="setView('top')" id="btnTop">🔝 Dessus</button>
+  <button onclick="setView('side')" id="btnSide">👁 Profil</button>
+  <button onclick="toggleAnomaly()" id="btnAnom">🔥 Focus Anomalie</button>
+  <button onclick="toggleWave()" id="btnWave">〰️ Ondes</button>
+</div>
+
+<div class="info-panel" id="infoPanel">
+  <div class="galaxy-card">
+    <h3>🌌 Galaxies harmoniques φⁿ</h3>
+    <div class="mass" id="harmCount">--</div>
+    <div class="label">Détectées dans la simulation</div>
+  </div>
+  <div class="galaxy-card anomaly">
+    <h3>⚠️ Anomalies JWST (z>10)</h3>
+    <div class="mass" id="anomName">JWST-ER1 / ZF-UDS-7329</div>
+    <div class="label">Masse trop élevée → défie ΛCDM</div>
+  </div>
+  <div class="galaxy-card">
+    <h3>🎯 Pic harmonique prédit</h3>
+    <div class="mass" id="peakMass">--</div>
+    <div class="label">nᵉ harmonique = M₀ × φⁿ</div>
+  </div>
+</div>
+
+<canvas id="cosmos"></canvas>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+// ═══════════════════════════════════════════════════════════════════════
+// CONSTANTES HARMONIQUES
+// ═══════════════════════════════════════════════════════════════════════
+const PHI = (1 + Math.sqrt(5)) / 2;           // 1.6180339...
+const LOGPHI = Math.log10(PHI);               // ~0.208987...
+const M0 = 1e8;                                // Masse de référence 10⁸ M☉
+const N_HARMONICS = 10;                        // Nombre d'harmoniques à simuler
+
+// Masses des galaxies harmoniques : M_n = M0 * phi^n
+function massAtHarmonic(n){ return M0 * Math.pow(PHI, n); }
+function logMassAtHarmonic(n){ return Math.log10(massAtHarmonic(n)); }
+
+// ═══════════════════════════════════════════════════════════════════════
+// GALAXIES ANOMALES JWST (celles qui surprennent le monde scientifique)
+// ═══════════════════════════════════════════════════════════════════════
+const ANOMALOUS_GALAXIES = [
+  {
+    name: "JWST-ER1g",
+    z: 1.94,
+    logM: 11.3,
+    desc: "Anneau d'Einstein massif — trop massive pour son âge",
+    color: 0xff5e6d,
+    size: 2.5
+  },
+  {
+    name: "ZF-UDS-7329",
+    z: 3.2,
+    logM: 11.5,
+    desc: "Galaxie quiescente ultra-massive à z=3.2 — ne devrait pas exister",
+    color: 0xff4466,
+    size: 3.0
+  },
+  {
+    name: "JWST CEERS-1749",
+    z: 17,
+    logM: 9.5,
+    desc: "Candidate à z~17 — 220M ans après Big Bang — trop évoluée",
+    color: 0xff2244,
+    size: 2.8
+  },
+  {
+    name: "GLASS-z13",
+    z: 13,
+    logM: 8.8,
+    desc: "z~13, 300M ans — déjà structurée, défie les modèles",
+    color: 0xff8866,
+    size: 2.3
+  },
+  {
+    name: "JADES-GS-z14-0",
+    z: 14.32,
+    logM: 9.2,
+    desc: "Record de distance — 290M ans — brillante et massive",
+    color: 0xff6e55,
+    size: 2.6
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════════════
+// SCENE SETUP
+// ═══════════════════════════════════════════════════════════════════════
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 200);
+camera.position.set(12, 6, 18);
+camera.lookAt(0, 0, 0);
+
+const renderer = new THREE.WebGLRenderer({canvas:document.getElementById('cosmos'), antialias:true, alpha:true});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+
+// Post-processing — bloom pour l'effet « naissance lumineuse »
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.6, 0.4, 0.85);
+bloomPass.threshold = 0.1;
+bloomPass.strength = 1.4;
+bloomPass.radius = 0.8;
+composer.addPass(bloomPass);
+
+// Orbit controls
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 5;
+controls.maxDistance = 60;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.25;
+controls.target.set(0, 1, 0);
+controls.update();
+
+// ═══════════════════════════════════════════════════════════════════════
+// LUMIÈRES
+// ═══════════════════════════════════════════════════════════════════════
+scene.add(new THREE.AmbientLight(0x0a0a20, 0.5));
+const pointLight = new THREE.PointLight(0xd4a843, 60, 40);
+pointLight.position.set(0, 8, 0);
+scene.add(pointLight);
+
+// ═══════════════════════════════════════════════════════════════════════
+// CHAMP D'ONDE COSMOLOGIQUE Ψ — Fond ondulatoire
+// ═══════════════════════════════════════════════════════════════════════
+const fieldGeometry = new THREE.PlaneGeometry(30, 30, 256, 256);
+const fieldMaterial = new THREE.ShaderMaterial({
+  uniforms: {
+    uTime: {value:0},
+    uPHI: {value: PHI},
+    uColor1: {value: new THREE.Color('#0a0830')},
+    uColor2: {value: new THREE.Color('#1a1050')},
+    uHighlight: {value: new THREE.Color('#d4a843')}
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    varying vec3 vPos;
+    void main(){
+      vUv = uv;
+      vec4 pos = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+      vPos = position;
+      gl_Position = pos;
+    }
+  `,
+  fragmentShader: `
+    varying vec2 vUv;
+    varying vec3 vPos;
+    uniform float uTime;
+    uniform float uPHI;
+    uniform vec3 uColor1;
+    uniform vec3 uColor2;
+    uniform vec3 uHighlight;
+    
+    // Bruit de Voronoï pour texture cosmique
+    float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+    
+    float noise(vec2 p){
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      f = f*f*(3.0-2.0*f);
+      float a = hash(i);
+      float b = hash(i+vec2(1,0));
+      float c = hash(i+vec2(0,1));
+      float d = hash(i+vec2(1,1));
+      return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);
+    }
+    
+    void main(){
+      // Ondes harmoniques multiples
+      vec2 uv = vUv;
+      float dist = length(uv - 0.5) * 2.0; // distance radiale normalisée
+      
+      // Champ d'onde Ψ = Σ sin(n·φ·r) / n
+      float psi = 0.0;
+      for(int n=1; n<=12; n++){
+        float r = dist * float(n) * uPHI * 8.0;
+        psi += sin(r + uTime * 0.3) / float(n);
+      }
+      psi = 0.5 + 0.5 * psi / 2.5;
+      
+      // Nœuds harmoniques (pics stationnaires)
+      float nodes = 0.0;
+      for(int k=1; k<=10; k++){
+        float rn = float(k) * uPHI * 0.9;
+        nodes += exp(-pow((dist - rn)*14.0, 2.0)) * 0.6;
+      }
+      
+      // Texture de bruit cosmique
+      vec2 p = uv * 40.0;
+      float n1 = noise(p + uTime*0.02);
+      float n2 = noise(p*2.0 - uTime*0.03);
+      float n3 = noise(p*4.0 + uTime*0.05);
+      float cosmic = n1*0.6 + n2*0.3 + n3*0.1;
+      
+      vec3 col = mix(uColor1, uColor2, psi * 0.6 + cosmic * 0.3);
+      
+      // Faire briller les nœuds harmoniques
+      col = mix(col, uHighlight, nodes * 0.25);
+      
+      // Centre plus brillant
+      col += vec3(0.02, 0.03, 0.08) * (1.0 - dist) * 0.5;
+      
+      float alpha = 0.15 + nodes * 0.15 + psi * 0.08;
+      gl_FragColor = vec4(col, alpha);
+    }
+  `,
+  transparent: true,
+  depthWrite: false
+});
+const field = new THREE.Mesh(fieldGeometry, fieldMaterial);
+field.rotation.x = -Math.PI/2;
+field.position.y = -1.5;
+scene.add(field);
+
+// Second plan d'onde vertical
+const field2 = new THREE.Mesh(fieldGeometry.clone(), fieldMaterial.clone());
+field2.rotation.set(0, 0, 0);
+field2.position.set(0, 0, -12);
+field2.scale.set(1.5, 1.5, 1);
+scene.add(field2);
+
+// ═══════════════════════════════════════════════════════════════════════
+// PARTICULES DU CHAMP Ψ — nuage de points ondulatoire
+// ═══════════════════════════════════════════════════════════════════════
+const N_PARTICLES = 3000;
+const partGeo = new THREE.BufferGeometry();
+const partPositions = new Float32Array(N_PARTICLES * 3);
+const partColors = new Float32Array(N_PARTICLES * 3);
+const partSizes = new Float32Array(N_PARTICLES);
+const partBase = new Float32Array(N_PARTICLES * 3); // positions de base
+const partPhase = new Float32Array(N_PARTICLES); // phase individuelle
+
+for(let i=0; i<N_PARTICLES; i++){
+  // Distribution radiale avec densité aux harmoniques
+  const r = Math.random() * 12;
+  const theta = Math.random() * Math.PI * 2;
+  const phi_angle = Math.acos(2*Math.random()-1);
+  
+  const x = r * Math.sin(phi_angle) * Math.cos(theta);
+  const y = r * Math.sin(phi_angle) * Math.sin(theta);
+  const z = r * Math.cos(phi_angle);
+  
+  partBase[i*3] = x;
+  partBase[i*3+1] = y;
+  partBase[i*3+2] = z;
+  
+  partPositions[i*3] = x;
+  partPositions[i*3+1] = y;
+  partPositions[i*3+2] = z;
+  
+  // Couleur selon proximité aux harmoniques
+  const nearestN = Math.round(Math.log10(r/M0)/LOGPHI);
+  const distToHarmonic = Math.abs(Math.log10(r/M0) - nearestN*LOGPHI);
+  const isHarmonic = distToHarmonic < 0.08;
+  
+  if(isHarmonic){
+    partColors[i*3] = 0.24 + Math.random()*0.1;
+    partColors[i*3+1] = 0.85 + Math.random()*0.15;
+    partColors[i*3+2] = 0.7 + Math.random()*0.3;
+  } else {
+    partColors[i*3] = 0.3 + Math.random()*0.2;
+    partColors[i*3+1] = 0.2 + Math.random()*0.15;
+    partColors[i*3+2] = 0.5 + Math.random()*0.3;
+  }
+  
+  partSizes[i] = isHarmonic ? 0.04+Math.random()*0.03 : 0.01+Math.random()*0.01;
+  partPhase[i] = Math.random() * Math.PI * 2;
+}
+
+partGeo.setAttribute('position', new THREE.BufferAttribute(partPositions, 3));
+partGeo.setAttribute('color', new THREE.BufferAttribute(partColors, 3));
+partGeo.setAttribute('size', new THREE.BufferAttribute(partSizes, 1));
+
+const partMat = new THREE.PointsMaterial({
+  size: 0.06,
+  vertexColors: true,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+  transparent: true,
+  opacity: 0.7
+});
+const particles = new THREE.Points(partGeo, partMat);
+scene.add(particles);
+
+// ═══════════════════════════════════════════════════════════════════════
+// GALAXIES HARMONIQUES (n = 0 à N_HARMONICS)
+// ═══════════════════════════════════════════════════════════════════════
+const harmonicGalaxies = [];
+const harmonicGroups = new THREE.Group();
+scene.add(harmonicGroups);
+
+function createGalaxyMesh(M_n, n, isAnomaly=false, anomalyData=null){
+  const group = new THREE.Group();
+  
+  // Masse → rayon dans la visualisation
+  const logM = Math.log10(M_n);
+  const radius = 0.3 + (logM - 7) * 0.8;
+  
+  // Sphère lumineuse centrale
+  const coreGeo = new THREE.SphereGeometry(radius, 32, 32);
+  const coreColor = isAnomaly ? 0xff3355 : 0x3ef0d8;
+  const coreMat = new THREE.MeshBasicMaterial({
+    color: coreColor,
+    transparent: true,
+    opacity: 0.9,
+    depthWrite: false
+  });
+  const core = new THREE.Mesh(coreGeo, coreMat);
+  group.add(core);
+  
+  // Halo externe
+  const haloGeo = new THREE.SphereGeometry(radius*1.8, 32, 32);
+  const haloMat = new THREE.MeshBasicMaterial({
+    color: coreColor,
+    transparent: true,
+    opacity: 0.15,
+    depthWrite: false
+  });
+  const halo = new THREE.Mesh(haloGeo, haloMat);
+  group.add(halo);
+  
+  // Anneau de particules en orbite
+  const ringCount = Math.floor(60 + logM * 5);
+  const ringGeo = new THREE.BufferGeometry();
+  const ringPos = new Float32Array(ringCount * 3);
+  for(let i=0; i<ringCount; i++){
+    const angle = (i/ringCount)*Math.PI*2;
+    const r = radius * (1.3+Math.random()*0.6);
+    ringPos[i*3] = Math.cos(angle)*r;
+    ringPos[i*3+1] = (Math.random()-0.5)*0.3;
+    ringPos[i*3+2] = Math.sin(angle)*r;
+  }
+  ringGeo.setAttribute('position', new THREE.BufferAttribute(ringPos, 3));
+  const ringMat = new THREE.PointsMaterial({
+    size: 0.04,
+    color: isAnomaly ? 0xff7744 : 0xaaddff,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    transparent: true,
+    opacity: 0.7
+  });
+  const ring = new THREE.Points(ringGeo, ringMat);
+  group.add(ring);
+  
+  // Label
+  group.userData = {
+    n, M_n, logM,
+    isAnomaly,
+    anomalyData,
+    core, halo, ring,
+    radius,
+    baseY: 0,
+    pulsePhase: Math.random()*Math.PI*2
+  };
+  
+  return group;
+}
+
+// Placer les galaxies harmoniques sur une spirale logarithmique
+for(let n=0; n<=N_HARMONICS; n++){
+  const M_n = massAtHarmonic(n);
+  const logM = Math.log10(M_n);
+  
+  // Spirale : chaque harmonique est placée sur un bras
+  const r = 1.5 + n * 1.2;
+  const angle = n * 2.4; // angle en radians
+  const x = r * Math.cos(angle);
+  const z = r * Math.sin(angle);
+  const y = (Math.random()-0.5) * 0.6;
+  
+  const galaxy = createGalaxyMesh(M_n, n);
+  galaxy.position.set(x, y, z);
+  galaxy.userData.baseY = y;
+  harmonicGroups.add(galaxy);
+  harmonicGalaxies.push(galaxy);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// GALAXIES ANOMALES JWST — Les « impossibles »
+// ═══════════════════════════════════════════════════════════════════════
+const anomalyGroup = new THREE.Group();
+scene.add(anomalyGroup);
+const anomalyGalaxies = [];
+
+ANOMALOUS_GALAXIES.forEach((agd, idx)=>{
+  const M_n = Math.pow(10, agd.logM);
+  // Trouver le n harmonique le plus proche
+  const nearestN = Math.round((agd.logM - Math.log10(M0)) / LOGPHI);
+  
+  const galaxy = createGalaxyMesh(M_n, nearestN, true, agd);
+  // Placer en périphérie, plus visible
+  const r = 4 + idx * 2.2;
+  const angle = idx * 1.1 + 0.5;
+  galaxy.position.set(r*Math.cos(angle), 0.8+idx*0.4, r*Math.sin(angle));
+  galaxy.userData.baseY = galaxy.position.y;
+  anomalyGroup.add(galaxy);
+  anomalyGalaxies.push(galaxy);
+  
+  // Ligne de connexion vers le centre (visualiser la résonance)
+  const lineGeo = new THREE.BufferGeometry();
+  const lineVerts = new Float32Array([
+    0, 0, 0,
+    galaxy.position.x, galaxy.position.y, galaxy.position.z
+  ]);
+  lineGeo.setAttribute('position', new THREE.BufferAttribute(lineVerts, 3));
+  const lineMat = new THREE.LineBasicMaterial({
+    color: 0xff5e6d,
+    transparent: true,
+    opacity: 0.25,
+    depthWrite: false
+  });
+  const line = new THREE.Line(lineGeo, lineMat);
+  anomalyGroup.add(line);
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// HALO CENTRAL — Source Ψ
+// ═══════════════════════════════════════════════════════════════════════
+const centerGeo = new THREE.SphereGeometry(0.4, 64, 64);
+const centerMat = new THREE.MeshBasicMaterial({
+  color: 0xd4a843,
+  transparent: true,
+  opacity: 0.8,
+  depthWrite: false
+});
+const center = new THREE.Mesh(centerGeo, centerMat);
+scene.add(center);
+const centerHaloGeo = new THREE.SphereGeometry(1.2, 64, 64);
+const centerHaloMat = new THREE.MeshBasicMaterial({
+  color: 0xd4a843,
+  transparent: true,
+  opacity: 0.12,
+  depthWrite: false
+});
+const centerHalo = new THREE.Mesh(centerHaloGeo, centerHaloMat);
+scene.add(centerHalo);
+
+// ═══════════════════════════════════════════════════════════════════════
+// CERCLES DE RÉSONANCE (orbites harmoniques)
+// ═══════════════════════════════════════════════════════════════════════
+const resonanceRings = [];
+for(let n=1; n<=N_HARMONICS; n++){
+  const r = 1.5 + n * 1.2;
+  const ringGeo = new THREE.TorusGeometry(r, 0.02, 16, 128);
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: 0xd4a843,
+    transparent: true,
+    opacity: 0.15,
+    depthWrite: false
+  });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.rotation.x = Math.PI/2;
+  ring.position.y = -1.4;
+  scene.add(ring);
+  resonanceRings.push({mesh:ring, r, n});
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// ÉTOILES D'ARRIÈRE-PLAN
+// ═══════════════════════════════════════════════════════════════════════
+const starsGeo = new THREE.BufferGeometry();
+const starsCount = 4000;
+const starsPos = new Float32Array(starsCount*3);
+const starsCol = new Float32Array(starsCount*3);
+for(let i=0; i<starsCount; i++){
+  const theta = Math.random()*Math.PI*2;
+  const phi = Math.acos(2*Math.random()-1);
+  const r = 20+Math.random()*40;
+  starsPos[i*3] = r*Math.sin(phi)*Math.cos(theta);
+  starsPos[i*3+1] = r*Math.sin(phi)*Math.sin(theta);
+  starsPos[i*3+2] = r*Math.cos(phi);
+  const brightness = 0.3+Math.random()*0.7;
+  starsCol[i*3] = brightness;
+  starsCol[i*3+1] = brightness;
+  starsCol[i*3+2] = brightness;
+}
+starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
+starsGeo.setAttribute('color', new THREE.BufferAttribute(starsCol, 3));
+const starsMat = new THREE.PointsMaterial({
+  size: 0.06,
+  vertexColors: true,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+  transparent: true,
+  opacity: 0.8
+});
+const stars = new THREE.Points(starsGeo, starsMat);
+scene.add(stars);
+
+// ═══════════════════════════════════════════════════════════════════════
+// ANIMATION
+// ═══════════════════════════════════════════════════════════════════════
+const clock = new THREE.Clock();
+let waveVisible = true;
+let focusAnomaly = false;
+
+function animate(time){
+  requestAnimationFrame(animate);
+  
+  const dt = Math.min(clock.getDelta(), 0.1);
+  const t = time * 0.001;
+  
+  controls.update();
+  
+  // Mise à jour du champ d'onde
+  field.material.uniforms.uTime.value = t;
+  field2.material.uniforms.uTime.value = t;
+  
+  // Animation des particules du champ Ψ
+  const posArr = particles.geometry.attributes.position.array;
+  for(let i=0; i<N_PARTICLES; i++){
+    const bx = partBase[i*3];
+    const bz = partBase[i*3+2];
+    const r = Math.sqrt(bx*bx + bz*bz);
+    
+    // Oscillation ondulatoire inspirée de Ψ
+    const wave = Math.sin(r*PHI*2.5 - t*0.8 + partPhase[i]) * 0.4;
+    const wave2 = Math.sin(r*PHI*1.2 + t*0.5 + partPhase[i]*1.7) * 0.25;
+    
+    posArr[i*3] = bx + wave * 0.5;
+    posArr[i*3+1] = partBase[i*3+1] + wave + wave2;
+    posArr[i*3+2] = bz + wave2 * 0.5;
+  }
+  particles.geometry.attributes.position.needsUpdate = true;
+  
+  // Animation des galaxies harmoniques (respiration)
+  harmonicGalaxies.forEach(g => {
+    const ud = g.userData;
+    const pulse = 1 + Math.sin(t*1.5 + ud.pulsePhase) * 0.08;
+    g.scale.setScalar(pulse);
+    g.position.y = ud.baseY + Math.sin(t*1.1 + ud.pulsePhase) * 0.3;
+    
+    // Animation des anneaux
+    ud.ring.rotation.y += dt * 0.4;
+    ud.ring.rotation.x += dt * 0.1;
+    ud.halo.scale.setScalar(1 + Math.sin(t*2+ud.pulsePhase)*0.15);
+  });
+  
+  // Animation des galaxies anomalies (pulsation intense)
+  anomalyGalaxies.forEach(g => {
+    const ud = g.userData;
+    const pulse = 1 + Math.sin(t*2.5 + ud.pulsePhase) * 0.18;
+    g.scale.setScalar(pulse);
+    g.position.y = ud.baseY + Math.sin(t*1.8 + ud.pulsePhase) * 0.5;
+    ud.halo.material.opacity = 0.2 + Math.sin(t*3+ud.pulsePhase)*0.1;
+    ud.ring.rotation.y += dt * 0.7;
+  });
+  
+  // Centre
+  centerHalo.scale.setScalar(1 + Math.sin(t*0.7)*0.3);
+  
+  // Cercles de résonance
+  resonanceRings.forEach(rr => {
+    rr.mesh.scale.setScalar(1 + Math.sin(t*1.2 + rr.n*0.5)*0.03);
+  });
+  
+  // Rotation des étoiles
+  stars.rotation.y += dt * 0.02;
+  
+  // Focus anomalie : caméra plus proche
+  if(focusAnomaly && anomalyGalaxies.length > 0){
+    const target = anomalyGalaxies[0].position;
+    controls.target.lerp(target, 0.03);
+  }
+  
+  // Visibilité des ondes
+  field.visible = waveVisible;
+  field2.visible = waveVisible;
+  
+  // Mise à jour UI
+  document.getElementById('harmCount').textContent = `${harmonicGalaxies.length} galaxies (n=0..${N_HARMONICS})`;
+  const peakN = 6;
+  const peakM = massAtHarmonic(peakN);
+  document.getElementById('peakMass').textContent = 
+    `${peakM.toExponential(1)} M☉ (n=${peakN}, φ${peakN}=${Math.pow(PHI,peakN).toFixed(1)})`;
+  
+  // Annonce
+  const announce = document.getElementById('announce');
+  const cycle = Math.floor(t/8) % ANOMALOUS_GALAXIES.length;
+  const currentAnom = ANOMALOUS_GALAXIES[cycle];
+  announce.textContent = `⚠️ ${currentAnom.name} — z=${currentAnom.z} — ${currentAnom.desc}`;
+  announce.style.opacity = 0.5 + Math.sin(t*0.5)*0.5;
+  
+  composer.render();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CONTROLS UI
+// ═══════════════════════════════════════════════════════════════════════
+window.setView = function(view){
+  document.querySelectorAll('.controls button').forEach(b=>b.classList.remove('active'));
+  focusAnomaly = false;
+  switch(view){
+    case 'top':
+      camera.position.set(0, 18, 0.1);
+      controls.target.set(0, 0, 0);
+      document.getElementById('btnTop').classList.add('active');
+      break;
+    case 'side':
+      camera.position.set(0, 2, 18);
+      controls.target.set(0, 1, 0);
+      document.getElementById('btnSide').classList.add('active');
+      break;
+    default:
+      camera.position.set(12, 6, 18);
+      controls.target.set(0, 1, 0);
+      document.getElementById('btnFree').classList.add('active');
+  }
+  camera.lookAt(controls.target);
+  controls.update();
+};
+
+window.toggleAnomaly = function(){
+  focusAnomaly = !focusAnomaly;
+  const btn = document.getElementById('btnAnom');
+  if(focusAnomaly){
+    btn.classList.add('active');
+    btn.textContent = '🔥 Focus Anomalie ON';
+  } else {
+    btn.classList.remove('active');
+    btn.textContent = '🔥 Focus Anomalie';
+    controls.target.set(0, 1, 0);
+  }
+};
+
+window.toggleWave = function(){
+  waveVisible = !waveVisible;
+  const btn = document.getElementById('btnWave');
+  if(waveVisible){
+    btn.classList.add('active');
+    btn.textContent = '〰️ Ondes ON';
+  } else {
+    btn.classList.remove('active');
+    btn.textContent = '〰️ Ondes OFF';
+  }
+};
+
+// Init wave button active
+document.getElementById('btnWave').classList.add('active');
+document.getElementById('btnWave').textContent = '〰️ Ondes ON';
+
+window.addEventListener('resize', ()=>{
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  composer.setSize(innerWidth, innerHeight);
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// DÉMARRAGE
+// ═══════════════════════════════════════════════════════════════════════
+document.getElementById('announce').textContent = 
+  '⚠️ JWST-ER1g — Anneau d\'Einstein massif — trop massive pour son âge';
+
+// Initialiser les compteurs
+document.getElementById('harmCount').textContent = `${harmonicGalaxies.length} galaxies (n=0..${N_HARMONICS})`;
+const initPeakM = massAtHarmonic(6);
+document.getElementById('peakMass').textContent = 
+  `${initPeakM.toExponential(1)} M☉ (n=6, φ⁶=${Math.pow(PHI,6).toFixed(1)})`;
+document.getElementById('anomName').textContent = ANOMALOUS_GALAXIES.map(g=>g.name).join(' | ');
+
+requestAnimationFrame(animate);
+
+console.log('🌌 Naissance des Galaxies — Simulation Harmonique initialisée');
+console.log(`   φ = ${PHI.toFixed(10)}`);
+console.log(`   Mₙ = M₀ × φⁿ ,  M₀ = ${M0.toExponential(0)} M☉`);
+console.log(`   ${harmonicGalaxies.length} galaxies harmoniques générées`);
+console.log(`   ${ANOMALOUS_GALAXIES.length} anomalies JWST mises en évidence`);
+console.log('   ');
+console.log('   Anomalies JWST (ne correspondent PAS au modèle standard ΛCDM) :');
+ANOMALOUS_GALAXIES.forEach(g => {
+  console.log(`   • ${g.name} (z=${g.z}, logM=${g.logM}) — ${g.desc}`);
+});
+console.log('   ');
+console.log('   L\'approche harmonique Mₙ = M₀ × φⁿ prédit NATURELLEMENT');
+console.log('   ces masses comme des harmoniques du champ cosmologique primordial.');
+console.log('   ');
+console.log('   "Les galaxies ne se forment pas. Elles résonnent."');
+</script>
+</body>
+</html>

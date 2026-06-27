@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCV PRO — Codec d'Archivage Broadcast Lossless</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            border-radius: 12px;
+            border: 1px solid #e94560;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            color: #e94560;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(233, 69, 96, 0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            color: #a0a0a0;
+            margin-bottom: 5px;
+        }
+
+        .header .subtitle {
+            font-size: 0.9em;
+            color: #00d4ff;
+            margin-top: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: rgba(15, 52, 96, 0.5);
+            border: 1px solid #e94560;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            color: #00d4ff;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #a0a0a0;
+            font-size: 0.9em;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: rgba(22, 33, 62, 0.8);
+            border: 1px solid #e94560;
+            border-radius: 12px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card h2 {
+            color: #e94560;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #e94560;
+            padding-bottom: 10px;
+        }
+
+        .upload-area {
+            border: 2px dashed #00d4ff;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .upload-area:hover {
+            border-color: #e94560;
+            background: rgba(233, 69, 96, 0.1);
+        }
+
+        .upload-area.dragover {
+            border-color: #e94560;
+            background: rgba(233, 69, 96, 0.15);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            color: #e0e0e0;
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .upload-hint {
+            color: #a0a0a0;
+            font-size: 0.9em;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .options {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #e94560;
+        }
+
+        .option-group {
+            margin-bottom: 20px;
+        }
+
+        .option-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .option-label {
+            display: block;
+            font-weight: 600;
+            color: #00d4ff;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+
+        .option-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #e94560;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(233, 69, 96, 0.1);
+        }
+
+        .radio-option:hover {
+            border-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .radio-option input[type="radio"] {
+            margin-right: 8px;
+            cursor: pointer;
+            accent-color: #e94560;
+        }
+
+        .radio-option label {
+            cursor: pointer;
+            flex: 1;
+            color: #e0e0e0;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+            color: white;
+            border: 1px solid #e94560;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(233, 69, 96, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+            border: 1px solid #00d4ff;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 212, 255, 0.2);
+        }
+
+        .progress-section {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .progress-section.show {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            border: 1px solid #e94560;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e94560 0%, #00d4ff 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            color: #a0a0a0;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            display: none;
+            font-size: 0.95em;
+            border-left: 4px solid;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .status-message.success {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4caf50;
+            border-left-color: #4caf50;
+        }
+
+        .status-message.error {
+            background: rgba(233, 69, 96, 0.1);
+            color: #e94560;
+            border-left-color: #e94560;
+        }
+
+        .status-message.info {
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+            border-left-color: #00d4ff;
+        }
+
+        .results {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+            border: 1px solid #e94560;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(233, 69, 96, 0.3);
+        }
+
+        .result-row:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            color: #a0a0a0;
+            font-weight: 500;
+        }
+
+        .result-value {
+            color: #00d4ff;
+            font-weight: 600;
+        }
+
+        .file-info {
+            background: rgba(0, 212, 255, 0.05);
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            display: none;
+            border: 1px solid #00d4ff;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .file-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 0.95em;
+        }
+
+        .file-info-label {
+            color: #a0a0a0;
+            font-weight: 500;
+        }
+
+        .file-info-value {
+            color: #00d4ff;
+            font-weight: 600;
+        }
+
+        .specs {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e94560;
+            margin-top: 20px;
+        }
+
+        .specs h3 {
+            color: #e94560;
+            margin-bottom: 10px;
+        }
+
+        .specs ul {
+            margin-left: 20px;
+            color: #a0a0a0;
+        }
+
+        .specs li {
+            margin-bottom: 5px;
+        }
+
+        .specs strong {
+            color: #00d4ff;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎬 HCV PRO</h1>
+            <p>Codec d'Archivage Broadcast Lossless</p>
+            <div class="subtitle">Compression 8-15:1 • Qualité 100% • Archivage 50+ ans</div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">8-15:1</div>
+                <div class="stat-label">Ratio de Compression</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">100%</div>
+                <div class="stat-label">Lossless</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">50+ ans</div>
+                <div class="stat-label">Durabilité Archivage</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">Broadcast</div>
+                <div class="stat-label">Qualité Professionnelle</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-grid">
+            <!-- Upload Section -->
+            <div class="card">
+                <h2>📤 Compression</h2>
+
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Glissez-déposez votre fichier ici</div>
+                    <div class="upload-hint">ou cliquez pour sélectionner (Images, Vidéos, Données)</div>
+                    <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.mp4,.mov,.mkv,.bin,.dat">
+                </div>
+
+                <div class="file-info" id="fileInfo">
+                    <div class="file-info-row">
+                        <span class="file-info-label">Fichier:</span>
+                        <span class="file-info-value" id="fileName">-</span>
+                    </div>
+                    <div class="file-info-row">
+                        <span class="file-info-label">Taille:</span>
+                        <span class="file-info-value" id="fileSize">-</span>
+                    </div>
+                    <div class="file-info-row">
+                        <span class="file-info-label">Type:</span>
+                        <span class="file-info-value" id="fileType">-</span>
+                    </div>
+                </div>
+
+                <div class="options">
+                    <div class="option-group">
+                        <label class="option-label">⚙️ Mode de Compression</label>
+                        <div class="option-row">
+                            <div class="radio-option">
+                                <input type="radio" id="modeGrain" name="mode" value="GRAIN_SYNTH" checked>
+                                <label for="modeGrain">Grain Synth</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="modeDirect" name="mode" value="DIRECT">
+                                <label for="modeDirect">Direct</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <label class="option-label">🎯 Profondeur Bit</label>
+                        <div class="option-row">
+                            <div class="radio-option">
+                                <input type="radio" id="bit8" name="bitdepth" value="8">
+                                <label for="bit8">8-bit</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="bit10" name="bitdepth" value="10">
+                                <label for="bit10">10-bit</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="bit12" name="bitdepth" value="12" checked>
+                                <label for="bit12">12-bit</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="bit16" name="bitdepth" value="16">
+                                <label for="bit16">16-bit</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" id="compressBtn" disabled>🚀 Compresser</button>
+                    <button class="btn-secondary" id="resetBtn">🔄 Réinitialiser</button>
+                </div>
+
+                <div class="progress-section" id="progressSection">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span id="progressPercent">0%</span>
+                        <span id="progressTime">--:--</span>
+                    </div>
+                </div>
+
+                <div class="status-message" id="statusMessage"></div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="card">
+                <h2>📊 Résultats</h2>
+
+                <div class="results" id="results">
+                    <div class="result-row">
+                        <span class="result-label">Taille Originale:</span>
+                        <span class="result-value" id="resultOriginal">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Taille Compressée:</span>
+                        <span class="result-value" id="resultCompressed">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Ratio:</span>
+                        <span class="result-value" id="resultRatio">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Économies:</span>
+                        <span class="result-value" id="resultSavings">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Temps:</span>
+                        <span class="result-value" id="resultTime">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Vitesse:</span>
+                        <span class="result-value" id="resultSpeed">-</span>
+                    </div>
+                </div>
+
+                <div class="specs">
+                    <h3>📋 Spécifications HCV PRO</h3>
+                    <ul>
+                        <li><strong>Codec:</strong> Harmonic Codec V16 Pro</li>
+                        <li><strong>Compression:</strong> Lossless 100%</li>
+                        <li><strong>Ratio:</strong> 8-15:1 selon le contenu</li>
+                        <li><strong>Profondeur:</strong> 8, 10, 12, 16-bit</li>
+                        <li><strong>Formats:</strong> Images, Vidéo, Données</li>
+                        <li><strong>Archivage:</strong> 50+ ans garanti</li>
+                        <li><strong>Vérification:</strong> Checksum intégré</li>
+                        <li><strong>Métadonnées:</strong> Complètes préservées</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        // Utility functions
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function showStatus(message, type) {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message show ${type}`;
+        }
+
+        // Upload area
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleFileSelect(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            selectedFile = file;
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatBytes(file.size);
+            document.getElementById('fileType').textContent = file.type || 'Binaire';
+            document.getElementById('fileInfo').classList.add('show');
+            document.getElementById('compressBtn').disabled = false;
+        }
+
+        // Compress button
+        document.getElementById('compressBtn').addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            const bitdepth = document.querySelector('input[name="bitdepth"]:checked').value;
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('mode', mode);
+            formData.append('bitdepth', bitdepth);
+
+            const progressSection = document.getElementById('progressSection');
+            progressSection.classList.add('show');
+            document.getElementById('compressBtn').disabled = true;
+
+            try {
+                // Appel API réel
+                const response = await fetch('/api/compress', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Erreur de compression');
+                }
+
+                // Afficher les résultats
+                document.getElementById('resultOriginal').textContent = formatBytes(data.original_size);
+                document.getElementById('resultCompressed').textContent = formatBytes(data.compressed_size);
+                document.getElementById('resultRatio').textContent = data.ratio + ':1';
+                document.getElementById('resultSavings').textContent = data.savings + '%';
+                document.getElementById('resultTime').textContent = data.time + 's';
+                document.getElementById('resultSpeed').textContent = data.speed + ' MB/s';
+                document.getElementById('results').classList.add('show');
+
+                showStatus('✅ Compression réussie! Fichier prêt pour archivage.', 'success');
+
+            } catch (error) {
+                showStatus('❌ Erreur: ' + error.message, 'error');
+            } finally {
+                progressSection.classList.remove('show');
+                document.getElementById('compressBtn').disabled = false;
+            }
+        });
+
+        // Reset button
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            selectedFile = null;
+            fileInput.value = '';
+            document.getElementById('fileInfo').classList.remove('show');
+            document.getElementById('compressBtn').disabled = true;
+            document.getElementById('progressSection').classList.remove('show');
+            document.getElementById('statusMessage').classList.remove('show');
+            document.getElementById('results').classList.remove('show');
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('progressPercent').textContent = '0%';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KA Phone — Administration Hologramme</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #0d1117; color: #f0f0f5; padding: 24px; }
+    h1 { color: #d4a843; margin-bottom: 8px; font-size: 1.5em; }
+    .subtitle { color: #a0a0b8; margin-bottom: 24px; font-size: 0.9em; }
+    .card { background: #14141e; border: 1px solid #252535; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+    .card h2 { font-size: 1.1em; margin-bottom: 16px; color: #d4a843; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 0.8em; color: #a0a0b8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .form-group input, .form-group textarea, .form-group select {
+        width: 100%; padding: 10px 14px; background: #0a0a0f; color: #f0f0f5;
+        border: 1px solid #252535; border-radius: 8px; font-family: inherit; font-size: 0.9em;
+    }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #d4a843; }
+    .btn { padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9em; transition: all 0.2s; }
+    .btn-primary { background: #d4a843; color: #0a0a0f; }
+    .btn-primary:hover { background: #f0c96e; }
+    .btn-danger { background: #ff4757; color: white; }
+    .btn-danger:hover { background: #ff6b7a; }
+    .btn-warning { background: #ffa502; color: #0a0a0f; }
+    .btn-outline { background: transparent; border: 1px solid #252535; color: #f0f0f5; }
+    .btn-outline:hover { border-color: #d4a843; color: #d4a843; }
+    .btn-sm { padding: 6px 12px; font-size: 0.8em; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+    th { background: #1a1a25; padding: 10px 14px; text-align: left; font-size: 0.75em; text-transform: uppercase; color: #a0a0b8; border-bottom: 2px solid #252535; }
+    td { padding: 8px 14px; border-bottom: 1px solid #252535; vertical-align: top; }
+    tr:hover td { background: #1a1a28; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 50px; font-size: 0.75em; font-weight: 600; }
+    .badge-info { background: rgba(108,92,231,0.1); color: #a29bfe; }
+    .badge-warning { background: rgba(255,165,2,0.1); color: #ffa502; }
+    .toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 24px; border-radius: 8px; font-weight: 600; z-index: 999; animation: fadeIn 0.3s; }
+    .toast-success { background: #00c896; color: #0a0a0f; }
+    .toast-error { background: #ff4757; color: white; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-box { background: #14141e; border: 1px solid #252535; border-radius: 8px; padding: 16px; text-align: center; }
+    .stat-box .stat-value { font-size: 2em; font-weight: 800; color: #d4a843; }
+    .stat-box .stat-label { font-size: 0.75em; color: #a0a0b8; text-transform: uppercase; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .modal-overlay.hidden { display: none; }
+    .modal { background: #14141e; border: 1px solid #252535; border-radius: 12px; padding: 24px; max-width: 700px; width: 95%; max-height: 85vh; overflow-y: auto; }
+    .modal h3 { color: #d4a843; margin-bottom: 16px; }
+    .media-preview-video { width: 100%; height: 200px; border-radius: 8px; border: 1px solid #252535; }
+    .tag-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .tag { display: inline-block; padding: 2px 8px; background: rgba(212,168,67,0.1); color: #d4a843; border-radius: 4px; font-size: 0.75em; }
+</style>
+</head>
+<body>
+
+<h1>◈ KA Phone — Administration Hologramme</h1>
+<p class="subtitle">Alimenter l'hologramme en temps réel. Ajouter, éditer, supprimer des faits avec textes, images et vidéos.</p>
+
+<div class="stats">
+    <div class="stat-box"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Faits</div></div>
+    <div class="stat-box"><div class="stat-value" id="statCategories">0</div><div class="stat-label">Catégories</div></div>
+    <div class="stat-box"><div class="stat-value" id="statMedia">0</div><div class="stat-label">Avec médias</div></div>
+    <div class="stat-box"><div class="stat-value" id="statVerifies">0</div><div class="stat-label">Vérifications</div></div>
+</div>
+
+<div class="card">
+    <h2 id="formTitle">➕ Ajouter un fait</h2>
+    <input type="hidden" id="editIndex" value="-1">
+    <div class="form-row">
+        <div class="form-group">
+            <label>Catégorie</label>
+            <select id="catSelect">
+                <option value="egypte_ancienne">Égypte ancienne (Kemet)</option><option value="histoire">Histoire</option>
+                <option value="sciences">Sciences</option><option value="physique">Physique</option>
+                <option value="biologie">Biologie</option><option value="astronomie">Astronomie</option>
+                <option value="sante">Santé</option><option value="philosophie">Philosophie</option>
+                <option value="psychologie">Psychologie</option><option value="cuisine">Cuisine</option>
+                <option value="sport">Sport</option><option value="informatique">Informatique</option>
+                <option value="ia">Intelligence Artificielle</option><option value="musique">Musique</option>
+                <option value="cinema">Cinéma</option><option value="litterature">Littérature</option>
+                <option value="voyage">Voyage</option><option value="geographie">Géographie</option>
+                <option value="bricolage">Bricolage</option><option value="education">Éducation</option>
+                <option value="quotidien">Quotidien</option><option value="general">Général</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Source / Référence</label>
+            <input type="text" id="source" placeholder="Ex: UNESCO 1980, Article, Livre...">
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Question</label>
+        <input type="text" id="question" placeholder="Comment l'utilisateur formulerait cette question ?">
+    </div>
+    <div class="form-group">
+        <label>Réponse</label>
+        <textarea id="reponse" rows="4" placeholder="La réponse correcte et vérifiée..."></textarea>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label>🖼️ Lien image (optionnel)</label>
+            <input type="url" id="image" placeholder="https://exemple.com/photo.jpg">
+        </div>
+        <div class="form-group">
+            <label>🎬 Lien vidéo YouTube (optionnel)</label>
+            <input type="url" id="video" placeholder="https://youtube.com/watch?v=...">
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Mots-clés (séparés par des virgules)</label>
+        <input type="text" id="motsCles" placeholder="egypte, africain, kemet, pharaon...">
+    </div>
+    <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="sauvegarderFait()">💾 Sauvegarder</button>
+        <button class="btn btn-outline" onclick="annulerEdition()" id="cancelBtn" style="display:none">✖️ Annuler</button>
+        <button class="btn btn-outline" onclick="chargerFaits()" style="margin-left:auto">🔄 Rafraîchir</button>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📋 Faits dans l'hologramme (<span id="faitsCount">0</span>)</h2>
+    <div style="overflow-x:auto">
+        <table>
+            <thead><tr><th>Cat</th><th>Question</th><th>Réponse</th><th>Médias</th><th>Source</th><th>Actions</th></tr></thead>
+            <tbody id="faitsTable"></tbody>
+        </table>
+    </div>
+    <p id="emptyMsg" style="text-align:center;padding:40px;color:#606078">Aucun fait. Ajoutez le premier !</p>
+</div>
+
+<div id="toastContainer"></div>
+
+<script>
+const API = '';
+let faitsCache = [];
+
+function toast(msg, type) {
+    const t = document.createElement('div');
+    t.className = `toast toast-${type}`; t.textContent = msg;
+    document.getElementById('toastContainer').appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+function annulerEdition() {
+    document.getElementById('editIndex').value = '-1';
+    document.getElementById('formTitle').textContent = '➕ Ajouter un fait';
+    document.getElementById('cancelBtn').style.display = 'none';
+    ['question','reponse','motsCles','image','video','source'].forEach(id => document.getElementById(id).value = '');
+}
+
+function editerFait(i) {
+    const f = faitsCache[i]; if (!f) return;
+    document.getElementById('editIndex').value = i;
+    document.getElementById('formTitle').textContent = '✏️ Éditer le fait';
+    document.getElementById('cancelBtn').style.display = 'inline-block';
+    document.getElementById('catSelect').value = f.categorie || 'general';
+    document.getElementById('question').value = f.question || '';
+    document.getElementById('reponse').value = f.reponse || '';
+    document.getElementById('motsCles').value = (f.mots_cles || []).join(', ');
+    document.getElementById('image').value = f.image || '';
+    document.getElementById('video').value = f.video || '';
+    document.getElementById('source').value = f.source || '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function sauvegarderFait() {
+    const cat = document.getElementById('catSelect').value;
+    const question = document.getElementById('question').value.trim();
+    const reponse = document.getElementById('reponse').value.trim();
+    if (!question || !reponse) { toast('Question et réponse requis.', 'error'); return; }
+
+    const fait = {
+        categorie: cat, question, reponse,
+        mots_cles: document.getElementById('motsCles').value.split(',').map(s => s.trim()).filter(Boolean),
+        source: document.getElementById('source').value.trim() || 'Ajout manuel',
+        image: document.getElementById('image').value.trim(),
+        video: document.getElementById('video').value.trim(),
+    };
+
+    const idx = parseInt(document.getElementById('editIndex').value);
+    const isEdit = idx >= 0;
+    if (isEdit) fait.index = idx;
+
+    try {
+        const r = await fetch(API + (isEdit ? '/api/hologramme/modifier' : '/api/hologramme/ajouter'), {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fait)
+        });
+        const d = await r.json();
+        if (d.status === 'ok') { toast(isEdit ? '✅ Fait modifié' : '✅ Fait ajouté', 'success'); annulerEdition(); chargerFaits(); }
+        else toast('Erreur: ' + (d.error || 'inconnue'), 'error');
+    } catch(e) { toast('Erreur réseau: ' + e.message, 'error'); }
+}
+
+async function supprimerFait(i) {
+    if (!confirm('Supprimer définitivement ce fait ?')) return;
+    try {
+        const r = await fetch(API + '/api/hologramme/supprimer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ index: i }) });
+        const d = await r.json();
+        if (d.status === 'ok') { toast('🗑️ Supprimé', 'success'); chargerFaits(); }
+    } catch(e) { toast('Erreur: ' + e.message, 'error'); }
+}
+
+function voirFait(i) {
+    const f = faitsCache[i]; if (!f) return;
+    const hasImg = f.image && f.image.startsWith('http');
+    const hasVid = f.video && f.video.includes('youtube');
+    let vidEmbed = '';
+    if (hasVid) {
+        const vidId = f.video.match(/(?:v=|\/)([\w-]{11})/);
+        if (vidId) vidEmbed = `<iframe class="media-preview-video" src="https://www.youtube.com/embed/${vidId[1]}" frameborder="0" allowfullscreen></iframe>`;
+    }
+    document.getElementById('modalTitle').textContent = '📋 Fait #' + (i+1);
+    document.getElementById('modalContent').innerHTML = `
+        <p><strong>Catégorie:</strong> <span class="badge badge-info">${f.categorie||'—'}</span> | <strong>Source:</strong> ${f.source||'—'}</p>
+        <hr style="border-color:#252535;margin:12px 0">
+        <p><strong>Question:</strong></p><div style="background:#0a0a0f;padding:12px;border-radius:8px;margin:8px 0">${f.question||'—'}</div>
+        <p><strong>Réponse:</strong></p><div style="background:#0a0a0f;padding:12px;border-radius:8px;margin:8px 0;white-space:pre-wrap">${f.reponse||'—'}</div>
+        ${hasImg ? `<p><strong>Image:</strong></p><img src="${f.image}" style="max-width:100%;max-height:200px;border-radius:8px;border:1px solid #252535;margin:8px 0" onerror="this.style.display='none'">` : ''}
+        ${vidEmbed ? `<p><strong>Vidéo:</strong></p>${vidEmbed}` : f.video ? `<p><strong>Vidéo:</strong> <a href="${f.video}" target="_blank" style="color:#d4a843">${f.video}</a></p>` : ''}
+        <div class="tag-list">${(f.mots_cles||[]).map(k => `<span class="tag">${k}</span>`).join('')}</div>
+    `;
+    document.getElementById('detailModal').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('detailModal').classList.add('hidden'); }
+
+async function chargerFaits() {
+    try {
+        const r = await fetch(API + '/api/hologramme/liste');
+        const data = await r.json();
+        faitsCache = data.faits || [];
+        const n = faitsCache.length;
+        document.getElementById('faitsCount').textContent = n;
+        document.getElementById('statTotal').textContent = n;
+        document.getElementById('statCategories').textContent = new Set(faitsCache.map(f => f.categorie)).size;
+        document.getElementById('statMedia').textContent = faitsCache.filter(f => f.image || f.video).length;
+
+        const tbody = document.getElementById('faitsTable'), empty = document.getElementById('emptyMsg');
+        if (n === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+        empty.style.display = 'none';
+
+        tbody.innerHTML = faitsCache.map((f, i) => {
+            let mediaHtml = '';
+            if (f.image && f.image.startsWith('http')) mediaHtml += '<span class="badge badge-info">🖼️</span> ';
+            if (f.video && f.video.includes('youtube')) mediaHtml += '<span class="badge badge-warning">▶️</span>';
+            if (!mediaHtml && (f.image || f.video)) mediaHtml = '<span class="badge badge-info">🔗</span>';
+            if (!mediaHtml) mediaHtml = '—';
+            return `<tr>
+                <td><span class="badge badge-info">${f.categorie||'—'}</span></td>
+                <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer" onclick="voirFait(${i})">${f.question||'—'}</td>
+                <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#a0a0b8">${(f.reponse||'').substring(0,100)}...</td>
+                <td style="text-align:center">${mediaHtml}</td>
+                <td style="font-size:0.8em;color:#606078;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.source||'—'}</td>
+                <td style="white-space:nowrap">
+                    <button class="btn btn-sm btn-outline" onclick="voirFait(${i})" title="Voir">👁️</button>
+                    <button class="btn btn-sm btn-warning" onclick="editerFait(${i})" title="Éditer">✏️</button>
+                    <button class="btn btn-sm btn-danger" onclick="supprimerFait(${i})" title="Supprimer">🗑️</button>
+                </td>
+            </tr>`;
+        }).join('');
+    } catch(e) { toast('Erreur chargement: ' + e.message, 'error'); }
+}
+
+chargerFaits();
+setInterval(chargerFaits, 30000);
+</script>
+
+<div class="modal-overlay hidden" id="detailModal" onclick="if(event.target===this)closeModal()">
+    <div class="modal"><h3 id="modalTitle"></h3><div id="modalContent"></div><button class="btn btn-primary" onclick="closeModal()" style="margin-top:16px">Fermer</button></div>
+</div>
+</body>
+</html>

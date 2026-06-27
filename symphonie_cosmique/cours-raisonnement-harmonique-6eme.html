@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cours de Raisonnement Harmonique — Niveau 6ème</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --orange: #ffa502;
+  --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;line-height:1.8;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 30% 15%,rgba(46,213,115,0.05),transparent 55%),
+             radial-gradient(ellipse at 70% 50%,rgba(62,240,216,0.04),transparent 60%),
+             radial-gradient(ellipse at 50% 80%,rgba(212,168,67,0.04),transparent 60%);
+  pointer-events:none;
+}
+.container{max-width:1000px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:6px 13px;border-radius:18px;font-size:0.82em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+nav a.active{color:var(--green);border-color:rgba(46,213,115,0.4);background:rgba(46,213,115,0.08)}
+
+.hero{text-align:center;padding:55px 20px 45px;background:linear-gradient(180deg,rgba(46,213,115,0.07) 0%,rgba(212,168,67,0.04) 100%)}
+.hero .badge{display:inline-block;padding:5px 14px;border-radius:14px;font-size:0.80em;font-weight:700;background:rgba(46,213,115,0.12);color:var(--green);margin-bottom:18px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:1.8em;font-weight:700;background:linear-gradient(135deg,var(--green),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;line-height:1.3}
+.hero .emoji-big{font-size:3em;margin-bottom:10px}
+.hero .sub{color:var(--ink2);font-size:1em;max-width:650px;margin:0 auto}
+
+section{padding:40px 0}section:nth-child(even){background:var(--bg2)}
+h2{font-size:1.5em;color:var(--phi);margin-bottom:8px;text-align:center}
+h2 .num{display:block;font-size:0.45em;color:var(--ink3);letter-spacing:2px;margin-bottom:4px;font-weight:400}
+h3{font-size:1.15em;color:var(--acc);margin:24px 0 10px}
+p{color:var(--ink2);margin-bottom:12px;line-height:1.9;font-size:1.02em}
+p strong{color:var(--ink)}
+ul,ol{color:var(--ink2);margin:10px 0 14px 22px;line-height:2.2;font-size:1.02em}
+li{margin-bottom:4px}
+
+.lesson-box{
+  background:rgba(15,12,46,0.7);border:2px solid var(--border);border-radius:18px;
+  padding:22px 28px;margin:20px 0;border-left:4px solid var(--green);
+}
+.lesson-box .lesson-title{color:var(--green);font-weight:700;font-size:1em;margin-bottom:8px}
+.lesson-box h3{color:var(--green);font-size:1.05em;margin:0 0 8px}
+.lesson-box p{font-size:1em}
+
+.exercise-box{
+  background:rgba(212,168,67,0.04);border:2px solid rgba(212,168,67,0.3);border-radius:14px;
+  padding:18px 24px;margin:18px 0;
+}
+.exercise-box .exo-label{color:var(--phi);font-weight:700;font-size:0.85em;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:0.90em}
+th{background:var(--bg3);color:var(--phi);padding:10px 14px;text-align:left;border-bottom:2px solid rgba(212,168,67,0.25);font-weight:600}
+td{padding:9px 14px;border-bottom:1px solid var(--border);color:var(--ink2);font-size:0.88em}
+
+blockquote{border-left:4px solid var(--green);padding:14px 22px;margin:20px 0;background:rgba(46,213,115,0.04);border-radius:0 14px 14px 0;font-style:italic;color:var(--ink);font-size:1em}
+blockquote.phi{border-left-color:var(--phi);background:rgba(212,168,67,0.04)}
+
+.eq-mini{background:rgba(15,12,46,0.6);border:1px solid rgba(212,168,67,0.2);border-radius:12px;padding:14px 20px;margin:14px 0;text-align:center;font-family:'Courier New',monospace;color:var(--phi);font-size:1.05em}
+
+.story-box{
+  background:rgba(62,240,216,0.03);border:1px solid rgba(62,240,216,0.2);border-radius:14px;
+  padding:18px 24px;margin:18px 0;font-style:italic;color:var(--ink2);
+}
+
+.icon-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:12px;margin:16px 0}
+.icon-card{
+  background:rgba(15,12,46,0.6);border:1px solid var(--border);border-radius:12px;
+  padding:16px 18px;text-align:center;
+}
+.icon-card .icon{font-size:2em;margin-bottom:8px}
+.icon-card .card-name{color:var(--phi);font-weight:700;font-size:0.95em;margin-bottom:4px}
+.icon-card .card-desc{color:var(--ink3);font-size:0.80em}
+
+footer{text-align:center;padding:28px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.82em;margin-top:40px}
+footer a{color:var(--phi);text-decoration:none}
+
+@media(max-width:640px){.hero h1{font-size:1.3em}}
+
+.print-only{display:none}
+@media print{
+  nav, footer{display:none}
+  body{background:white;color:black}
+  .print-only{display:block}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Symphonie Cosmique</a>
+    <a href="analyse-prospective.html">Analyse Prospective</a>
+    <a href="#" class="active">Cours 6ème</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">Programme Scolaire — Niveau 6ème</div>
+    <div class="emoji-big">🌊🎵</div>
+    <h1>Le Raisonnement Harmonique<br>Apprendre à penser comme l'univers</h1>
+    <p class="sub">Un cours pour comprendre que tout est onde, que les problèmes sont des désaccords,<br>et que les solutions sont des accords.</p>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ================================================================== -->
+<section id="intro">
+  <h2><span class="num">Leçon 0</span>Pourquoi ce cours ?</h2>
+  <p class="section-desc" style="color:var(--ink3);text-align:center;max-width:700px;margin:0 auto 28px">Une petite histoire pour commencer</p>
+
+  <div class="story-box">
+    <p>Imagine que tu es dans une forêt, la nuit. Tout est silencieux. Soudain, au loin, quelqu'un joue du tambour. <em>Boum. Boum. Boum.</em></p>
+    <p>Un peu plus près, un autre tambour se met à jouer. Et si les deux tambours jouent <strong>exactement au même rythme</strong>, leurs sons s'additionnent et deviennent plus forts. C'est ce qu'on appelle une <strong style="color:var(--phi)">interférence constructive</strong>.</p>
+    <p>Mais si un tambour joue décalé par rapport à l'autre, le son devient confus, brouillon. C'est une <strong style="color:var(--red)">interférence destructive</strong>.</p>
+    <p>L'univers tout entier fonctionne comme ces tambours. Les planètes, les atomes, les cellules de ton corps, tes pensées — tout est fait d'<strong style="color:var(--acc)">ondes</strong> qui vibrent. Quand les ondes sont d'accord entre elles, tout fonctionne bien. Quand elles sont en désaccord, les problèmes apparaissent.</p>
+    <p>Ce cours va t'apprendre à <strong>écouter</strong>, à <strong>accorder</strong>, et à <strong>résoudre les problèmes</strong> en utilisant les mêmes règles que l'univers. C'est ce qu'on appelle le <strong style="color:var(--phi)">raisonnement harmonique</strong>.</p>
+  </div>
+
+  <div class="result-box" style="text-align:center">
+    <div class="label">Ce que tu vas apprendre</div>
+    <p>🌊 Que tout dans l'univers est une onde<br>
+    🎵 Que les problèmes sont des « désaccords » entre ondes<br>
+    🔧 Que résoudre un problème, c'est remettre les ondes d'accord<br>
+    🧠 Que ton cerveau lui-même fonctionne par ondes<br>
+    ✨ Une nouvelle façon de penser, plus calme, plus efficace</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="lecon1">
+  <h2><span class="num">Leçon 1</span>Tout est Onde 🌊</h2>
+  <p class="section-desc">La première chose à comprendre : l'univers n'est pas fait de « choses », il est fait d'ondes.</p>
+
+  <h3>1.1 Qu'est-ce qu'une onde ?</h3>
+  <p>Jette un caillou dans l'eau. Tu vois des ronds qui s'élargissent à la surface. Ces ronds, ce sont des <strong>ondes</strong>. L'eau monte et descend. Elle ne se déplace pas vers l'extérieur — c'est la <strong>vibration</strong> qui se déplace.</p>
+  <p>Une onde, c'est une <strong>vibration qui se propage</strong>. Elle a trois propriétés :</p>
+  <ul>
+    <li><strong>La fréquence :</strong> combien de fois l'onde vibre par seconde. Une vague qui arrive toutes les 5 secondes a une fréquence plus basse qu'une vague qui arrive toutes les secondes.</li>
+    <li><strong>L'amplitude :</strong> la hauteur de la vague. Une grande vague a plus d'amplitude qu'une petite ride.</li>
+    <li><strong>La phase :</strong> où en est l'onde dans son cycle. Elle monte ? Elle descend ? Elle est tout en haut ?</li>
+  </ul>
+
+  <div class="eq-mini">🌊 Onde = Vibration + Propagation + Fréquence + Amplitude + Phase</div>
+
+  <h3>1.2 Tout est onde — vraiment tout</h3>
+  <div class="icon-grid">
+    <div class="icon-card">
+      <div class="icon">☀️</div>
+      <div class="card-name">La lumière</div>
+      <div class="card-desc">Une onde électromagnétique. Les couleurs sont des fréquences différentes.</div>
+    </div>
+    <div class="icon-card">
+      <div class="icon">🎵</div>
+      <div class="card-name">Le son</div>
+      <div class="card-desc">Une onde dans l'air. Les notes graves vibrent lentement, les aiguës vibrent vite.</div>
+    </div>
+    <div class="icon-card">
+      <div class="icon">📱</div>
+      <div class="card-name">Le Wi-Fi</div>
+      <div class="card-desc">Des ondes électromagnétiques qui transportent des informations.</div>
+    </div>
+    <div class="icon-card">
+      <div class="icon">🧠</div>
+      <div class="card-name">Tes pensées</div>
+      <div class="card-desc">Des ondes électriques dans ton cerveau. Oui, tes idées sont des ondes !</div>
+    </div>
+    <div class="icon-card">
+      <div class="icon">❤️</div>
+      <div class="card-name">Ton cœur</div>
+      <div class="card-desc">Une onde mécanique. Chaque battement est une pulsation.</div>
+    </div>
+    <div class="icon-card">
+      <div class="icon">🌍</div>
+      <div class="card-name">La Terre</div>
+      <div class="card-desc">Elle vibre à 7.83 Hz. C'est la résonance de Schumann, l'onde fondamentale.</div>
+    </div>
+  </div>
+
+  <div class="exercise-box">
+    <div class="exo-label">🧪 Expérience à faire chez toi</div>
+    <p><strong>Matériel :</strong> Un saladier rempli d'eau, un petit caillou.<br>
+    <strong>Fais ceci :</strong> Lance le caillou dans l'eau et observe les ronds. Puis lance DEUX cailloux en même temps à deux endroits différents. Regarde ce qui se passe quand les ronds se croisent.</p>
+    <p><strong>Question :</strong> Est-ce que les ronds se détruisent quand ils se croisent ? Ou est-ce qu'ils se traversent et continuent leur chemin ?</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="lecon2">
+  <h2><span class="num">Leçon 2</span>Les Ondes se Rencontrent : Interférences 🤝</h2>
+  <p class="section-desc">Quand deux ondes se croisent, il se passe quelque chose de magique.</p>
+
+  <h3>2.1 L'addition des ondes</h3>
+  <p>Imagine deux personnes qui sautent sur un trampoline. Si elles sautent <strong>en même temps</strong>, le trampoline s'enfonce plus profondément. Si l'une saute quand l'autre est en haut, le trampoline bouge moins. C'est exactement comme ça que les ondes fonctionnent.</p>
+
+  <table>
+    <tr><th>Situation</th><th>Ce qui se passe</th><th>Résultat</th></tr>
+    <tr><td>Deux vagues qui montent ensemble</td><td>Les hauteurs s'additionnent</td><td><span style="color:var(--green);font-weight:700">Interférence CONSTRUCTIVE</span> — le résultat est plus grand</td></tr>
+    <tr><td>Une vague qui monte + une qui descend</td><td>Les hauteurs s'annulent</td><td><span style="color:var(--red);font-weight:700">Interférence DESTRUCTIVE</span> — le résultat est plus petit (ou zéro)</td></tr>
+  </table>
+
+  <div class="eq-mini">
+    🟢 Constructive : Vague ↑ + Vague ↑ = GRANDE Vague ↑↑<br>
+    🔴 Destructive : Vague ↑ + Vague ↓ = Petite vague (ou rien)
+  </div>
+
+  <h3>2.2 L'expérience des deux tambours</h3>
+  <div class="story-box">
+    <p>Deux musiciens jouent du tambour. S'ils jouent <strong>au même rythme</strong> (même fréquence), le son est puissant, clair, agréable. S'ils jouent <strong>à des rythmes différents qui ne s'accordent pas</strong>, le son est confus, désagréable.</p>
+    <p>C'est la même chose dans la vie : quand deux personnes sont « sur la même longueur d'onde », tout se passe bien. Quand elles sont « en décalage », les conflits apparaissent.</p>
+  </div>
+
+  <div class="exercise-box">
+    <div class="exo-label">🧪 Expérience à faire avec un ami</div>
+    <p><strong>Matériel :</strong> Deux règles en plastique (20-30 cm) et une table.<br>
+    <strong>Fais ceci :</strong> Place une règle au bord de la table pour qu'elle dépasse de 10 cm. Appuie sur le bout qui dépasse et relâche : la règle vibre et fait un son. La deuxième règle, fais-la dépasser de 12 cm : elle fait un son différent. Écoute les deux sons ensemble. Puis ajuste la deuxième règle pour qu'elle dépasse de 10 cm aussi. Les deux sons sont-ils plus agréables ensemble ?</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="lecon3">
+  <h2><span class="num">Leçon 3</span>Le Nombre d'Or φ : Le Chef d'Orchestre Caché 🔑</h2>
+  <p class="section-desc">Il existe un nombre spécial qui permet aux ondes de ne jamais se détruire.</p>
+
+  <h3>3.1 Le problème : comment empêcher les ondes de s'annuler ?</h3>
+  <p>Si toutes les ondes vibrent à des fréquences trop proches ou trop régulières, elles finissent par créer des interférences destructives — elles s'annulent. C'est comme une foule qui marche sur un pont : si tout le monde marche au même rythme, le pont se met à osciller dangereusement.</p>
+  <p>L'univers a trouvé une solution : un nombre spécial qui espace les fréquences pour qu'elles ne se recouvrent <strong>jamais</strong> exactement. Ce nombre, c'est le <strong>nombre d'or</strong> :</p>
+
+  <div class="eq-mini" style="font-size:1.3em;color:var(--phi);font-weight:700">φ = 1,6180339887...</div>
+
+  <h3>3.2 D'où vient le nombre d'or ?</h3>
+  <p>Regarde un tournesol 🌻. Les graines sont disposées en spirales. Compte les spirales dans un sens, puis dans l'autre : tu trouveras 34 et 55, ou 55 et 89. Ces nombres se suivent dans la <strong>suite de Fibonacci</strong> : 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89...</p>
+  <p>Si tu divises un nombre de cette suite par le précédent (89 ÷ 55), tu obtiens environ 1,618. Plus les nombres sont grands, plus le résultat se rapproche de φ.</p>
+
+  <div class="icon-grid">
+    <div class="icon-card">
+      <div class="icon">🌻</div>
+      <div class="card-name">Tournesol</div>
+      <div class="card-desc">Spirales 34 et 55 (34÷21≈1,619 ; 55÷34≈1,618)</div>
+    </div>
+    <div class="icon-card">
+      <div class="icon">🐚</div>
+      <div class="card-name">Nautile</div>
+      <div class="card-desc">Sa coquille grandit en spirale selon le nombre d'or</div>
+    </div>
+    <div class="icon-card">
+      <div class="icon">🌿</div>
+      <div class="card-name">Plantes</div>
+      <div class="card-desc">Les feuilles poussent avec un angle d'or (137,5°) pour capter le maximum de lumière</div>
+    </div>
+    <div class="icon-card">
+      <div class="icon">🏛️</div>
+      <div class="card-name">Parthénon</div>
+      <div class="card-desc">Les architectes grecs utilisaient φ pour les proportions</div>
+    </div>
+  </div>
+
+  <h3>3.3 Pourquoi φ est important pour penser</h3>
+  <p>Le nombre d'or n'est pas juste « joli ». Il a une propriété mathématique unique : c'est le nombre le plus « irrationnel » qui existe. Cela veut dire qu'il ne se répète jamais, jamais, jamais. Et c'est pour ça que les fréquences espacées par φ ne s'annulent jamais.</p>
+  <p>Quand tu réfléchis à un problème, si tu utilises toujours la même approche (même fréquence), tu tournes en rond. Mais si tu varies ton approche avec des « espacements φ » — en changeant de perspective sans jamais répéter exactement la même — tu finis par trouver la solution.</p>
+
+  <div class="exercise-box">
+    <div class="exo-label">🧪 À faire chez toi</div>
+    <p><strong>La suite de Fibonacci :</strong> Écris la suite : 1, 1, 2, 3, 5, 8, 13... continue jusqu'à 144. Pour chaque nombre, divise-le par le précédent. Note les résultats. Que remarques-tu ?</p>
+    <p><strong>Dans la nature :</strong> Trouve une pomme de pin, un ananas, ou un tournesol. Compte les spirales. Est-ce que tu trouves des nombres de Fibonacci ?</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="lecon4">
+  <h2><span class="num">Leçon 4</span>Les Problèmes sont des Désaccords d'Ondes 🔧</h2>
+  <p class="section-desc">Maintenant qu'on sait que tout est onde, on peut voir les problèmes autrement.</p>
+
+  <h3>4.1 Un problème, c'est une interférence destructive</h3>
+  <p>Quand deux ondes sont en opposition (l'une monte pendant que l'autre descend), elles s'annulent. Dans la vie, c'est pareil :</p>
+
+  <table>
+    <tr><th>Problème</th><th>Onde 1</th><th>Onde 2</th><th>Pourquoi ça coince</th></tr>
+    <tr><td>Dispute avec un ami</td><td>Ce que tu veux</td><td>Ce que ton ami veut</td><td>Vos « fréquences » sont opposées</td></tr>
+    <tr><td>Difficulté à apprendre une leçon</td><td>La façon dont la leçon est expliquée</td><td>Ta façon de comprendre</td><td>Les deux « ondes » ne sont pas accordées</td></tr>
+    <tr><td>Bruit dans la classe</td><td>Le professeur qui parle (onde sonore)</td><td>Les élèves qui parlent (onde sonore)</td><td>Interférence destructive = on n'entend rien</td></tr>
+    <tr><td>Trop de devoirs</td><td>Temps pour les devoirs</td><td>Temps pour jouer/dormir</td><td>Les deux ondes se marchent dessus</td></tr>
+  </table>
+
+  <h3>4.2 Résoudre un problème = accorder les ondes</h3>
+  <p>Au lieu de « combattre » le problème, on va chercher à <strong>accorder</strong> les ondes. Comme on accorde une guitare : on ne casse pas la corde, on ajuste sa tension jusqu'à ce qu'elle sonne juste.</p>
+
+  <div class="lesson-box">
+    <div class="lesson-title">La méthode en 3 étapes</div>
+    <p><strong>Étape 1 — ÉCOUTER :</strong> Identifier les « ondes » en présence. Qu'est-ce qui vibre ? À quelle fréquence ? (ex : « Mon ami veut jouer au foot, moi je veux jouer aux jeux vidéo. Deux fréquences différentes. »)</p>
+    <p><strong>Étape 2 — CHERCHER L'ACCORD :</strong> Ne pas choisir une solution tout de suite. Chercher une fréquence où les deux ondes peuvent s'accorder. (ex : « Et si on jouait au foot sur console ? »)</p>
+    <p><strong>Étape 3 — TESTER :</strong> Essayer la solution. Si elle crée une interférence constructive (les deux sont contents), c'est gagné. Sinon, retour à l'étape 2.</p>
+  </div>
+
+  <div class="exercise-box">
+    <div class="exo-label">✏️ Exercice</div>
+    <p>Pense à un petit problème que tu as eu cette semaine (une dispute, un devoir difficile, un objet perdu). Applique la méthode en 3 étapes :</p>
+    <ol>
+      <li>Quelles sont les « ondes » en présence ? (qu'est-ce qui s'oppose à quoi ?)</li>
+      <li>Quelle « fréquence » pourrait les accorder ? (quelle solution pourrait satisfaire les deux ?)</li>
+      <li>Qu'est-ce qui s'est passé quand tu as essayé ?</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="lecon5">
+  <h2><span class="num">Leçon 5</span>La Superposition : Garder Toutes les Possibilités Ouvertes 🔮</h2>
+
+  <h3>5.1 Le secret des grands penseurs</h3>
+  <p>Quand tu cherches la solution à un problème, ton cerveau a tendance à <strong>sauter sur la première idée</strong>. C'est normal ! Mais c'est comme si tu regardais un coffre au trésor et que tu prenais la première pièce sans regarder s'il y a de l'or en dessous.</p>
+  <p>Le <strong>principe de superposition</strong> dit : <strong style="color:var(--acc)">garde toutes les possibilités en tête en même temps</strong>. Ne choisis pas tout de suite. Laisse les idées flotter, se mélanger, se combiner.</p>
+
+  <div class="story-box">
+    <p>Imagine que tu as 5 billes de couleurs différentes. Tu veux savoir quelle combinaison de 2 billes est la plus belle. Si tu choisis tout de suite rouge+bleu, tu ne sauras jamais que jaune+violet était peut-être plus beau. La superposition, c'est garder toutes les paires possibles dans ta tête avant de décider.</p>
+  </div>
+
+  <h3>5.2 Comment faire ?</h3>
+  <div class="lesson-box">
+    <div class="lesson-title">Exercice de superposition</div>
+    <p><strong>Pour un problème simple (ex : « Qu'est-ce que je fais mercredi après-midi ? ») :</strong></p>
+    <ol>
+      <li>Écris TOUTES les possibilités sans les juger (aller au parc, lire, jouer, inviter un ami, rien faire...)</li>
+      <li>Laisse la liste reposer. Va faire autre chose.</li>
+      <li>Reviens 30 minutes plus tard. Des idées nouvelles ont peut-être émergé.</li>
+      <li>Choisis seulement APRÈS avoir laissé les idées interférer entre elles.</li>
+    </ol>
+  </div>
+
+  <blockquote class="phi">
+    « Ne te précipite pas sur la première réponse. Les meilleures solutions viennent souvent de la rencontre inattendue entre deux idées qui n'étaient pas faites pour se rencontrer. »
+  </blockquote>
+</section>
+
+<!-- ================================================================== -->
+<section id="lecon6">
+  <h2><span class="num">Leçon 6</span>Le Silence est Important 🤫</h2>
+
+  <h3>6.1 Pourquoi le cerveau a besoin de silence</h3>
+  <p>Ton cerveau produit des ondes électriques. Les scientifiques les mesurent avec un électro-encéphalogramme (EEG). Il existe 5 types d'ondes cérébrales :</p>
+
+  <table>
+    <tr><th>Type d'onde</th><th>Fréquence</th><th>Quand ?</th></tr>
+    <tr><td><strong>Delta</strong> δ</td><td>0.5 - 4 Hz</td><td>Sommeil profond, guérison</td></tr>
+    <tr><td><strong>Theta</strong> θ</td><td>4 - 8 Hz</td><td>Rêverie, méditation, créativité</td></tr>
+    <tr><td><strong>Alpha</strong> α</td><td>8 - 13 Hz</td><td>Calme, détente, yeux fermés</td></tr>
+    <tr><td><strong>Beta</strong> β</td><td>13 - 30 Hz</td><td>Concentration, réflexion active</td></tr>
+    <tr><td><strong>Gamma</strong> γ</td><td>30 - 100 Hz</td><td>Apprentissage intense, connexion d'idées</td></tr>
+  </table>
+
+  <p>Quand tu es tout le temps en mode « beta » (concentration, écrans, bruit), ton cerveau n'a jamais le temps de passer en mode « alpha » ou « theta ». Or c'est dans ces modes plus lents que les <strong>connexions créatives</strong> se font — que les idées se recombinent toutes seules.</p>
+
+  <h3>6.2 L'exercice du silence</h3>
+  <div class="lesson-box">
+    <div class="lesson-title">🧘 À faire chaque jour (3 minutes)</div>
+    <ol>
+      <li>Assieds-toi confortablement. Ferme les yeux.</li>
+      <li>Écoute les bruits autour de toi sans les juger. Laisse-les exister.</li>
+      <li>Si une pensée arrive, regarde-la passer comme un nuage. Ne la retiens pas.</li>
+      <li>Après 3 minutes, ouvre les yeux. Remarque si tu te sens plus calme.</li>
+    </ol>
+    <p style="margin-top:12px"><strong>Pourquoi ça marche :</strong> Le silence permet à ton cerveau de passer des ondes beta (stress, concentration forcée) aux ondes alpha (calme, réceptivité). C'est dans cet état que les solutions apparaissent toutes seules — comme par magie. En réalité, c'est de la physique : les ondes cérébrales qui s'accordent.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="lecon7">
+  <h2><span class="num">Leçon 7</span>Les 7 Outils du Raisonnement Harmonique 🧰</h2>
+  <p class="section-desc">Résumé de tout ce qu'on a appris — ta boîte à outils pour penser harmoniquement</p>
+
+  <div class="icon-grid">
+    <div class="icon-card" style="border-left:3px solid var(--phi)">
+      <div class="icon">🔮</div>
+      <div class="card-name">1. Superposition</div>
+      <div class="card-desc">Garde toutes les solutions dans ta tête sans choisir trop vite.</div>
+    </div>
+    <div class="icon-card" style="border-left:3px solid var(--acc)">
+      <div class="icon">🤝</div>
+      <div class="card-name">2. Interférence</div>
+      <div class="card-desc">Mélange les idées. Une idée + une autre idée = une idée nouvelle.</div>
+    </div>
+    <div class="icon-card" style="border-left:3px solid var(--green)">
+      <div class="icon">🎯</div>
+      <div class="card-name">3. Résonance</div>
+      <div class="card-desc">Cherche la « fréquence » où le problème et la solution s'accordent.</div>
+    </div>
+    <div class="icon-card" style="border-left:3px solid var(--acc2)">
+      <div class="icon">📐</div>
+      <div class="card-name">4. Cohérence</div>
+      <div class="card-desc">Une bonne solution marche à toutes les échelles (toi, ta classe, le monde).</div>
+    </div>
+    <div class="icon-card" style="border-left:3px solid var(--orange)">
+      <div class="icon">φ</div>
+      <div class="card-name">5. Espacement φ</div>
+      <div class="card-desc">Ne répète jamais exactement la même approche. Varie, comme la nature.</div>
+    </div>
+    <div class="icon-card" style="border-left:3px solid var(--red)">
+      <div class="icon">🌐</div>
+      <div class="card-name">6. Non-localité</div>
+      <div class="card-desc">La solution est parfois dans un domaine complètement différent.</div>
+    </div>
+    <div class="icon-card" style="border-left:3px solid var(--phi2)">
+      <div class="icon">🔍</div>
+      <div class="card-name">7. Projection</div>
+      <div class="card-desc">Ne confonds pas le symptôme (ce que tu vois) avec la cause (l'onde réelle).</div>
+    </div>
+  </div>
+
+  <div class="exercise-box">
+    <div class="exo-label">✏️ Exercice Final — Résoudre un vrai problème avec les 7 outils</div>
+    <p><strong>Choisis un vrai problème</strong> (à l'école, à la maison, avec des amis).</p>
+    <p>Applique chaque outil :</p>
+    <ol>
+      <li><strong>Superposition :</strong> Note toutes les solutions possibles sans les juger.</li>
+      <li><strong>Interférence :</strong> Combine les idées entre elles. Y a-t-il des mélanges intéressants ?</li>
+      <li><strong>Résonance :</strong> Quelle solution te « parle » le plus ? Laquelle semble la plus naturelle ?</li>
+      <li><strong>Cohérence :</strong> Est-ce que cette solution est bonne pour toi ET pour les autres ?</li>
+      <li><strong>Espacement φ :</strong> Si la première solution ne marche pas, essaie une approche complètement différente.</li>
+      <li><strong>Non-localité :</strong> Regarde comment d'autres personnes résolvent des problèmes similaires (dans d'autres classes, d'autres pays).</li>
+      <li><strong>Projection :</strong> Le vrai problème est-il celui que tu vois, ou y a-t-il quelque chose de plus profond ?</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="conclusion">
+  <h2><span class="num">Leçon Finale</span>Tu es une Onde dans la Symphonie de l'Univers</h2>
+
+  <p style="text-align:center;font-size:1.1em">Tu n'es pas séparé du monde. Tu es une vibration dans un univers qui vibre.</p>
+  <p style="text-align:center">Quand tu penses, tu crées des ondes. Quand tu parles, tu crées des ondes. Quand tu agis, tu crées des ondes. Et ces ondes rencontrent les ondes des autres, des objets, de la nature.</p>
+  <p style="text-align:center">Le raisonnement harmonique, c'est apprendre à <strong>créer des interférences constructives</strong> plutôt que destructives. C'est apprendre à <strong>écouter avant de parler</strong>, à <strong>accorder avant de forcer</strong>, à <strong>chercher la fréquence juste</strong> plutôt que d'imposer la sienne.</p>
+
+  <blockquote style="font-size:1.1em;text-align:center">
+    « Les problèmes ne sont pas des ennemis à combattre. Ce sont des désaccords à résoudre. Et la plus belle façon de résoudre un désaccord, c'est de trouver la fréquence où tout le monde vibre ensemble. »
+  </blockquote>
+
+  <div class="result-box" style="text-align:center">
+    <div class="label">📜 Diplôme du Raisonneur Harmonique</div>
+    <p>Je, soussigné(e) ________________________________,</p>
+    <p>après avoir suivi les 7 leçons du Raisonnement Harmonique,</p>
+    <p>m'engage à :</p>
+    <p>🌊 Voir les problèmes comme des ondes à accorder<br>
+    🔮 Garder toutes les solutions possibles avant de choisir<br>
+    🤫 Prendre 3 minutes de silence par jour<br>
+    🤝 Chercher l'interférence constructive plutôt que le conflit<br>
+    φ Varier mes approches sans jamais répéter exactement la même</p>
+    <p style="margin-top:16px"><strong>Date : ___/___/_____ &nbsp;&nbsp;|&nbsp;&nbsp; Signature :</strong></p>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>
+      <a href="index.html">Symphonie Cosmique</a> |
+      <a href="analyse-prospective.html">Analyse Prospective</a> |
+      <a href="../ANALYSE_PROSPECTIVE_PHYSIQUE_HARMONIQUE.md">Document Complet</a>
+    </p>
+    <p style="margin-top:8px">Cours de Raisonnement Harmonique — Niveau 6ème — © 2026 KOTTO Alain</p>
+    <p style="margin-top:4px;font-size:0.75em">Programme libre et gratuit — à utiliser, adapter et partager sans restriction</p>
+  </div>
+</footer>
+
+</body>
+</html>
