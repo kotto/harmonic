@@ -39,18 +39,164 @@ from typing import Dict, List, Tuple, Optional
 PHI = 1.618033988749895
 TAU = 2.0 * math.pi
 
-# Mots vides français (pour filtrage)
-_STOPWORDS = {
+# ═══════════════════════════════════════════════════════════════════════════════
+# MULTILINGUE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Stopwords par langue
+_STOPWORDS_FR = {
     'le', 'la', 'les', 'de', 'des', 'du', 'un', 'une', 'et', 'est', 'a',
     'dans', 'que', 'qui', 'pas', 'ne', 'sur', 'pour', 'avec', 'ce', 'cette',
     'par', 'au', 'aux', 'en', 'plus', 'moins', 'tout', 'tous', 'son', 'sa',
     'ses', 'il', 'elle', 'ils', 'elles', 'nous', 'vous', 'leur', 'leurs',
     'mais', 'ou', 'donc', 'or', 'ni', 'car', 'aussi', 'très', 'bien',
-    'the', 'a', 'an', 'is', 'are', 'was', 'were', 'of', 'in', 'on', 'at',
-    'to', 'for', 'with', 'by', 'from', 'it', 'its', 'and', 'or', 'not',
-    'this', 'that', 'these', 'those', 'be', 'has', 'have', 'had', 'do',
-    'does', 'did', 'will', 'would', 'can', 'could', 'may', 'might',
 }
+
+_STOPWORDS_EN = {
+    'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+    'may', 'might', 'shall', 'should', 'can', 'of', 'in', 'on', 'at', 'to',
+    'for', 'with', 'by', 'from', 'it', 'its', 'and', 'or', 'not', 'but',
+    'if', 'so', 'as', 'than', 'that', 'this', 'these', 'those', 'which',
+    'who', 'whom', 'what', 'when', 'where', 'how', 'all', 'both', 'each',
+    'every', 'some', 'any', 'no', 'nor', 'just', 'very', 'too', 'also',
+}
+
+_STOPWORDS_ES = {
+    'el', 'la', 'los', 'las', 'de', 'del', 'un', 'una', 'y', 'e', 'es',
+    'está', 'son', 'en', 'con', 'para', 'por', 'que', 'se', 'su', 'sus',
+    'al', 'lo', 'como', 'más', 'pero', 'o', 'ha', 'han', 'fue', 'ser',
+    'tiene', 'todo', 'todos', 'muy', 'hay', 'qué', 'cuando', 'donde',
+}
+
+_STOPWORDS_DE = {
+    'der', 'die', 'das', 'den', 'dem', 'des', 'ein', 'eine', 'einer',
+    'und', 'ist', 'sind', 'war', 'waren', 'in', 'an', 'auf', 'mit',
+    'von', 'zu', 'für', 'bei', 'aus', 'nach', 'vor', 'auch', 'nicht',
+    'sich', 'sie', 'er', 'es', 'wir', 'ihr', 'wie', 'was', 'wer',
+    'wo', 'wann', 'warum', 'dass', 'wird', 'hat', 'haben', 'kann',
+}
+
+# Stopwords universels (utilisés par défaut)
+_STOPWORDS = _STOPWORDS_FR  # rétrocompatibilité
+
+# Mapping langue → stopwords
+_LANG_STOPWORDS = {
+    'fr': _STOPWORDS_FR,
+    'en': _STOPWORDS_EN,
+    'es': _STOPWORDS_ES,
+    'de': _STOPWORDS_DE,
+}
+
+# Indices de langue (caractères spécifiques)
+_LANG_MARKERS = {
+    'fr': set('àâäéèêëîïôöùûüçœæ'),
+    'es': set('áéíóúüñ¿¡'),
+    'de': set('äöüß'),
+    'en': set(),  # pas de caractères distinctifs
+}
+
+# Préfixes de question par langue
+_QUESTION_PREFIXES = {
+    'fr': ['explique', 'qu est-ce que', 'qu est ce que', 'qui est',
+            'pourquoi', 'comment', 'decris', 'definis', 'quelle est',
+            'quand', 'ou se', 'que signifie'],
+    'en': ['what is', 'who is', 'explain', 'describe', 'define',
+            'why', 'how does', 'how do', 'how', 'when', 'where', 'which'],
+    'es': ['qué es', 'quién es', 'explica', 'describe', 'define',
+            'por qué', 'cómo', 'cuándo', 'dónde', 'cuál es'],
+    'de': ['was ist', 'wer ist', 'erkläre', 'beschreibe', 'definiere',
+            'warum', 'wie', 'wann', 'wo', 'welche'],
+}
+
+# Templates de réponse par langue (fallback)
+_RESPONSE_TEMPLATES = {
+    'fr': {
+        'definition': [
+            "Le concept de {sujet} est lié à {mots}. Cela implique {w1} et {w2}.",
+            "Pour comprendre {sujet}, il faut saisir que {w0} est en relation avec {w1}.",
+        ],
+        'not_found': "Je n'ai pas assez de connaissances sur {sujet}.",
+        'no_understand': "Je ne comprends pas assez la question sur {sujet}.",
+    },
+    'en': {
+        'definition': [
+            "The concept of {sujet} is related to {w0}. This implies {w1} and {w2}.",
+            "To understand {sujet}, one must grasp that {w0} connects to {w1}.",
+        ],
+        'not_found': "I don't have enough knowledge about {sujet} yet.",
+        'no_understand': "I don't quite understand the question about {sujet}.",
+    },
+    'es': {
+        'definition': [
+            "El concepto de {sujet} está relacionado con {w0}. Esto implica {w1} y {w2}.",
+            "Para entender {sujet}, hay que comprender que {w0} se relaciona con {w1}.",
+        ],
+        'not_found': "No tengo suficiente conocimiento sobre {sujet}.",
+        'no_understand': "No entiendo bien la pregunta sobre {sujet}.",
+    },
+    'de': {
+        'definition': [
+            "Das Konzept von {sujet} ist mit {w0} verbunden. Dies impliziert {w1} und {w2}.",
+            "Um {sujet} zu verstehen, muss man begreifen, dass {w0} mit {w1} zusammenhängt.",
+        ],
+        'not_found': "Ich habe nicht genug Wissen über {sujet}.",
+        'no_understand': "Ich verstehe die Frage zu {sujet} nicht ganz.",
+    },
+}
+
+
+def _detect_language(text: str) -> str:
+    """
+    Détecte la langue d'un texte (fr/en/es/de).
+    
+    Approche :
+    1. Compter les caractères spécifiques à chaque langue
+    2. Compter les stopwords de chaque langue
+    3. Langue = celle avec le score le plus élevé
+    """
+    text_lower = text.lower()
+    scores = {'fr': 0.0, 'en': 0.0, 'es': 0.0, 'de': 0.0}
+    
+    # Score basé sur les caractères accentués spécifiques
+    for ch in text_lower:
+        for lang, markers in _LANG_MARKERS.items():
+            if ch in markers:
+                scores[lang] += 2.0  # fort signal
+    
+    # Score basé sur les stopwords
+    words = set(text_lower.split())
+    for lang, stopwords in _LANG_STOPWORDS.items():
+        overlap = words & stopwords
+        scores[lang] += len(overlap) * 1.0
+    
+    # Bonus pour les patterns de question
+    for lang, prefixes in _QUESTION_PREFIXES.items():
+        for pfx in prefixes:
+            if text_lower.startswith(pfx):
+                scores[lang] += 3.0
+                break
+    
+    # Détection de patterns hispaniques
+    if '¿' in text or '¡' in text:
+        scores['es'] += 10.0
+    if 'ñ' in text_lower:
+        scores['es'] += 3.0
+    
+    # Si rien n'est détecté, fr par défaut
+    best = max(scores, key=scores.get)
+    if scores[best] == 0:
+        return 'fr'
+    return best
+
+
+def _get_lang_config(lang: str) -> dict:
+    """Retourne la configuration pour une langue donnée."""
+    return {
+        'stopwords': _LANG_STOPWORDS.get(lang, _STOPWORDS_FR),
+        'prefixes': _QUESTION_PREFIXES.get(lang, _QUESTION_PREFIXES['fr']),
+        'templates': _RESPONSE_TEMPLATES.get(lang, _RESPONSE_TEMPLATES['fr']),
+    }
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -492,13 +638,19 @@ def holographic_generate(question: str,
     Phase 2 : Si des faits sont trouvés → réponse structurée.
     Phase 3 : Sinon → fallback par résonance vectorielle pure.
     """
-    sujet_phrase = _extract_subject(question)
+    # Détection de langue
+    lang = _detect_language(question)
+    lang_cfg = _get_lang_config(lang)
+    stopwords = lang_cfg['stopwords']
+    
+    sujet_phrase = _extract_subject(question, lang)
     q_words_clean = [w.strip('.,!?;:()[]{}«»""\'\'¿¡') for w in question.lower().split()
-                     if w.strip('.,!?;:()[]{}«»""\'\'¿¡') not in _STOPWORDS
+                     if w.strip('.,!?;:()[]{}«»""\'\'¿¡') not in stopwords
                      and len(w.strip('.,!?;:()[]{}«»""\'\'¿¡')) >= 2]
     
     if not q_words_clean:
-        return f"Je ne comprends pas assez la question sur {sujet_phrase}."
+        tpl = lang_cfg['templates']
+        return tpl['no_understand'].format(sujet=sujet_phrase)
     
     # Pré-calculer les vecteurs des mots de la question
     q_vecs = {}
@@ -506,9 +658,17 @@ def holographic_generate(question: str,
         if qw in encoder.word_vectors:
             q_vecs[qw] = encoder.word_vectors[qw]
     
-    # Étape 2 : Scorer les faits (optimisé: index par sujet pour réduire le scan)
+    # Étape 2 : Scorer les faits
     fact_scores = []
     q_set = set(q_words_clean)
+    
+    # Pré-calculer le vecteur du sujet de la question (hors boucle!)
+    v_q_subj = None
+    if sujet_phrase:
+        v_q_subj = encoder.encode_query(sujet_phrase)
+        norm_q_subj = np.sqrt(np.sum(np.abs(v_q_subj)**2))
+        if norm_q_subj < 1e-10:
+            v_q_subj = None
     
     for s, r, o, sec in knowledge_base:
         # Filtrage rapide : le sujet ou l'objet doit partager un mot avec la question
@@ -539,14 +699,30 @@ def holographic_generate(question: str,
         
         lexical_norm = lexical_overlap / max(len(q_words_clean), 1)
         vector_norm = vector_score / max(len(q_words_clean), 1)
-        score = lexical_norm * 0.7 + vector_norm * 0.3
         
+        # Bonus de similarité holographique sujet_question ↔ sujet_fait
+        subject_bonus = 0.0
+        if v_q_subj is not None:
+            # Comparer avec les mots du sujet du fait (prendre le max)
+            best_subj_sim = 0.0
+            for fw in s_words:
+                if fw in encoder.word_vectors:
+                    v_fw = encoder.word_vectors[fw]
+                    sim = float(np.real(np.dot(v_q_subj, np.conj(v_fw))))
+                    if sim > best_subj_sim:
+                        best_subj_sim = sim
+            subject_bonus = max(0.0, best_subj_sim) * 0.5
+        
+        # Score final : lexical + vectoriel + similarité sujet holographique
+        score = lexical_norm * 0.4 + vector_norm * 0.2 + subject_bonus
+        
+        # Bonus pour correspondance exacte ou partielle du sujet
         if any(qw == s.lower() or s.lower() in qw for qw in q_set):
-            score += 0.3
-        if any(qw in s.lower() for qw in q_set):
+            score += 0.25
+        elif any(qw in s.lower() for qw in q_set):
             score += 0.1
         
-        if score > 0.08:
+        if score > 0.06:
             fact_scores.append((score, (s, r, o, sec)))
     
     # Étape 3 : Construire la réponse
@@ -565,7 +741,7 @@ def holographic_generate(question: str,
                 break
         
         # Rendu stylisé avec StyleEngine (si disponible)
-        response = _render_with_style(selected, question, sujet_phrase)
+        response = _render_with_style(selected, question, sujet_phrase, lang)
         
         if memoire is not None:
             for s, r, o, _ in selected:
@@ -611,16 +787,13 @@ def holographic_generate(question: str,
 # FONCTIONS AUXILIAIRES
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def _extract_subject(question: str) -> str:
+def _extract_subject(question: str, lang: str = 'fr') -> str:
     """Extrait le sujet principal d'une question."""
     q = question.lower().strip()
-    for prefix in ['explique', 'qu est-ce que', 'qu est ce que', 'qui est',
-                    'pourquoi', 'comment', 'decris', 'definis', 'quelle est',
-                    'what is', 'who is', 'explain', 'describe', 'define',
-                    'was ist', '¿qué es', 'que es']:
+    prefixes = _QUESTION_PREFIXES.get(lang, _QUESTION_PREFIXES['fr'])
+    for prefix in sorted(prefixes, key=len, reverse=True):
         if q.startswith(prefix):
             q = q[len(prefix):].strip()
-    # Nettoyer la ponctuation restante
     q = q.strip('.,!?;:¿¡?')
     return q if q else question
 
@@ -738,7 +911,8 @@ def _detect_domain(secteur: str) -> str:
 
 def _render_with_style(facts: List[Tuple[str, str, str, str]],
                         question: str,
-                        sujet: str) -> str:
+                        sujet: str,
+                        lang: str = 'fr') -> str:
     """
     Rend les faits avec le StyleEngine pour un français élégant.
     
@@ -749,13 +923,28 @@ def _render_with_style(facts: List[Tuple[str, str, str, str]],
       → Rendu « encyclopédique » : chaque fait élégant, séparé proprement
     """
     if not facts:
-        return _fallback_fact_lookup(question, [], sujet)
+        tpl = _RESPONSE_TEMPLATES.get(lang, _RESPONSE_TEMPLATES['fr'])
+        return tpl['not_found'].format(sujet=sujet)
     
     # Détecter si c'est une chaîne logique
     is_chain = _is_logical_chain(facts)
     
-    # Détecter le domaine du meilleur fait
-    domaine = _detect_domain(facts[0][3])
+    # Détecter le domaine par vote majoritaire (5 meilleurs faits)
+    domaine_votes = {}
+    for _, _, _, sec in facts[:5]:
+        d = _detect_domain(sec)
+        domaine_votes[d] = domaine_votes.get(d, 0) + 1
+    # Si éparpillement → GENERAL, sinon domaine majoritaire
+    if not domaine_votes:
+        domaine = 'GENERAL'
+    else:
+        best_domain = max(domaine_votes, key=domaine_votes.get)
+        best_count = domaine_votes[best_domain]
+        # Si le meilleur a moins de 50% des votes → GENERAL
+        if best_count < max(2, len(facts[:5]) * 0.5):
+            domaine = 'GENERAL'
+        else:
+            domaine = best_domain
     
     try:
         from style_engine import StyleEngine, RICH_TEMPLATES
@@ -785,7 +974,7 @@ def _render_with_style(facts: List[Tuple[str, str, str, str]],
             pass
     
     # COLLECTION : faits indépendants → rendu encyclopédique
-    return _render_collection(facts, domaine, templates, sujet)
+    return _render_collection(facts, domaine, templates, sujet, lang)
 
 
 def _is_logical_chain(facts: List[Tuple[str, str, str, str]]) -> bool:
@@ -811,7 +1000,8 @@ def _is_logical_chain(facts: List[Tuple[str, str, str, str]]) -> bool:
 def _render_collection(facts: List[Tuple[str, str, str, str]],
                        domaine: str,
                        templates: dict,
-                       sujet: str) -> str:
+                       sujet: str,
+                       lang: str = 'fr') -> str:
     """
     Rendu « encyclopédique » : faits indépendants mais élégants.
     
@@ -828,10 +1018,13 @@ def _render_collection(facts: List[Tuple[str, str, str, str]],
     # Enlever les suffixes comme "(a propos de ...)"
     if '(a propos de' in sujet_clean:
         sujet_clean = sujet_clean.split('(a propos de')[0].strip()
-    # Enlever les préfixes de question résiduels
-    for pfx in ['fonctionne ', 'explique ', 'decris ', 'definis ']:
-        if sujet_clean.lower().startswith(pfx):
-            sujet_clean = sujet_clean[len(pfx):]
+        # Enlever les préfixes de question résiduels (toutes langues)
+        for pfx in ['fonctionne ', 'explique ', 'decris ', 'definis ',
+                     'function ', 'explain ', 'describe ', 'define ',
+                     'how does ', 'how do ', 'what is ', 'who is ',
+                     'was ist ', 'wer ist ', '¿qué es ', 'que es ']:
+            if sujet_clean.lower().startswith(pfx):
+                sujet_clean = sujet_clean[len(pfx):]
     # Enlever la ponctuation et mots parasites
     sujet_clean = sujet_clean.rstrip('?.,! ')
     sujet_clean = sujet_clean.replace('?', '').replace('!', '')
@@ -840,51 +1033,57 @@ def _render_collection(facts: List[Tuple[str, str, str, str]],
     if len(words) > 6:
         sujet_clean = ' '.join(words[:6])
     
-    # Phrases d'ancrage par domaine
+    # Phrases d'ancrage par domaine et langue
     ancrages = {
-        'PHYSIQUE': [
-            f"Le phénomène de {sujet_clean} repose sur plusieurs principes physiques.",
-            f"La physique éclaire {sujet_clean} sous plusieurs angles complémentaires.",
-            f"Plusieurs faits physiques permettent de cerner {sujet_clean}.",
-        ],
-        'BIOLOGIE': [
-            f"Le vivant nous renseigne sur {sujet_clean} à travers plusieurs mécanismes.",
-            f"La biologie offre plusieurs perspectives sur {sujet_clean}.",
-            f"Plusieurs processus biologiques éclairent {sujet_clean}.",
-        ],
-        'CONSCIENCE': [
-            f"L'expérience de {sujet_clean} se déploie sur plusieurs dimensions.",
-            f"La conscience de {sujet_clean} se révèle à travers différents aspects.",
-            f"Plusieurs facettes éclairent notre compréhension de {sujet_clean}.",
-        ],
-        'HISTOIRE': [
-            f"L'histoire de {sujet_clean} s'écrit à travers plusieurs faits marquants.",
-            f"Plusieurs événements historiques permettent de comprendre {sujet_clean}.",
-        ],
-        'PHILOSOPHIE': [
-            f"La question de {sujet_clean} se déploie sur plusieurs plans.",
-            f"Plusieurs perspectives philosophiques éclairent {sujet_clean}.",
-        ],
-        'MATHS': [
-            f"Le concept de {sujet_clean} s'appuie sur plusieurs résultats.",
-            f"Plusieurs propriétés mathématiques définissent {sujet_clean}.",
-        ],
-        'GENERAL': [
-            f"Pour bien comprendre {sujet_clean}, plusieurs éléments sont à considérer.",
-            f"Le sujet de {sujet_clean} touche à plusieurs aspects importants.",
-            f"Voici les principaux éléments concernant {sujet_clean}.",
-        ],
+        'fr': {
+            'PHYSIQUE': [
+                f"Le phénomène de {sujet_clean} repose sur plusieurs principes physiques.",
+                f"La physique éclaire {sujet_clean} sous plusieurs angles.",
+            ],
+            'BIOLOGIE': [
+                f"Le vivant nous renseigne sur {sujet_clean} à travers plusieurs mécanismes.",
+                f"Plusieurs processus biologiques éclairent {sujet_clean}.",
+            ],
+            'CONSCIENCE': [
+                f"L'expérience de {sujet_clean} se déploie sur plusieurs dimensions.",
+                f"Plusieurs facettes éclairent notre compréhension de {sujet_clean}.",
+            ],
+        },
+        'en': {
+            'PHYSIQUE': [
+                f"The phenomenon of {sujet_clean} rests on several physical principles.",
+                f"Physics illuminates {sujet_clean} from several angles.",
+            ],
+            'BIOLOGIE': [
+                f"Living systems reveal {sujet_clean} through several mechanisms.",
+                f"Several biological processes shed light on {sujet_clean}.",
+            ],
+            'CONSCIENCE': [
+                f"The experience of {sujet_clean} unfolds across several dimensions.",
+                f"Several facets illuminate our understanding of {sujet_clean}.",
+            ],
+        },
     }
     
-    ancrage_list = ancrages.get(domaine, ancrages['GENERAL'])
-    ancrage = random.choice(ancrage_list)
+    # Fallback : ancrages français
+    lang_ancrages = ancrages.get(lang, ancrages['fr'])
+    domaine_ancrages = lang_ancrages.get(
+        domaine,
+        lang_ancrages.get('PHYSIQUE', [
+            f"Several aspects are important regarding {sujet_clean}.",
+        ])
+    )
+    if not domaine_ancrages:
+        domaine_ancrages = [f"Voici les principaux éléments concernant {sujet_clean}."]
+    ancrage = random.choice(domaine_ancrages)
     
-    # Phrases de liaison pour la collection (pas de causalité)
-    liaisons = [
-        "D'une part,", "Par ailleurs,", "D'autre part,", 
-        "On notera également que", "Il faut aussi savoir que",
-        "Un autre aspect important :", "Ajoutons que",
-    ]
+    # Liaisons multilingues
+    liaisons_map = {
+        'fr': ["D'une part,", "Par ailleurs,", "On notera également que"],
+        'en': ["First,", "Furthermore,", "It is also worth noting that"],
+    }
+    liaisons = liaisons_map.get(lang, liaisons_map['fr'])
+    enfin_word = {'fr': 'Enfin', 'en': 'Finally', 'es': 'Finalmente', 'de': 'Schließlich'}.get(lang, 'Enfin')
     
     # Rendu de chaque fait en forme compacte élégante
     rendered_facts = []
@@ -902,7 +1101,7 @@ def _render_collection(facts: List[Tuple[str, str, str, str]],
         if i == 0:
             parts.append(f"{fact_str}.")
         elif i == len(rendered_facts) - 1:
-            parts.append(f"Enfin, {fact_str[0].lower()}{fact_str[1:]}.")
+            parts.append(f"{enfin_word}, {fact_str[0].lower()}{fact_str[1:]}.")
         else:
             liaison = liaisons[i % len(liaisons)]
             parts.append(f"{liaison} {fact_str[0].lower()}{fact_str[1:]}.")
