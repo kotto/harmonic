@@ -741,46 +741,173 @@ def _render_with_style(facts: List[Tuple[str, str, str, str]],
                         sujet: str) -> str:
     """
     Rend les faits avec le StyleEngine pour un français élégant.
-    Si StyleEngine indisponible → fallback concaténation simple.
+    
+    Deux modes :
+    - CHAÎNE : si les faits s'enchaînent logiquement (objet_i → sujet_{i+1})
+      → StyleEngine._render_chain() avec connecteurs causaux
+    - COLLECTION : si les faits sont indépendants (thématique commune seulement)
+      → Rendu « encyclopédique » : chaque fait élégant, séparé proprement
     """
     if not facts:
         return _fallback_fact_lookup(question, [], sujet)
     
-    # Tenter d'utiliser le StyleEngine
+    # Détecter si c'est une chaîne logique
+    is_chain = _is_logical_chain(facts)
+    
+    # Détecter le domaine du meilleur fait
+    domaine = _detect_domain(facts[0][3])
+    
     try:
         from style_engine import StyleEngine, RICH_TEMPLATES
         styler = StyleEngine(use_llm=False)
-        
-        # Détecter le domaine du meilleur fait
-        domaine = _detect_domain(facts[0][3])
-        
-        # Construire un pseudo-chemin pour le StyleEngine
-        # Le StyleEngine attend [(s, r, o, sec), ...]
-        path = [(s, r, o, sec) for s, r, o, sec in facts]
-        
-        # Si un seul fait, utiliser le template single
-        if len(path) == 1:
-            templates = RICH_TEMPLATES.get(domaine, RICH_TEMPLATES.get('GENERAL', {}))
-            if 'single' in templates:
-                import random
-                s, r, o, _ = path[0]
-                tmpl = random.choice(templates['single'])
-                return tmpl.format(sujet=s.capitalize(), relation=r, objet=o)
-        
-        # Pour 2+ faits, utiliser le rendu du StyleEngine
-        result = styler.render(path, question, domaine)
-        if result and 'Aucun chemin' not in result:
-            return result
+        templates = RICH_TEMPLATES.get(domaine, RICH_TEMPLATES.get('GENERAL', {}))
     except ImportError:
-        pass
-    except Exception:
-        pass
+        templates = {}
     
-    # Fallback : concaténation simple avec ponctuation
-    parts = []
-    for s, r, o, _ in facts:
-        parts.append(f"{s.capitalize()} {r} {o}")
-    return '. '.join(parts) + '.'
+    if len(facts) == 1:
+        # Fait unique → template single
+        if templates and 'single' in templates:
+            import random
+            s, r, o, _ = facts[0]
+            tmpl = random.choice(templates['single'])
+            return tmpl.format(sujet=s.capitalize(), relation=r, objet=o)
+        s, r, o, _ = facts[0]
+        return f"{s.capitalize()} {r} {o}."
+    
+    if is_chain:
+        # Chaîne logique → StyleEngine complet (intro → liens → conclusion)
+        try:
+            path = [(s, r, o, sec) for s, r, o, sec in facts]
+            result = styler.render(path, question, domaine)
+            if result and 'Aucun chemin' not in result:
+                return result
+        except Exception:
+            pass
+    
+    # COLLECTION : faits indépendants → rendu encyclopédique
+    return _render_collection(facts, domaine, templates, sujet)
+
+
+def _is_logical_chain(facts: List[Tuple[str, str, str, str]]) -> bool:
+    """
+    Détecte si les faits forment une chaîne logique.
+    Une chaîne : l'objet du fait N partage des mots avec le sujet du fait N+1.
+    """
+    if len(facts) < 2:
+        return False
+    
+    chain_links = 0
+    for i in range(len(facts) - 1):
+        obj_words = set(w.strip('.,!?;:') for w in facts[i][2].lower().split() if len(w) >= 2)
+        subj_words = set(w.strip('.,!?;:') for w in facts[i+1][0].lower().split() if len(w) >= 2)
+        overlap = obj_words & subj_words
+        if overlap:
+            chain_links += 1
+    
+    # Est une chaîne si au moins la moitié des transitions sont liées
+    return chain_links >= (len(facts) - 1) * 0.5
+
+
+def _render_collection(facts: List[Tuple[str, str, str, str]],
+                       domaine: str,
+                       templates: dict,
+                       sujet: str) -> str:
+    """
+    Rendu « encyclopédique » : faits indépendants mais élégants.
+    
+    Structure :
+      [Phrase d'ancrage thématique]
+      D'une part, Fait 1.
+      D'autre part, Fait 2.
+      Enfin, Fait 3.
+    """
+    import random
+    
+    # Nettoyer le sujet pour l'affichage
+    sujet_clean = sujet.strip()
+    # Enlever les suffixes comme "(a propos de ...)"
+    if '(a propos de' in sujet_clean:
+        sujet_clean = sujet_clean.split('(a propos de')[0].strip()
+    # Enlever les préfixes de question résiduels
+    for pfx in ['fonctionne ', 'explique ', 'decris ', 'definis ']:
+        if sujet_clean.lower().startswith(pfx):
+            sujet_clean = sujet_clean[len(pfx):]
+    # Enlever la ponctuation et mots parasites
+    sujet_clean = sujet_clean.rstrip('?.,! ')
+    sujet_clean = sujet_clean.replace('?', '').replace('!', '')
+    # Limiter à 6 mots max
+    words = sujet_clean.split()
+    if len(words) > 6:
+        sujet_clean = ' '.join(words[:6])
+    
+    # Phrases d'ancrage par domaine
+    ancrages = {
+        'PHYSIQUE': [
+            f"Le phénomène de {sujet_clean} repose sur plusieurs principes physiques.",
+            f"La physique éclaire {sujet_clean} sous plusieurs angles complémentaires.",
+            f"Plusieurs faits physiques permettent de cerner {sujet_clean}.",
+        ],
+        'BIOLOGIE': [
+            f"Le vivant nous renseigne sur {sujet_clean} à travers plusieurs mécanismes.",
+            f"La biologie offre plusieurs perspectives sur {sujet_clean}.",
+            f"Plusieurs processus biologiques éclairent {sujet_clean}.",
+        ],
+        'CONSCIENCE': [
+            f"L'expérience de {sujet_clean} se déploie sur plusieurs dimensions.",
+            f"La conscience de {sujet_clean} se révèle à travers différents aspects.",
+            f"Plusieurs facettes éclairent notre compréhension de {sujet_clean}.",
+        ],
+        'HISTOIRE': [
+            f"L'histoire de {sujet_clean} s'écrit à travers plusieurs faits marquants.",
+            f"Plusieurs événements historiques permettent de comprendre {sujet_clean}.",
+        ],
+        'PHILOSOPHIE': [
+            f"La question de {sujet_clean} se déploie sur plusieurs plans.",
+            f"Plusieurs perspectives philosophiques éclairent {sujet_clean}.",
+        ],
+        'MATHS': [
+            f"Le concept de {sujet_clean} s'appuie sur plusieurs résultats.",
+            f"Plusieurs propriétés mathématiques définissent {sujet_clean}.",
+        ],
+        'GENERAL': [
+            f"Pour bien comprendre {sujet_clean}, plusieurs éléments sont à considérer.",
+            f"Le sujet de {sujet_clean} touche à plusieurs aspects importants.",
+            f"Voici les principaux éléments concernant {sujet_clean}.",
+        ],
+    }
+    
+    ancrage_list = ancrages.get(domaine, ancrages['GENERAL'])
+    ancrage = random.choice(ancrage_list)
+    
+    # Phrases de liaison pour la collection (pas de causalité)
+    liaisons = [
+        "D'une part,", "Par ailleurs,", "D'autre part,", 
+        "On notera également que", "Il faut aussi savoir que",
+        "Un autre aspect important :", "Ajoutons que",
+    ]
+    
+    # Rendu de chaque fait en forme compacte élégante
+    rendered_facts = []
+    for i, (s, r, o, _) in enumerate(facts):
+        # Forme simple élégante sans template redondant
+        fact_str = f"{s.capitalize()} {r} {o}"
+        rendered_facts.append(fact_str)
+    
+    # Assemblage
+    if len(rendered_facts) == 1:
+        return f"{ancrage} {rendered_facts[0]}."
+    
+    parts = [ancrage]
+    for i, fact_str in enumerate(rendered_facts):
+        if i == 0:
+            parts.append(f"{fact_str}.")
+        elif i == len(rendered_facts) - 1:
+            parts.append(f"Enfin, {fact_str[0].lower()}{fact_str[1:]}.")
+        else:
+            liaison = liaisons[i % len(liaisons)]
+            parts.append(f"{liaison} {fact_str[0].lower()}{fact_str[1:]}.")
+    
+    return ' '.join(parts)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
