@@ -504,18 +504,38 @@ def extend_knowledge(facts: List[Tuple[str, str, str, str]]):
 class HarmonicModel:
     """
     Interface unifiee du modele harmonique.
+    
+    Modes d'encodage :
+      - use_holographic=False : φ-cercle 1D classique (~2300 mots, Shannon)
+      - use_holographic=True  : HRR S² vectoriel (~40000 mots, Bekenstein)
     """
     
-    def __init__(self, use_memory: bool = True):
+    def __init__(self, use_memory: bool = True, use_holographic: bool = True):
         self.knowledge_base = list(KNOWLEDGE_BASE)  # copie modifiable
-        self.kx, self.ky, self.w2i = build_waves(self.knowledge_base)
+        self.use_holographic = use_holographic
+        self._encoder = None  # HolographicEncoder (si use_holographic)
+        
+        if use_holographic:
+            from holographic_encoder import build_holographic_waves
+            self.kx, self.ky, self.w2i, self._encoder = build_holographic_waves(
+                self.knowledge_base, dim=384
+            )
+        else:
+            self.kx, self.ky, self.w2i = build_waves(self.knowledge_base)
+        
         self.memoire = MemoireOndulatoire(nx=128, ny=128) if use_memory else None
         self._last_topic = None
     
     def set_language(self, lang: str):
         """Change la langue du modele (reconstruit les vagues)."""
         self.knowledge_base = translate_kb(lang)
-        self.kx, self.ky, self.w2i = build_waves(self.knowledge_base)
+        if self.use_holographic and self._encoder is not None:
+            from holographic_encoder import build_holographic_waves
+            self.kx, self.ky, self.w2i, self._encoder = build_holographic_waves(
+                self.knowledge_base, encoder=self._encoder
+            )
+        else:
+            self.kx, self.ky, self.w2i = build_waves(self.knowledge_base)
 
     def ask(self, question: str, max_words: int = 6) -> str:
         """Pose une question et obtient une reponse factuelle."""
@@ -523,9 +543,17 @@ class HarmonicModel:
         if self._last_topic and len(question.split()) <= 4:
             enriched = f"{question} (a propos de {self._last_topic})"
         
-        reponse = generate(enriched, self.kx, self.ky, self.w2i,
-                          knowledge_base=self.knowledge_base,
-                          memoire=self.memoire, max_words=max_words)
+        if self.use_holographic and self._encoder is not None:
+            from holographic_encoder import holographic_generate
+            reponse = holographic_generate(
+                enriched, self._encoder, self.kx, self.ky, self.w2i,
+                knowledge_base=self.knowledge_base,
+                memoire=self.memoire, max_words=max_words
+            )
+        else:
+            reponse = generate(enriched, self.kx, self.ky, self.w2i,
+                              knowledge_base=self.knowledge_base,
+                              memoire=self.memoire, max_words=max_words)
         
         mots_sujet = [w for w in question.lower().split()
                       if w not in _STOPWORDS and len(w) > 2]
@@ -641,6 +669,23 @@ class HarmonicModel:
         fact = (sujet, relation, objet, secteur)
         if fact not in self.knowledge_base:
             self.knowledge_base.append(fact)
+            if self.use_holographic and self._encoder is not None:
+                # Mettre à jour l'encodage avec les nouveaux mots
+                from holographic_encoder import build_holographic_waves
+                self.kx, self.ky, self.w2i, self._encoder = build_holographic_waves(
+                    self.knowledge_base, encoder=self._encoder
+                )
+            else:
+                self.kx, self.ky, self.w2i = build_waves(self.knowledge_base)
+    
+    def rebuild_waves(self):
+        """Reconstruit explicitement les vecteurs d'onde."""
+        if self.use_holographic and self._encoder is not None:
+            from holographic_encoder import build_holographic_waves
+            self.kx, self.ky, self.w2i, self._encoder = build_holographic_waves(
+                self.knowledge_base, encoder=self._encoder
+            )
+        else:
             self.kx, self.ky, self.w2i = build_waves(self.knowledge_base)
     
     def learn_text(self, texte: str, amplitude: float = 0.7):
