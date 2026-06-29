@@ -79,8 +79,11 @@ class HologrammeMonde:
         x = np.linspace(-math.pi, math.pi, nx)
         y = np.linspace(-math.pi, math.pi, ny)
         self.xx, self.yy = np.meshgrid(x, y, indexing='ij')
-        # Hologramme : bruit de fond initial (l'experience du vide)
-        self.H = np.random.randn(nx, ny) * 0.01 + 1j * np.random.randn(nx, ny) * 0.01
+        # Hologramme : initialise a ZERO (page blanche, pas de bruit)
+        # Le bruit initial representait \"l'experience du vide\" mais
+        # cree un plancher de bruit qui noie le signal des connaissances.
+        # Un hologramme vide doit etre SILENCIEUX, pas bruyant.
+        self.H = np.zeros((nx, ny), dtype=np.complex128)
         self.n_experiences = 0
         self.historique_gradient = []  # Pour suivi
 
@@ -108,6 +111,16 @@ class HologrammeMonde:
         onde_ref = np.exp(-1j * (kx * self.xx + ky * self.yy))
         corr = np.sum(self.H * onde_ref)
         return float(np.abs(corr) / (self.nx * self.ny))
+
+    def lire_onde_complexe(self, kx: float, ky: float) -> complex:
+        """
+        Mesure la correlation COMPLEXE du monde avec une onde.
+        Retourne la valeur complexe complete (amplitude ET phase).
+        La phase encode le CONTEXTE dans lequel l'onde apparait.
+        """
+        onde_ref = np.exp(-1j * (kx * self.xx + ky * self.yy))
+        corr = np.sum(self.H * onde_ref)
+        return complex(corr / (self.nx * self.ny))
 
     def energie(self) -> float:
         """Energie totale de l'hologramme."""

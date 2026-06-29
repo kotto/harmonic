@@ -404,7 +404,7 @@ class PhiVocoder:
     - Contrôle prosodique total via les 11 dimensions
     """
 
-    def __init__(self, sample_rate: int = 22050):
+    def __init__(self, sample_rate: int = 48000):
         self.sample_rate = sample_rate
         self.source = PhiSource(sample_rate)
         self.filter = PhiFormantFilter(sample_rate)
@@ -723,7 +723,7 @@ def voice_11d_to_audio(voice_params: np.ndarray,
     return vocoder.synthesize(voice_params, duration)
 
 
-def save_wav(audio: np.ndarray, filepath: str, sample_rate: int = 22050):
+def save_wav(audio: np.ndarray, filepath: str, sample_rate: int = 48000):
     """Sauvegarde un array audio en fichier WAV."""
     import struct
     import wave

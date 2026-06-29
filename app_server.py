@@ -50,8 +50,69 @@ if HAS_FLASK:
         return jsonify({
             'ok': True,
             'status': 'running',
-            'message': 'HCV Studio is running'
+            'message': 'HCV Studio + Harmonic AI'
         })
+    
+    # =====================================================================
+    # HARMONIC AI ENDPOINTS
+    # =====================================================================
+    
+    # Initialisation lazy du modele Harmonic AI
+    _harmonic_ai = None
+    
+    def _get_ai():
+        global _harmonic_ai
+        if _harmonic_ai is None:
+            import sys
+            sys.path.insert(0, 'engine')
+            from harmonic_ai import HarmonicAI
+            _harmonic_ai = HarmonicAI(use_memory=True)
+        return _harmonic_ai
+    
+    @app.route('/api/ask')
+    def api_ask():
+        """Reponse factuelle"""
+        from flask import request
+        q = request.args.get('q', '')
+        if not q:
+            return jsonify({'error': 'Parametre q requis'}), 400
+        ai = _get_ai()
+        response = ai.ask(q)
+        return jsonify({'question': q, 'response': response, 'model': 'harmonic-v1'})
+    
+    @app.route('/api/reason')
+    def api_reason():
+        """Raisonnement en chaine"""
+        from flask import request
+        q = request.args.get('q', '')
+        if not q:
+            return jsonify({'error': 'Parametre q requis'}), 400
+        ai = _get_ai()
+        response = ai.reason(q)
+        return jsonify({'question': q, 'response': response, 'model': 'harmonic-v1'})
+    
+    @app.route('/api/create')
+    def api_create():
+        """Connexions creatives"""
+        from flask import request
+        n = int(request.args.get('n', '3'))
+        ai = _get_ai()
+        ideas = ai.create(n=n)
+        return jsonify({'ideas': ideas, 'model': 'harmonic-v1'})
+    
+    @app.route('/api/haiku')
+    def api_haiku():
+        """Haiku"""
+        ai = _get_ai()
+        return jsonify({'haiku': ai.haiku(), 'model': 'harmonic-v1'})
+    
+    @app.route('/api/stats')
+    def api_stats():
+        """Statistiques du modele"""
+        ai = _get_ai()
+        return jsonify({'stats': ai.stats, 'model': 'harmonic-v1'})
+    
+    # ====================================================================
     
     @app.route('/api/info')
     def info():

@@ -413,28 +413,30 @@ class HarmonicTokenizer:
     
     def encode(self, text: str, add_special_tokens: bool = True) -> List[int]:
         """
-        Encode un texte en tokens.
-        
-        Args:
-            text: Texte a encoder
-            add_special_tokens: Ajouter <BOS> et <EOS>
-        
-        Returns:
-            List d'ids de tokens
+        Encode un texte en tokens. Les mots inconnus sont decoupes
+        en caracteres individuels (jamais de <UNK>).
         """
-        # Decouper en mots (separation basique)
         words = re.findall(r"\w+|[^\w\s]", text.lower())
-        
+
         tokens = []
         for word in words:
             if word in self.token_to_id:
                 tokens.append(self.token_to_id[word])
             else:
-                tokens.append(self.unk_id)
-        
+                # Fallback: decouper en caracteres
+                for ch in word:
+                    if ch in self.token_to_id:
+                        tokens.append(self.token_to_id[ch])
+                    else:
+                        # Ajouter le caractere au vocabulaire dynamiquement
+                        new_id = len(self.id_to_token)
+                        self.token_to_id[ch] = new_id
+                        self.id_to_token[new_id] = ch
+                        tokens.append(new_id)
+
         if add_special_tokens:
             tokens = [self.bos_id] + tokens + [self.eos_id]
-        
+
         return tokens
     
     def decode(self, token_ids: List[int], skip_special_tokens: bool = True) -> str:

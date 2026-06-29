@@ -31,32 +31,32 @@ logger = logging.getLogger(__name__)
 ROUTING_TABLE = {
     "mathematical": {
         "primary": "deepseek-reasoner",
-        "fallback": "gpt-4",
+        "fallback": "deepseek-chat",
         "config_override": {"temperature": 0.3, "max_tokens": 4096}
     },
     "code": {
         "primary": "deepseek-chat",
-        "fallback": "gpt-4",
+        "fallback": "gpt-3.5-turbo",
         "config_override": {"temperature": 0.2, "max_tokens": 4096}
     },
     "creative": {
-        "primary": "claude-3-5-sonnet-20241022",
-        "fallback": "mistral-large-latest",
+        "primary": "deepseek-chat",        # DeepSeek bon en creativite aussi
+        "fallback": "claude-3-5-sonnet-20241022",
         "config_override": {"temperature": 0.85, "max_tokens": 2048}
     },
     "reasoning": {
-        "primary": "claude-3-opus-20240229",
-        "fallback": "deepseek-reasoner",
+        "primary": "deepseek-reasoner",
+        "fallback": "claude-3-opus-20240229",
         "config_override": {"temperature": 0.5, "max_tokens": 2048}
     },
     "factual": {
-        "primary": "gpt-4",
-        "fallback": "gpt-3.5-turbo",
+        "primary": "deepseek-chat",
+        "fallback": "qwen-max",
         "config_override": {"temperature": 0.2, "max_tokens": 1024}
     },
     "general": {
-        "primary": "gpt-3.5-turbo",
-        "fallback": "mistral-small-latest",
+        "primary": "deepseek-chat",
+        "fallback": "gpt-3.5-turbo",
         "config_override": {"temperature": 0.7, "max_tokens": 512}
     },
 }
@@ -92,28 +92,36 @@ class HarmonicLLM:
                     api_base="https://api.deepseek.com/v1",
                 )
                 self._providers[name] = OpenAILLM(cfg)
-            
+
+            elif "qwen" in name.lower():
+                cfg = LLMConfig(
+                    model=name,
+                    api_key=os.environ.get("QWEN_API_KEY"),
+                    api_base="https://dashscope.aliyuncs.com/compatible-mode/v1",
+                )
+                self._providers[name] = OpenAILLM(cfg)
+
             elif "claude" in name.lower() or "opus" in name.lower() or "sonnet" in name.lower():
                 cfg = LLMConfig(
                     model=name,
                     api_key=os.environ.get("ANTHROPIC_API_KEY"),
                 )
                 self._providers[name] = AnthropicLLM(cfg)
-            
+
             elif "mistral" in name.lower() or "mixtral" in name.lower():
                 cfg = LLMConfig(
                     model=name,
                     api_key=os.environ.get("MISTRAL_API_KEY"),
                 )
                 self._providers[name] = MistralLLM(cfg)
-            
+
             elif "gpt" in name.lower() or "openai" in name.lower():
                 cfg = LLMConfig(
                     model=name,
                     api_key=os.environ.get("OPENAI_API_KEY"),
                 )
                 self._providers[name] = OpenAILLM(cfg)
-            
+
             else:
                 # Fallback: essayer en OpenAI (compatible)
                 cfg = LLMConfig(

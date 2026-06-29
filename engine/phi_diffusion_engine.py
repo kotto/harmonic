@@ -137,13 +137,30 @@ def voice_11d_to_backend_params(v: np.ndarray, backend: str) -> Dict:
 
 
 # =========================================================================
+# RESAMPLING UTILITY
+# =========================================================================
+
+def resample_audio(audio: np.ndarray, orig_sr: int, target_sr: int) -> np.ndarray:
+    """Resample audio to target sample rate using linear interpolation."""
+    if orig_sr == target_sr:
+        return audio
+    duration = len(audio) / orig_sr
+    n_target = int(duration * target_sr)
+    indices = np.linspace(0, len(audio) - 1, n_target)
+    lo = np.floor(indices).astype(int)
+    hi = np.clip(lo + 1, 0, len(audio) - 1)
+    frac = indices - lo
+    return (audio[lo] * (1 - frac) + audio[hi] * frac).astype(np.float32)
+
+
+# =========================================================================
 # PHI DIFFUSION ENGINE
 # =========================================================================
 
 class PhiDiffusionEngine:
     """Moteur de synthèse vocale de qualité professionnelle piloté par 11D."""
 
-    def __init__(self, sample_rate: int = 22050):
+    def __init__(self, sample_rate: int = 48000):
         self.sample_rate = sample_rate
         self.encoder = ConditionEncoder()
         self._backend_name = None
@@ -153,33 +170,48 @@ class PhiDiffusionEngine:
         self.total_synthesized = 0
         self.total_time_ms = 0.0
 
-    def _detect_backend(self) -> str:
+    def _detect_backend(self, force: str = None) -> str:
+        if force:
+            self._backend_name = force
+            return force
         if self._backend_name:
             return self._backend_name
-        try:
-            import TTS
-            self._backend_name = "coqui_xtts"
-            print("[PhiDiffusion] Backend: Coqui TTS / XTTS-v2")
-            return self._backend_name
-        except ImportError:
-            pass
+        # 1) Piper TTS — local, léger, CPU, fonctionne partout (<100 MB RAM)
         try:
             import importlib
             if importlib.util.find_spec("piper"):
-                self._backend_name = "piper_tts"
-                print("[PhiDiffusion] Backend: Piper TTS")
-                return self._backend_name
+                # Vérifie qu'on a au moins une voix FR
+                voices_dir = os.environ.get('PIPER_VOICE_DIR', 'E:/piper_voices')
+                if os.path.isdir(voices_dir) and any(f.endswith('.onnx') for f in os.listdir(voices_dir)):
+                    self._backend_name = "piper_tts"
+                    print("[PhiDiffusion] Backend: Piper TTS (local, CPU)")
+                    return self._backend_name
         except Exception:
             pass
+        # 2) Edge-TTS — cloud Microsoft, bonne qualité, pas de RAM
         if shutil.which("edge-tts"):
             self._backend_name = "edge_tts"
             print("[PhiDiffusion] Backend: Edge-TTS (cloud)")
             return self._backend_name
+        # 3) Coqui XTTS-v2 — qualité ElevenLabs, nécessite 4+ GB RAM
+        try:
+            import psutil
+            avail_gb = psutil.virtual_memory().available / (1024**3)
+            if avail_gb > 5.0:
+                import TTS
+                self._backend_name = "coqui_xtts"
+                print("[PhiDiffusion] Backend: Coqui TTS / XTTS-v2")
+                return self._backend_name
+            else:
+                print(f"[PhiDiffusion] XTTS-v2 ignoré (RAM dispo: {avail_gb:.1f} GB < 5.0 requis)")
+        except ImportError:
+            pass
         self._backend_name = "gtts"
         print("[PhiDiffusion] Backend: gTTS (fallback)")
         return self._backend_name
 
-    def synthesize(self, text: str, voice_params=None, voice_name="default", style="neutre") -> np.ndarray:
+    def synthesize(self, text: str, voice_params=None, voice_name="default",
+                   style="neutre", speaker_wav: Optional[str] = None) -> np.ndarray:
         backend = self._detect_backend()
         if voice_params is None:
             voice_params = self._neutral_11d()
@@ -190,7 +222,7 @@ class PhiDiffusionEngine:
         t0 = time.time()
 
         if backend in ("coqui_tts", "coqui_xtts"):
-            audio = self._synth_coqui(text, params, voice_name)
+            audio = self._synth_coqui(text, params, voice_name, speaker_wav=speaker_wav)
         elif backend == "piper_tts":
             audio = self._synth_piper(text, params, voice_name)
         elif backend == "edge_tts":
@@ -202,6 +234,17 @@ class PhiDiffusionEngine:
         self.total_synthesized += 1
         n = self.total_synthesized
         self.total_time_ms = (self.total_time_ms * (n - 1) + ms) / n
+
+        # Resample to target sample rate (default 48 kHz)
+        if backend == "piper_tts":
+            backend_sr = 22050
+        elif backend in ("coqui_tts", "coqui_xtts"):
+            backend_sr = 24000
+        else:
+            backend_sr = 24000
+        if backend_sr != self.sample_rate:
+            audio = resample_audio(audio, backend_sr, self.sample_rate)
+
         return audio
 
     def synthesize_from_profile(self, text: str, profile_name="default", style="neutre") -> np.ndarray:
@@ -213,61 +256,210 @@ class PhiDiffusionEngine:
         lang = "fr" if "fr" in profile_name.lower() else "en"
         return self.synthesize(text, vp, lang, style)
 
-    # ----------------------------------------------------------------- COQUI XTTS-v2
-    def _synth_coqui(self, text: str, params: Dict, voice_name: str) -> np.ndarray:
+    def synthesize_high_quality(
+        self,
+        text: str,
+        speaker_wav: Optional[str] = None,
+        voice_profile: str = "css10_fr_native",
+        language: str = "fr",
+        speed: float = 1.0,
+        style: str = "neutre",
+    ) -> np.ndarray:
+        """
+        Synthese de qualite ElevenLabs via XTTS-v2 avec clonage vocal.
+
+        Args:
+            text: texte a synthetiser
+            speaker_wav: chemin vers audio de reference (6-30s) pour cloner une voix.
+                         Si None, utilise le profil integre (css10_fr_native par defaut).
+            voice_profile: nom du profil 11D integre (css10_fr_native, default, etc.)
+            language: code langue
+            speed: vitesse (0.5-2.0)
+            style: style emotionnel
+
+        Returns:
+            np.ndarray float32 audio
+        """
+        from engine.voice_signature_extractor import REFERENCE_PROFILES
+
+        # Charger la signature 11D du profil
+        if voice_profile in REFERENCE_PROFILES:
+            vp = REFERENCE_PROFILES[voice_profile].to_array()
+        else:
+            vp = self._neutral_11d()
+
+        # Appliquer le style
+        if style != "neutre":
+            vp = self._apply_style(vp, style)
+
+        # Parametres backend
+        backend = self._detect_backend()
+        params = voice_11d_to_backend_params(vp, backend)
+        params['speed'] = speed
+        params['language'] = language
+
+        t0 = time.time()
+
+        if backend in ("coqui_tts", "coqui_xtts"):
+            audio = self._synth_coqui(text, params, voice_profile, speaker_wav=speaker_wav)
+        elif backend == "piper_tts":
+            audio = self._synth_piper(text, params, voice_profile)
+        else:
+            audio = self._synth_edgetts(text, params, voice_profile)
+
+        ms = (time.time() - t0) * 1000
+        self.total_synthesized += 1
+        n = self.total_synthesized
+        self.total_time_ms = (self.total_time_ms * (n - 1) + ms) / n
+
+        # Resample to target sample rate (default 48 kHz)
+        if backend == "piper_tts":
+            backend_sr = 22050
+        elif backend in ("coqui_tts", "coqui_xtts"):
+            backend_sr = 24000
+        else:
+            backend_sr = 24000
+        if backend_sr != self.sample_rate:
+            audio = resample_audio(audio, backend_sr, self.sample_rate)
+
+        return audio
+
+    # ----------------------------------------------------------------- COQUI XTTS-v2 (qualite ElevenLabs)
+    def _synth_coqui(self, text: str, params: Dict, voice_name: str,
+                     speaker_wav: Optional[str] = None) -> np.ndarray:
+        """
+        Synthese via XTTS-v2 avec clonage vocal optionnel.
+
+        Args:
+            speaker_wav: chemin vers audio de reference (6-30s) pour clonage.
+                         Si None, utilise la voix par defaut du modele.
+        """
         try:
             if self._coqui_tts is None:
                 from TTS.api import TTS
                 import builtins
                 orig = builtins.input
                 builtins.input = lambda _: 'y'
-                print("[PhiDiffusion] Loading XTTS-v2 model (~1.5 GB)...")
+                print("[PhiDiffusion] Loading XTTS-v2 model (~1.8 GB, first load ~30s)...")
                 try:
-                    self._coqui_tts = TTS(model_name="tts_models/multilingual/multi-dataset/xtts_v2", progress_bar=False)
+                    self._coqui_tts = TTS(
+                        model_name="tts_models/multilingual/multi-dataset/xtts_v2",
+                        progress_bar=False
+                    )
                     print("[PhiDiffusion] XTTS-v2 loaded")
                 finally:
                     builtins.input = orig
-            wav = self._coqui_tts.tts(text=text, speaker_wav=None,
-                                      language=params.get('language', 'fr'),
-                                      speed=params.get('speed', 1.0))
+
+            wav = self._coqui_tts.tts(
+                text=text,
+                speaker_wav=speaker_wav,
+                language=params.get('language', 'fr'),
+                speed=params.get('speed', 1.0),
+            )
             if isinstance(wav, list) and len(wav) > 0:
-                return np.array(wav, dtype=np.float32)
-            return np.zeros(int(2.0 * self.sample_rate), dtype=np.float32)
+                audio = np.array(wav, dtype=np.float32)
+                # Normaliser
+                peak = np.max(np.abs(audio))
+                if peak > 0:
+                    audio = audio / peak * 0.95
+                return audio
+            return np.zeros(int(2.0 * 24000), dtype=np.float32)
         except Exception as e:
             print(f"[PhiDiffusion] Coqui failed: {e}, fallback Edge-TTS")
-            return self._synth_edgetts(text, voice_11d_to_backend_params(self._neutral_11d(), "edge_tts"), voice_name)
+            return self._synth_edgetts(
+                text,
+                voice_11d_to_backend_params(self._neutral_11d(), "edge_tts"),
+                voice_name
+            )
 
     # ----------------------------------------------------------------- PIPER
     def _synth_piper(self, text: str, params: Dict, voice_name: str) -> np.ndarray:
+        """Synthèse via Piper TTS (local, léger)."""
         try:
             self._ensure_piper_voice(voice_name)
-            import piper
-            stream = io.BytesIO()
-            self._piper_voice.synthesize(text, stream, length_scale=params.get('length_scale', 1.0),
-                                         noise_scale=params.get('noise_scale', 0.667),
-                                         noise_w=params.get('noise_w', 0.8),
-                                         sentence_silence=params.get('sentence_silence', 0.2))
-            with wave.open(io.BytesIO(stream.getvalue()), 'rb') as wf:
+            from piper.config import SynthesisConfig
+
+            # Construire la config de synthèse
+            syn_config = SynthesisConfig(
+                length_scale=params.get('length_scale', 1.0),
+                noise_scale=params.get('noise_scale', 0.667),
+                noise_w_scale=params.get('noise_w', 0.8),
+            )
+
+            # Utiliser synthesize_wav avec un BytesIO wrappé dans wave.Wave_write
+            buf = io.BytesIO()
+            wav_writer = wave.open(buf, 'w')
+            try:
+                self._piper_voice.synthesize_wav(text, wav_writer, syn_config)
+            finally:
+                wav_writer.close()
+
+            # Lire le WAV depuis le buffer
+            buf.seek(0)
+            with wave.open(buf, 'rb') as wf:
                 raw = wf.readframes(wf.getnframes())
-            return np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768.0
+            audio = np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768.0
+            return audio
         except Exception as e:
             print(f"[PhiDiffusion] Piper failed: {e}, fallback Edge-TTS")
+            import traceback
+            traceback.print_exc()
             return self._synth_edgetts(text, voice_11d_to_backend_params(self._neutral_11d(), "edge_tts"), voice_name)
 
     def _ensure_piper_voice(self, name: str):
+        """Charge une voix Piper. Priorité : E:/piper_voices/ (pré-téléchargé)."""
         if self._piper_voice_name == name and self._piper_voice:
             return
         import piper
-        cache = Path(os.path.expanduser("~")) / ".cache" / "piper_tts" / name
-        model = cache / f"{name}.onnx"
-        if not model.exists():
-            cache.mkdir(parents=True, exist_ok=True)
-            import urllib.request
-            url = f"https://huggingface.co/rhasspy/piper-voices/resolve/main/{name}/{name}.onnx"
-            req = urllib.request.Request(url, headers={'User-Agent': 'HarmonicAI'})
-            with urllib.request.urlopen(req, timeout=120) as r:
-                model.write_bytes(r.read())
-        self._piper_voice = piper.PiperVoice.load(str(model))
+
+        # Mapping noms logiques → fichiers de voix réels
+        VOICE_MAP = {
+            'default': 'fr_FR-siwis-medium',
+            'fr': 'fr_FR-siwis-medium',
+            'fr_female': 'fr_FR-siwis-medium',
+            'fr_male': 'fr_FR-gilles-low',
+            'en': 'en_US-lessac-medium',
+            'en_female': 'en_US-lessac-medium',
+            'css10_fr_native': 'fr_FR-siwis-medium',
+        }
+        resolved = VOICE_MAP.get(name, name)
+
+        # Chercher la voix dans les répertoires connus
+        search_dirs = [
+            os.environ.get('PIPER_VOICE_DIR', 'E:/piper_voices'),
+            str(Path(os.path.expanduser("~")) / ".cache" / "piper_tts"),
+        ]
+        model_path = None
+        for d in search_dirs:
+            candidate = Path(d) / f"{resolved}.onnx"
+            if candidate.exists():
+                model_path = str(candidate)
+                break
+            # Cherche aussi les .onnx qui commencent par le nom résolu
+            if os.path.isdir(d):
+                for f in sorted(os.listdir(d)):
+                    if f.startswith(resolved) and f.endswith('.onnx'):
+                        model_path = str(Path(d) / f)
+                        break
+                if model_path:
+                    break
+
+        if not model_path:
+            # Téléchargement fallback
+            cache = Path(os.path.expanduser("~")) / ".cache" / "piper_tts" / resolved
+            model = cache / f"{resolved}.onnx"
+            if not model.exists():
+                cache.mkdir(parents=True, exist_ok=True)
+                import urllib.request
+                url = f"https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR/{'siwis' if 'siwis' in resolved else 'gilles'}/{'medium' if 'medium' in resolved else 'low'}/{resolved}.onnx"
+                print(f"[PhiDiffusion] Téléchargement voix Piper: {url}")
+                req = urllib.request.Request(url, headers={'User-Agent': 'HarmonicAI'})
+                with urllib.request.urlopen(req, timeout=120) as r:
+                    model.write_bytes(r.read())
+            model_path = str(model)
+
+        print(f"[PhiDiffusion] Chargement voix Piper: {model_path}")
+        self._piper_voice = piper.PiperVoice.load(model_path)
         self._piper_voice_name = name
 
     # ----------------------------------------------------------------- EDGE-TTS
@@ -335,7 +527,7 @@ class PhiDiffusionEngine:
         return np.clip(v, 0, 1)
 
     @staticmethod
-    def save_wav(audio: np.ndarray, filepath: str, sample_rate: int = 22050):
+    def save_wav(audio: np.ndarray, filepath: str, sample_rate: int = 48000):
         os.makedirs(os.path.dirname(filepath) or '.', exist_ok=True)
         a16 = np.clip(audio * 32767, -32768, 32767).astype(np.int16)
         with wave.open(filepath, 'w') as wf:

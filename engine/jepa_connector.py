@@ -1,21 +1,32 @@
 """
-Connecteur JEPA pour le Moteur de Résonance Harmonique
-=======================================================
-Intègre le prédicteur JEPA (Joint Embedding Predictive Architecture)
-dans le pipeline d'inférence pour prédire l'évolution des signatures 9D.
+[DEPRECATED] Connecteur JEPA — REMPLACE par engine.abc_predictor_connector
+============================================================================
+Ce module est OBSOLETE depuis la migration JEPA → ABC (juin 2026).
 
-Le JEPA prédit la PROCHAINE signature 9D à partir de l'historique des signatures,
-permettant :
-- Anticipation de la direction thématique de la conversation
-- Détection de changements de contexte (topic shift prédictif)
-- Boost de résonance basé sur les prédictions
-- Score de confiance sur la cohérence future
+Le predicteur JEPA (reseau neuronal ~650 parametres) a ete remplace par
+le predicteur par noyau ABC pur (engine.sopc_core.predictive_update_abc,
+engine.abc_predictor_connector.ABCPredictorConnector).
 
-Usage:
-    from engine.jepa_connector import JEPAConnector
-    connector = JEPAConnector()
-    connector.load_or_init()
-    prediction = connector.predict(signature_history)
+Raisons du remplacement :
+  - Noyau ABC : 0 parametre, deterministe, ne peut pas diverger.
+  - JEPA       : ~650 parametres, stochastique, divergence possible.
+  - Le noyau ABC EST le predicteur naturel des signatures harmoniques
+    (moyenne ponderee par K(t) = B(alpha)·E_alpha(-alpha·t^alpha/(1-alpha))).
+
+Migration :
+    AVANT : from engine.jepa_connector import JEPAConnector
+            conn = JEPAConnector(max_history=32)
+            conn.load_or_init()
+            conn.add_signature(sig)
+            pred = conn.predict(horizon=3)
+
+    APRES : from engine.abc_predictor_connector import ABCPredictorConnector
+            conn = ABCPredictorConnector(max_history=32)
+            conn.load_or_init()
+            conn.add_signature(sig)
+            pred = conn.predict(horizon=3)
+
+Ce fichier est conserve pour reference uniquement.
 """
 
 import os
@@ -29,6 +40,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+
+import warnings
+warnings.warn(
+    "jepa_connector.py est DEPRECATED. Utilisez abc_predictor_connector.py a la place.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 logger = logging.getLogger(__name__)
 

@@ -2,29 +2,66 @@
 Noyau ABC — Atangana-Baleanu-Caputo (Python/Numpy/Torch)
 =========================================================
 Implantation numeriquement stable du noyau de memoire non-locale
-base sur la fonction de Mittag-Leffler.
+base sur la derivee fractionnaire d'Atangana-Baleanu et la fonction
+de Mittag-Leffler.
 
-Constantes fondamentales :
-    PHI = 1.618033988749895  (nombre d'or)
-    ALPHA = 1/PHI            (ordre optimal de la derivee ABC)
-    B_1_PHI                  (constante de normalisation B(alpha))
-    ALPHA_CONST              (facteur de normalisation optimal)
+Contexte mathematique
+---------------------
+La derivee fractionnaire ABC (Atangana-Baleanu-Caputo) est definie par :
+
+    D^α_t f(t) = B(α)/(1-α) ∫_0^t f'(τ) E_α(-α(t-τ)^α/(1-α)) dτ
+
+ou E_α(z) est la fonction de Mittag-Leffler. Le noyau de cette derivee,
+K_α(t-τ) = E_α(-α(t-τ)^α/(1-α)), definit une MEMOIRE NON-LOCALE :
+contrairement a une derivee classique (locale), l'etat present depend
+de TOUT l'historique, avec un poids decroissant gouverne par le noyau.
+
+Ordre optimal α = 1/φ
+----------------------
+L'ordre fractionnaire α = 1/φ ≈ 0.618 emerge naturellement :
+  - Pour α → 0 : memoire infinie (tout le passe pese egal) → inertie
+  - Pour α → 1 : memoire nulle (derivee classique) → amnesie
+  - α = 1/φ   : point d'equilibre entre ces deux regimes.
+    Le nombre d'or φ = (1+√5)/2 maximise le rapport memoire/inertie
+    car φ est le nombre le plus irrationnel (developpement en fraction
+    continue le plus lent), garantissant qu'aucun motif de repetition
+    ne se forme dans les poids de memoire.
+
+Constantes fondamentales
+------------------------
+    PHI        : nombre d'or φ = (1+√5)/2 ≈ 1.618033988749895
+    ALPHA      : ordre fractionnaire optimal = 1/φ ≈ 0.618033988749895
+    B_1_PHI    : constante de normalisation B(α) = 0.8506508083
+                 Calibree pour que le noyau discret ait ΣK(t) = 1.
+    ALPHA_CONST: facteur de normalisation = 1/B(1/φ) ≈ 1.1755694591
 
 Le noyau ABC est defini par :
-    K(t) = B(alpha) * E_alpha(-alpha * t^alpha / (1 - alpha))
+    K(t) = B(α) * E_α(-α * t^α / (1 - α))
+
+Reference : Atangana, A., & Baleanu, D. (2016).
+    New fractional derivatives with nonlocal and non-singular kernel.
+    Thermal Science, 20(2), 763-769.
 """
 
 import math
 import numpy as np
 
 # =========================================================================
-# CONSTANTES HARMONIQUES FONDAMENTALES
+# CONSTANTES FONDAMENTALES DU NOYAU ABC
+# =========================================================================
+# PHI   : nombre d'or φ = (1+√5)/2. Irrationalite maximale → memoire non
+#         repetitive garantie par construction.
+# ALPHA : ordre fractionnaire = 1/φ. Point d'equilibre entre memoire
+#         infinie (α→0) et amnesie (α→1).
+# B_1_PHI : B(α) — constante de normalisation du noyau discret.
+#           Garantit Σ_t K(t) = 1 (conservation de la masse de memoire).
+# ALPHA_CONST : 1/B(α) — facteur multiplicatif pour les mises a jour.
 # =========================================================================
 
 PHI = 1.618033988749895
-ALPHA = 1.0 / PHI  # = 0.618033988749895
+ALPHA = 1.0 / PHI  # ≈ 0.618033988749895
 B_1_PHI = 0.8506508083
-ALPHA_CONST = 1.0 / B_1_PHI  # = 1.1755694591
+ALPHA_CONST = 1.0 / B_1_PHI  # ≈ 1.1755694591
 
 
 # =========================================================================

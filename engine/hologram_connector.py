@@ -158,15 +158,21 @@ class HologrammeConnecteur:
         # [('ghana', 0.89), ('empire', 0.76), ('afrique', 0.72), ...]
     """
     
-    def __init__(self, hologramme_path: Optional[str] = None):
+    def __init__(self, hologramme_path: Optional[str] = None,
+                 use_fasttext: bool = True):
         """
         Initialise le connecteur.
         
         Args:
             hologramme_path: Chemin vers le fichier hologramme.npy.
                              Si None, utilise HOLOGRAMME_PATH par defaut.
+            use_fasttext: Si False, saute le chargement de fasttext (512 MB)
+                          et les vecteurs pre-entraines, reduisant la memoire
+                          de ~500 MB a ~50 MB. Utilise les n-grams caracteres
+                          comme fallback (qualite reduite mais fonctionnel).
         """
         self._chemin = hologramme_path or HOLOGRAMME_PATH
+        self._use_fasttext = use_fasttext
         self._initialise = False
         self._stats = {
             "n_resonances": 0,
@@ -594,11 +600,15 @@ class HologrammeConnecteur:
             # Charger la matrice PPMI (bruit reduit par rapport a la co-occurrence)
             self._ppmi = self._charger_ppmi()
 
-            # Charger le modele FastText pour l'expansion OOV
-            self._charger_fasttext()
-
-            # Charger les vecteurs pre-entraines (cc.fr.300) pour le bridge OOV
-            self._charger_vecteurs_pretrained()
+            # Charger le modele FastText pour l'expansion OOV (optionnel)
+            if self._use_fasttext:
+                self._charger_fasttext()
+                # Charger les vecteurs pre-entraines (cc.fr.300) pour le bridge OOV
+                self._charger_vecteurs_pretrained()
+            else:
+                self._fasttext_model = None
+                self._pretrained_vectors = None
+                print("  [HologrammeConnecteur] Mode LEGER: fasttext desactive (~50 MB)")
 
             # Les lecteurs sont crees dynamiquement a chaque resonner()
             self.n_lecteurs = N_LECTEURS

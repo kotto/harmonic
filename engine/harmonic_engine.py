@@ -26,6 +26,7 @@ from typing import Dict, Any, Optional, List, Tuple, Set, Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from collections import OrderedDict
+import numpy as np
 
 # Import du connecteur holographique (si disponible)
 try:
@@ -49,6 +50,21 @@ except ImportError:
     import os
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from engine.abc_kernel import PHI, ALPHA, B_1_PHI, ALPHA_CONST
+
+# Import du prédicteur ABC (remplace JEPA — migration Atangana-Baleanu-Caputo).
+# Deterministe, zero parametre : la prediction est une moyenne ponderee par
+# le noyau de memoire non-locale K(t) = B(α)·E_α(-α·t^α/(1-α)).
+try:
+    from .abc_predictor_connector import ABCPredictorConnector as _ABCPredictor
+    ABC_PREDICTOR_AVAILABLE = True
+except ImportError:
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from engine.abc_predictor_connector import ABCPredictorConnector as _ABCPredictor
+        ABC_PREDICTOR_AVAILABLE = True
+    except ImportError:
+        _ABCPredictor = None
+        ABC_PREDICTOR_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -195,321 +211,223 @@ class ConversationTurn:
 
 class HarmonicAnalyzer:
     """
-    Analyseur harmonique de prompts.
-    Extrait la signature harmonique d'un prompt en 7+ dimensions.
+    Analyseur SPECTRAL — ecoute le spectre naturel du texte.
+    
+    Principe : le texte EST deja une onde. On ne lui impose rien.
+    On lit son signal brut, on calcule sa FFT, on extrait les
+    features spectrales standard (centroide, rolloff, flatness, flux...).
+    
+    ZERO phi impose. ZERO embedding arbitraire. ZERO regex.
+    Juste le signal -> FFT -> features.
     """
 
-    PATTERNS = {
-        "mathematical": {
-            "keywords": [
-                r'\d+\.?\d*', r'calculer?', r'somme', r'difference', r'produit',
-                r'equation', r'fonction', r'derivee', r'integrale', r'matrice',
-                r'vecteur', r'probabilite', r'statistique', r'pourcentage',
-                r'racine', r'carre', r'cube', r'logarithme', r'exponentiel',
-                r'trigonometrie', r'sinus', r'cosinus', r'tangente',
-                r'theoreme', r'demonstration', r'preuve', r'axiome',
-                r'algebre', r'geometrie', r'arithmetique'
-            ],
-            "weight": 0.35
-        },
-        "code": {
-            "keywords": [
-                r'\bpython\b', r'\bjavascript\b', r'\bjava\b', r'\bc\+\+\b', r'\brust\b',
-                r'\bfonction\b', r'\bclasse\b', r'\balgorithme\b', r'\bimplementer\b',
-                r'\bbug\b', r'\berreur\b', r'\bdeboguer\b', r'\bcompiler\b',
-                r'\bapi\b', r'\bendpoint\b', r'\broute\b', r'\bbase de donnees\b',
-                r'\bgit\b', r'\bdocker\b', r'\bkubernetes\b', r'\baws\b',
-                r'\bhtml\b', r'\bcss\b', r'\breact\b', r'\bvue\b', r'\bangular\b',
-                r'\bprogramme\b', r'\bcode\b', r'\bscript\b', r'\bautomatisation\b'
-            ],
-            "weight": 0.25
-        },
-        "creative": {
-            "keywords": [
-                r'ecrire', r'ecris', r'ecrivez', r'ecrit', r'ecrivons',
-                r'poeme', r'poesie', r'poetique', r'poete', r'poetesse',
-                r'roman', r'nouvelle', r'conte', r'fable', r'legende',
-                r'creer', r'cree', r'creez', r'creons', r'creation',
-                r'imaginer', r'imagine', r'imaginez', r'imaginons',
-                r'inventer', r'invente', r'inventez', r'invention',
-                r'concevoir', r'concu', r'concevez',
-                r'raconter', r'raconte', r'racontez', r'racontons',
-                r'composer', r'compose', r'composez', r'composition',
-                r'decrire', r'decrivez', r'description',
-                r'metaphore', r'analogie', r'symbole', r'allegorie',
-                r'style', r'elegant', r'beau', r'belle', r'esthetique',
-                r'emotion', r'sentiment', r'passion', r'reve', r'reves',
-                r'art', r'musique', r'peinture', r'litterature',
-                r'personnage', r'intrigue', r'dialogue', r'narratif',
-                r'creatif', r'creative', r'creativite',
-                r'fantastique', r'imaginaire', r'onirique', r'surrealiste',
-                r'mythologique', r'mythique', r'legendaire',
-                r'epopee', r'epique', r'heroique',
-                r'lyrique', r'lyrisme', r'baroque', r'minimaliste',
-                r'mystique', r'mysticisme', r'philosophique',
-                r'visionnaire', r'futuriste', r'utopique',
-                r'dramatique', r'tragedie', r'comedie',
-                r'haiku', r'calligramme', r'acrostiche',
-                r'chanson', r'chant', r'hymne', r'ode',
-                r'pensee', r'pense', r'pensez', r'reflexion',
-                r'conscience', r'conscient', r'esprit', r'ame'
-            ],
-            "weight": 0.35
-        },
-        "reasoning": {
-            "keywords": [
-                r'pourquoi', r'expliquer', r'expliquez', r'analyser',
-                r'si.*alors', r'donc', r'parce que', r'consequence',
-                r'cause', r'effet', r'comparer', r'contraster',
-                r'evaluer', r'juger', r'critiquer', r'interpreter',
-                r'logique', r'raisonnement', r'deduction', r'induction',
-                r'hypothese', r'these', r'argument', r'contre-argument',
-                r'implication', r'condition', r'necessaire', r'suffisant'
-            ],
-            "weight": 0.35
-        },
-        "factual": {
-            "keywords": [
-                r'\bqu est ce que\b', r'\bdefinition\b', r'\bdecrire\b', r'\bliste\b',
-                r'\bfait\b', r'\bdonnee\b', r'\binformation\b', r'\bconnaissance\b',
-                r'\bgeographie\b', r'\bscience\b', r'\btechnologie\b',
-                r'\bdate\b', r'\bevenement\b', r'\bpersonne\b', r'\blieu\b',
-                r'\bpopulation\b', r'\bcapitale\b', r'\blangue\b', r'\bculture\b',
-                r'\bqui\b', r'\bou\b', r'\bquand\b'
-            ],
-            "weight": 0.25
-        }
-
-    }
-
-    # Mots a forte charge emotionnelle (positive)
-    EMOTIONAL_POSITIVE = {
-        'joie', 'joyeux', 'joyeuse', 'heureux', 'heureuse', 'bonheur',
-        'amour', 'amoureux', 'passion', 'passionne', 'espoir', 'esperance',
-        'reve', 'rever', 'reveur', 'merveilleux', 'merveille',
-        'magnifique', 'extraordinaire', 'genial', 'superbe', 'excellent',
-        'formidable', 'emerveiller', 'enchantement', 'gratitude',
-        'plaisir', 'delice', 'ravissement', 'exaltation', 'euphorie',
-        'serenite', 'serein', 'paix', 'paisible', 'harmonie', 'harmonieux',
-        'beatitude', 'nostalgie', 'nostalgique',
-        'content', 'contente', 'satisfait', 'fier', 'fierte',
-        'admiration', 'emerveillement', 'epanouissement'
-    }
-
-    # Mots a forte charge emotionnelle (negative)
-    EMOTIONAL_NEGATIVE = {
-        'triste', 'tristesse', 'chagrin', 'peine', 'peiner', 'douleur',
-        'douloureux', 'souffrance', 'souffrir', 'colere', 'en colere',
-        'rage', 'furieux', 'fureur', 'peur', 'peureux', 'crainte',
-        'craintif', 'angoiss', 'anxieux', 'anxiete',
-        'desespoir', 'desespere', 'detresse', 'melancolie', 'melancolique',
-        'regret', 'regretter', 'culpabilite', 'coupable',
-        'honte', 'honteux', 'humiliation', 'humilie',
-        'ressentiment', 'amertume', 'amer', 'frustration', 'frustre',
-        'deception', 'decu', 'decevoir', 'ennui', 'ennuyer', 'lassitude',
-        'lasse', 'mepris', 'mepriser',
-        'malheureux', 'malheur', 'pleurer', 'pleurs', 'larme',
-        'detester', 'hair', 'mepris', 'affreux', 'horrible', 'terrible',
-        'stress', 'stresse', 'inquiet', 'inquietude', 'malaise'
-    }
-
-    # Indices temporels
-    TEMPORAL_INDICATORS = {
-        'hier', 'aujourd\'hui', 'demain', 'maintenant', 'bientot', 'tard',
-        'jamais', 'toujours', 'souvent', 'parfois', 'rarement',
-        'autrefois', 'jadis', 'naguere', 'desormais', 'desormais',
-        'prochain', 'passe', 'futur', 'avenir', 'actuel',
-        'matin', 'soir', 'nuit', 'midi', 'minuit',
-        'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche',
-        'janvier', 'fevrier', 'mars', 'avril', 'mai', 'juin',
-        'juillet', 'aout', 'septembre', 'octobre', 'novembre', 'decembre',
-        'annee', 'mois', 'semaine', 'jour', 'heure', 'minute', 'seconde',
-        'epoque', 'periode', 'duree', 'intervalle', 'instant'
-    }
-
-    RARE_WORDS: Set[str] = {
-        'paradigme', 'epistemologique', 'ontologique', 'phenomenologique',
-        'transcendantal', 'axiomatique', 'heuristique', 'stochastique',
-        'deterministe', 'probabiliste', 'asymptotique', 'topologique',
-        'metamorphique', 'polymorphique', 'heterogene', 'homogene',
-        'synergique', 'emergent', 'recursif', 'iteratif',
-        'algorithmique', 'computationnel', 'quantique', 'relativiste',
-        'cristallographique', 'biomoleculaire',
-        'ethnomethodologique', 'phylogense', 'ontogenese'
-    }
-
     def __init__(self):
-        self.compiled_patterns = {}
-        for category, config in self.PATTERNS.items():
-            self.compiled_patterns[category] = [
-                re.compile(kw, re.IGNORECASE) for kw in config["keywords"]
-            ]
+        pass
 
-    def analyze(self, prompt: str) -> HarmonicSignature:
-        """Analyse un prompt et retourne sa signature harmonique enrichie."""
-        words = prompt.split()
-        word_count = len(words)
-        if word_count == 0:
+    def analyze(self, prompt: str):
+        if not prompt or not prompt.strip():
             return self._empty_signature()
 
-        word_lengths = [len(w) for w in words]
+        # 1. Signal numerique brut (valeurs ASCII normalisees)
+        chars = list(prompt)
+        n = len(chars)
+        signal = np.array([ord(c) / 256.0 for c in chars], dtype=np.float64)
 
-        # phi_ratio : Ratio de mots rares
-        rare_count = sum(1 for w in words if w.lower().strip('.,!?;:()[]{}""\'') in self.RARE_WORDS)
-        phi_ratio = min(1.0, (rare_count / max(word_count, 1)) * PHI)
+        # Fenetrage de Hann
+        window = 0.5 * (1 - np.cos(2 * np.pi * np.arange(n) / max(n-1, 1)))
+        signal = signal * window
 
-        # alpha_complexity : Complexite syntaxique
-        avg_word_length = sum(word_lengths) / word_count
-        variance = sum((l - avg_word_length) ** 2 for l in word_lengths) / word_count
-        std_dev = math.sqrt(variance)
-        alpha_complexity = min(1.0, ((avg_word_length / 15.0 + std_dev / 5.0) / 2.0) * ALPHA)
+        # Zero-padding a la puissance de 2 superieure
+        n_fft = 2 ** int(np.ceil(np.log2(max(n, 16))))
+        signal_padded = np.zeros(n_fft)
+        signal_padded[:n] = signal
 
-        # Scores par categorie
-        category_scores = self._compute_category_scores(prompt, words)
+        # 2. FFT — spectre NATUREL
+        fft = np.fft.rfft(signal_padded)
+        magnitude = np.abs(fft)
+        power = magnitude ** 2
+        n_bins = len(magnitude)
+        freqs = np.fft.rfftfreq(n_fft)
+        total_power = np.sum(power) + 1e-10
 
-        # Scores enrichis
-        emotional_score = self._compute_emotional_score(prompt, words)
-        temporal_score = self._compute_temporal_score(prompt, words)
+        # 3. Features spectrales standard
+        # Centroide (frequence moyenne ponderee)
+        spectral_centroid = np.sum(freqs * power) / total_power
 
-        k_reasoning = category_scores.get("reasoning", 0.0)
-        k_creative = category_scores.get("creative", 0.0)
-        k_mathematical = category_scores.get("mathematical", 0.0)
-        k_factual = category_scores.get("factual", 0.0)
-        k_code = category_scores.get("code", 0.0)
+        # Spread (largeur de bande)
+        spectral_spread = np.sqrt(np.sum(((freqs - spectral_centroid) ** 2) * power) / total_power)
 
-        vector_7d = [phi_ratio, alpha_complexity, k_reasoning, k_creative,
-                     k_mathematical, k_factual, k_code]
+        # Rolloff (85% de l'energie en dessous)
+        cumsum = np.cumsum(power)
+        rolloff_idx = np.searchsorted(cumsum, 0.85 * total_power)
+        rolloff = freqs[min(rolloff_idx, n_bins-1)]
 
-        hash_input = f"{phi_ratio:.6f}|{alpha_complexity:.6f}|{k_reasoning:.6f}|{k_creative:.6f}|{k_mathematical:.6f}|{k_factual:.6f}|{k_code:.6f}|{emotional_score:.6f}|{temporal_score:.6f}"
+        # Flatness (ratio geo/ari — proche de 1 = spectre plat = diversite)
+        geo_mean = np.exp(np.mean(np.log(power[1:] + 1e-10)))
+        ari_mean = np.mean(power[1:]) + 1e-10
+        flatness = geo_mean / ari_mean
+
+        # Flux (changement spectral entre debut et fin)
+        if n > 64 and n_bins > 8:
+            half = n_fft // 2
+            fft1 = np.abs(np.fft.rfft(signal_padded[:half]))
+            fft2 = np.abs(np.fft.rfft(signal_padded[half:]))
+            min_len = min(len(fft1), len(fft2))
+            flux = np.sum(np.abs(fft2[:min_len] - fft1[:min_len])) / (min_len + 1e-10)
+        else:
+            flux = 0.0
+
+        # Energies par bande
+        low_energy = float(np.sum(power[freqs < 0.125]) / total_power)
+        mid_energy = float(np.sum(power[(freqs >= 0.125) & (freqs < 0.25)]) / total_power)
+        high_energy = float(np.sum(power[freqs >= 0.25]) / total_power)
+
+        # Zero-crossing rate
+        zcr = float(np.sum(np.abs(np.diff(np.sign(signal)))) / (2 * max(n-1, 1)))
+
+        # Periodicite (autocorrelation)
+        if n > 4:
+            ac = np.correlate(signal - np.mean(signal), signal - np.mean(signal), mode='full')
+            ac = ac[n-1:] / (ac[n-1] + 1e-10)
+            peaks = np.sum((ac[2:-1] > 0.3) & (ac[2:-1] > ac[1:-2]) & (ac[2:-1] > ac[3:]))
+            periodicity = float(min(1.0, peaks / max(n/4, 1)))
+        else:
+            periodicity = 0.0
+
+        # Skewness / Kurtosis
+        skewness = float(np.mean(signal**3) / (np.std(signal)**3 + 1e-10))
+        kurtosis = float(np.mean(signal**4) / (np.std(signal)**4 + 1e-10))
+
+        # 4. Mapping en 9 dimensions harmoniques
+        phi_ratio = min(1.0, float(flatness) * 2.0)
+        alpha_complexity = min(1.0, float(spectral_spread) * 8.0)
+        k_reasoning = min(1.0, low_energy * 3.0 + (1.0 - min(1.0, float(flux) * 5.0)) * 0.3)
+        k_creative = min(1.0, float(flatness) * 1.5 + float(spectral_spread) * 4.0)
+        k_mathematical = min(1.0, periodicity * 1.5 + high_energy * 4.0)
+        k_factual = min(1.0, (1.0 - float(rolloff) * 2.0) * 0.7 + low_energy * 1.5)
+        k_code = min(1.0, periodicity * 1.8 + mid_energy * 3.0)
+        k_emotional = min(1.0, abs(skewness) * 0.5 + zcr * 3.0)
+        k_temporal = min(1.0, float(flux) * 6.0)
+
+        vals = [phi_ratio, alpha_complexity, k_reasoning, k_creative,
+                k_mathematical, k_factual, k_code, k_emotional, k_temporal]
+        vals = [max(0.0, min(1.0, v)) for v in vals]
+        vector_7d = vals[:7]
+
+        hash_input = "|".join(f"{v:.6f}" for v in vals)
         hash_id = hashlib.sha256(hash_input.encode()).hexdigest()[:16]
 
         return HarmonicSignature(
-            phi_ratio=round(phi_ratio, 6),
-            alpha_complexity=round(alpha_complexity, 6),
-            k_reasoning=round(k_reasoning, 6),
-            k_creative=round(k_creative, 6),
-            k_mathematical=round(k_mathematical, 6),
-            k_factual=round(k_factual, 6),
-            k_code=round(k_code, 6),
-            k_emotional=round(emotional_score, 6),
-            k_temporal=round(temporal_score, 6),
-            vector_7d=[round(v, 6) for v in vector_7d],
-            hash_id=hash_id
+            phi_ratio=round(vals[0], 6), alpha_complexity=round(vals[1], 6),
+            k_reasoning=round(vals[2], 6), k_creative=round(vals[3], 6),
+            k_mathematical=round(vals[4], 6), k_factual=round(vals[5], 6),
+            k_code=round(vals[6], 6), k_emotional=round(vals[7], 6),
+            k_temporal=round(vals[8], 6),
+            vector_7d=[round(v, 6) for v in vector_7d], hash_id=hash_id
         )
 
-    def _compute_category_scores(self, prompt: str, words: List[str]) -> Dict[str, float]:
-        scores = {}
-        total_matches = 0
-        match_counts = {}
+    def classify(self, signature, classifier=None):
+        if classifier is not None and classifier.is_fitted:
+            return classifier.predict(signature)
+        cats = {"mathematical": signature.k_mathematical, "code": signature.k_code,
+                "creative": signature.k_creative, "reasoning": signature.k_reasoning,
+                "factual": signature.k_factual}
+        best = max(cats, key=cats.get)
+        s = cats[best]
+        return (best, s) if s >= 0.15 else ("general", s)
 
-        for category, config in self.PATTERNS.items():
-            match_count = 0
-            for pattern in self.compiled_patterns[category]:
-                matches = pattern.findall(prompt)
-                match_count += len(matches)
-            match_counts[category] = match_count
-            total_matches += match_count
-
-        if total_matches == 0:
-            return {cat: 0.0 for cat in self.PATTERNS}
-
-        for category, config in self.PATTERNS.items():
-            match_count = match_counts[category]
-            raw_score = match_count / max(total_matches, 1)
-            weighted_score = raw_score * config["weight"]
-            harmonic_score = weighted_score * PHI * 2.0
-            scores[category] = min(1.0, harmonic_score)
-
-        return scores
-
-    def _compute_emotional_score(self, prompt: str, words: List[str]) -> float:
-        """Calcule la charge emotionnelle du prompt (0..1)."""
-        prompt_lower = prompt.lower()
-        pos_count = sum(1 for w in self.EMOTIONAL_POSITIVE if w in prompt_lower)
-        neg_count = sum(1 for w in self.EMOTIONAL_NEGATIVE if w in prompt_lower)
-        total_emotional = pos_count + neg_count
-        if total_emotional == 0:
-            return 0.0
-        # Proportion de mots emotionnels + intensite harmonique
-        ratio = total_emotional / max(len(words), 1)
-        return min(1.0, ratio * PHI * 3.0)
-
-    def _compute_temporal_score(self, prompt: str, words: List[str]) -> float:
-        """Calcule la dimension temporelle du prompt (0..1)."""
-        prompt_lower = prompt.lower()
-        temporal_count = sum(1 for w in self.TEMPORAL_INDICATORS if w in prompt_lower)
-        if temporal_count == 0:
-            return 0.0
-        ratio = temporal_count / max(len(words), 1)
-        return min(1.0, ratio * PHI * 3.0)
-
-    def classify(self, signature: HarmonicSignature) -> Tuple[str, float]:
-        """Classifie le prompt dans une categorie (avec fallback general)."""
-        categories = {
-            "mathematical": signature.k_mathematical,
-            "code": signature.k_code,
-            "creative": signature.k_creative,
-            "reasoning": signature.k_reasoning,
-            "factual": signature.k_factual
-        }
-        best_category = max(categories, key=categories.get)
-        best_score = categories[best_category]
-
-        # Si tous les scores sont a 0 ou tres faibles, c'est general
-        if best_score < 0.15 or max(categories.values()) == 0.0:
-            return ("general", 0.0)
-
-        # Si charge emotionnelle elevee et pas de categorie dominante -> creative
-        if signature.k_emotional > 0.4 and best_score < 0.3:
-            return ("creative", signature.k_emotional)
-
-        return (best_category, best_score)
-
-    def detect_sentiment(self, text: str) -> Tuple[str, float]:
-        """Detecte le sentiment dominant: positif/negatif/neutre avec score."""
-        text_lower = text.lower()
-        pos_count = sum(1 for w in self.EMOTIONAL_POSITIVE if w in text_lower)
-        neg_count = sum(1 for w in self.EMOTIONAL_NEGATIVE if w in text_lower)
-        total = pos_count + neg_count
-        if total == 0:
+    def detect_sentiment(self, text: str):
+        if len(text) < 4:
             return ("neutre", 0.0)
-        net = (pos_count - neg_count) / max(total, 1)
-        intensity = min(1.0, total / max(len(text.split()), 1) * 5.0)
-        if abs(net) < 0.2:
-            return ("neutre", intensity)
-        return ("positif" if net > 0 else "negatif", intensity)
+        signal = np.array([ord(c)/256.0 for c in text])
+        skew = float(np.mean(signal**3) / (np.std(signal)**3 + 1e-10))
+        score = min(1.0, abs(skew) * 0.6)
+        if score > 0.4:
+            return ("positif", score) if skew > 0 else ("negatif", score)
+        return ("neutre", score)
 
-    def extract_topics(self, text: str, max_topics: int = 3) -> List[str]:
-        """Extrait les sujets principaux du texte (mots-clés significatifs)."""
-        words = text.lower().split()
-        # Filtrer les mots vides et courts
-        stop_words = {'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'ce', 'cet',
-                      'cette', 'ces', 'mon', 'ton', 'son', 'ma', 'ta', 'sa',
-                      'mes', 'tes', 'ses', 'nos', 'vos', 'leurs',
-                      'et', 'ou', 'mais', 'donc', 'car', 'ni', 'or',
-                      'je', 'tu', 'il', 'elle', 'nous', 'vous', 'ils', 'elles',
-                      'qui', 'que', 'quoi', 'dont', 'ou',
-                      'est', 'sont', 'ai', 'as', 'a', 'avons', 'avez', 'ont',
-                      'sur', 'sous', 'dans', 'avec', 'pour', 'par', 'sans',
-                      'plus', 'moins', 'tres', 'aussi', 'si', 'ne', 'pas'}
-        significant = [w.strip('.,!?;:()[]{}""\'') for w in words
-                       if len(w) > 4 and w not in stop_words]
-        # Compter les occurrences
-        freq = {}
-        for w in significant:
-            freq[w] = freq.get(w, 0) + 1
-        # Trier par frequence
-        sorted_topics = sorted(freq.items(), key=lambda x: -x[1])
-        return [w for w, c in sorted_topics[:max_topics]]
+    def extract_topics(self, text: str, max_topics: int = 3):
+        signal = np.array([ord(c)/256.0 for c in text])
+        if len(signal) < 4:
+            return ["general"]
+        fft = np.abs(np.fft.rfft(signal))
+        top_idx = np.argsort(fft)[-max_topics:]
+        topic_map = {0: "structure", 1: "emotion", 2: "logique",
+                     3: "creation", 4: "technique", 5: "connaissance"}
+        return [topic_map.get(i % 6, "general") for i in top_idx]
 
-    def _empty_signature(self) -> HarmonicSignature:
+    def _empty_signature(self):
         return HarmonicSignature(
             phi_ratio=0.0, alpha_complexity=0.0,
-            k_reasoning=0.0, k_creative=0.0,
-            k_mathematical=0.0, k_factual=0.0, k_code=0.0,
-            k_emotional=0.0, k_temporal=0.0,
-            vector_7d=[0.0] * 7, hash_id="0" * 16
+            k_reasoning=0.0, k_creative=0.0, k_mathematical=0.0,
+            k_factual=0.0, k_code=0.0, k_emotional=0.0, k_temporal=0.0,
+            vector_7d=[0.0]*7, hash_id="empty"
         )
+
+
+class CalibratedClassifier:
+    """
+    Classifieur par centroides de resonance — 100% ondulatoire.
+    
+    Chaque categorie = un centroide (signature 9D moyenne).
+    Classification = resonance maximale (similarite cosinus).
+    Zero parametre. Tout est geometrie ondulatoire.
+    """
+
+    def __init__(self):
+        self.centroids: Dict[str, np.ndarray] = {}
+        self._fitted = False
+
+    def fit(self, analyzer: 'HarmonicAnalyzer',
+            labeled_prompts: Dict[str, List[str]]):
+        for category, prompts in labeled_prompts.items():
+            if not prompts:
+                continue
+            sigs = []
+            for p in prompts:
+                sig = analyzer.analyze(p)
+                sigs.append(np.array([
+                    sig.phi_ratio, sig.alpha_complexity,
+                    sig.k_reasoning, sig.k_creative,
+                    sig.k_mathematical, sig.k_factual, sig.k_code,
+                    sig.k_emotional, sig.k_temporal,
+                ], dtype=np.float64))
+            if sigs:
+                c = np.mean(sigs, axis=0)
+                norm = np.linalg.norm(c)
+                if norm > 0:
+                    c = c / norm
+                self.centroids[category] = c
+        self._fitted = len(self.centroids) > 0
+        return self
+
+    def predict(self, signature: HarmonicSignature) -> Tuple[str, float]:
+        if not self._fitted:
+            cats = {"mathematical": signature.k_mathematical,
+                    "code": signature.k_code,
+                    "creative": signature.k_creative,
+                    "reasoning": signature.k_reasoning,
+                    "factual": signature.k_factual}
+            best = max(cats, key=cats.get)
+            s = cats[best]
+            return (best, s) if s >= 0.15 else ("general", s)
+
+        q = np.array([signature.phi_ratio, signature.alpha_complexity,
+                      signature.k_reasoning, signature.k_creative,
+                      signature.k_mathematical, signature.k_factual,
+                      signature.k_code, signature.k_emotional,
+                      signature.k_temporal], dtype=np.float64)
+        qn = np.linalg.norm(q) + 1e-10
+        best_cat, best_sim = "general", -1.0
+        for cat, c in self.centroids.items():
+            sim = float(np.dot(q, c) / (qn * np.linalg.norm(c) + 1e-10))
+            if sim > best_sim:
+                best_sim, best_cat = sim, cat
+        return best_cat, max(0.0, min(1.0, (best_sim + 1.0) / 2.0))
+
+    @property
+    def is_fitted(self) -> bool:
+        return self._fitted
 
 
 # =========================================================================
@@ -1106,6 +1024,65 @@ class HarmonicGenerator:
     def __init__(self, analyzer: Optional[HarmonicAnalyzer] = None):
         self.analyzer = analyzer or HarmonicAnalyzer()
         self.generation_count = 0
+        self._langage_gen = None  # Generateur de langage (templates ameliores)
+        self._resonance_gen = None  # Generateur par resonance holographique (0 param)
+        self._memoire_ondulatoire = None  # Memoire holographique pour apprentissage continu
+        self._last_topic = None  # Dernier sujet de conversation
+
+    def _get_resonance_gen(self):
+        if self._resonance_gen is None:
+            try:
+                import sys, os
+                _dir = os.path.dirname(os.path.abspath(__file__))
+                sys.path.insert(0, _dir)
+                sys.path.insert(0, os.path.join(os.path.dirname(_dir), 'harmonic_training'))
+                from fast_resonance_generator import FastResonanceGenerator
+                from model.harmonic_resonance_generator import VOCABULAIRE_BASE
+                extra = ['parle', 'moi', 'du', 'explique', 'comment', 'fonctionne',
+                         'est', 'que', 'pourquoi', 'quand', 'ou', 'dit',
+                         'dis', 'veut', 'peux', 'faut', 'doit', 'nombre', 'or',
+                         'amour', 'conscience', 'univers', 'dieu', 'vie', 'mort',
+                         'temps', 'espace', 'lumiere', 'ombre', 'ame', 'coeur',
+                         'a', 'de', 'le', 'la', 'les', 'un', 'une', 'et', 'en',
+                         'au', 'aux', 'des', 'du', 'sur', 'sous', 'avec', 'sans',
+                         'plus', 'moins', 'tout', 'tous', 'faire', 'dit', 'dire',
+                         'calcul', 'derivee', 'equation', 'solution', 'resoudre',
+                         'code', 'python', 'fonction', 'algorithme', 'donnee',
+                         'theorie', 'principe', 'loi', 'science', 'physique']
+                vocab = list(VOCABULAIRE_BASE) + [w for w in extra if w not in VOCABULAIRE_BASE]
+                self._resonance_gen = FastResonanceGenerator(vocab, nx=128, ny=128)
+            except Exception:
+                self._resonance_gen = False
+        return self._resonance_gen if self._resonance_gen is not False else None
+
+    def _get_langage_gen(self):
+        """Initialisation lazy du generateur de langage harmonique."""
+        if self._langage_gen is None:
+            try:
+                import sys, os
+                _dir = os.path.dirname(os.path.abspath(__file__))
+                sys.path.insert(0, _dir)
+                from qualitative_knowledge import (
+                    build_natural_waves, grammatical_generate_with_memory
+                )
+                kx, ky, w2i = build_natural_waves()
+                self._langage_gen = ('qualitative', kx, ky, w2i)
+            except Exception:
+                try:
+                    from .harmonic_language import GenerateurLangage
+                    self._langage_gen = GenerateurLangage()
+                except ImportError:
+                    try:
+                        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                        from engine.harmonic_language import GenerateurLangage
+                        self._langage_gen = GenerateurLangage()
+                    except ImportError:
+                        self._langage_gen = False
+        if self._langage_gen is False:
+            return None
+        if isinstance(self._langage_gen, tuple) and self._langage_gen[0] == 'qualitative':
+            return self._langage_gen
+        return self._langage_gen
 
     def generate(self, prompt: str, category: Optional[str] = None,
                  length: str = "normal", sentiment: str = "neutre",
@@ -1113,18 +1090,18 @@ class HarmonicGenerator:
                  knowledge_context: Optional[str] = None) -> str:
         """
         Genere une reponse harmonique pure (sans LLM).
-        
+
+        Si un contexte de connaissance (hologramme) est disponible,
+        utilise le GenerateurLangage pour produire un francais naturel.
+        Sinon, fallback sur les templates harmoniques (qualite reduite).
+
         Args:
             prompt: Texte d'entree
             category: Categorie harmonique (auto-detectee si None)
             length: "court", "normal", "long"
             sentiment: Adaptation emotionnelle
-            temperature: Alea de selection (0.0 = deterministe, 1.0 = max alea)
-            knowledge_context: Contexte extrait de l'hologramme (optionnel).
-                               Si fourni, il est insere dans la reponse.
-        
-        Returns:
-            Texte genere harmoniquement
+            temperature: Alea de selection
+            knowledge_context: Contexte extrait de l'hologramme (optionnel)
         """
         self.generation_count += 1
 
@@ -1134,55 +1111,72 @@ class HarmonicGenerator:
             category, confidence = self.analyzer.classify(sig)
             sentiment, sent_score = self.analyzer.detect_sentiment(prompt)
 
-        # Selection du template de reponse
-        templates = self.RESPONSE_TEMPLATES.get(category, self.RESPONSE_TEMPLATES["general"])
-        
-        # Selection harmonique avec temperature
-        if temperature > 0:
-            idx = int(len(templates) * (PHI * (1 - temperature) + random.random() * temperature)) % len(templates)
-        else:
-            idx = int(len(prompt) * PHI) % len(templates)
-        
-        base_response = templates[idx]
+        # === PRIMAIRE : Generation QUALITATIVE avec MEMOIRE ===
+        gen_data = self._get_langage_gen()
+        if isinstance(gen_data, tuple) and gen_data[0] == 'qualitative':
+            import sys, os
+            _dir = os.path.dirname(os.path.abspath(__file__))
+            sys.path.insert(0, _dir)
+            from qualitative_knowledge import grammatical_generate_with_memory, MemoireOndulatoire
+            
+            # Initialiser la memoire si necessaire
+            if self._memoire_ondulatoire is None:
+                self._memoire_ondulatoire = MemoireOndulatoire(nx=128, ny=128)
+            
+            # Si c'est une question de suivi (courte, commence par "et", "ou", "pourquoi"),
+            # injecter le contexte du dernier sujet
+            enriched_prompt = prompt
+            if self._last_topic and len(prompt.split()) <= 4:
+                enriched_prompt = f"{prompt} (a propos de {self._last_topic})"
+            
+            _, kx, ky, w2i = gen_data
+            try:
+                texte = grammatical_generate_with_memory(
+                    enriched_prompt, kx, ky, w2i,
+                    memoire=self._memoire_ondulatoire, max_words=6
+                )
+                if texte and len(texte) > 10:
+                    # Extraire le sujet pour le prochain tour
+                    mots_sujet = [w for w in prompt.lower().split() 
+                                  if w not in ('explique','decris','parle','moi','de','du','qu','est','ce','que','le','la','les','et','pourquoi','comment')]
+                    if mots_sujet:
+                        self._last_topic = ' '.join(mots_sujet[:3])
+                    return texte
+            except Exception:
+                pass
 
-        # Introduction adaptee au sentiment
-        intros = self.SENTIMENT_INTROS.get(sentiment, self.SENTIMENT_INTROS["neutre"])
-        if temperature > 0:
-            intro_idx = int(random.random() * len(intros)) % len(intros)
-        else:
-            intro_idx = int(len(prompt) * ALPHA) % len(intros)
-        intro = intros[intro_idx]
+        # === SECONDAIRE : Generation par RESONANCE HOLOGRAPHIQUE ===
+        if knowledge_context and knowledge_context.strip():
+            resonance_gen = self._get_resonance_gen()
+            if resonance_gen:
+                try:
+                    resonance_gen.apprendre_contexte(knowledge_context)
+                    texte = resonance_gen.generer_texte(prompt, max_tokens=50)
+                    if texte and len(texte) > 5:
+                        # FEEDBACK : la generation enrichit l'hologramme (apprentissage)
+                        resonance_gen.apprendre(texte, amplitude=0.5)
+                        # Injection du prompt aussi (le systeme apprend de chaque question)
+                        resonance_gen.apprendre(prompt, amplitude=0.3)
+                        return texte
+                except Exception:
+                    pass
 
-        # Conclusion harmonique
-        conclusion = self.CONCLUSIONS.get(category, self.CONCLUSIONS["general"])
+        # === SECONDAIRE : Generation par langage naturel (templates ameliores) ===
+        if knowledge_context and knowledge_context.strip():
+            gen = self._get_langage_gen()
+            if gen:
+                faits = [f.strip() for f in re.split(r'[.\n]+', knowledge_context) if len(f.strip()) > 10]
+                if faits:
+                    return gen.formuler(prompt, faits[:3])
 
-        # === INTEGRATION HOLOGRAMME ===
-        # Si un contexte de connaissance est fourni, l'inserer dans la reponse
-        if knowledge_context:
-            # Utiliser le template "factual" pour les reponses informeES
-            knowledge_phrase = (
-                f"D'apres la base de connaissances holographiques : {knowledge_context}\n\n"
-            )
-        else:
-            knowledge_phrase = ""
-
-        # Assemblage avec connaissance si presente
-        if length == "court":
-            response = f"{intro}{knowledge_phrase}{base_response}"
-        elif length == "long":
-            idx2 = (idx + 1) % len(templates)
-            second = templates[idx2]
-            if knowledge_phrase:
-                response = f"{intro}{base_response}\n\n{knowledge_phrase}{second}\n\n{conclusion}"
-            else:
-                response = f"{intro}{base_response}\n\n{second}\n\n{conclusion}"
-        else:
-            if knowledge_phrase:
-                response = f"{intro}{knowledge_phrase}{base_response}\n\n{conclusion}"
-            else:
-                response = f"{intro}{base_response}\n\n{conclusion}"
-
-        return response
+        # === FALLBACK : Pas de connaissance → reponse honnete ===
+        # L'intelligence n'invente pas. Si la resonance n'a rien trouve,
+        # elle le dit. C'est plus fidele au principe que des templates.
+        return (
+            "Je ne dispose pas d'assez de connaissances pour repondre a cette question. "
+            "Mon intelligence repose sur la resonance avec les ondes stockees dans l'hologramme. "
+            "Cette question n'a pas encore rencontre d'echo dans ma base de connaissance."
+        )
 
     def generate_with_expansion(self, prompt: str, category: Optional[str] = None,
                                  length: str = "normal",
@@ -1228,13 +1222,20 @@ class HarmonicResonanceEngine:
     """
     Moteur de resonance harmonique principal.
     Orchestre l'analyse harmonique, la memoire, la generation et l'expansion.
-    Integre HologrammeConnecteur + JEPA Connector.
+    Integre HologrammeConnecteur + Predicteur ABC (noyau Atangana-Baleanu-Caputo).
     """
     
     def __init__(self, cache: Optional[HarmonicCache] = None,
                  memory: Optional[ConversationMemory] = None,
                  use_hologram: bool = True,
                  use_jepa: bool = True):
+        """
+        Args:
+            use_hologram: True (full), False (off), ou 'light' (~50 MB au lieu de ~550 MB).
+                          Le mode 'light' desactive fasttext et les vecteurs pre-entraines,
+                          utilisant les n-grams caracteres comme fallback.
+            use_jepa: Active le predicteur ABC (remplace JEPA). Default True.
+        """
         self.analyzer = HarmonicAnalyzer()
         self.cache = cache or HarmonicCache()
         self.expander = HarmonicContextExpander()
@@ -1252,31 +1253,41 @@ class HarmonicResonanceEngine:
         self.hologram_use = use_hologram
         self._init_hologram()
         
-        # === INTEGRATION JEPA ===
-        self.jepa_connector = None
-        self.jepa_use = use_jepa and JEPA_AVAILABLE
-        if self.jepa_use:
+        # === INTEGRATION PREDICTEUR ABC (remplace JEPA) ===
+        # Migration Atangana-Baleanu-Caputo : le prédicteur par noyau ABC pur
+        # remplace le réseau neuronal JEPA. Deterministe, zero parametre.
+        self.abc_connector = None
+        self.abc_use = use_jepa and ABC_PREDICTOR_AVAILABLE
+        if self.abc_use:
             try:
-                self.jepa_connector = JEPAConnector(max_history=32)
-                self.jepa_connector.load_or_init()
-                print("  [HarmonicResonanceEngine] JEPA connecte et pret")
+                self.abc_connector = _ABCPredictor(max_history=32)
+                self.abc_connector.load_or_init()
+                print("  [HarmonicResonanceEngine] Predicteur ABC connecte et pret")
             except Exception as e:
-                print(f"  [HarmonicResonanceEngine] Erreur JEPA: {e}")
-                self.jepa_connector = None
-                self.jepa_use = False
+                print(f"  [HarmonicResonanceEngine] Erreur predicteur ABC: {e}")
+                self.abc_connector = None
+                self.abc_use = False
     
     def _init_hologram(self):
-        """Initialise le connecteur holographique si disponible."""
+        """Initialise le connecteur holographique si disponible.
+        
+        Supporte les modes :
+          - True  : chargement complet (fasttext inclus, ~550 MB)
+          - 'light': chargement reduit (sans fasttext, ~50 MB)
+          - False : hologramme desactive
+        """
         if not self.hologram_use:
             return
         if not _HOLOGRAM_CONNECTOR_AVAILABLE:
             print("  [HarmonicResonanceEngine] Connecteur holographique non disponible")
             return
         try:
-            self.hologram_connector = _HoloConnector()
+            use_fasttext = (self.hologram_use != 'light')
+            self.hologram_connector = _HoloConnector(use_fasttext=use_fasttext)
             self.hologram_loaded = self.hologram_connector.est_charge()
             if self.hologram_loaded:
-                print("  [HarmonicResonanceEngine] Hologramme connecte et pret")
+                mode_str = "LEGER" if not use_fasttext else "complet"
+                print(f"  [HarmonicResonanceEngine] Hologramme connecte ({mode_str})")
             else:
                 print("  [HarmonicResonanceEngine] Hologramme non charge")
                 self.hologram_connector = None
@@ -1344,94 +1355,350 @@ class HarmonicResonanceEngine:
                                                        knowledge_context=knowledge_context)
 
     def chat(self, user_message: str) -> Dict[str, Any]:
+        """Pipeline conversationnel — delegue a chat_resonance() (100% ondes)."""
+        return self.chat_resonance(user_message)
+
+    # =====================================================================
+    # PIPELINE UNIFIE AVEC LLM (chat_with_llm)
+    # =====================================================================
+
+    def _run_abc_prediction(self, sig: HarmonicSignature,
+                            category: str = "general") -> Dict[str, Any]:
         """
-        Pipeline conversationnel complet.
-        Analyse -> JEPA -> Hologramme -> Memoire -> Generation -> Expansion -> Memoire
+        Execute la prediction ABC et retourne les stats.
+        Extrait de chat() pour reutilisation dans chat_with_llm().
         """
-        t0 = datetime.now()
-        
-        # 1. Analyser le message
-        sig = self.analyzer.analyze(user_message)
-        category, confidence = self.analyzer.classify(sig)
-        sentiment, sent_score = self.analyzer.detect_sentiment(user_message)
-        topics = self.analyzer.extract_topics(user_message)
-        
-        # 1b. JEPA : ajouter la signature 7D convertie en 9D à l'historique
-        jepa_stats = {}
-        if self.jepa_connector is not None:
-            # Convertir la signature 7D en 9D (padding pour le JEPA)
+        abc_stats = {}
+        if self.abc_connector is not None:
             sig_dict = sig.to_dict()
             sig_9d = np.array([
-                sig_dict.get("phi", 0.5),
-                sig_dict.get("alpha", 0.5),
-                sig_dict.get("reasoning", 0.5),
-                sig_dict.get("creativity", 0.5),
-                sig_dict.get("math", 0.5),
-                sig_dict.get("factual", 0.5),
-                sig_dict.get("code", 0.5),
-                sig_dict.get("emotion", 0.5),
-                sig_dict.get("temporal", 0.5),
+                sig_dict.get("phi", sig.phi_ratio),
+                sig_dict.get("alpha", sig.alpha_complexity),
+                sig_dict.get("reasoning", sig.k_reasoning),
+                sig_dict.get("creativity", sig.k_creative),
+                sig_dict.get("math", sig.k_mathematical),
+                sig_dict.get("factual", sig.k_factual),
+                sig_dict.get("code", sig.k_code),
+                sig_dict.get("emotion", sig.k_emotional),
+                sig_dict.get("temporal", sig.k_temporal),
             ], dtype=np.float32)
-            
-            self.jepa_connector.add_signature(sig_9d)
-            jepa_pred = self.jepa_connector.predict(horizon=3)
-            
-            if jepa_pred:
-                jepa_stats = {
-                    "resonance": jepa_pred.resonance,
-                    "topic_shift": jepa_pred.topic_shift,
-                    "generation_boost": self.jepa_connector.get_generation_boost(category),
-                    "signature_predite": jepa_pred.signature_predite.tolist(),
-                    "futures": [f.tolist() for f in jepa_pred.futures] if jepa_pred.futures is not None else None,
+
+            self.abc_connector.add_signature(sig_9d)
+            abc_pred = self.abc_connector.predict(horizon=3)
+
+            if abc_pred:
+                abc_stats = {
+                    "resonance": abc_pred.resonance,
+                    "topic_shift": abc_pred.topic_shift,
+                    "generation_boost": self.abc_connector.get_generation_boost(category),
+                    "signature_predite": abc_pred.signature_predite.tolist(),
+                    "futures": [f.tolist() for f in abc_pred.futures] if abc_pred.futures is not None else None,
                 }
-                self.stats["resonance_scores"].append(jepa_pred.resonance)
+                self.stats["resonance_scores"].append(abc_pred.resonance)
+            else:
+                abc_stats = {"resonance": None, "topic_shift": None, "generation_boost": 1.0}
+
+        return abc_stats
+
+    def _build_harmonic_system_prompt(
+        self,
+        category: str,
+        abc_stats: Dict[str, Any],
+        knowledge_context: Optional[str] = None,
+        memory_context: Optional[str] = None,
+        user_prefs: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        """
+        Construit un system prompt enrichi par l'infrastructure harmonique.
+
+        Combine :
+          1. Le prompt specifique a la categorie
+          2. Le contexte de l'hologramme (connaissances resonantes)
+          3. Les signaux du predicteur ABC (resonance, topic shift)
+          4. Le contexte de la memoire de conversation
+          5. Les preferences utilisateur
+        """
+        parts = []
+
+        # 1. Prompt de base par categorie
+        category_prompts = {
+            "mathematical": (
+                "Tu es un assistant mathematique de precision. "
+                "Resous les problemes etape par etape avec rigueur. "
+                "Fournis des resultats exacts et verifiables."
+            ),
+            "code": (
+                "Tu es un assistant de programmation. "
+                "Genere du code propre, commente et fonctionnel. "
+                "Explique la logique et les choix d'implementation."
+            ),
+            "creative": (
+                "Tu es un assistant creatif. "
+                "Laisse libre cours a ton imagination. "
+                "Utilise des metaphores et des images poetiques."
+            ),
+            "reasoning": (
+                "Tu es un assistant de raisonnement. "
+                "Analyse les problemes en profondeur. "
+                "Structure ta pensee de maniere logique et methodique."
+            ),
+            "factual": (
+                "Tu es un assistant factuel. "
+                "Fournis des informations precises et verifiables. "
+                "Cite tes sources quand c'est possible."
+            ),
+            "general": (
+                "Tu es un assistant IA utile et precis. "
+                "Reponds de maniere naturelle et adaptee au contexte."
+            ),
+        }
+        parts.append(category_prompts.get(category, category_prompts["general"]))
+
+        # 2. Contexte holographique (connaissances resonantes)
+        if knowledge_context and knowledge_context.strip():
+            parts.append(
+                f"\n[SAVOIR DE REFERENCE]\n"
+                f"Connaissances extraites de la base holographique :\n"
+                f"{knowledge_context[:800]}"
+            )
+
+        # 3. Signaux du predicteur ABC
+        if abc_stats:
+            resonance = abc_stats.get("resonance")
+            topic_shift = abc_stats.get("topic_shift")
+            boost = abc_stats.get("generation_boost", 1.0)
+
+            if resonance is not None:
+                if topic_shift is not None and topic_shift > 0.3:
+                    parts.append(
+                        f"\n[ATTENTION] Changement de sujet probable "
+                        f"(topic_shift={topic_shift:.2f}). "
+                        f"Adapte ta reponse au nouveau contexte."
+                    )
+                elif resonance > 0.8:
+                    parts.append(
+                        f"\n[CONTEXTE] Conversation coherente "
+                        f"(resonance={resonance:.2f}). "
+                        f"Poursuis dans la meme direction thematique."
+                    )
+                elif resonance < 0.4:
+                    parts.append(
+                        f"\n[CONTEXTE] Faible resonance ({resonance:.2f}). "
+                        f"La conversation est fragmentee — sois plus explicite."
+                    )
+
+            if boost > 1.0:
+                parts.append(
+                    f"[CONFIANCE] Boost de generation actif (x{boost:.1f}). "
+                    f"Sois plus assertif dans ta reponse."
+                )
+
+        # 4. Contexte de la memoire de conversation
+        if memory_context and memory_context.strip():
+            parts.append(
+                f"\n[HISTORIQUE DE CONVERSATION]\n{memory_context[:600]}"
+            )
+
+        # 5. Preferences utilisateur
+        if user_prefs:
+            prefs_str = ", ".join(
+                f"{k}={v}" for k, v in user_prefs.items()
+                if k in ("language", "style", "expertise_level")
+            )
+            if prefs_str:
+                parts.append(f"\n[PREFERENCES UTILISATEUR] {prefs_str}")
+
+        return "\n\n".join(parts)
+
+    def chat_resonance(
+        self,
+        user_message: str,
+        memory: Optional[Any] = None,
+        profile: Optional[Any] = None,
+    ) -> Dict[str, Any]:
+        """
+        Chat 100% ondulatoire — zero LLM, zero template, zero parametre.
         
-        # 2. Extraire le contexte holographique (si disponible)
-        knowledge_context, holo_stats = self._extraire_contexte_hologramme(user_message)
-        knowledge_used = knowledge_context is not None
-        
-        # 3. Ajouter a la memoire
-        self.memory.add_turn("user", user_message, category, sentiment, topics)
-        
-        # 4. Generer la reponse enrichie (avec boost JEPA si disponible)
-        context = self.memory.get_context_summary()
-        
-        # Appliquer le boost JEPA à la génération
-        generation_kwargs = {}
-        if jepa_stats and jepa_stats.get("generation_boost", 1.0) > 1.0:
-            generation_kwargs["resonance_boost"] = jepa_stats["generation_boost"]
-        
-        response = self.generator.generate_with_expansion(
-            user_message, category, length="normal",
-            knowledge_context=knowledge_context,
-            **generation_kwargs
-        )
-        
-        # 5. Ajouter a la memoire
-        self.memory.add_turn("assistant", response, category, "neutre", topics)
-        
+        Pipeline :
+          1. Analyse spectrale du message → signature 9D
+          2. Contexte holographique (si dispo)
+          3. Generation par resonance holographique
+          4. Feedback : la reponse enrichit l'hologramme
+          5. Si resonance faible → LLM en fallback
+        """
+        t0 = datetime.now()
+
+        # 1. Analyser
+        sig = self.analyzer.analyze(user_message)
+        category, confidence = self.analyzer.classify(sig)
+        if confidence <= 0.15:
+            category = "general"
+
+        # 2. Contexte holographique
+        knowledge_context = None
+        if self.hologram_loaded and self.hologram_connector:
+            try:
+                knowledge_context, _ = self._extraire_contexte_hologramme(user_message)
+            except Exception:
+                pass
+
+        # Si pas de contexte holographique, utiliser le generateur pur (templates)
+        resonance_used = False
+        response = None
+
+        # Toujours essayer la resonance d'abord (si assez de connaissance accumulee)
+        resonance_gen = self.generator._get_resonance_gen()
+        if resonance_gen and resonance_gen.experience_count > 10:
+            try:
+                if knowledge_context and knowledge_context.strip():
+                    resonance_gen.apprendre_contexte(knowledge_context)
+                response = resonance_gen.generer_texte(user_message, max_tokens=60)
+                # Verifier qualite : au moins 20 car, pas que des stopwords
+                if response and len(response) > 20:
+                    words = response.lower().split()
+                    stopwords = {'le','la','les','de','des','un','une','et','a','en','au','aux','pas','ne','se','ce','il','elle','je','tu','<EOS>'}
+                    meaningful = [w for w in words if w not in stopwords and len(w) > 1]
+                    if len(meaningful) >= 3:
+                        resonance_used = True
+                        resonance_gen.apprendre(response, amplitude=0.5)
+                        resonance_gen.apprendre(user_message, amplitude=0.3)
+            except Exception:
+                pass
+
+        # Fallback : generateur classique si resonance n'a pas produit
+        if not response:
+            response = self.generator.generate(
+                user_message, category, knowledge_context=knowledge_context
+            )
+
+        # 5. Memoire
+        if memory is not None:
+            memory.add("user", user_message, category=category, resonance_score=confidence)
+            memory.add("assistant", response, category=category,
+                      resonance_score=confidence)
+
+        # 6. Profil
+        if profile is not None:
+            profile.record_interaction(category, resonance_score=confidence)
+
         elapsed = (datetime.now() - t0).total_seconds() * 1000
-        
+
         result = {
             "response": response,
             "category": category,
             "confidence": confidence,
-            "sentiment": sentiment,
-            "sentiment_score": sent_score,
-            "topics": topics,
-            "context_summary": context,
+            "resonance_used": resonance_used,
             "processing_time_ms": round(elapsed, 2),
-            "memory_stats": self.memory.get_stats(),
-            "knowledge_used": knowledge_used,
-            "jepa_used": self.jepa_connector is not None,
+            "signature": sig.to_dict(),
+            "abc_used": self.abc_connector is not None,
         }
-        
-        if knowledge_used:
+        return result
+
+    def chat_with_llm(
+        self,
+        user_message: str,
+        llm: Any,  # HarmonicLLM (evite import circulaire)
+        memory: Optional[Any] = None,  # ConversationMemory
+        profile: Optional[Any] = None,  # UserProfile
+    ) -> Dict[str, Any]:
+        """
+        Pipeline conversationnel complet avec LLM reel.
+
+        Remplace le chat() template par une generation LLM intelligente,
+        tout en conservant l'infrastructure harmonique :
+          Analyse → ABC Predict → Hologramme → Memoire → LLM
+
+        Args:
+            user_message: message utilisateur
+            llm: instance HarmonicLLM pour la generation
+            memory: ConversationMemory optionnelle (session context)
+            profile: UserProfile optionnel (preferences)
+
+        Returns:
+            dict avec response, category, abc_stats, knowledge_used, etc.
+        """
+        t0 = datetime.now()
+
+        # 1. Analyser le message
+        sig = self.analyzer.analyze(user_message)
+        category, confidence = self.analyzer.classify(sig)
+        if confidence <= 0.15:
+            category = "general"
+
+        # 2. Prediction ABC
+        abc_stats = self._run_abc_prediction(sig, category)
+
+        # 3. Contexte holographique
+        knowledge_context, holo_stats = self._extraire_contexte_hologramme(user_message)
+
+        # 4. Contexte memoire
+        memory_context = None
+        if memory is not None:
+            memory.add("user", user_message, category=category,
+                      resonance_score=confidence)
+            memory_context = memory.get_context(max_tokens=600)
+
+        # 5. Preferences utilisateur
+        user_prefs = None
+        if profile is not None:
+            user_prefs = profile.get_optimized_config()
+
+        # 6. Construire le system prompt enrichi
+        system_prompt = self._build_harmonic_system_prompt(
+            category=category,
+            abc_stats=abc_stats,
+            knowledge_context=knowledge_context,
+            memory_context=memory_context,
+            user_prefs=user_prefs,
+        )
+
+        # 7. Config LLM
+        try:
+            from .llm.base import LLMConfig
+        except ImportError:
+            from engine.llm.base import LLMConfig
+
+        config = LLMConfig(
+            system_prompt=system_prompt,
+            temperature=0.7,
+            max_tokens=2048,
+        )
+
+        # Appliquer les preferences au config
+        if user_prefs:
+            if "temperature" in user_prefs:
+                config.temperature = user_prefs["temperature"]
+            if "max_tokens" in user_prefs:
+                config.max_tokens = user_prefs["max_tokens"]
+
+        # 8. Generer via LLM
+        resp = llm.generate(user_message, category, config)
+        latency = (datetime.now() - t0).total_seconds() * 1000
+
+        # 9. Enregistrer la reponse dans la memoire
+        if memory is not None:
+            memory.add("assistant", resp.content, category=category,
+                      resonance_score=abc_stats.get("resonance") or confidence)
+
+        # 10. Construire le resultat
+        result = {
+            "response": resp.content,
+            "category": category,
+            "confidence": confidence,
+            "model": resp.model,
+            "provider": resp.provider,
+            "tokens_used": resp.usage.get("total_tokens", 0),
+            "processing_time_ms": round(latency, 2),
+            "abc_used": self.abc_connector is not None,
+            "knowledge_used": knowledge_context is not None,
+            "signature": sig.to_dict(),
+        }
+
+        if abc_stats:
+            result["abc_stats"] = abc_stats
+        if knowledge_context:
             result["knowledge_stats"] = holo_stats
-        
-        if jepa_stats:
-            result["jepa_stats"] = jepa_stats
-        
+
         return result
 
     def get_stats(self) -> Dict[str, Any]:

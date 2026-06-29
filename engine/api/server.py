@@ -260,65 +260,60 @@ class HarmonicAPI:
         async def chat(req: ChatRequest):
             self._init_components()
             start = time.time()
-            
+
             session_id = req.user_id
             memory = self._get_or_create_memory(session_id)
             profile = self._get_or_create_profile(req.user_id)
-            
-            # Ajouter les messages a la memoire
-            for msg in req.messages:
-                if msg.role == "user":
-                    sig = self.engine.analyze(msg.content)
-                    cat, conf = self.engine.classify(msg.content)
-                    memory.add("user", msg.content, category=cat, resonance_score=conf)
-            
+
             # Dernier message utilisateur
             last_user_msg = next(
                 (m.content for m in reversed(req.messages) if m.role == "user"),
                 ""
             )
-            
+
             if not last_user_msg:
                 raise HTTPException(status_code=400, detail="Aucun message utilisateur")
-            
-            # Auto-classify
-            cat, conf = self.engine.classify(last_user_msg)
-            category = cat if conf > 0.15 else "general"
-            
-            # Build config with user preferences
-            from ..llm import LLMConfig
-            user_config = profile.get_optimized_config()
-            config = LLMConfig(
-                temperature=req.temperature or user_config.get("temperature", 0.7),
-                max_tokens=req.max_tokens or user_config.get("max_tokens", 2048),
-                system_prompt=f"Contexte conversation: {memory.get_context()[:500]}...",
+
+            # Ajouter les messages precedents a la memoire (pour le contexte)
+            for msg in req.messages:
+                if msg.role == "user" and msg.content != last_user_msg:
+                    sig = self.engine.analyze(msg.content)
+                    cat, conf = self.engine.classify(msg.content)
+                    memory.add("user", msg.content, category=cat, resonance_score=conf)
+
+            # Pipeline harmonique unifie → LLM avec ABC + hologramme + memoire
+            result = self.engine.chat_with_llm(
+                user_message=last_user_msg,
+                llm=self.llm,
+                memory=memory,
+                profile=profile,
             )
-            
-            # Generate
-            resp = self.llm.generate(last_user_msg, category, config)
+
             latency = (time.time() - start) * 1000
-            
-            # Ajouter la reponse a la memoire
-            resonance = conf if conf > 0 else 0.5
-            memory.add("assistant", resp.content, category=category, resonance_score=resonance)
-            
-            # Enregistrer l'interaction
-            profile.record_interaction(category, resonance_score=resonance, model=resp.model, latency_ms=latency)
-            
+
             # Memoire long-terme
+            category = result["category"]
+            resonance = result.get("abc_stats", {}).get("resonance") or result["confidence"]
             self.long_term.remember(
                 f"User {req.user_id} asked about {category}: {last_user_msg[:100]}",
                 category=category,
                 importance=resonance,
                 resonance_score=resonance,
             )
-            
+
+            # Enregistrer l'interaction
+            profile.record_interaction(
+                category, resonance_score=resonance,
+                model=result.get("model", "unknown"),
+                latency_ms=latency,
+            )
+
             return ChatResponse(
-                content=resp.content,
-                model=resp.model,
+                content=result["response"],
+                model=result.get("model", "unknown"),
                 category=category,
                 resonance_score=round(resonance, 4),
-                tokens_used=resp.usage.get("total_tokens", 0),
+                tokens_used=result.get("tokens_used", 0),
                 latency_ms=round(latency, 2),
                 session_id=session_id,
             )
