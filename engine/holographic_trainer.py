@@ -579,8 +579,239 @@ class HolographicTrainer:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# FONCTIONS UTILITAIRES
+# QUALITY GUARD — Maintien de la qualité pendant la croissance
 # ═══════════════════════════════════════════════════════════════════════════════
+
+class QualityGuard:
+    """
+    Gardien de la qualité des relations lors de l'ajout de nouveaux faits.
+    
+    Principes :
+      1. VALIDATION : un nouveau fait est-il cohérent avec la KB existante ?
+      2. INTÉGRATION : comment l'ajouter sans dégrader la précision ?
+      3. DÉTECTION DE CONTRADICTIONS : deux faits opposés → phase opposée
+      4. APPRENTISSAGE INCRÉMENTAL : mise à jour ciblée, pas réentraînement complet
+    """
+    
+    def __init__(self, encoder, trainer, knowledge_base):
+        self.encoder = encoder
+        self.trainer = trainer
+        self.kb = [(str(s), str(r), str(o), str(sec)) for s, r, o, sec in knowledge_base]
+        self.validation_log = []
+        self.contradictions = []
+    
+    def validate_fact(self, sujet: str, relation: str, objet: str) -> dict:
+        """
+        Évalue la qualité d'un nouveau fait avant intégration.
+        
+        Retourne un dict avec :
+          - accepted: bool (doit-on intégrer ce fait ?)
+          - confidence: float (0-1)
+          - warning: str ou None
+          - phase_conflict: bool (contradiction potentielle ?)
+        """
+        result = {
+            'accepted': True,
+            'confidence': 0.5,
+            'warning': None,
+            'phase_conflict': False,
+        }
+        
+        # Vérifier que les mots existent ou peuvent être encodés
+        if len(sujet) < 2 or len(objet) < 2:
+            result['accepted'] = False
+            result['warning'] = 'Mots trop courts'
+            return result
+        
+        # Encoder les mots
+        vs = self.encoder.encode_word(sujet)
+        vo = self.encoder.encode_word(objet)
+        
+        # 1. Similarité sujet-objet : si elle est déjà très haute → redondant
+        sim_so = float(np.real(np.dot(vs, np.conj(vo))))
+        if sim_so > 0.9:
+            result['confidence'] = 0.95
+            result['warning'] = 'Fait redondant (déjà fortement lié)'
+            return result
+        
+        # 2. Vérifier la cohérence avec les faits existants sur le même sujet
+        existing_objects = []
+        for s, r, o, _ in self.kb:
+            if s == sujet and o != objet:
+                existing_objects.append(o)
+        
+        if existing_objects:
+            # Calculer la direction moyenne des objets existants
+            obj_vecs = []
+            for eo in existing_objects[:20]:
+                if eo in self.encoder.word_vectors:
+                    obj_vecs.append(self.encoder.word_vectors[eo])
+            
+            if obj_vecs:
+                mean_obj = sum(obj_vecs) / len(obj_vecs)
+                mean_obj /= np.sqrt(np.sum(np.abs(mean_obj)**2) + 1e-10)
+                
+                # Similarité du nouvel objet avec la direction moyenne
+                sim_new = float(np.real(np.dot(vo, np.conj(mean_obj))))
+                
+                if sim_new < -0.3:
+                    # Le nouvel objet pointe dans la direction OPPOSÉE → contradiction
+                    result['phase_conflict'] = True
+                    result['warning'] = f'Contradiction potentielle: {sujet} → {objet} '
+                    result['warning'] += f's\'oppose à la direction moyenne des objets existants (sim={sim_new:.2f})'
+                    result['confidence'] = max(0.1, (sim_new + 1) / 2)
+                elif sim_new < 0.1:
+                    # Objet non aligné mais pas opposé → faible cohérence
+                    result['warning'] = f'Faible cohérence: {objet} peu aligné avec les autres objets de {sujet}'
+                    result['confidence'] = 0.3 + (sim_new + 0.3) / 1.3
+                else:
+                    # Bon alignement → fait cohérent
+                    result['confidence'] = 0.5 + sim_new * 0.5
+        
+        # 3. Vérifier la cohérence inverse (sujet depuis l'objet)
+        existing_subjects = []
+        for s, r, o, _ in self.kb:
+            if o == objet and s != sujet:
+                existing_subjects.append(s)
+        
+        if existing_subjects:
+            subj_vecs = [self.encoder.word_vectors[es] for es in existing_subjects[:20] if es in self.encoder.word_vectors]
+            if subj_vecs:
+                mean_subj = sum(subj_vecs) / len(subj_vecs)
+                mean_subj /= np.sqrt(np.sum(np.abs(mean_subj)**2) + 1e-10)
+                sim_new_s = float(np.real(np.dot(vs, np.conj(mean_subj))))
+                if sim_new_s < -0.3:
+                    result['phase_conflict'] = True
+                    result['warning'] = result['warning'] or f'Contradiction inverse: {objet} ← {sujet}'
+                    result['confidence'] = min(result['confidence'], 0.2)
+        
+        result['accepted'] = result['confidence'] >= 0.2  # seuil bas, on log même en cas de doute
+        self.validation_log.append(result)
+        return result
+    
+    def integrate_fact(self, sujet: str, relation: str, objet: str, 
+                       secteur: str = 'GENERAL', force: bool = False) -> bool:
+        """
+        Intègre un nouveau fait avec validation et apprentissage incrémental.
+        
+        Args:
+            sujet, relation, objet: le triplet
+            secteur: domaine sémantique
+            force: si True, ignore la validation
+        
+        Returns:
+            True si le fait a été intégré
+        """
+        validation = self.validate_fact(sujet, relation, objet)
+        
+        if not force and not validation['accepted']:
+            return False
+        
+        # Ajouter à la KB
+        fact = (sujet, relation, objet, secteur)
+        if fact in self.kb:
+            return False
+        self.kb.append(fact)
+        
+        # Apprentissage incrémental : mettre à jour SEULEMENT les mots concernés
+        ctx_vecs = []
+        for w in [sujet] + relation.split():
+            if w in self.encoder.word_vectors:
+                ctx_vecs.append(self.encoder.word_vectors[w])
+        
+        if ctx_vecs:
+            psi_ctx = sum(ctx_vecs) / len(ctx_vecs)
+            psi_ctx /= np.sqrt(np.sum(np.abs(psi_ctx)**2) + 1e-10)
+            
+            # Mettre à jour l'objet
+            if objet in self.encoder.word_vectors:
+                v_obj = self.encoder.word_vectors[objet]
+                v_new = v_obj + 0.3 * psi_ctx  # lr fixe pour incrémental
+                v_new /= np.sqrt(np.sum(np.abs(v_new)**2) + 1e-10)
+                self.encoder.word_vectors[objet] = v_new
+            
+            # Mettre à jour le sujet (direction inverse)
+            ctx_inv = [objet] + relation.split()
+            ctx_inv_vecs = [self.encoder.word_vectors[w] for w in ctx_inv if w in self.encoder.word_vectors]
+            if ctx_inv_vecs:
+                psi_ctx_inv = sum(ctx_inv_vecs) / len(ctx_inv_vecs)
+                psi_ctx_inv /= np.sqrt(np.sum(np.abs(psi_ctx_inv)**2) + 1e-10)
+                if sujet in self.encoder.word_vectors:
+                    v_subj = self.encoder.word_vectors[sujet]
+                    v_new_s = v_subj + 0.3 * psi_ctx_inv
+                    v_new_s /= np.sqrt(np.sum(np.abs(v_new_s)**2) + 1e-10)
+                    self.encoder.word_vectors[sujet] = v_new_s
+        
+        # Journaliser
+        self.validation_log.append({
+            'action': 'integrated',
+            'fact': fact,
+            'confidence': validation['confidence'],
+            'phase_conflict': validation['phase_conflict'],
+        })
+        
+        return True
+    
+    def detect_contradictions(self) -> List[Tuple[str, str, str, str, float]]:
+        """
+        Détecte les contradictions dans la KB en mesurant les oppositions de phase.
+        
+        Retourne une liste de (sujet, objet1, objet2, relation, opposition_score)
+        """
+        from collections import defaultdict
+        contradictions = []
+        
+        # Grouper les faits par sujet
+        facts_by_subject = defaultdict(list)
+        for s, r, o, _ in self.kb:
+            facts_by_subject[s].append((r, o))
+        
+        for sujet, fact_list in facts_by_subject.items():
+            if len(fact_list) < 2:
+                continue
+            if sujet not in self.encoder.word_vectors:
+                continue
+            
+            objects = [(r, o) for r, o in fact_list if o in self.encoder.word_vectors]
+            for i in range(len(objects)):
+                for j in range(i + 1, len(objects)):
+                    r1, o1 = objects[i]
+                    r2, o2 = objects[j]
+                    vo1 = self.encoder.word_vectors[o1]
+                    vo2 = self.encoder.word_vectors[o2]
+                    sim = float(np.real(np.dot(vo1, np.conj(vo2))))
+                    
+                    # Opposition de phase forte = contradiction potentielle
+                    if sim < -0.5:
+                        contradictions.append((sujet, o1, o2, f'{r1} vs {r2}', sim))
+        
+        self.contradictions = contradictions
+        return contradictions
+    
+    def quality_report(self) -> dict:
+        """Rapport sur la qualité actuelle de la KB."""
+        contradictions = self.detect_contradictions()
+        total_facts = len(self.kb)
+        
+        # Mesurer la cohérence moyenne sujet-objet
+        sims = []
+        for s, r, o, _ in self.kb[-1000:]:  # échantillon
+            if s in self.encoder.word_vectors and o in self.encoder.word_vectors:
+                sim = float(np.real(np.dot(
+                    self.encoder.word_vectors[s],
+                    np.conj(self.encoder.word_vectors[o])
+                )))
+                sims.append(sim)
+        
+        return {
+            'total_facts': total_facts,
+            'contradictions_detected': len(contradictions),
+            'contradictions': contradictions[:10],
+            'mean_sim_subject_object': round(float(np.mean(sims)), 4) if sims else 0,
+            'std_sim': round(float(np.std(sims)), 4) if sims else 0,
+            'validations_logged': len(self.validation_log),
+            'phase_conflicts': sum(1 for v in self.validation_log if isinstance(v, dict) and v.get('phase_conflict')),
+        }
 
 def build_test_pairs(knowledge_base, n_positive: int = 500, n_negative: int = 500):
     """
