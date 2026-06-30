@@ -682,6 +682,13 @@ class HarmonicModel:
                     self.knowledge_base, encoder=self._encoder
                 )
     
+    def rebuild_waves(self):
+        """Reconstruit les vecteurs d'onde (alias pour compatibilité)."""
+        if self.use_holographic and self._encoder is not None:
+            self.kx, self.ky, self.w2i = self._rebuild_projections()
+        else:
+            self.kx, self.ky, self.w2i = build_waves(self.knowledge_base)
+    
     def train_encoder(self, epochs: int = 5, lr: float = 0.3) -> dict:
         """
         Entraîne l'encodeur holographique sur toute la base de connaissance.
