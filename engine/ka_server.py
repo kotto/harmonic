@@ -109,6 +109,17 @@ ai.model.knowledge_base = facts
 ai.model.rebuild_waves()
 ai.engine = ReasoningEngine(ai.model)
 
+# Entraînement rapide au démarrage (essentiel pour la qualité)
+print(f"  ⚡ Entraînement de l'encodeur ({len(facts):,} faits)...")
+try:
+    result = ai.model.train_encoder(epochs=5, lr=0.3)
+    if 'precision_apres' in result:
+        print(f"  ✅ Précision: {result['precision_avant']}% → {result['precision_apres']}% ({result.get('temps_s', 0):.1f}s)")
+    else:
+        print(f"  ✅ Entraînement terminé ({result.get('temps_s', 0):.1f}s)")
+except Exception as e:
+    print(f"  ⚠️  Entraînement rapide impossible: {e}")
+
 print(f"  🧠 Harmonic AI: {len(ai.model.knowledge_base):,} faits, {len(ai.model.w2i):,} mots")
 print(f"  🔄 Bootstrapper: {'actif' if ai.bootstrapper else 'inactif'}")
 print(f"  💬 Mémoire conversation: {ai.conversation.max_messages} messages")
