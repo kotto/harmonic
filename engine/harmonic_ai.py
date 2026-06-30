@@ -211,6 +211,13 @@ class HarmonicAI:
         self.conversation.add("user", question)
         self.conversation.add("assistant", response)
         
+        # Correction orthographique finale
+        try:
+            from style_engine import _fix_accents
+            response = _fix_accents(response)
+        except ImportError:
+            pass
+        
         return response
     
     def _enrich_with_context(self, question: str) -> str:
