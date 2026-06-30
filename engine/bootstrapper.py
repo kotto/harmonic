@@ -205,8 +205,16 @@ class HarmonicBootstrapper:
       - confiance : score moyen de matching
     """
     
-    def __init__(self, use_memory: bool = True):
-        self.model = HarmonicModel(use_memory=use_memory)
+    def __init__(self, use_memory: bool = True, model=None):
+        """
+        Args:
+            use_memory: activer la mémoire holographique
+            model: modèle HarmonicModel existant (si None, en crée un nouveau)
+        """
+        if model is not None:
+            self.model = model
+        else:
+            self.model = HarmonicModel(use_memory=use_memory)
         self._autonomie_history = []
         self._llm_calls = 0
         self._total_queries = 0
@@ -244,6 +252,18 @@ class HarmonicBootstrapper:
                         total += n
         return total
     
+    def _llm_fallback(self, question: str) -> Optional[str]:
+        """Appelle le LLM pour obtenir une réponse. Retourne None si indisponible."""
+        if not _LLM_AVAILABLE:
+            return None
+        try:
+            self._llm_calls += 1
+            self._autonomie_history.append(False)
+            llm_resp = _LLM.generate(question, category="factual")
+            return llm_resp.content.strip() or None
+        except Exception:
+            return None
+    
     def ask_with_fallback(self, question: str) -> Tuple[str, bool]:
         """
         Pose une question. Si le modele ne trouve pas de reponse,
@@ -257,11 +277,31 @@ class HarmonicBootstrapper:
         # Essayer le modele harmonique d'abord
         response = self.model.ask(question)
         
-        # Verifier si la reponse est satisfaisante (pas un message d'erreur)
+        # Vérifier la confiance (overlap lexical + phrases faibles)
         low_confidence = any(phrase in response.lower() for phrase in [
             'je ne connais pas', 'je ne trouve pas', 'pas de resonance',
             'connais pas assez'
         ])
+        
+        # Vérification supplémentaire : chevauchement lexical des SUJETS
+        if not low_confidence:
+            # Mots-outils à ignorer (verbes communs, prépositions, etc.)
+            _ignore_words = {'le', 'la', 'les', 'de', 'des', 'un', 'une', 'et', 'est', 'a',
+                           'que', 'qui', 'quoi', 'dans', 'sur', 'pour', 'avec', 'par',
+                           'the', 'a', 'an', 'is', 'are', 'of', 'in', 'on', 'at', 'to',
+                           'what', 'who', 'how', 'why', 'when', 'where', 'which',
+                           'invente', 'cree', 'decouvert', 'fonctionne', 'explique', 'trouve',
+                           'fait', 'dit', 'donne', 'utilise', 'appelle', 'signifie',
+                           'comment', 'pourquoi', 'quand', 'combien'}
+            q_words = set(w.strip('.,!?;:()[]{}') for w in question.lower().split()
+                         if len(w) > 2 and w not in _ignore_words)
+            r_words = set(w.strip('.,!?;:()[]{}') for w in response.lower().split() if len(w) > 2)
+            subject_overlap = q_words & r_words
+            # Si moins de la moitié des mots-sujets apparaissent → faible
+            # Pour les questions courtes (1-2 mots-sujets), exiger 100%
+            min_required = max(1, len(q_words) * 0.6) if len(q_words) <= 2 else len(q_words) * 0.5
+            if len(q_words) > 0 and len(subject_overlap) < min_required:
+                low_confidence = True
         
         if not low_confidence:
             self._autonomie_history.append(True)
@@ -277,7 +317,13 @@ class HarmonicBootstrapper:
                 # APPRENDRE de la reponse du LLM
                 triples = extract_triples_simple(llm_text)
                 for s, r, o, sec in triples:
-                    self.model.learn(s, r, o, sec)
+                    self.model.knowledge_base.append((s, r, o, sec))
+                if triples:
+                    # Reconstruire les ondes avec les nouveaux faits
+                    if hasattr(self.model, 'rebuild_waves'):
+                        self.model.rebuild_waves()
+                    else:
+                        self.model.kx, self.model.ky, self.model.w2i = build_waves(self.model.knowledge_base)
                 
                 self._autonomie_history.append(False)
                 return llm_text, False

@@ -98,9 +98,11 @@ _LANG_MARKERS = {
 
 # Préfixes de question par langue
 _QUESTION_PREFIXES = {
-    'fr': ['explique', 'qu est-ce que', 'qu est ce que', 'qui est',
-            'pourquoi', 'comment', 'decris', 'definis', 'quelle est',
-            'quand', 'ou se', 'que signifie'],
+    'fr': ['qu est-ce que', 'qu est ce que', 'qui a invente', 'qui a cree',
+            'qui a decouvert', 'qui est', 'qui a', 'explique', 'pourquoi',
+            'comment', 'decris', 'definis', 'quelle est',
+            'quand', 'ou se', 'que signifie', 'qu a',
+            'donne moi', 'parle moi de', 'dis moi'],
     'en': ['what is', 'who is', 'explain', 'describe', 'define',
             'why', 'how does', 'how do', 'how', 'when', 'where', 'which'],
     'es': ['qué es', 'quién es', 'explica', 'describe', 'define',

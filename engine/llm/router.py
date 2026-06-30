@@ -50,13 +50,13 @@ ROUTING_TABLE = {
         "config_override": {"temperature": 0.5, "max_tokens": 2048}
     },
     "factual": {
-        "primary": "deepseek-chat",
-        "fallback": "qwen-max",
+        "primary": "claude-haiku-4-5-20251001",
+        "fallback": "claude-sonnet-4-6",
         "config_override": {"temperature": 0.2, "max_tokens": 1024}
     },
     "general": {
-        "primary": "deepseek-chat",
-        "fallback": "gpt-3.5-turbo",
+        "primary": "claude-haiku-4-5-20251001",
+        "fallback": "claude-sonnet-4-6",
         "config_override": {"temperature": 0.7, "max_tokens": 512}
     },
 }

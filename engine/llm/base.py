@@ -14,7 +14,7 @@ class LLMConfig:
     model: str = "gpt-4"
     temperature: float = 0.7
     max_tokens: int = 2048
-    top_p: float = 0.9
+    top_p: Optional[float] = None  # None = ne pas envoyer (conflit avec temperature sur Claude 4+)
     frequency_penalty: float = 0.0
     presence_penalty: float = 0.0
     stop_sequences: Optional[List[str]] = None

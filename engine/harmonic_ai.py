@@ -61,10 +61,86 @@ class HarmonicAI:
       - load()     : restauration complète
     """
     
-    def __init__(self, use_memory: bool = True):
+    def __init__(self, use_memory: bool = True, enable_bootstrapper: bool = True):
         self.model = HarmonicModel(use_memory=use_memory)
         self.engine = ReasoningEngine(self.model)
         self._load_extended_kb()
+        
+        # Bootstrapper pour le sevrage progressif du LLM
+        self.bootstrapper = None
+        if enable_bootstrapper:
+            from bootstrapper import HarmonicBootstrapper
+            self.bootstrapper = HarmonicBootstrapper(model=self.model)
+    
+    def _confidence_score(self, response: str, question: str) -> float:
+        """
+        Évalue la confiance dans une réponse (0 = pas confiance, 1 = confiance totale).
+        
+        Stratégie : vérifier que la réponse apporte de l'information NOUVELLE,
+        pas juste un echo de la question via les templates.
+        """
+        if not response or len(response) < 20:
+            return 0.0
+        low_phrases = ['je ne connais pas', 'je ne trouve pas', 'pas de resonance',
+                       'connais pas assez', 'ne comprends pas', 'pas assez de connaissances']
+        if any(p in response.lower() for p in low_phrases):
+            return 0.0
+        
+        # Extraire le SUJET NET de la question (sans les mots-outils)
+        stopwords = {'le', 'la', 'les', 'de', 'des', 'du', 'un', 'une', 'et', 'est', 'a',
+                     'que', 'qui', 'quoi', 'dans', 'sur', 'pour', 'avec', 'par', 'en',
+                     'the', 'a', 'an', 'is', 'are', 'of', 'in', 'on', 'at', 'to',
+                     'what', 'who', 'how', 'why', 'when', 'where', 'which',
+                     'invente', 'cree', 'decouvert', 'fonctionne', 'explique', 'trouve',
+                     'fait', 'dit', 'donne', 'utilise', 'appelle', 'signifie',
+                     'comment', 'pourquoi', 'quand', 'ou', 'combien', 'est-ce'}
+        q_words = set(w.strip('.,!?;:()[]{}') for w in question.lower().split()
+                     if len(w) > 2 and w not in stopwords)
+        
+        if not q_words:
+            return 0.4
+        
+        # Identifier les MOTS-CLÉS de la question (les plus longs, les plus spécifiques)
+        key_words = sorted(q_words, key=len, reverse=True)[:3]  # top 3 mots les plus longs
+        
+        # Vérifier que les MOTS-CLÉS n'apparaissent PAS comme simples échos
+        # (si un mot-clé apparaît suivi d'un verbe générique → echo du template)
+        echo_score = 0
+        for kw in key_words:
+            # Chercher le mot-clé dans la réponse
+            pos = response.lower().find(kw)
+            if pos >= 0:
+                # Vérifier le contexte : est-ce un echo ?
+                context = response.lower()[max(0,pos-20):pos+len(kw)+30]
+                echo_patterns = ['éclaire ' + kw, 'comprendre ' + kw, 'cerner ' + kw,
+                                'phénomène de ' + kw, 'concept de ' + kw]
+                if any(p in context for p in echo_patterns):
+                    echo_score += 1  # c'est un echo, pas une vraie réponse
+        
+        # Si tous les mots-clés sont des échos → très faible confiance
+        if len(key_words) > 0 and echo_score >= len(key_words):
+            return 0.1
+        
+        # Si la plupart sont des échos → faible
+        if len(key_words) > 0 and echo_score / len(key_words) >= 0.5:
+            return 0.2
+        
+        # Vérifier aussi la présence RÉELLE des mots-clés dans la réponse
+        r_words = set(w.strip('.,!?;:()[]{}') for w in response.lower().split() if len(w) > 2)
+        key_overlap = set(key_words) & r_words
+        key_ratio = len(key_overlap) / len(key_words) if key_words else 1.0
+        
+        # Si aucun mot-clé n'apparaît → très faible
+        if key_ratio == 0:
+            return 0.15
+        
+        # Si peu de mots-clés apparaissent → faible
+        if key_ratio < 0.3:
+            return 0.25
+        
+        # Sinon, confiance basée sur la longueur et couverture
+        base = 0.35 + key_ratio * 0.3 + min(0.25, len(response) / 400)
+        return min(1.0, base)
     
     def _load_extended_kb(self):
         """Charge la base étendue si disponible."""
@@ -90,11 +166,34 @@ class HarmonicAI:
     # ═══════════════════════════════════════════════════════════════════
     
     def ask(self, question: str) -> str:
-        """Réponse factuelle — utilise le meilleur chemin de raisonnement."""
+        """Réponse factuelle avec fallback LLM automatique."""
+        # Essayer le moteur harmonique d'abord
         try:
-            return self.engine.reason(question, max_depth=1)
+            response = self.engine.reason(question, max_depth=1)
         except Exception:
-            return self.model.ask(question)
+            response = self.model.ask(question)
+        
+        # Si confiance faible et bootstrapper disponible → fallback LLM
+        if self.bootstrapper is not None:
+            confidence = self._confidence_score(response, question)
+            if confidence < 0.35:
+                try:
+                    llm_text = self.bootstrapper._llm_fallback(question)
+                    if llm_text:
+                        response = llm_text
+                        # Apprendre de la réponse LLM
+                        from bootstrapper import extract_triples_simple
+                        triples = extract_triples_simple(llm_text)
+                        for s, r, o, sec in triples:
+                            self.model.knowledge_base.append((s, r, o, sec))
+                        if triples:
+                            self.model.rebuild_waves()
+                            # Mettre à jour l'engine avec le nouveau modèle
+                            self.engine = ReasoningEngine(self.model)
+                except Exception:
+                    pass
+        
+        return response
     
     def reason(self, question: str) -> str:
         """Chaîne de raisonnement avec style élégant."""
@@ -202,12 +301,16 @@ class HarmonicAI:
     
     @property
     def stats(self) -> dict:
-        return {
+        s = {
             'faits': len(self.model.knowledge_base),
             'vocabulaire': len(self.model.w2i),
             'experiences': self.model.experience_count,
             'energie': round(self.model.memoire.energie, 0) if self.model.memoire and hasattr(self.model.memoire, 'energie') else 0,
         }
+        if self.bootstrapper:
+            s['autonomie'] = round(self.bootstrapper.autonomie * 100, 1)
+            s['llm_calls'] = self.bootstrapper._llm_calls
+        return s
 
 
 # ═══════════════════════════════════════════════════════════════════════

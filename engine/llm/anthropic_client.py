@@ -44,14 +44,19 @@ class AnthropicLLM(LLMInterface):
         try:
             system = cfg.system_prompt or ""
             
-            resp = client.messages.create(
+            # Ne pas envoyer top_p pour les modèles Claude 4+ (conflit avec temperature)
+            kwargs = dict(
                 model=cfg.model,
                 max_tokens=cfg.max_tokens,
                 temperature=cfg.temperature,
-                top_p=cfg.top_p,
                 system=system,
                 messages=[{"role": "user", "content": prompt}],
             )
+            # top_p uniquement pour les anciens modèles ou si explicitement demandé
+            if cfg.top_p is not None and cfg.top_p != 1.0:
+                kwargs['top_p'] = cfg.top_p
+            
+            resp = client.messages.create(**kwargs)
             latency = (time.time() - start) * 1000
             
             content = resp.content[0].text if resp.content else ""
