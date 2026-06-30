@@ -1,0 +1,27 @@
+# Render Blueprint — KA Server + Harmonic AI + HCV Compression
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: ka-api
+    env: python
+    region: frankfurt  # Europe, proche de la France
+    plan: starter      # 512 MB RAM, 0.1 CPU — suffisant pour Harmonic
+    buildCommand: |
+      pip install -r requirements_server.txt
+      # Créer le répertoire de données
+      mkdir -p data/bootstrapper_output
+      # Télécharger le modèle si pas déjà présent
+      if [ ! -f data/bootstrapper_output/knowledge_base_50k.npz ]; then
+        echo "Modèle 50K introuvable — sera chargé au premier démarrage"
+      fi
+    startCommand: gunicorn ka_server:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.8
+      - key: MODEL_NAME
+        value: 50k
+      - key: KA_PERSONALITY
+        value: "Tu es KA, assistant personnel. Ton ton est chaleureux et concis. Tu réponds en français, en 2-3 phrases."
+    autoDeploy: true
