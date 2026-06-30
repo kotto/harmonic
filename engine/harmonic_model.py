@@ -670,23 +670,79 @@ class HarmonicModel:
         if fact not in self.knowledge_base:
             self.knowledge_base.append(fact)
             if self.use_holographic and self._encoder is not None:
-                # Mettre à jour l'encodage avec les nouveaux mots
+                # Apprentissage ondulatoire rapide (1 epoch, lr élevé)
+                from holographic_trainer import HolographicTrainer
+                trainer = HolographicTrainer(self._encoder, lr=0.3)
+                trainer.train_from_kb([fact], epochs=1, verbose=False)
+                # Reconstruire les projections 2D
+                self.kx, self.ky, self.w2i = self._rebuild_projections()
+            else:
                 from holographic_encoder import build_holographic_waves
                 self.kx, self.ky, self.w2i, self._encoder = build_holographic_waves(
                     self.knowledge_base, encoder=self._encoder
                 )
-            else:
-                self.kx, self.ky, self.w2i = build_waves(self.knowledge_base)
     
-    def rebuild_waves(self):
-        """Reconstruit explicitement les vecteurs d'onde."""
-        if self.use_holographic and self._encoder is not None:
-            from holographic_encoder import build_holographic_waves
-            self.kx, self.ky, self.w2i, self._encoder = build_holographic_waves(
-                self.knowledge_base, encoder=self._encoder
-            )
-        else:
-            self.kx, self.ky, self.w2i = build_waves(self.knowledge_base)
+    def train_encoder(self, epochs: int = 5, lr: float = 0.3) -> dict:
+        """
+        Entraîne l'encodeur holographique sur toute la base de connaissance.
+        
+        Args:
+            epochs: nombre de passes
+            lr: taux d'apprentissage
+        
+        Returns:
+            dict avec perte initiale/finale, temps, précision
+        """
+        if not self.use_holographic or self._encoder is None:
+            return {'error': 'Encodeur holographique non disponible'}
+        
+        from holographic_trainer import HolographicTrainer, build_test_pairs
+        
+        trainer = HolographicTrainer(self._encoder, lr=lr)
+        test_pairs = build_test_pairs(self.knowledge_base, n_positive=500, n_negative=500)
+        eval_before = trainer.evaluate(test_pairs)
+        
+        import time
+        t0 = time.time()
+        losses = trainer.train_from_kb(self.knowledge_base, epochs=epochs, verbose=False)
+        elapsed = time.time() - t0
+        
+        eval_after = trainer.evaluate(test_pairs)
+        self._rebuild_projections()
+        
+        return {
+            'loss_initial': round(losses[0], 4),
+            'loss_final': round(losses[-1], 4),
+            'temps_s': round(elapsed, 1),
+            'precision_avant': eval_before['precision'],
+            'precision_apres': eval_after['precision'],
+            'sim_positive_apres': eval_after['sim_positive'],
+        }
+    
+    def _rebuild_projections(self):
+        """Reconstruit les projections 2D depuis l'encodeur (après entraînement)."""
+        if self._encoder is None:
+            return
+        words = sorted(self._encoder.word_vectors.keys())
+        n = len(words)
+        kx = np.zeros(n)
+        ky = np.zeros(n)
+        w2i = {}
+        for i, w in enumerate(words):
+            if w.startswith('__char_'):
+                continue
+            v = self._encoder.word_vectors[w]
+            total = np.sum(v)
+            kx[i] = np.real(total)
+            ky[i] = np.imag(total)
+            w2i[w] = i
+        norms = np.sqrt(kx**2 + ky**2) + 1e-10
+        kx /= norms
+        ky /= norms
+        self.kx = kx[:len(w2i)]
+        self.ky = ky[:len(w2i)]
+        self.w2i = w2i
+        return self.kx, self.ky, self.w2i
     
     def learn_text(self, texte: str, amplitude: float = 0.7):
         """Apprend un texte libre dans la memoire holographique."""

@@ -495,6 +495,10 @@ class HolographicEncoder:
         # Vecteurs unitaires → dot est déjà la similarité cosinus
         return float(dot)
     
+    def similarity_word(self, word_a: str, word_b: str) -> float:
+        """Alias pour similarity() — utilisé par le trainer."""
+        return self.similarity(word_a, word_b)
+    
     def collision_check(self, threshold: float = 0.95) -> List[Tuple[str, str, float]]:
         """
         Détecte les paires de mots trop similaires (collisions potentielles).
