@@ -167,9 +167,9 @@ class HarmonicAI:
     
     def ask(self, question: str) -> str:
         """Réponse factuelle avec fallback LLM automatique."""
-        # Essayer le moteur harmonique d'abord
+        # Essayer le moteur harmonique d'abord (raisonnement multi-sauts)
         try:
-            response = self.engine.reason(question, max_depth=1)
+            response = self.engine.reason(question, max_depth=2)
         except Exception:
             response = self.model.ask(question)
         

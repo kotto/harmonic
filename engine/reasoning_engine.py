@@ -103,8 +103,8 @@ def _overlap(a: str, b: str) -> float:
     return len(wa & wb) / max(len(wa), len(wb))
 
 def find_paths(knowledge_base: list, question: str, max_depth: int = 3,
-               max_paths: int = 3) -> List[List[Tuple[str, str, str, str]]]:
-    """Trouve les chemins de resonance universels."""
+               max_paths: int = 3, encoder=None) -> List[List[Tuple[str, str, str, str]]]:
+    """Trouve les chemins de resonance. Vérification holographique sur le résultat final."""
     q_words = _meaningful_words(question)
     
     scored_starts = []
@@ -124,7 +124,7 @@ def find_paths(knowledge_base: list, question: str, max_depth: int = 3,
         seen = {s}
         depth = 0
         while depth < max_depth:
-            best_score, best_next = 0.2, None
+            best_score, best_next = 0.15, None
             for s2, r2, o2, sec2 in knowledge_base:
                 if s2 in seen: continue
                 score = _overlap(current_obj, s2)
@@ -137,12 +137,39 @@ def find_paths(knowledge_base: list, question: str, max_depth: int = 3,
             else: break
         if len(path) >= 2: paths.append(path)
     
+    # Vérification holographique : scorer chaque chemin trouvé
+    if encoder is not None and len(paths) > 1:
+        scored_paths = []
+        for p in paths:
+            # Score de cohérence holographique du chemin
+            coherence = 0.0
+            for i in range(len(p) - 1):
+                coherence += _holographic_overlap(encoder, p[i][2], p[i+1][0])  # objet → sujet suivant
+            coherence /= max(len(p) - 1, 1)
+            scored_paths.append((coherence + len(p) * 0.1, p))
+        scored_paths.sort(key=lambda x: -x[0])
+        paths = [p for _, p in scored_paths]
+    
     unique, seen_sigs = [], set()
     for p in paths:
         sig = tuple(s for s, r, o, sec in p)
         if sig not in seen_sigs: seen_sigs.add(sig); unique.append(p)
     unique.sort(key=lambda p: -len(p))
     return unique[:max_paths]
+
+
+def _holographic_overlap(encoder, text_a: str, text_b: str) -> float:
+    """
+    Similarité holographique entre deux textes.
+    Retourne une valeur dans [0, 1].
+    """
+    try:
+        v_a = encoder.encode_query(text_a)
+        v_b = encoder.encode_query(text_b)
+        sim = float(np.real(np.dot(v_a, np.conj(v_b))))
+        return max(0.0, min(1.0, (sim + 1.0) / 2.0))
+    except Exception:
+        return 0.0
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 3. DETECTEUR DE DOMAINE (automatique)
@@ -256,8 +283,9 @@ class ReasoningEngine:
             return float((dot + 1.0) / 2.0)
     
     def reason(self, question: str, max_depth: int = 3) -> str:
-        """Raisonnement generalise avec style elegant."""
-        paths = find_paths(self.model.knowledge_base, question, max_depth)
+        """Raisonnement generalise avec style elegant et vérification holographique."""
+        paths = find_paths(self.model.knowledge_base, question, max_depth,
+                          encoder=self._encoder)
         
         if not paths:
             return self.model.ask(question)
@@ -268,7 +296,8 @@ class ReasoningEngine:
     
     def reason_multi(self, question: str, max_depth: int = 3) -> str:
         """Raisonnement multi-perspective."""
-        paths = find_paths(self.model.knowledge_base, question, max_depth)
+        paths = find_paths(self.model.knowledge_base, question, max_depth,
+                          encoder=self._encoder)
         
         if not paths:
             return self.model.ask(question)
