@@ -286,6 +286,174 @@ class ReasoningEngine:
                 parts.append(f"Sous un autre angle, {rendered}")
         return ' '.join(parts)
     
+    def create_ondulatoire(self, concept_a: str = None, concept_b: str = None,
+                            n_idees: int = 3) -> List[str]:
+        """
+        CREE par SUPERPOSITION ONDULATOIRE — le véritable processus créatif.
+        
+        Principe physique :
+          1. Deux concepts → deux ondes Ψ_a et Ψ_b
+          2. Superposition : Ψ_créatif = Ψ_a + Ψ_b (pas une moyenne!)
+          3. L'hologramme est sondé avec Ψ_créatif
+          4. Les FAITS qui résonnent avec l'interférence sont les PONTS créatifs
+        
+        Contrairement à create() qui filtre des paires aléatoires par plage,
+        create_ondulatoire() fait ÉMERGER la connexion du substrat ondulatoire
+        lui-même — comme la nature crée.
+        
+        Args:
+            concept_a: premier concept (ou None pour auto-détection)
+            concept_b: second concept (ou None pour auto-détection)
+            n_idees: nombre d'idées créatives à générer
+        
+        Returns:
+            Liste de ponts créatifs exprimés en langage naturel
+        """
+        if self._encoder is None:
+            return self.create(n_ideas=n_idees)
+        
+        kb = self.model.knowledge_base
+        encoder = self._encoder
+        
+        # Collecter les sujets par domaine
+        subjects_by_domain = {}
+        for s, r, o, sec in kb:
+            dom = SECTOR_TO_DOMAIN.get(sec, 'GENERAL')
+            if dom not in subjects_by_domain:
+                subjects_by_domain[dom] = []
+            if s not in subjects_by_domain[dom]:
+                subjects_by_domain[dom].append(s)
+        
+        domains = list(subjects_by_domain.keys())
+        if len(domains) < 2:
+            return self.create(n_ideas=n_idees)
+        
+        idees = []
+        
+        for _ in range(n_idees * 3):  # max 3 essais par idée
+            # Sélectionner deux concepts de domaines DIFFÉRENTS
+            if concept_a and concept_b:
+                d1 = d2 = None
+                s1, s2 = concept_a, concept_b
+            else:
+                # Privilégier les domaines riches et les concepts significatifs
+                rich_domains = [d for d in domains 
+                               if len(subjects_by_domain[d]) >= 10]
+                if len(rich_domains) >= 2:
+                    d1, d2 = random.sample(rich_domains, 2)
+                else:
+                    d1, d2 = random.sample(domains, 2)
+                # Choisir des concepts de longueur raisonnable (>4 caractères)
+                good_s1 = [s for s in subjects_by_domain[d1] if 4 <= len(s) <= 30]
+                good_s2 = [s for s in subjects_by_domain[d2] if 4 <= len(s) <= 30]
+                if not good_s1 or not good_s2:
+                    continue
+                s1 = random.choice(good_s1)
+                s2 = random.choice(good_s2)
+            
+            # Étape 1 : Encoder les deux concepts
+            v_a = encoder.encode_query(s1)
+            v_b = encoder.encode_query(s2)
+            
+            # Étape 2 : SUPERPOSITION (pas moyenne — addition pure)
+            v_creative = v_a + v_b
+            norm = np.sqrt(np.sum(np.abs(v_creative)**2))
+            if norm > 1e-10:
+                v_creative /= norm
+            
+            # Étape 3 : Sonder la mémoire holographique (optimisé: échantillonnage)
+            # On échantillonne ~3000 mots du vocabulaire au lieu de 25K
+            all_vocab = list(self.model.w2i.keys())
+            sample_size = min(3000, len(all_vocab))
+            vocab_sample = random.sample(all_vocab, sample_size) if sample_size < len(all_vocab) else all_vocab
+            
+            resonance_scores = []
+            for w in vocab_sample:
+                if w in encoder.word_vectors and len(w) > 3:
+                    v_w = encoder.word_vectors[w]
+                    vec_sim = float(np.real(np.dot(v_creative, np.conj(v_w))))
+                    resonance_scores.append((w, vec_sim))
+            
+            resonance_scores.sort(key=lambda x: -x[1])
+            # Filtrer : exclure les mots des concepts eux-mêmes
+            concept_words = set((s1 + ' ' + s2).lower().split())
+            bridge_words = [w for w, s in resonance_scores[:25] 
+                           if s > 0.01 and w not in concept_words]
+            
+            if len(bridge_words) < 2:
+                continue
+            
+            # Étape 4 : Trouver des faits qui contiennent ces mots-ponts
+            bridge_facts = []
+            for s, r, o, sec in kb:
+                fact_text = f"{s} {r} {o}".lower()
+                matches = sum(1 for bw in bridge_words[:8] if bw in fact_text)
+                if matches >= 1:
+                    bridge_facts.append((matches, s, r, o, sec))
+            
+            if not bridge_facts:
+                continue
+            
+            bridge_facts.sort(key=lambda x: -x[0])
+            
+            # Étape 5 : Construire l'idée créative
+            # Sélectionner les meilleurs mots-ponts (diversité, pas que les 3 premiers)
+            top_words = bridge_words[:6]
+            # Mélanger pour éviter que ce soit toujours les 3 mêmes
+            if len(top_words) > 3:
+                top_words = list(random.sample(top_words, min(5, len(top_words))))
+            top_bridges = bridge_facts[:3]
+            
+            # Détecter les domaines pour le rendu
+            dom_a = SECTOR_TO_DOMAIN.get(top_bridges[0][4], 'GENERAL') if top_bridges else 'GENERAL'
+            
+            # Sécuriser les références aux top_words
+            w0 = top_words[0] if len(top_words) > 0 else s1
+            w1 = top_words[1] if len(top_words) > 1 else s2
+            w2 = top_words[2] if len(top_words) > 2 else w1
+            
+            # Templates de créativité ondulatoire
+            templates = [
+                f"Quand l'onde de « {s1} » rencontre celle de « {s2} », "
+                f"un motif d'interférence se forme. Dans ce motif, on discerne "
+                f"« {w0} », « {w1} » et « {w2} » — "
+                f"comme si {s1} et {s2} avaient toujours été les deux faces "
+                f"d'une même réalité.",
+                
+                f"La superposition de {s1} et {s2} fait émerger un pont inattendu. "
+                f"Les faits résonants révèlent que {w0} est le point "
+                f"de contact, là où {w1} et {w2} "
+                f"entrent en cohérence. Comme si l'univers avait toujours su "
+                f"que ces deux concepts étaient reliés.",
+                
+                f"Je sonde l'hologramme avec le battement de {s1} et {s2}. "
+                f"La réponse ne se fait pas attendre : {w0} émerge, "
+                f"suivi de {w1}. Le troisième harmonique, {w2}, "
+                f"confirme que {s1} et {s2} dansent sur la même fréquence "
+                f"fondamentale.",
+                
+                f"L'interférence ondulatoire entre {s1} et {s2} active "
+                f"des faits précis dans ma mémoire. {top_bridges[0][1].capitalize()} "
+                f"{top_bridges[0][2]} {top_bridges[0][3]} — ce fait résonne "
+                f"avec les DEUX concepts simultanément. {w0} et "
+                f"{w1} confirment la connexion.",
+            ]
+            
+            template = random.choice(templates)
+            
+            # Déduplication
+            key = template[:60]
+            if key not in {i[:60] for i in idees}:
+                idees.append(template)
+            
+            if len(idees) >= n_idees:
+                break
+        
+        if not idees:
+            return self.create(n_ideas=n_idees)
+        
+        return idees[:n_idees]
+    
     def create(self, domain1: str = None, domain2: str = None,
                concept: str = None, n_ideas: int = 3) -> List[str]:
         """

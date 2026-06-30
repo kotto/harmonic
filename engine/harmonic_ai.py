@@ -108,6 +108,15 @@ class HarmonicAI:
         """Connexions créatives entre domaines."""
         return self.engine.create(n_ideas=n)
     
+    def create_ondulatoire(self, concept_a: str = None, concept_b: str = None, n: int = 3) -> List[str]:
+        """
+        Créativité ondulatoire profonde — superposition + sondage mémoire.
+        
+        Superpose les ondes de deux concepts, sonde l'hologramme,
+        et fait ÉMERGER les ponts créatifs du substrat ondulatoire.
+        """
+        return self.engine.create_ondulatoire(concept_a, concept_b, n_idees=n)
+    
     def metaphor(self, n: int = 5) -> List[str]:
         """Métaphores poétiques par interférence."""
         return self.engine.metaphor(n_metaphores=n)
