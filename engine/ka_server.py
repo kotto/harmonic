@@ -53,27 +53,34 @@ print("=" * 55)
 
 def load_facts(model_name='best'):
     """Charge la base de connaissance. Fallback: KB qualitative intégrée."""
-    model_files = {
-        '50k':  '../data/bootstrapper_output/knowledge_base_50k.npz',
-        '217k': '../data/bootstrapper_output/knowledge_base_clean.npz',
-        '500k': '../data/bootstrapper_output/knowledge_base_500k.npz',
-        'best': '../data/bootstrapper_output/knowledge_base_50k.npz',
-    }
+    # Chercher dans engine/data/ d'abord (chemin Render), puis ../data/ (local)
+    search_paths = [
+        Path(__file__).resolve().parent / 'data' / 'bootstrapper_output',
+        Path(__file__).resolve().parent.parent / 'data' / 'bootstrapper_output',
+        Path('/opt/render/project/src/data/bootstrapper_output'),
+        Path('/opt/render/project/src/engine/data/bootstrapper_output'),
+    ]
     
-    # Essayer les chemins relatifs et absolus
-    for base in [Path('.'), Path(__file__).resolve().parent, Path('/opt/render/project/src')]:
-        for name, rel_path in model_files.items():
-            path = base / rel_path
-            if path.exists():
-                data = np.load(str(path), allow_pickle=True)
-                facts = [(str(s), str(r), str(o), str(sec)) for s, r, o, sec in data['facts']]
-                print(f"  📂 {path.name}: {len(facts):,} faits chargés")
-                return facts
+    model_files = {
+        '50k':  'knowledge_base_50k.npz',
+        '217k': 'knowledge_base_clean.npz',
+        '500k': 'knowledge_base_500k.npz',
+        'best': 'knowledge_base_50k.npz',
+    }
+    filename = model_files.get(model_name, 'knowledge_base_50k.npz')
+    
+    for base in search_paths:
+        path = base / filename
+        if path.exists():
+            data = np.load(str(path), allow_pickle=True)
+            facts = [(str(s), str(r), str(o), str(sec)) for s, r, o, sec in data['facts']]
+            print(f"  📂 {path.name}: {len(facts):,} faits chargés")
+            return facts
     
     # Fallback: KB qualitative intégrée (914 faits)
     from harmonic_model import KNOWLEDGE_BASE
     print(f"  📂 KB qualitative intégrée: {len(KNOWLEDGE_BASE):,} faits (mode dégradé)")
-    print(f"  💡 Pour charger 50K faits: ajouter le fichier .npz dans data/bootstrapper_output/")
+    print(f"  💡 Pour charger 50K faits: ajouter le fichier .npz dans engine/data/bootstrapper_output/")
     return [(str(s), str(r), str(o), str(sec)) for s, r, o, sec in KNOWLEDGE_BASE]
 
 # Parse arguments
