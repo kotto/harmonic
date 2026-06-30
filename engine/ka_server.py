@@ -46,21 +46,29 @@ print("=" * 55)
 # ── Chargement du modèle Harmonic ──────────────────────────────────────────
 
 def load_facts(model_name='best'):
-    """Charge la base de connaissance."""
+    """Charge la base de connaissance. Fallback: KB qualitative intégrée."""
     model_files = {
         '50k':  '../data/bootstrapper_output/knowledge_base_50k.npz',
         '217k': '../data/bootstrapper_output/knowledge_base_clean.npz',
         '500k': '../data/bootstrapper_output/knowledge_base_500k.npz',
         'best': '../data/bootstrapper_output/knowledge_base_50k.npz',
     }
-    path = model_files.get(model_name, model_files['best'])
-    if not Path(path).exists():
-        print(f"  [!] Fichier introuvable: {path}")
-        return None
-    data = np.load(str(path), allow_pickle=True)
-    facts = [(str(s), str(r), str(o), str(sec)) for s, r, o, sec in data['facts']]
-    print(f"  📂 {Path(path).name}: {len(facts):,} faits chargés")
-    return facts
+    
+    # Essayer les chemins relatifs et absolus
+    for base in [Path('.'), Path(__file__).resolve().parent, Path('/opt/render/project/src')]:
+        for name, rel_path in model_files.items():
+            path = base / rel_path
+            if path.exists():
+                data = np.load(str(path), allow_pickle=True)
+                facts = [(str(s), str(r), str(o), str(sec)) for s, r, o, sec in data['facts']]
+                print(f"  📂 {path.name}: {len(facts):,} faits chargés")
+                return facts
+    
+    # Fallback: KB qualitative intégrée (914 faits)
+    from harmonic_model import KNOWLEDGE_BASE
+    print(f"  📂 KB qualitative intégrée: {len(KNOWLEDGE_BASE):,} faits (mode dégradé)")
+    print(f"  💡 Pour charger 50K faits: ajouter le fichier .npz dans data/bootstrapper_output/")
+    return [(str(s), str(r), str(o), str(sec)) for s, r, o, sec in KNOWLEDGE_BASE]
 
 # Parse arguments
 model_name = 'best'
@@ -79,17 +87,13 @@ for arg in sys.argv[1:]:
 
 # Charger
 facts = load_facts(model_name)
-if facts is None:
-    print("  [!] Impossible de charger les faits. Démarrage en mode dégradé.")
-    facts = []
 
 from harmonic_ai import HarmonicAI
 from reasoning_engine import ReasoningEngine
 
 ai = HarmonicAI(enable_bootstrapper=True)
-if facts:
-    ai.model.knowledge_base = facts[:30000]  # 30K pour démarrage rapide
-    ai.model.rebuild_waves()
+ai.model.knowledge_base = facts
+ai.model.rebuild_waves()
 ai.engine = ReasoningEngine(ai.model)
 
 print(f"  🧠 Harmonic AI: {len(ai.model.knowledge_base):,} faits, {len(ai.model.w2i):,} mots")
@@ -103,10 +107,8 @@ HCV_DIR = Path(__file__).resolve().parent.parent / 'HCV-Compression-Engine'
 if HCV_DIR.exists():
     try:
         import importlib.util
-        # Charger les codecs HCV sans conflit avec le module 'codecs' standard
         for mod_name, file_name in [
             ('hcv_android_boost', 'codecs/hcv_android_boost_codec.py'),
-            ('hcv_pro', 'codecs/hcv_pro_codec.py'),
             ('hcv_upscaler', 'mobile/upscaler.py'),
         ]:
             spec = importlib.util.spec_from_file_location(mod_name, str(HCV_DIR / file_name))
@@ -120,8 +122,11 @@ if HCV_DIR.exists():
         HCVUpscaler = modules['hcv_upscaler'].HCVUpscaler
         hcv_available = True
         print("  📦 HCV Compression: disponible")
-    except Exception as e:
-        print(f"  📦 HCV Compression: erreur ({e})")
+    except Exception:
+        pass  # Silencieux en production
+
+if not hcv_available:
+    print("  📦 HCV Compression: non disponible (mode cloud)")
 
 print(f"  🌐 Serveur: http://localhost:{port}")
 print("=" * 55)
