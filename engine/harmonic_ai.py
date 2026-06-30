@@ -71,6 +71,17 @@ class HarmonicAI:
         if enable_bootstrapper:
             from bootstrapper import HarmonicBootstrapper
             self.bootstrapper = HarmonicBootstrapper(model=self.model)
+        
+        # Mémoire conversationnelle multi-tours
+        import importlib.util, sys
+        spec = importlib.util.spec_from_file_location(
+            "conversation_memory",
+            str(_MODULE_DIR / "memory" / "conversation.py")
+        )
+        conv_module = importlib.util.module_from_spec(spec)
+        sys.modules["conversation_memory"] = conv_module
+        spec.loader.exec_module(conv_module)
+        self.conversation = conv_module.ConversationMemory(max_messages=50)
     
     def _confidence_score(self, response: str, question: str) -> float:
         """
@@ -166,19 +177,22 @@ class HarmonicAI:
     # ═══════════════════════════════════════════════════════════════════
     
     def ask(self, question: str) -> str:
-        """Réponse factuelle avec fallback LLM automatique."""
+        """Réponse factuelle avec mémoire conversationnelle et fallback LLM."""
+        # Enrichir la question avec le contexte de conversation
+        enriched = self._enrich_with_context(question)
+        
         # Essayer le moteur harmonique d'abord (raisonnement multi-sauts)
         try:
-            response = self.engine.reason(question, max_depth=2)
+            response = self.engine.reason(enriched, max_depth=2)
         except Exception:
-            response = self.model.ask(question)
+            response = self.model.ask(enriched)
         
         # Si confiance faible et bootstrapper disponible → fallback LLM
         if self.bootstrapper is not None:
-            confidence = self._confidence_score(response, question)
+            confidence = self._confidence_score(response, enriched)
             if confidence < 0.35:
                 try:
-                    llm_text = self.bootstrapper._llm_fallback(question)
+                    llm_text = self.bootstrapper._llm_fallback(enriched)
                     if llm_text:
                         response = llm_text
                         # Apprendre de la réponse LLM
@@ -193,7 +207,45 @@ class HarmonicAI:
                 except Exception:
                     pass
         
+        # Enregistrer dans la mémoire conversationnelle
+        self.conversation.add("user", question)
+        self.conversation.add("assistant", response)
+        
         return response
+    
+    def _enrich_with_context(self, question: str) -> str:
+        """
+        Enrichit une question avec le sujet de la conversation.
+        Pour les questions courtes (follow-up), ajoute le sujet précédent.
+        """
+        recent = self.conversation.messages[-6:] if self.conversation.messages else []
+        if not recent:
+            return question
+        
+        # Si la question est courte (follow-up probable)
+        q_words = question.lower().split()
+        if len(q_words) <= 6:
+            # Trouver la dernière question USER (le sujet principal)
+            last_user_q = None
+            for msg in reversed(recent):
+                if msg.role == "user":
+                    last_user_q = msg.content
+                    break
+            
+            if last_user_q:
+                # Extraire les mots-clés de la DERNIÈRE QUESTION (pas de la réponse)
+                stopwords = {'le', 'la', 'les', 'de', 'des', 'du', 'un', 'une', 'et', 'est', 'a',
+                           'que', 'qui', 'quoi', 'dans', 'sur', 'pour', 'avec', 'par', 'en',
+                           'the', 'of', 'in', 'on', 'at', 'to', 'is', 'are', 'comment',
+                           'pourquoi', 'quand', 'quelle', 'quel', 'quels', 'quelles',
+                           'explique', 'parle', 'decris', 'definis'}
+                sujet_words = [w.strip('.,!?;:') for w in last_user_q.lower().split()
+                             if len(w) > 2 and w not in stopwords]
+                if sujet_words:
+                    context = ' '.join(sujet_words[:4])
+                    return f"{question} (a propos de: {context})"
+        
+        return question
     
     def reason(self, question: str) -> str:
         """Chaîne de raisonnement avec style élégant."""
