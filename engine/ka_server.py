@@ -37,7 +37,13 @@ import numpy as np
 # ═══════════════════════════════════════════════════════════════════════════════
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/api/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+    }
+})
 
 print("=" * 55)
 print("  KA SERVER — Harmonic AI + HCV Compression")
