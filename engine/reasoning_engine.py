@@ -221,6 +221,39 @@ class ReasoningEngine:
         self.model = model
         from style_engine import StyleEngine
         self.styler = StyleEngine(use_llm=use_llm_style)
+        # Encodeur holographique (si dispo)
+        self._encoder = getattr(model, '_encoder', None)
+    
+    def _interference(self, word_a: str, word_b: str, w2i: dict) -> float:
+        """
+        Calcule l'interférence entre deux mots.
+        
+        Si l'encodeur holographique est disponible → similarité vectorielle ℂᴰ.
+        Sinon → cosinus φ-cercle 2D classique.
+        
+        Retourne une valeur dans [0, 1].
+        """
+        if self._encoder is not None:
+            # Similarité holographique vectorielle
+            va = self._encoder.encode_word(word_a) if word_a not in self._encoder.word_vectors else self._encoder.word_vectors[word_a]
+            vb = self._encoder.encode_word(word_b) if word_b not in self._encoder.word_vectors else self._encoder.word_vectors[word_b]
+            sim = float(np.real(np.dot(va, np.conj(vb))))
+            # Les vecteurs Gaussiens donnent sim ~ N(0, 1/√D). On remap.
+            # sim ≈ 0 → mots non liés (interférence neutre)
+            # sim > 0 → concepts proches, sim < 0 → concepts éloignés
+            # Mapping sigmoïde doux pour étaler dans [0, 1]
+            D = self._encoder.dim
+            scaled = sim * np.sqrt(D)  # normaliser par l'écart-type attendu
+            interf = 1.0 / (1.0 + np.exp(-scaled))  # sigmoïde → [0, 1]
+            return float(interf)
+        else:
+            # φ-cercle classique
+            kx, ky = self.model.kx, self.model.ky
+            i1, i2 = w2i.get(word_a), w2i.get(word_b)
+            if i1 is None or i2 is None:
+                return 0.5
+            dot = kx[i1]*kx[i2] + ky[i1]*ky[i2]
+            return float((dot + 1.0) / 2.0)
     
     def reason(self, question: str, max_depth: int = 3) -> str:
         """Raisonnement generalise avec style elegant."""
@@ -291,15 +324,13 @@ class ReasoningEngine:
                 # entre les concepts principaux (sujets des faits)
                 pairs = []
                 for s1, r1, o1, _ in facts_by_domain[d1][:20]:
-                    if s1 not in w2i:
+                    if s1 not in w2i and self._encoder is None:
                         continue
                     for s2, r2, o2, _ in facts_by_domain[d2][:20]:
-                        if s2 not in w2i:
+                        if s2 not in w2i and self._encoder is None:
                             continue
                         # Interference entre les ondes des deux sujets
-                        i1, i2 = w2i[s1], w2i[s2]
-                        dot = kx[i1]*kx[i2] + ky[i1]*ky[i2]
-                        interference = (dot + 1.0) / 2.0  # [0, 1]
+                        interference = self._interference(s1, s2, w2i)
                         # On cherche des interferences MODEREES (ni trop proches, ni trop eloignees)
                         # car ce sont les plus creatives
                         if 0.3 < interference < 0.8:
@@ -373,12 +404,10 @@ class ReasoningEngine:
                 if d1 >= d2:
                     continue
                 for s1 in subjects_by_domain[d1][:15]:
-                    if s1 not in w2i: continue
+                    if s1 not in w2i and self._encoder is None: continue
                     for s2 in subjects_by_domain[d2][:15]:
-                        if s2 not in w2i: continue
-                        i1, i2 = w2i[s1], w2i[s2]
-                        dot = kx[i1]*kx[i2] + ky[i1]*ky[i2]
-                        interf = (dot + 1.0) / 2.0
+                        if s2 not in w2i and self._encoder is None: continue
+                        interf = self._interference(s1, s2, w2i)
                         # Zone metaphorique : 0.35-0.65
                         if 0.35 < interf < 0.65:
                             templates = [
@@ -419,8 +448,9 @@ class ReasoningEngine:
         # Trouver 3 concepts qui interferent de maniere creative
         subjects = []
         for s, r, o, sec in kb:
-            if s in w2i and s not in subjects:
-                subjects.append(s)
+            if len(s) > 2 and s not in subjects:
+                if self._encoder is not None or s in w2i:
+                    subjects.append(s)
         
         if len(subjects) < 3:
             return "Pas assez de concepts pour un haiku."
@@ -429,14 +459,13 @@ class ReasoningEngine:
         best_trio = None
         best_score = 0
         for _ in range(100):
-            i1, i2, i3 = random.sample(range(min(50, len(subjects))), 3)
-            s1, s2, s3 = subjects[i1], subjects[i2], subjects[i3]
-            if s1 not in w2i or s2 not in w2i or s3 not in w2i:
-                continue
-            interfs = []
-            for a, b in [(i1,i2), (i2,i3), (i1,i3)]:
-                dot = kx[w2i[subjects[a]]]*kx[w2i[subjects[b]]] + ky[w2i[subjects[a]]]*ky[w2i[subjects[b]]]
-                interfs.append((dot+1)/2)
+            indices = random.sample(range(min(50, len(subjects))), 3)
+            s1, s2, s3 = subjects[indices[0]], subjects[indices[1]], subjects[indices[2]]
+            interfs = [
+                self._interference(s1, s2, w2i),
+                self._interference(s2, s3, w2i),
+                self._interference(s1, s3, w2i),
+            ]
             # Score : variance des interferences (diversite creative)
             score = np.std(interfs) + (0.3 < np.mean(interfs) < 0.7) * 0.1
             if score > best_score:
@@ -466,16 +495,15 @@ class ReasoningEngine:
         
         subjects = []
         for s, r, o, sec in kb:
-            if s in w2i and len(s) > 3 and s not in subjects:
-                subjects.append(s)
+            if len(s) > 3 and s not in subjects:
+                if self._encoder is not None or s in w2i:
+                    subjects.append(s)
         
         images = []
         for _ in range(200):
             i1, i2 = random.sample(range(len(subjects)), 2)
             s1, s2 = subjects[i1], subjects[i2]
-            if s1 not in w2i or s2 not in w2i: continue
-            dot = kx[w2i[s1]]*kx[w2i[s2]] + ky[w2i[s1]]*ky[w2i[s2]]
-            interf = (dot + 1.0) / 2.0
+            interf = self._interference(s1, s2, w2i)
             if 0.15 < interf < 0.35:  # zone surrealiste
                 templates = [
                     f"J'ai vu un {s1} qui buvait du {s2} a la terrasse d'un cafe.",

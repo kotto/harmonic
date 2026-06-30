@@ -197,7 +197,7 @@ class HarmonicAI:
             'faits': len(self.model.knowledge_base),
             'vocabulaire': len(self.model.w2i),
             'experiences': self.model.experience_count,
-            'energie': round(self.model.memoire.energie, 0) if self.model.memoire else 0,
+            'energie': round(self.model.memoire.energie, 0) if self.model.memoire and hasattr(self.model.memoire, 'energie') else 0,
         }
 
 
