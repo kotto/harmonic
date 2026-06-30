@@ -99,14 +99,29 @@ print(f"  💬 Mémoire conversation: {ai.conversation.max_messages} messages")
 # ── HCV (optionnel) ─────────────────────────────────────────────────────────
 
 hcv_available = False
-try:
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'HCV-Compression-Engine'))
-    from codecs.hcv_android_boost_codec import HCVAndroidBoostCodec
-    from mobile.upscaler import HCVUpscaler
-    hcv_available = True
-    print("  📦 HCV Compression: disponible")
-except ImportError:
-    print("  📦 HCV Compression: non disponible (codecs à restaurer)")
+HCV_DIR = Path(__file__).resolve().parent.parent / 'HCV-Compression-Engine'
+if HCV_DIR.exists():
+    try:
+        import importlib.util
+        # Charger les codecs HCV sans conflit avec le module 'codecs' standard
+        for mod_name, file_name in [
+            ('hcv_android_boost', 'codecs/hcv_android_boost_codec.py'),
+            ('hcv_pro', 'codecs/hcv_pro_codec.py'),
+            ('hcv_upscaler', 'mobile/upscaler.py'),
+        ]:
+            spec = importlib.util.spec_from_file_location(mod_name, str(HCV_DIR / file_name))
+            if spec and spec.loader:
+                mod = importlib.util.module_from_spec(spec)
+                sys.modules[mod_name] = mod
+                spec.loader.exec_module(mod)
+        
+        from sys import modules
+        HCVAndroidBoostCodec = modules['hcv_android_boost'].HCVAndroidBoostCodec
+        HCVUpscaler = modules['hcv_upscaler'].HCVUpscaler
+        hcv_available = True
+        print("  📦 HCV Compression: disponible")
+    except Exception as e:
+        print(f"  📦 HCV Compression: erreur ({e})")
 
 print(f"  🌐 Serveur: http://localhost:{port}")
 print("=" * 55)
@@ -260,14 +275,16 @@ def compress():
     original_size = len(input_data)
     
     # Utiliser le codec HCV
-    codec = HCVAndroidBoostCodec(preset='balanced')
+    codec = HCVAndroidBoostCodec(quality='balanced')
     try:
-        compressed, ratio = codec.compress(input_data)
+        compressed, stats = codec.encode(jpeg_bytes=input_data)
         return jsonify({
-            'original_size': original_size,
+            'original_size': stats.get('source_size', len(input_data)),
             'compressed_size': len(compressed),
-            'ratio': round(ratio, 1),
-            'saved_percent': round((1 - 1/max(ratio, 1)) * 100, 1),
+            'ratio': round(stats.get('ratio_vs_source', 1), 1),
+            'saved_percent': round(stats.get('savings_vs_source', 0), 1),
+            'resolution': stats.get('original_resolution', '?'),
+            'speed_mbps': round(stats.get('speed_mbps', 0), 1),
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -295,7 +312,7 @@ def upscale():
         return jsonify({'error': 'Image invalide'}), 400
     
     upscaler = HCVUpscaler()
-    upscaled = upscaler.upscale(img, factor=scale)
+    upscaled = upscaler.upscale_sync(img, factor=scale)
     _, buffer = cv2.imencode('.jpg', upscaled, [cv2.IMWRITE_JPEG_QUALITY, 90])
     
     return send_file(
@@ -322,17 +339,17 @@ def enhance():
     input_data = file.read()
     
     import cv2
-    codec = HCVAndroidBoostCodec(preset='balanced')
+    codec = HCVAndroidBoostCodec(quality='balanced')
     upscaler = HCVUpscaler()
     
     try:
         # 1. Compresser
-        compressed, ratio = codec.compress(input_data)
+        compressed, stats = codec.encode(jpeg_bytes=input_data)
         # 2. Décompresser
-        decompressed = codec.decompress(compressed)
+        decompressed = codec.decode(compressed)
         # 3. Upscaler
         img = cv2.imdecode(np.frombuffer(decompressed, np.uint8), cv2.IMREAD_COLOR)
-        upscaled = upscaler.upscale(img, factor=2)
+        upscaled = upscaler.upscale_sync(img, factor=2)
         _, buffer = cv2.imencode('.jpg', upscaled, [cv2.IMWRITE_JPEG_QUALITY, 90])
         
         return send_file(io.BytesIO(buffer), mimetype='image/jpeg')
