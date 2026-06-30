@@ -266,6 +266,149 @@ class HolographicTrainer:
         
         return epoch_losses
     
+    def train_optimized(self, knowledge_base: List[Tuple], epochs: int = 10,
+                         lr_start: float = 0.5, lr_end: float = 0.05,
+                         repulsion_strength: float = 0.03,
+                         verbose: bool = True) -> dict:
+        """
+        Entraînement optimisé pour maximiser la précision (>95%).
+        
+        Combine :
+        1. Accumulation de contexte (attraction)
+        2. Répulsion inter-domaine (contraste)
+        3. Décroissance du learning rate (lr_start → lr_end)
+        4. Époques multiples
+        
+        Returns:
+            dict avec métriques détaillées
+        """
+        from collections import defaultdict
+        
+        # Grouper les mots par secteur pour la répulsion
+        domain_words = defaultdict(list)
+        for s, r, o, sec in knowledge_base:
+            for w in f'{s} {r} {o}'.split():
+                w = w.strip('.,!?;:')
+                if len(w) >= 2:
+                    domain_words[sec].append(w)
+        
+        all_objects = list(set(o for _, _, o, _ in knowledge_base if len(o) > 2))
+        self._all_words = list(set(
+            list(all_objects) + [s for s, _, _, _ in knowledge_base if len(s) > 2]
+        ))
+        
+        epoch_losses = []
+        t0_total = time.time()
+        
+        for epoch in range(epochs):
+            t0 = time.time()
+            lr = lr_start - (lr_start - lr_end) * epoch / max(epochs - 1, 1)
+            
+            # ── PHASE 1 : Attraction (accumulation de contexte) ──
+            ctx_accum = {}
+            ctx_count = {}
+            
+            for s, r, o, sec in knowledge_base:
+                if len(s) < 2 or len(o) < 2:
+                    continue
+                context = [s] + r.split()
+                ctx_vecs = [self.encoder.word_vectors[w] for w in context if w in self.encoder.word_vectors]
+                if not ctx_vecs:
+                    continue
+                psi_ctx = sum(ctx_vecs) / len(ctx_vecs)
+                
+                for target in [o, s]:  # les deux directions
+                    if target not in ctx_accum:
+                        ctx_accum[target] = np.zeros(self.encoder.dim, dtype=np.complex128)
+                        ctx_count[target] = 0
+                    ctx_accum[target] += psi_ctx
+                    ctx_count[target] += 1
+            
+            # Appliquer les mises à jour
+            for word, accum in ctx_accum.items():
+                if word not in self.encoder.word_vectors or ctx_count[word] < 1:
+                    continue
+                psi_avg_ctx = accum / ctx_count[word]
+                norm_ctx = np.sqrt(np.sum(np.abs(psi_avg_ctx)**2))
+                if norm_ctx < 1e-10:
+                    continue
+                psi_avg_ctx /= norm_ctx
+                
+                psi_old = self.encoder.word_vectors[word]
+                psi_new = psi_old + lr * psi_avg_ctx
+                norm_new = np.sqrt(np.sum(np.abs(psi_new)**2))
+                if norm_new > 1e-10:
+                    psi_new /= norm_new
+                self.encoder.word_vectors[word] = psi_new
+            
+            # ── PHASE 2 : Répulsion inter-domaine ──
+            if repulsion_strength > 0 and epoch >= 2:  # commence après 2 epochs d'attraction
+                # Calculer les centroïdes de domaine
+                domain_centroids = {}
+                for sec, words in domain_words.items():
+                    vecs = []
+                    for w in words[:200]:
+                        if w in self.encoder.word_vectors:
+                            vecs.append(self.encoder.word_vectors[w])
+                    if vecs:
+                        centroid = sum(vecs) / len(vecs)
+                        norm_c = np.sqrt(np.sum(np.abs(centroid)**2))
+                        if norm_c > 1e-10:
+                            centroid /= norm_c
+                        domain_centroids[sec] = centroid
+                
+                # Pour chaque mot, repousser des centroïdes des AUTRES domaines
+                sectors_list = list(domain_centroids.keys())
+                for sec, words in domain_words.items():
+                    my_centroid = domain_centroids.get(sec)
+                    for w in words[:100]:
+                        if w not in self.encoder.word_vectors:
+                            continue
+                        v = self.encoder.word_vectors[w]
+                        for other_sec in sectors_list:
+                            if other_sec == sec:
+                                continue
+                            other_c = domain_centroids[other_sec]
+                            v = v - repulsion_strength * lr * other_c
+                        norm_v = np.sqrt(np.sum(np.abs(v)**2))
+                        if norm_v > 1e-10:
+                            v /= norm_v
+                        self.encoder.word_vectors[w] = v
+            
+            # ── Perte ──
+            epoch_loss = 0.0
+            n_updated = 0
+            for word in ctx_accum:
+                if word in self.encoder.word_vectors and ctx_count.get(word, 0) > 0:
+                    psi_avg = ctx_accum[word] / ctx_count[word]
+                    norm_avg = np.sqrt(np.sum(np.abs(psi_avg)**2))
+                    if norm_avg > 1e-10:
+                        psi_avg /= norm_avg
+                    dot = np.real(np.dot(self.encoder.word_vectors[word], np.conj(psi_avg)))
+                    loss = -math.log(max(0.1, (dot + 1.0) / 2.0))
+                    epoch_loss += loss
+                    n_updated += 1
+            
+            avg_loss = epoch_loss / max(n_updated, 1)
+            epoch_losses.append(avg_loss)
+            
+            if verbose:
+                elapsed = time.time() - t0
+                print(f"  Epoch {epoch+1:>2d}/{epochs} | lr={lr:.3f} | loss={avg_loss:.4f} "
+                      f"| {n_updated} mots | {elapsed:.1f}s")
+        
+        if verbose:
+            total_elapsed = time.time() - t0_total
+            print(f"  Total: {total_elapsed:.1f}s | Loss: {epoch_losses[0]:.4f} → {epoch_losses[-1]:.4f}")
+        
+        return {
+            'losses': [round(l, 4) for l in epoch_losses],
+            'loss_start': round(epoch_losses[0], 4),
+            'loss_end': round(epoch_losses[-1], 4),
+            'total_time': round(time.time() - t0_total, 1),
+            'n_words_updated': n_updated,
+        }
+    
     def train_from_corpus(self, texts: List[str], window: int = 5,
                           epochs: int = 1, verbose: bool = True) -> List[float]:
         """
