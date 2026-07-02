@@ -21,8 +21,46 @@ Usage :
   python ka_server.py --model 217k     # charger le modèle 217K
 """
 
-import sys, os, io, time, json
+import sys, os, io, time, json, logging
 from pathlib import Path
+from collections import defaultdict
+
+# ── Logging structuré ────────────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler('ka_server.log', encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
+log = logging.getLogger(__name__)
+
+# ── Métriques serveur ────────────────────────────────────────────────────────
+SERVER_START = time.time()
+_metrics = {
+    'requests': defaultdict(int),      # endpoint → count
+    'errors': defaultdict(int),        # endpoint → error count
+    'latency_sum': defaultdict(float), # endpoint → total latency ms
+    'latency_count': defaultdict(int), # endpoint → count for avg
+    'harmonic_count': 0,
+    'llm_count': 0,
+    'last_requests': [],               # (endpoint, latency_ms, status, timestamp)
+}
+_MAX_LAST_REQUESTS = 100
+
+# ── Rate Limiting ────────────────────────────────────────────────────────────
+_RATE_LIMIT_WINDOW = 60     # secondes
+_RATE_LIMIT_MAX = 30        # requêtes max par fenêtre
+_rate_limit_store = defaultdict(list)  # IP → [timestamps]
+
+def _check_rate_limit(ip: str) -> bool:
+    """Retourne True si la limite est dépassée."""
+    now = time.time()
+    window_start = now - _RATE_LIMIT_WINDOW
+    _rate_limit_store[ip] = [t for t in _rate_limit_store[ip] if t > window_start]
+    _rate_limit_store[ip].append(now)
+    return len(_rate_limit_store[ip]) > _RATE_LIMIT_MAX
 
 # Setup
 _ENGINE_DIR = Path(__file__).resolve().parent
@@ -45,11 +83,9 @@ CORS(app, resources={
     }
 })
 
-print("=" * 55)
-print("  KA SERVER — Harmonic AI + HCV Compression")
-print("=" * 55)
-
-# ── Chargement du modèle Harmonic ──────────────────────────────────────────
+log.info("=" * 55)
+log.info("  KA SERVER — Harmonic AI + HCV Compression")
+log.info("=" * 55)
 
 def load_facts(model_name='best'):
     """Charge la base de connaissance. Fallback: KB qualitative intégrée."""
@@ -63,9 +99,11 @@ def load_facts(model_name='best'):
     
     model_files = {
         '50k':  'knowledge_base_50k.npz',
+        '50k_clean': 'knowledge_base_50k_cleaned.npz',
+        '50k_res': 'knowledge_base_resonance.npz',
         '217k': 'knowledge_base_clean.npz',
         '500k': 'knowledge_base_500k.npz',
-        'best': 'knowledge_base_50k.npz',
+        'best': 'knowledge_base_resonance.npz',  # KB filtrée par résonance
     }
     filename = model_files.get(model_name, 'knowledge_base_50k.npz')
     
@@ -74,13 +112,13 @@ def load_facts(model_name='best'):
         if path.exists():
             data = np.load(str(path), allow_pickle=True)
             facts = [(str(s), str(r), str(o), str(sec)) for s, r, o, sec in data['facts']]
-            print(f"  📂 {path.name}: {len(facts):,} faits chargés")
+            log.info(f"  📂 {path.name}: {len(facts):,} faits chargés")
             return facts
     
     # Fallback: KB qualitative intégrée (914 faits)
     from harmonic_model import KNOWLEDGE_BASE
-    print(f"  📂 KB qualitative intégrée: {len(KNOWLEDGE_BASE):,} faits (mode dégradé)")
-    print(f"  💡 Pour charger 50K faits: ajouter le fichier .npz dans engine/data/bootstrapper_output/")
+    log.info(f"  📂 KB qualitative intégrée: {len(KNOWLEDGE_BASE):,} faits (mode dégradé)")
+    log.info(f"  💡 Pour charger 50K faits: ajouter le fichier .npz dans engine/data/bootstrapper_output/")
     return [(str(s), str(r), str(o), str(sec)) for s, r, o, sec in KNOWLEDGE_BASE]
 
 # Parse arguments
@@ -140,7 +178,7 @@ try:
     else:
         print(f"  ✅ Entraînement terminé ({result.get('temps_s', 0):.1f}s)")
 except Exception as e:
-    print(f"  ⚠️  Entraînement rapide impossible: {e}")
+    log.warning(f"  ⚠️  Entraînement rapide impossible: {e}")
 
 print(f"  🧠 Harmonic AI: {len(ai.model.knowledge_base):,} faits, {len(ai.model.w2i):,} mots")
 print(f"  🔄 Bootstrapper: {'actif' if ai.bootstrapper else 'inactif'}")
@@ -172,10 +210,43 @@ if HCV_DIR.exists():
         pass  # Silencieux en production
 
 if not hcv_available:
-    print("  📦 HCV Compression: non disponible (mode cloud)")
+    log.info("  📦 HCV Compression: non disponible (mode cloud)")
 
-print(f"  🌐 Serveur: http://localhost:{port}")
-print("=" * 55)
+log.info(f"  🌐 Serveur: http://localhost:{port}")
+log.info("=" * 55)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MIDDLEWARE — Métriques et Logging
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.before_request
+def _before_request():
+    request._start_time = time.time()
+
+@app.after_request
+def _after_request(response):
+    endpoint = request.endpoint or 'unknown'
+    latency_ms = (time.time() - getattr(request, '_start_time', time.time())) * 1000
+    
+    _metrics['requests'][endpoint] += 1
+    _metrics['latency_sum'][endpoint] += latency_ms
+    _metrics['latency_count'][endpoint] += 1
+    
+    if response.status_code >= 400:
+        _metrics['errors'][endpoint] += 1
+    
+    _metrics['last_requests'].append({
+        'endpoint': endpoint,
+        'latency_ms': round(latency_ms, 1),
+        'status': response.status_code,
+        'time': time.time()
+    })
+    if len(_metrics['last_requests']) > _MAX_LAST_REQUESTS:
+        _metrics['last_requests'] = _metrics['last_requests'][-_MAX_LAST_REQUESTS:]
+    
+    log.info(f"{request.method} {request.path} → {response.status_code} ({latency_ms:.0f}ms)")
+    return response
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ENDPOINTS HARMONIC AI
@@ -195,6 +266,37 @@ def chat():
     if not message:
         return jsonify({'error': 'Message requis', 'response': "Je n'ai pas compris votre message."}), 400
     
+    # Handler spécial pour les questions d'identité
+    identity_keywords = ['qui es tu', 'qui es-tu', 'tu es qui', 'comment tu t appelles',
+                         'ton nom', 'que fais tu', 'qui est ka', 'c est quoi ka',
+                         'presente toi', 'qu est ce que tu es', 'what are you', 'who are you']
+    msg_lower = message.lower().strip('?!.')
+    if any(kw in msg_lower for kw in identity_keywords):
+        return jsonify({
+            'response': "Je suis KA, un assistant personnel intelligent. "
+                        "Je vis dans cette application, représenté par une sphère vivante. "
+                        "Je fonctionne grâce à Harmonic AI, une intelligence ondulatoire "
+                        "qui s'appuie sur 51 000 connaissances vérifiées — sans aucune hallucination. "
+                        "Mon nom vient du Ka égyptien, la force vitale. "
+                        "Je suis chaleureux, concis, et je réponds toujours en français.",
+            'confidence': 0.95,
+            'source': 'identity',
+            'latency_ms': 2.0,
+            'model': 'harmonic-v2',
+        })
+    
+    # Validation: taille max
+    if len(message) > 2000:
+        return jsonify({'error': 'Message trop long (max 2000 caractères)'}), 422
+    
+    # Rate limiting
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or 'unknown')
+    if _check_rate_limit(client_ip):
+        return jsonify({
+            'error': 'Trop de requêtes. Réessayez dans une minute.',
+            'retry_after_s': _RATE_LIMIT_WINDOW
+        }), 429
+    
     # Injecter le contexte si fourni
     if context:
         message = f"{context}\n{message}"
@@ -205,6 +307,12 @@ def chat():
     
     confidence = ai._confidence_score(response, message)
     source = 'harmonic' if confidence >= 0.35 else 'llm'
+    
+    # Métriques
+    if source == 'harmonic':
+        _metrics['harmonic_count'] += 1
+    else:
+        _metrics['llm_count'] += 1
     
     return jsonify({
         'response': response,
@@ -291,7 +399,42 @@ def stats():
     s['conversation_messages'] = len(ai.conversation.messages)
     s['hcv_available'] = hcv_available
     s['server_uptime'] = round(time.time() - SERVER_START, 0)
+    s['harmonic_count'] = _metrics['harmonic_count']
+    s['llm_count'] = _metrics['llm_count']
     return jsonify(s)
+
+
+@app.route('/api/metrics', methods=['GET'])
+def metrics():
+    """Métriques détaillées du serveur."""
+    avg_latency = {}
+    for ep in _metrics['latency_sum']:
+        cnt = _metrics['latency_count'][ep]
+        avg_latency[ep] = round(_metrics['latency_sum'][ep] / cnt, 1) if cnt > 0 else 0
+    
+    return jsonify({
+        'uptime_s': round(time.time() - SERVER_START, 0),
+        'requests': dict(_metrics['requests']),
+        'errors': dict(_metrics['errors']),
+        'avg_latency_ms': avg_latency,
+        'harmonic_count': _metrics['harmonic_count'],
+        'llm_count': _metrics['llm_count'],
+        'last_requests': _metrics['last_requests'][-20:],  # 20 dernières
+    })
+
+
+@app.route('/api/autonomie/history', methods=['GET'])
+def autonomie_history():
+    """Historique d'autonomie (50 derniers appels)."""
+    if ai.bootstrapper and ai.bootstrapper._autonomie_history:
+        history = [1 if x else 0 for x in ai.bootstrapper._autonomie_history[-50:]]
+        return jsonify({
+            'history': history,
+            'autonomie': round(ai.bootstrapper.autonomie * 100, 1),
+            'llm_calls': ai.bootstrapper._llm_calls,
+            'total_queries': ai.bootstrapper._total_queries,
+        })
+    return jsonify({'history': [], 'autonomie': 100.0, 'llm_calls': 0})
 
 
 @app.route('/api/health', methods=['GET'])
@@ -412,19 +555,18 @@ def enhance():
 # DÉMARRAGE
 # ═══════════════════════════════════════════════════════════════════════════════
 
-SERVER_START = time.time()
-
 if __name__ == '__main__':
-    print(f"\n✨ KA Server prêt sur http://localhost:{port}")
-    print(f"   /api/chat     — conversation")
-    print(f"   /api/reason   — raisonnement")
-    print(f"   /api/create   — créativité")
-    print(f"   /api/haiku    — haïku")
-    print(f"   /api/stats    — statistiques")
-    print(f"   /api/health   — santé du serveur")
+    log.info(f"\n✨ KA Server prêt sur http://localhost:{port}")
+    log.info(f"   /api/chat      — conversation")
+    log.info(f"   /api/reason    — raisonnement")
+    log.info(f"   /api/create    — créativité")
+    log.info(f"   /api/haiku     — haïku")
+    log.info(f"   /api/stats     — statistiques")
+    log.info(f"   /api/metrics   — métriques détaillées")
+    log.info(f"   /api/health    — santé du serveur")
     if hcv_available:
-        print(f"   /api/compress — compression HCV")
-        print(f"   /api/upscale  — upscaling")
-        print(f"   /api/enhance  — pipeline complet")
-    print()
+        log.info(f"   /api/compress  — compression HCV")
+        log.info(f"   /api/upscale   — upscaling")
+        log.info(f"   /api/enhance   — pipeline complet")
+    log.info("")
     app.run(host='0.0.0.0', port=port, debug=False)
