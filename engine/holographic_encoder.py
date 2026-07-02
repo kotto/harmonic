@@ -30,7 +30,18 @@ Usage :
 
 import math
 import numpy as np
+import os
+from pathlib import Path
 from typing import Dict, List, Tuple, Optional
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PLONGEMENT SPECTRAL SÉMANTIQUE (PPMI + Laplacian)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+try:
+    from spectral_embedding import _SPECTRAL
+except Exception:
+    _SPECTRAL = None
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONSTANTES
@@ -228,58 +239,50 @@ class HolographicEncoder:
     
     def encode_word(self, word: str) -> np.ndarray:
         """
-        Convertit un mot en vecteur complexe Gaussien déterministe.
+        Convertit un mot en vecteur complexe.
         
-        HRR exige des vecteurs pseudo-orthogonaux :
-        - Chaque composante v_k ~ N(0, 1/√(2D)) + i·N(0, 1/√(2D))
-        - E[|v_k|²] = 1/D, donc E[|v|²] = 1
-        - Pour deux mots ≠, E[|<v_a, v_b>|²] = 1/D → quasi-orthogonaux en haute dimension
-        
-        Déterministe : hash FNV-1a → seed → np.random.RandomState → randn
-        Le φ-spacing est appliqué AU hash (pas aux phases) via FNV-1a qui
-        utilise le nombre d'or implicitement dans sa structure multiplicative.
+        Si le plongement spectral sémantique est disponible → utilise
+        la phase θ(mot) dérivée du Laplacian Eigenmaps pour injecter
+        la structure sémantique dans le vecteur.
+        Sinon → fallback Gaussien déterministe (HRR standard).
         """
         if word in self.word_vectors:
             return self.word_vectors[word]
         
         # Hash déterministe 64-bit
         seed = _fnv1a_hash(word)
-        
-        # Pour D > 500, on utilise une méthode mixte :
-        # - Les 32 premiers bits déterminent les 200 premières dimensions (Gaussien)
-        # - Le reste est généré par le hachage φ-itéré pour éviter les patterns
         rng = np.random.RandomState(seed & 0xFFFFFFFF)
         
-        # Tirage Gaussien complexe : real ~ N(0, σ²), imag ~ N(0, σ²)
-        # σ² = 1/(2D) pour que E[|v_k|²] = 1/D
         sigma = 1.0 / math.sqrt(2.0 * self.dim)
         
         if self.dim <= 500:
-            # Génération directe par RNG pour toutes les dimensions
             real = rng.randn(self.dim).astype(np.float64) * sigma
             imag = rng.randn(self.dim).astype(np.float64) * sigma
         else:
-            # Grand D : génération hybride
             real = np.zeros(self.dim, dtype=np.float64)
             imag = np.zeros(self.dim, dtype=np.float64)
-            
-            # Premières 500 dimensions : Gaussien standard
             n_direct = min(500, self.dim)
             real[:n_direct] = rng.randn(n_direct) * sigma
             imag[:n_direct] = rng.randn(n_direct) * sigma
-            
-            # Dimensions restantes : phases φ-espacées (déterministe, pas de collision)
-            # Chaque dimension k a une phase unique basée sur seed et k
             for k in range(n_direct, self.dim):
-                # Phase φ-espacée : combine le seed et l'index
                 phase_k = ((seed >> (k % 32)) ^ (k * 2654435761)) % 2147483647
                 phase_k = (phase_k * PHI) % TAU
                 real[k] = math.cos(phase_k) * sigma
                 imag[k] = math.sin(phase_k) * sigma
         
-        v = real + 1j * imag
-        # v a E[|v|²] ≈ 1 (par construction), pas besoin de normaliser
+        # 🔥 INJECTION SÉMANTIQUE : si le plongement spectral est disponible,
+        # remplacer les premières dimensions par la phase dérivée du sens
+        if _SPECTRAL is not None:
+            phase = _SPECTRAL.get_phase(word)
+            if phase is not None:
+                n_phase_dims = min(32, self.dim // 2)
+                boost = math.sqrt(self.dim / (2.0 * n_phase_dims)) * sigma
+                for k in range(n_phase_dims):
+                    phase_k = phase * (1.0 + k / PHI)
+                    real[2*k] = math.cos(phase_k) * boost
+                    imag[2*k] = math.sin(phase_k) * boost
         
+        v = real + 1j * imag
         self.word_vectors[word] = v
         return v
     
