@@ -137,10 +137,16 @@ class ResponseComposer:
       4. Varie la structure pour éviter la mécanicité
     """
 
-    def __init__(self, seed: Optional[int] = None):
+    def __init__(self, seed: Optional[int] = None, lang: str = 'fr'):
         if seed is not None:
             random.seed(seed)
+        self._lang = lang
         self._used_structures = set()  # anti-répétition
+    
+    def set_language(self, lang: str):
+        """Switch response language: 'fr' or 'en'."""
+        self._lang = lang
+        self._used_structures.clear()
 
     def compose(self, intent: QuestionIntent, facts: List[Fact],
                 enrichissement: Optional[str] = None,
@@ -384,10 +390,7 @@ class ResponseComposer:
 
     def _filter_facts(self, facts: List[Fact], intent: QuestionIntent) -> List[Fact]:
         """
-        Filtre les faits pour ne garder que ceux dont le sujet
-        correspond réellement au sujet de la question.
-
-        Évite le bruit où un mot-clé partagé ramène des faits hors-sujet.
+        Filtre les faits pour ne garder que ceux pertinents.
         """
         if not facts:
             return facts
@@ -395,21 +398,33 @@ class ResponseComposer:
         q_sujet = intent.sujet.lower().strip()
         q_keywords = set(intent.mots_cles)
 
+        # Extraire les mots significatifs du sujet (pour les questions longues)
+        sujet_words = set(q_sujet.split()) if q_sujet else set()
+
         filtered = []
         for s, r, o, sec in facts:
             s_lower = s.lower().strip()
-            # Le fait est pertinent si :
-            # 1. Son sujet == sujet de la question, OU
-            # 2. Son sujet contient le sujet de la question comme mot entier, OU
-            # 3. Son objet contient le sujet de la question ET le sujet partage un mot-clé
+            o_lower = o.lower()
+            r_lower = r.lower()
             is_relevant = False
+            
+            # 1. Sujet exact ou contenu
             if q_sujet and (s_lower == q_sujet or q_sujet in s_lower.split()):
                 is_relevant = True
+            # 2. Un mot-clé est dans le sujet du fait
             elif any(kw == s_lower or kw in s_lower.split() for kw in q_keywords):
                 is_relevant = True
-            # Exception : pour les questions d'identité, le sujet du fait peut être la personne
-            elif intent.type == 'identite' and q_sujet in o.lower():
+            # 3. Le sujet de la question est dans l'OBJET du fait
+            #    (cas "capitale du Japon" → "tokyo est capitale du Japon")
+            elif q_sujet and any(sw in o_lower for sw in sujet_words if len(sw) > 2):
                 is_relevant = True
+            # 4. Identité: sujet dans l'objet
+            elif intent.type == 'identite' and q_sujet in o_lower:
+                is_relevant = True
+            # 5. Un mot-clé apparaît dans l'objet ET le sujet partage un mot
+            elif any(kw in o_lower for kw in q_keywords if len(kw) > 2):
+                if any(sw in s_lower for sw in sujet_words if len(sw) > 2):
+                    is_relevant = True
 
             if is_relevant:
                 filtered.append((s, r, o, sec))

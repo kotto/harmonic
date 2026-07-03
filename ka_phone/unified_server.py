@@ -28,6 +28,7 @@ PYTHONDONTWRITEBYTECODE = True   # Empeche la creation de .pyc
 parametric = None; frequency = None; router = None
 actions = None; memory = None; hcv = None
 domain_router = None; qa_matcher = None; hybrid_writer = None
+engine_bridge = None  # Pont vers engine/ (décodeur ondulatoire, curated, moteurs)
 maat_guard = None; quick_facts = None; feedback_learner = None
 
 try:
@@ -128,6 +129,23 @@ try:
     hybrid_writer = HybridWriter(langue='fr')
 except ImportError:
     pass
+
+# ═══ ENGINE BRIDGE — Pont ondulatoire engine/ → KA Phone ═══
+try:
+    from engine_bridge import get_bridge
+    engine_bridge = get_bridge()
+    print(f"  Engine Bridge : Actif ({engine_bridge.stats.get('blocs_curated', 0)} blocs curated)")
+except Exception as e:
+    print(f"  Engine Bridge : Indisponible ({e})")
+
+# ═══ HARMONIC VOICE ENGINE — TTS unifié 3 niveaux ═══
+voice_engine = None
+try:
+    from harmonic_voice_engine import HarmonicVoiceEngine
+    voice_engine = HarmonicVoiceEngine()
+    print(f"  Voice Engine : Actif ({voice_engine.stats['engines']})")
+except Exception as e:
+    print(f"  Voice Engine : Indisponible ({e})")
 
 try:
     from maat_ethic_guard import MaatGuard
@@ -617,6 +635,17 @@ def process(prompt):
                 result["confidence"] = r.get("confidence", 0.8)
         except: pass
     
+    # Step 5i_bridge: ENGINE BRIDGE — Décodeur ondulatoire + blocs curated
+    if result["source"] == "unknown" and engine_bridge and engine_bridge.is_ready:
+        try:
+            bridge_response = engine_bridge.ask(prompt)
+            if bridge_response and len(bridge_response) > 20 and "Je n'ai pas encore" not in bridge_response:
+                result["text"] = bridge_response
+                result["source"] = "ondulatoire"
+                result["confidence"] = 0.85
+        except:
+            pass
+    
     # Step 5i: HybridWriter — DESACTIVE pour le general (ecrasait QuickFacts)
     # Conserve uniquement pour les requetes creatives (Step 5b3)
     # if result["source"] == "unknown" and hybrid_writer:
@@ -730,12 +759,34 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
             if actions:
                 stats["actions_log"] = len(actions.actions_log)
             stats["conversation_turns"] = len(conversation_memory)
+            if engine_bridge:
+                stats["engine"] = engine_bridge.stats
             
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(json.dumps(stats, ensure_ascii=False).encode('utf-8'))
+            self._send_json(stats)
+        
+        elif self.path == '/api/engine/stats':
+            s = engine_bridge.stats if engine_bridge else {'error': 'bridge not loaded'}
+            self._send_json(s)
+        
+        elif self.path == '/api/engine/compute':
+            params = self._parse_query()
+            expr = params.get('expr', '')
+            result = engine_bridge.compute(expr) if engine_bridge else None
+            self._send_json({'expr': expr, 'result': result or 'indisponible'})
+        
+        elif self.path == '/api/engine/grover':
+            params = self._parse_query()
+            target = int(params.get('target', 42))
+            n = int(params.get('n', 6))
+            result = engine_bridge.grover(target, n) if engine_bridge else None
+            self._send_json({'target': target, 'n_qubits': n, 'result': result})
+        
+        elif self.path == '/api/engine/fold':
+            params = self._parse_query()
+            seq = params.get('seq', 'MVLSPA')
+            result = engine_bridge.fold(seq) if engine_bridge else None
+            self._send_json({'seq': seq, 'result': result or 'indisponible'})
+        
         else:
             self.send_response(404); self.end_headers()
     
@@ -1075,6 +1126,49 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
             else:
                 self.send_response(404); self.end_headers()
         
+        # ═══ HARMONIC VOICE ENGINE — endpoints unifiés ═══
+        elif self.path == '/api/voice/speak' and voice_engine:
+            data = self._read_json()
+            text = data.get('text', '')
+            voice = data.get('voice', 'denise')
+            speed = float(data.get('speed', 1.0))
+            profile = data.get('profile', None)
+            lang = data.get('lang', None)
+            if lang:
+                voice_engine.set_language(lang)
+            elif text:
+                lang = voice_engine.auto_detect_language(text)
+                voice_engine.set_language(lang)
+            audio = voice_engine.speak(text, voice=voice, speed=speed, profile=profile)
+            self.send_response(200)
+            self.send_header('Content-Type', 'audio/wav')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(audio if audio else b'')
+        
+        elif self.path == '/api/voice/stream' and voice_engine:
+            data = self._read_json()
+            text = data.get('text', '')
+            voice = data.get('voice', 'denise')
+            speed = float(data.get('speed', 1.0))
+            profile = data.get('profile', None)
+            chunks = []
+            for audio, is_last in voice_engine.speak_stream(text, voice, speed, profile):
+                chunks.append(audio)
+            combined = b''.join(chunks)
+            self.send_response(200)
+            self.send_header('Content-Type', 'audio/wav')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(combined)
+        
+        elif self.path == '/api/voice/barge-in' and voice_engine:
+            voice_engine.barge_in()
+            self._send_json({'barge_in': True, 'interrupted': True})
+        
+        elif self.path == '/api/voice/stats' and voice_engine:
+            self._send_json(voice_engine.stats)
+        
         # ═══ COMBINED: /api/ask → texte + TTS en un appel ═══
         elif self.path == '/api/ask-with-voice':
             length = int(self.headers.get('Content-Length', 0))
@@ -1144,6 +1238,19 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
     
     def log_message(self, *a): pass
+    
+    def _send_json(self, data, status=200):
+        self.send_response(status)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(json.dumps(data, ensure_ascii=False).encode('utf-8'))
+    
+    def _parse_query(self):
+        """Parse les paramètres de requête GET."""
+        from urllib.parse import urlparse, parse_qs
+        qs = urlparse(self.path).query
+        return {k: v[0] for k, v in parse_qs(qs).items()}
 
 
 if __name__ == '__main__':

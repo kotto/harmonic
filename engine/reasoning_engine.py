@@ -82,6 +82,10 @@ SECTOR_TO_DOMAIN = {
     'NATURE_ANIM': 'BIOLOGIE', 'NATURE_VEGET': 'BIOLOGIE',
     'CORPS_ORGANES': 'BIOLOGIE', 'CORPS_SENS': 'BIOLOGIE',
     'METAPHYSIQUE': 'PHILOSOPHIE', 'SPIRITUALITE': 'PHILOSOPHIE',
+    # Nouveaux secteurs pratiques
+    'GEOGRAPHIE': 'GENERAL',
+    'SANTE': 'BIOLOGIE',
+    'ECONOMIE': 'GENERAL',
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -713,6 +717,93 @@ class ReasoningEngine:
                     break
         
         return images[:n_images]
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # RAISONNEMENT ONDULATOIRE AVANCÉ (v3)
+    # ═══════════════════════════════════════════════════════════════════════
+
+    def reason_syllogistic(self, question: str, max_syllogisms: int = 3) -> Optional[str]:
+        """
+        Raisonnement syllogistique explicite.
+        Détecte les chaînes A→B→C valides dans la KB et produit
+        des conclusions « donc A→C » en langage naturel.
+        """
+        try:
+            from syllogistic_reasoner import SyllogisticReasoner
+            sr = SyllogisticReasoner(
+                encoder=getattr(self.model, '_encoder', None),
+                seuil_coherence=0.05
+            )
+            return sr.answer_with_syllogisms(
+                question, self.model.knowledge_base, max_syllogisms
+            )
+        except Exception:
+            return None
+
+    def reason_spectral(self, question: str) -> Optional[str]:
+        """
+        Raisonnement par propagation d'onde multi-sauts (spectral_hop).
+        
+        L'onde de la question se propage de fait en fait dans la
+        mémoire holographique. La réponse émerge du point fixe.
+        
+        Cette méthode remplace find_paths() (overlap lexical) par
+        une propagation purement ondulatoire.
+        """
+        try:
+            from spectral_hop import SpectralHopper
+            encoder = getattr(self.model, '_encoder', None)
+            if encoder is None:
+                from holographic_encoder import HolographicEncoder
+                encoder = HolographicEncoder(dim=512)
+            
+            hopper = SpectralHopper(
+                encoder,
+                alpha=0.6,
+                stop_threshold=0.05,
+                max_hops=6,
+            )
+            result = hopper.reason(question, knowledge_base=self.model.knowledge_base)
+            
+            if result.answer and result.score > 0.01:
+                # Construire une réponse depuis la trajectoire
+                facts = result.facts_visited[:3]
+                if facts:
+                    phrases = [f.capitalize() + '.' for f in facts]
+                    return ' '.join(phrases)
+            return None
+        except Exception:
+            return None
+
+    def reason_counterfactual(self, question: str) -> Optional[str]:
+        """
+        Raisonnement contrefactuel par perturbation holographique.
+        Pour les questions « que se passerait-il si X changeait ? ».
+        """
+        try:
+            from counterfactual_reasoner import CounterfactualReasoner
+            cr = CounterfactualReasoner(
+                encoder=getattr(self.model, '_encoder', None),
+                knowledge_base=self.model.knowledge_base
+            )
+            return cr.ask(question, self.model.knowledge_base)
+        except Exception:
+            return None
+
+    def detect_paradoxes(self) -> Optional[str]:
+        """
+        Détecte les contradictions ondulatoires dans la KB.
+        Retourne un rapport textuel.
+        """
+        try:
+            from paradox_detector import ParadoxDetector
+            pd = ParadoxDetector(
+                encoder=getattr(self.model, '_encoder', None),
+                knowledge_base=self.model.knowledge_base
+            )
+            return pd.analyze_and_report(self.model.knowledge_base)
+        except Exception:
+            return None
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

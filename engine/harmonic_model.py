@@ -243,8 +243,13 @@ def generate(question: str, kx: np.ndarray, ky: np.ndarray, w2i: dict,
     
     # 1. Trouver les faits pertinents avec SCORE (pas juste boolean)
     scored_facts = []
-    q_words_set = set(sujet_lower.split())
+    q_words_set = {w for w in sujet_lower.split() if w not in _STOPWORDS}
     n_q_words = len(q_words_set)
+    if n_q_words == 0:
+        # Aucun mot significatif → fallback direct
+        return _generate_by_interference(
+            question, kx, ky, w2i, memoire, sujet_phrase, q_type, max_words, temperature
+        )
     
     for s, r, o, sec in kb:
         # Chercher dans TOUT le triplet (sujet, relation, objet)
@@ -285,37 +290,35 @@ def generate(question: str, kx: np.ndarray, ky: np.ndarray, w2i: dict,
     relevant_facts = [(s, r, o) for sc, s, r, o, sec in scored_facts if sc >= threshold]
     
     if not relevant_facts:
+        # Aucun fait au-dessus du seuil → fallback interference pure
         return _generate_by_interference(
             question, kx, ky, w2i, memoire, sujet_phrase, q_type, max_words, temperature
         )
-        seen_subjects = set()
-        unique_facts = []
-        for s, r, o in relevant_facts:
-            if s not in seen_subjects:
-                unique_facts.append((s, r, o))
-                seen_subjects.add(s)
-                if len(unique_facts) >= 3:
-                    break
-        
-        if len(unique_facts) >= 2:
-            s1, r1, o1 = unique_facts[0]
-            s2, r2, o2 = unique_facts[1]
-            phrase = f"{s1.capitalize()} {r1} {o1}. {s2.capitalize()} {r2} {o2}."
-        else:
-            s1, r1, o1 = unique_facts[0]
-            phrase = f"{s1.capitalize()} {r1} {o1}."
-        
-        # Apprentissage
-        if memoire is not None:
-            memoire.enregistrer_texte(question, kx, ky, w2i, amplitude=0.6)
-            memoire.enregistrer_texte(phrase, kx, ky, w2i, amplitude=0.4)
-        
-        return phrase
     
-    # 3. Fallback : interference pure (quand pas de faits directs)
-    return _generate_by_interference(
-        question, kx, ky, w2i, memoire, sujet_phrase, q_type, max_words, temperature
-    )
+    # 3. Assembler la réponse à partir des meilleurs faits
+    seen_subjects = set()
+    unique_facts = []
+    for s, r, o in relevant_facts:
+        if s not in seen_subjects:
+            unique_facts.append((s, r, o))
+            seen_subjects.add(s)
+            if len(unique_facts) >= 3:
+                break
+    
+    if len(unique_facts) >= 2:
+        s1, r1, o1 = unique_facts[0]
+        s2, r2, o2 = unique_facts[1]
+        phrase = f"{s1.capitalize()} {r1} {o1}. {s2.capitalize()} {r2} {o2}."
+    else:
+        s1, r1, o1 = unique_facts[0]
+        phrase = f"{s1.capitalize()} {r1} {o1}."
+    
+    # Apprentissage
+    if memoire is not None:
+        memoire.enregistrer_texte(question, kx, ky, w2i, amplitude=0.6)
+        memoire.enregistrer_texte(phrase, kx, ky, w2i, amplitude=0.4)
+    
+    return phrase
 
 
 def _generate_by_interference(question, kx, ky, w2i, memoire, sujet_phrase, q_type, max_words, temperature):

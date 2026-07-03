@@ -16,10 +16,12 @@ Usage :
   print(f\"Autonomie : {boot.autonomie:.0%}\")
 """
 
-import sys, os, re, math, time, json
+import sys, os, re, math, time, json, logging
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 import numpy as np
+
+log = logging.getLogger(__name__)
 
 # Imports locaux
 _ENGINE_DIR = Path(__file__).resolve().parent
@@ -54,24 +56,45 @@ SECTOR_KEYWORDS = {
     'EMOTION_NEG': ['peur', 'tristesse', 'colere', 'stress', 'angoisse', 'souffrance'],
     'ASTRONOMIE': ['etoile', 'planete', 'galaxie', 'soleil', 'lune', 'astre', 'ciel'],
     'COSMOLOGIE': ['univers', 'cosmos', 'big bang', 'trou noir', 'expansion', 'multivers'],
-    'PASSE': ['histoire', 'passe', ' origine', 'ancetre', 'tradition', 'archeologie'],
+    'PASSE': ['histoire', 'passe', 'origine', 'ancetre', 'tradition', 'archeologie'],
     'FUTUR': ['futur', 'avenir', 'progres', 'innovation', 'technologie', 'utopie'],
     'CULTURE': ['culture', 'art', 'musique', 'litterature', 'cinema', 'theatre', 'poesie'],
     'POLITIQUE': ['politique', 'democratie', 'justice', 'liberte', 'loi', 'etat', 'gouvernement'],
-    'METAPHYSIQUE': ['philosophie', 'etre', 'existence', 'realite', ' verite', 'essence', 'neant'],
+    'METAPHYSIQUE': ['philosophie', 'etre', 'existence', 'realite', 'verite', 'essence', 'neant'],
     'SPIRITUALITE': ['dieu', 'ame', 'spirituel', 'religion', 'foi', 'transcendance', 'sacre'],
+    # Nouveaux secteurs — alignés avec qualitative_knowledge.py
+    'CREATION': ['creation', 'creer', 'oeuvre', 'artiste', 'sculpture', 'peinture', 'dessin', 'architecture'],
+    'EXPRESSION': ['expression', 'langage', 'parole', 'communication', 'ecriture', 'langue', 'discours'],
+    'NATURE_ANIM': ['animal', 'mammifere', 'oiseau', 'poisson', 'insecte', 'reptile', 'faune'],
+    'NATURE_VEGET': ['plante', 'arbre', 'fleur', 'foret', 'vegetal', 'flore', 'jardin'],
+    'CORPS_ORGANES': ['corps', 'coeur', 'sang', 'poumon', 'foie', 'rein', 'cerveau', 'muscle', 'os'],
+    'CORPS_SENS': ['vue', 'ouie', 'odorat', 'toucher', 'gout', 'oeil', 'oreille', 'peau'],
+    # Secteurs pratiques (manquants cruciaux)
+    'GEOGRAPHIE': ['geographie', 'pays', 'capitale', 'continent', 'montagne', 'fleuve', 'ocean', 'mer', 'ville', 'region', 'frontiere'],
+    'SANTE': ['sante', 'maladie', 'medecin', 'medicament', 'vaccin', 'virus', 'bacterie', 'hopital', 'chirurgie', 'symptome'],
+    'ECONOMIE': ['economie', 'marche', 'commerce', 'monnaie', 'banque', 'inflation', 'pib', 'croissance', 'entreprise', 'finance'],
 }
 
 def detect_sector(text: str) -> str:
-    """Detecte le secteur semantique d'un texte."""
+    """Detecte le secteur semantique d'un texte (v2 — word boundaries)."""
     text_lower = text.lower()
     scores = {}
     for sector, keywords in SECTOR_KEYWORDS.items():
-        score = sum(1 for kw in keywords if kw in text_lower)
+        score = 0
+        for kw in keywords:
+            # Utiliser word boundaries (\b) pour éviter les sous-chaînes
+            # Ex: "onde" ne matchera plus "monde"
+            if re.search(r'\b' + re.escape(kw) + r'\b', text_lower):
+                score += 1
         if score > 0:
             scores[sector] = score
     if scores:
-        return max(scores, key=scores.get)
+        # En cas d'égalité, prendre le secteur avec le moins de keywords
+        # (plus spécifique) plutôt que le premier dans le dict
+        max_score = max(scores.values())
+        best = [(s, len(SECTOR_KEYWORDS[s])) for s, sc in scores.items() if sc == max_score]
+        best.sort(key=lambda x: x[1])  # trier par nombre de keywords (moins = plus spécifique)
+        return best[0][0]
     return "GENERAL"
 
 
@@ -257,10 +280,24 @@ class HarmonicBootstrapper:
         if not _LLM_AVAILABLE:
             return None
         try:
-            self._llm_calls += 1
-            self._autonomie_history.append(False)
-            llm_resp = _LLM.generate(question, category="factual")
-            return llm_resp.content.strip() or None
+            import threading
+            result = [None]
+            def _call():
+                try:
+                    self._llm_calls += 1
+                    self._autonomie_history.append(False)
+                    llm_resp = _LLM.generate(question, category="factual")
+                    result[0] = llm_resp.content.strip() or None
+                except Exception:
+                    result[0] = None
+            
+            thread = threading.Thread(target=_call, daemon=True)
+            thread.start()
+            thread.join(timeout=15)  # Timeout de 15 secondes
+            if thread.is_alive():
+                log.warning(f"LLM fallback timeout après 15s pour: {question[:80]}")
+                return None
+            return result[0]
         except Exception:
             return None
     

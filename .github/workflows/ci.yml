@@ -1,0 +1,49 @@
+name: CI — Harmonic AI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install numpy flask flask-cors pytest
+          pip install -r engine/requirements_server.txt 2>/dev/null || true
+
+      - name: Security scan — hardcoded keys
+        run: |
+          # Vérifier qu'aucune clé API n'est hardcodée dans le code source
+          ! grep -rn "sk-[a-zA-Z0-9]\{20,\}" engine/ --include="*.py" || (echo "🔴 CLÉ API DÉTECTÉE !" && exit 1)
+          echo "✅ Aucune clé API hardcodée trouvée"
+
+      - name: Run tests
+        run: |
+          cd engine
+          python -m pytest tests/ -v --tb=short
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install ruff
+      - run: ruff check engine/ --ignore=E501,E402,F401 || true

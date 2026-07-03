@@ -132,7 +132,9 @@ def main():
                 for r2, o2 in graph[o1]:
                     # Éviter les boucles
                     if o2 != s and len(o2) > 2:
-                        new_fact = (s, f"{r1} puis {r2}", o2, "GENERAL")
+                        from bootstrapper import detect_sector
+                        sec = detect_sector(f"{s} {r1} puis {r2} {o2}")
+                        new_fact = (s, f"{r1} puis {r2}", o2, sec)
                         key = (s, f"{r1} puis {r2}", o2)
                         if key not in existing:
                             facts.append(new_fact)

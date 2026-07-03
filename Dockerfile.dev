@@ -1,0 +1,20 @@
+# Dockerfile de développement — Harmonic AI
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Dépendances système minimales
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Dépendances Python
+COPY engine/requirements_server.txt .
+RUN pip install --no-cache-dir -r requirements_server.txt numpy
+
+# Code
+COPY engine/ engine/
+
+# Point d'entrée
+EXPOSE 8765
+CMD ["python", "engine/ka_server.py", "--port", "8765"]

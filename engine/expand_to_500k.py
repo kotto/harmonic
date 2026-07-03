@@ -204,7 +204,10 @@ def transitive_closure(facts: list, max_new: int = 50000) -> list:
                         comp_r = f'{r1} → {r2}'
                         key = (s, comp_r, o2)
                         if key not in existing and len(key[0]) > 1:
-                            new_facts.append((s, comp_r, o2, 'GENERAL'))
+                            # Détecter le secteur au lieu de hardcoder GENERAL
+                            from bootstrapper import detect_sector
+                            sec = detect_sector(f"{s} {comp_r} {o2}")
+                            new_facts.append((s, comp_r, o2, sec))
                             existing.add(key)
                             if len(new_facts) >= max_new:
                                 return new_facts

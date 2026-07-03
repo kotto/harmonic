@@ -193,17 +193,17 @@ class PhiDiffusionEngine:
             self._backend_name = "edge_tts"
             print("[PhiDiffusion] Backend: Edge-TTS (cloud)")
             return self._backend_name
-        # 3) Coqui XTTS-v2 — qualité ElevenLabs, nécessite 4+ GB RAM
+        # 3) Coqui XTTS-v2 — qualité ElevenLabs, nécessite 2.5+ GB RAM libre
         try:
             import psutil
             avail_gb = psutil.virtual_memory().available / (1024**3)
-            if avail_gb > 5.0:
+            if avail_gb > 2.5:
                 import TTS
                 self._backend_name = "coqui_xtts"
                 print("[PhiDiffusion] Backend: Coqui TTS / XTTS-v2")
                 return self._backend_name
             else:
-                print(f"[PhiDiffusion] XTTS-v2 ignoré (RAM dispo: {avail_gb:.1f} GB < 5.0 requis)")
+                print(f"[PhiDiffusion] XTTS-v2 ignoré (RAM dispo: {avail_gb:.1f} GB < 2.5 requis)")
         except ImportError:
             pass
         self._backend_name = "gtts"

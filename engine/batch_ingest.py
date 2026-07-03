@@ -11,8 +11,13 @@ import os, sys, time, json, re
 from pathlib import Path
 import numpy as np
 
-# Config
-os.environ['DEEPSEEK_API_KEY'] = 'sk-8a214089408541bfac209f0c8a451590'
+# Config — la clé API doit être définie dans l'environnement
+_DEEPSEEK_KEY = os.getenv('DEEPSEEK_API_KEY')
+if _DEEPSEEK_KEY:
+    os.environ['DEEPSEEK_API_KEY'] = _DEEPSEEK_KEY
+else:
+    print("⚠️  DEEPSEEK_API_KEY non définie. Exportez-la avant d'exécuter ce script.")
+    print("   export DEEPSEEK_API_KEY=sk-...")
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from bootstrapper import HarmonicBootstrapper, extract_triples_llm

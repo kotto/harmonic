@@ -94,7 +94,9 @@ def coherent_transitive_closure(facts, encoder, max_new=50000, sim_threshold=0.1
                 coherence = sim_ctx * 0.6 + sim_dir * 0.4
                 
                 if coherence >= sim_threshold:
-                    new_facts.append((s, comp_r, o2, 'GENERAL'))
+                    from bootstrapper import detect_sector
+                    sec = detect_sector(f"{s} {comp_r} {o2}")
+                    new_facts.append((s, comp_r, o2, sec))
                     existing.add(key)
                     
                     if len(new_facts) >= max_new:

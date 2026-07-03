@@ -1,0 +1,38 @@
+# Docker Compose — Environnement de développement Harmonic AI
+# Usage : docker compose up
+
+version: '3.8'
+
+services:
+  ka-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8765:8765"
+    environment:
+      - PORT=8765
+      - HOST=0.0.0.0
+      - MODEL_ALIAS=best
+      # Clés API — à définir via .env (non tracké par git)
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY:-}
+      - HF_HOME=/app/huggingface_cache
+      - TORCH_HOME=/app/torch_cache
+    volumes:
+      - ./engine:/app/engine
+      - ./data:/app/data
+      - huggingface_cache:/app/huggingface_cache
+      - torch_cache:/app/torch_cache
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8765/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  huggingface_cache:
+  torch_cache:
