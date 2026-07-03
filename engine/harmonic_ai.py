@@ -166,20 +166,22 @@ class HarmonicAI:
         return min(1.0, base)
     
     def _load_extended_kb(self):
-        """Charge la base étendue (50K faits) si disponible."""
-        # Essayer d'abord le 50K
-        kb_50k = _MODULE_DIR / "data" / "bootstrapper_output" / "knowledge_base_50k.npz"
-        kb_cleaned = _MODULE_DIR / "data" / "bootstrapper_output" / "knowledge_base_50k_cleaned.npz"
-        kb_resonance = _MODULE_DIR / "data" / "bootstrapper_output" / "knowledge_base_resonance.npz"
+        """Charge la base étendue (100K faits) si disponible."""
+        kb_paths = [
+            _MODULE_DIR / "data" / "bootstrapper_output" / "knowledge_base_100k.npz",
+            _MODULE_DIR / "data" / "bootstrapper_output" / "knowledge_base_resonance.npz",
+            _MODULE_DIR / "data" / "bootstrapper_output" / "knowledge_base_50k_cleaned.npz",
+            _MODULE_DIR / "data" / "bootstrapper_output" / "knowledge_base_50k.npz",
+        ]
         
-        for kb_path in [kb_resonance, kb_cleaned, kb_50k]:
+        for kb_path in kb_paths:
             if kb_path.exists():
                 try:
                     data = np.load(str(kb_path), allow_pickle=True)
                     ingested = list(data['facts'])
                     added = 0
                     for fact in ingested:
-                        s, r, o, sec = fact[0], fact[1], fact[2], fact[3]
+                        s, r, o, sec = str(fact[0]), str(fact[1]), str(fact[2]), str(fact[3])
                         if (s, r, o, sec) not in self.model.knowledge_base:
                             self.model.knowledge_base.append((s, r, o, sec))
                             added += 1
@@ -188,28 +190,9 @@ class HarmonicAI:
                             self.model.knowledge_base
                         )
                     print(f"Loaded {added} facts from {kb_path.name}")
-                    break  # Un seul fichier chargé
+                    break
                 except Exception as e:
                     print(f"Failed to load {kb_path.name}: {e}")
-        
-        # Fallback: ancien format
-        kb_old = _MODULE_DIR.parent / "data" / "bootstrapper_output" / "knowledge_base.npz"
-        if kb_old.exists():
-            try:
-                data = np.load(str(kb_old), allow_pickle=True)
-                ingested = list(data['facts'])
-                added = 0
-                for fact in ingested:
-                    s, r, o, sec = fact[0], fact[1], fact[2], fact[3]
-                    if (s, r, o, sec) not in self.model.knowledge_base:
-                        self.model.knowledge_base.append((s, r, o, sec))
-                        added += 1
-                if added > 0:
-                    self.model.kx, self.model.ky, self.model.w2i = build_waves(
-                        self.model.knowledge_base
-                    )
-            except Exception:
-                pass
     
     def _load_general_knowledge(self):
         """Charge la base de culture générale (géographie, histoire, etc.)."""
@@ -316,13 +299,20 @@ class HarmonicAI:
 
         # ── 2-3. Recherche de faits ──────────
         try:
-            from inverted_index import InvertedIndex
             from harmonic_quality import rerank
             
             if not hasattr(self, '_idx') or self._idx is None:
-                self._idx = InvertedIndex(self.model.knowledge_base)
+                try:
+                    from inverted_index import InvertedIndex
+                    self._idx = InvertedIndex(self.model.knowledge_base)
+                except Exception:
+                    self._idx = False  # marqueur d'échec
             
-            facts = self._idx.search(enriched, max_results=10)
+            if self._idx and self._idx is not False:
+                facts = self._idx.search(enriched, max_results=10)
+            else:
+                facts = self._retrieve_facts(enriched, intent)
+            
             if facts:
                 facts = rerank(enriched, facts, top_k=3)
         except Exception:
