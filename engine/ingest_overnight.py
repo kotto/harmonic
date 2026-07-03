@@ -18,10 +18,14 @@ from collections import Counter
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from bootstrapper import extract_triples_simple, detect_sector
+from prompts_200 import PROMPTS as PROMPTS_200
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURATION
 # ═══════════════════════════════════════════════════════════════════════════════
+
+# Utiliser les 200 prompts spécialisés
+DOMAIN_PROMPTS = PROMPTS_200
 
 TARGET_FACTS = 200000
 CHECKPOINT_EVERY = 2000
@@ -32,77 +36,9 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 CHECKPOINT_FILE = OUTPUT_DIR / 'checkpoint_overnight.json'
 OUTPUT_FILE = OUTPUT_DIR / 'knowledge_base_overnight.npz'
 
+# (les prompts sont maintenant dans prompts_200.py)
 # ═══════════════════════════════════════════════════════════════════════════════
-# PROMPTS PAR DOMAINE (chaque prompt génère 30 faits)
-# ═══════════════════════════════════════════════════════════════════════════════
-
-DOMAIN_PROMPTS = [
-    # Sciences
-    ("PHYSIQUE", "Liste 30 faits de physique: mécanique classique, thermodynamique, électromagnétisme, relativité, physique quantique, physique nucléaire. Format EXACT: sujet | relation | objet. Un par ligne. En français. Faits précis."),
-    ("CHIMIE", "Liste 30 faits de chimie: éléments, réactions, liaisons, équilibres, catalyse, tableau périodique, chimie organique. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("BIOLOGIE", "Liste 30 faits de biologie: cellules, ADN, protéines, enzymes, évolution, génétique, microbiologie. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("ASTRONOMIE", "Liste 30 faits d'astronomie: étoiles, galaxies, planètes, lune, soleil, trous noirs, exoplanètes, constellations. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("GEOLOGIE", "Liste 30 faits de géologie: roches, minéraux, tectonique, volcans, séismes, ères géologiques, fossiles. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("CLIMAT", "Liste 30 faits sur le climat et la météo: atmosphère, précipitations, vents, saisons, changement climatique. Format: sujet | relation | objet. Un par ligne. En français."),
-    
-    # Histoire & Géographie
-    ("HISTOIRE_ANTIQUE", "Liste 30 faits sur l'antiquité: Égypte, Grèce, Rome, Mésopotamie, Chine ancienne, empires. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("HISTOIRE_MODERNE", "Liste 30 faits historiques: Moyen Âge, Renaissance, Révolutions, guerres mondiales, 20e siècle. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("GEOGRAPHIE", "Liste 30 faits géographiques: pays, capitales, fleuves, montagnes, océans, déserts, populations. Format: sujet | relation | objet. Un par ligne. En français."),
-    
-    # Culture
-    ("LITTERATURE", "Liste 30 faits de littérature: auteurs célèbres, œuvres majeures, prix Nobel, genres littéraires. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("MUSIQUE", "Liste 30 faits musicaux: compositeurs, instruments, genres, théorie musicale, histoire de la musique. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("CINEMA", "Liste 30 faits de cinéma: réalisateurs, acteurs, films célèbres, techniques, histoire du cinéma. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("ART", "Liste 30 faits artistiques: peinture, sculpture, architecture, mouvements artistiques, musées. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("PHILOSOPHIE", "Liste 30 faits philosophiques: penseurs, concepts, écoles, éthique, métaphysique, logique. Format: sujet | relation | objet. Un par ligne. En français."),
-    
-    # Société
-    ("ECONOMIE", "Liste 30 faits économiques: marchés, monnaies, théories, institutions, commerce, développement. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("POLITIQUE", "Liste 30 faits politiques: systèmes, institutions, droits, relations internationales, constitutions. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("DROIT", "Liste 30 faits juridiques: lois, codes, tribunaux, procédures, droits fondamentaux. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("SOCIOLOGIE", "Liste 30 faits sociologiques: structures sociales, démographie, urbanisation, inégalités, cultures. Format: sujet | relation | objet. Un par ligne. En français."),
-    
-    # Technologie
-    ("INFORMATIQUE", "Liste 30 faits informatiques: ordinateurs, langages, algorithmes, internet, bases de données. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("IA", "Liste 30 faits sur l'intelligence artificielle: machine learning, deep learning, réseaux de neurones, NLP, vision. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("ROBOTIQUE", "Liste 20 faits de robotique: robots industriels, drones, automatisation, capteurs. Format: sujet | relation | objet. Un par ligne. En français."),
-    
-    # Santé & Corps
-    ("MEDECINE", "Liste 30 faits médicaux: maladies, traitements, vaccins, chirurgie, diagnostic, prévention. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("ANATOMIE", "Liste 30 faits anatomiques: organes, systèmes, squelette, muscles, système nerveux. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("NUTRITION", "Liste 20 faits nutritionnels: aliments, vitamines, minéraux, régimes, métabolisme. Format: sujet | relation | objet. Un par ligne. En français."),
-    
-    # Nature
-    ("BOTANIQUE", "Liste 30 faits botaniques: plantes, arbres, fleurs, fruits, légumes, photosynthèse. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("ZOOLOGIE", "Liste 30 faits zoologiques: animaux, espèces, comportement, habitats, évolution. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("ECOLOGIE", "Liste 30 faits écologiques: écosystèmes, biodiversité, pollution, conservation, climat. Format: sujet | relation | objet. Un par ligne. En français."),
-    
-    # Spiritualité & Conscience
-    ("SPIRITUALITE", "Liste 30 faits sur les religions et spiritualités: traditions, pratiques, croyances, textes sacrés. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("PSYCHOLOGIE", "Liste 30 faits psychologiques: comportement, cognition, émotions, développement, troubles. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("NEUROSCIENCE", "Liste 30 faits neuroscientifiques: cerveau, neurones, synapses, mémoire, perception. Format: sujet | relation | objet. Un par ligne. En français."),
-    
-    # Pratique
-    ("SPORT", "Liste 20 faits sportifs: disciplines, records, athlètes, compétitions, règles. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("CUISINE", "Liste 20 faits culinaires: gastronomie, techniques, ingrédients, plats, traditions. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("TRANSPORT", "Liste 20 faits sur les transports: voitures, trains, avions, bateaux, infrastructures. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("ARCHITECTURE", "Liste 20 faits architecturaux: bâtiments célèbres, styles, matériaux, architectes. Format: sujet | relation | objet. Un par ligne. En français."),
-    
-    # Langues
-    ("LINGUISTIQUE", "Liste 20 faits linguistiques: langues, grammaire, phonétique, étymologie, familles de langues. Format: sujet | relation | objet. Un par ligne. En français."),
-    
-    # Plus de sciences (2e passe)
-    ("PHYSIQUE_2", "Liste 30 faits de physique: optique, acoustique, mécanique des fluides, physique des particules, astrophysique. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("BIOLOGIE_2", "Liste 30 faits de biologie: immunologie, physiologie, écologie comportementale, biologie marine. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("MATHS", "Liste 30 faits mathématiques: nombres, géométrie, algèbre, analyse, probabilités, statistiques. Format: sujet | relation | objet. Un par ligne. En français."),
-    
-    # Plus d'histoire & géo (2e passe)
-    ("HISTOIRE_SCIENCE", "Liste 30 faits sur l'histoire des sciences: découvertes, scientifiques, inventions, prix Nobel. Format: sujet | relation | objet. Un par ligne. En français."),
-    ("GEOGRAPHIE_2", "Liste 30 faits géographiques: climats, ressources naturelles, démographie, frontières. Format: sujet | relation | objet. Un par ligne. En français."),
-]
-
-
+# PIPELINE
 # ═══════════════════════════════════════════════════════════════════════════════
 # PIPELINE
 # ═══════════════════════════════════════════════════════════════════════════════
