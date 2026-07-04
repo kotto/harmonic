@@ -1,0 +1,1223 @@
+"""
+Harmonic Brain — Architecture Cerveau Humain Ondulatoire
+==========================================================
+Inspiré du modèle conscient/inconscient du cerveau humain.
+
+ARCHITECTURE :
+  ┌─────────────────────────────────────────────────────────┐
+  │           INCONSCIENT (HolographicStore)                 │
+  │  · Stocke TOUT sans filtrer : H += ψ_f                  │
+  │  · Retrieval pur par résonance : H ⊗ ψ_Q               │
+  │  · Apprentissage par RÉPÉTITION : amplitude += 1       │
+  │  · Rumination (sommeil) : consolidation périodique      │
+  │  · Oubli naturel φ⁻ᵗ (noyau ABC)                       │
+  └────────────────────────┬────────────────────────────────┘
+                           │
+                           ▼  flux brut (tous les faits résonnants)
+  ┌─────────────────────────────────────────────────────────┐
+  │             CONSCIENT (ConsciousFilter)                  │
+  │  · Filtre par COHÉRENCE MUTUELLE                        │
+  │  · Applique les SFT (vérités ancrées)                   │
+  │  · FEEDBACK → Inconscient (renforce/affaiblit)          │
+  │  · Capacité limitée : traite N ≤ 10 faits               │
+  └────────────────────────┬────────────────────────────────┘
+                           │
+                           ▼  faits validés (1-3)
+                    ┌──────────────┐
+                    │  EXPRESSION   │
+                    │  (WaveDecoder)│
+                    └──────────────┘
+
+PRINCIPE FONDATEUR :
+  L'inconscient enregistre sans comprendre.
+  Le sens ÉMERGE par répétition + interférence.
+  Le conscient ne JUGE que ce qui remonte — il ne stocke rien.
+
+Usage:
+    from harmonic_brain import HarmonicBrain
+
+    brain = HarmonicBrain(knowledge_base)
+    brain.ingest("La lumière est une onde électromagnétique.")
+    brain.ingest_corpus("data/corpus/")
+    brain.ruminate()  # consolidation nocturne
+
+    result = brain.process("explique la lumière")
+    print(result.response)  # fluide, validé par le conscient
+"""
+
+import math, time, logging, re
+from collections import defaultdict, Counter
+from typing import List, Tuple, Dict, Set, Optional
+from dataclasses import dataclass, field
+import numpy as np
+from pathlib import Path
+import sys
+
+_MODULE_DIR = Path(__file__).resolve().parent
+if str(_MODULE_DIR) not in sys.path:
+    sys.path.insert(0, str(_MODULE_DIR))
+
+from holographic_encoder import (
+    HolographicEncoder, _circular_convolve, _circular_correlate,
+    _fnv1a_hash, build_holographic_waves
+)
+
+try:
+    from harmonic_quality import HIGH_AMPLITUDE_FACTS
+except ImportError:
+    HIGH_AMPLITUDE_FACTS = {}
+
+# Spectral Embedding (plongement sémantique ondulatoire)
+_SPECTRAL = None
+try:
+    from spectral_embedding import _SPECTRAL as _spec
+    _SPECTRAL = _spec
+except ImportError:
+    pass
+
+# Prompt Parser (parseur ondulatoire de question)
+from prompt_parser import PromptParser, StructuredPrompt
+
+# Conscient Intelligent (raisonnement, pas juste filtrage)
+from conscious_intelligence import ConsciousIntelligence
+
+# Domaines de raisonnement (adaptateur multi-domaine)
+from wave_domains import DomainAdapter, DOMAINS
+
+log = logging.getLogger(__name__)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONSTANTES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+PHI = 1.618033988749895
+PHI_INV = 1.0 / PHI
+TAU = 2.0 * math.pi
+
+# Poids de feedback conscient → inconscient
+ALPHA_REINFORCE = 0.1   # renforcement (acceptation)
+ALPHA_WEAKEN = 0.05     # affaiblissement (rejet)
+
+# Seuils
+RESONANCE_THRESHOLD = 0.01  # seuil minimal pour qu'un fait remonte
+COHERENCE_THRESHOLD = 0.3   # seuil de cohérence mutuelle
+
+# Stopwords
+_STOPWORDS = {
+    'the','a','an','is','are','was','were','of','in','on','at','to',
+    'for','with','by','from','and','it','its','that','this',
+    'these','those','which','who','whom','what','when','where','why','how',
+    'le','la','les','un','une','des','de','du','d','l','est','sont',
+    'a','ont','que','qui','quoi','dont','dans','sur','pour','par',
+    'avec','et','il','elle','ils','elles','ce','cet','cette','ces',
+}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# UTILITAIRES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _clean_text(text: str) -> str:
+    """Nettoie un texte (préfixes numériques, années, espaces)."""
+    text = re.sub(r'^\d+[\.\)]\s*', '', text.strip())
+    text = re.sub(r'\s*\(\d{4}[\-\–]\d{4}\)\s*', ' ', text)
+    text = re.sub(r'\s*\(\d{4}\)\s*', ' ', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
+
+def _tokenize(text: str) -> List[str]:
+    """Tokenisation simple avec stopwords."""
+    text = text.replace("'", " ").replace("'", " ")
+    return [w.strip('.,!?;:()[]{}«»\"') for w in text.lower().split()
+            if len(w) >= 2 and w not in _STOPWORDS]
+
+def _normalize(text: str) -> str:
+    """Normalise un texte (accents, casse)."""
+    return text.lower().replace('é','e').replace('è','e').replace('ê','e')\
+               .replace('à','a').replace('ù','u').replace('ô','o')\
+               .replace('î','i').replace('ï','i').replace('ç','c')
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DATACLASSES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@dataclass
+class FactRecord:
+    """Un fait stocké dans l'inconscient avec ses métadonnées."""
+    sujet: str
+    relation: str
+    objet: str
+    secteur: str
+    psi: np.ndarray          # vecteur d'onde du fait (ℂ⁵¹²)
+    amplitude: float = 1.0   # renforcée par répétition
+    count: int = 1           # nombre d'ingestions
+    last_seen: float = 0.0   # timestamp dernier accès
+    confidence: float = 0.5  # mise à jour par le conscient
+    times_retrieved: int = 0 # combien de fois remonté
+    times_accepted: int = 0  # combien de fois validé par le conscient
+
+@dataclass
+class BrainResult:
+    """Résultat du processus cerveau complet."""
+    response: str
+    confidence: float
+    facts_used: List[FactRecord]
+    facts_rejected: List[FactRecord]
+    retrieval_count: int     # combien de faits sont remontés de l'inconscient
+    total_time_ms: float
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# INCONSCIENT — HolographicStore
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class HolographicStore:
+    """
+    L'INCONSCIENT — mémoire holographique massive et passive.
+
+    Principes :
+      - Stocke TOUT sans filtrer : H += ψ_f (superposition additive)
+      - Retrieval pur par résonance : H ⊗ ψ_Q → tous les faits qui vibrent
+      - Apprentissage par RÉPÉTITION : même fait → amplitude += 1
+      - Aucun jugement de valeur — le conscient juge, pas l'inconscient
+      - Oubli naturel par le noyau ABC (φ⁻ᵗ)
+    """
+
+    def __init__(self, dim: int = 512):
+        self.dim = dim
+        self.encoder = HolographicEncoder(dim=dim)
+
+        # L'hologramme : superposition de TOUS les faits
+        self.hologram = np.zeros(dim, dtype=np.complex128)
+
+        # Registre des faits (pour le feedback conscient)
+        self.registry: Dict[Tuple[str, str, str], FactRecord] = {}
+
+        # Index inversé (pour lookup rapide, pas pour juger)
+        self.word_index: Dict[str, Set[Tuple[str, str, str]]] = defaultdict(set)
+
+        # 🔥 Index sous-mot → clés multi-mots (pour retrieval rapide)
+        # Ex: "peint" → ["a peint"] → permet de matcher "peint" avec "a peint"
+        self._subword_index: Dict[str, List[Tuple[str, np.ndarray]]] = None  # lazy build
+
+        # 🔥 IDF (Inverse Document Frequency) pour scoring lexical
+        self._idf: Dict[str, float] = None  # lazy build
+        self._total_docs: int = 0
+
+        # 🔥 Spectral Embedding (similarité sémantique ondulatoire)
+        self._spectral = _SPECTRAL
+        self._spectral_ready = (self._spectral is not None and
+                                self._spectral.is_ready and
+                                len(self._spectral.phases) > 100)
+        self._spectral_quality = 0.0  # sera calibré automatiquement
+        self._spectral_neighbors: Dict[str, List[Tuple[str, float]]] = None  # lazy
+
+        # Compteurs
+        self.total_ingested = 0
+        self.total_retrieved = 0
+        self._last_rumination = time.time()
+
+    def _build_subword_index(self):
+        """Construit l'index sous-mot → clés multi-mots (appelé une fois)."""
+        if self._subword_index is not None:
+            return
+        self._subword_index = defaultdict(list)
+        for key, vec in self.encoder.word_vectors.items():
+            for sub in key.split():
+                if len(sub) >= 2:
+                    self._subword_index[sub].append((key, vec))
+        log.info(f"Subword index: {len(self._subword_index)} sous-mots")
+
+    def _calibrate_spectral(self):
+        """
+        Évalue la qualité du plongement spectral en mesurant la similarité
+        de paires de mots connus pour être sémantiquement liés.
+
+        quality = 0.0 → phases aléatoires (bruit)
+        quality = 1.0 → phases parfaitement corrélées au sens
+        """
+        if not self._spectral_ready:
+            self._spectral_quality = 0.0
+            return
+
+        # Paires de référence : mots qui DEVRAIENT avoir des phases proches
+        reference_pairs = [
+            ('lumiere', 'onde'), ('capitale', 'ville'), ('paris', 'france'),
+            ('guerre', 'paix'), ('eau', 'mer'), ('musique', 'art'),
+            ('livre', 'roman'), ('roi', 'reine'),
+        ]
+        # Paires de contrôle
+        control_pairs = [
+            ('lumiere', 'tracteur'), ('capitale', 'fromage'), ('peintre', 'volcan'),
+            ('musique', 'beton'), ('roi', 'microbe'),
+        ]
+
+        ref_sims = []
+        for w1, w2 in reference_pairs:
+            sim = self._spectral.get_similarity(w1, w2)
+            if sim is not None:
+                ref_sims.append(max(0, sim))
+
+        ctrl_sims = []
+        for w1, w2 in control_pairs:
+            sim = self._spectral.get_similarity(w1, w2)
+            if sim is not None:
+                ctrl_sims.append(max(0, sim))
+
+        if not ref_sims:
+            self._spectral_quality = 0.0
+        else:
+            avg_ref = sum(ref_sims) / len(ref_sims)
+            avg_ctrl = sum(ctrl_sims) / len(ctrl_sims) if ctrl_sims else 0.5
+            # Qualité = combien les paires liées sont plus similaires que les paires aléatoires
+            quality = max(0.0, min(1.0, (avg_ref - avg_ctrl) * 3.0))
+            self._spectral_quality = quality
+
+        log.info(f"Qualité spectrale: {self._spectral_quality:.2f} "
+                 f"(0=bruit, 1=parfait) → poids sémantique = {0.2 * self._spectral_quality:.0%}")
+
+    def _build_idf(self):
+        """Construit les scores IDF pour tous les mots (appelé une fois)."""
+        if self._idf is not None:
+            return
+        self._idf = {}
+        self._total_docs = len(self.registry)
+        word_doc_count = Counter()
+        for key, record in self.registry.items():
+            fact_text = f"{_normalize(record.sujet)} {_normalize(record.relation)} {_normalize(record.objet)}"
+            unique_words = set(_tokenize(fact_text))
+            for w in list(unique_words):
+                for sub in w.split():
+                    if len(sub) >= 2:
+                        unique_words.add(sub)
+            for w in unique_words:
+                word_doc_count[w] += 1
+        for w, df in word_doc_count.items():
+            self._idf[w] = math.log(self._total_docs / max(df, 1)) + 1.0
+        log.info(f"IDF: {len(self._idf)} mots indexés")
+
+        # Auto-calibrer la qualité spectrale
+        if self._spectral_ready:
+            self._calibrate_spectral()
+        """Construit les scores IDF pour tous les mots (appelé une fois)."""
+        if self._idf is not None:
+            return
+        self._idf = {}
+        self._total_docs = len(self.registry)
+        # Compter dans combien de faits chaque mot apparaît
+        word_doc_count = Counter()
+        for key, record in self.registry.items():
+            fact_text = f"{_normalize(record.sujet)} {_normalize(record.relation)} {_normalize(record.objet)}"
+            unique_words = set(_tokenize(fact_text))
+            # Ajouter aussi les sous-mots
+            for w in list(unique_words):
+                for sub in w.split():
+                    if len(sub) >= 2:
+                        unique_words.add(sub)
+            for w in unique_words:
+                word_doc_count[w] += 1
+        # IDF = log(N / df)
+        for w, df in word_doc_count.items():
+            self._idf[w] = math.log(self._total_docs / max(df, 1)) + 1.0
+        log.info(f"IDF: {len(self._idf)} mots indexés")
+
+        # Auto-calibrer la qualité spectrale
+        if self._spectral_ready:
+            self._calibrate_spectral()
+
+    # ── INGESTION ─────────────────────────────────────────────────────────
+
+    def ingest(self, sujet: str, relation: str, objet: str,
+               secteur: str = "GENERAL") -> FactRecord:
+        """
+        Ingère un fait sans aucun filtre.
+
+        Si le fait existe déjà → renforce (amplitude += 1).
+        Sinon → crée un nouveau fait.
+        """
+        s = _clean_text(sujet)
+        r = _clean_text(relation)
+        o = _clean_text(objet)
+        # Normaliser les accents pour la clé
+        key = (_normalize(s).strip(), _normalize(r).strip(), _normalize(o).strip())
+
+        now = time.time()
+
+        # Fait déjà connu ? → RENFORCER
+        if key in self.registry:
+            record = self.registry[key]
+            record.count += 1
+            record.amplitude += 1.0
+            record.last_seen = now
+            # Renforcer dans l'hologramme
+            self.hologram += record.psi  # superposition additive
+            self.total_ingested += 1
+            return record
+
+        # Nouveau fait → ENREGISTRER
+        psi_f = self.encoder.encode_fact(s, r, o)
+
+        record = FactRecord(
+            sujet=s, relation=r, objet=o, secteur=secteur,
+            psi=psi_f, amplitude=1.0, count=1, last_seen=now
+        )
+
+        self.registry[key] = record
+        self.hologram += psi_f  # superposition
+
+        # Indexer les mots (version normalisée pour la recherche)
+        for w in _tokenize(f"{_normalize(s)} {_normalize(r)} {_normalize(o)}"):
+            self.word_index[w].add(key)
+
+        self.total_ingested += 1
+        return record
+
+    def ingest_batch(self, facts: List[Tuple[str, str, str, str]]) -> int:
+        """Ingère un lot de faits. Retourne le nombre de nouveaux."""
+        new_count = 0
+        for s, r, o, sec in facts:
+            key = (s.lower().strip(), r.lower().strip(), o.lower().strip())
+            if key not in self.registry:
+                new_count += 1
+            self.ingest(s, r, o, sec)
+        return new_count
+
+    # ── RETRIEVAL PUR ─────────────────────────────────────────────────────
+
+    def retrieve(self, question: str, threshold: float = RESONANCE_THRESHOLD,
+                 max_results: int = 50) -> List[Tuple[FactRecord, float]]:
+        """Retrieval PUR — TF-IDF lexical + bonus spectral."""
+        self._build_subword_index()
+        self._build_idf()
+
+        q_tokens = _tokenize(_normalize(question))
+        if not q_tokens:
+            return []
+
+        # 🔥 Ajouter les bigrammes "X Y" issus de "X d Y" (ex: "nombre d or" → "nombre or")
+        raw_toks = _normalize(question).split()
+        for i in range(len(raw_toks) - 2):
+            if raw_toks[i+1] == 'd' and len(raw_toks[i]) >= 2 and len(raw_toks[i+2]) >= 2:
+                q_tokens.append(f"{raw_toks[i]} {raw_toks[i+2]}")
+        # Bigrammes consécutifs
+        for i in range(len(q_tokens) - 1):
+            q_tokens.append(f"{q_tokens[i]} {q_tokens[i+1]}")
+
+        # 🔥 Verbes communs à ignorer (sauf si c'est le seul token)
+        _COMMON_VERBS = {'explique', 'est', 'sont', 'fait', 'donne', 'permet', 'dit',
+                         'explain', 'is', 'are', 'does', 'make', 'allows', 'says'}
+        significant_tokens = [t for t in q_tokens if t not in _COMMON_VERBS]
+        if significant_tokens:
+            q_tokens = significant_tokens
+
+        max_idf = sum(self._idf.get(t, 1.0) for t in q_tokens) + 0.01
+
+        # 🔥 PRÉ-FILTRE : lexical + spectral expansion
+        candidate_keys = set()
+        expanded_tokens = set(q_tokens)
+
+        # 1. Expansion spectrale (seulement si qualité > 0.7)
+        if self._spectral_ready and self._spectral_quality > 0.35:
+            for t in q_tokens:
+                phase = self._spectral.get_phase(t)
+                if phase is not None:
+                    # Chercher les mots avec phase proche dans tout le vocabulaire
+                    for w, w_phase in self._spectral.phases.items():
+                        d = abs(phase - w_phase)
+                        d = min(d, TAU - d)
+                        if d < math.pi / 6:  # 30° — seuil de similarité sémantique
+                            expanded_tokens.add(w)
+                            # Limiter à 10 voisins par token
+                            if len(expanded_tokens) > len(q_tokens) + 10:
+                                break
+
+        # 2. Lookup dans l'index inversé (tokens originaux + voisins spectraux)
+        for t in expanded_tokens:
+            if t in self.word_index:
+                candidate_keys.update(self.word_index[t])
+            if t in self._subword_index:
+                for multi_word, _ in self._subword_index[t]:
+                    if multi_word in self.word_index:
+                        candidate_keys.update(self.word_index[multi_word])
+
+        if not candidate_keys:
+            return []
+
+        # 🔥 Pré-calculer les phases de la question (seulement si qualité > 0.7)
+        q_phases = []
+        if self._spectral_ready and self._spectral_quality > 0.35:
+            for t in q_tokens:
+                ph = self._spectral.get_phase(t)
+                if ph is not None:
+                    q_phases.append(ph)
+
+        scored = []
+        now = time.time()
+        for key in candidate_keys:
+            if key not in self.registry:
+                continue
+            record = self.registry[key]
+            fact_text = f"{_normalize(record.sujet)} {_normalize(record.relation)} {_normalize(record.objet)}"
+            fact_tokens_raw = set(_tokenize(fact_text))
+            fact_tokens = set(fact_tokens_raw)
+            for ft in list(fact_tokens_raw):
+                for sub in ft.split():
+                    if len(sub) >= 2:
+                        fact_tokens.add(sub)
+            common_tokens = set(q_tokens) & fact_tokens
+            tfidf_score = sum(self._idf.get(t, 1.0) for t in common_tokens)
+
+            # Bonus sujet
+            sujet_norm = _normalize(record.sujet)
+            bonus_sujet = 0.0
+            for t in q_tokens:
+                if t == sujet_norm:
+                    bonus_sujet += 3.0
+                elif t in sujet_norm.split():
+                    bonus_sujet += 1.0
+
+            # 🔥 BONUS SÉMANTIQUE (seulement si qualité > 0.7)
+            semantic_bonus = 0.0
+            if self._spectral_quality > 0.35 and q_phases and fact_tokens:
+                f_phases = []
+                for ft in fact_tokens:
+                    ph = self._spectral.get_phase(ft)
+                    if ph is not None:
+                        f_phases.append(ph)
+                if f_phases:
+                    sims = []
+                    for qp in q_phases:
+                        best = max((math.cos(qp - fp) + 1.0) / 2.0 for fp in f_phases)
+                        sims.append(best)
+                    semantic_bonus = sum(sims) / len(sims)
+
+            # Score final : TF-IDF + Sémantique (seulement si qualité > 0.7) + Sujet
+            lexical_score = tfidf_score / max_idf if common_tokens else 0.0
+            # Le spectral n'est activé que si la qualité est suffisante (> 0.35)
+            if self._spectral_quality > 0.35:
+                semantic_weight = 0.3
+                lexical_weight = 0.5
+            else:
+                semantic_weight = 0.0
+                lexical_weight = 0.8
+            score = (lexical_score * lexical_weight +
+                     semantic_bonus * semantic_weight +
+                     min(bonus_sujet / 5.0, 0.3) * 0.2)
+
+            # Si aucun chevauchement lexical mais similarité sémantique > 0.5
+            if not common_tokens and semantic_bonus < 0.4:
+                continue
+            # Amplitude factor : normal pour faits standards, boost agressif pour SFT
+            if record.amplitude >= 5.0:
+                amplitude_factor = record.amplitude  # ×5 à ×10 directement
+            else:
+                amplitude_factor = 1.0 + math.log1p(record.amplitude) * 0.4
+            weighted = score * amplitude_factor
+            if weighted > threshold:
+                scored.append((record, weighted))
+                record.times_retrieved += 1
+                record.last_seen = now
+
+        scored.sort(key=lambda x: -x[1])
+        self.total_retrieved += 1
+        return scored[:max_results]
+
+    def ruminate(self, max_pairs: int = 50000):
+        """
+        Rumination nocturne — consolidation par interférence.
+
+        Pour des paires de faits aléatoires :
+          - Interférence constructive (cos > 0.7) → renforcement mutuel
+          - Interférence destructive (cos < -0.1) → affaiblissement du moins fréquent
+
+        Simule le sommeil : le cerveau « rejoue » les souvenirs et les consolide.
+        """
+        keys = list(self.registry.keys())
+        n = len(keys)
+        if n < 2:
+            return
+
+        rng = np.random.RandomState(42)
+        pairs_processed = 0
+        reinforced = 0
+        weakened = 0
+
+        for _ in range(min(max_pairs, n * (n-1) // 2)):
+            i, j = rng.randint(0, n, 2)
+            if i == j:
+                continue
+
+            rec_i = self.registry[keys[i]]
+            rec_j = self.registry[keys[j]]
+
+            # Interférence : cosinus hermitien entre les deux vecteurs
+            interference = float(np.real(np.dot(rec_i.psi, np.conj(rec_j.psi))))
+
+            if interference > 0.7:
+                # Renforcement mutuel
+                boost = 0.01 * interference
+                rec_i.amplitude += boost
+                rec_j.amplitude += boost
+                self.hologram += boost * (rec_i.psi + rec_j.psi)
+                reinforced += 1
+            elif interference < -0.1:
+                # Affaiblir le moins fréquent
+                weaker = rec_i if rec_i.count < rec_j.count else rec_j
+                decay = 0.01 * abs(interference)
+                weaker.amplitude = max(0.1, weaker.amplitude - decay)
+                self.hologram -= decay * weaker.psi
+                weakened += 1
+
+            pairs_processed += 1
+
+        self._last_rumination = time.time()
+        log.info(f"Rumination: {pairs_processed} paires, "
+                 f"{reinforced} renforcées, {weakened} affaiblies "
+                 f"({n} faits dans l'inconscient)")
+
+    # ── FEEDBACK (appelé par le conscient) ─────────────────────────────────
+
+    def reinforce(self, record: FactRecord, amount: float = ALPHA_REINFORCE):
+        """Renforce un fait dans l'hologramme (feedback positif du conscient)."""
+        record.amplitude += amount
+        record.confidence = min(1.0, record.confidence + amount * 2)
+        record.times_accepted += 1
+        self.hologram += amount * record.psi
+
+    def weaken(self, record: FactRecord, amount: float = ALPHA_WEAKEN):
+        """Affaiblit un fait (feedback négatif du conscient)."""
+        record.amplitude = max(0.01, record.amplitude - amount)
+        record.confidence = max(0.0, record.confidence - amount * 3)
+        self.hologram -= amount * record.psi
+
+    # ── STATS ──────────────────────────────────────────────────────────────
+
+    @property
+    def stats(self) -> dict:
+        return {
+            'faits': len(self.registry),
+            'total_ingested': self.total_ingested,
+            'total_retrieved': self.total_retrieved,
+            'amplitude_moyenne': sum(r.amplitude for r in self.registry.values()) / max(len(self.registry), 1),
+            'energie_hologramme': float(np.sum(np.abs(self.hologram)**2)),
+            'derniere_rumination': self._last_rumination,
+        }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONSCIENT — ConsciousFilter
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class ConsciousFilter:
+    """
+    LE CONSCIENT — filtre léger mais puissant.
+
+    Principes :
+      - Reçoit le flux brut de l'inconscient
+      - Vérifie la COHÉRENCE MUTUELLE des faits
+      - Applique les SFT (vérités ancrées) comme prior fort
+      - FEEDBACK → Inconscient (renforce/affaiblit)
+      - Capacité limitée : traite au plus 10-15 faits
+    """
+
+    def __init__(self, store: HolographicStore):
+        self.store = store
+
+    def filter(self, question: str,
+               candidates: List[Tuple[FactRecord, float]],
+               max_accepted: int = 3) -> Tuple[List[FactRecord], List[FactRecord]]:
+        """
+        Filtre les candidats de l'inconscient.
+
+        Critères de filtrage (dans l'ordre) :
+          1. PERTINENCE : le fait doit partager au moins 1 mot avec la question
+          2. COHÉRENCE MUTUELLE : pas de contradiction avec les faits déjà acceptés
+          3. SFT : bonus pour les faits validés manuellement
+          4. LIMITE : max_accepted faits pour ne pas surcharger le conscient
+
+        Returns:
+            (accepted, rejected)
+        """
+        if not candidates:
+            return [], []
+
+        q_tokens = set(_tokenize(_normalize(question)))
+        accepted = []
+        rejected = []
+
+        for rec, resonance in candidates:
+            # 1. PERTINENCE : chevauchement lexical avec la question
+            fact_tokens = set(_tokenize(f"{_normalize(rec.sujet)} {_normalize(rec.relation)} {_normalize(rec.objet)}"))
+            relevance = len(set(q_tokens) & fact_tokens)
+
+            if relevance == 0:
+                rejected.append(rec)
+                continue
+
+            # 2. COHÉRENCE MUTUELLE
+            is_coherent = True
+            for accepted_rec in accepted:
+                interference = float(np.real(np.dot(
+                    rec.psi, np.conj(accepted_rec.psi)
+                )))
+                if interference < -0.1:
+                    rejected.append(rec)
+                    is_coherent = False
+                    break
+
+            if not is_coherent:
+                continue
+
+            # 3. SFT bonus
+            sft_boost = self._check_sft(rec, question)
+
+            # Score final = résonance + pertinence + SFT
+            rec.confidence = min(1.0, resonance * 2.0 + relevance * 0.1 + sft_boost * 0.5)
+            accepted.append(rec)
+
+            # 4. Limite du conscient
+            if len(accepted) >= max_accepted:
+                break
+
+        # Rejeter les candidats restants
+        for rec, _ in candidates[len(accepted)+len(rejected):]:
+            rejected.append(rec)
+
+        return accepted, rejected
+
+    def _check_sft(self, record: FactRecord, question: str) -> float:
+        """
+        Vérifie si un fait correspond à un SFT (High-Amplitude Fact).
+
+        Returns:
+            boost (0.0 si pas de match, 1.0 si match parfait)
+        """
+        s_norm = _normalize(record.sujet)
+        o_norm = _normalize(record.objet)
+        q_norm = _normalize(question)
+
+        for (sf_s, sf_r, sf_o), amp in HIGH_AMPLITUDE_FACTS.items():
+            sf_s_norm = _normalize(sf_s)
+            sf_o_norm = _normalize(sf_o)
+
+            # Match sujet + objet
+            subject_match = (s_norm == sf_s_norm or sf_s_norm in s_norm or s_norm in sf_s_norm)
+            object_match = (o_norm == sf_o_norm or sf_o_norm in o_norm or o_norm in sf_o_norm)
+
+            if subject_match and object_match:
+                # Pertinence : la question contient-elle des mots du SFT ?
+                sf_words = set((sf_s_norm + ' ' + sf_o_norm).split())
+                q_words = set(q_norm.split())
+                relevance = len(sf_words & q_words) / max(len(sf_words), 1)
+                if relevance > 0:
+                    return min(1.0, (amp - 1.0) / 4.0 * relevance)
+
+        return 0.0
+
+    def feedback(self, accepted: List[FactRecord], rejected: List[FactRecord]):
+        """
+        FEEDBACK vers l'inconscient.
+
+        - Accepté → renforcer dans l'hologramme
+        - Rejeté → affaiblir dans l'hologramme
+        """
+        for rec in accepted:
+            self.store.reinforce(rec, ALPHA_REINFORCE)
+        for rec in rejected:
+            self.store.weaken(rec, ALPHA_WEAKEN)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CERVEAU COMPLET — HarmonicBrain
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class HarmonicBrain:
+    """
+    Cerveau Harmonique — orchestre Inconscient + Conscient.
+
+    Cycle complet :
+      1. Question → Inconscient.retrieve() → tous les faits résonnants
+      2. Conscient.filter() → faits validés cohérents
+      4. Conscient.feedback() → renforce/affaiblit dans l'inconscient
+      5. WaveDecoder → réponse en langage naturel
+
+    Usage:
+        brain = HarmonicBrain()
+        brain.ingest("La lumière est une onde électromagnétique.")
+        brain.ingest_corpus("data/corpus/")
+        brain.ruminate()  # à exécuter périodiquement
+
+        result = brain.process("explique la lumière")
+        print(result.response)
+    """
+
+    def __init__(self, knowledge_base: List[Tuple[str, str, str, str]] = None,
+                 dim: int = 512):
+        t0 = time.time()
+
+        # L'INCONSCIENT
+        self.unconscious = HolographicStore(dim=dim)
+
+        # LE CONSCIENT
+        self.conscious = ConsciousFilter(self.unconscious)
+
+        # LE PARSEUR DE PROMPT
+        self.parser = PromptParser()
+
+        # LE CONSCIENT INTELLIGENT (raisonne, pas juste filtre)
+        self.intelligence = ConsciousIntelligence(self.unconscious)
+
+        # Adaptateur multi-domaine (raisonne dans 12 domaines)
+        self._domain_adapters: Dict[str, DomainAdapter] = {}
+        self._current_domain: str = 'faits'
+
+        # Pré-charger la KB existante dans l'inconscient (sans filtrage)
+        if knowledge_base:
+            for s, r, o, sec in knowledge_base:
+                self.unconscious.ingest(s, r, o, sec)
+
+        # 🔥 INJECTER LES SFT (faits validés manuellement, amplitude 5.0)
+        sft_injected = 0
+        for (sf_s, sf_r, sf_o), amp in HIGH_AMPLITUDE_FACTS.items():
+            record = self.unconscious.ingest(sf_s, sf_r, sf_o, "SFT")
+            if record.amplitude < amp:
+                record.amplitude = amp  # forcer l'amplitude SFT
+            sft_injected += 1
+        if sft_injected > 0:
+            log.info(f"SFT injectés: {sft_injected} faits avec amplitude {amp}")
+
+        self._init_time = time.time() - t0
+        log.info(f"HarmonicBrain initialisé en {self._init_time:.1f}s "
+                 f"({len(self.unconscious.registry)} faits dans l'inconscient)")
+
+    @classmethod
+    def from_npz(cls, path: str, max_facts: int = None) -> 'HarmonicBrain':
+        """
+        Charge le cerveau directement depuis un fichier NPZ (sans HarmonicModel).
+
+        Usage:
+            brain = HarmonicBrain.from_npz('data/bootstrapper_output/knowledge_base_clean_v2.npz')
+        """
+        import numpy as np
+        data = np.load(path, allow_pickle=True)
+        facts = [(str(f[0]), str(f[1]), str(f[2]), str(f[3])) for f in data['facts']]
+        if max_facts:
+            facts = facts[:max_facts]
+        return cls(facts)
+
+    @classmethod
+    def from_kb_list(cls, kb: List[Tuple[str, str, str, str]]) -> 'HarmonicBrain':
+        """Charge le cerveau depuis une liste de faits (compatibilité HarmonicModel)."""
+        return cls(kb)
+
+    # ── INGESTION ──────────────────────────────────────────────────────────
+
+    def ingest_via_llm(self, text: str) -> int:
+        """
+        Ingère un texte via DeepSeek/LLM → extraction de triplets → inconscient.
+
+        Returns:
+            nombre de nouveaux faits ajoutés
+        """
+        try:
+            from bootstrapper import extract_triples_llm
+            triples = extract_triples_llm(text)
+        except ImportError:
+            from bootstrapper import extract_triples_simple
+            triples = extract_triples_simple(text)
+
+        new_count = 0
+        for s, r, o, sec in triples:
+            key = (_normalize(s).strip(), _normalize(r).strip(), _normalize(o).strip())
+            if key not in self.unconscious.registry:
+                new_count += 1
+            self.unconscious.ingest(s, r, o, sec)
+        return new_count
+
+    def ingest_corpus_via_llm(self, dir_path: str, max_files: int = 50,
+                               max_lines: int = 500) -> int:
+        """
+        Ingère un corpus via LLM (DeepSeek).
+
+        Args:
+            dir_path: répertoire contenant des fichiers .txt
+            max_files: nombre max de fichiers
+            max_lines: nombre max de lignes par fichier
+
+        Returns:
+            nombre total de nouveaux faits
+        """
+        import time as _time
+        corpus_path = Path(dir_path)
+        total_new = 0
+        files = list(corpus_path.glob("*.txt"))[:max_files]
+
+        log.info(f"Ingestion LLM: {len(files)} fichiers")
+        for fi, path in enumerate(files):
+            if path.stat().st_size < 100:
+                continue
+            with open(path, 'r', encoding='utf-8', errors='replace') as f:
+                lines = [l.strip() for l in f if 30 < len(l.strip()) < 500]
+            for li, line in enumerate(lines[:max_lines]):
+                try:
+                    new = self.ingest_via_llm(line)
+                    total_new += new
+                except Exception as e:
+                    log.warning(f"Erreur ingestion L{li}: {e}")
+                if (li + 1) % 10 == 0:
+                    _time.sleep(0.3)  # rate limit
+            log.info(f"  [{fi+1}/{len(files)}] {path.name}: +{total_new} nouveaux")
+
+        log.info(f"Ingestion terminée: {total_new} nouveaux faits "
+                 f"({len(self.unconscious.registry)} total)")
+        return total_new
+
+    # ── ADAPTATEUR MULTI-DOMAINE ───────────────────────────────────────────
+    
+    def _get_adapter(self, domain: str = None) -> DomainAdapter:
+        """Retourne l'adaptateur pour un domaine (lazy init)."""
+        if domain is None:
+            domain = self._current_domain
+        if domain not in self._domain_adapters:
+            self._domain_adapters[domain] = DomainAdapter(domain, self)
+        return self._domain_adapters[domain]
+    
+    def _detect_domain(self, question: str) -> str:
+        """
+        Détecte automatiquement le domaine de raisonnement.
+        
+        Mapping :
+          - Questions factuelles (capitale, qui, quand, où) → 'faits'
+          - Questions logiques (si, donc, déduire, syllogisme) → 'logique'
+          - Questions médicales (symptôme, maladie, traitement) → 'medecine'
+          - Questions juridiques (loi, article, droit, jugement) → 'droit'
+          - Questions musicales (note, accord, harmonie) → 'musique'
+          - Questions de code (fonction, bug, compiler) → 'code'
+          - Questions émotionnelles (ressentir, humeur, empathie) → 'emotion'
+        """
+        q = question.lower()
+        
+        domain_keywords = {
+            'medecine': ['symptôme', 'symptome', 'maladie', 'diagnostic', 'traitement',
+                        'fievre', 'toux', 'douleur', 'patient', 'medecin', 'infection'],
+            'droit': ['loi', 'article', 'juridique', 'tribunal', 'jugement', 'avocat',
+                     'prévenu', 'prevenu', 'condamnation', 'légal', 'legal', 'droit'],
+            'musique': ['note', 'accord', 'gamme', 'harmonie', 'mélodie', 'melodie',
+                       'rythme', 'compositeur', 'symphonie', 'instrument'],
+            'code': ['fonction', 'bug', 'compiler', 'débugger', 'debugger', 'algorithme',
+                    'variable', 'classe', 'objet', 'api', 'library'],
+            'logique': ['donc', 'déduire', 'deduire', 'syllogisme', 'prémisse', 'premisse',
+                       'si alors', 'par conséquent', 'par consequent'],
+            'emotion': ['ressentir', 'émotion', 'emotion', 'humeur', 'sentiment',
+                       'empathie', 'traumatisme', 'joie', 'tristesse', 'peur'],
+        }
+        
+        scores = {}
+        for domain, keywords in domain_keywords.items():
+            score = sum(1 for kw in keywords if kw in q)
+            if score > 0:
+                scores[domain] = score
+        
+        if scores:
+            return max(scores, key=scores.get)
+        
+        # Par défaut : faits (le plus général)
+        return 'faits'
+        """
+        Ingère un texte brut dans l'inconscient (extraction regex locale).
+        Pour l'ingestion LLM, utiliser ingest_via_llm().
+        """
+        from bootstrapper import extract_triples_simple
+        triples = extract_triples_simple(text)
+        for s, r, o, sec in triples:
+            self.unconscious.ingest(s, r, o, sec)
+        return len(triples)
+
+    def ask_hybrid(self, question: str, lang: str = 'fr') -> Tuple[str, float, bool]:
+        """
+        Mode hybride : cerveau d'abord, LLM en fallback.
+
+        Returns:
+            (réponse, confiance, from_llm: True si le LLM a été utilisé)
+        """
+        # 1. Essayer le cerveau
+        result = self.process(question, lang=lang)
+
+        if result.confidence >= 0.5 and len(result.response) >= 20:
+            return result.response, result.confidence, False
+
+        # 2. Fallback LLM
+        try:
+            from bootstrapper import _LLM_AVAILABLE, _LLM
+            if not _LLM_AVAILABLE:
+                return result.response, result.confidence, False
+
+            log.info(f"Fallback LLM pour: {question[:80]}")
+            llm_resp = _LLM.generate(question, category="factual")
+            llm_text = llm_resp.content.strip()
+
+            if llm_text:
+                # Apprendre de la réponse LLM
+                from bootstrapper import extract_triples_simple
+                triples = extract_triples_simple(llm_text)
+                for s, r, o, sec in triples:
+                    self.unconscious.ingest(s, r, o, sec)
+                if triples:
+                    log.info(f"  Appris {len(triples)} faits du LLM")
+                return llm_text, 1.0, True
+        except Exception as e:
+            log.warning(f"Fallback LLM échoué: {e}")
+
+        return result.response, result.confidence, False
+        """
+        Ingère un texte brut dans l'inconscient.
+
+        Le texte est découpé en phrases, chaque phrase → triplets → H += ψ_f.
+        Aucun filtrage — l'inconscient absorbe tout.
+        """
+        from bootstrapper import extract_triples_simple
+        triples = extract_triples_simple(text)
+        for s, r, o, sec in triples:
+            self.unconscious.ingest(s, r, o, sec)
+
+    def ingest(self, text: str) -> int:
+        """
+        Ingère un texte brut dans l'inconscient (extraction regex locale).
+        Pour l'ingestion LLM, utiliser ingest_via_llm().
+        """
+        from bootstrapper import extract_triples_simple
+        triples = extract_triples_simple(text)
+        for s, r, o, sec in triples:
+            self.unconscious.ingest(s, r, o, sec)
+        return len(triples)
+
+    def ingest_corpus(self, dir_path: str, max_files: int = 20):
+        """Ingère tout un répertoire de textes."""
+        corpus_path = Path(dir_path)
+        total = 0
+        for path in list(corpus_path.glob("*.txt"))[:max_files]:
+            if path.stat().st_size < 100:
+                continue
+            with open(path, 'r', encoding='utf-8', errors='replace') as f:
+                for line in f:
+                    line = line.strip()
+                    if len(line) > 30:
+                        self.ingest(line)
+                        total += 1
+        log.info(f"Corpus ingéré: {total} lignes")
+        return total
+
+    def ruminate(self, max_pairs: int = 50000):
+        """Lance la rumination nocturne (consolidation)."""
+        self.unconscious.ruminate(max_pairs)
+
+    # ── PROCESSUS PRINCIPAL ────────────────────────────────────────────────
+
+    def process(self, question: str, lang: str = 'fr',
+                max_accepted: int = 3) -> BrainResult:
+        """
+        Traitement complet par le cerveau harmonique.
+        
+        0. Parseur → analyse structurée + DÉTECTION DE DOMAINE
+        1. Inconscient → retrieval pur (tokens pondérés, seuils du domaine)
+        2. Conscient → filtre + feedback
+        3. Expression → langage naturel (format adapté au type)
+        """
+        t_start = time.time()
+        
+        # ── 0. PARSEUR + DOMAINE ──
+        parsed = self.parser.parse(question)
+        lang = parsed.lang
+        self._current_domain = self._detect_domain(question)
+        domain = self._get_adapter()  # adaptateur pour le domaine détecté
+
+        # Injecter les tokens pondérés dans la question pour le retrieval
+        # Les tokens à haut poids sont dupliqués pour simuler une pondération
+        weighted_question = question
+        for token, weight in parsed.weighted_tokens.items():
+            if weight >= 4.0:
+                weighted_question += f" {token} {token}"  # ×3 pour poids 4+
+            elif weight >= 3.0:
+                weighted_question += f" {token}"  # ×2 pour poids 3+
+
+        # ── 1. INCONSCIENT : retrieval pur ──
+        candidates = self.unconscious.retrieve(weighted_question, max_results=15)
+        retrieval_count = len(candidates)
+
+        # ── 2. CONSCIENT : filtrer + feedback ──
+        accepted, rejected = self.conscious.filter(question, candidates, max_accepted)
+        self.conscious.feedback(accepted, rejected)
+
+        # ── 2b. INTELLIGENCE CONSCIENTE : raisonner si confiance faible ──
+        if not accepted or (accepted and accepted[0].confidence < 0.5):
+            answer, conf, method = self.intelligence.reason(
+                question, candidates, parsed
+            )
+            if answer and conf > 0.5:
+                # Le conscient intelligent a trouvé une réponse par raisonnement
+                response = answer
+                total_time = (time.time() - t_start) * 1000
+                return BrainResult(
+                    response=response,
+                    confidence=conf,
+                    facts_used=accepted,
+                    facts_rejected=rejected,
+                    retrieval_count=retrieval_count,
+                    total_time_ms=total_time,
+                )
+
+        # ── 3. EXPRESSION : adaptée au type de question ──
+        response = self._express(accepted, question, parsed)
+
+        total_time = (time.time() - t_start) * 1000
+
+        confidence = 0.0
+        if accepted:
+            confidence = sum(r.confidence for r in accepted) / len(accepted)
+
+        return BrainResult(
+            response=response,
+            confidence=min(1.0, confidence),
+            facts_used=accepted,
+            facts_rejected=rejected,
+            retrieval_count=retrieval_count,
+            total_time_ms=total_time,
+        )
+
+    # ── EXPRESSION ─────────────────────────────────────────────────────────
+
+    def _express(self, facts: List[FactRecord], question: str,
+                 parsed: StructuredPrompt = None) -> str:
+        """Exprime les faits validés — adaptatif au type de question."""
+        if not facts:
+            sujet = question.strip('?.,!;: ')[:80]
+            if parsed and parsed.lang == 'en':
+                return f"I don't have enough information about '{sujet}' to answer with confidence."
+            return f"Je n'ai pas assez d'éléments sur « {sujet} » pour répondre avec confiance."
+
+        lang = parsed.lang if parsed else 'fr'
+        is_explanatory = parsed.is_explanatory if parsed else False
+
+        # Si question simple → 1 seul fait
+        if not is_explanatory or len(facts) == 1:
+            return self._render_single(facts[0], lang)
+
+        # Question explicative avec 2 faits → connectés
+        if len(facts) == 2:
+            return self._render_pair(facts[0], facts[1], lang)
+
+        # Question explicative avec 3+ faits → paragraphe
+        return self._render_multi(facts, question, lang)
+
+    def _render_single(self, rec: FactRecord, lang: str) -> str:
+        """Rend un fait unique en phrase naturelle."""
+        s = rec.sujet[0].upper() + rec.sujet[1:] if rec.sujet else rec.sujet
+        return f"{s} {rec.relation} {rec.objet}."
+
+    def _render_pair(self, f1: FactRecord, f2: FactRecord, lang: str) -> str:
+        """Deux faits avec connecteur."""
+        s1 = self._render_single(f1, lang).rstrip('.')
+        s2 = self._render_single(f2, lang)
+        s2 = s2[0].lower() + s2[1:]
+
+        connectors_fr = ['De plus, ', 'Par ailleurs, ', 'Également, ']
+        connectors_en = ['Moreover, ', 'Furthermore, ', 'Additionally, ']
+        conn = (connectors_fr if lang == 'fr' else connectors_en)[0]
+
+        return f"{s1}. {conn}{s2}"
+
+    def _render_multi(self, facts: List[FactRecord], question: str, lang: str) -> str:
+        """Mini-paragraphe pour 3 faits."""
+        intro_fr = ['D\'abord, ', 'En premier lieu, ', 'Fondamentalement, ']
+        intro_en = ['First, ', 'Primarily, ', 'Fundamentally, ']
+        mid_fr = ['De plus, ', 'Par ailleurs, ']
+        mid_en = ['Moreover, ', 'Furthermore, ']
+        concl_fr = ['Ainsi, ']
+        concl_en = ['Thus, ']
+
+        intro = (intro_fr if lang == 'fr' else intro_en)[hash(question) % 3]
+        mid = (mid_fr if lang == 'fr' else mid_en)
+        concl = (concl_fr if lang == 'fr' else concl_en)[0]
+
+        sentences = []
+        first = self._render_single(facts[0], lang)
+        sentences.append(intro + first[0].lower() + first[1:])
+
+        for i, f in enumerate(facts[1:-1]):
+            s = self._render_single(f, lang)
+            sentences.append(mid[i % len(mid)] + s[0].lower() + s[1:])
+
+        last = self._render_single(facts[-1], lang)
+        sentences.append(concl + last[0].lower() + last[1:])
+
+        return ' '.join(sentences)
+
+    # ── STATS ──────────────────────────────────────────────────────────────
+
+    @property
+    def stats(self) -> dict:
+        return {
+            'inconscient': self.unconscious.stats,
+            'init_time_s': round(self._init_time, 1),
+            'current_domain': self._current_domain,
+            'domains_available': list(DOMAINS.keys()),
+        }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEST
+# ═══════════════════════════════════════════════════════════════════════════════
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+
+    # Base de test
+    test_kb = [
+        ("lumiere", "est une", "onde electromagnetique", "PHYSIQUE_FOND"),
+        ("lumiere", "se deplace a", "300000 km/s", "PHYSIQUE_FOND"),
+        ("lumiere", "est composee de", "photons", "PHYSIQUE_FOND"),
+        ("einstein", "a decouvert", "la relativite", "PHYSIQUE_FOND"),
+        ("relativite", "unifie", "espace et temps", "PHYSIQUE_FOND"),
+        ("paris", "est la capitale de", "la france", "GEOGRAPHIE"),
+        ("tokyo", "est la capitale du", "japon", "GEOGRAPHIE"),
+        ("leonard de vinci", "a peint", "la joconde", "ART"),
+        ("phi", "est le", "nombre d or", "MATHS_PURES"),
+    ]
+
+    print("=" * 60)
+    print("Initialisation du cerveau harmonique...")
+    brain = HarmonicBrain(test_kb)
+    print(f"Stats inconscient: {brain.unconscious.stats}")
+    print(f"  → {len(brain.unconscious.registry)} faits stockés sans filtrage")
+
+    # Test d'ingestion répétée (renforcement)
+    print("\n--- Test de répétition ---")
+    for _ in range(3):
+        brain.ingest("La lumière est une onde électromagnétique.")
+    rec = brain.unconscious.registry.get(('lumiere', 'est une', 'onde electromagnetique'))
+    if rec:
+        print(f"  'lumiere est une onde...' → amplitude={rec.amplitude:.1f}, count={rec.count}")
+
+    # Test des questions
+    print("\n--- Questions ---")
+    tests = [
+        "explique la lumiere",
+        "capitale de la france",
+        "qui a peint la joconde",
+        "nombre d or",
+    ]
+    for q in tests:
+        result = brain.process(q)
+        print(f"\nQ: {q}")
+        print(f"R: {result.response}")
+        print(f"   confiance={result.confidence:.2f} | "
+              f"remontés={result.retrieval_count} | "
+              f"acceptés={len(result.facts_used)} | "
+              f"rejetés={len(result.facts_rejected)} | "
+              f"{result.total_time_ms:.0f}ms")
+
+    # Test rumination
+    print("\n--- Rumination ---")
+    brain.ruminate(max_pairs=100)
+    print(f"  Stats après rumination: {brain.unconscious.stats}")

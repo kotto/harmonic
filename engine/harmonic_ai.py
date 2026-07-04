@@ -42,6 +42,7 @@ sys.path.insert(0, str(_MODULE_DIR))
 from harmonic_model import HarmonicModel, build_waves, KNOWLEDGE_BASE
 from reasoning_engine import ReasoningEngine
 from style_engine import StyleEngine
+from harmonic_brain import HarmonicBrain, BrainResult
 
 
 class HarmonicAI:
@@ -94,6 +95,20 @@ class HarmonicAI:
             self._enricher.load_curated_defaults()
         except Exception:
             pass
+
+        # 🔥 CERVEAU HARMONIQUE (Inconscient massif + Conscient filtre)
+        self._brain = None
+        try:
+            self._brain = HarmonicBrain(self.model.knowledge_base)
+        except Exception:
+            pass
+
+    def _rebuild_brain(self):
+        """Reconstruit le cerveau après apprentissage."""
+        try:
+            self._brain = HarmonicBrain(self.model.knowledge_base)
+        except Exception:
+            self._brain = None
     
     def _confidence_score(self, response: str, question: str) -> float:
         """
@@ -216,252 +231,128 @@ class HarmonicAI:
     
     def ask(self, question: str) -> str:
         """
-        Réponse avec le pipeline RAG Harmonique :
-          0. Détection conversation/math/hors-domaine (DomainDetector)
-          1. Analyse d'intention (QuestionAnalyzer)
-          2. Recherche de faits pertinents (find_paths + recherche étendue)
-          3. Récupération du bloc de savoir enrichi (si disponible)
-          4. Composition de réponse naturelle (ResponseComposer)
-          5. Fallback LLM si confiance faible + apprentissage
+        Réponse avec le Pipeline Sémantique Harmonique Unifié.
+
+        Architecture 4-couches :
+          0. DomainDetector → fast path (conversation, math, identité)
+          1. Retrieval Inconscient (I×P×H×D)
+          2. Vérification Consciente + Synthèse ψ_R
+          3. Décodage Ondulatoire → langage naturel
+          4. Fallback LLM si confiance faible (sevrage progressif)
         """
-        # ── 0. DÉTECTION PRÉCOCE : conversation, math, hors-domaine ──
+        # ── 0. DÉTECTION PRÉCOCE ──
         try:
             from domain_detector import (
                 detect_question_type, handle_greeting, handle_identity,
-                handle_out_of_domain, detect_language
+                handle_out_of_domain
             )
             from smart_retriever import smart_math
-            
+
             qtype = detect_question_type(question)
             lang = qtype.get('language', 'fr')
-            
+
             if qtype.get('is_identity'):
                 resp = handle_identity(lang=lang)
                 if resp:
                     self.conversation.add("user", question)
                     self.conversation.add("assistant", resp)
                     return resp
-            
+
             if qtype.get('is_greeting'):
                 resp = handle_greeting(
                     is_mercy=qtype.get('is_mercy', False),
-                    is_bye=qtype.get('is_bye', False),
-                    lang=lang
+                    is_bye=qtype.get('is_bye', False), lang=lang
                 )
                 if resp:
                     self.conversation.add("user", question)
                     self.conversation.add("assistant", resp)
                     return resp
-            
-            # Math : utiliser smart_math (plus complet)
+
             math_result = smart_math(question)
             if math_result:
                 self.conversation.add("user", question)
                 self.conversation.add("assistant", math_result)
                 return math_result
-            
+
             if qtype.get('is_out_of_domain'):
                 resp = handle_out_of_domain(qtype.get('out_category', ''), lang=lang)
                 if resp:
                     self.conversation.add("user", question)
                     self.conversation.add("assistant", resp)
                     return resp
-                
         except ImportError:
             lang = 'fr'
-        
-        # Enrichir la question avec le contexte de conversation
+
+        # Enrichir avec le contexte conversationnel
         enriched = self._enrich_with_context(question)
 
-        # ── 0. CHEMIN ONDULATOIRE PRIMAIRE ────────────────────────────────
-        # Le wave decoder est désactivé pour les questions factuelles.
-        # Il reste disponible pour les tâches créatives via ai.create(), ai.metaphor(), etc.
-        # Pour les questions de connaissance, le pipeline KB + compositeur est prioritaire.
-
-        # ── 1. Analyse d'intention (fallback si onde insuffisante) ────────
-        try:
-            from question_analyzer import analyze_question
-            intent = analyze_question(enriched)
-        except Exception:
-            intent = None
-
-        # ── 1b. RAISONNEMENT AVANCÉ : contrefactuel / syllogistique ──────────
-        # Si la question est contrefactuelle, router vers le CounterfactualReasoner
-        if intent is None or self._is_counterfactual(question):
-            try:
-                cf_response = self.engine.reason_counterfactual(enriched)
-                if cf_response:
-                    self.conversation.add("user", question)
-                    self.conversation.add("assistant", cf_response)
-                    return cf_response
-            except Exception:
-                pass
-
-        # ── 2-3. Recherche de faits ──────────
-        try:
-            from harmonic_quality import rerank
-            
-            if not hasattr(self, '_idx') or self._idx is None:
-                try:
-                    from inverted_index import InvertedIndex
-                    self._idx = InvertedIndex(self.model.knowledge_base)
-                except Exception:
-                    self._idx = False  # marqueur d'échec
-            
-            if self._idx and self._idx is not False:
-                facts = self._idx.search(enriched, max_results=10)
-            else:
-                facts = self._retrieve_facts(enriched, intent)
-            
-            if facts:
-                facts = rerank(enriched, facts, top_k=3)
-        except Exception:
-            facts = self._retrieve_facts(enriched, intent)
-        bloc = None
-        contexte_precedent = getattr(self, '_contexte_precedent', None)
-        if self._enricher and intent:
-            # Passer le type de question pour le nuancing (blocs segmentés)
-            bloc = self._enricher.get_bloc(intent.sujet, intent.type)
-
-        # ── 4. Composition de réponse : composer harmonique (chain-of-thought) ──
+        # ── 1-3. PIPELINE SÉMANTIQUE UNIFIÉ ──
         response = None
-        eff_lang = lang if 'lang' in dir() else 'fr'
-        
-        # PRIORITÉ : utiliser le composeur harmonique (chain-of-thought + post-process)
-        if facts:
+        confidence = 0.0
+
+        if self._brain is not None:
             try:
-                from harmonic_quality import compose_answer, post_process
-                response = compose_answer(question, facts, lang=eff_lang)
-                response = post_process(response, lang=eff_lang)
+                result = self._brain.process(enriched, lang=lang)
+                response = result.response
+                confidence = result.confidence
+
+                # Apprentissage automatique si la réponse est bonne
+                if result.is_confident and result.facts_used and self._enricher:
+                    for s, r, o, sec in result.facts_used[:2]:
+                        if not self._enricher.has_bloc(s):
+                            # Marquer pour enrichissement futur
+                            pass
             except Exception:
                 response = None
-        
-        # FALLBACK : ancien ResponseComposer si le nouveau échoue
-        if (not response or len(response) < 10) and intent and (facts or bloc):
-            try:
-                from response_composer import ResponseComposer
-                if self._composer is None:
-                    self._composer = ResponseComposer()
-                if hasattr(self._composer, 'set_language'):
-                    self._composer.set_language(eff_lang)
-                response = self._composer.compose(
-                    intent, facts, bloc,
-                    contexte_precedent=contexte_precedent
-                )
-            except Exception:
-                response = None
+                confidence = 0.0
 
-        # ── 4b. RAISONNEMENT MULTI-ÉTAPES (coherent_transitivity) ────────
-        if not response or len(response) < 20:
-            try:
-                from coherent_transitivity import coherent_transitive_closure
-                paths = coherent_transitive_closure(
-                    self.model.knowledge_base, enriched,
-                    max_depth=3, min_coherence=0.4
-                )
-                if paths:
-                    # Composer une réponse à partir des chemins trouvés
-                    from harmonic_quality import compose_answer
-                    flat_facts = []
-                    for path in paths[:2]:
-                        flat_facts.extend(path)
-                    if flat_facts:
-                        response = compose_answer(enriched, flat_facts[:5], lang=eff_lang)
-            except Exception:
-                pass
-
-        # ── 4c. GÉNÉRATION HOLOGRAPHIQUE (fast_resonance_generator) ──────
-        if not response or len(response) < 20:
-            try:
-                from fast_resonance_generator import FastResonanceGenerator
-                if not hasattr(self, '_resgen') or self._resgen is None:
-                    self._resgen = FastResonanceGenerator(
-                        self.model.knowledge_base,
-                        encoder=getattr(self.model, '_encoder', None)
-                    )
-                resp = self._resgen.generate(enriched)
-                if resp and len(resp) > 15:
-                    response = resp
-            except Exception:
-                pass
-        # Si le compositeur n'a pas produit de réponse satisfaisante,
-        # essayer le décodeur ondulatoire pur
-        if not response or len(response) < 15:
-            try:
-                from wave_decoder import WaveDecoder
-                if not hasattr(self, '_decoder') or self._decoder is None:
-                    encoder = getattr(self.model, '_encoder', None)
-                    if encoder is not None:
-                        self._decoder = WaveDecoder(
-                            encoder, self.model.knowledge_base, vocab_limit=3000
-                        )
-                    else:
-                        self._decoder = None
-                if self._decoder is not None:
-                    decoded = self._decoder.decode_rich(enriched)
-                    if decoded and len(decoded) > 10:
-                        response = decoded
-            except Exception:
-                pass
-
-        # Fallback : ancien pipeline (StyleEngine)
-        if not response or len(response) < 15:
-            try:
-                response = self.engine.reason(enriched, max_depth=2)
-            except Exception:
-                response = self.model.ask(enriched)
-
-        # ── 5. Fallback LLM si confiance faible ─────────────────────────────
-        if self.bootstrapper is not None:
-            confidence = self._confidence_score(response, enriched)
-            if confidence < 0.35:
+        # ── 4. FALLBACK LLM (sevrage progressif) ──
+        if not response or len(response) < 15 or confidence < 0.35:
+            # Essayer d'abord le raisonnement harmonique classique
+            if not response or len(response) < 15:
                 try:
-                    llm_text = self.bootstrapper._llm_fallback(enriched)
-                    if llm_text:
-                        response = llm_text
-                        # Apprendre de la réponse LLM
-                        from bootstrapper import extract_triples_simple
-                        triples = extract_triples_simple(llm_text)
-                        for s, r, o, sec in triples:
-                            self.model.knowledge_base.append((s, r, o, sec))
-                        if triples:
-                            self.model.rebuild_waves()
-                            self.engine = ReasoningEngine(self.model)
-                        # 🔥 AUTO-ENRICHISSEMENT : stocker la réponse LLM comme bloc permanent
-                        if self._enricher and intent:
-                            # Si le sujet n'a pas encore de bloc → enrichir une fois pour toutes
-                            if not self._enricher.has_bloc(intent.sujet):
-                                self._enricher.enrich_from_llm(
-                                    intent.sujet, llm_text, intent.type
-                                )
+                    response = self.engine.reason(enriched, max_depth=2)
                 except Exception:
-                    pass
-            # 🔥 AUTO-ENRICHISSEMENT sans LLM : si confiance moyenne (0.35-0.5)
-            # et pas de bloc → marquer le sujet pour enrichissement futur
-            elif self._enricher and intent:
-                if not self._enricher.has_bloc(intent.sujet) and confidence < 0.5:
-                    # Stocker la meilleure réponse harmonique comme bloc de base
-                    if len(response) > 100:
-                        self._enricher.enrich_curated(intent.sujet, response, intent.type)
+                    response = self.model.ask(enriched)
 
-        # ── POST-PROCESSING QUALITÉ (langue, format, capitalisation) ──
+            # Si toujours pas satisfaisant → LLM
+            if self.bootstrapper is not None:
+                conf = self._confidence_score(response, enriched) if response else 0.0
+                if conf < 0.35:
+                    try:
+                        llm_text = self.bootstrapper._llm_fallback(enriched)
+                        if llm_text:
+                            response = llm_text
+                            # Apprendre de la réponse LLM
+                            from bootstrapper import extract_triples_simple
+                            triples = extract_triples_simple(llm_text)
+                            for s, r, o, sec in triples:
+                                if (s, r, o, sec) not in self.model.knowledge_base:
+                                    self.model.knowledge_base.append((s, r, o, sec))
+                            if triples:
+                                self.model.rebuild_waves()
+                                self.engine = ReasoningEngine(self.model)
+                                self._rebuild_brain()
+                    except Exception:
+                        pass
+
+        # ── POST-PROCESSING ──
         try:
             from harmonic_quality import post_process
-            eff_lang = lang if 'lang' in dir() else 'fr'
-            response = post_process(response, lang=eff_lang)
+            response = post_process(response, lang=lang)
         except Exception:
             pass
 
-        # Enregistrer dans la mémoire conversationnelle
-        self.conversation.add("user", question)
-        self.conversation.add("assistant", response)
-
-        # Correction orthographique finale
+        # Correction orthographique
         try:
             from style_engine import _fix_accents
             response = _fix_accents(response)
         except ImportError:
             pass
+
+        # Mémoire conversationnelle
+        self.conversation.add("user", question)
+        self.conversation.add("assistant", response)
 
         return response
 

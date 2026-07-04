@@ -156,51 +156,39 @@ def build_ppmi_matrix(sentences: List[List[str]],
 # LAPLACIAN EIGENMAPS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def laplacian_eigenmaps(W: np.ndarray, k: int = 2) -> Tuple[np.ndarray, np.ndarray]:
+def svd_embedding(W, k: int = 2) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Calcule le plongement Laplacian Eigenmaps.
+    Plongement par SVD tronquée sur la matrice PPMI.
     
-    L_sym = I - D^{-1/2} W D^{-1/2}
-    Extraction des k+1 plus petites valeurs propres (skip λ₀=0 trivial).
-    
-    Args:
-        W: matrice de similarité PPMI
-        k: nombre de dimensions du plongement (2 pour S¹)
+    Plus robuste que Laplacian Eigenmaps sur les petits corpus.
+    W ≈ U Σ V^T → embedding = U[:, :k]
     
     Returns:
-        (embedding [N, k], eigenvalues [k])
+        (embedding [N, k], singular_values [k])
     """
     N = W.shape[0]
     
-    # Degré
-    if HAS_SCIPY and hasattr(W, 'sum'):
-        d = np.array(W.sum(axis=1)).flatten()
-    else:
-        d = np.sum(W, axis=1)
-    
-    d_inv_sqrt = 1.0 / np.sqrt(np.maximum(d, 1e-12))
-    
-    # Laplacien normalisé
     if HAS_SCIPY and hasattr(W, 'toarray'):
-        D_inv_sqrt = diags(d_inv_sqrt)
-        L_sym = eye(N) - D_inv_sqrt @ W @ D_inv_sqrt
-        log.info(f"  [ARPACK] Calcul des {k+1} plus petites valeurs propres...")
-        vals, vecs = eigsh(L_sym, k=k+1, which='SM', tol=1e-6, maxiter=3000)
+        from scipy.sparse.linalg import svds
+        log.info(f"  [SVD sparse] Calcul des {k} plus grandes valeurs singulières...")
+        U, S, Vt = svds(W, k=k, which='LM')
+        # svds retourne en ordre croissant → inverser
+        idx = np.argsort(S)[::-1]
+        S = S[idx]
+        U = U[:, idx]
     else:
-        D_inv_sqrt_mat = np.diag(d_inv_sqrt)
-        L_sym = np.eye(N) - D_inv_sqrt_mat @ W @ D_inv_sqrt_mat
-        log.info(f"  [NumPy] Calcul des valeurs propres (matrice {N}×{N})...")
-        vals, vecs = np.linalg.eigh(L_sym)
+        # Dense fallback
+        if hasattr(W, 'toarray'):
+            W_dense = W.toarray()
+        else:
+            W_dense = W
+        log.info(f"  [SVD dense] Calcul des valeurs singulières (matrice {N}×{N})...")
+        U, S, Vt = np.linalg.svd(W_dense, full_matrices=False)
+        U = U[:, :k]
+        S = S[:k]
     
-    # Trier et ignorer λ₀=0
-    idx = np.argsort(vals)
-    vals = vals[idx]
-    vecs = vecs[:, idx]
-    
-    embedding = vecs[:, 1:k+1]
-    eigenvalues = vals[1:k+1]
-    
-    return embedding, eigenvalues
+    log.info(f"  Valeurs singulières : σ₁={S[0]:.2f}, σ₂={S[1]:.2f}")
+    return U, S
 
 
 def embedding_to_phases(embedding: np.ndarray) -> np.ndarray:
@@ -241,14 +229,16 @@ class SpectralEmbedding:
     # ═════════════════════════════════════════════════════════════════════════
     
     def build_from_corpus(self, sentences: List[List[str]],
-                          window: int = 5, min_freq: int = 2):
+                          window: int = 5, min_freq: int = 2,
+                          use_svd: bool = True):
         """
-        Pipeline complet : corpus → PPMI → Laplacian → phases S¹.
+        Pipeline : corpus → PPMI → SVD (ou Laplacian) → phases S¹.
         
         Args:
             sentences: corpus tokenisé
             window: fenêtre de co-occurrence
             min_freq: fréquence minimale
+            use_svd: utiliser SVD (plus robuste) au lieu de Laplacian Eigenmaps
         """
         t0 = time.time()
         
@@ -258,15 +248,17 @@ class SpectralEmbedding:
         self.vocab = vocab
         
         if len(vocab) < 3:
-            log.warning("Vocabulaire trop petit pour le Laplacian Eigenmaps")
+            log.warning("Vocabulaire trop petit pour le plongement spectral")
             return
         
-        # 2. Laplacian Eigenmaps
-        log.info("Laplacian Eigenmaps...")
-        embedding, eigenvalues = laplacian_eigenmaps(W, k=2)
+        # 2. Plongement (SVD ou Laplacian)
+        if use_svd:
+            log.info("SVD...")
+            embedding, values = svd_embedding(W, k=2)
+        else:
+            log.info("Laplacian Eigenmaps...")
+            embedding, values = laplacian_eigenmaps(W, k=2)
         self.embedding = embedding
-        
-        log.info(f"  Valeurs propres : λ₁={eigenvalues[0]:.6f}, λ₂={eigenvalues[1]:.6f}")
         
         # 3. Phases S¹
         phases = embedding_to_phases(embedding)
