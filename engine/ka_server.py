@@ -807,17 +807,17 @@ def wave_creative():
 @app.route('/')
 def serve_index():
     """Page d'accueil — KA Phone PWA."""
-    return send_file('ka_index.html')
+    return send_from_directory(str(_ENGINE_DIR), 'ka_index.html')
 
 @app.route('/manifest.json')
 def serve_manifest():
     """Manifest PWA pour installation sur l'écran d'accueil."""
-    return send_file('manifest.json')
+    return send_from_directory(str(_ENGINE_DIR), 'manifest.json')
 
 @app.route('/sw.js')
 def serve_service_worker():
     """Service Worker pour le mode hors-ligne."""
-    return send_file('sw.js', mimetype='application/javascript')
+    return send_from_directory(str(_ENGINE_DIR), 'sw.js', mimetype='application/javascript')
 
 @app.route('/favicon.ico')
 def serve_favicon():
