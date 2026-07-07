@@ -819,6 +819,11 @@ def serve_service_worker():
     """Service Worker pour le mode hors-ligne."""
     return send_from_directory(str(_ENGINE_DIR), 'sw.js', mimetype='application/javascript')
 
+@app.route('/icons/<path:filename>')
+def serve_icons(filename):
+    """Icônes PWA."""
+    return send_from_directory(str(_ENGINE_DIR / 'icons'), filename)
+
 @app.route('/favicon.ico')
 def serve_favicon():
     """Favicon."""
