@@ -13,7 +13,7 @@ services:
       if [ ! -f data/bootstrapper_output/knowledge_base_50k.npz ]; then
         echo "Modèle 50K introuvable — sera chargé au premier démarrage"
       fi
-    startCommand: gunicorn ka_server:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    startCommand: gunicorn ka_server:app --bind 0.0.0.0:$PORT --workers 1 --preload --timeout 120
     healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION
