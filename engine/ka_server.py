@@ -168,6 +168,11 @@ KA_IDENTITY = [
     ("mon nom est", "un assistant intelligent nomme", "KA", "GENERAL"),
     ("je suis", "une intelligence artificielle nommee", "KA", "GENERAL"),
     ("je", "suis", "KA", "GENERAL"),
+    # Faits pour les questions "qui es tu" / "tu es qui" (inversion sujet)
+    ("tu es", "un assistant personnel nomme", "KA", "GENERAL"),
+    ("tu es", "une intelligence artificielle", "KA", "GENERAL"),
+    ("tu", "es", "KA", "GENERAL"),
+    ("KA", "est", "mon nom", "GENERAL"),
 ]
 facts = facts + KA_IDENTITY
 
@@ -266,19 +271,21 @@ def chat():
     # Handler spécial pour les questions d'identité
     identity_keywords = ['qui es tu', 'qui es-tu', 'tu es qui', 'comment tu t appelles',
                          'ton nom', 'que fais tu', 'qui est ka', 'c est quoi ka',
-                         'presente toi', 'qu est ce que tu es', 'what are you', 'who are you']
-    msg_lower = message.lower().strip('?!.')
+                         'presente toi', 'qu est ce que tu es', 'what are you', 'who are you',
+                         'tu es quoi', 't es qui', 't es quoi', 'qui etes vous',
+                         'vous etes qui', 'comment vous appelez vous']
+    msg_lower = message.lower().strip('?!. ')
     if any(kw in msg_lower for kw in identity_keywords):
         return jsonify({
-            'response': "Je suis KA, un assistant personnel intelligent. "
+            'response': "Je suis KA, votre assistant personnel intelligent. "
                         "Je vis dans cette application, représenté par une sphère vivante. "
                         "Je fonctionne grâce à Harmonic AI, une intelligence ondulatoire "
-                        "qui s'appuie sur 51 000 connaissances vérifiées — sans aucune hallucination. "
+                        "qui ne produit jamais d'hallucination. "
                         "Mon nom vient du Ka égyptien, la force vitale. "
-                        "Je suis chaleureux, concis, et je réponds toujours en français.",
-            'confidence': 0.95,
+                        "Je réponds toujours en français, de façon chaleureuse et concise.",
+            'confidence': 1.0,
             'source': 'identity',
-            'latency_ms': 2.0,
+            'latency_ms': 1.0,
             'model': 'harmonic-brain-v3',
         })
     
