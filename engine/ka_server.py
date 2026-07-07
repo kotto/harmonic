@@ -121,8 +121,9 @@ def load_facts(model_name='best'):
     log.info(f"  💡 Pour charger 50K faits: ajouter le fichier .npz dans engine/data/bootstrapper_output/")
     return [(str(s), str(r), str(o), str(sec)) for s, r, o, sec in KNOWLEDGE_BASE]
 
-# Parse arguments — priorité: flag --model > env MODEL_NAME > default (qualitative, léger)
-model_name = os.environ.get('MODEL_NAME', 'qualitative')  # 'qualitative' = 914 faits, tient dans 256 Mo
+model_name = 'qualitative'  # LÉGER — 914 faits, tient dans 256 Mo
+# Pour utiliser le modèle complet : décommenter la ligne ci-dessous
+# model_name = os.environ.get('MODEL_NAME', 'qualitative')
 for arg in sys.argv[1:]:
     if arg.startswith('--model='):
         model_name = arg.split('=')[1]
