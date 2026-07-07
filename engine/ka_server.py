@@ -89,6 +89,12 @@ log.info("=" * 55)
 
 def load_facts(model_name='best'):
     """Charge la base de connaissance. Fallback: KB qualitative intégrée."""
+    # Mode qualitatif : toujours utiliser la KB intégrée (léger)
+    if model_name in ('qualitative', 'light', 'minimal'):
+        from harmonic_model import KNOWLEDGE_BASE
+        log.info(f"  📂 KB qualitative intégrée: {len(KNOWLEDGE_BASE):,} faits (mode léger)")
+        return [(str(s), str(r), str(o), str(sec)) for s, r, o, sec in KNOWLEDGE_BASE]
+    
     # Chercher dans engine/data/ d'abord (chemin Render), puis ../data/ (local)
     search_paths = [
         Path(__file__).resolve().parent / 'data' / 'bootstrapper_output',
@@ -103,9 +109,13 @@ def load_facts(model_name='best'):
         '50k_res': 'knowledge_base_resonance.npz',
         '217k': 'knowledge_base_clean.npz',
         '500k': 'knowledge_base_500k.npz',
-        'best': 'knowledge_base_resonance.npz',  # KB filtrée par résonance
+        'best': 'knowledge_base_resonance.npz',
     }
-    filename = model_files.get(model_name, 'knowledge_base_50k.npz')
+    filename = model_files.get(model_name)
+    if not filename:
+        log.warning(f"  ⚠️ Modèle inconnu: {model_name}, fallback qualitatif")
+        from harmonic_model import KNOWLEDGE_BASE
+        return [(str(s), str(r), str(o), str(sec)) for s, r, o, sec in KNOWLEDGE_BASE]
     
     for base in search_paths:
         path = base / filename
@@ -117,8 +127,7 @@ def load_facts(model_name='best'):
     
     # Fallback: KB qualitative intégrée (914 faits)
     from harmonic_model import KNOWLEDGE_BASE
-    log.info(f"  📂 KB qualitative intégrée: {len(KNOWLEDGE_BASE):,} faits (mode dégradé)")
-    log.info(f"  💡 Pour charger 50K faits: ajouter le fichier .npz dans engine/data/bootstrapper_output/")
+    log.info(f"  📂 KB qualitative intégrée: {len(KNOWLEDGE_BASE):,} faits (fallback)")
     return [(str(s), str(r), str(o), str(sec)) for s, r, o, sec in KNOWLEDGE_BASE]
 
 model_name = 'qualitative'  # LÉGER — 914 faits, tient dans 256 Mo
