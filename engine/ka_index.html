@@ -589,19 +589,26 @@ const K={txt:'',shift:false,lock:false,ts:0,alt:false,voice:false,vt:null,emo:fa
 const KR=[[['1','~'],['2','@'],['3','#'],['4','$'],['5','%'],['6','^'],['7','&'],['8','*'],['9','('],['0',')']],[['a','à'],['z','æ'],['e','€'],['r','®'],['t','™'],['y','¥'],['u','ù'],['i','ï'],['o','œ'],['p','°']],[['q',''],['s','ß'],['d',''],['f',''],['g',''],['h',''],['j',''],['k',''],['l',''],['m','µ']],[['w',''],['x',''],['c','ç'],['v',''],['b',''],['n','ñ']]];
 const EM=['😊','😂','❤️','🔥','✨','🙏','👍','🎉','😄','😍','🤔','😎','🥰','💪','🙌','👋','🎶','🌟','💡','🚀','🌍','🍕','☕','🎯','💬','✅','😘','🫶','🤩','😅','🫠','🤝','🌸','⭐','🎵'];
 const SD={'':['Sophie','Appeler','Réunion','Oui','Super','Merci','Demain'],'so':['Sophie','Soirée','Souvenir'],'ap':['Appeler','Appelle','Après'],'me':['Merci','Message','Même'],'ou':['Oui','Ouvert','Ouais'],'to':['Tokyo','Toi','Toujours'],'de':['Demain','Décision','Depuis'],'re':['Réunion','Rendez-vous','Retrouve'],'su':['Super','Sur','Surtout'],'bi':['Bientôt','Bien','Bises'],'bo':['Bonjour','Bonsoir','Bon'],'co':['Comment','Comme','Contact'],'pr':['Prépare','Prendre','Prochain'],'pa':['Paris','Parfait','Partager'],'ma':['Maintenant','Matin','Mais'],'vo':['Voici','Voilà','Voyage'],'sa':['Salut','Samedi','Sans'],'tr':['Très','Travail','Trouver']};
-	const RP=['😊 Super !','Parfait, à demain !','👍 On se retrouve où ?','Ok ! Tu veux réserver ?','Cool !','Avec plaisir 🎉','Bonne idée !','Oui absolument !'];
+	const RP=['Je suis KA, votre assistant personnel intelligent. Posez-moi une question !','Que voulez-vous savoir ? Je suis là pour vous aider.','Bonjour ! Je suis KA. Que puis-je faire pour vous ?'];
+	// Note : RP n'est utilisé qu'en mode déconnecté temporaire
 	
 	// === CONNEXION À L'IA HARMONIC ===
 		const API_URL = (location.hostname==='localhost'||location.hostname==='127.0.0.1') ? 'http://localhost:8765' : 'https://ka-api.onrender.com';
 	let API_ONLINE = false;
 	
-	// Vérifier la connexion au démarrage
-	(async function checkAPI(){
-	  try {
-	    const r = await fetch(API_URL + '/api/health');
-	    if (r.ok) { API_ONLINE = true; console.log('✅ KA connecté à Harmonic AI'); }
-	  } catch(e) { console.log('⚠️ Mode hors-ligne (fallback simulé)'); }
-	})();
+		// Vérifier la connexion au démarrage
+		(async function checkAPI(){
+		  try {
+		    const r = await fetch(API_URL + '/api/health', {signal: AbortSignal.timeout(5000)});
+		    if (r.ok) { API_ONLINE = true; console.log('✅ KA connecté'); }
+		  } catch(e) { 
+		    API_ONLINE = false;
+		    console.log('⚠️ Serveur inaccessible — mode dégradé'); 
+		    // Afficher un indicateur discret dans l'UI
+		    const sb = document.querySelector('.sb__t');
+		    if(sb) sb.textContent = 'KA · ⚠️';
+		  }
+		})();
 	
 	async function askKA(message) {
 	  if (!API_ONLINE) return RP[Math.floor(Math.random() * RP.length)];
