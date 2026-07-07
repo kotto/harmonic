@@ -1,17 +1,15 @@
-# Render Blueprint — KA Server + Harmonic AI + HCV Compression
+# Render Blueprint — KA Server + Harmonic AI + HCV Compression + HPC
 # https://render.com/docs/blueprint-spec
 
 services:
   - type: web
     name: ka-api
     env: python
-    region: frankfurt  # Europe, proche de la France
-    plan: starter      # 512 MB RAM, 0.1 CPU — suffisant pour Harmonic
+    region: frankfurt
+    plan: starter
     buildCommand: |
       pip install -r requirements_server.txt
-      # Créer le répertoire de données
       mkdir -p data/bootstrapper_output
-      # Télécharger le modèle si pas déjà présent
       if [ ! -f data/bootstrapper_output/knowledge_base_50k.npz ]; then
         echo "Modèle 50K introuvable — sera chargé au premier démarrage"
       fi
@@ -25,3 +23,21 @@ services:
       - key: KA_PERSONALITY
         value: "Tu es KA, assistant personnel. Ton ton est chaleureux et concis. Tu réponds en français, en 2-3 phrases."
     autoDeploy: true
+
+# Endpoints disponibles :
+#   /api/chat          — conversation IA
+#   /api/reason        — raisonnement
+#   /api/create        — créativité
+#   /api/haiku         — haïku
+#   /api/stats         — statistiques
+#   /api/metrics       — métriques
+#   /api/health        — santé
+#   /api/compress      — compression HCV
+#   /api/upscale       — upscaling
+#   /api/enhance       — pipeline complet
+#   /api/hpc/protein   — repliement protéique (NEW)
+#   /api/hpc/quantum   — simulation quantique (NEW)
+#   /api/hpc/compress  — simulation HCV (NEW)
+#   /api/code/generate — génération de code (NEW)
+#   /api/wave/explain  — explication scientifique (NEW)
+#   /api/wave/creative — génération créative (NEW)

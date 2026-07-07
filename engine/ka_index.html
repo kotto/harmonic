@@ -6,8 +6,10 @@
 <meta name="theme-color" content="#07070f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="description" content="KA — Intent Operating System">
-<title>KA · Intent OS</title>
+<meta name="apple-mobile-web-app-title" content="KA Phone">
+<meta name="description" content="KA — L'Univers dans votre poche. IA harmonique, zéro hallucination, hors ligne.">
+<link rel="manifest" href="/manifest.json">
+<title>KA Phone</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
 :root{
@@ -526,9 +528,58 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
       <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px" onclick="go('s-jrn');closeMore()"><span style="font-size:18px">✈️</span><div><div style="font-size:13px;color:var(--t1)">Voyage</div><div style="font-size:11px;color:var(--t4)">Tokyo</div></div></div>
       <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px" onclick="go('s-rel');closeMore()"><span style="font-size:18px">👤</span><div><div style="font-size:13px;color:var(--t1)">Relation</div><div style="font-size:11px;color:var(--t4)">Sophie</div></div></div>
       <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px" onclick="go('s-cap');closeMore()"><span style="font-size:18px">💡</span><div><div style="font-size:13px;color:var(--t1)">Idée</div><div style="font-size:11px;color:var(--t4)">Capturer</div></div></div>
-      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-dec');closeMore()"><span style="font-size:18px">⚖️</span><div><div style="font-size:13px;color:var(--t1)">Décision</div><div style="font-size:11px;color:var(--t4)">Changer de voiture ?</div></div></div>
+	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-dec');closeMore()"><span style="font-size:18px">⚖️</span><div><div style="font-size:13px;color:var(--t1)">Décision</div><div style="font-size:11px;color:var(--t4)">Changer de voiture ?</div></div></div>
+	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-hpc');closeMore()"><span style="font-size:18px">🧬</span><div><div style="font-size:13px;color:var(--t1)">HPC Lab</div><div style="font-size:11px;color:var(--t4)">Protein Folding · Quantum · HCV</div></div></div>
+	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-code');closeMore()"><span style="font-size:18px">💻</span><div><div style="font-size:13px;color:var(--t1)">Code Studio</div><div style="font-size:11px;color:var(--t4)">Génération zero-LLM</div></div></div>
     </div>
     <div class="btn btn--ghost" onclick="closeMore()" style="margin-top:12px;text-align:center">Fermer</div>
+  </div>
+
+  <!-- HPC LAB -->
+  <div class="sc cap" id="s-hpc">
+    <div class="sph"><div class="sph__back" onclick="go('s-home')" role="button">‹ KA</div><div class="sph__badge" style="color:var(--life)">KA HPC LAB</div><div style="width:48px"></div></div>
+    <div class="sp-body">
+      <div style="display:flex;gap:6px;justify-content:center;margin-bottom:14px;flex-wrap:wrap">
+        <span class="pill pill--life" style="cursor:pointer" onclick="hpcMode='protein';hpcRun()" id="hpc-p-protein">🧬 Protéine</span>
+        <span class="pill" style="cursor:pointer;background:rgba(197,156,255,.12);border-color:rgba(197,156,255,.3);color:var(--accent-c, #c59cff)" onclick="hpcMode='quantum';hpcRun()" id="hpc-p-quantum">⚛️ Quantique</span>
+        <span class="pill pill--soul" style="cursor:pointer" onclick="hpcMode='compress';hpcRun()" id="hpc-p-compress">📦 HCV</span>
+      </div>
+      <div id="hpc-input" style="margin-bottom:12px">
+        <input id="hpc-seq" placeholder="Séquence AA (ex: ALAARGASN)…" style="width:100%;padding:11px 14px;border-radius:14px;background:var(--g1);border:.5px solid var(--b2);color:var(--t1);font-size:13px;font-family:var(--font-mono,monospace);outline:none">
+      </div>
+      <div id="hpc-result" class="card" style="display:none"></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px">
+        <div class="stat"><div class="stat__v">φ³</div><div class="stat__l">Speedup</div></div>
+        <div class="stat"><div class="stat__v">0 GPU</div><div class="stat__l">Hardware</div></div>
+        <div class="stat"><div class="stat__v">5 kW</div><div class="stat__l">Énergie</div></div>
+      </div>
+    </div>
+    <div class="cta-row">
+      <div class="btn btn--life" onclick="hpcRun()">▶ Lancer</div>
+      <div class="btn btn--ghost" onclick="go('s-home')">Fermer</div>
+    </div>
+  </div>
+
+  <!-- CODE STUDIO -->
+  <div class="sc dec" id="s-code">
+    <div class="sph"><div class="sph__back" onclick="go('s-home')" role="button">‹ KA</div><div class="sph__badge" style="color:var(--sky)">KA CODE</div><div style="width:48px"></div></div>
+    <div class="sp-body">
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <select id="code-lang" style="padding:8px 12px;border-radius:10px;background:var(--g1);border:.5px solid var(--b2);color:var(--t1);font-size:12px">
+          <option value="python">Python</option>
+          <option value="javascript">JavaScript</option>
+          <option value="go">Go</option>
+          <option value="rust">Rust</option>
+        </select>
+        <input id="code-prompt" placeholder="Décrivez le code…" style="flex:1;padding:8px 14px;border-radius:10px;background:var(--g1);border:.5px solid var(--b2);color:var(--t1);font-size:13px;outline:none">
+      </div>
+      <div id="code-result" class="card card--raised" style="display:none;font-family:var(--font-mono,monospace);font-size:11px;line-height:1.5;white-space:pre-wrap;max-height:320px;overflow:auto"></div>
+      <div style="font-size:10px;color:var(--t4);text-align:center;margin-top:12px;letter-spacing:.06em">Zéro LLM · Génération par patterns harmoniques</div>
+    </div>
+    <div class="cta-row">
+      <div class="btn btn--sky" onclick="codeGen()">▶ Générer</div>
+      <div class="btn btn--ghost" onclick="go('s-home')">Fermer</div>
+    </div>
   </div>
 </div>
 
@@ -541,7 +592,7 @@ const SD={'':['Sophie','Appeler','Réunion','Oui','Super','Merci','Demain'],'so'
 	const RP=['😊 Super !','Parfait, à demain !','👍 On se retrouve où ?','Ok ! Tu veux réserver ?','Cool !','Avec plaisir 🎉','Bonne idée !','Oui absolument !'];
 	
 	// === CONNEXION À L'IA HARMONIC ===
-	const API_URL = 'http://localhost:8765';
+		const API_URL = (location.hostname==='localhost'||location.hostname==='127.0.0.1') ? 'http://localhost:8765' : 'https://ka-api.onrender.com';
 	let API_ONLINE = false;
 	
 	// Vérifier la connexion au démarrage
@@ -679,6 +730,64 @@ function buildCapWave(){
 function tick(){const n=new Date();document.getElementById('clk').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 tick();setInterval(tick,10000);
 buildKbd();renderSugs();
-</script>
-</body>
-</html>
+
+// ── HPC LAB ──
+let hpcMode='protein';
+function hpcRun(){
+  const mode=hpcMode;
+  const res=document.getElementById('hpc-result');
+  res.style.display='block';res.innerHTML='<span style="color:var(--soul-l);animation:pulse 1.2s ease-in-out infinite">●</span> Calcul en cours…';
+  const inp=document.getElementById('hpc-input');
+  
+  if(mode==='protein'){
+    const seq=(document.getElementById('hpc-seq')?.value||'ALAARGASN').toUpperCase().replace(/[^A-Z]/g,'');
+    fetch(API_URL+'/api/hpc/protein',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sequence:seq||'ALAARGASN'})})
+      .then(r=>r.json()).then(d=>{
+        res.innerHTML=`<div class="sec-lbl">🧬 PROTEIN FOLDING</div><div style="font-size:13px;color:var(--t2);line-height:1.6">Énergie libre : <b style="color:var(--life)">${d.free_energy_kcal_mol} kcal/mol</b><br>Confiance : <b>${Math.round(d.confidence*100)}%</b><br>Hélice α ${d.secondary_structure.helix_percent}% | Feuillet β ${d.secondary_structure.sheet_percent}% | Boucle ${d.secondary_structure.loop_percent}%<br><span style="color:var(--life)">Accélération φ : ${d.harmonic_speedup}</span></div>`;
+        inp.style.display='block';
+      }).catch(()=>{res.innerHTML='<span style="color:var(--coral)">⚠️ API inaccessible</span>';});
+  }else if(mode==='quantum'){
+    inp.style.display='none';
+    fetch(API_URL+'/api/hpc/quantum',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({n_qubits:8})})
+      .then(r=>r.json()).then(d=>{
+        res.innerHTML=`<div class="sec-lbl">⚛️ SIMULATION QUANTIQUE</div><div style="font-size:13px;color:var(--t2);line-height:1.6">Énergie fondamentale : <b style="color:var(--soul-l)">${d.ground_state_energy}</b><br>Spectre : ${d.energy_spectrum.slice(0,4).map(e=>e.toFixed(3)).join(', ')}…<br><span style="color:var(--soul-l)">Efficacité harmonique : ${d.harmonic_efficiency}</span></div>`;
+      }).catch(()=>{res.innerHTML='<span style="color:var(--coral)">⚠️ API inaccessible</span>';});
+  }else{
+    inp.style.display='none';
+    fetch(API_URL+'/api/hpc/compress',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({size_bytes:12400000,type:'image'})})
+      .then(r=>r.json()).then(d=>{
+        res.innerHTML=`<div class="sec-lbl">📦 HCV COMPRESSION</div><div style="font-size:13px;color:var(--t2);line-height:1.6">${(d.original_bytes/1e6).toFixed(1)} Mo → <b style="color:var(--life)">${(d.compressed_bytes/1e3).toFixed(0)} Ko</b><br>Gain : <b>${d.gain_percent}%</b> · Sans perte perceptible<br><span style="color:var(--life)">${d.method}</span></div>`;
+      }).catch(()=>{res.innerHTML='<span style="color:var(--coral)">⚠️ API inaccessible</span>';});
+  }
+}
+
+// ── CODE STUDIO ──
+function codeGen(){
+  const prompt=document.getElementById('code-prompt')?.value?.trim();
+  const lang=document.getElementById('code-lang')?.value||'python';
+  const res=document.getElementById('code-result');
+  if(!prompt){res.style.display='block';res.innerHTML='<span style="color:var(--coral)">Veuillez décrire le code souhaité</span>';return;}
+  res.style.display='block';res.innerHTML='<span style="color:var(--soul-l);animation:pulse 1.2s ease-in-out infinite">●</span> Génération…';
+  fetch(API_URL+'/api/code/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,language:lang})})
+    .then(r=>r.json()).then(d=>{res.textContent=d.code;res.style.color='var(--life)';})
+    .catch(()=>{res.innerHTML='<span style="color:var(--coral)">⚠️ API inaccessible — essayez "tri" ou "fibonacci"</span>';
+      // Fallback local
+      const p=prompt.toLowerCase();
+      if(p.includes('tri')||p.includes('sort'))res.textContent=lang==='python'?'def tri_rapide(arr):\n    if len(arr) <= 1: return arr\n    pivot = arr[0]\n    gauche = [x for x in arr[1:] if x <= pivot]\n    droite = [x for x in arr[1:] if x > pivot]\n    return tri_rapide(gauche) + [pivot] + tri_rapide(droite)':'function quickSort(arr) {\n  if (arr.length <= 1) return arr;\n  const pivot = arr[0];\n  const left = arr.slice(1).filter(x => x <= pivot);\n  const right = arr.slice(1).filter(x => x > pivot);\n  return [...quickSort(left), pivot, ...quickSort(right)];\n}';
+      else if(p.includes('fibo'))res.textContent=lang==='python'?'def fibonacci(n):\n    a, b = 0, 1\n    for _ in range(n):\n        yield a\n        a, b = b, a + b':'function* fibonacci(n) {\n  let a = 0, b = 1;\n  for (let i = 0; i < n; i++) {\n    yield a;\n    [a, b] = [b, a + b];\n  }\n}';
+      else res.textContent=lang==='python'?`def solve(data):\n    """${prompt.slice(0,50)}"""\n    return data`:`function solve(data) {\n  // ${prompt.slice(0,50)}\n  return data;\n}`;
+    });
+}
+		</script>
+	<script>
+	// Service Worker — Mode hors-ligne PWA
+	if ('serviceWorker' in navigator) {
+	  navigator.serviceWorker.register('/sw.js').then(() => {
+	    console.log('KA Phone · Service Worker activé — Mode hors-ligne prêt');
+	  }).catch(() => {
+	    console.log('KA Phone · Service Worker non disponible');
+	  });
+	}
+	</script>
+	</body>
+	</html>

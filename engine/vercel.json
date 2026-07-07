@@ -1,14 +1,20 @@
 {
-  "name": "ka-app",
+  "name": "ka-phone",
   "version": 2,
   "builds": [
-    { "src": "index.html", "use": "@vercel/static" },
-    { "src": "manifest.json", "use": "@vercel/static" }
+    { "src": "ka_index.html", "use": "@vercel/static" },
+    { "src": "manifest.json", "use": "@vercel/static" },
+    { "src": "sw.js", "use": "@vercel/static" },
+    { "src": "icons/*.svg", "use": "@vercel/static" },
+    { "src": "_headers", "use": "@vercel/static" },
+    { "src": "_redirects", "use": "@vercel/static" }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "/index.html" }
-  ],
-  "env": {
-    "API_URL": "https://ka-api.onrender.com"
-  }
+    { "src": "/sw\\.js", "dest": "/sw.js" },
+    { "src": "/manifest\\.json", "dest": "/manifest.json" },
+    { "src": "/icons/(.*)", "dest": "/icons/$1" },
+    { "src": "/_headers", "dest": "/_headers" },
+    { "src": "/_redirects", "dest": "/_redirects" },
+    { "src": "/(.*)", "dest": "/ka_index.html" }
+  ]
 }
