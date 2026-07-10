@@ -84,6 +84,27 @@ from conscious_intelligence import ConsciousIntelligence
 # Domaines de raisonnement (adaptateur multi-domaine)
 from wave_domains import DomainAdapter, DOMAINS
 
+# 🔥 Module Mathématique (micro-calculateur déterministe, 100% précis)
+try:
+    from wave_math import wave_solve as try_math_solve
+except ImportError:
+    try:
+        from math_bridge import try_math_solve
+    except ImportError:
+        try_math_solve = None
+
+# 🔥 Logique Ondulatoire (syllogisme, déduction, induction)
+try:
+    from wave_logic import WaveLogic
+except ImportError:
+    WaveLogic = None
+
+# 🔥 Raisonnement par propagation (chaîne de résonance)
+try:
+    from wave_reasoning import WaveReasoner
+except ImportError:
+    WaveReasoner = None
+
 log = logging.getLogger(__name__)
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -125,17 +146,32 @@ def _clean_text(text: str) -> str:
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
+def _split_camel_snake(text: str) -> str:
+    """Découpe camelCase et snake_case en mots séparés pour le matching technique."""
+    text = re.sub(r'_+', ' ', text)
+    text = re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', text)
+    text = re.sub(r'(?<=[A-Z])(?=[A-Z][a-z])', ' ', text)
+    return text
+
 def _tokenize(text: str) -> List[str]:
-    """Tokenisation simple avec stopwords."""
+    """Tokenisation avec stopwords + termes techniques."""
     text = text.replace("'", " ").replace("'", " ")
-    return [w.strip('.,!?;:()[]{}«»\"') for w in text.lower().split()
-            if len(w) >= 2 and w not in _STOPWORDS]
+    text = _split_camel_snake(text)
+    tokens = [w.strip('.,!?;:()[]{}«»\"') for w in text.lower().split()
+              if len(w) >= 2 and w not in _STOPWORDS]
+    extra = []
+    for t in tokens:
+        if '.' in t:
+            extra.append(t.replace('.', ''))
+    return tokens + extra
 
 def _normalize(text: str) -> str:
-    """Normalise un texte (accents, casse)."""
+    """Normalise un texte (accents, casse, symboles grecs)."""
     return text.lower().replace('é','e').replace('è','e').replace('ê','e')\
                .replace('à','a').replace('ù','u').replace('ô','o')\
-               .replace('î','i').replace('ï','i').replace('ç','c')
+               .replace('î','i').replace('ï','i').replace('ç','c')\
+               .replace('φ','phi').replace('α','alpha').replace('β','beta')\
+               .replace('γ','gamma').replace('δ','delta').replace('ψ','psi')
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1033,13 +1069,57 @@ class HarmonicBrain:
         domain = self._get_adapter()  # adaptateur pour le domaine détecté
 
         # Injecter les tokens pondérés dans la question pour le retrieval
-        # Les tokens à haut poids sont dupliqués pour simuler une pondération
         weighted_question = question
         for token, weight in parsed.weighted_tokens.items():
             if weight >= 4.0:
-                weighted_question += f" {token} {token}"  # ×3 pour poids 4+
+                weighted_question += f" {token} {token}"
             elif weight >= 3.0:
-                weighted_question += f" {token}"  # ×2 pour poids 3+
+                weighted_question += f" {token}"
+
+        # ── 0.5. MICRO-CALCULATEUR (interception mathématique prioritaire) ──
+        if try_math_solve:
+            math_result = try_math_solve(question, lang)
+            if math_result:
+                total_time = (time.time() - t_start) * 1000
+                return BrainResult(
+                    response=math_result if math_result.endswith('.') else math_result + '.',
+                    confidence=0.95,
+                    facts_used=[],
+                    facts_rejected=[],
+                    retrieval_count=0,
+                    total_time_ms=total_time,
+                )
+
+        # ── 0.6. LOGIQUE ONDULATOIRE (questions de raisonnement pur) ──
+        if self._is_logic_question(question, parsed):
+            wave_result = self._try_wave_logic(question, parsed)
+            if wave_result:
+                total_time = (time.time() - t_start) * 1000
+                return BrainResult(
+                    response=wave_result,
+                    confidence=0.90,
+                    facts_used=[],
+                    facts_rejected=[],
+                    retrieval_count=0,
+                    total_time_ms=total_time,
+                )
+
+        # ── 0.7. RAISONNEMENT PAR PROPAGATION (chaîne de résonance) ──
+        if WaveReasoner is not None:
+            try:
+                chain_result = self._try_wave_chain(question)
+                if chain_result:
+                    total_time = (time.time() - t_start) * 1000
+                    return BrainResult(
+                        response=chain_result,
+                        confidence=0.85,
+                        facts_used=[],
+                        facts_rejected=[],
+                        retrieval_count=0,
+                        total_time_ms=total_time,
+                    )
+            except Exception:
+                pass
 
         # ── 1. INCONSCIENT : retrieval pur ──
         candidates = self.unconscious.retrieve(weighted_question, max_results=15)
@@ -1050,6 +1130,16 @@ class HarmonicBrain:
         self.conscious.feedback(accepted, rejected)
 
         # ── 2b. INTELLIGENCE CONSCIENTE : raisonner si confiance faible ──
+        # GARDE-FOU : si aucun candidat → ne pas inventer
+        if not accepted and not candidates:
+            response = self._dont_know(question, lang)
+            total_time = (time.time() - t_start) * 1000
+            return BrainResult(
+                response=response, confidence=0.0,
+                facts_used=[], facts_rejected=[],
+                retrieval_count=0, total_time_ms=total_time,
+            )
+
         if not accepted or (accepted and accepted[0].confidence < 0.5):
             answer, conf, method = self.intelligence.reason(
                 question, candidates, parsed
@@ -1086,6 +1176,71 @@ class HarmonicBrain:
         )
 
     # ── EXPRESSION ─────────────────────────────────────────────────────────
+
+    def _is_logic_question(self, question: str, parsed) -> bool:
+        """Détecte si la question relève du raisonnement logique pur."""
+        q = question.lower()
+        logic_markers = [
+            'syllogisme', 'deduire', 'deduction', 'donc', 'alors',
+            'que peut-on', 'que deduire', 'que conclure', 'conclusion',
+            'est-ce coherent', 'contradiction', 'compatible',
+            'si ', 'alors ', 'donc ', 'par consequent',
+        ]
+        # Questions très courtes qui ressemblent à des demandes de raisonnement
+        if any(m in q for m in logic_markers):
+            return True
+        # Questions avec structure "A est B, B est C"
+        if parsed and parsed.type in ('identite', 'explication'):
+            if ',' in question or ' et ' in question.lower():
+                return True
+        return False
+
+    def _try_wave_logic(self, question: str, parsed) -> str:
+        """Tente de résoudre par logique ondulatoire (WaveLogic)."""
+        if WaveLogic is None:
+            return None
+        try:
+            # Extraire les prémisses de la question
+            premises = self._extract_premises(question)
+            if len(premises) < 1:
+                return None
+
+            wl = WaveLogic(self)
+            result = wl.solve(premises=premises, question=question)
+
+            if result and result.is_valid and result.confidence > 0.5:
+                return result.conclusion
+        except Exception:
+            pass
+        return None
+
+    def _extract_premises(self, question: str) -> list:
+        """Extrait les prémisses d'une question (séparées par ',', 'et', 'puisque')."""
+        parts = re.split(r'[,;]\s*|\s+et\s+|\s+donc\s+|\s+or\s+|\s+puisque\s+|\s+car\s+', question)
+        premises = [p.strip() for p in parts if len(p.strip()) > 5]
+        premises = [p for p in premises if not p.startswith('?') and not p.startswith('que ') 
+                    and not p.startswith('quelle ') and not p.startswith('quel ')]
+        return premises
+
+    def _try_wave_chain(self, question: str) -> str:
+        """Raisonnement par propagation de ψ à travers l'hologramme."""
+        if WaveReasoner is None:
+            return None
+        try:
+            reasoner = WaveReasoner(self)
+            chain = reasoner.reason(question, max_depth=3)
+            if chain and chain.is_valid and chain.conclusion:
+                return chain.conclusion
+        except Exception:
+            pass
+        return None
+
+    def _dont_know(self, question: str, lang: str) -> str:
+        """Réponse quand on ne sait pas — honnête, pas d'invention."""
+        sujet = question.strip('?.,!;: ')[:80]
+        if lang == 'en':
+            return f"I don't have enough information about '{sujet}' to answer with confidence."
+        return f"Je n'ai pas assez d'éléments sur « {sujet} » pour répondre avec confiance."
 
     def _express(self, facts: List[FactRecord], question: str,
                  parsed: StructuredPrompt = None) -> str:

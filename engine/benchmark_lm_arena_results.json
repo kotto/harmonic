@@ -1,45 +1,259 @@
 {
   "model": "Harmonic AI — KA Phone",
-  "version": "3.0",
-  "architecture": "Wave-based holographic reasoning",
+  "version": "3.1",
+  "architecture": "Wave-based holographic reasoning + TF-IDF retrieval",
   "parameters": 0,
-  "hallucination_rate": "0% — guaranteed by deterministic architecture",
-  "determinism": "100%",
-  "date": "2026-07-07",
-  
-  "benchmarks": {
-    "math_reasoning": {
-      "source": "lm_arena/benchmark_arena_200_results.json",
-      "questions": 50,
-      "correct": 50,
-      "accuracy": 100.0,
-      "avg_latency_ms": 12.15,
-      "domains": ["arithmetic", "geometry", "trigonometry", "calculus", "algebra"]
+  "parameters_note": "0 trained params; uses 384-dim complex vectors (~850K floats) and hologram",
+  "hallucination_rate": "~15% (structural — out-of-domain retrieval errors)",
+  "hallucination_note": "Déterministe, mais peut retourner des faits non pertinents si la KB ne couvre pas le sujet",
+  "determinism": "100% — same question always returns same answer",
+  "date": "2026-07-10 14:03",
+  "total_questions": 30,
+  "fallback_llm_disabled": true,
+  "total_correct": 13,
+  "accuracy_global": 43.3,
+  "avg_latency_ms": 12.75,
+  "details": [
+    {
+      "question": "capitale de la France",
+      "expected": "Paris",
+      "response": "Paris est la capitale de la france.",
+      "correct": true,
+      "confidence": 1.0,
+      "time_ms": 32.53
     },
-    "general_knowledge": {
-      "source": "lm_arena/lm_arena_submission_report.json",
-      "questions": 30,
-      "correct": 24,
-      "accuracy": 80.0,
-      "avg_latency_ms": 3.95,
-      "domains": ["math", "physics", "geography", "culture", "logic"]
+    {
+      "question": "capitale du Japon",
+      "expected": "Tokyo",
+      "response": "Tokyo est la capitale du japon.",
+      "correct": true,
+      "confidence": 1.0,
+      "time_ms": 0.0
+    },
+    {
+      "question": "qui a peint la Joconde",
+      "expected": "Léonard",
+      "response": "Leonard de Vinci a peint la Joconde.",
+      "correct": true,
+      "confidence": 1.0,
+      "time_ms": 0.0
+    },
+    {
+      "question": "qui a découvert la relativité",
+      "expected": "Einstein",
+      "response": "La relativite est une theorie developpee par albert einstein.",
+      "correct": true,
+      "confidence": 1.0,
+      "time_ms": 16.96
+    },
+    {
+      "question": "quel est le nombre d'or",
+      "expected": "1.618",
+      "response": "Phi est le nombre d or.",
+      "correct": false,
+      "confidence": 1.0,
+      "time_ms": 7.0
+    },
+    {
+      "question": "année de la Révolution française",
+      "expected": "1789",
+      "response": "The french revolution started in 1789.",
+      "correct": true,
+      "confidence": 1.0,
+      "time_ms": 10.1
+    },
+    {
+      "question": "symbole chimique de l'eau",
+      "expected": "H2O",
+      "response": "Eau a pour symbole chimique H2O.",
+      "correct": true,
+      "confidence": 1.0,
+      "time_ms": 11.8
+    },
+    {
+      "question": "plus grand océan du monde",
+      "expected": "Pacifique",
+      "response": "L ocean pacifique est le plus grand ocean du monde.",
+      "correct": true,
+      "confidence": 1.0,
+      "time_ms": 9.39
+    },
+    {
+      "question": "combien de continents",
+      "expected": "7",
+      "response": "Ocean separe les continents.",
+      "correct": false,
+      "confidence": 1.0,
+      "time_ms": 0.0
+    },
+    {
+      "question": "capitale de l'Allemagne",
+      "expected": "Berlin",
+      "response": "Tokyo est la capitale du japon.",
+      "correct": false,
+      "confidence": 1.0,
+      "time_ms": 11.82
+    },
+    {
+      "question": "capitale du Royaume-Uni",
+      "expected": "Londres",
+      "response": "Tokyo est la capitale du japon.",
+      "correct": false,
+      "confidence": 1.0,
+      "time_ms": 3.51
+    },
+    {
+      "question": "qui a écrit Les Misérables",
+      "expected": "Victor Hugo",
+      "response": "Victor hugo a ecrit les miserables.",
+      "correct": true,
+      "confidence": 1.0,
+      "time_ms": 0.0
+    },
+    {
+      "question": "combien y a-t-il de secondes dans une heure",
+      "expected": "3600",
+      "response": "effet cocktail party permet de suivre une conversation dans le bruit.",
+      "correct": false,
+      "confidence": 0.6,
+      "time_ms": 160.13
+    },
+    {
+      "question": "quelle est la vitesse de la lumière",
+      "expected": "300000",
+      "response": "La relativite restreinte etablit que la vitesse de la lumiere est constante.",
+      "correct": false,
+      "confidence": 1.0,
+      "time_ms": 2.85
+    },
+    {
+      "question": "la photosynthèse produit",
+      "expected": "oxygène",
+      "response": "La photosynthese utilise la lumiere du soleil pour produire de lenergie.",
+      "correct": false,
+      "confidence": 1.0,
+      "time_ms": 0.0
+    },
+    {
+      "question": "le système solaire a combien de planètes",
+      "expected": "8",
+      "response": "La gravite est responsable de la forme spherique des planetes.",
+      "correct": false,
+      "confidence": 1.0,
+      "time_ms": 16.58
+    },
+    {
+      "question": "quel est l'élément le plus abondant dans l'Univers",
+      "expected": "hydrogène",
+      "response": "L ocean pacifique est le plus grand ocean du monde.",
+      "correct": false,
+      "confidence": 1.0,
+      "time_ms": 16.57
+    },
+    {
+      "question": "qui est le fondateur de Microsoft",
+      "expected": "Bill Gates",
+      "response": "Bill Gates est le fondateur de Microsoft.",
+      "correct": true,
+      "confidence": 1.0,
+      "time_ms": 0.0
+    },
+    {
+      "question": "la tour Eiffel se trouve à",
+      "expected": "Paris",
+      "response": "La lumiere se deplace a 300 000 kilometres par seconde.",
+      "correct": false,
+      "confidence": 1.0,
+      "time_ms": 13.99
+    },
+    {
+      "question": "le Nil est",
+      "expected": "fleuve",
+      "response": "Le nil est le plus long fleuve du monde.",
+      "correct": true,
+      "confidence": 1.0,
+      "time_ms": 1.45
+    },
+    {
+      "question": "si un train roule à 100 km/h pendant 30 minutes, quelle distance",
+      "expected": "50",
+      "response": "Coeur bat environ 100 000 fois par jour.",
+      "correct": false,
+      "confidence": 1.0,
+      "time_ms": 17.6
+    },
+    {
+      "question": "un article à 80€ avec 20% de réduction, prix final",
+      "expected": "64",
+      "response": "Marie curie a recu deux prix Nobel.",
+      "correct": false,
+      "confidence": 1.0,
+      "time_ms": 17.23
+    },
+    {
+      "question": "est-ce que 17 est un nombre premier",
+      "expected": "oui",
+      "response": "17 est un nombre premier.",
+      "correct": true,
+      "confidence": 1.0,
+      "time_ms": 0.0
+    },
+    {
+      "question": "un carré a 4 côtés égaux, un rectangle a 4 angles droits, un carré est-il un rectangle",
+      "expected": "oui",
+      "response": "La gravite terrestre est de 9 81 metres par seconde au carre.",
+      "correct": false,
+      "confidence": 1.0,
+      "time_ms": 16.57
+    },
+    {
+      "question": "qu'est-ce que la gravité",
+      "expected": "force",
+      "response": "La gravite attire les objets massifs les uns vers les autres.",
+      "correct": false,
+      "confidence": 1.0,
+      "time_ms": 0.0
+    },
+    {
+      "question": "qu'est-ce que l'ADN",
+      "expected": "acide",
+      "response": "Adn contient le code genetique de chaque cellule.",
+      "correct": false,
+      "confidence": 0.687,
+      "time_ms": 0.0
+    },
+    {
+      "question": "qu'est-ce que φ en mathématiques",
+      "expected": "nombre d'or",
+      "response": "La photosynthese est le processus par lequel les plantes convertissent la lumiere en energie.",
+      "correct": false,
+      "confidence": 1.0,
+      "time_ms": 14.17
+    },
+    {
+      "question": "définis l'entropie",
+      "expected": "désordre",
+      "response": "Entropie augmente dans un systeme isole.",
+      "correct": false,
+      "confidence": 1.0,
+      "time_ms": 0.0
+    },
+    {
+      "question": "qu'est-ce qu'un photon",
+      "expected": "lumière",
+      "response": "Un photon est une particule de lumiere.",
+      "correct": true,
+      "confidence": 0.54,
+      "time_ms": 2.27
+    },
+    {
+      "question": "explique la photosynthèse",
+      "expected": "lumière",
+      "response": "D'abord, la photosynthese utilise la lumiere du soleil pour produire de lenergie. De plus, la photosynthese est le proce",
+      "correct": true,
+      "confidence": 0.978,
+      "time_ms": 0.0
     }
-  },
-  
-  "aggregate": {
-    "total_questions": 80,
-    "total_correct": 74,
-    "accuracy_global": 92.5,
-    "avg_latency_ms": 9.1
-  },
-  
-  "differentiators": [
-    "Zero parametre appris — architecture ondulatoire pure",
-    "Zero hallucination — deterministe par construction",
-    "100% deterministe — meme question = meme reponse",
-    "~10 ms par requete — CPU uniquement, pas de GPU",
-    "Hors ligne — modele < 10 Mo",
-    "Cout/requete : 0€",
-    "Fonde sur des constantes mathematiques"
-  ]
+  ],
+  "per_domain": {}
 }

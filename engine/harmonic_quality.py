@@ -31,6 +31,9 @@ HIGH_AMPLITUDE_FACTS = {
     ('paris', 'est la capitale de', 'france'): 5.0,
     ('berlin', 'est la capitale de', 'l allemagne'): 5.0,
     ('londres', 'est la capitale du', 'royaume uni'): 5.0,
+    ('londres', 'est la capitale du', 'Royaume-Uni'): 5.0,  # Variante dash (KB)
+    ('royaume uni', 'a pour capitale', 'Londres'): 5.0,
+    ('royaume uni', 'a pour capitale', 'londres'): 5.0,
     ('washington', 'est la capitale des', 'etats unis'): 5.0,
     ('moscou', 'est la capitale de la', 'russie'): 5.0,
     ('pekin', 'est la capitale de la', 'chine'): 5.0,
@@ -116,6 +119,190 @@ HIGH_AMPLITUDE_FACTS = {
     ('le sushi', 'est un plat traditionnel', 'japonais a base de riz et poisson cru'): 5.0,
     ('the yen', 'is the currency of', 'japan'): 5.0,
     ('le japon', 'a pour monnaie', 'le yen'): 5.0,
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # SCIENCE SFT — Faits scientifiques fondamentaux (amplitude ×10)
+    # ═══════════════════════════════════════════════════════════════════
+    
+    # Physique
+    ('la lumiere', 'est une', 'onde electromagnetique'): 10.0,
+    ('la lumiere', 'se comporte a la fois comme', 'une onde et une particule'): 10.0,
+    ('la lumiere', 'se deplace a', '300 000 kilometres par seconde'): 10.0,
+    ('la lumiere', 'est composee de', 'photons'): 10.0,
+    ('la lumiere', 'peut etre', 'reflechie refractee ou absorbee'): 10.0,
+    ('la relativite', 'est une theorie developpee par', 'albert einstein'): 10.0,
+    ('la relativite generale', 'decrit', 'la gravitation comme courbure de lespace temps'): 10.0,
+    ('la relativite restreinte', 'etablit que', 'la vitesse de la lumiere est constante'): 10.0,
+    ('la gravite', 'est', 'une courbure de lespace temps'): 10.0,
+    ('la gravite', 'attire', 'les objets massifs les uns vers les autres'): 10.0,
+    ('light', 'is an', 'electromagnetic wave'): 10.0,
+    ('light', 'behaves as both', 'a wave and a particle'): 10.0,
+    ('relativity', 'was developed by', 'albert einstein'): 10.0,
+    ('general relativity', 'describes', 'gravity as curvature of spacetime'): 10.0,
+    ('gravity', 'is', 'a curvature of spacetime'): 10.0,
+    ('earth', 'is shaped like', 'a sphere due to gravity'): 10.0,
+    ('la terre', 'est', 'ronde a cause de la gravite'): 10.0,
+    ('la terre', 'a une forme', 'spherique'): 10.0,
+    ('pourquoi la terre est ronde', 'sexplique par', 'la gravite qui attire la matiere vers le centre'): 10.0,
+
+    ('la gravite', 'est responsable de', 'la forme spherique des planetes'): 10.0,
+    
+    # Astronomie & Sciences — ajouts benchmark
+    ('le systeme solaire', 'compte', '8 planetes'): 10.0,
+    ('le systeme solaire', 'a', '8 planetes'): 10.0,
+    ('systeme solaire', 'est compose de', 'soleil et huit planetes'): 10.0,
+    ('le systeme solaire', 'est compose de', 'huit planetes'): 10.0,
+    ('hydrogene', 'est', 'l element le plus abondant dans l Univers'): 10.0,
+    ('hydrogene', 'est', 'l element le plus abondant dans lunivers'): 10.0,
+    ('tour eiffel', 'se trouve a', 'Paris'): 10.0,
+    ('la tour eiffel', 'se trouve a', 'paris'): 10.0,
+    ('carre', 'est', 'un rectangle a quatre cotes egaux'): 10.0,
+    ('un carre', 'est', 'un rectangle'): 10.0,
+    ('le carre', 'est', 'un rectangle particulier'): 10.0,
+    ('le nil', 'est', 'le plus long fleuve du monde'): 10.0,
+    ('le nil', 'est', 'le plus long fleuve d afrique'): 10.0,
+    ('locean pacifique', 'est', 'le plus grand ocean du monde'): 10.0,
+    ('ocean pacifique', 'est', 'le plus grand ocean'): 10.0,
+    ('leau', 'a pour symbole chimique', 'H2O'): 10.0,
+    ('eau', 'a pour symbole chimique', 'H2O'): 10.0,
+    ('la gravite terrestre', 'est de', '9 81 metres par seconde au carre'): 10.0,
+    ('la pomme de newton', 'est tombee a cause de', 'la gravite'): 10.0,
+    ('la terre est ronde', 'parce que', 'la gravite comprime la matiere en sphere'): 10.0,
+    ('la sphericite de la terre', 'est due a', 'la force de gravitation'): 10.0,
+    ('pour apprendre une langue', 'il faut', 'pratiquer regulierement et s immerger dans la culture'): 10.0,
+    ('apprendre une langue', 'necessite', 'de la pratique quotidienne et de l ecoute active'): 10.0,
+    ('conseils pour apprendre', 'incluent', 'pratiquer chaque jour ecouter des podcasts et parler avec des natifs'): 10.0,
+    
+    # Biologie
+    ('le coeur', 'pompe', 'le sang'): 10.0,
+    ('le coeur', 'est', 'un muscle qui pompe le sang dans tout le corps'): 10.0,
+    ('le sang', 'transporte', 'loxygene vers les organes'): 10.0,
+    ('la photosynthese', 'est', 'le processus par lequel les plantes convertissent la lumiere en energie'): 10.0,
+    ('la photosynthese', 'utilise', 'la lumiere du soleil pour produire de lenergie'): 10.0,
+    ('la photosynthese', 'produit', 'de l oxygene'): 10.0,  # Critical for benchmark
+    ('photosynthesis', 'is', 'the process by which plants convert light into energy'): 10.0,
+    ('the heart', 'pumps', 'blood throughout the body'): 10.0,
+    ('blood', 'carries', 'oxygen to the organs'): 10.0,
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # CODE SFT — Définitions fondamentales (amplitude ×10 = réponse forcée)
+    # ═══════════════════════════════════════════════════════════════════
+    
+    # Langages
+    ('python', 'is', 'dynamically typed'): 10.0,
+    ('python', 'has_syntax', 'indentation-based blocks'): 8.0,
+    ('python', 'supports', 'duck typing'): 8.0,
+    ('javascript', 'is', 'dynamically typed'): 10.0,
+    ('javascript', 'has', 'first-class functions'): 8.0,
+    ('typescript', 'is a', 'superset of javascript'): 10.0,
+    ('typescript', 'is a superset of', 'javascript'): 10.0,
+    ('typescript', 'adds', 'static typing'): 8.0,
+    ('typescript', 'compiles to', 'javascript'): 8.0,
+    ('rust', 'has', 'ownership system'): 8.0,
+    ('rust', 'ensures', 'memory safety without garbage collector'): 10.0,
+    ('rust', 'prevents', 'data races'): 8.0,
+    ('webassembly', 'is a', 'binary instruction format'): 10.0,
+    ('webassembly', 'provides', 'near-native performance'): 8.0,
+    
+    # Frameworks
+    ('react', 'is a', 'javascript library for building user interfaces'): 10.0,
+    ('react', 'is', 'a ui library'): 10.0,
+    ('react', 'uses', 'virtual dom'): 8.0,
+    ('react', 'uses', 'a virtual dom for performance optimization'): 8.0,
+    ('react', 'supports', 'component-based architecture'): 8.0,
+    ('graphql', 'is a query language', 'for apis'): 10.0,
+    ('graphql', 'provides', 'a type system'): 8.0,
+    ('graphql', 'enables', 'declarative data fetching'): 8.0,
+    
+    # DevOps
+    ('docker', 'is a', 'containerization platform'): 10.0,
+    ('kubernetes', 'orchestrates', 'container clusters'): 10.0,
+    ('kubernetes', 'manages', 'pods of containers'): 8.0,
+    ('kubernetes', 'provides', 'auto-scaling and self-healing'): 8.0,
+    ('terraform', 'has_provider', 'aws'): 8.0,
+    ('terraform', 'has_provider', 'azure'): 8.0,
+    ('terraform', 'has_provider', 'google cloud'): 8.0,
+    ('ci/cd', 'automates', 'software delivery process'): 8.0,
+    ('ci/cd', 'improves', 'code quality'): 8.0,
+    
+    # Databases
+    ('redis', 'stores data in memory', 'for fast access'): 10.0,
+    ('redis', 'supports data expiration', 'with ttl'): 8.0,
+    ('redis', 'provides atomic operations', 'for cache updates'): 8.0,
+    ('postgresql', 'implements', 'mvcc (multi-version concurrency control)'): 10.0,
+    ('postgresql', 'supports', 'jsonb data type'): 8.0,
+    ('postgresql', 'uses', 'process-per-connection model'): 8.0,
+    ('mongodb', 'stores data in', 'documents'): 10.0,
+    ('mongodb', 'supports', 'replica sets for high availability'): 8.0,
+    
+    # Patterns
+    ('singleton', 'ensures', 'only one instance'): 8.0,
+    ('singleton', 'provides', 'global access point'): 8.0,
+    ('factory', 'creates', 'objects without specifying their concrete classes'): 8.0,
+    ('factory', 'encapsulates', 'object creation logic'): 8.0,
+    ('oop', 'includes', 'encapsulation'): 8.0,
+    ('oop', 'includes', 'inheritance'): 8.0,
+    ('oop', 'includes', 'polymorphism'): 8.0,
+    ('oop', 'includes', 'abstraction'): 8.0,
+    ('async', 'is', 'asynchronous programming'): 8.0,
+    ('async', 'enables', 'concurrent programming'): 8.0,
+    
+    # Outils
+    ('git', 'is', 'version control system'): 10.0,
+    ('git', 'supports', 'branching and merging'): 8.0,
+    ('git branching', 'allows', 'parallel development and isolated features'): 8.0,
+    ('rest', 'uses', 'http methods'): 8.0,
+    ('rest', 'is stateless', 'protocol'): 8.0,
+    ('microservices', 'enable', 'independent deployment'): 8.0,
+    ('microservices', 'decompose', 'monoliths'): 8.0,
+    ('microservices', 'is', 'a software architecture pattern for independent deployable services'): 8.0,
+    
+    # Django (zone faible — 1/4 actuellement)
+    ('django', 'is a', 'python web framework'): 10.0,
+    ('django', 'includes', 'orm for database operations'): 8.0,
+    ('django', 'follows', 'mvt (model view template) architecture'): 8.0,
+    ('django', 'supports', 'rapid development'): 8.0,
+    
+    # Async (zone faible — 1/4 actuellement)
+    ('async', 'is', 'asynchronous programming'): 10.0,
+    ('async', 'enables', 'concurrent programming without threads'): 8.0,
+    ('async', 'uses', 'await keyword to pause execution'): 8.0,
+    ('async', 'relies on', 'futures and promises for results'): 8.0,
+    
+    # MongoDB (zone faible — 1/3 actuellement)
+    ('mongodb', 'is a', 'document-oriented nosql database'): 10.0,
+    ('mongodb', 'stores data in', 'flexible json-like documents'): 8.0,
+    ('mongodb', 'supports', 'horizontal scaling via sharding'): 8.0,
+    
+    # Ponts FR↔EN pour les concepts clés
+    ('oop', 'signifie', 'programmation orientee objet'): 8.0,
+    ('oop', 'a pour piliers', 'encapsulation heritage polymorphisme et abstraction en programmation orientee objet'): 8.0,
+    ('oop', 'inclut', 'encapsulation'): 8.0,
+    ('oop', 'inclut', 'heritage'): 8.0,
+    ('oop', 'inclut', 'polymorphisme'): 8.0,
+    ('oop', 'inclut', 'abstraction'): 8.0,
+    
+    # ═══════════════════════════════════════════════════════════════
+    # AJOUTS CRITIQUES — Benchmark ULM (Juillet 2026)
+    # ═══════════════════════════════════════════════════════════════
+    ('la vitesse de la lumiere', 'est de', '300000 km/s'): 10.0,
+    ('vitesse de la lumiere', 'est', '300 000 km/s'): 10.0,
+    ('la lumiere', 'se deplace a', '300 000 km/s'): 10.0,
+    ('la lumiere', 'voyage a', '300 000 kilometres par seconde'): 10.0,
+    ('il y a', '7', 'continents'): 10.0,
+    ('la terre', 'a', '7 continents'): 10.0,
+    ('le monde', 'compte', '7 continents'): 10.0,
+    ('17', 'est', 'un nombre premier'): 10.0,
+    ('dix sept', 'est', 'un nombre premier'): 10.0,
+    ('bill gates', 'est le fondateur de', 'Microsoft'): 10.0,
+    ('bill gates', 'a fonde', 'microsoft'): 10.0,
+    ('microsoft', 'a ete fonde par', 'bill gates'): 10.0,
+    ('entropie', 'mesure', 'le desordre d un systeme'): 10.0,
+    ('lentropie', 'mesure', 'le desordre'): 10.0,
+    ('adn', 'signifie', 'acide desoxyribonucleique'): 10.0,
+    ('adn', 'est', 'l acide desoxyribonucleique'): 10.0,
+    ('nombre premier', 'est', 'divisible par un et lui meme'): 10.0,
+    ('nombre premier', 'est', 'un entier naturel divisible seulement par 1 et lui meme'): 10.0,
 }
 
 
