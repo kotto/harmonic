@@ -1506,8 +1506,16 @@ class HarmonicBrain:
         except Exception:
             pass
 
-        # Fallback : rendu simple avec accents (inchangé)
-        return self._render_simple(facts, lang)
+        # Fallback : rendu simple
+        import random
+        if not facts:
+            return ""
+        f0 = facts[0]
+        s = f0.sujet[0].upper() + f0.sujet[1:] if f0.sujet else f0.sujet
+        parts = [f"{s} {f0.relation} {f0.objet}."]
+        for f in facts[1:]:
+            parts.append(f"{f.sujet} {f.relation} {f.objet}.")
+        return ' '.join(parts)
 
     def _rerank_by_context(self, candidates: List, question: str) -> List:
         """
