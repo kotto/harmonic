@@ -1418,6 +1418,9 @@ class HarmonicBrain:
         # 🔥 Appliquer le WaveStyler (améliore TOUTES les réponses)
         response = self._style_response(response, question, accepted, lang, candidates)
 
+        # 🔥 DÉDUPLICATION + FILTRE LANGUE : nettoyer la réponse
+        response = self._clean_response(response, lang)
+
         return BrainResult(
             response=response,
             confidence=min(1.0, confidence),
@@ -1581,7 +1584,39 @@ class HarmonicBrain:
                 break
         return found
 
-    def _render_simple(self, facts: List[FactRecord], lang: str) -> str:
+    def _clean_response(self, response: str, lang: str) -> str:
+        """Nettoie la réponse : déduplication des phrases et filtre de langue."""
+        if not response:
+            return response
+        
+        # Découper en phrases
+        sentences = [s.strip() for s in response.replace('?', '.').replace('!', '.').split('.') if s.strip()]
+        if len(sentences) <= 1:
+            return response
+        
+        # Dédupliquer par similarité (garder la première occurrence)
+        seen_norm = set()
+        unique = []
+        for s in sentences:
+            norm = _normalize(s)[:50]  # 50 premiers caractères normalisés
+            if norm not in seen_norm:
+                seen_norm.add(norm)
+                unique.append(s)
+        
+        # Filtre de langue : détecter les phrases en anglais dans une réponse FR
+        if lang == 'fr':
+            EN_MARKERS = {'the', 'is', 'are', 'was', 'were', 'has', 'have', 'of', 'in', 'by'}
+            filtered = []
+            for s in unique:
+                words = set(s.lower().split())
+                en_score = len(words & EN_MARKERS)
+                if en_score >= 3:  # Trop de mots anglais → probablement EN
+                    continue
+                filtered.append(s)
+            if filtered:
+                unique = filtered
+        
+        return '. '.join(unique) + '.' if unique else response
         """Rendu simple : sujet relation objet, avec connecteurs de base."""
         import random
         if not facts:
