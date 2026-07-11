@@ -125,7 +125,7 @@ def load_facts(model_name='best'):
             log.info(f"  📂 {path.name}: {len(facts):,} faits chargés")
             return facts
     
-    # Fallback: KB qualitative intégrée (914 faits)
+    # Fallback: KB qualitative intégrée (1955 faits)
     from harmonic_model import KNOWLEDGE_BASE
     log.info(f"  📂 KB qualitative intégrée: {len(KNOWLEDGE_BASE):,} faits (fallback)")
     return [(str(s), str(r), str(o), str(sec)) for s, r, o, sec in KNOWLEDGE_BASE]
@@ -148,6 +148,27 @@ for arg in sys.argv[1:]:
 
 # Charger
 facts = load_facts(model_name)
+
+# 🔥 Fusionner les faits structurés (pays, tableau périodique, etc.) 
+# quel que soit le chemin de chargement
+try:
+    import json
+    expanded_path = Path(__file__).resolve().parent / 'data' / 'kb_merged.json'
+    if expanded_path.exists():
+        with open(expanded_path, 'r', encoding='utf-8') as f:
+            expanded = json.load(f)
+        existing = set((str(s).lower().strip(), str(r).lower().strip(), str(o).lower().strip()) 
+                       for s, r, o, sec in facts)
+        added = 0
+        for s, r, o, sec in expanded:
+            key = (str(s).lower().strip(), str(r).lower().strip(), str(o).lower().strip())
+            if key not in existing:
+                facts.append((str(s), str(r), str(o), str(sec)))
+                existing.add(key)
+                added += 1
+        log.info(f"  📂 KB étendue: +{added} faits structurés → {len(facts):,} total")
+except Exception as e:
+    log.warning(f"  ⚠️ Fusion KB étendue impossible: {e}")
 
 # Ajouter l'identité KA (le modèle doit savoir qui il est)
 KA_IDENTITY = [
@@ -174,7 +195,75 @@ KA_IDENTITY = [
     ("tu", "es", "KA", "GENERAL"),
     ("KA", "est", "mon nom", "GENERAL"),
 ]
-facts = facts + KA_IDENTITY
+
+# Capitales du monde (couverture rapide)
+CAPITALS = [
+    ("Yaounde","est la capitale du","Cameroun","GEO"),
+    ("Paris","est la capitale de","la France","GEO"),
+    ("Tokyo","est la capitale du","Japon","GEO"),
+    ("Berlin","est la capitale de","l Allemagne","GEO"),
+    ("Londres","est la capitale du","Royaume Uni","GEO"),
+    ("Rome","est la capitale de","l Italie","GEO"),
+    ("Madrid","est la capitale de","l Espagne","GEO"),
+    ("Washington","est la capitale des","Etats Unis","GEO"),
+    ("Brasilia","est la capitale du","Bresil","GEO"),
+    ("Buenos Aires","est la capitale de","l Argentine","GEO"),
+    ("Moscou","est la capitale de","la Russie","GEO"),
+    ("Pekin","est la capitale de","la Chine","GEO"),
+    ("New Delhi","est la capitale de","l Inde","GEO"),
+    ("Canberra","est la capitale de","l Australie","GEO"),
+    ("Ottawa","est la capitale du","Canada","GEO"),
+    ("Le Caire","est la capitale de","l Egypte","GEO"),
+    ("Pretoria","est la capitale de","l Afrique du Sud","GEO"),
+    ("Abuja","est la capitale du","Nigeria","GEO"),
+    ("Nairobi","est la capitale du","Kenya","GEO"),
+    ("Dakar","est la capitale du","Senegal","GEO"),
+    ("Alger","est la capitale de","l Algerie","GEO"),
+    ("Rabat","est la capitale du","Maroc","GEO"),
+    ("Tunis","est la capitale de","la Tunisie","GEO"),
+    ("Bamako","est la capitale du","Mali","GEO"),
+    ("Ouagadougou","est la capitale du","Burkina Faso","GEO"),
+    ("Abidjan","est la capitale de","la Cote d Ivoire","GEO"),
+    ("Lome","est la capitale du","Togo","GEO"),
+    ("Cotonou","est la capitale du","Benin","GEO"),
+    ("Kinshasa","est la capitale de","la RDC","GEO"),
+    ("Luanda","est la capitale de","l Angola","GEO"),
+    ("Maputo","est la capitale du","Mozambique","GEO"),
+    ("Antananarivo","est la capitale de","Madagascar","GEO"),
+    ("Kigali","est la capitale du","Rwanda","GEO"),
+    ("Addis Abeba","est la capitale de","l Ethiopie","GEO"),
+    ("Seoul","est la capitale de","la Coree du Sud","GEO"),
+    ("Bangkok","est la capitale de","la Thailande","GEO"),
+    ("Hanoi","est la capitale du","Vietnam","GEO"),
+    ("Jakarta","est la capitale de","l Indonesie","GEO"),
+    ("Manille","est la capitale des","Philippines","GEO"),
+    ("Mexico","est la capitale du","Mexique","GEO"),
+    ("Lima","est la capitale du","Perou","GEO"),
+    ("Santiago","est la capitale du","Chili","GEO"),
+    ("Bogota","est la capitale de","la Colombie","GEO"),
+    ("Caracas","est la capitale du","Venezuela","GEO"),
+    ("Lisbonne","est la capitale du","Portugal","GEO"),
+    ("Athenes","est la capitale de","la Grece","GEO"),
+    ("Vienne","est la capitale de","l Autriche","GEO"),
+    ("Bruxelles","est la capitale de","la Belgique","GEO"),
+    ("Amsterdam","est la capitale des","Pays Bas","GEO"),
+    ("Stockholm","est la capitale de","la Suede","GEO"),
+    ("Oslo","est la capitale de","la Norvege","GEO"),
+    ("Copenhague","est la capitale du","Danemark","GEO"),
+    ("Helsinki","est la capitale de","la Finlande","GEO"),
+    ("Varsovie","est la capitale de","la Pologne","GEO"),
+    ("Prague","est la capitale de","la Republique Tcheque","GEO"),
+    ("Budapest","est la capitale de","la Hongrie","GEO"),
+    ("Bucarest","est la capitale de","la Roumanie","GEO"),
+    ("Sofia","est la capitale de","la Bulgarie","GEO"),
+    ("Ankara","est la capitale de","la Turquie","GEO"),
+    ("Teheran","est la capitale de","l Iran","GEO"),
+    ("Bagdad","est la capitale de","l Irak","GEO"),
+    ("Riyad","est la capitale de","l Arabie Saoudite","GEO"),
+    ("Abou Dabi","est la capitale des","Emirats Arabes Unis","GEO"),
+    ("Kiev","est la capitale de","l Ukraine","GEO"),
+]
+facts = facts + KA_IDENTITY + CAPITALS
 
 from harmonic_brain import HarmonicBrain
 
@@ -273,7 +362,7 @@ def chat():
                          'ton nom', 'que fais tu', 'qui est ka', 'c est quoi ka',
                          'presente toi', 'qu est ce que tu es', 'what are you', 'who are you',
                          'tu es quoi', 't es qui', 't es quoi', 'qui etes vous',
-                         'vous etes qui', 'comment vous appelez vous']
+                         'vous etes qui', 'comment vous appelez vous', 'quel est ton nom']
     msg_lower = message.lower().strip('?!. ')
     if any(kw in msg_lower for kw in identity_keywords):
         return jsonify({
@@ -821,6 +910,11 @@ def wave_creative():
 # FRONTEND — PWA (KA Phone)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+@app.route('/benchmark')
+def serve_benchmark():
+    """Page de benchmark public."""
+    return send_from_directory(str(_ENGINE_DIR), 'benchmark.html')
+
 @app.route('/')
 def serve_index():
     """Page d'accueil — KA Phone PWA."""
@@ -847,6 +941,264 @@ def serve_favicon():
     return send_from_directory(_ENGINE_DIR, 'favicon.ico') if (_ENGINE_DIR / 'favicon.ico').exists() else ('', 204)
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# GÉNÉRATION MÉDIA HARMONIQUE (Universe Language Model)
+# Image = |Ψ|² (Born) | Forme = phase DFT | Génération = résonance + ABC
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_media_engine = None
+
+def _get_media_engine():
+    """Lazy-init du moteur média harmonique."""
+    global _media_engine
+    if _media_engine is None:
+        try:
+            from multimodal.harmonic_media import HarmonicMediaEngine
+            mem_path = str(_ENGINE_DIR / 'data' / 'visual_memory.npz')
+            _media_engine = HarmonicMediaEngine(
+                dim=512,
+                memory_path=mem_path if os.path.exists(mem_path) else None
+            )
+            log.info("  🎨 Moteur média harmonique initialisé")
+        except Exception as e:
+            log.error(f"  Erreur init moteur média : {e}")
+            return None
+    return _media_engine
+
+
+@app.route('/api/media/image', methods=['POST'])
+def media_image():
+    """Génère une image harmonique → image/png."""
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if _check_rate_limit(ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+
+    try:
+        data = request.get_json(force=True)
+        prompt = data.get('prompt', '')
+        width = min(int(data.get('width', 256)), 512)
+        height = min(int(data.get('height', 256)), 512)
+
+        engine = _get_media_engine()
+        if engine is None:
+            return jsonify({'error': 'Moteur média non disponible'}), 503
+
+        result = engine.generate_image(prompt, width=width, height=height)
+
+        # Retourner l'image en PNG
+        import io as _io
+        from PIL import Image
+        buf = _io.BytesIO()
+        Image.fromarray(result.image).save(buf, format='PNG')
+        buf.seek(0)
+
+        log.info(f"  🎨 Image générée : '{prompt[:40]}' ({width}×{height}) "
+                 f"cohérence={result.phase_coherence:.3f} "
+                 f"[{result.processing_time_ms:.0f}ms]")
+        return send_file(buf, mimetype='image/png',
+                         as_attachment=True, download_name='harmonic.png')
+    except Exception as e:
+        log.error(f"  /api/media/image : {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/media/audio', methods=['POST'])
+def media_audio():
+    """Génère un audio harmonique → audio/wav."""
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if _check_rate_limit(ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+
+    try:
+        data = request.get_json(force=True)
+        prompt = data.get('prompt', '')
+        duration = min(float(data.get('duration', 10.0)), 30.0)
+        mode = data.get('mode', 'music')  # 'music' ou 'soundscape'
+
+        engine = _get_media_engine()
+        if engine is None:
+            return jsonify({'error': 'Moteur média non disponible'}), 503
+
+        result = engine.generate_audio(prompt, duration=duration, mode=mode)
+
+        import io as _io
+        from scipy.io import wavfile
+        samples_int = (np.clip(result.samples, -1, 1) * 32767).astype(np.int16)
+        buf = _io.BytesIO()
+        wavfile.write(buf, result.sample_rate, samples_int)
+        buf.seek(0)
+
+        log.info(f"  🎵 Audio généré : '{prompt[:40]}' mode={mode} "
+                 f"harmonie={result.harmony_score:.3f} "
+                 f"[{result.processing_time_ms:.0f}ms]")
+        return send_file(buf, mimetype='audio/wav',
+                         as_attachment=True, download_name='harmonic.wav')
+    except Exception as e:
+        log.error(f"  /api/media/audio : {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/media/video', methods=['POST'])
+def media_video():
+    """Génère une vidéo harmonique → video/mp4."""
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if _check_rate_limit(ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+
+    try:
+        data = request.get_json(force=True)
+        prompt = data.get('prompt', '')
+        duration = min(float(data.get('duration', 3.0)), 10.0)
+        fps = min(int(data.get('fps', 12)), 24)
+        width = min(int(data.get('width', 128)), 256)
+        height = min(int(data.get('height', 128)), 256)
+
+        engine = _get_media_engine()
+        if engine is None:
+            return jsonify({'error': 'Moteur média non disponible'}), 503
+
+        result = engine.generate_video(
+            prompt, duration=duration, fps=fps,
+            width=width, height=height
+        )
+
+        # Encoder en MP4
+        import tempfile
+        tmp = tempfile.NamedTemporaryFile(suffix='.mp4', delete=False)
+        tmp_path = tmp.name
+        tmp.close()
+        engine.save_video(result.frames, tmp_path, fps)
+
+        log.info(f"  🎬 Vidéo générée : '{prompt[:40]}' "
+                 f"({result.n_frames}f, {width}×{height}) "
+                 f"cohérence={result.temporal_coherence:.3f} "
+                 f"[{result.processing_time_ms:.0f}ms]")
+        return send_file(tmp_path, mimetype='video/mp4',
+                         as_attachment=True, download_name='harmonic.mp4')
+    except Exception as e:
+        log.error(f"  /api/media/video : {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/media/generate', methods=['POST'])
+def media_generate():
+    """Génère plusieurs modalités cohérentes → JSON + métriques."""
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if _check_rate_limit(ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+
+    try:
+        data = request.get_json(force=True)
+        prompt = data.get('prompt', '')
+        modalities = data.get('modalities', ['image', 'audio'])
+        width = min(int(data.get('width', 256)), 512)
+        height = min(int(data.get('height', 256)), 512)
+        duration = min(float(data.get('duration', 5.0)), 20.0)
+
+        engine = _get_media_engine()
+        if engine is None:
+            return jsonify({'error': 'Moteur média non disponible'}), 503
+
+        result = engine.generate_all(
+            prompt, modalities=modalities,
+            width=width, height=height, duration=duration
+        )
+
+        response = result.to_dict()
+        response['status'] = 'ok'
+
+        # Sauvegarder les fichiers si demandé
+        save_files = data.get('save', False)
+        if save_files:
+            import io as _io
+            files = {}
+            if result.image is not None:
+                from PIL import Image
+                buf = _io.BytesIO()
+                Image.fromarray(result.image).save(buf, format='PNG')
+                files['image'] = buf.getvalue()
+            if result.audio is not None:
+                from scipy.io import wavfile
+                buf = _io.BytesIO()
+                samples_int = (np.clip(result.audio, -1, 1) * 32767).astype(np.int16)
+                wavfile.write(buf, engine.audio_gen.sr, samples_int)
+                files['audio'] = buf.getvalue()
+
+        log.info(f"  🎨🎬🎵 Génération unifiée : '{prompt[:40]}' "
+                 f"[{result.processing_time_ms:.0f}ms]")
+        return jsonify(response)
+    except Exception as e:
+        log.error(f"  /api/media/generate : {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/media/templates', methods=['GET'])
+def media_templates():
+    """Liste les concepts visuels appris disponibles."""
+    try:
+        engine = _get_media_engine()
+        if engine is None:
+            return jsonify({'error': 'Moteur média non disponible'}), 503
+
+        concepts = engine.available_concepts
+        stats = engine.stats()
+
+        return jsonify({
+            'concepts': concepts,
+            'n_concepts': len(concepts),
+            'stats': stats,
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/media/ingest', methods=['POST'])
+def media_ingest():
+    """Ingère une image dans la mémoire (apprentissage continu)."""
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if _check_rate_limit(ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+
+    try:
+        if 'image' not in request.files:
+            return jsonify({'error': 'Aucune image fournie'}), 400
+
+        file = request.files['image']
+        concepts = request.form.getlist('concepts')
+        if not concepts:
+            concepts = [request.form.get('concept', 'inconnu')]
+
+        engine = _get_media_engine()
+        if engine is None:
+            return jsonify({'error': 'Moteur média non disponible'}), 503
+
+        # Charger l'image
+        from PIL import Image
+        import io as _io
+        img = Image.open(_io.BytesIO(file.read())).convert('RGB')
+        img_array = np.array(img)
+
+        engine.trainer.ingest_image(img_array, concepts)
+
+        # Sauvegarder la mémoire mise à jour
+        mem_path = str(_ENGINE_DIR / 'data' / 'visual_memory.npz')
+        engine.save_memory(mem_path)
+
+        coh = engine.trainer.compute_phase_coherence(concepts[0])
+
+        log.info(f"  📥 Image ingérée : concepts={concepts} "
+                 f"cohérence={coh.coherence:.3f}")
+        return jsonify({
+            'status': 'ok',
+            'concepts': concepts,
+            'coherence': coh.coherence,
+            'n_instances': coh.n_instances,
+        })
+    except Exception as e:
+        log.error(f"  /api/media/ingest : {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # DÉMARRAGE
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -864,5 +1216,11 @@ if __name__ == '__main__':
         log.info(f"   /api/compress  — compression HCV")
         log.info(f"   /api/upscale   — upscaling")
         log.info(f"   /api/enhance   — pipeline complet")
+    log.info(f"   /api/media/image     — génération image harmonique")
+    log.info(f"   /api/media/audio     — génération audio harmonique")
+    log.info(f"   /api/media/video     — génération vidéo harmonique")
+    log.info(f"   /api/media/generate  — génération multi-modale")
+    log.info(f"   /api/media/templates — concepts visuels appris")
+    log.info(f"   /api/media/ingest    — ingestion d'image (apprentissage)")
     log.info("")
     app.run(host='0.0.0.0', port=port, debug=False)
