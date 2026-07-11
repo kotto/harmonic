@@ -1333,82 +1333,30 @@ class HarmonicBrain:
 
     def _try_compose(self, facts: List[FactRecord], question: str,
                      parsed: StructuredPrompt = None, lang: str = 'fr') -> str:
-        """Compose avec connecteurs variés et corrections d'accents.
+        """Compose une réponse naturelle avec le WaveStyler."""
+        # Si WaveStyler disponible → rendu naturel (registre, pronoms, subordonnées)
+        try:
+            from wave_styler import WaveStyler
+            styler = WaveStyler(self.unconscious.encoder if self.unconscious else None)
+            fact_tuples = [(f.sujet, f.relation, f.objet, f.secteur) for f in facts]
+            return styler.render(fact_tuples, question, lang)
+        except Exception:
+            pass
 
-        Pour 1 fait → rendu simple + accents.
-        Pour 2+ faits → connecteurs variés (pas toujours "De plus").
-        """
+        # Fallback : rendu simple avec accents (inchangé)
+        return self._render_simple(facts, lang)
+
+    def _render_simple(self, facts: List[FactRecord], lang: str) -> str:
+        """Rendu simple : sujet relation objet, avec connecteurs de base."""
         import random
-
-        # Corrections d'accents (mots sans accent → avec accent)
-        _ACCENTS = {
-            'lumiere': 'lumière', 'oxygene': 'oxygène', 'energie': 'énergie',
-            'theorie': 'théorie', 'systeme': 'système', 'phenomene': 'phénomène',
-            'electricite': 'électricité', 'electrique': 'électrique',
-            'emission': 'émission', 'element': 'élément', 'elements': 'éléments',
-            'complexe': 'complexe', 'different': 'différent', 'differents': 'différents',
-            'premiere': 'première', 'deuxieme': 'deuxième', 'troisieme': 'troisième',
-            'physique': 'physique', 'chimique': 'chimique', 'biologique': 'biologique',
-            'realite': 'réalité', 'equation': 'équation', 'evolution': 'évolution',
-            'cree': 'crée', 'creee': 'créée', 'decrit': 'décrit',
-            'interet': 'intérêt', 'definition': 'définition',
-            'molecule': 'molécule', 'molecules': 'molécules',
-            'nucleaire': 'nucléaire', 'atome': 'atome', 'atomes': 'atomes',
-        }
-
-        def _fix(text):
-            for k, v in _ACCENTS.items():
-                text = text.replace(k, v)
-            return text
-
-        def _cap(text):
-            if not text:
-                return text
-            return text[0].upper() + text[1:]
-
-        # 1 fait → rendu simple + accents + majuscule
-        if len(facts) == 1:
-            f = facts[0]
-            s = _cap(f.sujet)
-            r = f.relation
-            o = f.objet
-            text = f"{s} {r} {o}."
-            return _fix(text)
-
-        # 2+ faits → connecteurs variés
-        if lang == 'en':
-            connectors = [
-                "Moreover, ", "Furthermore, ", "Additionally, ",
-                "It is also worth noting that ", "Besides, ",
-            ]
-        else:
-            connectors = [
-                "De plus, ", "Par ailleurs, ", "Également, ",
-                "Il convient aussi de souligner que ", "À cela s'ajoute le fait que ",
-                "On notera également que ", "En complément, ",
-            ]
-
-        # Premier fait
-        f0 = facts[0]
-        parts = [f"{_cap(f0.sujet)} {f0.relation} {f0.objet}."]
-
-        # Faits suivants avec connecteurs variés
-        available = list(range(len(connectors)))
+        if not facts:
+            return ""
+        s = facts[0].sujet[0].upper() + facts[0].sujet[1:] if facts[0].sujet else ""
+        parts = [f"{s} {facts[0].relation} {facts[0].objet}."]
+        connectors = ["De plus, ", "Par ailleurs, ", "Également, "]
         for f in facts[1:]:
-            if available:
-                idx = random.choice(available)
-                available.remove(idx)
-            else:
-                idx = random.randrange(len(connectors))
-            conn = connectors[idx]
-            s = f.sujet
-            o = f.objet
-            r = f.relation
-            # Mettre en minuscule après le connecteur
-            parts.append(f"{conn}{s} {r} {o}.")
-
-        text = ' '.join(parts)
-        return _fix(text)
+            parts.append(f"{random.choice(connectors)}{f.sujet} {f.relation} {f.objet}.")
+        return ' '.join(parts)
 
     def _dont_know(self, question: str, lang: str) -> str:
         """Réponse quand on ne sait pas — honnête, pas d'invention."""
