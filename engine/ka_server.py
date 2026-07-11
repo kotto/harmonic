@@ -267,9 +267,9 @@ facts = facts + KA_IDENTITY + CAPITALS
 
 from harmonic_brain import HarmonicBrain
 
-# Charger le cerveau directement (sans l'ancien HarmonicModel)
+# Charger le cerveau directement (dim=256 pour économiser la RAM)
 print(f"  🧠 Initialisation du Cerveau Harmonique v3...")
-brain = HarmonicBrain(facts)
+brain = HarmonicBrain(facts, dim=256)
 print(f"  🧠 Cerveau prêt: {brain.unconscious.stats['faits']:,} faits dans l'inconscient")
 print(f"  🌐 Domaines: {len(brain.stats.get('domains_available', []))}")
 print(f"  💬 Parseur: actif")
