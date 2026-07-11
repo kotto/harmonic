@@ -319,17 +319,24 @@ class HolographicEncoder:
                 real[k] = math.cos(phase_k) * sigma
                 imag[k] = math.sin(phase_k) * sigma
         
-        # 🔥 INJECTION SÉMANTIQUE : utiliser le spectral KB (prioritaire) ou global
+        # 🔥 INJECTION SÉMANTIQUE : phases multiples pour signature riche
         spectral = _KB_SPECTRAL or _SPECTRAL
         if spectral is not None:
-            phase = spectral.get_phase(word)
-            if phase is not None:
-                n_phase_dims = min(64, self.dim // 2)  # 2× plus de dimensions sémantiques
-                boost = math.sqrt(self.dim / (2.0 * n_phase_dims)) * sigma
-                for k in range(n_phase_dims):
-                    phase_k = phase * (1.0 + k / PHI)
-                    real[2*k] = math.cos(phase_k) * boost
-                    imag[2*k] = math.sin(phase_k) * boost
+            phases = spectral.get_phases(word)  # liste de phases (1 à 4)
+            if phases:
+                n_phases = len(phases)
+                n_phase_dims = min(64 * n_phases, self.dim) // (2 * n_phases) * n_phases
+                n_phase_dims = min(n_phase_dims, self.dim // 2)
+                boost = math.sqrt(self.dim / (2.0 * max(n_phase_dims, 1))) * sigma
+                
+                for p_idx, phase in enumerate(phases):
+                    offset = p_idx * (n_phase_dims // max(n_phases, 1))
+                    for k in range(offset, offset + n_phase_dims // max(n_phases, 1)):
+                        if 2*k + 1 >= self.dim:
+                            break
+                        phase_k = phase * (1.0 + (k - offset) / PHI)
+                        real[2*k] = math.cos(phase_k) * boost
+                        imag[2*k] = math.sin(phase_k) * boost
         
         v = real + 1j * imag
         self.word_vectors[word] = v

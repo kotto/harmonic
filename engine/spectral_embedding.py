@@ -193,11 +193,18 @@ def svd_embedding(W, k: int = 2) -> Tuple[np.ndarray, np.ndarray]:
 
 def embedding_to_phases(embedding: np.ndarray) -> np.ndarray:
     """
-    Convertit le plongement 2D en phases sur S¹.
+    Convertit le plongement K-dim en K/2 phases sur S¹.
     
-    θ(mot) = arg(v₁(mot) + i·v₂(mot)) ∈ [0, 2π]
+    θ_j(mot) = arg(v_{2j}(mot) + i·v_{2j+1}(mot)) ∈ [0, 2π]
+    
+    Pour K=2 → 1 phase par mot
+    Pour K=8 → 4 phases par mot (signature sémantique riche)
     """
-    phases = np.arctan2(embedding[:, 1], embedding[:, 0]) % TAU
+    K = embedding.shape[1]
+    n_phases = K // 2
+    phases = np.zeros((embedding.shape[0], n_phases))
+    for j in range(n_phases):
+        phases[:, j] = np.arctan2(embedding[:, 2*j+1], embedding[:, 2*j]) % TAU
     return phases
 
 
@@ -252,19 +259,20 @@ class SpectralEmbedding:
             return
         
         # 2. Plongement (SVD ou Laplacian)
+        K = 8  # 4 phases sémantiques par mot (richesse sémantique)
         if use_svd:
-            log.info("SVD...")
-            embedding, values = svd_embedding(W, k=2)
+            log.info(f"SVD (k={K})...")
+            embedding, values = svd_embedding(W, k=K)
         else:
-            log.info("Laplacian Eigenmaps...")
-            embedding, values = laplacian_eigenmaps(W, k=2)
+            log.info(f"Laplacian Eigenmaps (k={K})...")
+            embedding, values = laplacian_eigenmaps(W, k=K)
         self.embedding = embedding
         
-        # 3. Phases S¹
-        phases = embedding_to_phases(embedding)
+        # 3. Phases S¹ (K/2 phases par mot)
+        phases = embedding_to_phases(embedding)  # [N, K/2]
         
         for word, idx in vocab.items():
-            self.phases[word] = float(phases[idx])
+            self.phases[word] = phases[idx].tolist()  # liste de K/2 phases
         
         dt = time.time() - t0
         log.info(f"  {len(self.phases)} mots plongés en {dt:.1f}s")
@@ -292,8 +300,22 @@ class SpectralEmbedding:
     # ═════════════════════════════════════════════════════════════════════════
     
     def get_phase(self, word: str) -> Optional[float]:
-        """Retourne la phase θ(word) ∈ [0, 2π], ou None si inconnu."""
-        return self.phases.get(word.lower().strip())
+        """Retourne la première phase sémantique θ₁(word) ∈ [0, 2π], ou None."""
+        val = self.phases.get(word.lower().strip())
+        if val is None:
+            return None
+        if isinstance(val, list):
+            return val[0] if val else None
+        return float(val)
+    
+    def get_phases(self, word: str) -> Optional[List[float]]:
+        """Retourne toutes les phases sémantiques [θ₁, θ₂, ...] du mot, ou None."""
+        val = self.phases.get(word.lower().strip())
+        if val is None:
+            return None
+        if isinstance(val, list):
+            return val
+        return [float(val)]  # Ancien format → liste de 1 phase
     
     def get_vector(self, word: str) -> np.ndarray:
         """
@@ -384,12 +406,19 @@ class SpectralEmbedding:
         log.info(f"  Phases sauvegardées : {path} ({len(self.phases)} mots)")
     
     def load(self, path: str) -> bool:
-        """Charge les phases depuis JSON."""
+        """Charge les phases depuis JSON (compatible ancien et nouveau format)."""
         try:
             with open(path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             self.dim = data.get('dim', self.dim)
-            self.phases = {w: float(t) for w, t in data.get('phases', {}).items()}
+            raw_phases = data.get('phases', {})
+            # Compatible : float (ancien) ou list (nouveau)
+            self.phases = {}
+            for w, t in raw_phases.items():
+                if isinstance(t, list):
+                    self.phases[w] = [float(x) for x in t]
+                else:
+                    self.phases[w] = float(t)
             self.vocab = {w: i for i, w in enumerate(self.phases.keys())}
             self._cache = {}
             log.info(f"  Phases chargées : {path} ({len(self.phases)} mots)")
