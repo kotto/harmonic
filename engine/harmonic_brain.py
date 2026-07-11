@@ -577,6 +577,71 @@ class HolographicStore:
         self.total_retrieved += 1
         return scored[:max_results]
 
+    def retrieve_resonance(self, question: str, max_results: int = 50,
+                           sector_boost: str = None) -> List[Tuple[FactRecord, float]]:
+        """
+        RETRIEVAL ONDULATOIRE PUR — par résonance holographique ℂ⁵¹².
+        
+        Remplace le TF-IDF lexical par la cohérence de phase entre
+        le ψ de la question et les ψ des faits stockés dans l'hologramme.
+        
+        Algorithme :
+          1. Encoder la question → ψ_Q
+          2. Pour chaque fait, mesurer Re(⟨ψ_fact | ψ_Q⟩) → cohérence
+          3. Multiplier par l'amplitude du fait
+          4. Bonus sujet si le sujet du fait est dans la question
+          5. Trier et retourner les meilleurs
+        """
+        psi_q = self.encoder.encode_query(question)
+        if psi_q is None or np.all(psi_q == 0):
+            return []
+        
+        q_norm = _normalize(question)
+        q_tokens = set(_tokenize(q_norm))
+        
+        scored = []
+        now = time.time()
+        
+        for key, record in self.registry.items():
+            if record.psi is None:
+                continue
+            
+            # Cohérence de phase entre ψ_fact et ψ_Q
+            coherence = float(np.real(np.dot(record.psi, np.conj(psi_q))))
+            # Normaliser en [0, 1]
+            I = (coherence + 1.0) / 2.0
+            
+            # Bonus sujet : le sujet du fait apparaît dans la question
+            sujet_norm = _normalize(record.sujet)
+            bonus_sujet = 0.0
+            if sujet_norm in q_norm or any(t == sujet_norm for t in q_tokens):
+                bonus_sujet = 0.3
+            elif any(t in sujet_norm for t in q_tokens if len(t) >= 4):
+                bonus_sujet = 0.15
+            
+            # Bonus secteur (si spécifié)
+            bonus_secteur = 0.0
+            if sector_boost and record.secteur == sector_boost:
+                bonus_secteur = 0.2
+            
+            # Facteur d'amplitude
+            if record.amplitude >= 5.0:
+                amp_factor = record.amplitude / 5.0
+            else:
+                amp_factor = 1.0 + math.log1p(record.amplitude) * 0.3
+            
+            # Score final
+            score = (I + bonus_sujet + bonus_secteur) * amp_factor
+            
+            if score > 0.01:  # seuil minimal
+                scored.append((record, score))
+                record.times_retrieved += 1
+                record.last_seen = now
+        
+        scored.sort(key=lambda x: -x[1])
+        self.total_retrieved += 1
+        return scored[:max_results]
+
     def ruminate(self, max_pairs: int = 50000):
         """
         Rumination nocturne — consolidation par interférence.
@@ -1226,9 +1291,27 @@ class HarmonicBrain:
             except Exception:
                 pass
 
-        # ── 1. INCONSCIENT : retrieval pur ──
+        # ── 1. INCONSCIENT : retrieval hybride (TF-IDF + résonance ψ) ──
         candidates = self.unconscious.retrieve(weighted_question, max_results=15)
         retrieval_count = len(candidates)
+        
+        # 🔥 BOOST ONDULATOIRE : ajouter un bonus de résonance ψ aux scores TF-IDF
+        if candidates and self.unconscious.encoder is not None:
+            try:
+                psi_q = self.unconscious.encoder.encode_query(weighted_question)
+                if psi_q is not None and not np.all(psi_q == 0):
+                    boosted = []
+                    for rec, tfidf_score in candidates:
+                        if rec.psi is not None:
+                            coherence = float(np.real(np.dot(rec.psi, np.conj(psi_q))))
+                            resonance_boost = max(0, coherence) * 0.3  # +0 à +0.3
+                            boosted.append((rec, tfidf_score + resonance_boost))
+                        else:
+                            boosted.append((rec, tfidf_score))
+                    boosted.sort(key=lambda x: -x[1])
+                    candidates = boosted
+            except Exception:
+                pass  # Silencieux : garder les scores TF-IDF
 
         # ── 1.5. FILTRAGE PAR CONTEXTE (réduit le bruit en conversation) ──
         if use_conversation and self.conversation is not None and candidates:
