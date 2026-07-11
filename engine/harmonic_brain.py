@@ -414,7 +414,7 @@ class HolographicStore:
         if self.use_holographic and self.encoder:
             psi_f = self.encoder.encode_fact(s, r, o)
         else:
-            psi_f = np.zeros(dim or 64, dtype=np.complex128)  # Pas d'encodage ℂ
+            psi_f = np.zeros(self.dim or 64, dtype=np.complex128)  # Pas d'encodage ℂ
 
         record = FactRecord(
             sujet=s, relation=r, objet=o, secteur=secteur,
