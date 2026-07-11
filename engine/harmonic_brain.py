@@ -1429,9 +1429,12 @@ class HarmonicBrain:
         scored.sort(key=lambda x: -x[1])
         
         # Filtrer les scores trop bas (bruit évident)
-        if scored and len(scored) > 5:
+        if scored and len(scored) > 3:
             max_score = scored[0][1]
-            scored = [(r, s) for r, s in scored if s > max_score * 0.15]
+            # Ne garder que les candidats avec score > 25% du meilleur
+            scored = [(r, s) for r, s in scored if s > max_score * 0.25]
+            # Maximum 5 candidats pour limiter le bruit
+            scored = scored[:5]
         
         return scored
 

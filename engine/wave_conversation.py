@@ -78,6 +78,17 @@ class WaveConversation:
         'what is', 'who is', 'how many', 'when',
     }
 
+    # Mots ultra-fréquents qui indiquent un follow-up même si la
+    # cohérence ψ est faible — ils ne portent pas assez de sens seuls
+    WEAK_KEYWORDS = {
+        'ca', 'ça', 'cela', 'ce', 'cette', 'ceci',
+        'il', 'elle', 'ils', 'elles', 'on',
+        'et', 'donc', 'alors', 'du coup', 'aussi',
+        'produit', 'fait', 'marche', 'passe', 'donne', 'sert',
+        'quoi', 'comment', 'pourquoi', 'quand', 'ou', 'où',
+        'plus', 'grand', 'petit', 'haut', 'bas', 'fort', 'faible',
+    }
+
     def __init__(self, encoder, dim: int = 512):
         self.encoder = encoder
         self.dim = dim
@@ -120,13 +131,17 @@ class WaveConversation:
         Retourne True (follow-up), False (nouveau sujet), ou None (incertain).
         """
         q = question.lower().strip()
+        words = set(q.split())
+
+        # Si la question contient surtout des mots faibles → follow-up forcé
+        strong_words = words - self.WEAK_KEYWORDS
+        if len(strong_words) <= 1 and self.turn_count > 0:
+            # Ex: "et ça ?", "pourquoi ?", "et le plus grand ?"
+            return True
 
         # Questions très courtes (1-3 mots) → probablement follow-up
-        words = q.split()
-        if len(words) <= 3 and self.turn_count > 0:
-            # Sauf si ça commence par un mot interrogatif fort
-            if words[0] not in ('qui', 'quelle', 'quel', 'combien', 'quand',
-                                'what', 'who', 'how', 'when', 'where'):
+        if len(q.split()) <= 3 and self.turn_count > 0:
+            if words and not any(m in q for m in self.NEW_TOPIC_MARKERS):
                 return True
 
         # Marqueurs explicites de follow-up en début de question
@@ -172,20 +187,28 @@ class WaveConversation:
 
     def _enrich_question(self, question: str) -> str:
         """
-        Enrichit une question de follow-up avec le contexte précédent.
-        Rend le sujet principal PLUS fort que les mots de la question.
+        Enrichit agressivement une question de follow-up.
+        
+        Le sujet DOMINE les mots de la question pour noyer le bruit.
+        Ex: "et ca produit quoi" + sujet="photosynthese"
+            → "photosynthese photosynthese photosynthese ca produit quoi"
         """
         if not self.last_subject:
             return question
 
         words = question.strip().split()
         
-        # Questions très courtes → le sujet DOMINE
+        # Le sujet est répété proportionnellement à la faiblesse de la question
         if len(words) <= 4:
-            return f"{self.last_subject} {self.last_subject} {question}"
+            # Question très courte → le sujet domine massivement
+            repetitions = 4  # 4× le sujet pour noyer les mots faibles
+        elif len(words) <= 6:
+            repetitions = 3
+        else:
+            repetitions = 2
         
-        # Questions plus longues → préfixer le sujet
-        return f"{self.last_subject} {question}"
+        subject_repeated = ' '.join([self.last_subject] * repetitions)
+        return f"{subject_repeated} {question}"
 
     def _update_context(self, psi_q: np.ndarray, psi_r: np.ndarray):
         """
