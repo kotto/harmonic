@@ -1108,21 +1108,12 @@ class HarmonicBrain:
     def chat(self, question: str, lang: str = 'fr') -> BrainResult:
         """
         Conversation multi-tours avec contexte ψ ondulatoire.
+        Le contexte ψ est mis à jour automatiquement dans process().
         """
         result = self.process(question, lang=lang, use_conversation=True)
-        # Mise à jour du contexte après la réponse
-        if self.conversation is not None and result.response:
-            try:
-                conv = self.conversation
-                psi_q = conv._encode(question)
-                psi_r = conv._encode(result.response)
-                conv._update_context(psi_q, psi_r)
-                conv.last_response = result.response
-                if result.facts_used:
-                    conv.last_subject = result.facts_used[0].sujet
-                conv.turn_count += 1
-            except Exception:
-                pass
+        # Extraire le sujet des faits acceptés pour les futurs enrichissements
+        if self.conversation is not None and result.facts_used:
+            self.conversation.last_subject = result.facts_used[0].sujet
         return result
 
     def _update_conv_context(self, question: str, response: str,
