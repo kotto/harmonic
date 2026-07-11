@@ -38,10 +38,30 @@ from typing import Dict, List, Tuple, Optional
 # PLONGEMENT SPECTRAL SÉMANTIQUE (PPMI + Laplacian)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+_SPECTRAL = None
 try:
-    from spectral_embedding import _SPECTRAL
+    from spectral_embedding import _SPECTRAL as _global_spectral
+    _SPECTRAL = _global_spectral
 except Exception:
-    _SPECTRAL = None
+    pass
+
+# 🔥 Charger le spectral entraîné sur la KB (plus pertinent que le global)
+_KB_SPECTRAL = None
+try:
+    from spectral_embedding import SpectralEmbedding
+    _kb_path = Path(__file__).resolve().parent / 'data' / 'spectral_phases_kb.json'
+    if _kb_path.exists():
+        _KB_SPECTRAL = SpectralEmbedding(dim=512)
+        _KB_SPECTRAL.load(str(_kb_path))
+except Exception:
+    pass
+
+# 🔥 PLONGEMENT APPRIS (remplace FNV1a)
+try:
+    from learned_embedding import get_learned_embedding
+    _LEARNED = get_learned_embedding()
+except Exception:
+    _LEARNED = None
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONSTANTES
@@ -241,15 +261,44 @@ class HolographicEncoder:
         """
         Convertit un mot en vecteur complexe.
         
-        Si le plongement spectral sémantique est disponible → utilise
-        la phase θ(mot) dérivée du Laplacian Eigenmaps pour injecter
-        la structure sémantique dans le vecteur.
-        Sinon → fallback Gaussien déterministe (HRR standard).
+        Priorité :
+          1. Plongement appris (SVD PPMI) → similarité sémantique réelle
+          2. Phase spectrale (Laplacian) → fallback structuré
+          3. FNV1a Gaussien → fallback déterministe
         """
         if word in self.word_vectors:
             return self.word_vectors[word]
         
-        # Hash déterministe 64-bit
+        # 🔥 PLONGEMENT APPRIS : priorité absolue
+        if _LEARNED is not None and _LEARNED.is_trained:
+            learned_vec = _LEARNED.get_vector(word)
+            if learned_vec is not None:
+                # Adapter la dimension : pad/trunc à self.dim
+                learned_dim = len(learned_vec)
+                if learned_dim >= self.dim:
+                    v = learned_vec[:self.dim]
+                else:
+                    # Pad avec le fallback FNV1a pour les dimensions restantes
+                    v = np.zeros(self.dim, dtype=np.complex128)
+                    v[:learned_dim] = learned_vec
+                    # Remplir le reste avec FNV1a (compatibilité HRR)
+                    seed = _fnv1a_hash(word)
+                    rng = np.random.RandomState(seed & 0xFFFFFFFF)
+                    sigma = 1.0 / math.sqrt(2.0 * self.dim)
+                    for k in range(learned_dim, self.dim):
+                        phase_k = ((seed >> (k % 32)) ^ (k * 2654435761)) % 2147483647
+                        phase_k = (phase_k * PHI) % TAU
+                        v[k] = complex(math.cos(phase_k) * sigma * 0.1,
+                                      math.sin(phase_k) * sigma * 0.1)  # faible amplitude
+                
+                # Normaliser
+                norm = np.sqrt(np.sum(np.abs(v)**2))
+                if norm > 0:
+                    v = v / norm
+                self.word_vectors[word] = v
+                return v
+        
+        # Fallback : FNV1a Gaussien (comportement original)
         seed = _fnv1a_hash(word)
         rng = np.random.RandomState(seed & 0xFFFFFFFF)
         
@@ -270,12 +319,12 @@ class HolographicEncoder:
                 real[k] = math.cos(phase_k) * sigma
                 imag[k] = math.sin(phase_k) * sigma
         
-        # 🔥 INJECTION SÉMANTIQUE : si le plongement spectral est disponible,
-        # remplacer les premières dimensions par la phase dérivée du sens
-        if _SPECTRAL is not None:
-            phase = _SPECTRAL.get_phase(word)
+        # 🔥 INJECTION SÉMANTIQUE : utiliser le spectral KB (prioritaire) ou global
+        spectral = _KB_SPECTRAL or _SPECTRAL
+        if spectral is not None:
+            phase = spectral.get_phase(word)
             if phase is not None:
-                n_phase_dims = min(32, self.dim // 2)
+                n_phase_dims = min(64, self.dim // 2)  # 2× plus de dimensions sémantiques
                 boost = math.sqrt(self.dim / (2.0 * n_phase_dims)) * sigma
                 for k in range(n_phase_dims):
                     phase_k = phase * (1.0 + k / PHI)
@@ -471,6 +520,32 @@ class HolographicEncoder:
                 scores[i] = self.resonance_score(w, query_vector)
         
         return scores
+    
+    def reencode_all_with_semantics(self):
+        """
+        Ré-encode tous les mots existants avec leur phase sémantique.
+        À appeler UNE FOIS après avoir chargé le spectral embedding.
+        
+        Transforme les ψ aléatoires (FNV1a) en ψ sémantiquement alignés :
+        - Mots qui co-occurrent → phases proches → cohérence élevée
+        - Mots sans relation → phases décorrélées → cohérence nulle
+        """
+        spectral = _KB_SPECTRAL or _SPECTRAL
+        if spectral is None or not spectral.is_ready:
+            return 0
+        
+        reencoded = 0
+        for word in list(self.word_vectors.keys()):
+            if word.startswith('__char_'):
+                continue
+            # Forcer le ré-encodage avec injection sémantique
+            try:
+                self.word_vectors[word] = self.encode_word(word)
+                reencoded += 1
+            except Exception:
+                pass
+        
+        return reencoded
     
     # ── Utilitaires ───────────────────────────────────────────────────────
     

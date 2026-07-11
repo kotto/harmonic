@@ -917,6 +917,15 @@ class HarmonicBrain:
         if sft_injected > 0:
             log.info(f"SFT injectés: {sft_injected} faits avec amplitude {amp}")
 
+        # 🔥 RÉ-ENCODAGE SÉMANTIQUE : aligner les ψ avec les phases de co-occurrence
+        # Transforme les vecteurs FNV1a (quasi-orthogonaux) en vecteurs sémantiques
+        try:
+            n_reencoded = self.unconscious.encoder.reencode_all_with_semantics()
+            if n_reencoded > 0:
+                log.info(f"Ré-encodage sémantique: {n_reencoded} mots réalignés")
+        except Exception:
+            pass
+
         self._init_time = time.time() - t0
         log.info(f"HarmonicBrain initialisé en {self._init_time:.1f}s "
                  f"({len(self.unconscious.registry)} faits dans l'inconscient)")
