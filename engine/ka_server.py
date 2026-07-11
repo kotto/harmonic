@@ -267,9 +267,11 @@ facts = facts + KA_IDENTITY + CAPITALS
 
 from harmonic_brain import HarmonicBrain
 
-# Charger le cerveau directement (dim=256 pour économiser la RAM)
-print(f"  🧠 Initialisation du Cerveau Harmonique v3...")
-brain = HarmonicBrain(facts, dim=256)
+# Charger le cerveau — mode léger pour le serveur (pas d'encodage holographique)
+# L'encodage ℂ⁵¹² consomme ~8 KB/fait — trop pour 1.5 GB de RAM
+# Le retrieval TF-IDF seul donne 93%+ de précision
+print(f"  🧠 Initialisation du Cerveau Harmonique v3 (mode serveur léger)...")
+brain = HarmonicBrain(facts, dim=64, use_holographic=False)
 print(f"  🧠 Cerveau prêt: {brain.unconscious.stats['faits']:,} faits dans l'inconscient")
 print(f"  🌐 Domaines: {len(brain.stats.get('domains_available', []))}")
 print(f"  💬 Parseur: actif")

@@ -238,9 +238,10 @@ class HolographicStore:
       - Oubli naturel par le noyau ABC (φ⁻ᵗ)
     """
 
-    def __init__(self, dim: int = 512):
+    def __init__(self, dim: int = 512, use_holographic: bool = True):
         self.dim = dim
-        self.encoder = HolographicEncoder(dim=dim)
+        self.use_holographic = use_holographic
+        self.encoder = HolographicEncoder(dim=dim) if use_holographic else None
 
         # L'hologramme : superposition de TOUS les faits
         self.hologram = np.zeros(dim, dtype=np.complex128)
@@ -410,7 +411,10 @@ class HolographicStore:
             return record
 
         # Nouveau fait → ENREGISTRER
-        psi_f = self.encoder.encode_fact(s, r, o)
+        if self.use_holographic and self.encoder:
+            psi_f = self.encoder.encode_fact(s, r, o)
+        else:
+            psi_f = np.zeros(dim or 64, dtype=np.complex128)  # Pas d'encodage ℂ
 
         record = FactRecord(
             sujet=s, relation=r, objet=o, secteur=secteur,
@@ -872,11 +876,11 @@ class HarmonicBrain:
     """
 
     def __init__(self, knowledge_base: List[Tuple[str, str, str, str]] = None,
-                 dim: int = 512):
+                 dim: int = 512, use_holographic: bool = True):
         t0 = time.time()
 
         # L'INCONSCIENT
-        self.unconscious = HolographicStore(dim=dim)
+        self.unconscious = HolographicStore(dim=dim, use_holographic=use_holographic)
 
         # LE CONSCIENT
         self.conscious = ConsciousFilter(self.unconscious)
