@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULM sur LM Arena — L'IA qui ne ment pas</title>
+    <meta name="description" content="ULM (Universe Language Machine) — 2 Mo. Zéro GPU. Zéro paramètre. Zéro hallucination. 100% sur 30 questions. Essayez-le en direct.">
+    <meta property="og:title" content="ULM — L'IA de 2 Mo qui défie les LLMs">
+    <meta property="og:description" content="2 Mo. Zéro GPU. Zéro hallucination. 100% déterministe. Essayez ULM en direct.">
+    <meta property="og:image" content="https://harmonic-ai.site/images/ulm-lm-arena.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <style>
+        :root {
+            --phi: #D4A843;
+            --bg: #0a0a0f;
+            --card: #111118;
+            --text: #e0e0e0;
+            --accent: #6366f1;
+            --success: #22c55e;
+            --warn: #f59e0b;
+            --red: #ef4444;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            padding: 60px 20px 40px;
+            background: linear-gradient(180deg, #111118 0%, #0a0a0f 100%);
+            border-bottom: 1px solid #222;
+        }
+        .hero h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--phi), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .hero .tagline {
+            font-size: 1.2rem;
+            color: #999;
+            margin-bottom: 30px;
+        }
+
+        /* Badge */
+        .badge-row {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .badge {
+            background: var(--card);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 15px 25px;
+            text-align: center;
+            min-width: 120px;
+        }
+        .badge .value {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--success), #4ade80);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .badge .value.warn { background: linear-gradient(135deg, var(--warn), #fbbf24); -webkit-background-clip: text; }
+        .badge .label { font-size: 0.75rem; color: #888; margin-top: 5px; }
+
+        /* Comparaison */
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 40px 0;
+        }
+        @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+        .compare-card {
+            background: var(--card);
+            border: 1px solid #222;
+            border-radius: 16px;
+            padding: 25px;
+        }
+        .compare-card.ulm { border-color: var(--success); }
+        .compare-card.llm { border-color: #333; }
+        .compare-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .compare-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #1a1a22;
+            font-size: 0.9rem;
+        }
+        .compare-row .val { font-weight: 600; }
+        .check { color: var(--success); }
+        .cross { color: var(--red); }
+        .neutral { color: var(--warn); }
+
+        /* Chat Widget */
+        .chat-section {
+            margin: 40px 0;
+        }
+        .chat-section h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        .chat-container {
+            background: var(--card);
+            border: 1px solid #222;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        .chat-messages {
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .chat-msg {
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .chat-msg .q {
+            background: #1a1a28;
+            padding: 10px 15px;
+            border-radius: 12px 12px 0 12px;
+            display: inline-block;
+            max-width: 80%;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .chat-msg .r {
+            background: #0d2818;
+            padding: 10px 15px;
+            border-radius: 0 12px 12px 12px;
+            display: inline-block;
+            max-width: 90%;
+            color: #a0e0b0;
+        }
+        .chat-input-row {
+            display: flex;
+            border-top: 1px solid #222;
+        }
+        .chat-input-row input {
+            flex: 1;
+            background: #0a0a12;
+            border: none;
+            color: var(--text);
+            padding: 15px 20px;
+            font-size: 1rem;
+            outline: none;
+        }
+        .chat-input-row button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .chat-input-row button:hover { background: #5558e6; }
+        .chat-input-row button:disabled { background: #333; cursor: not-allowed; }
+        .chat-loading { color: var(--warn); font-style: italic; padding: 10px; }
+
+        /* Physics section */
+        .physics {
+            background: var(--card);
+            border: 1px solid #222;
+            border-radius: 16px;
+            padding: 25px;
+            margin: 40px 0;
+            text-align: center;
+        }
+        .physics .formula {
+            font-family: 'Georgia', serif;
+            font-size: 1.3rem;
+            color: var(--phi);
+            margin: 15px 0;
+            word-break: break-all;
+        }
+        .physics .precision {
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        /* CTA */
+        .cta {
+            text-align: center;
+            margin: 40px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 15px 35px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: scale(1.03); }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-outline { background: transparent; border: 2px solid var(--accent); color: var(--accent); }
+        .btn-gold { background: var(--phi); color: #000; }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #555;
+            font-size: 0.85rem;
+            border-top: 1px solid #222;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+    <h1>ULM — Universe Language Machine</h1>
+    <p class="tagline">Ce n'est pas un LLM. C'est un moteur de vérité ondulatoire.</p>
+    <div class="badge-row">
+        <div class="badge">
+            <div class="value">2 Mo</div>
+            <div class="label">Taille totale</div>
+        </div>
+        <div class="badge">
+            <div class="value">0</div>
+            <div class="label">Paramètres appris</div>
+        </div>
+        <div class="badge">
+            <div class="value">100%</div>
+            <div class="label">Benchmark 30Q</div>
+        </div>
+        <div class="badge">
+            <div class="value warn">93%</div>
+            <div class="label">Benchmark 730Q</div>
+        </div>
+        <div class="badge">
+            <div class="value">0%</div>
+            <div class="label">Hallucination</div>
+        </div>
+        <div class="badge">
+            <div class="value">88 ms</div>
+            <div class="label">Latence</div>
+        </div>
+    </div>
+</section>
+
+<div class="container">
+
+<!-- COMPARAISON -->
+<div class="comparison">
+    <div class="compare-card ulm">
+        <h3>🌊 ULM (Universe Language Machine)</h3>
+        <div class="compare-row"><span>Architecture</span><span class="val">Ondes & interférences</span></div>
+        <div class="compare-row"><span>Hallucinations</span><span class="val check">✅ 0% (structurel)</span></div>
+        <div class="compare-row"><span>Déterminisme</span><span class="val check">✅ 100%</span></div>
+        <div class="compare-row"><span>Taille</span><span class="val check">✅ 2 Mo</span></div>
+        <div class="compare-row"><span>GPU requis</span><span class="val check">✅ Aucun</span></div>
+        <div class="compare-row"><span>Paramètres</span><span class="val check">✅ 0 appris</span></div>
+        <div class="compare-row"><span>Coût/requête</span><span class="val check">✅ 0€</span></div>
+        <div class="compare-row"><span>Fondement physique</span><span class="val check">✅ α à 99.99998%</span></div>
+        <div class="compare-row"><span>Fonctionne sur</span><span class="val check">✅ Téléphone</span></div>
+    </div>
+    <div class="compare-card llm">
+        <h3>🤖 LLMs (GPT-4, Claude, Gemini)</h3>
+        <div class="compare-row"><span>Architecture</span><span class="val">Probabilités statistiques</span></div>
+        <div class="compare-row"><span>Hallucinations</span><span class="val cross">❌ 3-10% inhérent</span></div>
+        <div class="compare-row"><span>Déterminisme</span><span class="val cross">❌ Aléatoire</span></div>
+        <div class="compare-row"><span>Taille</span><span class="val neutral">⚠️ 700 Go+</span></div>
+        <div class="compare-row"><span>GPU requis</span><span class="val neutral">⚠️ Data centers</span></div>
+        <div class="compare-row"><span>Paramètres</span><span class="val neutral">⚠️ Milliards</span></div>
+        <div class="compare-row"><span>Coût/requête</span><span class="val neutral">⚠️ $0.01-0.10</span></div>
+        <div class="compare-row"><span>Fondement physique</span><span class="val cross">❌ Aucun</span></div>
+        <div class="compare-row"><span>Fonctionne sur</span><span class="val cross">❌ Cloud uniquement</span></div>
+    </div>
+</div>
+
+<!-- PHYSICS -->
+<div class="physics">
+    <h3>📐 Fondé sur les Lois de l'Univers</h3>
+    <p>ULM n'est pas un modèle statistique. C'est une implémentation de la Théorie de l'Univers Harmonique.</p>
+    <div class="formula">α = π⁴ · e⁻⁴ · φ⁻⁵ · √2⁻¹ · √3⁻⁵ = 1/137.036</div>
+    <p class="precision">Constante de structure fine prédite à 99.99998% — CODATA : 137.035999</p>
+    <div style="margin-top:10px;font-size:0.85rem;color:#888">
+        Ψ = Σ Hₙ · (Ψ₁)ⁿ &nbsp;|&nbsp; Hₙ ∈ {φ, π, e, √2, √3, √5, e/π} &nbsp;|&nbsp; 7 constantes. 1 équation. Zéro paramètre libre.
+    </div>
+</div>
+
+<!-- CHAT WIDGET -->
+<div class="chat-section">
+    <h2>🧪 Essayez ULM en Direct</h2>
+    <p style="text-align:center;color:#888;margin-bottom:15px">Posez une question. ULM répond. Sans halluciner. Sans GPU. Dans votre navigateur.</p>
+    <div class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+            <div class="chat-msg">
+                <div class="q">💡 Suggestions : capitale du Japon, 3+7, qui a peint la Joconde, symbole de l'or, explique la photosynthèse</div>
+            </div>
+        </div>
+        <div class="chat-input-row">
+            <input type="text" id="chatInput" placeholder="Posez une question..." onkeypress="if(event.key==='Enter')askULM()">
+            <button id="chatBtn" onclick="askULM()">→</button>
+        </div>
+    </div>
+</div>
+
+<!-- CTA -->
+<div class="cta">
+    <a href="https://github.com/kotto/harmonic" class="btn btn-outline" target="_blank">📦 Code Source</a>
+    <a href="#contact" class="btn btn-primary">📱 Télécharger KA PHONE</a>
+    <a href="docs/DOCUMENT_FONDATEUR_PUBLIC.md" class="btn btn-gold" target="_blank">📖 Théorie Complète</a>
+</div>
+
+</div>
+
+<footer>
+    <p>ULM (Universe Language Machine) — Théorie de l'Univers Harmonique © 2026 Alain Kotto</p>
+    <p>Enveloppe Soleau déposée à l'INPI. Tous droits réservés.</p>
+    <p style="margin-top:10px"><a href="index.html" style="color:var(--accent)">← Retour au site Harmonic AI</a></p>
+</footer>
+
+<script>
+const API_URL = '/api/chat';
+
+async function askULM() {
+    const input = document.getElementById('chatInput');
+    const btn = document.getElementById('chatBtn');
+    const messages = document.getElementById('chatMessages');
+    const question = input.value.trim();
+    if (!question) return;
+
+    // Add question
+    const qDiv = document.createElement('div');
+    qDiv.className = 'chat-msg';
+    qDiv.innerHTML = `<div class="q">${escapeHtml(question)}</div>`;
+    messages.appendChild(qDiv);
+
+    // Add loading
+    const loadDiv = document.createElement('div');
+    loadDiv.className = 'chat-loading';
+    loadDiv.id = 'loading';
+    loadDiv.textContent = 'ULM réfléchit...';
+    messages.appendChild(loadDiv);
+    messages.scrollTop = messages.scrollHeight;
+
+    input.value = '';
+    btn.disabled = true;
+
+    try {
+        const resp = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: question, lang: 'fr' })
+        });
+        const data = await resp.json();
+        const answer = data.response || data.message || 'Je n\'ai pas assez d\'éléments pour répondre.';
+
+        // Remove loading
+        document.getElementById('loading')?.remove();
+
+        // Add response
+        const rDiv = document.createElement('div');
+        rDiv.className = 'chat-msg';
+        rDiv.innerHTML = `<div class="r">${escapeHtml(answer)}</div>`;
+        if (data.confidence !== undefined) {
+            rDiv.innerHTML += `<div style="font-size:0.7rem;color:#666;margin-top:3px">confiance: ${(data.confidence*100).toFixed(0)}% | ${data.total_time_ms?.toFixed(0) || '?'} ms</div>`;
+        }
+        messages.appendChild(rDiv);
+    } catch (e) {
+        document.getElementById('loading')?.remove();
+        const errDiv = document.createElement('div');
+        errDiv.className = 'chat-msg';
+        errDiv.innerHTML = `<div class="r" style="background:#281a1a;color:#e0a0a0">Connexion au serveur ULM impossible. Le serveur doit être démarré localement.</div>`;
+        messages.appendChild(errDiv);
+    }
+
+    messages.scrollTop = messages.scrollHeight;
+    btn.disabled = false;
+    input.focus();
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+
+</body>
+</html>
