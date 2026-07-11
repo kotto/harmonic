@@ -1,34 +1,31 @@
 #!/usr/bin/env python3
 """
-Wave Fine-Tune — Ajustement des ψ par la contrainte ⊛
-=======================================================
-Pour chaque fait (sujet, relation, objet), la contrainte est :
-    ψ_sujet ⊛ ψ_relation ≈ ψ_objet
+Wave Fine-Tune V2 — Moindres Carrés Alternés dans le Domaine de Fourier
+=========================================================================
+Pour chaque fait (sujet, relation, objet) :
+    ψ_s ⊛ ψ_r ≈ ψ_o
 
-Cet ajustement itératif minimise l'erreur totale :
-    L = Σ ||ψ_s ⊛ ψ_r - ψ_o||²
+Dans le domaine de Fourier, la convolution devient multiplication :
+    ψ̃_s[k] · ψ̃_r[k] ≈ ψ̃_o[k]
 
-C'est l'équivalent ondulatoire de la rétropropagation,
-mais sans gradient — c'est de l'algèbre linéaire dans ℂ⁵¹².
+SOLUTION (moindres carrés alternés) :
+  Pour un mot w utilisé comme sujet :
+    ψ̃_w[k] = Σ (ψ̃_o · ψ̃_r*) / Σ |ψ̃_r|²   (sur tous les faits où w est sujet)
+  
+  Puis normalisation dans le domaine temporel.
 
-ALGORITHME (inspiré de Hebb : "fire together, wire together") :
-  1. Pour chaque fait (s, r, o) :
-     a. Calculer la prédiction : ψ_pred = ψ_s ⊛ ψ_r
-     b. Calculer l'erreur : E = ψ_pred - ψ_o
-     c. Ajuster ψ_s : ψ_s += η · (E ⊗ ψ_r)   (corrélation circulaire)
-     d. Ajuster ψ_r : ψ_r += η · (ψ_s* ⊗ E)
-     e. Normaliser les vecteurs modifiés
-  2. Répéter jusqu'à convergence
+C'est la solution CLOSED-FORM optimale par fréquence.
 
 USAGE :
   from wave_fine_tune import WaveFineTuner
   tuner = WaveFineTuner(encoder)
-  tuner.fine_tune(knowledge_base, epochs=3)
+  tuner.fine_tune(knowledge_base, epochs=5)
 """
 
 import math
 import numpy as np
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
+from collections import defaultdict
 import logging
 
 log = logging.getLogger(__name__)
@@ -36,42 +33,20 @@ log = logging.getLogger(__name__)
 PHI = 1.618033988749895
 
 
-def _circular_convolve(a: np.ndarray, b: np.ndarray) -> np.ndarray:
-    """a ⊛ b = IFFT(FFT(a) · FFT(b))"""
-    A = np.fft.fft(a)
-    B = np.fft.fft(b)
-    return np.fft.ifft(A * B)
-
-
-def _circular_correlate(a: np.ndarray, b: np.ndarray) -> np.ndarray:
-    """a ⊗ b = IFFT(FFT(a) · conj(FFT(b))) — unbinding"""
-    A = np.fft.fft(a)
-    B = np.fft.fft(b)
-    return np.fft.ifft(A * np.conj(B))
-
-
-def _normalize(psi: np.ndarray) -> np.ndarray:
-    """Normalise un vecteur ψ à la norme unitaire."""
-    norm = np.sqrt(np.sum(np.abs(psi) ** 2))
-    if norm > 1e-15:
-        return psi / norm
-    return psi
-
-
 class WaveFineTuner:
     """
-    Ajuste les ψ pour que ψ_s ⊛ ψ_r ≈ ψ_o pour tous les faits.
+    Ajuste les ψ par moindres carrés alternés dans le domaine de Fourier.
     """
 
-    def __init__(self, encoder, learning_rate: float = 0.01):
+    def __init__(self, encoder, learning_rate: float = 1.0):
         self.encoder = encoder
-        self.lr = learning_rate
+        self.lr = learning_rate  # 1.0 = solution complète, <1.0 = step partiel
         self.dim = encoder.dim
 
     def fine_tune(self, knowledge_base: List[Tuple[str, str, str, str]],
-                  epochs: int = 3, verbose: bool = True) -> dict:
+                  epochs: int = 5, verbose: bool = True) -> dict:
         """
-        Ajuste itérativement les ψ de la KB.
+        Ajuste itérativement les ψ par moindres carrés alternés.
 
         Args:
             knowledge_base: liste de (sujet, relation, objet, secteur)
@@ -79,82 +54,148 @@ class WaveFineTuner:
             verbose: afficher la progression
 
         Returns:
-            dict avec les métriques d'entraînement
+            dict avec métriques
         """
-        history = {'epoch': [], 'loss': [], 'adjusted': []}
+        history = {'epoch': [], 'loss': [], 'words_updated': []}
+
+        # Construire les index : pour chaque mot, quels faits l'utilisent ?
+        facts_by_subject = defaultdict(list)  # mot → [(r, o), ...]
+        facts_by_object = defaultdict(list)   # mot → [(s, r), ...]
+        all_words = set()
+
+        for s, r, o, sec in knowledge_base:
+            ws, wr, wo = s.lower().strip(), r.lower().strip(), o.lower().strip()
+            facts_by_subject[ws].append((wr, wo))
+            facts_by_object[wo].append((ws, wr))
+            all_words.update([ws, wr, wo])
+
+        # Filtrer : ne garder que les mots présents dans l'encodeur
+        vocab = {w for w in all_words if w in self.encoder.word_vectors}
 
         for epoch in range(epochs):
             total_loss = 0.0
-            adjusted = 0
+            words_updated = 0
 
-            for s, r, o, sec in knowledge_base:
-                # Encoder les mots
-                psi_s = self._get_vec(s)
-                psi_r = self._get_vec(r)
-                psi_o = self._get_vec(o)
+            # Étape 1 : Optimiser les ψ_sujet (en fixant ψ_relation et ψ_objet)
+            words_updated += self._optimize_by_role(
+                facts_by_subject, vocab, role='subject', epoch=epoch)
 
-                if psi_s is None or psi_r is None or psi_o is None:
-                    continue
+            # Étape 2 : Optimiser les ψ_objet (en fixant ψ_sujet et ψ_relation)
+            words_updated += self._optimize_by_role(
+                facts_by_object, vocab, role='object', epoch=epoch)
 
-                # Prédiction : ψ_pred = ψ_s ⊛ ψ_r
-                psi_pred = _circular_convolve(psi_s, psi_r)
+            # Calculer la loss
+            total_loss = self._compute_loss(knowledge_base, vocab)
+            avg_loss = total_loss / max(len(knowledge_base), 1)
 
-                # Erreur
-                error = psi_pred - psi_o
-                loss = float(np.sum(np.abs(error) ** 2))
-                total_loss += loss
-
-                # Ajuster ψ_s : Δψ_s = η · (error ⊗ ψ_r)
-                correction_s = _circular_correlate(error, psi_r) * self.lr
-                psi_s_new = _normalize(psi_s - correction_s)
-
-                # Ajuster ψ_o : Δψ_o = η · (ψ_pred - ψ_o)  (rapprocher de la réalité)
-                correction_o = error * self.lr
-                psi_o_new = _normalize(psi_o + correction_o)
-
-                # Appliquer
-                self._set_vec(s, psi_s_new)
-                self._set_vec(o, psi_o_new)
-                adjusted += 1
-
-            avg_loss = total_loss / max(adjusted, 1)
             history['epoch'].append(epoch)
             history['loss'].append(avg_loss)
-            history['adjusted'].append(adjusted)
+            history['words_updated'].append(words_updated)
 
             if verbose:
                 log.info(f"  Epoch {epoch+1}/{epochs}: loss={avg_loss:.4f}, "
-                         f"adjusted={adjusted} faits")
+                         f"updated={words_updated} mots")
 
         return history
 
-    def _get_vec(self, word: str) -> Optional[np.ndarray]:
-        """Récupère le ψ d'un mot, l'encode si nécessaire."""
-        w = word.lower().strip()
-        if w in self.encoder.word_vectors:
-            return self.encoder.word_vectors[w].copy()
-        # Encoder le mot (créé s'il n'existe pas)
-        return self.encoder.encode_word(w)
+    def _optimize_by_role(self, facts_by_role: Dict[str, List],
+                          vocab: set, role: str, epoch: int) -> int:
+        """
+        Optimise les ψ pour un rôle donné (sujet ou objet).
 
-    def _set_vec(self, word: str, psi: np.ndarray):
-        """Met à jour le ψ d'un mot."""
-        w = word.lower().strip()
-        self.encoder.word_vectors[w] = psi
+        Pour chaque mot w :
+          ψ̃_w[k] = Σ (ψ̃_target[k] · ψ̃_other[k]*) / (Σ |ψ̃_other[k]|² + ε)
+
+        où la somme est sur tous les faits où w apparaît dans ce rôle.
+        """
+        updated = 0
+        epsilon = 1e-8
+
+        for word in vocab:
+            if word not in facts_by_role or not facts_by_role[word]:
+                continue
+
+            facts = facts_by_role[word]
+            if len(facts) < 1:
+                continue
+
+            # Accumuler numérateur et dénominateur dans le domaine de Fourier
+            num = np.zeros(self.dim, dtype=np.complex128)
+            den = np.zeros(self.dim, dtype=np.float64)
+
+            for other_word, target_word in facts:
+                if other_word not in vocab or target_word not in vocab:
+                    continue
+
+                psi_other = self.encoder.word_vectors[other_word]
+                psi_target = self.encoder.word_vectors[target_word]
+
+                # Passer dans le domaine de Fourier
+                psi_other_f = np.fft.fft(psi_other)
+                psi_target_f = np.fft.fft(psi_target)
+
+                # Accumuler
+                num += psi_target_f * np.conj(psi_other_f)
+                den += np.abs(psi_other_f) ** 2
+
+            if np.all(den < epsilon):
+                continue
+
+            # Solution optimale dans le domaine de Fourier
+            psi_new_f = num / (den + epsilon)
+
+            # Revenir au domaine temporel
+            psi_new = np.fft.ifft(psi_new_f)
+
+            # Normaliser
+            norm = np.sqrt(np.sum(np.abs(psi_new) ** 2))
+            if norm > 1e-15:
+                psi_new /= norm
+
+            # Appliquer avec learning rate
+            if self.lr >= 1.0:
+                self.encoder.word_vectors[word] = psi_new
+            else:
+                psi_old = self.encoder.word_vectors[word]
+                self.encoder.word_vectors[word] = psi_old + self.lr * (psi_new - psi_old)
+                norm = np.sqrt(np.sum(np.abs(self.encoder.word_vectors[word]) ** 2))
+                if norm > 1e-15:
+                    self.encoder.word_vectors[word] /= norm
+
+            updated += 1
+
+        return updated
+
+    def _compute_loss(self, knowledge_base: List, vocab: set) -> float:
+        """Calcule la loss totale L = Σ ||ψ_s ⊛ ψ_r - ψ_o||²."""
+        total = 0.0
+        count = 0
+        for s, r, o, sec in knowledge_base:
+            ws, wr, wo = s.lower().strip(), r.lower().strip(), o.lower().strip()
+            if ws not in vocab or wr not in vocab or wo not in vocab:
+                continue
+            psi_s = self.encoder.word_vectors[ws]
+            psi_r = self.encoder.word_vectors[wr]
+            psi_o = self.encoder.word_vectors[wo]
+            # Convolution via FFT
+            psi_pred = np.fft.ifft(np.fft.fft(psi_s) * np.fft.fft(psi_r))
+            error = np.sum(np.abs(psi_pred - psi_o) ** 2)
+            total += error
+            count += 1
+        return total / max(count, 1)
 
 
 def demo(encoder, kb):
-    """Démonstration du fine-tuning."""
+    """Démonstration du fine-tuning par moindres carrés."""
     print("=" * 60)
-    print("WAVE FINE-TUNE — Ajustement par contrainte ⊛")
+    print("WAVE FINE-TUNE V2 — Moindres Carrés Alternés (Fourier)")
     print("=" * 60)
 
-    # Mesurer la cohérence avant
-    pairs = [
-        ('lumiere', 'onde'),
-        ('lumiere', 'photon'),
-        ('paris', 'france'),
-    ]
-    print("\nAvant fine-tuning:")
+    pairs = [('lumiere', 'onde'), ('lumiere', 'photon'),
+             ('paris', 'france'), ('terre', 'gravite')]
+
+    # Avant
+    print("\nAvant:")
     for w1, w2 in pairs:
         v1 = encoder.word_vectors.get(w1)
         v2 = encoder.word_vectors.get(w2)
@@ -163,10 +204,11 @@ def demo(encoder, kb):
             print(f"  {w1:15} ↔ {w2:15} → coh={coh:+.3f}")
 
     # Fine-tune
-    tuner = WaveFineTuner(encoder, learning_rate=0.01)
-    history = tuner.fine_tune(kb, epochs=3)
+    tuner = WaveFineTuner(encoder, learning_rate=1.0)
+    history = tuner.fine_tune(kb, epochs=5)
 
-    print(f"\nAprès fine-tuning ({len(history['epoch'])} epochs):")
+    # Après
+    print(f"\nAprès ({len(history['epoch'])} epochs):")
     for w1, w2 in pairs:
         v1 = encoder.word_vectors.get(w1)
         v2 = encoder.word_vectors.get(w2)
