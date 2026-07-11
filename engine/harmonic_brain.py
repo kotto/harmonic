@@ -1079,15 +1079,38 @@ class HarmonicBrain:
 
     # ── PROCESSUS PRINCIPAL ────────────────────────────────────────────────
 
+    def _style_response(self, response: str, question: str, facts_used: list,
+                        lang: str, candidates: list = None) -> str:
+        """Applique le WaveStyler à une réponse, quel que soit son chemin d'origine."""
+        if not response:
+            return response
+        
+        # Utiliser les faits acceptés, ou les candidats si accepté est vide
+        facts_to_style = list(facts_used) if facts_used else []
+        if not facts_to_style and candidates:
+            # Extraire les 3 meilleurs candidats comme faits pour le stylage
+            facts_to_style = [rec for rec, score in candidates[:3]]
+        
+        if not facts_to_style:
+            return response
+        
+        try:
+            from wave_styler import WaveStyler
+            styler = WaveStyler(self.unconscious.encoder if self.unconscious else None)
+            fact_tuples = [(f.sujet, f.relation, f.objet, f.secteur) for f in facts_to_style]
+            styled = styler.render(fact_tuples, question, lang)
+            if styled and len(styled) > 5:
+                return styled
+        except Exception:
+            pass
+        return response
+
     def chat(self, question: str, lang: str = 'fr') -> BrainResult:
         """
         Conversation multi-tours avec contexte ψ ondulatoire.
-
-        Détecte automatiquement les follow-up, enrichit les questions
-        avec le sujet précédent, et maintient la mémoire de conversation.
         """
         result = self.process(question, lang=lang, use_conversation=True)
-        # Mise à jour du contexte après la réponse (garanti quel que soit le chemin)
+        # Mise à jour du contexte après la réponse
         if self.conversation is not None and result.response:
             try:
                 conv = self.conversation
@@ -1095,7 +1118,6 @@ class HarmonicBrain:
                 psi_r = conv._encode(result.response)
                 conv._update_context(psi_q, psi_r)
                 conv.last_response = result.response
-                # Extraire le sujet des faits acceptés
                 if result.facts_used:
                     conv.last_subject = result.facts_used[0].sujet
                 conv.turn_count += 1
@@ -1200,9 +1222,10 @@ class HarmonicBrain:
             try:
                 chain_result = self._try_wave_chain(question)
                 if chain_result:
+                    response = self._style_response(chain_result, question, accepted, lang, candidates)
                     total_time = (time.time() - t_start) * 1000
                     return BrainResult(
-                        response=chain_result,
+                        response=response,
                         confidence=0.85,
                         facts_used=[],
                         facts_rejected=[],
@@ -1237,7 +1260,7 @@ class HarmonicBrain:
             )
             if answer and conf > 0.5:
                 # Le conscient intelligent a trouvé une réponse par raisonnement
-                response = answer
+                response = self._style_response(answer, question, accepted, lang, candidates)
                 total_time = (time.time() - t_start) * 1000
                 return BrainResult(
                     response=response,
@@ -1261,6 +1284,9 @@ class HarmonicBrain:
 
         # 🔥 Mise à jour du contexte de conversation
         self._update_conv_context(question, response, use_conversation)
+
+        # 🔥 Appliquer le WaveStyler (améliore TOUTES les réponses)
+        response = self._style_response(response, question, accepted, lang, candidates)
 
         return BrainResult(
             response=response,
