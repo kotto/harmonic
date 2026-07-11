@@ -35,13 +35,21 @@ PHI = 1.618033988749895
 
 class WaveFineTuner:
     """
-    Ajuste les ψ par moindres carrés alternés dans le domaine de Fourier.
+    Ajuste les ψ par moindres carrés alternés RÉGULARISÉS.
+    
+    L = Σ ||ψ_s ⊛ ψ_r - ψ_o||² + λ · Σ ||ψ - ψ_SVD||²
+    
+    λ contrôle l'équilibre entre :
+      - Apprendre les relations (contrainte ⊛)
+      - Préserver le sens (spectral embedding SVD)
     """
 
-    def __init__(self, encoder, learning_rate: float = 1.0):
+    def __init__(self, encoder, learning_rate: float = 1.0, lambda_reg: float = 1.0):
         self.encoder = encoder
-        self.lr = learning_rate  # 1.0 = solution complète, <1.0 = step partiel
+        self.lr = learning_rate
+        self.lambda_reg = lambda_reg  # Poids de la préservation sémantique
         self.dim = encoder.dim
+        self.psi_svd = {}  # Sauvegarde des vecteurs SVD originaux
 
     def fine_tune(self, knowledge_base: List[Tuple[str, str, str, str]],
                   epochs: int = 5, verbose: bool = True) -> dict:
@@ -71,6 +79,9 @@ class WaveFineTuner:
 
         # Filtrer : ne garder que les mots présents dans l'encodeur
         vocab = {w for w in all_words if w in self.encoder.word_vectors}
+
+        # 🔥 SAUVEGARDER les vecteurs SVD originaux (pour la régularisation)
+        self.psi_svd = {w: self.encoder.word_vectors[w].copy() for w in vocab}
 
         for epoch in range(epochs):
             total_loss = 0.0
@@ -102,14 +113,17 @@ class WaveFineTuner:
                           vocab: set, role: str, epoch: int) -> int:
         """
         Optimise les ψ pour un rôle donné (sujet ou objet).
-
-        Pour chaque mot w :
-          ψ̃_w[k] = Σ (ψ̃_target[k] · ψ̃_other[k]*) / (Σ |ψ̃_other[k]|² + ε)
-
-        où la somme est sur tous les faits où w apparaît dans ce rôle.
+        
+        SOLUTION RÉGULARISÉE (dans le domaine de Fourier) :
+          ψ̃_w[k] = (Σ ψ̃_target · ψ̃_other* + λ · ψ̃_SVD[k]) / (Σ |ψ̃_other|² + λ)
+        
+        λ = 0 → solution non régularisée (instable)
+        λ = ∞ → conserve ψ_SVD (aucun apprentissage)
+        λ = 1 → équilibre optimal
         """
         updated = 0
         epsilon = 1e-8
+        lam = self.lambda_reg
 
         for word in vocab:
             if word not in facts_by_role or not facts_by_role[word]:
@@ -130,21 +144,23 @@ class WaveFineTuner:
                 psi_other = self.encoder.word_vectors[other_word]
                 psi_target = self.encoder.word_vectors[target_word]
 
-                # Passer dans le domaine de Fourier
                 psi_other_f = np.fft.fft(psi_other)
                 psi_target_f = np.fft.fft(psi_target)
 
-                # Accumuler
                 num += psi_target_f * np.conj(psi_other_f)
                 den += np.abs(psi_other_f) ** 2
+
+            # 🔥 RÉGULARISATION : ajouter le terme de préservation SVD
+            if word in self.psi_svd and lam > 0:
+                psi_svd_f = np.fft.fft(self.psi_svd[word])
+                num += lam * psi_svd_f
+                den += lam  # scalaire ajouté à chaque dimension
 
             if np.all(den < epsilon):
                 continue
 
-            # Solution optimale dans le domaine de Fourier
+            # Solution optimale régularisée
             psi_new_f = num / (den + epsilon)
-
-            # Revenir au domaine temporel
             psi_new = np.fft.ifft(psi_new_f)
 
             # Normaliser
