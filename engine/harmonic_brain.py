@@ -84,6 +84,18 @@ from conscious_intelligence import ConsciousIntelligence
 # Domaines de raisonnement (adaptateur multi-domaine)
 from wave_domains import DomainAdapter, DOMAINS
 
+# 🔥 Composer de réponses naturelles (30+ micro-structures)
+try:
+    from response_composer import ResponseComposer
+except ImportError:
+    ResponseComposer = None
+
+# 🔥 Analyseur de question (détection d'intention)
+try:
+    from question_analyzer import analyze_question as _analyze_q
+except ImportError:
+    _analyze_q = None
+
 # 🔥 Module Mathématique (micro-calculateur déterministe, 100% précis)
 try:
     from wave_math import wave_solve as try_math_solve
@@ -104,6 +116,12 @@ try:
     from wave_reasoning import WaveReasoner
 except ImportError:
     WaveReasoner = None
+
+# 🔥 Conversation multi-tours (contexte ψ ondulatoire)
+try:
+    from wave_conversation import WaveConversation
+except ImportError:
+    WaveConversation = None
 
 log = logging.getLogger(__name__)
 
@@ -804,6 +822,17 @@ class HarmonicBrain:
         # LE CONSCIENT INTELLIGENT (raisonne, pas juste filtre)
         self.intelligence = ConsciousIntelligence(self.unconscious)
 
+        # 🔥 LE COMPOSER DE RÉPONSES (style naturel, 30+ structures)
+        self.composer = ResponseComposer() if ResponseComposer is not None else None
+
+        # 🔥 LA CONVERSATION (contexte ψ multi-tours)
+        self.conversation = None
+        if WaveConversation is not None:
+            try:
+                self.conversation = WaveConversation(self.unconscious.encoder)
+            except Exception:
+                self.conversation = None
+
         # Adaptateur multi-domaine (raisonne dans 12 domaines)
         self._domain_adapters: Dict[str, DomainAdapter] = {}
         self._current_domain: str = 'faits'
@@ -1050,15 +1079,61 @@ class HarmonicBrain:
 
     # ── PROCESSUS PRINCIPAL ────────────────────────────────────────────────
 
+    def chat(self, question: str, lang: str = 'fr') -> BrainResult:
+        """
+        Conversation multi-tours avec contexte ψ ondulatoire.
+
+        Détecte automatiquement les follow-up, enrichit les questions
+        avec le sujet précédent, et maintient la mémoire de conversation.
+        """
+        result = self.process(question, lang=lang, use_conversation=True)
+        # Mise à jour du contexte après la réponse (garanti quel que soit le chemin)
+        if self.conversation is not None and result.response:
+            try:
+                conv = self.conversation
+                psi_q = conv._encode(question)
+                psi_r = conv._encode(result.response)
+                conv._update_context(psi_q, psi_r)
+                conv.last_response = result.response
+                # Extraire le sujet des faits acceptés
+                if result.facts_used:
+                    conv.last_subject = result.facts_used[0].sujet
+                conv.turn_count += 1
+            except Exception:
+                pass
+        return result
+
+    def _update_conv_context(self, question: str, response: str,
+                              use_conversation: bool):
+        """Post-processing : met à jour le contexte de conversation."""
+        if not use_conversation or self.conversation is None or not response:
+            return
+        try:
+            conv = self.conversation
+            psi_q = conv._encode(question)
+            psi_r = conv._encode(response)
+            conv._update_context(psi_q, psi_r)
+            conv.last_response = response
+            conv.turn_count += 1
+        except Exception:
+            pass
+
     def process(self, question: str, lang: str = 'fr',
-                max_accepted: int = 3) -> BrainResult:
+                max_accepted: int = 3, use_conversation: bool = False) -> BrainResult:
         """
         Traitement complet par le cerveau harmonique.
         
         0. Parseur → analyse structurée + DÉTECTION DE DOMAINE
+        0.5. Math bridge (interception mathématique)
+        0.6. Wave logic (syllogismes, déductions)
+        0.7. Wave reasoning (propagation de chaîne)
         1. Inconscient → retrieval pur (tokens pondérés, seuils du domaine)
         2. Conscient → filtre + feedback
         3. Expression → langage naturel (format adapté au type)
+        
+        Args:
+            use_conversation: si True, utilise le contexte de conversation ψ
+                              (follow-up detection, enrichissement, mémoire)
         """
         t_start = time.time()
         
@@ -1066,10 +1141,24 @@ class HarmonicBrain:
         parsed = self.parser.parse(question)
         lang = parsed.lang
         self._current_domain = self._detect_domain(question)
-        domain = self._get_adapter()  # adaptateur pour le domaine détecté
+        domain = self._get_adapter()
+
+        # ── 0.1. CONVERSATION (contexte ψ multi-tours) ──
+        enriched_question = question
+        conv_meta = {}
+        if use_conversation and self.conversation is not None:
+            try:
+                is_fu, coh = self.conversation._detect_followup(
+                    question, self.conversation._encode(question))
+                if is_fu:
+                    enriched_question = self.conversation._enrich_question(question)
+                conv_meta = {'is_followup': is_fu, 'coherence': coh,
+                            'enriched': enriched_question if is_fu else question}
+            except Exception:
+                enriched_question = question
 
         # Injecter les tokens pondérés dans la question pour le retrieval
-        weighted_question = question
+        weighted_question = enriched_question
         for token, weight in parsed.weighted_tokens.items():
             if weight >= 4.0:
                 weighted_question += f" {token} {token}"
@@ -1080,9 +1169,11 @@ class HarmonicBrain:
         if try_math_solve:
             math_result = try_math_solve(question, lang)
             if math_result:
+                response = math_result if math_result.endswith('.') else math_result + '.'
+                self._update_conv_context(question, response, use_conversation)
                 total_time = (time.time() - t_start) * 1000
                 return BrainResult(
-                    response=math_result if math_result.endswith('.') else math_result + '.',
+                    response=response,
                     confidence=0.95,
                     facts_used=[],
                     facts_rejected=[],
@@ -1158,13 +1249,18 @@ class HarmonicBrain:
                 )
 
         # ── 3. EXPRESSION : adaptée au type de question ──
-        response = self._express(accepted, question, parsed)
+        response = self._try_compose(accepted, question, parsed, lang)
+        if not response:
+            response = self._express(accepted, question, parsed)
 
         total_time = (time.time() - t_start) * 1000
 
         confidence = 0.0
         if accepted:
             confidence = sum(r.confidence for r in accepted) / len(accepted)
+
+        # 🔥 Mise à jour du contexte de conversation
+        self._update_conv_context(question, response, use_conversation)
 
         return BrainResult(
             response=response,
@@ -1235,6 +1331,85 @@ class HarmonicBrain:
             pass
         return None
 
+    def _try_compose(self, facts: List[FactRecord], question: str,
+                     parsed: StructuredPrompt = None, lang: str = 'fr') -> str:
+        """Compose avec connecteurs variés et corrections d'accents.
+
+        Pour 1 fait → rendu simple + accents.
+        Pour 2+ faits → connecteurs variés (pas toujours "De plus").
+        """
+        import random
+
+        # Corrections d'accents (mots sans accent → avec accent)
+        _ACCENTS = {
+            'lumiere': 'lumière', 'oxygene': 'oxygène', 'energie': 'énergie',
+            'theorie': 'théorie', 'systeme': 'système', 'phenomene': 'phénomène',
+            'electricite': 'électricité', 'electrique': 'électrique',
+            'emission': 'émission', 'element': 'élément', 'elements': 'éléments',
+            'complexe': 'complexe', 'different': 'différent', 'differents': 'différents',
+            'premiere': 'première', 'deuxieme': 'deuxième', 'troisieme': 'troisième',
+            'physique': 'physique', 'chimique': 'chimique', 'biologique': 'biologique',
+            'realite': 'réalité', 'equation': 'équation', 'evolution': 'évolution',
+            'cree': 'crée', 'creee': 'créée', 'decrit': 'décrit',
+            'interet': 'intérêt', 'definition': 'définition',
+            'molecule': 'molécule', 'molecules': 'molécules',
+            'nucleaire': 'nucléaire', 'atome': 'atome', 'atomes': 'atomes',
+        }
+
+        def _fix(text):
+            for k, v in _ACCENTS.items():
+                text = text.replace(k, v)
+            return text
+
+        def _cap(text):
+            if not text:
+                return text
+            return text[0].upper() + text[1:]
+
+        # 1 fait → rendu simple + accents + majuscule
+        if len(facts) == 1:
+            f = facts[0]
+            s = _cap(f.sujet)
+            r = f.relation
+            o = f.objet
+            text = f"{s} {r} {o}."
+            return _fix(text)
+
+        # 2+ faits → connecteurs variés
+        if lang == 'en':
+            connectors = [
+                "Moreover, ", "Furthermore, ", "Additionally, ",
+                "It is also worth noting that ", "Besides, ",
+            ]
+        else:
+            connectors = [
+                "De plus, ", "Par ailleurs, ", "Également, ",
+                "Il convient aussi de souligner que ", "À cela s'ajoute le fait que ",
+                "On notera également que ", "En complément, ",
+            ]
+
+        # Premier fait
+        f0 = facts[0]
+        parts = [f"{_cap(f0.sujet)} {f0.relation} {f0.objet}."]
+
+        # Faits suivants avec connecteurs variés
+        available = list(range(len(connectors)))
+        for f in facts[1:]:
+            if available:
+                idx = random.choice(available)
+                available.remove(idx)
+            else:
+                idx = random.randrange(len(connectors))
+            conn = connectors[idx]
+            s = f.sujet
+            o = f.objet
+            r = f.relation
+            # Mettre en minuscule après le connecteur
+            parts.append(f"{conn}{s} {r} {o}.")
+
+        text = ' '.join(parts)
+        return _fix(text)
+
     def _dont_know(self, question: str, lang: str) -> str:
         """Réponse quand on ne sait pas — honnête, pas d'invention."""
         sujet = question.strip('?.,!;: ')[:80]
@@ -1252,6 +1427,17 @@ class HarmonicBrain:
             return f"Je n'ai pas assez d'éléments sur « {sujet} » pour répondre avec confiance."
 
         lang = parsed.lang if parsed else 'fr'
+
+        # 🔥 TENTATIVE COMPOSER (style naturel, 30+ structures)
+        if self.composer is not None:
+            try:
+                composed = self._try_compose(facts, question, parsed, lang)
+                if composed:
+                    return composed
+            except Exception:
+                pass  # Fallback vers les templates simples
+
+        # Fallback : templates simples
         is_explanatory = parsed.is_explanatory if parsed else False
 
         # Si question simple → 1 seul fait
