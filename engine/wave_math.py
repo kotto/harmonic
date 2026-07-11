@@ -202,7 +202,7 @@ def parse_expression(question: str) -> Optional[Tuple[float, str]]:
             return (fn(), label)
     
     # ── RACINE CARRÉE ──
-    m = re.search(r'racine\s*carree?\s*(de\s*)?(\d+(?:[.,]\d+)?)', q)
+    m = re.search(r'racine\s*carr[eé]e?\s*(de\s*)?(\d+(?:[.,]\d+)?)', q, re.IGNORECASE)
     if not m:
         m = re.search(r'sqrt\s*(of\s*)?(\d+(?:[.,]\d+)?)', q)
     if not m:

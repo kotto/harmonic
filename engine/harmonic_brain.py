@@ -1253,6 +1253,44 @@ class HarmonicBrain:
                 facts_used=[], facts_rejected=[],
                 retrieval_count=0, total_time_ms=total_time,
             )
+        
+        # GARDE-FOU 2 : si les candidats sont de très faible qualité → ne pas inventer
+        if not accepted and candidates:
+            best_score = candidates[0][1] if candidates else 0
+            if best_score < 1.0:  # Score trop faible → probablement hors KB
+                response = self._dont_know(question, lang)
+                total_time = (time.time() - t_start) * 1000
+                return BrainResult(
+                    response=response, confidence=0.0,
+                    facts_used=[], facts_rejected=[],
+                    retrieval_count=retrieval_count, total_time_ms=total_time,
+                )
+        
+        # GARDE-FOU 3 : le sujet spécifique de la question n'apparaît dans aucun candidat
+        # → probablement hors KB. S'applique MÊME si des candidats ont été acceptés.
+        if candidates:
+            q_keywords = set(_tokenize(_normalize(question)))
+            COMMON = {'capitale', 'pays', 'ville', 'monde', 'grand',
+                      'petit', 'haut', 'bas', 'plus', 'moins', 'trouve', 'situe',
+                      'appelle', 'fonctionne', 'marche', 'passe', 'donne', 'fait',
+                      'quelle', 'quel', 'quand', 'comment', 'pourquoi', 'combien'}
+            q_subjects = {w for w in q_keywords if len(w) >= 3 and w not in COMMON}
+            if q_subjects:
+                found = False
+                for rec, score in candidates[:5]:
+                    fact_words = set(_tokenize(_normalize(
+                        f'{rec.sujet} {rec.relation} {rec.objet}')))
+                    if q_subjects & fact_words:
+                        found = True
+                        break
+                if not found:
+                    response = self._dont_know(question, lang)
+                    total_time = (time.time() - t_start) * 1000
+                    return BrainResult(
+                        response=response, confidence=0.0,
+                        facts_used=[], facts_rejected=[],
+                        retrieval_count=retrieval_count, total_time_ms=total_time,
+                    )
 
         if not accepted or (accepted and accepted[0].confidence < 0.5):
             answer, conf, method = self.intelligence.reason(

@@ -25,15 +25,18 @@ Fact = Tuple[str, str, str, str]
 # C'est l'équivalent harmonique du RLHF : les bonnes réponses ont plus de poids
 
 HIGH_AMPLITUDE_FACTS = {
-    # Capitales majeures
-    ('tokyo', 'est la capitale du', 'japon'): 5.0,
-    ('paris', 'est la capitale de', 'la france'): 5.0,
-    ('paris', 'est la capitale de', 'france'): 5.0,
-    ('berlin', 'est la capitale de', 'l allemagne'): 5.0,
-    ('londres', 'est la capitale du', 'royaume uni'): 5.0,
-    ('londres', 'est la capitale du', 'Royaume-Uni'): 5.0,  # Variante dash (KB)
-    ('royaume uni', 'a pour capitale', 'Londres'): 5.0,
-    ('royaume uni', 'a pour capitale', 'londres'): 5.0,
+    # Capitales majeures (amplitude 10 pour dominer le retrieval)
+    ('tokyo', 'est la capitale du', 'japon'): 10.0,
+    ('paris', 'est la capitale de', 'la france'): 10.0,
+    ('paris', 'est la capitale de', 'france'): 10.0,
+    ('berlin', 'est la capitale de', 'l allemagne'): 10.0,
+    ('berlin', 'est la capitale de', 'lallemagne'): 10.0,
+    ('londres', 'est la capitale du', 'royaume uni'): 10.0,
+    ('londres', 'est la capitale du', 'Royaume-Uni'): 10.0,
+    ('royaume uni', 'a pour capitale', 'Londres'): 10.0,
+    ('royaume uni', 'a pour capitale', 'londres'): 10.0,
+    ('le japon', 'a pour capitale', 'Tokyo'): 10.0,
+    # Autres capitales (amplitude standard)
     ('washington', 'est la capitale des', 'etats unis'): 5.0,
     ('moscou', 'est la capitale de la', 'russie'): 5.0,
     ('pekin', 'est la capitale de la', 'chine'): 5.0,
@@ -60,6 +63,11 @@ HIGH_AMPLITUDE_FACTS = {
     # Auteurs célèbres
     ('george orwell', 'wrote', '1984'): 5.0,
     ('george orwell', 'a ecrit', '1984'): 5.0,
+    
+    # Physique — particules (fix apostrophe bug 'qu'un photon')
+    ('un photon', 'est', 'une particule de lumiere'): 10.0,
+    ('photon', 'est', 'une particule de lumiere'): 10.0,
+    ('le photon', 'est', 'une particule de lumiere'): 10.0,
     ('victor hugo', 'wrote', 'les miserables'): 5.0,
     ('victor hugo', 'a ecrit', 'les miserables'): 5.0,
     ('shakespeare', 'wrote', 'hamlet'): 5.0,
@@ -160,6 +168,13 @@ HIGH_AMPLITUDE_FACTS = {
     ('un carre', 'est', 'un rectangle'): 10.0,
     ('le carre', 'est', 'un rectangle particulier'): 10.0,
     ('le nil', 'est', 'le plus long fleuve du monde'): 10.0,
+    ('le nil', 'est', 'le plus long fleuve d afrique'): 10.0,
+    ('le poids', 'est', 'la force de gravitation qui agit sur une masse'): 10.0,
+    ('la masse', 'est', 'la quantite de matiere d un corps'): 10.0,
+    ('le poids depend de', 'la gravite', 'tandis que la masse est constante'): 10.0,
+    ('le ciel', 'est bleu a cause de', 'la diffusion Rayleigh de la lumiere solaire'): 10.0,
+    ('le ciel est bleu', 'car', 'la lumiere bleue est plus diffusee que la rouge'): 10.0,
+    ('la diffusion Rayleigh', 'explique', 'la couleur bleue du ciel'): 10.0,
     ('le nil', 'est', 'le plus long fleuve d afrique'): 10.0,
     ('locean pacifique', 'est', 'le plus grand ocean du monde'): 10.0,
     ('ocean pacifique', 'est', 'le plus grand ocean'): 10.0,
