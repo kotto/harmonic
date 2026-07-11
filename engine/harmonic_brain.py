@@ -1230,6 +1230,15 @@ class HarmonicBrain:
         candidates = self.unconscious.retrieve(weighted_question, max_results=15)
         retrieval_count = len(candidates)
 
+        # ── 1.5. FILTRAGE PAR CONTEXTE (réduit le bruit en conversation) ──
+        if use_conversation and self.conversation is not None and candidates:
+            candidates = self._rerank_by_context(candidates, enriched_question)
+            # Extraire le sujet pour les pronoms et le suivi
+            best_subject = candidates[0][0].sujet if candidates else ""
+            if self.conversation and best_subject:
+                self.conversation.last_subject = best_subject
+                conv_meta['subject'] = best_subject
+
         # ── 2. CONSCIENT : filtrer + feedback ──
         accepted, rejected = self.conscious.filter(question, candidates, max_accepted)
         self.conscious.feedback(accepted, rejected)
@@ -1362,6 +1371,82 @@ class HarmonicBrain:
 
         # Fallback : rendu simple avec accents (inchangé)
         return self._render_simple(facts, lang)
+
+    def _rerank_by_context(self, candidates: List, question: str) -> List:
+        """
+        Re-classe les candidats par contexte (ψ + secteur).
+        - Cohérence ψ > 0.08 → boost ×(1+coh×3)
+        - Cohérence ψ < -0.02 → pénalité ×0.1
+        - Même secteur que le tour précédent → boost ×1.5
+        - Secteur différent → pénalité ×0.3
+        """
+        if not candidates or self.conversation is None:
+            return candidates
+        
+        conv = self.conversation
+        if np.all(conv.psi_context == 0) and not conv.last_subject:
+            return candidates
+        
+        # Déterminer le secteur dominant du tour précédent
+        prev_facts = []
+        if hasattr(conv, 'last_response') and conv.last_response:
+            prev_facts = self._extract_facts_from_text(conv.last_response)
+        prev_sectors = set(f.secteur for f in prev_facts if f.secteur) if prev_facts else set()
+        
+        scored = []
+        for rec, score in candidates:
+            adjusted = score
+            
+            # Filtrage par cohérence ψ
+            try:
+                psi_fact = rec.psi if hasattr(rec, 'psi') and rec.psi is not None else None
+                if psi_fact is None and hasattr(self.unconscious, 'encoder'):
+                    psi_fact = self.unconscious.encoder.encode_query(
+                        f'{rec.sujet} {rec.objet}')
+                
+                if psi_fact is not None and not np.all(conv.psi_context == 0):
+                    coherence = float(np.real(np.dot(psi_fact, np.conj(conv.psi_context))))
+                    if coherence > 0.08:
+                        adjusted *= (1.0 + coherence * 3)
+                    elif coherence < -0.02:
+                        adjusted *= 0.1
+                    else:
+                        adjusted *= 0.5
+            except Exception:
+                pass
+            
+                # Filtrage par secteur (plus fiable que ψ seul)
+            if prev_sectors and hasattr(rec, 'secteur'):
+                if rec.secteur in prev_sectors:
+                    adjusted *= 1.8  # Même secteur → fort boost
+                elif rec.secteur and prev_sectors:
+                    # Secteur différent → pénalité forte SAUF si le score ψ est élevé
+                    if adjusted < score * 0.5:
+                        adjusted *= 0.15  # Très probablement du bruit
+            
+            scored.append((rec, adjusted))
+        
+        scored.sort(key=lambda x: -x[1])
+        
+        # Filtrer les scores trop bas (bruit évident)
+        if scored and len(scored) > 5:
+            max_score = scored[0][1]
+            scored = [(r, s) for r, s in scored if s > max_score * 0.15]
+        
+        return scored
+
+    def _extract_facts_from_text(self, text: str) -> list:
+        """Extrait les FactRecords mentionnés dans un texte de réponse."""
+        if not text or not hasattr(self, 'unconscious'):
+            return []
+        found = []
+        text_lower = text.lower()
+        for key, rec in self.unconscious.registry.items():
+            if rec.sujet.lower() in text_lower:
+                found.append(rec)
+            if len(found) >= 3:
+                break
+        return found
 
     def _render_simple(self, facts: List[FactRecord], lang: str) -> str:
         """Rendu simple : sujet relation objet, avec connecteurs de base."""

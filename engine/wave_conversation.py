@@ -173,19 +173,19 @@ class WaveConversation:
     def _enrich_question(self, question: str) -> str:
         """
         Enrichit une question de follow-up avec le contexte précédent.
-        "Et ça produit quoi ?" + sujet="photosynthèse"
-        → "La photosynthèse ça produit quoi ?"
+        Rend le sujet principal PLUS fort que les mots de la question.
         """
         if not self.last_subject:
             return question
 
-        # Si la question est très courte → préfixer avec le sujet
         words = question.strip().split()
+        
+        # Questions très courtes → le sujet DOMINE
         if len(words) <= 4:
-            return f"{self.last_subject} {question}"
-
-        # Sinon → ajouter le sujet à la fin
-        return f"{question} {self.last_subject}"
+            return f"{self.last_subject} {self.last_subject} {question}"
+        
+        # Questions plus longues → préfixer le sujet
+        return f"{self.last_subject} {question}"
 
     def _update_context(self, psi_q: np.ndarray, psi_r: np.ndarray):
         """
