@@ -333,30 +333,97 @@ class FewShotInjector:
         """
         Consolide un pattern dans l'inconscient (apprentissage permanent).
 
-        Si un pattern a été utilisé plusieurs fois avec succès,
-        on l'ingère comme des faits dans la KB plutôt que de le
-        laisser s'estomper.
+        Si un pattern a été utilisé 3+ fois avec une cohérence > 0.5,
+        on le transforme en triplets permanents dans la KB.
+
+        Processus :
+          1. Extraire les ψ les plus proches du pattern dans l'inconscient
+          2. Renforcer leur amplitude (ils ont « prouvé » leur utilité)
+          3. Si le pattern n'a pas de faits correspondants, en créer
         """
         pattern = self.workspace.get(pattern_id)
-        if pattern is None or pattern.times_used < 3:
+        if pattern is None:
             return
 
-        # Le pattern est consolidé → on pourrait extraire des triplets
-        # ou augmenter l'amplitude des faits liés
-        log.info(f"Pattern consolidé: {pattern_id} "
-                 f"(utilisé {pattern.times_used} fois, "
-                 f"cohérence {pattern.coherence:.2f})")
+        if pattern.times_used < 3:
+            log.debug(f"Pattern {pattern_id}: {pattern.times_used}/3 utilisations "
+                      f"(pas encore consolidable)")
+            return
 
-        # Augmenter l'amplitude des faits liés dans le brain
+        if pattern.coherence < 0.3:
+            log.debug(f"Pattern {pattern_id}: cohérence trop faible "
+                      f"({pattern.coherence:.2f})")
+            return
+
+        log.info(f"🧩 CONSOLIDATION: pattern {pattern_id} "
+                 f"(utilisé {pattern.times_used}×, cohérence {pattern.coherence:.2f})")
+
+        # 1. Renforcer les faits existants qui résonnent avec ce pattern
+        reinforced = 0
+        new_threshold = 0.4  # seuil pour créer de nouveaux faits
+        reinforced_threshold = 0.25  # seuil pour renforcer
+
         if self.brain is not None:
             for key, record in self.brain.unconscious.registry.items():
-                if record.psi is not None:
-                    influence = float(np.abs(np.dot(
-                        record.psi.conj(), pattern.psi_pattern
-                    )))
-                    if influence > 0.3:
-                        record.amplitude += pattern.boost * 0.1
-                        record.times_accepted += 1
+                if record.psi is None:
+                    continue
+                influence = float(np.abs(np.dot(
+                    record.psi.conj(), pattern.psi_pattern
+                )))
+                # Normaliser
+                nr = np.linalg.norm(record.psi)
+                npatt = np.linalg.norm(pattern.psi_pattern)
+                if nr > 1e-10 and npatt > 1e-10:
+                    influence = influence / (nr * npatt)
+
+                if influence > reinforced_threshold:
+                    # Renforcer ce fait — il a été utilisé avec succès
+                    boost = pattern.boost * influence * 0.2
+                    record.amplitude += boost
+                    record.times_accepted += 1
+                    record.confidence = min(1.0, record.confidence + 0.05)
+                    reinforced += 1
+
+        # 2. Si le pattern est très fort mais pas de faits correspondants → créer
+        if reinforced < 3 and pattern.coherence > 0.6 and self.brain is not None:
+            # Le pattern représente une transformation (input→output)
+            # On peut extraire les exemples originaux et les ingérer comme faits
+            log.info(f"  Pattern orphelin — création de faits synthétiques")
+            # Créer un fait générique à partir du ψ_pattern
+            pattern_desc = f"pattern_{pattern.pattern_type}"
+            relation = f"applique le pattern {pattern.pattern_type}"
+
+            # Ingérer comme fait dans l'inconscient
+            self.brain.unconscious.ingest(
+                pattern_desc,
+                relation,
+                f"coherence={pattern.coherence:.2f}",
+                "GENERAL"
+            )
+            # Donner une amplitude initiale élevée
+            new_key = (pattern_desc.lower(), relation.lower(),
+                       f"coherence={pattern.coherence:.2f}".lower())
+            if new_key in self.brain.unconscious.registry:
+                self.brain.unconscious.registry[new_key].amplitude = pattern.boost * 0.5
+
+        log.info(f"  → {reinforced} faits renforcés, pattern consolidé")
+
+        # Marquer comme consolidé (retirer du workspace)
+        self.workspace.pop(pattern_id, None)
+
+    def auto_consolidate(self):
+        """
+        Consolidation automatique de tous les patterns éligibles.
+
+        Appeler périodiquement (ex: toutes les 100 requêtes).
+        """
+        consolidable = [
+            pid for pid, p in self.workspace.items()
+            if p.times_used >= 3 and p.coherence > 0.3
+        ]
+        for pid in consolidable:
+            self.consolidate(pid)
+        return len(consolidable)
 
     @property
     def stats(self) -> dict:

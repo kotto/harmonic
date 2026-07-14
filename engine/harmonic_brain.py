@@ -90,6 +90,15 @@ try:
 except ImportError:
     FewShotInjector = None
 
+# 🎯 Harmonic Attention — ψ contextuels dynamiques
+_HARMONIC_ATTENTION_AVAILABLE = False
+try:
+    from harmonic_attention import HarmonicAttention, ContextualEncoder
+    _HARMONIC_ATTENTION_AVAILABLE = True
+except ImportError:
+    HarmonicAttention = None
+    ContextualEncoder = None
+
 try:
     from harmonic_quality import HIGH_AMPLITUDE_FACTS
 except ImportError:
@@ -957,6 +966,18 @@ class HarmonicBrain:
             except Exception:
                 pass
 
+        # 🎯 ATTENTION DYNAMIQUE (ψ contextuels)
+        self._attention = None
+        if _HARMONIC_ATTENTION_AVAILABLE:
+            try:
+                enc = self.unconscious.encoder if use_holographic else None
+                self._attention = HarmonicAttention(
+                    encoder=enc, dim=dim,
+                    alpha=PHI_INV * 0.5  # ~0.309
+                )
+            except Exception:
+                pass
+
         # Adaptateur multi-domaine (raisonne dans 12 domaines)
         self._domain_adapters: Dict[str, DomainAdapter] = {}
         self._current_domain: str = 'faits'
@@ -1311,6 +1332,18 @@ class HarmonicBrain:
             elif weight >= 3.0:
                 weighted_question += f" {token}"
 
+        # 🎯 ATTENTION DYNAMIQUE : contextualiser les ψ avant retrieval
+        if self._attention is not None:
+            try:
+                ctx_psi = self._attention.contextualize_query(weighted_question)
+                if ctx_psi is not None:
+                    # Injecter le ψ contextuel comme ψ de requête (override temporaire)
+                    self._query_psi_override = ctx_psi
+            except Exception:
+                self._query_psi_override = None
+        else:
+            self._query_psi_override = None
+
         # ── 0.5. MICRO-CALCULATEUR (interception mathématique prioritaire) ──
         if try_math_solve:
             math_result = try_math_solve(question, lang)
@@ -1483,20 +1516,38 @@ class HarmonicBrain:
         if self._deep_reasoner is not None and (not accepted or
                 (accepted and accepted[0].confidence < 0.5)):
             try:
-                deep_answer = self._deep_reasoner.reason_deep(question, max_depth=7)
+                # Essayer d'abord le multi-branche (plus puissant)
+                deep_answer = self._deep_reasoner.reason_deep_multi(
+                    question, max_depth=7, beam_width=3
+                )
                 if deep_answer and len(deep_answer) > 40:
                     response = self._style_response(deep_answer, question, accepted, lang, candidates)
                     total_time = (time.time() - t_start) * 1000
                     return BrainResult(
                         response=response,
-                        confidence=0.70,  # confiance modérée pour deep reasoning
+                        confidence=0.70,
                         facts_used=accepted,
                         facts_rejected=rejected,
                         retrieval_count=retrieval_count,
                         total_time_ms=total_time,
                     )
             except Exception:
-                pass
+                # Fallback : mono-branche simple
+                try:
+                    deep_answer = self._deep_reasoner.reason_deep(question, max_depth=7)
+                    if deep_answer and len(deep_answer) > 40:
+                        response = self._style_response(deep_answer, question, accepted, lang, candidates)
+                        total_time = (time.time() - t_start) * 1000
+                        return BrainResult(
+                            response=response,
+                            confidence=0.65,
+                            facts_used=accepted,
+                            facts_rejected=rejected,
+                            retrieval_count=retrieval_count,
+                            total_time_ms=total_time,
+                        )
+                except Exception:
+                    pass
 
         # ── 3. EXPRESSION : adaptée au type de question ──
         response = self._try_compose(accepted, question, parsed, lang)
@@ -1954,6 +2005,7 @@ class HarmonicBrain:
             'web_retriever': self._web is not None,
             'deep_reasoner': self._deep_reasoner is not None,
             'few_shot': self._few_shot is not None,
+            'harmonic_attention': self._attention is not None,
         }
 
 
