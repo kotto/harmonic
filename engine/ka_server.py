@@ -107,9 +107,10 @@ def load_facts(model_name='best'):
         '50k':  'knowledge_base_50k.npz',
         '50k_clean': 'knowledge_base_50k_cleaned.npz',
         '50k_res': 'knowledge_base_resonance.npz',
+        '100k': 'knowledge_base_100k.npz',
         '217k': 'knowledge_base_clean.npz',
         '500k': 'knowledge_base_500k.npz',
-        'best': 'knowledge_base_resonance.npz',
+        'best': 'knowledge_base_100k.npz',
     }
     filename = model_files.get(model_name)
     if not filename:
@@ -130,9 +131,8 @@ def load_facts(model_name='best'):
     log.info(f"  📂 KB qualitative intégrée: {len(KNOWLEDGE_BASE):,} faits (fallback)")
     return [(str(s), str(r), str(o), str(sec)) for s, r, o, sec in KNOWLEDGE_BASE]
 
-model_name = 'qualitative'  # LÉGER — 914 faits, tient dans 256 Mo
-# Pour utiliser le modèle complet : décommenter la ligne ci-dessous
-# model_name = os.environ.get('MODEL_NAME', 'qualitative')
+model_name = '100k'  # 110K faits — KB complète
+# Pour utiliser le modèle léger : --model qualitative
 for arg in sys.argv[1:]:
     if arg.startswith('--model='):
         model_name = arg.split('=')[1]
