@@ -220,6 +220,15 @@ class ConsciousCreator:
         self._style_vector: np.ndarray = None              # direction dominante du style
         self._successful_ops: Dict[str, int] = defaultdict(int)  # ops qui marchent
 
+        # 🎨 Critique esthétique intégré (évalue et raffine)
+        self._critic = None
+        try:
+            from conscious_critic import ConsciousCritic
+            self._critic = ConsciousCritic(brain=brain, dim=dim, encoder=encoder)
+            self._critic.inject_creative_memory(self._creative_memory)
+        except ImportError:
+            pass
+
         # Rumination (background)
         self._ruminating = False
         self._rumination_thread: Optional[threading.Thread] = None
@@ -561,11 +570,43 @@ class ConsciousCreator:
             desc = descriptions.get(name, name)
             lines.append(f"  {pct:.0f}% {desc}")
         lines.append(f"  Mémoire créative : {len(self._creative_memory)} créations")
+        
+        # Ajouter les stats du critique si disponible
+        if self._critic:
+            cs = self._critic.stats
+            lines.append(f"  Évaluations : {cs['evaluations']} | "
+                        f"Beauté moyenne : {cs['avg_beauty']:.3f} | "
+                        f"Sublimes : {cs['sublime_count']}")
         return "\n".join(lines)
+
+    # 🎨 CRITIQUE ESTHÉTIQUE ───────────────────────────────────────────────
+
+    def evaluate(self, idea: CreativeIdea):
+        """Évalue la beauté d'une idée créative via le Conscient Critique."""
+        if self._critic is None:
+            return None
+        self._critic.inject_creative_memory(self._creative_memory)
+        return self._critic.evaluate(idea.psi, idea.sources, idea.op_name)
+
+    def refine(self, idea: CreativeIdea, max_iterations: int = 5):
+        """Raffine une idée jusqu'à l'équilibre φ."""
+        if self._critic is None:
+            return idea.psi, []
+        self._critic.inject_creative_memory(self._creative_memory)
+        return self._critic.refine(
+            idea.psi, idea.sources, max_iterations,
+            creator=self
+        )
+
+    def select_best(self, ideas: List[CreativeIdea]):
+        """Sélectionne la plus belle idée parmi plusieurs."""
+        if self._critic is None:
+            return ideas[0] if ideas else None, None
+        return self._critic.select_best(ideas)
 
     @property
     def stats(self) -> dict:
-        return {
+        s = {
             'ruminating': self._ruminating,
             'rumination_count': self._rumination_count,
             'emergent_ideas': len(self._emergent_ideas),
@@ -574,7 +615,11 @@ class ConsciousCreator:
             'top_ops': dict(sorted(self._successful_ops.items(),
                                    key=lambda x: -x[1])[:3]),
             'temperature': self.temperature,
+            'critic_active': self._critic is not None,
         }
+        if self._critic:
+            s['critic_stats'] = self._critic.stats
+        return s
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
