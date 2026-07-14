@@ -53,6 +53,12 @@ STOP_SUBJECTS = {
 # ═══════════════════════════════════════════════════════════════════════════════
 
 PATTERNS = [
+    # 0. NÉGATION — doit être testé AVANT le pattern "est" générique
+    {
+        'regex': r'([A-ZÀ-Űa-zà-ÿ][a-zà-ÿ]{2,}(?:\s(?:[a-zà-ÿ]{2,}|de|du|des|d|la|le|les|l)){0,4})\s+n(?:e|\s*\'|\s+)est\s+pas\s+(?:un|une|le|la|les|l|des|du|de la|d)?\s*(.+?)(?:\.\s+[A-ZÀ-Ű]|\.\s*$|$)',
+        'relation': "n'est pas",
+        'sector': 'GENERAL',
+    },
     # 1. X est un/une Y (définition)
     {
         'regex': r'([A-ZÀ-Ű][a-zà-ÿ]{2,}(?:\s(?:[a-zà-ÿ]{2,}|de|du|des|d|la|le|les|l)){0,4})\s+(?:est|sont|était|étaient|reste|demeure|devient|deviennent|constitue|représente|forme)\s+(?:un|une|le|la|les|l|des|du|de la|d)\s+(.+)',
@@ -413,6 +419,14 @@ class TripleExtractor:
 
                     if (sujet.lower() in STOP_SUBJECTS or
                             len(sujet) < 3 or len(objet) < 5):
+                        continue
+
+                    # TRONQUER l'objet au premier point suivi d'espace et majuscule (fin de phrase)
+                    objet = re.split(r'\.\s+(?=[A-ZÀ-Ű])', objet)[0]
+                    # TRONQUER aussi au point-virgule, deux-points
+                    objet = re.split(r'[;:]\s+(?=[A-ZÀ-Ű])', objet)[0]
+                    objet = objet.strip(' .,;:')
+                    if len(objet) < 5:
                         continue
 
                     key = (sujet, rel, objet)

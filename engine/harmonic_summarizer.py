@@ -46,6 +46,170 @@ log = logging.getLogger(__name__)
 PHI = 1.618033988749895
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# NETTOYAGE & VALIDATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _clean_phrase(phrase: str) -> str:
+    """
+    Nettoie un syntagme extrait par regex.
+    
+    Corrige :
+      · Articles tronqués : « s côtes » → « les côtes »
+      · « l évolution » → « l'évolution »
+      · Ponctuation parasite
+      · Espaces multiples
+    """
+    # Reconstruire les articles tronqués
+    phrase = re.sub(r'\bs\s+([a-zà-ÿ])', r'les \1', phrase)  # « s côtes » → « les côtes »
+    phrase = re.sub(r'\bd\s+([a-zà-ÿ])', r'de \1', phrase)   # « d émission » → « de émission »
+    phrase = re.sub(r'\bl\s+([a-zà-ÿ])', r"l'\1", phrase)     # « l évolution » → « l'évolution »
+    phrase = re.sub(r'\bn\s+([a-zà-ÿ])', r"n'\1", phrase)     # « n est » → « n'est »
+    phrase = re.sub(r'\bqu\s+([a-zà-ÿ])', r"qu'\1", phrase)   # « qu il » → « qu'il »
+    
+    # Ponctuation parasite
+    phrase = re.sub(r'\s*\.\s*$', '', phrase)
+    phrase = re.sub(r'\s*;\s*$', '', phrase)
+    phrase = re.sub(r'\s+', ' ', phrase)
+    
+    return phrase.strip()
+
+def _clean_subject(subject: str) -> str:
+    """Nettoie un sujet extrait."""
+    # Enlever les articles au début
+    subject = re.sub(r'^(le |la |les |l |un |une |des |du |de la )', '', subject.lower())
+    return _clean_phrase(subject)
+
+def _normalize_key(s: str, r: str, o: str) -> tuple:
+    """Crée une clé de déduplication normalisée."""
+    sn = _clean_subject(s).strip()
+    rn = r.lower().strip()
+    on = _clean_phrase(o).strip().lower()
+    # Normaliser les espaces et accents
+    on = re.sub(r'\s+', ' ', on)
+    return (sn, rn, on)
+
+def _validate_triple(s: str, r: str, o: str) -> bool:
+    """Valide qu'un triple est acceptable."""
+    sn = _clean_subject(s).strip()
+    on = _clean_phrase(o).strip()
+    
+    # Sujet trop court
+    if len(sn) < 3:
+        return False
+    # Objet trop court
+    if len(on) < 5:
+        return False
+    # Sujet = stopword
+    if sn in {'il', 'elle', 'on', 'ils', 'elles', 'cela', 'ceci', 'cet', 'cette',
+              'ces', 'ce', 'ca', 'qui', 'que', 'quoi', 'dont', 'tout', 'rien'}:
+        return False
+    # Objet = sujet (circularité)
+    if sn == on:
+        return False
+    # Objet est juste un article ou préposition
+    if on in {'le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'au', 'aux', 'sur',
+              'dans', 'par', 'pour', 'avec', 'sans', 'sous', 'entre', 'vers'}:
+        return False
+    
+    return True
+
+def _dedup_triples(triples: List[Tuple[str, str, str, str]]) -> List[Tuple[str, str, str, str]]:
+    """
+    Déduplication intelligente :
+      1. Normalise les clés (sujet, relation, objet)
+      2. Élimine les doublons exacts
+      3. Pour les mêmes (sujet, relation), garde l'objet le plus long
+    """
+    # Étape 1 : déduplication exacte normalisée
+    seen = {}
+    for s, r, o, sec in triples:
+        key = _normalize_key(s, r, o)
+        if key not in seen:
+            seen[key] = (s, r, o, sec)
+    
+    # Étape 2 : pour les mêmes (sujet, relation), garder l'objet le plus informatif
+    by_subj_rel = defaultdict(list)
+    for (sn, rn, on), (s, r, o, sec) in seen.items():
+        by_subj_rel[(sn, rn)].append((s, r, o, sec, len(on)))
+    
+    result = []
+    for (sn, rn), candidates in by_subj_rel.items():
+        # Garder l'objet le plus long (le plus informatif)
+        best = max(candidates, key=lambda x: x[4])
+        result.append((best[0], best[1], best[2], best[3]))
+    
+    return result
+
+def _detect_contradictions_lexical(triples: List[Tuple[str, str, str, str]]) -> List[Tuple]:
+    """
+    Détecte les contradictions par patterns lexicaux (fallback mode léger).
+    
+    Cherche :
+      · (X, est, Y) vs (X, n'est pas, Y) → contradiction directe
+      · (X, augmente, Y) vs (X, diminue, Y) → opposition
+      · (X, cause, Y) vs (X, empêche, Y) → opposition fonctionnelle
+    """
+    contradictions = []
+    
+    # Paires de relations opposées
+    opposite_relations = [
+        ('est', "n'est pas"),
+        ('augmente', 'diminue'),
+        ('cause', 'empêche'),
+        ('produit', 'détruit'),
+        ('favorise', 'menace'),
+        ('crée', 'détruit'),
+        ('protège', 'menace'),
+        ('réduit', 'augmente'),
+        ('est nécessaire', 'est inutile'),
+        ('augmente', 'réduit'),
+        ('favorise', 'détruit'),
+        ('contribue à', 'menace'),
+        ('augmente', 'menace'),   # OGM: augmente rendements VS menace biodiversité
+        ('favorise', 'menace'),   # mondialisation: favorise croissance VS menace emplois
+    ]
+    
+    # Normaliser une relation pour la comparaison (enlever la négation)
+    def _strip_negation(rel: str) -> str:
+        return re.sub(r'^ne\s+', '', rel).replace(' pas', '').strip()
+    
+    # Index par sujet
+    by_subject = defaultdict(list)
+    for s, r, o, sec in triples:
+        sn = _clean_subject(s)
+        by_subject[sn].append((r, o, sec))
+    
+    for subject, facts in by_subject.items():
+        for i in range(len(facts)):
+            for j in range(i + 1, len(facts)):
+                r1, o1, _ = facts[i]
+                r2, o2, _ = facts[j]
+                
+                # Vérifier si les relations sont opposées
+                r1n = r1.lower().strip()
+                r2n = r2.lower().strip()
+                
+                for opp_a, opp_b in opposite_relations:
+                    if (r1n == opp_a and r2n == opp_b) or (r1n == opp_b and r2n == opp_a):
+                        # Vérifier que les objets sont similaires (même sujet de contradiction)
+                        o1n = _clean_phrase(o1)
+                        o2n = _clean_phrase(o2)
+                        # Les objets doivent être liés (partagent des mots ou sont identiques)
+                        words1 = set(o1n.split())
+                        words2 = set(o2n.split())
+                        overlap = words1 & words2
+                        if overlap or o1n == o2n:
+                            contradictions.append((
+                                (subject, r1, o1),
+                                (subject, r2, o2),
+                                -0.5  # score négatif = contradiction
+                            ))
+                            break
+    
+    return contradictions
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # SEGMENTATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -194,10 +358,19 @@ class HarmonicSummarizer:
         log.info(f"Segmentation: {len(chunks)} chunks")
 
         # ── 2. EXTRACTION ──
-        all_triples = []
+        all_triples_raw = []
         for chunk in chunks:
             triples = extract_triples_from_text(chunk)
-            all_triples.extend(triples)
+            all_triples_raw.extend(triples)
+
+        # ── 2b. NETTOYAGE + VALIDATION + DÉDUPLICATION ──
+        # Valider chaque triple
+        valid_triples = [(s, r, o, sec) for s, r, o, sec in all_triples_raw
+                         if _validate_triple(s, r, o)]
+        # Nettoyer les objets
+        cleaned_triples = [(s, r, _clean_phrase(o), sec) for s, r, o, sec in valid_triples]
+        # Dédupliquer
+        all_triples = _dedup_triples(cleaned_triples)
 
         if not all_triples:
             return HarmonicSummary(
@@ -251,17 +424,28 @@ class HarmonicSummarizer:
 
         # ── 7. DÉTECTION DE CONTRADICTIONS ──
         contradictions = []
-        for i in range(min(len(selected), len(selected))):
-            for j in range(i + 1, min(len(selected), len(selected))):
-                # Même sujet + relations opposées → contradiction potentielle
-                if (selected[i][0].lower() == selected[j][0].lower() and
-                        selected[i][1] != selected[j][1]):
-                    coh = self._coherence(
-                        self._get_psi(f"{selected[i][0]}|{selected[i][1]}|{selected[i][2]}"),
-                        self._get_psi(f"{selected[j][0]}|{selected[j][1]}|{selected[j][2]}")
-                    )
-                    if coh < -0.01:  # interférence destructive
-                        contradictions.append((selected[i][:3], selected[j][:3], coh))
+        # Essayer d'abord la détection par phase (mode holographique)
+        if hasattr(self, 'brain') and self.brain is not None:
+            try:
+                # Version phase-based si dispo
+                for i in range(min(len(selected), len(selected))):
+                    for j in range(i + 1, min(len(selected), len(selected))):
+                        if (selected[i][0].lower() == selected[j][0].lower() and
+                                selected[i][1] != selected[j][1]):
+                            coh = self._coherence(
+                                self._get_psi(f"{selected[i][0]}|{selected[i][1]}|{selected[i][2]}"),
+                                self._get_psi(f"{selected[j][0]}|{selected[j][1]}|{selected[j][2]}")
+                            )
+                            if coh < -0.01:
+                                contradictions.append((selected[i][:3], selected[j][:3], coh))
+            except Exception:
+                pass
+        
+        # Fallback lexical (toujours actif)
+        lexical_contradictions = _detect_contradictions_lexical(
+            [(s, r, o, sec) for s, r, o, sec, _ in selected]
+        )
+        contradictions.extend(lexical_contradictions)
 
         # ── 8. EXPRESSION ──
         summary = self._compose_summary(selected, themes, contradictions, target_lang)
@@ -302,13 +486,19 @@ class HarmonicSummarizer:
             lines.append("🔑 POINTS CLÉS (par ordre d'importance) :")
             lines.append("")
             for i, (s, r, o, _, cent) in enumerate(selected):
-                # Formater le fait en phrase naturelle
-                if r in ('est', 'sont'):
-                    phrase = f"{i+1}. {s.capitalize()} {r} {o}."
-                elif r.startswith('a '):
-                    phrase = f"{i+1}. {s.capitalize()} {r} {o}."
+                # Nettoyer le sujet et l'objet pour l'affichage
+                sn = _clean_subject(s).capitalize()
+                on = _clean_phrase(o)
+                rn = r.lower().strip()
+                # Formater la phrase
+                if rn.startswith('a '):
+                    phrase = f"{i+1}. {sn} {rn} {on}."
+                elif rn in ('est', 'sont', 'reste', 'demeure', 'devient'):
+                    phrase = f"{i+1}. {sn} {rn} {on}."
                 else:
-                    phrase = f"{i+1}. {s.capitalize()} {r} {o}."
+                    phrase = f"{i+1}. {sn} {rn} {on}."
+                # Capitalize first letter
+                phrase = phrase[0].upper() + phrase[1:] if phrase else phrase
                 lines.append(f"   {phrase}")
             lines.append("")
 
