@@ -99,6 +99,39 @@ except ImportError:
     HarmonicAttention = None
     ContextualEncoder = None
 
+# 📚 Apprentissage continu
+_WAVE_FINE_TUNE_AVAILABLE = False
+try:
+    from wave_fine_tune import WaveFineTuner
+    _WAVE_FINE_TUNE_AVAILABLE = True
+except ImportError:
+    WaveFineTuner = None
+
+_FAST_LEARNER_AVAILABLE = False
+try:
+    from fast_learner import FastLearner
+    _FAST_LEARNER_AVAILABLE = True
+except ImportError:
+    FastLearner = None
+
+_FEEDBACK_LOOP_AVAILABLE = False
+try:
+    from feedback_loop import FeedbackLoop
+    _FEEDBACK_LOOP_AVAILABLE = True
+except ImportError:
+    FeedbackLoop = None
+
+# FastLearner et WaveFineTuner sont importés lazy (dans __init__)
+# pour éviter l'import circulaire (fast_learner importe HarmonicBrain)
+
+# FeedbackLoop
+_FEEDBACK_LOOP_AVAILABLE = False
+try:
+    from feedback_loop import FeedbackLoop
+    _FEEDBACK_LOOP_AVAILABLE = True
+except ImportError:
+    FeedbackLoop = None
+
 try:
     from harmonic_quality import HIGH_AMPLITUDE_FACTS
 except ImportError:
@@ -978,6 +1011,33 @@ class HarmonicBrain:
             except Exception:
                 pass
 
+        # 📚 APPRENTISSAGE CONTINU (imports lazy pour éviter circulaire)
+        self._fine_tuner = None
+        self._fast_learner = None
+        self._feedback = None
+        self._learn_count = 0
+        self._learn_every = 100
+
+        if use_holographic:
+            try:
+                from wave_fine_tune import WaveFineTuner
+                self._fine_tuner = WaveFineTuner(
+                    encoder=self.unconscious.encoder,
+                    learning_rate=1.0, lambda_reg=2.0
+                )
+            except Exception:
+                pass
+        try:
+            from fast_learner import FastLearner
+            self._fast_learner = FastLearner(self)
+        except Exception:
+            pass
+        try:
+            from feedback_loop import FeedbackLoop
+            self._feedback = FeedbackLoop(brain=self)
+        except Exception:
+            pass
+
         # Adaptateur multi-domaine (raisonne dans 12 domaines)
         self._domain_adapters: Dict[str, DomainAdapter] = {}
         self._current_domain: str = 'faits'
@@ -1576,6 +1636,9 @@ class HarmonicBrain:
         # 🔥 DÉDUPLICATION + FILTRE LANGUE : nettoyer la réponse
         response = self._clean_response(response, lang)
 
+        # 📚 APPRENTISSAGE CONTINU : feedback + fine-tune périodique
+        self._maybe_learn(question, response, confidence, accepted)
+
         return BrainResult(
             response=response,
             confidence=min(1.0, confidence),
@@ -1634,6 +1697,75 @@ class HarmonicBrain:
                 facts_used=[], facts_rejected=[],
                 retrieval_count=0, total_time_ms=0,
             )
+
+    # 📚 APPRENTISSAGE CONTINU ──────────────────────────────────────────────
+    def _maybe_learn(self, question: str, response: str, confidence: float,
+                     accepted: List):
+        """
+        Apprentissage continu après chaque interaction réussie.
+        """
+        self._learn_count += 1
+
+        # 1. FEEDBACK : renforcer les faits utilisés
+        if self._feedback is not None and confidence > 0.4:
+            try:
+                for fact in accepted:
+                    if hasattr(fact, 'sujet'):
+                        key = (_normalize(fact.sujet), _normalize(fact.relation),
+                               _normalize(fact.objet))
+                        if key in self.unconscious.registry:
+                            record = self.unconscious.registry[key]
+                            record.amplitude += 0.1 * confidence
+                            record.times_accepted += 1
+                            if confidence > 0.7:
+                                record.confidence = min(1.0, record.confidence + 0.02)
+            except Exception:
+                pass
+
+        # 2. FINE-TUNE périodique (Fourier ALS)
+        if (self._fine_tuner is not None and
+                self._learn_count % self._learn_every == 0 and
+                len(self.unconscious.registry) > 100):
+            try:
+                kb_list = [
+                    (r.sujet, r.relation, r.objet, r.secteur)
+                    for r in self.unconscious.registry.values()
+                    if r.times_accepted > 0
+                ][:50000]
+                if len(kb_list) > 500:
+                    history = self._fine_tuner.fine_tune(kb_list, epochs=2, verbose=False)
+                    log.info(f"📚 Fine-tune: {history['words_updated'][-1]} mots, "
+                             f"loss={history['loss'][-1]:.4f}")
+            except Exception as e:
+                log.debug(f"Fine-tune skipped: {e}")
+
+        # 3. AUTO-CURRICULUM périodique
+        if (self._fast_learner is not None and
+                self._learn_count % (self._learn_every * 10) == 0):
+            try:
+                self._fast_learner.auto_curriculum(target_patterns=10)
+            except Exception:
+                pass
+
+    def learn(self):
+        """Lance un cycle d'apprentissage complet."""
+        results = {'fine_tuned': False, 'curriculum': False}
+        if self._fine_tuner is not None:
+            try:
+                kb_list = [(r.sujet, r.relation, r.objet, r.secteur)
+                           for r in self.unconscious.registry.values()][:50000]
+                if len(kb_list) > 500:
+                    self._fine_tuner.fine_tune(kb_list, epochs=3, verbose=True)
+                    results['fine_tuned'] = True
+            except Exception as e:
+                log.warning(f"Fine-tune failed: {e}")
+        if self._fast_learner is not None:
+            try:
+                self._fast_learner.auto_curriculum(target_patterns=20)
+                results['curriculum'] = True
+            except Exception as e:
+                log.warning(f"Curriculum failed: {e}")
+        return results
 
     # 🌐 WEB SEARCH FALLBACK ─────────────────────────────────────────────────
     def _try_web_search(self, question: str, lang: str = 'fr') -> Optional[BrainResult]:
@@ -2006,6 +2138,10 @@ class HarmonicBrain:
             'deep_reasoner': self._deep_reasoner is not None,
             'few_shot': self._few_shot is not None,
             'harmonic_attention': self._attention is not None,
+            'fine_tuner': self._fine_tuner is not None,
+            'fast_learner': self._fast_learner is not None,
+            'feedback_loop': self._feedback is not None,
+            'learn_count': self._learn_count,
         }
 
 
