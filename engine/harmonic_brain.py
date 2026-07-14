@@ -1380,7 +1380,49 @@ class HarmonicBrain:
                               (follow-up detection, enrichissement, mémoire)
         """
         t_start = time.time()
-        
+
+        # ── 0.0 FAST PATH : Salutations, Identité, Conversation ──
+        try:
+            from domain_detector import (
+                detect_question_type, handle_greeting, handle_identity,
+                handle_out_of_domain
+            )
+            qtype = detect_question_type(question)
+            lang = qtype.get('language', 'fr')
+
+            # Identité (qui es-tu ?)
+            if qtype.get('is_identity'):
+                resp = handle_identity(lang=lang)
+                if resp:
+                    self._update_conv_context(question, resp, use_conversation)
+                    return BrainResult(response=resp, confidence=1.0,
+                        facts_used=[], facts_rejected=[], retrieval_count=0,
+                        total_time_ms=(time.time()-t_start)*1000)
+
+            # Salutations (bonjour, merci, au revoir)
+            if qtype.get('is_greeting') or qtype.get('is_mercy') or qtype.get('is_bye'):
+                resp = handle_greeting(
+                    is_mercy=qtype.get('is_mercy', False),
+                    is_bye=qtype.get('is_bye', False), lang=lang
+                )
+                if resp:
+                    self._update_conv_context(question, resp, use_conversation)
+                    return BrainResult(response=resp, confidence=1.0,
+                        facts_used=[], facts_rejected=[], retrieval_count=0,
+                        total_time_ms=(time.time()-t_start)*1000)
+
+            # Hors-domaine → tenter la créativité avant d'abandonner
+            if qtype.get('is_out_of_domain') and self._creator is not None:
+                creative_resp = self._creator.create(question, max_iterations=3)
+                if creative_resp and creative_resp.expression:
+                    resp = creative_resp.expression
+                    self._update_conv_context(question, resp, use_conversation)
+                    return BrainResult(response=resp, confidence=0.5,
+                        facts_used=[], facts_rejected=[], retrieval_count=0,
+                        total_time_ms=(time.time()-t_start)*1000)
+        except ImportError:
+            lang = 'fr'
+
         # ── 0. PARSEUR + DOMAINE ──
         parsed = self.parser.parse(question)
         lang = parsed.lang
