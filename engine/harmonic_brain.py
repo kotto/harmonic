@@ -62,6 +62,34 @@ from holographic_encoder import (
     _fnv1a_hash, build_holographic_waves
 )
 
+# 🌐 Web Retriever — connecte l'IA à Internet
+_WEB_RETRIEVER = None
+try:
+    from web_retriever import WebRetriever
+    _WEB_RETRIEVER = WebRetriever()
+    log = logging.getLogger(__name__)
+    log.info("🌐 WebRetriever chargé — recherche Internet disponible")
+except Exception as e:
+    log = logging.getLogger(__name__)
+    log.warning(f"WebRetriever non disponible: {e}")
+
+# 🔗 Phase Amplifier — propagation ψ profonde
+_PHASE_AMPLIFIER_AVAILABLE = False
+try:
+    from phase_amplifier import PhaseAmplifier, deep_reason
+    _PHASE_AMPLIFIER_AVAILABLE = True
+except ImportError:
+    PhaseAmplifier = None
+    deep_reason = None
+
+# 🧪 Few-Shot Injector — apprentissage par injection temporaire
+_FEW_SHOT_AVAILABLE = False
+try:
+    from few_shot_injector import FewShotInjector
+    _FEW_SHOT_AVAILABLE = True
+except ImportError:
+    FewShotInjector = None
+
 try:
     from harmonic_quality import HIGH_AMPLITUDE_FACTS
 except ImportError:
@@ -902,6 +930,33 @@ class HarmonicBrain:
             except Exception:
                 self.conversation = None
 
+        # 🌐 WEB RETRIEVER (connexion Internet)
+        self._web = _WEB_RETRIEVER  # instance globale partagée
+
+        # 🔗 PHASE AMPLIFIER (raisonnement profond)
+        self._deep_reasoner = None
+        if _PHASE_AMPLIFIER_AVAILABLE:
+            try:
+                # En mode léger, on passe dim et l'encodeur peut être None
+                # (PhaseAmplifier a un fallback hash-based)
+                enc = self.unconscious.encoder if use_holographic else None
+                self._deep_reasoner = PhaseAmplifier(
+                    brain=self, dim=dim, encoder=enc
+                )
+            except Exception:
+                pass
+
+        # 🧪 FEW-SHOT INJECTOR (apprentissage temporaire)
+        self._few_shot = None
+        if _FEW_SHOT_AVAILABLE:
+            try:
+                self._few_shot = FewShotInjector(
+                    brain=self, dim=dim,
+                    encoder=self.unconscious.encoder
+                )
+            except Exception:
+                pass
+
         # Adaptateur multi-domaine (raisonne dans 12 domaines)
         self._domain_adapters: Dict[str, DomainAdapter] = {}
         self._current_domain: str = 'faits'
@@ -1340,8 +1395,14 @@ class HarmonicBrain:
         self.conscious.feedback(accepted, rejected)
 
         # ── 2b. INTELLIGENCE CONSCIENTE : raisonner si confiance faible ──
-        # GARDE-FOU : si aucun candidat → ne pas inventer
+        # GARDE-FOU : si aucun candidat → tenter le web avant d'abandonner
         if not accepted and not candidates:
+            # 🌐 Fallback Internet
+            web_result = self._try_web_search(question, lang)
+            if web_result:
+                self._update_conv_context(question, web_result.response, use_conversation)
+                return web_result
+
             response = self._dont_know(question, lang)
             total_time = (time.time() - t_start) * 1000
             return BrainResult(
@@ -1350,10 +1411,16 @@ class HarmonicBrain:
                 retrieval_count=0, total_time_ms=total_time,
             )
         
-        # GARDE-FOU 2 : si les candidats sont de très faible qualité → ne pas inventer
+        # GARDE-FOU 2 : si les candidats sont de très faible qualité → tenter le web
         if not accepted and candidates:
             best_score = candidates[0][1] if candidates else 0
             if best_score < 1.0:  # Score trop faible → probablement hors KB
+                # 🌐 Fallback Internet
+                web_result = self._try_web_search(question, lang)
+                if web_result:
+                    self._update_conv_context(question, web_result.response, use_conversation)
+                    return web_result
+
                 response = self._dont_know(question, lang)
                 total_time = (time.time() - t_start) * 1000
                 return BrainResult(
@@ -1380,6 +1447,12 @@ class HarmonicBrain:
                         found = True
                         break
                 if not found:
+                    # 🌐 Fallback Internet avant d'abandonner
+                    web_result = self._try_web_search(question, lang)
+                    if web_result:
+                        self._update_conv_context(question, web_result.response, use_conversation)
+                        return web_result
+
                     response = self._dont_know(question, lang)
                     total_time = (time.time() - t_start) * 1000
                     return BrainResult(
@@ -1405,6 +1478,26 @@ class HarmonicBrain:
                     total_time_ms=total_time,
                 )
 
+        # ── 2c. RAISONNEMENT PROFOND (Phase Amplifier) ──
+        # Si le conscient intelligent n'a pas trouvé, tenter la propagation amplifiée
+        if self._deep_reasoner is not None and (not accepted or
+                (accepted and accepted[0].confidence < 0.5)):
+            try:
+                deep_answer = self._deep_reasoner.reason_deep(question, max_depth=7)
+                if deep_answer and len(deep_answer) > 40:
+                    response = self._style_response(deep_answer, question, accepted, lang, candidates)
+                    total_time = (time.time() - t_start) * 1000
+                    return BrainResult(
+                        response=response,
+                        confidence=0.70,  # confiance modérée pour deep reasoning
+                        facts_used=accepted,
+                        facts_rejected=rejected,
+                        retrieval_count=retrieval_count,
+                        total_time_ms=total_time,
+                    )
+            except Exception:
+                pass
+
         # ── 3. EXPRESSION : adaptée au type de question ──
         response = self._try_compose(accepted, question, parsed, lang)
         if not response:
@@ -1415,6 +1508,13 @@ class HarmonicBrain:
         confidence = 0.0
         if accepted:
             confidence = sum(r.confidence for r in accepted) / len(accepted)
+
+        # 🌐 FALLBACK WEB : si confiance trop faible, tenter Internet
+        if confidence < 0.35 and self._web is not None:
+            web_result = self._try_web_search(question, lang)
+            if web_result:
+                self._update_conv_context(question, web_result.response, use_conversation)
+                return web_result
 
         # 🔥 Mise à jour du contexte de conversation
         self._update_conv_context(question, response, use_conversation)
@@ -1435,6 +1535,124 @@ class HarmonicBrain:
         )
 
     # ── EXPRESSION ─────────────────────────────────────────────────────────
+
+    # 🧪 FEW-SHOT LEARNING ──────────────────────────────────────────────────
+    def few_shot(self, examples: List[Tuple[str, str]], query: str,
+                 pattern_type: str = "general") -> 'BrainResult':
+        """
+        Apprentissage few-shot par injection temporaire de pattern.
+
+        Montre 3 exemples au cerveau, qui extrait le ψ_pattern commun,
+        l'injecte temporairement dans l'hologramme, traite la requête,
+        puis laisse le pattern s'estomper naturellement.
+
+        Args:
+            examples: liste de (input, output) — les exemples
+            query: la nouvelle requête à traiter
+            pattern_type: type de pattern
+
+        Returns:
+            BrainResult avec la réponse
+        """
+        if self._few_shot is None:
+            return BrainResult(
+                response="Few-shot learning non disponible (module manquant)",
+                confidence=0.0,
+                facts_used=[], facts_rejected=[],
+                retrieval_count=0, total_time_ms=0,
+            )
+
+        try:
+            result = self._few_shot.process(
+                examples=examples,
+                query=query,
+                pattern_type=pattern_type,
+            )
+            return BrainResult(
+                response=result.response,
+                confidence=result.confidence,
+                facts_used=result.facts_from_kb,
+                facts_rejected=[],
+                retrieval_count=len(result.facts_from_kb) + len(result.facts_from_pattern),
+                total_time_ms=0,
+            )
+        except Exception as e:
+            return BrainResult(
+                response=f"Erreur few-shot: {e}",
+                confidence=0.0,
+                facts_used=[], facts_rejected=[],
+                retrieval_count=0, total_time_ms=0,
+            )
+
+    # 🌐 WEB SEARCH FALLBACK ─────────────────────────────────────────────────
+    def _try_web_search(self, question: str, lang: str = 'fr') -> Optional[BrainResult]:
+        """
+        Tente une recherche Internet si la KB interne n'a rien trouvé.
+
+        Returns:
+            BrainResult si une réponse web a été trouvée, None sinon.
+        """
+        if self._web is None:
+            return None
+
+        try:
+            results = self._web.search_web(question, max_results=3)
+            if not results:
+                return None
+
+            # Construire une réponse à partir des résultats web
+            best = results[0]
+            summary = best.get('summary') or best.get('snippet') or ''
+
+            if len(summary) < 30:
+                return None
+
+            # Formater la réponse selon la source
+            source_name = best.get('source', 'web')
+            title = best.get('title', '')
+            url = best.get('url', '')
+
+            if source_name == 'wikipedia':
+                prefix = "Selon Wikipédia" if lang == 'fr' else "According to Wikipedia"
+            elif source_name == 'duckduckgo':
+                prefix = "D'après DuckDuckGo" if lang == 'fr' else "According to DuckDuckGo"
+            else:
+                prefix = "D'après une recherche web" if lang == 'fr' else "According to a web search"
+
+            if title and title.lower() not in summary.lower():
+                response = f"{prefix}, {title} : {summary}"
+            else:
+                response = f"{prefix} : {summary}"
+
+            # Ajouter les sources additionnelles si disponibles
+            if len(results) >= 2:
+                extra_sources = []
+                for r in results[1:3]:
+                    if r.get('snippet') and len(r['snippet']) > 40:
+                        extra_sources.append(f"• {r.get('title', 'Source')} : {r['snippet'][:200]}…")
+                if extra_sources:
+                    response += "\n\nSources complémentaires :\n" + "\n".join(extra_sources)
+
+            # Ajouter les URLs
+            if url:
+                response += f"\n\n🔗 {url}"
+                for r in results[1:2]:
+                    if r.get('url'):
+                        response += f"\n🔗 {r['url']}"
+
+            t_start = time.time()
+            total_time = (time.time() - t_start) * 1000  # approximatif
+
+            return BrainResult(
+                response=response,
+                confidence=0.60,  # confiance modérée pour le web
+                facts_used=[],
+                facts_rejected=[],
+                retrieval_count=len(results),
+                total_time_ms=total_time,
+            )
+        except Exception:
+            return None
 
     def _is_logic_question(self, question: str, parsed) -> bool:
         """Détecte si la question relève du raisonnement logique pur."""
@@ -1733,6 +1951,9 @@ class HarmonicBrain:
             'init_time_s': round(self._init_time, 1),
             'current_domain': self._current_domain,
             'domains_available': list(DOMAINS.keys()),
+            'web_retriever': self._web is not None,
+            'deep_reasoner': self._deep_reasoner is not None,
+            'few_shot': self._few_shot is not None,
         }
 
 

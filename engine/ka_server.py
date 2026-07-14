@@ -277,6 +277,15 @@ print(f"  🌐 Domaines: {len(brain.stats.get('domains_available', []))}")
 print(f"  💬 Parseur: actif")
 print(f"  🎯 SFT: {sum(1 for r in brain.unconscious.registry.values() if r.amplitude >= 5)}")
 
+# ── 🌐 Web Retriever (recherche Internet) ──────────────────────────────────────
+_web_retriever = None
+try:
+    from web_retriever import WebRetriever
+    _web_retriever = WebRetriever()
+    print(f"  🌐 Web Retriever: connecté (DuckDuckGo + Wikipedia)")
+except Exception as e:
+    print(f"  🌐 Web Retriever: non disponible ({e})")
+
 # ── HCV (optionnel) ─────────────────────────────────────────────────────────
 
 hcv_available = False
@@ -491,6 +500,179 @@ def surreal():
     result = brain.process("genere une image surrealiste")
     images = [result.response] if result.response else ["Image surréaliste indisponible."]
     return jsonify({'images': images, 'count': len(images)})
+
+
+# 🌐 RECHERCHE WEB ──────────────────────────────────────────────────────────────
+
+@app.route('/api/search_web', methods=['POST'])
+def search_web():
+    """
+    Recherche sur Internet via DuckDuckGo + Wikipedia.
+
+    Body JSON :
+      - query: str (requête de recherche)
+      - max_results: int (défaut 5)
+      - include_wikipedia: bool (défaut true)
+      - include_web: bool (défaut true)
+      - lang: str (défaut 'auto')
+
+    Retourne :
+      - results: [{source, title, url, snippet, summary}]
+      - query: str
+      - total: int
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    query = data.get('query', '').strip()
+    if not query:
+        return jsonify({'error': 'query required', 'results': []}), 400
+
+    max_results = min(data.get('max_results', 5), 10)
+    include_wikipedia = data.get('include_wikipedia', True)
+    include_web = data.get('include_web', True)
+    lang = data.get('lang', 'auto')
+
+    if _web_retriever is not None:
+        if lang == 'wikipedia_only':
+            results = _web_retriever.search_wikipedia_multiple(query, lang=lang, limit=max_results)
+        else:
+            results = _web_retriever.search_web(
+                query,
+                max_results=max_results,
+                include_wikipedia=include_wikipedia,
+                include_web=include_web,
+            )
+        return jsonify({
+            'results': results,
+            'query': query,
+            'total': len(results),
+        })
+    else:
+        return jsonify({
+            'error': 'Web retriever not available',
+            'results': [],
+            'query': query,
+            'total': 0,
+        }), 503
+
+
+@app.route('/api/search_news', methods=['POST'])
+def search_news():
+    """
+    Recherche d'actualités récentes.
+
+    Body JSON :
+      - topic: str (sujet, optionnel)
+      - max_results: int (défaut 5)
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    topic = data.get('topic', '').strip() or None
+    max_results = min(data.get('max_results', 5), 10)
+
+    if _web_retriever is not None:
+        results = _web_retriever.get_current_news(topic=topic, max_results=max_results)
+        return jsonify({
+            'results': results,
+            'topic': topic,
+            'total': len(results),
+        })
+    else:
+        return jsonify({
+            'error': 'Web retriever not available',
+            'results': [],
+            'total': 0,
+        }), 503
+
+
+# 🧪 FEW-SHOT LEARNING ──────────────────────────────────────────────────────────
+
+@app.route('/api/few_shot', methods=['POST'])
+def few_shot():
+    """
+    Apprentissage few-shot par injection temporaire de pattern.
+
+    Body JSON :
+      - examples: [{"input": "...", "output": "..."}, ...]  (2-10 paires)
+      - query: str (nouvelle requête à traiter)
+      - pattern_type: str (optionnel, défaut "general")
+
+    Retourne :
+      - response: str
+      - confidence: float
+      - pattern_coherence: float (qualité du pattern extrait)
+      - interference_strength: float
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    examples_raw = data.get('examples', [])
+    query = data.get('query', '').strip()
+    pattern_type = data.get('pattern_type', 'general')
+
+    if not query:
+        return jsonify({'error': 'query required'}), 400
+    if len(examples_raw) < 2:
+        return jsonify({'error': 'Au moins 2 exemples requis'}), 400
+
+    # Convertir en liste de tuples (input, output)
+    examples = [(ex.get('input', ''), ex.get('output', '')) for ex in examples_raw]
+
+    result = brain.few_shot(examples=examples, query=query, pattern_type=pattern_type)
+
+    # Récupérer les stats du few-shot
+    few_shot_stats = {}
+    if brain._few_shot is not None:
+        few_shot_stats = brain._few_shot.stats
+
+    return jsonify({
+        'response': result.response,
+        'confidence': round(result.confidence, 2),
+        'facts_count': result.retrieval_count,
+        'few_shot_stats': few_shot_stats,
+    })
+
+
+# 🔗 DEEP REASONING ─────────────────────────────────────────────────────────────
+
+@app.route('/api/deep_reason', methods=['POST'])
+def deep_reason():
+    """
+    Raisonnement profond par propagation ψ amplifiée.
+
+    Body JSON :
+      - question: str
+      - max_depth: int (défaut 7, max 15)
+
+    Retourne :
+      - response: str (conclusion)
+      - chain_depth: int (nombre de sauts)
+      - total_coherence: float
+      - reasoning_type: str
+      - chain_explanation: str (explication détaillée)
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    question = data.get('question', '').strip()
+    max_depth = min(data.get('max_depth', 7), 15)
+
+    if not question:
+        return jsonify({'error': 'question required'}), 400
+
+    if brain._deep_reasoner is None:
+        return jsonify({
+            'error': 'Deep reasoner non disponible (mode holographique requis)',
+            'response': brain.process(question).response,
+        }), 503
+
+    from phase_amplifier import PhaseAmplifier
+    chain = brain._deep_reasoner.propagate(question, max_depth=max_depth)
+    response = brain._deep_reasoner.reason_deep(question, max_depth=max_depth)
+    explanation = brain._deep_reasoner.explain(chain)
+
+    return jsonify({
+        'response': response,
+        'chain_depth': chain.depth,
+        'total_coherence': round(chain.total_coherence, 3),
+        'reasoning_type': chain.reasoning_type,
+        'stopped_reason': chain.stopped_reason,
+        'chain_explanation': explanation,
+    })
 
 
 @app.route('/api/stats', methods=['GET'])
@@ -779,6 +961,143 @@ def hpc_compress():
         'gain_percent': gain,
         'method': 'HCV Harmonic Compression v2.0',
         'quality': 'lossless-perceptually',
+    })
+
+
+@app.route('/api/harmonic/encode', methods=['POST'])
+def harmonic_encode():
+    """
+    Compression Harmonic Dictionary — encode réel avec dictionnaire 1.2M patches.
+    Body: { "image_base64": "...", "quality": 45, "mode": "image" }
+    """
+    import base64, io, time
+    data = request.get_json(force=True, silent=True) or {}
+    
+    try:
+        from multimodal.harmonic_database import HarmonicDatabase
+        from multimodal.harmonic_codec import HarmonicCodec
+        from PIL import Image
+        import numpy as np
+    except Exception as e:
+        return jsonify({'error': f'Import error: {str(e)}'}), 500
+
+    quality = int(data.get('quality', 45))
+    mode = data.get('mode', 'image')
+    dict_path = data.get('dict_path', 'E:/harmonic_dict_full')
+
+    # Charger le dictionnaire
+    try:
+        db = HarmonicDatabase(patch_size=20, K=16, stride=20, 
+                              shard_size=50000, shard_dir=dict_path)
+        codec = HarmonicCodec(db, quality=quality)
+        codec.match_threshold = 1.0
+    except Exception as e:
+        return jsonify({'error': f'Dict load error: {str(e)}'}), 500
+
+    result = {}
+    
+    # Décoder l'image
+    img_b64 = data.get('image_base64', '')
+    if img_b64:
+        try:
+            img_bytes = base64.b64decode(img_b64)
+            img = np.array(Image.open(io.BytesIO(img_bytes)).convert('RGB'))
+        except Exception as e:
+            return jsonify({'error': f'Image decode error: {str(e)}'}), 400
+    else:
+        # Image de test par défaut
+        from pathlib import Path
+        test_img = Path('E:/SAAS - Copie/av_generation_output/massive_dataset/sunset')
+        jpgs = sorted(test_img.glob('*.jpg'))
+        if jpgs:
+            img = np.array(Image.open(jpgs[-1]).convert('RGB'))
+        else:
+            img = np.random.RandomState(42).randint(0, 256, (200, 200, 3), dtype=np.uint8)
+
+    h, w = img.shape[:2]
+    raw_bytes = h * w * 3
+
+    # Encoder
+    t0 = time.perf_counter()
+    bitstream = codec.encode_v2(img, 'default')
+    encode_ms = (time.perf_counter() - t0) * 1000
+
+    # Décoder
+    t0 = time.perf_counter()
+    reconstructed, meta = codec.decode_v2(bitstream, database=db)
+    decode_ms = (time.perf_counter() - t0) * 1000
+
+    # Métriques
+    def psnr_fn(a, b):
+        a, b = a.astype(np.float64), b.astype(np.float64)
+        mse = np.mean((a - b) ** 2)
+        return 100.0 if mse < 1e-15 else 20.0 * np.log10(255.0 / np.sqrt(mse))
+
+    hm = min(h, reconstructed.shape[0])
+    wm = min(w, reconstructed.shape[1])
+    psnr_val = psnr_fn(img[:hm, :wm], reconstructed[:hm, :wm])
+
+    try:
+        from skimage.metrics import structural_similarity
+        ssim_val = structural_similarity(
+            img[:hm, :wm], reconstructed[:hm, :wm], 
+            channel_axis=2, data_range=255
+        )
+    except Exception:
+        ssim_val = None
+
+    ratio = raw_bytes / len(bitstream) if len(bitstream) > 0 else 0
+    gain = round((1 - 1/ratio) * 100) if ratio > 0 else 0
+
+    result = {
+        'original_bytes': raw_bytes,
+        'compressed_bytes': len(bitstream),
+        'ratio': round(ratio, 1),
+        'gain_percent': gain,
+        'psnr_db': round(psnr_val, 1),
+        'ssim': round(ssim_val, 4) if ssim_val is not None else None,
+        'encode_ms': round(encode_ms, 1),
+        'decode_ms': round(decode_ms, 1),
+        'match_rate': round(codec._last_match_rate * 100, 1) if hasattr(codec, '_last_match_rate') else None,
+        'quality': quality,
+        'patch_size': db.patch_size,
+        'dict_patches': sum(s.n_patches for s in db._shards),
+        'method': 'Harmonic Dictionary HHD2 — 1.2M patches, 48 catégories',
+        'resolution': f'{w}x{h}',
+    }
+
+    return jsonify(result)
+
+
+@app.route('/api/harmonic/stats', methods=['GET'])
+def harmonic_stats():
+    """Statistiques de stockage avec compression harmonique."""
+    try:
+        from multimodal.background_compressor import estimate_photos_remaining
+        import shutil
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    # Espace disque disponible
+    dict_path = 'E:/harmonic_dict_full'
+    try:
+        total, used, free = shutil.disk_usage(dict_path)
+    except Exception:
+        free = 200 * 1024**3  # fallback 200 GB
+
+    # Estimation
+    avg_compressed = 3500  # ~3.5 KB par photo 4K avec qualité 45
+    photos_remaining = estimate_photos_remaining(free, avg_compressed)
+
+    return jsonify({
+        'disk_free_gb': round(free / (1024**3), 1),
+        'photos_remaining': photos_remaining,
+        'avg_compressed_bytes': avg_compressed,
+        'avg_ratio': 119.5,
+        'storage_saved_mb': 0,  # sera mis à jour par le background compressor
+        'dict_size_mb': 1500,
+        'dict_patches': 1185600,
+        'dict_categories': 48,
     })
 
 

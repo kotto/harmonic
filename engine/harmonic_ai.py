@@ -44,6 +44,14 @@ from reasoning_engine import ReasoningEngine
 from style_engine import StyleEngine
 from harmonic_brain import HarmonicBrain, BrainResult
 
+# 🌐 Web Retriever (optionnel)
+_WEB_RETRIEVER = None
+try:
+    from web_retriever import WebRetriever
+    _WEB_RETRIEVER = WebRetriever()
+except Exception:
+    pass
+
 
 class HarmonicAI:
     """
@@ -306,16 +314,27 @@ class HarmonicAI:
                 response = None
                 confidence = 0.0
 
-        # ── 4. FALLBACK LLM (sevrage progressif) ──
+        # ── 4. FALLBACK : Web → Raisonnement → LLM (sevrage progressif) ──
         if not response or len(response) < 15 or confidence < 0.35:
-            # Essayer d'abord le raisonnement harmonique classique
+            # 4a. Essayer d'abord le raisonnement harmonique classique
             if not response or len(response) < 15:
                 try:
                     response = self.engine.reason(enriched, max_depth=2)
                 except Exception:
                     response = self.model.ask(enriched)
 
-            # Si toujours pas satisfaisant → LLM
+            # 4b. 🌐 FALLBACK WEB — recherche Internet gratuite
+            conf = self._confidence_score(response, enriched) if response else 0.0
+            if conf < 0.35 and _WEB_RETRIEVER is not None:
+                try:
+                    web_summary = _WEB_RETRIEVER.search_quick(enriched)
+                    if web_summary and len(web_summary) > 40:
+                        response = f"🌐 D'après une recherche web : {web_summary}"
+                        confidence = 0.55
+                except Exception:
+                    pass
+
+            # 4c. Si toujours pas satisfaisant → LLM (payant, dernière option)
             if self.bootstrapper is not None:
                 conf = self._confidence_score(response, enriched) if response else 0.0
                 if conf < 0.35:
@@ -775,6 +794,26 @@ class HarmonicAI:
             s['llm_calls'] = self.bootstrapper._llm_calls
         return s
 
+    # ═══════════════════════════════════════════════════════════════════
+    # 🌐 RECHERCHE WEB
+    # ═══════════════════════════════════════════════════════════════════
+
+    def search_web(self, query: str, max_results: int = 5) -> list:
+        """
+        Recherche sur Internet via DuckDuckGo + Wikipedia.
+
+        Retourne une liste de résultats [{source, title, url, snippet, summary}, ...].
+        """
+        if _WEB_RETRIEVER is None:
+            return [{'error': 'Web retriever non disponible'}]
+        return _WEB_RETRIEVER.search_web(query, max_results=max_results)
+
+    def get_news(self, topic: str = None, max_results: int = 5) -> list:
+        """Récupère les actualités récentes."""
+        if _WEB_RETRIEVER is None:
+            return [{'error': 'Web retriever non disponible'}]
+        return _WEB_RETRIEVER.get_current_news(topic=topic, max_results=max_results)
+
 
 # ═══════════════════════════════════════════════════════════════════════
 # CLI
@@ -789,12 +828,35 @@ def main():
     parser.add_argument('--metaphor', type=int, default=0, help='Generate N metaphors')
     parser.add_argument('--haiku', action='store_true', help='Generate a haiku')
     parser.add_argument('--surreal', type=int, default=0, help='Generate N surreal images')
+    parser.add_argument('--web', type=str, help='Search the web for a query')
+    parser.add_argument('--news', type=str, help='Get current news (optional topic)')
     parser.add_argument('--stats', action='store_true', help='Show stats')
     parser.add_argument('--learn', type=str, help='Learn a fact (text or S|R|O|SEC)')
     parser.add_argument('--save', type=str, help='Save model to path')
     parser.add_argument('--load', type=str, help='Load model from path')
     args = parser.parse_args()
-    
+
+    # 🌐 --web / --news : rapide, pas besoin de charger le modèle complet
+    if args.web or args.news:
+        from web_retriever import WebRetriever
+        wr = WebRetriever(timeout=10)
+        if args.web:
+            results = wr.search_web(args.web, max_results=5)
+            for i, r in enumerate(results):
+                print(f"\n{i+1}. [{r.get('source', 'web')}] {r.get('title', 'Sans titre')}")
+                if r.get('snippet'):
+                    print(f"   {r['snippet'][:200]}")
+                if r.get('url'):
+                    print(f"   🔗 {r['url']}")
+        if args.news:
+            topic = args.news if args.news != 'latest' else None
+            results = wr.get_current_news(topic=topic)
+            for i, r in enumerate(results):
+                print(f"\n{i+1}. {r.get('title', 'Sans titre')}")
+                if r.get('snippet'):
+                    print(f"   {r['snippet'][:150]}")
+        return
+
     ai = HarmonicAI()
     
     if args.load:
@@ -832,7 +894,7 @@ def main():
     if args.surreal:
         for s in ai.surreal(args.surreal):
             print(f"  🎨 {s}")
-    
+
     if args.save:
         ai.save(args.save)
         print(f"Model saved to {args.save}")
