@@ -21,7 +21,7 @@ Usage :
   python ka_server.py --model 217k     # charger le modèle 217K
 """
 
-import sys, os, io, time, json, logging
+import sys, os, io, re, time, json, logging
 from pathlib import Path
 from collections import defaultdict
 
@@ -108,10 +108,10 @@ def load_facts(model_name='best'):
         '50k_clean': 'knowledge_base_50k_cleaned.npz',
         '50k_res': 'knowledge_base_resonance.npz',
         '100k': 'knowledge_base_100k.npz',
-        '110k': 'knowledge_base_merged_v2.npz',
+        '110k': 'knowledge_base_merged_v3.npz',
         '217k': 'knowledge_base_clean.npz',
         '500k': 'knowledge_base_500k.npz',
-        'best': 'knowledge_base_merged_v2.npz',
+        'best': 'knowledge_base_merged_v3.npz',
     }
     filename = model_files.get(model_name)
     if not filename:
@@ -287,6 +287,28 @@ try:
 except Exception as e:
     print(f"  🌐 Web Retriever: non disponible ({e})")
 
+# ── 🎯 Domain Specializer (spécialisation dynamique) ──────────────────────────
+_specializer = None
+_SPECIALIZER_AVAILABLE = False
+try:
+    from domain_specializer import DomainSpecializer, detect_specialize_intent, load_user_kbs_for_brain
+    _specializer = DomainSpecializer(brain=brain, web_retriever=_web_retriever)
+    _SPECIALIZER_AVAILABLE = True
+    print(f"  🎯 Domain Specializer: actif (spécialisation dynamique)")
+except Exception as e:
+    print(f"  🎯 Domain Specializer: non disponible ({e})")
+
+# ── 🏢 Enterprise Ingestor (injection de données d'entreprise) ─────────────────
+_enterprise_ingestor = None
+_ENTERPRISE_AVAILABLE = False
+try:
+    from enterprise_ingest import EnterpriseIngestor
+    _enterprise_ingestor = EnterpriseIngestor(brain=brain)
+    _ENTERPRISE_AVAILABLE = True
+    print(f"  🏢 Enterprise Ingestor: actif (PDF, DOCX, CSV, JSON, TXT)")
+except Exception as e:
+    print(f"  🏢 Enterprise Ingestor: non disponible ({e})")
+
 # ── HCV (optionnel) ─────────────────────────────────────────────────────────
 
 hcv_available = False
@@ -359,15 +381,63 @@ def _after_request(response):
 def chat():
     """
     Conversation avec l'IA.
-    Body: { "message": "texte", "context": "optionnel" }
+    Body: { "message": "texte", "context": "optionnel",
+            "style": "auto|concise|elegant|pedagogique|chaleureux",
+            "depth": "court|standard|détaillé",
+            "personality": "ka|savant|vulgarisateur|poete" }
     Returns: { "response": "...", "confidence": 0.85, "source": "harmonic|llm" }
     """
     data = request.get_json(force=True, silent=True) or {}
     message = data.get('message', '').strip()
     context = data.get('context', '').strip()
+    user_id = data.get('user_id', 'anonymous')
+    
+    # Nouveaux paramètres de contrôle du style
+    style = data.get('style', 'auto')          # "concise"|"elegant"|"pedagogique"|"chaleureux"|"auto"
+    depth = data.get('depth', 'standard')       # "court"|"standard"|"détaillé"
+    personality = data.get('personality', 'ka') # "ka"|"savant"|"vulgarisateur"|"poete"
+    
+    # Valider les valeurs
+    valid_styles = {'concise', 'elegant', 'pedagogique', 'chaleureux', 'auto'}
+    valid_depths = {'court', 'standard', 'détaillé'}
+    valid_personalities = {'ka', 'savant', 'vulgarisateur', 'poete'}
+    if style not in valid_styles: style = 'auto'
+    if depth not in valid_depths: depth = 'standard'
+    if personality not in valid_personalities: personality = 'ka'
     
     if not message:
         return jsonify({'error': 'Message requis', 'response': "Je n'ai pas compris votre message."}), 400
+    
+    # 🎯 Détection de demande de spécialisation
+    if _SPECIALIZER_AVAILABLE and _specializer is not None:
+        intent = detect_specialize_intent(message)
+        if intent:
+            domain = intent['domain']
+            depth = intent.get('depth', 'expert')
+            log.info(f"🎯 Demande de spécialisation détectée: domain={domain}, "
+                     f"depth={depth}, user={user_id}")
+            
+            # Lancer la spécialisation (asynchrone pour ne pas bloquer)
+            result = _specializer.specialize(
+                domain=domain, depth=depth, user_id=user_id, async_mode=False
+            )
+            return jsonify({
+                'response': result.message,
+                'confidence': 1.0 if result.success else 0.5,
+                'source': 'specializer',
+                'latency_ms': round(result.elapsed_seconds * 1000, 0),
+                'model': 'harmonic-v2',
+                'specialization': result.to_dict() if result.success else None,
+            })
+    
+    # 🔄 Chargement automatique des KB utilisateur
+    if user_id != 'anonymous' and _SPECIALIZER_AVAILABLE and not brain.has_user_kb(user_id):
+        try:
+            n_loaded = load_user_kbs_for_brain(brain, user_id)
+            if n_loaded > 0:
+                log.info(f"🔄 {n_loaded} KB utilisateur chargées pour user={user_id}")
+        except Exception as e:
+            log.debug(f"🔄 Chargement KB utilisateur ignoré: {e}")
     
     # Handler spécial pour les questions d'identité
     identity_keywords = ['qui es tu', 'qui es-tu', 'tu es qui', 'comment tu t appelles',
@@ -407,7 +477,8 @@ def chat():
         message = f"{context}\n{message}"
     
     t0 = time.time()
-    result = brain.process(message)
+    result = brain.process(message, style=style, depth=depth, personality=personality,
+                          user_id=user_id)
     response = result.response
     latency_ms = (time.time() - t0) * 1000
     
@@ -427,6 +498,271 @@ def chat():
         'latency_ms': round(latency_ms, 0),
         'model': 'harmonic-v2',
     })
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🎯 SPÉCIALISATION DYNAMIQUE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/specialize', methods=['POST'])
+def specialize():
+    """
+    Lance une spécialisation de l'IA sur un domaine.
+    
+    Body: {
+        "user_id": "user_123",        # requis
+        "domain": "photographie",     # requis
+        "depth": "expert",            # "debutant"|"avance"|"expert"|"encyclopedique"
+        "async": false                # false = attendre, true = job_id
+    }
+    
+    Retourne: SpecializationResult ou {"job_id": "...", "status": "started"}
+    """
+    if not _SPECIALIZER_AVAILABLE:
+        return jsonify({
+            'error': 'Domain Specializer non disponible',
+            'response': "La spécialisation dynamique n'est pas disponible sur ce serveur."
+        }), 503
+    
+    data = request.get_json(force=True, silent=True) or {}
+    user_id = data.get('user_id', 'anonymous')
+    domain = data.get('domain', '').strip()
+    depth = data.get('depth', 'expert')
+    async_mode = data.get('async', False)
+    
+    # Validation
+    if not domain or len(domain) < 2:
+        return jsonify({
+            'error': 'Domaine requis (min 2 caractères)',
+            'response': "Quel domaine souhaitez-vous que j'explore ?"
+        }), 400
+    
+    valid_depths = {'debutant', 'avance', 'expert', 'encyclopedique'}
+    if depth not in valid_depths:
+        depth = 'expert'
+    
+    log.info(f"🎯 /api/specialize: user={user_id}, domain={domain}, "
+             f"depth={depth}, async={async_mode}")
+    
+    try:
+        if async_mode:
+            # Mode asynchrone : retourne immédiatement un job_id
+            result = _specializer.specialize(
+                domain=domain, depth=depth, user_id=user_id,
+                async_mode=True
+            )
+            return jsonify({
+                'response': result.message,
+                'confidence': 1.0,
+                'source': 'specializer',
+                'status': 'started',
+                'job_id': result.message.split('job_id=')[-1].strip() if 'job_id=' in result.message else None,
+            })
+        else:
+            # Mode synchrone : attend la fin
+            result = _specializer.specialize(
+                domain=domain, depth=depth, user_id=user_id,
+                async_mode=False
+            )
+            
+            return jsonify({
+                'response': result.message,
+                'confidence': 1.0 if result.success else 0.5,
+                'source': 'specializer',
+                'latency_ms': round(result.elapsed_seconds * 1000, 0),
+                'model': 'harmonic-v2',
+                'specialization': result.to_dict() if result.success else None,
+            })
+    except Exception as e:
+        log.exception(f"Erreur spécialisation: {e}")
+        return jsonify({
+            'error': str(e),
+            'response': f"❌ Erreur pendant la spécialisation : {e}",
+        }), 500
+
+
+@app.route('/api/specialize/status/<user_id>', methods=['GET'])
+def specialize_status(user_id):
+    """
+    Retourne l'état de spécialisation pour un utilisateur.
+    
+    GET /api/specialize/status/user_123
+    
+    Retourne: {
+        "user_id": "user_123",
+        "active_jobs": [...],
+        "specialized_domains": {
+            "photographie": {"depth": "expert", "triplets": 8432, ...}
+        }
+    }
+    """
+    if not _SPECIALIZER_AVAILABLE:
+        return jsonify({'error': 'Domain Specializer non disponible'}), 503
+    
+    try:
+        # Récupérer les jobs actifs
+        user_jobs = _specializer.get_user_jobs(user_id)
+        active_jobs = [j.to_dict() for j in user_jobs if j.status not in ('done', 'error')]
+        
+        # Récupérer les domaines spécialisés depuis le profil
+        specialized_domains = _specializer.get_user_domains(user_id)
+        
+        return jsonify({
+            'user_id': user_id,
+            'active_jobs': active_jobs,
+            'specialized_domains': specialized_domains,
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🏢 ENTERPRISE DATA INJECTION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/enterprise/ingest', methods=['POST'])
+def enterprise_ingest():
+    """
+    Ingère des fichiers pour une entreprise (chemins sur le serveur).
+    
+    Body: {
+        "enterprise_id": "acme_corp",
+        "domain": "documentation_interne",
+        "depth": "expert",
+        "file_paths": ["/data/docs/contrats.pdf", "/data/docs/produits.csv"]
+    }
+    """
+    if not _ENTERPRISE_AVAILABLE:
+        return jsonify({
+            'error': 'Enterprise Ingestor non disponible',
+            'response': "L'ingestion de données d'entreprise n'est pas disponible."
+        }), 503
+    
+    data = request.get_json(force=True, silent=True) or {}
+    enterprise_id = data.get('enterprise_id', '').strip()
+    domain = data.get('domain', '').strip()
+    depth = data.get('depth', 'expert')
+    file_paths = data.get('file_paths', [])
+    
+    if not enterprise_id:
+        return jsonify({'error': 'enterprise_id requis'}), 400
+    if not domain:
+        return jsonify({'error': 'domain requis'}), 400
+    if not file_paths:
+        return jsonify({'error': 'file_paths requis (liste de chemins)'}), 400
+    
+    log.info(f"🏢 /api/enterprise/ingest: enterprise={enterprise_id}, "
+             f"domain={domain}, files={len(file_paths)}")
+    
+    try:
+        result = _enterprise_ingestor.ingest_files(
+            file_paths=file_paths,
+            enterprise_id=enterprise_id,
+            domain=domain,
+            depth=depth,
+        )
+        return jsonify(result.to_dict())
+    except Exception as e:
+        log.exception(f"Erreur ingestion entreprise: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/enterprise/upload', methods=['POST'])
+def enterprise_upload():
+    """
+    Upload de fichier pour une entreprise (multipart/form-data).
+    
+    Form fields:
+        file: le fichier à uploader
+        enterprise_id: identifiant entreprise
+        domain: domaine de connaissance
+        depth: profondeur (optionnel, défaut: expert)
+    """
+    if not _ENTERPRISE_AVAILABLE:
+        return jsonify({'error': 'Enterprise Ingestor non disponible'}), 503
+    
+    enterprise_id = request.form.get('enterprise_id', '').strip()
+    domain = request.form.get('domain', '').strip()
+    depth = request.form.get('depth', 'expert')
+    
+    if not enterprise_id:
+        return jsonify({'error': 'enterprise_id requis'}), 400
+    if not domain:
+        return jsonify({'error': 'domain requis'}), 400
+    
+    if 'file' not in request.files:
+        return jsonify({'error': 'Aucun fichier fourni'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'Nom de fichier vide'}), 400
+    
+    # Sauvegarder le fichier uploadé
+    ent_uploads_dir = _ENGINE_DIR / 'data' / 'enterprises' / enterprise_id / 'uploads'
+    ent_uploads_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Sanitize filename
+    safe_filename = re.sub(r'[^a-zA-Z0-9_.-]', '_', file.filename)
+    upload_path = ent_uploads_dir / safe_filename
+    
+    # Éviter les écrasements
+    if upload_path.exists():
+        stem = upload_path.stem
+        suffix = upload_path.suffix
+        upload_path = ent_uploads_dir / f"{stem}_{int(time.time())}{suffix}"
+    
+    file.save(str(upload_path))
+    log.info(f"🏢 Upload: {upload_path} ({upload_path.stat().st_size} bytes)")
+    
+    # Lancer l'ingestion
+    try:
+        result = _enterprise_ingestor.ingest_files(
+            file_paths=[str(upload_path)],
+            enterprise_id=enterprise_id,
+            domain=domain,
+            depth=depth,
+        )
+        return jsonify(result.to_dict())
+    except Exception as e:
+        log.exception(f"Erreur ingestion après upload: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/enterprise/status/<enterprise_id>', methods=['GET'])
+def enterprise_status(enterprise_id):
+    """
+    Statut d'une entreprise.
+    
+    GET /api/enterprise/status/acme_corp
+    """
+    if not _ENTERPRISE_AVAILABLE:
+        return jsonify({'error': 'Enterprise Ingestor non disponible'}), 503
+    
+    try:
+        status = _enterprise_ingestor.get_enterprise_status(enterprise_id)
+        return jsonify(status)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/enterprise/list', methods=['GET'])
+def enterprise_list():
+    """
+    Liste toutes les entreprises.
+    
+    GET /api/enterprise/list
+    """
+    if not _ENTERPRISE_AVAILABLE:
+        return jsonify({'error': 'Enterprise Ingestor non disponible'}), 503
+    
+    try:
+        enterprises = _enterprise_ingestor.list_enterprises()
+        return jsonify({
+            'enterprises': enterprises,
+            'count': len(enterprises),
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/reason', methods=['POST'])
