@@ -1513,6 +1513,35 @@ class HarmonicBrain:
 
         # ── 1. INCONSCIENT : retrieval hybride (TF-IDF + résonance ψ) ──
         candidates = self.unconscious.retrieve(weighted_question, max_results=15)
+
+        # Vérifier que les faits remontés correspondent BIEN à la question
+        # Si un mot-clé important de la question n'apparaît nulle part → web
+        if candidates and self._web is not None:
+            q_keywords = set(_tokenize(_normalize(question)))
+            COMMON_WORDS = {'capitale','pays','ville','monde','grand','petit','haut','bas',
+                'plus','moins','trouve','situe','appelle','fonctionne','marche','passe',
+                'donne','fait','quelle','quel','quand','comment','pourquoi','combien',
+                'the','is','are','was','were','of','in','on','at','to','a','an','it'}
+            important_words = {w for w in q_keywords if len(w) >= 4 and w not in COMMON_WORDS}
+            if important_words:
+                found_all = True
+                for iw in important_words:
+                    found_in_any = False
+                    for rec, score in candidates[:5]:
+                        fact_text = _normalize(f'{rec.sujet} {rec.relation} {rec.objet}')
+                        if iw in fact_text:
+                            found_in_any = True
+                            break
+                    if not found_in_any:
+                        found_all = False
+                        break
+                if not found_all:
+                    # Les mots-clés de la question ne sont pas dans les faits → web
+                    web_result = self._try_web_search(question, lang)
+                    if web_result:
+                        self._update_conv_context(question, web_result.response, use_conversation)
+                        return web_result
+
         retrieval_count = len(candidates)
         
         # 🔥 BOOST ONDULATOIRE : ajouter un bonus de résonance ψ aux scores TF-IDF

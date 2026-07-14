@@ -226,7 +226,8 @@ def detect_question_type(question: str) -> dict:
                          ('cuisine', r'recette|cuisine|cook|cooking'),
                          ('code', r'\bcode\b|\bdebug\b|python|javascript|programming'),
                          ('actualite', r'actualite|news|breaking|dernière|récent'),
-                         ('blague', r'blague|joke|humour|rigolo|funny')]:
+                         ('blague', r'blague|joke|humour|rigolo|funny'),
+                         ('philosophie', r'sens de la vie|existence|dieu|âme|spirituel|destin|pourquoi (?:existe|vivons|sommes)|bonheur|vérité|réalité|conscience|libre arbitre|mort|éternel|infini')]:
         if re.search(pattern, q_lower):
             result['is_out_of_domain'] = True
             result['out_category'] = key
