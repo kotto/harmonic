@@ -1038,6 +1038,15 @@ class HarmonicBrain:
         except Exception:
             pass
 
+        # 🎨 CONSCIENT CRÉATEUR (créativité ondulatoire)
+        self._creator = None
+        try:
+            from conscious_creator import ConsciousCreator
+            enc = self.unconscious.encoder if use_holographic else None
+            self._creator = ConsciousCreator(brain=self, dim=dim, encoder=enc)
+        except Exception:
+            pass
+
         # Adaptateur multi-domaine (raisonne dans 12 domaines)
         self._domain_adapters: Dict[str, DomainAdapter] = {}
         self._current_domain: str = 'faits'
@@ -1650,6 +1659,42 @@ class HarmonicBrain:
 
     # ── EXPRESSION ─────────────────────────────────────────────────────────
 
+    # 🎨 CRÉATIVITÉ ─────────────────────────────────────────────────────────
+    def create(self, prompt: str = "trouve une connexion creative",
+               max_iterations: int = 5) -> str:
+        """
+        Créativité ondulatoire — le conscient manipule l'inconscient.
+        
+        Combine des concepts par opérations ondulatoires (superposition,
+        convolution, déphasage...) et fait émerger des connexions nouvelles.
+        """
+        if self._creator is None:
+            return "Créativité non disponible (module manquant)"
+        idea = self._creator.create(prompt, max_iterations=max_iterations)
+        return idea.expression if idea else "Aucune idée créative émergée."
+
+    def start_ruminating(self, interval: float = 2.0):
+        """Démarre la rumination créative en arrière-plan."""
+        if self._creator:
+            self._creator.start_ruminating(interval)
+
+    def stop_ruminating(self):
+        """Arrête la rumination créative."""
+        if self._creator:
+            self._creator.stop_ruminating()
+
+    def get_creative_ideas(self, n: int = 5) -> list:
+        """Récupère les idées émergentes de la rumination."""
+        if self._creator:
+            return [i.expression for i in self._creator.get_emergent_ideas(n)]
+        return []
+
+    def get_style(self) -> str:
+        """Décrit le style créatif émergent du cerveau."""
+        if self._creator:
+            return self._creator.get_style_description()
+        return "Style non disponible."
+
     # 🧪 FEW-SHOT LEARNING ──────────────────────────────────────────────────
     def few_shot(self, examples: List[Tuple[str, str]], query: str,
                  pattern_type: str = "general") -> 'BrainResult':
@@ -2141,6 +2186,7 @@ class HarmonicBrain:
             'fine_tuner': self._fine_tuner is not None,
             'fast_learner': self._fast_learner is not None,
             'feedback_loop': self._feedback is not None,
+            'conscious_creator': self._creator is not None,
             'learn_count': self._learn_count,
         }
 
