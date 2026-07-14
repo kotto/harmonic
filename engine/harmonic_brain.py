@@ -1038,6 +1038,15 @@ class HarmonicBrain:
         except Exception:
             pass
 
+        # 🎭 DIALOGUE HARMONIQUE (la forme naturelle)
+        self._dialogue = None
+        try:
+            from harmonic_dialogue import HarmonicDialogue
+            enc = self.unconscious.encoder if use_holographic else None
+            self._dialogue = HarmonicDialogue(brain=self, dim=dim, encoder=enc)
+        except Exception:
+            pass
+
         # 🎨 CONSCIENT CRÉATEUR (créativité ondulatoire)
         self._creator = None
         try:
@@ -1724,6 +1733,23 @@ class HarmonicBrain:
         # 🔥 DÉDUPLICATION + FILTRE LANGUE : nettoyer la réponse
         response = self._clean_response(response, lang)
 
+        # 🎭 DIALOGUE HARMONIQUE : transformer la réponse brute en expression naturelle
+        if self._dialogue is not None and response:
+            try:
+                # Extraire les faits pour le dialogue
+                facts_for_dialogue = [
+                    (f.sujet, f.relation, f.objet, f.secteur)
+                    for f in (accepted or [])
+                ]
+                response = self._dialogue.respond(
+                    question=question,
+                    facts=facts_for_dialogue if facts_for_dialogue else None,
+                    brain_response=response,
+                    confidence=confidence,
+                )
+            except Exception:
+                pass  # fallback silencieux à la réponse brute
+
         # 📚 APPRENTISSAGE CONTINU : feedback + fine-tune périodique
         self._maybe_learn(question, response, confidence, accepted)
 
@@ -2291,6 +2317,7 @@ class HarmonicBrain:
             'feedback_loop': self._feedback is not None,
             'conscious_creator': self._creator is not None,
             'harmonic_summarizer': self._summarizer is not None,
+            'harmonic_dialogue': self._dialogue is not None,
             'learn_count': self._learn_count,
         }
 
