@@ -1047,6 +1047,14 @@ class HarmonicBrain:
         except Exception:
             pass
 
+        # 📖 RÉSUMEUR HARMONIQUE (lecture de documents)
+        self._summarizer = None
+        try:
+            from harmonic_summarizer import HarmonicSummarizer
+            self._summarizer = HarmonicSummarizer(brain=self, dim=dim, max_facts=15)
+        except Exception:
+            pass
+
         # Adaptateur multi-domaine (raisonne dans 12 domaines)
         self._domain_adapters: Dict[str, DomainAdapter] = {}
         self._current_domain: str = 'faits'
@@ -1695,6 +1703,30 @@ class HarmonicBrain:
             return self._creator.get_style_description()
         return "Style non disponible."
 
+    # 📖 RÉSUMÉ HARMONIQUE ─────────────────────────────────────────────────
+    def summarize(self, text: str, max_facts: int = 15) -> dict:
+        """
+        Résume un texte long en extrayant ses piliers de connaissance.
+
+        Args:
+            text: texte à résumer (1 à 50 pages)
+            max_facts: nombre max de faits dans le résumé
+
+        Returns:
+            dict avec summary, key_facts, themes, contradictions, stats
+        """
+        if self._summarizer is None:
+            return {'summary': 'Résumeur non disponible', 'key_facts': []}
+        result = self._summarizer.summarize(text, max_facts=max_facts)
+        return {
+            'summary': result.summary,
+            'key_facts': [{'subject': s, 'relation': r, 'object': o, 'centrality': round(c, 4)}
+                         for s, r, o, c in result.key_facts],
+            'themes': result.key_themes,
+            'contradictions': len(result.contradictions),
+            'stats': result.stats,
+        }
+
     # 🧪 FEW-SHOT LEARNING ──────────────────────────────────────────────────
     def few_shot(self, examples: List[Tuple[str, str]], query: str,
                  pattern_type: str = "general") -> 'BrainResult':
@@ -2187,6 +2219,7 @@ class HarmonicBrain:
             'fast_learner': self._fast_learner is not None,
             'feedback_loop': self._feedback is not None,
             'conscious_creator': self._creator is not None,
+            'harmonic_summarizer': self._summarizer is not None,
             'learn_count': self._learn_count,
         }
 

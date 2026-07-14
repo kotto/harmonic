@@ -675,6 +675,37 @@ def deep_reason():
     })
 
 
+# 📖 RÉSUMÉ HARMONIQUE ─────────────────────────────────────────────────────────
+
+@app.route('/api/summarize', methods=['POST'])
+def summarize():
+    """
+    Résumé harmonique d'un texte long.
+
+    Body JSON :
+      - text: str (le texte à résumer, 1 à 50 pages)
+      - max_facts: int (défaut 15, max 30)
+
+    Retourne :
+      - summary: str (résumé en langage naturel)
+      - key_facts: [{subject, relation, object, centrality}]
+      - themes: [str]
+      - contradictions: int
+      - stats: {chunks, triples_extracted, ...}
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    text = data.get('text', '').strip()
+    if not text:
+        return jsonify({'error': 'text required'}), 400
+    if len(text) < 50:
+        return jsonify({'error': 'Texte trop court (minimum 50 caractères)'}), 400
+
+    max_facts = min(data.get('max_facts', 15), 30)
+
+    result = brain.summarize(text, max_facts=max_facts)
+    return jsonify(result)
+
+
 @app.route('/api/stats', methods=['GET'])
 def stats():
     """Statistiques du système."""
