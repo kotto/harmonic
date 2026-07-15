@@ -1114,47 +1114,155 @@ class EntityIndex:
     
     def search(self, question: str, max_results: int = 15) -> List[Tuple[FactRecord, float]]:
         """
-        Recherche entity-aware d'une question.
+        Recherche entity-aware avec parsing question.
         
-        Stratégie :
-        1. Extraire les entités (mots longs) de la question
-        2. Chercher dans l'index pour chaque entité
-        3. Fusionner et classer par amplitude + correspondance
+        Stratégie Question-Aware :
+        1. Parser la question pour extraire ENTITÉ + TYPE DE RELATION
+        2. Chercher les faits sur l'ENTITÉ
+        3. Filtrer/faire monter les faits dont la relation matche le TYPE
+        4. Si rien, fallback word-overlap classique
         """
         self.build()
         
-        # Extraire les entités de la question (mots > 3 lettres, pas stopwords)
+        q_lower = question.lower().strip()
         stopwords = {'quelle','quel','quels','quelles','est','sont','qui','que','quoi',
                      'dont','pour','dans','sur','avec','par','plus','moins','tout',
                      'très','cette','cet','ces','aux','des','les','une','dun','comment',
-                     'quand','pourquoi','combien','peut','fait','elle','elles','ils'}
-        q_words = [w for w in question.lower().split() if len(w) > 3 and w not in stopwords]
+                     'quand','pourquoi','combien','peut','fait','elle','elles','ils',
+                     'le','la','un','du','de','et','ou','en','au','se','son','sa','ses',
+                     'nous','vous','leur','mes','tes','nos','vos','ce','ça','ont','a',
+                     'ont','ete','etre','avoir','aller','venir','faire','dire','voir',
+                     'savoir','pouvoir','vouloir','what','is','are','was','were','the',
+                     'a','an','of','in','on','at','to','for','and','or','how','when',
+                     'who','where','why','which'}
+        q_words = [w for w in q_lower.split() if len(w) > 2 and w not in stopwords]
         
         if not q_words:
             return []
+
+        # ── PHASE 1 : Question-Aware Parsing ──────────────────────────
+        # Détecter le TYPE de relation demandé
+        relation_map = {
+            # FR — Géographie
+            'capitale': ['capitale', 'capital', 'chef-lieu'],
+            'pays': ['pays', 'nation'],
+            'continent': ['continent', 'continents'],
+            'ocean': ['océan', 'ocean', 'mers', 'mer'],
+            'fleuve': ['fleuve', 'rivière', 'riviere', 'cours'],
+            'montagne': ['montagne', 'sommet', 'pic', 'everest', 'kilimandjaro'],
+            'desert': ['désert', 'desert', 'sahara'],
+            'monnaie': ['monnaie', 'devise', 'euro', 'dollar', 'yen', 'livre'],
+            'langue': ['langue', 'parle', 'official'],
+            # FR — Sciences
+            'symbole': ['symbole', 'symboles', 'chimique'],
+            'formule': ['formule', 'formules', 'composition', 'compose'],
+            'element': ['élément', 'element', 'atome', 'atomique'],
+            'decouvert': ['découvert', 'decouvert', 'découverte', 'decouverte', 'trouvé', 'trouve', 'identifié'],
+            'invente': ['inventé', 'invente', 'invention', 'créé', 'cree', 'fondé', 'fonde', 'développé', 'developpe'],
+            'planete': ['planète', 'planete', 'planetes', 'planètes', 'jupiter', 'mars', 'venus', 'saturne', 'mercure'],
+            'systeme': ['système', 'systeme', 'systemes', 'systèmes'],
+            'force': ['force', 'gravité', 'gravite', 'attraction'],
+            # FR — Corps humain
+            'organe': ['organe', 'organes', 'foie', 'rein', 'poumon', 'cerveau', 'coeur', 'cœur'],
+            'os': ['os', 'squelette', 'squelette'],
+            'muscle': ['muscle', 'muscles'],
+            'maladie': ['maladie', 'maladies', 'virus', 'bactérie', 'bacterie', 'infection'],
+            'traitement': ['traitement', 'médicament', 'medicament', 'vaccin', 'remède', 'remede', 'soigne'],
+            # FR — Histoire
+            'date': ['quand', 'année', 'annee', 'date', 'commencé', 'commence', 'terminé', 'termine', 'fondé', 'fonde', 'créé', 'cree', 'eu lieu', 'a lieu'],
+            'guerre': ['guerre', 'bataille', 'conflit', 'invasion'],
+            'revolution': ['révolution', 'revolution', 'soulèvement', 'soulèvement'],
+            'independance': ['indépendance', 'independance', 'autonomie'],
+            'empire': ['empire', 'royaume', 'dynastie'],
+            'dirigeant': ['roi', 'reine', 'empereur', 'président', 'president', 'dirigeant', 'pharaon', 'souverain', 'chef'],
+            # FR — Arts
+            'peint': ['peint', 'peinte', 'dessiné', 'dessine', 'toile', 'tableau'],
+            'ecrit': ['écrit', 'ecrit', 'rédigé', 'redige', 'composé', 'compose', 'auteur', 'roman', 'livre'],
+            'compose': ['composé', 'compose', 'musique', 'symphonie', 'concerto', 'sonate'],
+            'realise': ['réalisé', 'realise', 'film', 'cinéma', 'cinema', 'réalisateur', 'realisateur'],
+            # FR — Code
+            'definition_code': ['qu\'est-ce', 'cest', 'définis', 'definis', 'explique', 'signifie', 'what is'],
+            'fonction_code': ['fonction', 'def', 'function', 'écris', 'ecris', 'code'],
+            'commande': ['commande', 'commandes', 'syntaxe'],
+            # FR — Quantité
+            'combien': ['nombre', 'combien', 'total', 'compte', 'dénombrer'],
+            'mesure': ['mesure', 'longueur', 'hauteur', 'altitude', 'profondeur', 'poids', 'vitesse', 'superficie'],
+            'population': ['population', 'habitants', 'habitants', 'densité', 'densite'],
+            # FR — Localisation
+            'localisation': ['où', 'ou', 'trouve', 'situé', 'situe', 'localisation', 'lieu', 'endroit'],
+            # FR — Comparaison
+            'plus_grand': ['plus grand', 'plus grande', 'plus haut', 'plus long', 'plus important', 'plus grand'],
+            'plus_petit': ['plus petit', 'plus courte', 'plus bas', 'plus courte'],
+            # EN (mêmes concepts)
+            'capital_en': ['capital', 'capitals'],
+            'discovered_en': ['discovered', 'invented', 'created', 'founded'],
+            'symbol_en': ['symbol', 'chemical'],
+            'how_many_en': ['how many', 'number of'],
+            'when_en': ['when', 'year', 'date'],
+            'who_en': ['who'],
+            'what_en': ['what'],
+        }
         
-        # Chercher les faits pour chaque entité
+        detected_relations = []
+        for rel_type, keywords in relation_map.items():
+            for kw in keywords:
+                if kw in q_lower:
+                    detected_relations.append((rel_type, kw))
+                    break
+        
+        # ── PHASE 2 : Entity extraction ───────────────────────────────
+        # L'entité principale = le mot le plus long/moins commun dans la question
+        # (probablement un nom propre ou concept)
+        entity_candidates = [w for w in q_words if len(w) > 4]
+        # Prioriser les mots qui commencent par une majuscule (noms propres)
+        q_original = question.strip()
+        proper_nouns = [w.lower() for w in q_original.split() 
+                        if w and w[0].isupper() and len(w) > 2 and w.lower() not in stopwords]
+        if proper_nouns:
+            entity_candidates = proper_nouns + entity_candidates
+        
+        # ── PHASE 3 : Lookup + Scoring ────────────────────────────────
         all_candidates = {}
-        for word in q_words:
+        for word in entity_candidates:
             for s, r, o, amp in self.lookup(word, max_results=50):
                 key = (s, r, o)
                 if key not in all_candidates:
-                    # Score basé sur l'amplitude et le nombre de mots de la question qui matchent
                     fact_text = f'{s} {r} {o}'.lower()
                     keyword_matches = sum(1 for w in q_words if w in fact_text)
                     
-                    # Bonus pour bigrammes (ex: "seconde guerre" → "seconde guerre mondiale")
+                    # Bonus bigrammes
                     for i in range(len(q_words)-1):
                         bigram = f'{q_words[i]} {q_words[i+1]}'
                         if bigram in fact_text:
-                            keyword_matches += 2  # gros bonus bigramme
+                            keyword_matches += 2
                     
+                    # Score de base
                     score = amp * 0.5 + keyword_matches * 3.0
-                    all_candidates[key] = (s, r, o, amp, score)
+                    
+                    # 🆕 BONUS MASSIF si la relation matche le type demandé
+                    relation_match = False
+                    if detected_relations:
+                        for rel_type, rel_kw in detected_relations:
+                            if rel_kw in r.lower() or rel_kw in o.lower():
+                                score += 30.0  # bonus énorme
+                                relation_match = True
+                                break
+                    
+                    # 🆕 Pénalité pour objets très longs (bruit)
+                    if len(o) > 80:
+                        score *= 0.5
+                    
+                    all_candidates[key] = (s, r, o, amp, score, relation_match)
+        
+        # 🆕 Si une relation est détectée, filtrer pour ne garder QUE les faits qui matchent
+        if detected_relations:
+            relation_matched = {k: v for k, v in all_candidates.items() if v[5]}
+            if len(relation_matched) >= 2:
+                all_candidates = relation_matched
         
         # Convertir en FactRecord
         results = []
-        for (s, r, o), (s_raw, r_raw, o_raw, amp, score) in all_candidates.items():
+        for (s, r, o), (s_raw, r_raw, o_raw, amp, score, rel_match) in all_candidates.items():
             record = self.store.registry.get((s, r, o))
             if record:
                 results.append((record, score))
