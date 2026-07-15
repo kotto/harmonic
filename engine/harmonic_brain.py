@@ -2184,15 +2184,17 @@ class HarmonicBrain:
         
         # 🆕 DIRECT FACT RESPONSE : si le top résultat a une relation matchee ET score > 20
         if entity_candidates and entity_candidates[0][1] > 20.0:
-            top_rec, top_score = entity_candidates[0]
-            direct = f'{top_rec.sujet.title()} {top_rec.relation} {top_rec.objet}.'
+            top_recs = [r for r,_ in entity_candidates[:1]]
+            direct = f'{top_recs[0].sujet.title()} {top_recs[0].relation} {top_recs[0].objet}.'
+            if len(top_recs) >= 2 and top_recs[0].sujet.lower().strip() == top_recs[1].sujet.lower().strip() if len(top_recs) > 1 else False:
+                direct = f'{top_recs[0].sujet.title()} {top_recs[0].relation} {top_recs[0].objet}. De plus, {top_recs[1].sujet.title()} {top_recs[1].relation} {top_recs[1].objet}.'
             self._update_conv_context(question, direct, use_conversation)
             return BrainResult(
                 response=direct,
-                confidence=min(1.0, top_score / 30.0),
-                facts_used=[top_rec],
+                confidence=min(1.0, entity_candidates[0][1] / 30.0),
+                facts_used=top_recs,
                 facts_rejected=[],
-                retrieval_count=1,
+                retrieval_count=len(entity_candidates),
                 total_time_ms=(time.time() - t_start) * 1000,
             )
         
@@ -2897,6 +2899,54 @@ class HarmonicBrain:
                 break
         return found
 
+    def _weave_response(self, facts: List[FactRecord], question: str) -> str:
+        """Tisse les faits en réponse conversationnelle (inspiré PageForge)."""
+        import random
+        if not facts:
+            return ''
+        
+        # Patterns de réponse naturelle (similaire à ContentWeaver)
+        SINGLE_PATTERNS = [
+            "{sujet} {relation} {objet}.",
+            "C'est simple : {sujet} {relation} {objet}.",
+            "Pour répondre à votre question, {sujet} {relation} {objet}.",
+            "La réponse est que {sujet} {relation} {objet}.",
+            "Je peux vous dire que {sujet} {relation} {objet}.",
+            "Voici la réponse : {sujet} {relation} {objet}.",
+            "Eh bien, {sujet} {relation} {objet}.",
+            "Sachez que {sujet} {relation} {objet}.",
+        ]
+        
+        DUAL_PATTERNS = [
+            "{s1} {r1} {o1}. De plus, {s2} {r2} {o2}.",
+            "D'une part, {s1} {r1} {o1} ; d'autre part, {s2} {r2} {o2}.",
+            "{s1} se caractérise par {o1}. Par ailleurs, {s2} {r2} {o2}.",
+            "Tout d'abord, {s1} {r1} {o1}. Ensuite, {s2} {r2} {o2}.",
+            "Il faut savoir que {s1} {r1} {o1}, et aussi que {s2} {r2} {o2}.",
+            "{s1} {r1} {o1} — un fait important. Ajoutons que {s2} {r2} {o2}.",
+        ]
+        
+        TRANSITIONS = [
+            "Cela dit, ", "Par ailleurs, ", "En complément, ",
+            "Précisons que ", "Ajoutons que ", "Notons également que ",
+        ]
+        
+        if len(facts) >= 2 and facts[0].sujet.lower().strip() == facts[1].sujet.lower().strip():
+            pattern = random.choice(DUAL_PATTERNS)
+            f1, f2 = facts[0], facts[1]
+            resp = pattern.format(
+                s1=f1.sujet.title(), r1=f1.relation, o1=f1.objet,
+                s2=f2.sujet.title(), r2=f2.relation, o2=f2.objet,
+            )
+        else:
+            pattern = random.choice(SINGLE_PATTERNS)
+            f1 = facts[0]
+            resp = pattern.format(
+                sujet=f1.sujet.title(), relation=f1.relation, objet=f1.objet,
+            )
+        
+        return resp
+    
     def _clean_response(self, response: str, lang: str) -> str:
         """Nettoie et formate la réponse."""
         if not response:
