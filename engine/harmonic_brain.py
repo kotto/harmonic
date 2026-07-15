@@ -625,8 +625,8 @@ class HolographicStore:
             lexical_score = tfidf_score / max_idf if common_tokens else 0.0
             # Le spectral n'est activé que si la qualité est suffisante (> 0.35)
             if self._spectral_quality > 0.35:
-                semantic_weight = 0.3
-                lexical_weight = 0.5
+                semantic_weight = 0.6   # 🆕 boosté de 0.3 → 0.6
+                lexical_weight = 0.3    # 🆕 réduit de 0.5 → 0.3
             else:
                 semantic_weight = 0.0
                 lexical_weight = 0.8
@@ -969,6 +969,7 @@ DOMAIN_SECTOR_MAP: Dict[str, str] = {
     # ── HISTOIRE ──
     'PASSE': 'histoire',
     'FUTUR': 'histoire',
+    'HISTOIRE': 'histoire',  # produit par detect_sector()
     # ── CODE ──
     'CODE': 'code',
     'DISTILL': 'code',
@@ -1040,6 +1041,235 @@ DOMAIN_KEYWORDS: Dict[str, List[str]] = {
         'diagnostic', 'traitement', 'symptome', 'infection',
     ],
 }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENTITY RETRIEVER — Retrieval entity-centric (inspiré Obsidian)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class EntityIndex:
+    """
+    Index entity-centric pour retrieval O(1).
+    
+    Principe Obsidian : au lieu de chercher dans 100K faits avec TF-IDF,
+    indexer par ENTITÉ (sujet ou objet) et faire un lookup direct.
+    
+    Usage:
+        index = EntityIndex(brain.unconscious)
+        facts = index.lookup("brésil")  # → tous les faits sur le Brésil
+        facts = index.search("capitale du Brésil")  # → le fait exact
+    """
+    
+    def __init__(self, store: 'HolographicStore'):
+        self.store = store
+        self._entity_index: Dict[str, List[Tuple[str, str, str, float]]] = defaultdict(list)
+        self._built = False
+    
+    def build(self):
+        """Construit l'index entité → faits."""
+        if self._built:
+            return
+        
+        for (s, r, o), record in self.store.registry.items():
+            amp = record.amplitude
+            # Indexer par sujet complet
+            self._entity_index[s].append((s, r, o, amp))
+            # Indexer par chaque mot significatif du sujet et de l'objet
+            for word in s.split():
+                if len(word) > 2:
+                    self._entity_index[word].append((s, r, o, amp))
+            for word in o.split():
+                if len(word) > 2:
+                    self._entity_index[word].append((s, r, o, amp))
+            # Indexer bigrammes sujet+objet
+            s_words = s.split()
+            o_words = o.split()
+            if len(s_words) >= 2:
+                for i in range(len(s_words)-1):
+                    bigram = f'{s_words[i]} {s_words[i+1]}'
+                    self._entity_index[bigram].append((s, r, o, amp))
+            if len(o_words) >= 2:
+                for i in range(len(o_words)-1):
+                    bigram = f'{o_words[i]} {o_words[i+1]}'
+                    self._entity_index[bigram].append((s, r, o, amp))
+        
+        self._built = True
+        log.info(f"EntityIndex: {len(self._entity_index):,} entités indexées")
+    
+    def lookup(self, entity: str, max_results: int = 20) -> List[Tuple[str, str, str, float]]:
+        """Lookup direct par entité. Retourne les faits triés par amplitude."""
+        self.build()
+        entity_clean = entity.lower().strip()
+        results = self._entity_index.get(entity_clean, [])
+        # Dédupliquer
+        seen = set()
+        unique = []
+        for s, r, o, amp in results:
+            key = (s, r, o)
+            if key not in seen:
+                seen.add(key)
+                unique.append((s, r, o, amp))
+        unique.sort(key=lambda x: -x[3])
+        return unique[:max_results]
+    
+    def search(self, question: str, max_results: int = 15) -> List[Tuple[FactRecord, float]]:
+        """
+        Recherche entity-aware d'une question.
+        
+        Stratégie :
+        1. Extraire les entités (mots longs) de la question
+        2. Chercher dans l'index pour chaque entité
+        3. Fusionner et classer par amplitude + correspondance
+        """
+        self.build()
+        
+        # Extraire les entités de la question (mots > 3 lettres, pas stopwords)
+        stopwords = {'quelle','quel','quels','quelles','est','sont','qui','que','quoi',
+                     'dont','pour','dans','sur','avec','par','plus','moins','tout',
+                     'très','cette','cet','ces','aux','des','les','une','dun','comment',
+                     'quand','pourquoi','combien','peut','fait','elle','elles','ils'}
+        q_words = [w for w in question.lower().split() if len(w) > 3 and w not in stopwords]
+        
+        if not q_words:
+            return []
+        
+        # Chercher les faits pour chaque entité
+        all_candidates = {}
+        for word in q_words:
+            for s, r, o, amp in self.lookup(word, max_results=50):
+                key = (s, r, o)
+                if key not in all_candidates:
+                    # Score basé sur l'amplitude et le nombre de mots de la question qui matchent
+                    fact_text = f'{s} {r} {o}'.lower()
+                    keyword_matches = sum(1 for w in q_words if w in fact_text)
+                    
+                    # Bonus pour bigrammes (ex: "seconde guerre" → "seconde guerre mondiale")
+                    for i in range(len(q_words)-1):
+                        bigram = f'{q_words[i]} {q_words[i+1]}'
+                        if bigram in fact_text:
+                            keyword_matches += 2  # gros bonus bigramme
+                    
+                    score = amp * 0.5 + keyword_matches * 3.0
+                    all_candidates[key] = (s, r, o, amp, score)
+        
+        # Convertir en FactRecord
+        results = []
+        for (s, r, o), (s_raw, r_raw, o_raw, amp, score) in all_candidates.items():
+            record = self.store.registry.get((s, r, o))
+            if record:
+                results.append((record, score))
+        
+        results.sort(key=lambda x: -x[1])
+        return results[:max_results]
+    
+    def stats(self) -> Dict:
+        return {
+            'entities': len(self._entity_index),
+            'built': self._built,
+        }
+
+
+class OndulatoireIndex:
+    """
+    Index entity-centric ONDULATOIRE — lookup par résonance ψ.
+    
+    Contrairement à EntityIndex (string exact), cet index utilise les
+    vecteurs psi du HolographicEncoder pour trouver les entités par
+    COHÉRENCE QUANTIQUE, même si l'orthographe diffère.
+    
+    Usage:
+        oidx = OndulatoireIndex(brain.unconscious, brain.unconscious.encoder)
+        facts = oidx.search("capitale du Brésil")  # trouve "bresil" aussi
+    """
+    
+    def __init__(self, store: 'HolographicStore', encoder):
+        self.store = store
+        self.encoder = encoder
+        self._psi_entities: Dict[str, np.ndarray] = {}  # entity → psi vector
+        self._entity_facts: Dict[str, List[Tuple[str, str, str, float]]] = defaultdict(list)
+        self._built = False
+    
+    def build(self):
+        """Encode toutes les entités en ψ et construit l'index."""
+        if self._built or self.encoder is None:
+            return
+        
+        for (s, r, o), record in self.store.registry.items():
+            # Encoder le sujet comme entité ψ
+            if s not in self._psi_entities:
+                psi = self.encoder.encode_query(s)
+                if psi is not None and np.any(psi != 0):
+                    self._psi_entities[s] = psi
+            # Encoder les mots-clés de l'objet
+            for word in o.split():
+                if len(word) > 3 and word not in self._psi_entities:
+                    psi = self.encoder.encode_query(word)
+                    if psi is not None and np.any(psi != 0):
+                        self._psi_entities[word] = psi
+            
+            # Associer les faits aux entités
+            amp = record.amplitude
+            if s in self._psi_entities:
+                self._entity_facts[s].append((s, r, o, amp))
+            for word in o.split():
+                if len(word) > 3 and word in self._psi_entities:
+                    self._entity_facts[word].append((s, r, o, amp))
+        
+        self._built = True
+        log.info(f"OndulatoireIndex: {len(self._psi_entities)} entités ψ, "
+                 f"{sum(len(v) for v in self._entity_facts.values())} liens")
+    
+    def search(self, question: str, max_results: int = 15, 
+               coherence_threshold: float = 0.5) -> List[Tuple[FactRecord, float]]:
+        """
+        Recherche par résonance ψ.
+        
+        1. Encode la question en ψ_question
+        2. Pour chaque entité ψ, calcule la cohérence |⟨ψ_q|ψ_e⟩|
+        3. Si cohérence > seuil, ajoute les faits de cette entité
+        4. Bonus proportionnel à la cohérence
+        """
+        if not self._built or self.encoder is None:
+            return []
+        
+        psi_q = self.encoder.encode_query(question)
+        if psi_q is None or np.all(psi_q == 0):
+            return []
+        
+        all_candidates = {}
+        
+        for entity, psi_e in self._psi_entities.items():
+            # Cohérence quantique entre la question et l'entité
+            coherence = float(np.abs(np.dot(psi_q.conj(), psi_e)))
+            
+            if coherence > coherence_threshold:
+                for s, r, o, amp in self._entity_facts.get(entity, []):
+                    key = (s, r, o)
+                    if key not in all_candidates:
+                        # Score = amplitude × cohérence
+                        score = amp * coherence * 2.0
+                        all_candidates[key] = (s, r, o, amp, score)
+                    else:
+                        # Moyenne des cohérences
+                        _, _, _, _, old_score = all_candidates[key]
+                        new_score = max(old_score, amp * coherence * 2.0)
+                        all_candidates[key] = (s, r, o, amp, new_score)
+        
+        # Convertir en FactRecord
+        results = []
+        for (s, r, o), (_, _, _, amp, score) in all_candidates.items():
+            record = self.store.registry.get((s, r, o))
+            if record:
+                results.append((record, score))
+        
+        results.sort(key=lambda x: -x[1])
+        return results[:max_results]
+    
+    def stats(self) -> Dict:
+        return {
+            'entities': len(self._psi_entities),
+            'built': self._built,
+        }
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1218,8 +1448,14 @@ class HarmonicBrain:
             record = self.unconscious.ingest(sf_s, sf_r, sf_o, "SFT")
             if record.amplitude < amp:
                 record.amplitude = amp  # forcer l'amplitude SFT
-            # Router aussi vers les domaines
-            self._route_ingest(sf_s, sf_r, sf_o, "SFT")
+            # 🆕 Router aussi vers les domaines (détecter le secteur depuis le contenu)
+            try:
+                from bootstrapper import detect_sector
+                sft_sector = detect_sector(f"{sf_s} {sf_r} {sf_o}")
+                if sft_sector != 'GENERAL':
+                    self._route_ingest(sf_s, sf_r, sf_o, sft_sector)
+            except Exception:
+                pass
             sft_injected += 1
         if sft_injected > 0:
             log.info(f"SFT injectés: {sft_injected} faits avec amplitude {amp}")
@@ -1239,6 +1475,15 @@ class HarmonicBrain:
 
         # 👤 KB UTILISATEUR : dictionnaire de cerveaux personnels par user_id
         self._user_kbs: Dict[str, 'HarmonicBrain'] = {}
+        
+        # 🔍 ENTITY INDEX : retrieval entity-centric O(1) (inspiré Obsidian)
+        self._entity_index = EntityIndex(self.unconscious)
+        self._entity_index.build()
+        
+        # 🌊 ONDULATOIRE INDEX : lookup par résonance ψ
+        self._wave_index = OndulatoireIndex(self.unconscious, self.unconscious.encoder)
+        if use_holographic:
+            self._wave_index.build()
         
         self._init_time = time.time() - t0
         log.info(f"HarmonicBrain initialisé en {self._init_time:.1f}s "
@@ -1825,9 +2070,18 @@ class HarmonicBrain:
             except Exception:
                 pass
 
-        # ── 1. INCONSCIENT : retrieval hybride (TF-IDF + résonance ψ) ──
-        # 🆕 ROUTAGE MULTI-HOLOGRAMME : détecter le domaine et booster les faits pertinents
-        candidates = self.unconscious.retrieve(weighted_question, max_results=15)
+        # ── 1. INCONSCIENT : retrieval entity-centric + TF-IDF fallback ──
+        # 🔍 ENTITY SEARCH (O(1) lookup, inspiré Obsidian)
+        entity_candidates = self._entity_index.search(question, max_results=10)
+        
+        if entity_candidates and entity_candidates[0][1] > 5.0:
+            candidates = entity_candidates
+        else:
+            candidates = self.unconscious.retrieve(weighted_question, max_results=15)
+            if entity_candidates:
+                candidates = self._merge_candidates(candidates, entity_candidates, user_boost=1.2)
+
+        # Ondulatoire désactivé (prêt, calibration ψ nécessaire)
         
         # Boost des candidats qui appartiennent au(x) domaine(s) détecté(s)
         detected_domains = self._detect_domains(question)
@@ -1841,7 +2095,7 @@ class HarmonicBrain:
                 boosted = []
                 for rec, score in candidates:
                     if rec.secteur.upper().strip() in domain_sectors:
-                        boosted.append((rec, score * 1.3))  # +30% boost domaine
+                        boosted.append((rec, score * 1.3))
                     else:
                         boosted.append((rec, score))
                 boosted.sort(key=lambda x: -x[1])
