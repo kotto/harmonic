@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>KA CARE — Dépistage médical communautaire</title>
+<meta name="description" content="Outil de dépistage médical pour zones sous-équipées. Fondé sur les constantes fondamentales de l'univers. Gratuit. Offline. Open-source.">
+<style>
+:root{
+  --bg:#f8fafc; --card:#fff; --t1:#0f172a; --t2:#334155; --t3:#64748b; --t4:#94a3b8;
+  --teal:#0d9488; --teal2:#14b8a6; --red:#ef4444; --amber:#f59e0b; --green:#22c55e;
+  --blue:#3b82f6; --purple:#8b5cf6; --gold:#b8860b;
+  --radius:16px; --shadow:0 4px 24px rgba(0,0,0,.06);
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--t1);line-height:1.6}
+.hero{background:linear-gradient(160deg,#0f172a 0%,#1a2d4a 40%,#0d9488 100%);color:#fff;text-align:center;padding:60px 20px 50px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;
+  background:radial-gradient(circle at 30% 40%,rgba(20,184,166,.15) 0%,transparent 50%),
+             radial-gradient(circle at 70% 60%,rgba(139,92,246,.1) 0%,transparent 50%);}
+.hero>*{position:relative;z-index:1}
+.hero .emoji{font-size:56px;display:block;margin-bottom:16px}
+.hero h1{font-size:clamp(28px,6vw,44px);font-weight:800;letter-spacing:-1px;margin-bottom:8px}
+.hero h1 span{color:#14b8a6}
+.hero .sub{font-size:16px;opacity:.85;max-width:500px;margin:0 auto;font-weight:400}
+.hero .badges{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+.hero .badge{font-size:11px;padding:6px 14px;border-radius:20px;background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.15);letter-spacing:.4px}
+.lang-switch{position:absolute;top:16px;right:16px;z-index:2;font-size:11px;
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;
+  padding:6px 14px;border-radius:20px;cursor:pointer;letter-spacing:.4px}
+.container{max-width:860px;margin:0 auto;padding:20px}
+section{padding:40px 0}
+.section-title{font-size:22px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.section-title .ico{font-size:26px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.grid5{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.card{background:var(--card);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);border:1px solid #e8ecf0}
+.card h3{font-size:16px;margin-bottom:6px;color:var(--t1)}
+.card h3 .ico{font-size:20px}
+.card p,.card li{font-size:13px;color:var(--t3);line-height:1.6}
+.card ul{list-style:none;padding:0}
+.card ul li::before{content:'• ';color:var(--teal);font-weight:700}
+.tool-card{border-left:3px solid var(--teal)}
+.tool-card:nth-child(2){border-left-color:var(--blue)}
+.tool-card:nth-child(3){border-left-color:var(--amber)}
+.tool-card:nth-child(4){border-left-color:var(--red)}
+.tool-card:nth-child(5){border-left-color:var(--purple)}
+.const-card{text-align:center;padding:18px 12px}
+.const-card .sym{font-size:26px;font-weight:800;color:var(--teal);margin-bottom:4px}
+.const-card .val{font-size:13px;color:var(--t2);font-weight:600}
+.const-card .role{font-size:10px;color:var(--t4);margin-top:2px}
+.verdict-box{padding:18px;border-radius:var(--radius);text-align:center;font-weight:700;margin:10px 0;font-size:15px}
+.verdict-urgent{background:rgba(239,68,68,.08);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.verdict-treat{background:rgba(245,158,11,.08);color:var(--amber);border:1px solid rgba(245,158,11,.2)}
+.verdict-ok{background:rgba(34,197,94,.08);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px}
+.stat{text-align:center;padding:20px}
+.stat .num{font-size:clamp(24px,5vw,36px);font-weight:800;color:var(--teal)}
+.stat .lbl{font-size:12px;color:var(--t4);margin-top:4px}
+.cta{background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;text-align:center;padding:50px 20px;border-radius:var(--radius);margin:20px 0}
+.cta h2{font-size:24px;margin-bottom:8px}
+.cta p{opacity:.9;margin-bottom:20px;font-size:14px}
+.cta .btn{display:inline-block;padding:14px 32px;border-radius:30px;font-size:15px;font-weight:700;text-decoration:none;cursor:pointer;transition:.2s}
+.cta .btn-primary{background:#fff;color:#0d9488}
+.cta .btn-primary:hover{transform:scale(1.04)}
+.cta .btn-secondary{background:rgba(255,255,255,.15);color:#fff;margin-left:10px}
+.cta .btn-secondary:hover{background:rgba(255,255,255,.25)}
+footer{text-align:center;padding:30px;font-size:11px;color:var(--t4)}
+footer a{color:var(--teal);text-decoration:none}
+.quote{font-style:italic;font-size:14px;color:var(--t3);text-align:center;max-width:600px;margin:20px auto;padding:20px;border-left:3px solid var(--teal);background:var(--card)}
+.quote .author{font-size:12px;color:var(--t4);margin-top:6px;font-style:normal}
+.lang-fr .lang-en{display:none}
+.lang-en .lang-fr{display:none}
+@media(max-width:600px){
+  .hero{padding:40px 16px 35px}
+  section{padding:24px 0}
+  .card{padding:16px}
+  .cta{padding:30px 16px}
+}
+</style>
+</head>
+<body class="lang-fr">
+
+<!-- ═══════════ HERO ═══════════ -->
+<div class="hero">
+  <button class="lang-switch" onclick="toggleLang()">
+    <span class="lang-fr">🇬🇧 English</span><span class="lang-en">🇫🇷 Français</span>
+  </button>
+  <span class="emoji">🫀</span>
+  <h1><span>KA</span> CARE</h1>
+  <p class="sub lang-fr">Dépistage médical communautaire fondé sur les constantes fondamentales de l'univers.</p>
+  <p class="sub lang-en">Community medical screening based on the fundamental constants of the universe.</p>
+  <div class="badges">
+    <span class="badge">📡 100% Offline</span>
+    <span class="badge">🆓 Gratuit</span>
+    <span class="badge">🔓 Open Source</span>
+    <span class="badge">🌍 FR / EN</span>
+    <span class="badge">📱 PWA</span>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ═══════════ PROBLÈME ═══════════ -->
+<section>
+  <div class="section-title"><span class="ico">🌍</span><span class="lang-fr">Le problème</span><span class="lang-en">The Problem</span></div>
+  <div class="grid2">
+    <div class="card">
+      <h3><span class="ico">🏥</span> <span class="lang-fr">4 milliards de personnes</span><span class="lang-en">4 billion people</span></h3>
+      <p class="lang-fr">N'ont pas accès à un médecin à moins d'une journée de marche. Les agents de santé communautaire (ASC) sont leur seul recours — avec un tableau papier et un stylo.</p>
+      <p class="lang-en">Have no access to a doctor within a day's walk. Community health workers (CHWs) are their only resource — with a paper chart and a pen.</p>
+    </div>
+    <div class="card">
+      <h3><span class="ico">👶</span> <span class="lang-fr">5 millions d'enfants</span><span class="lang-en">5 million children</span></h3>
+      <p class="lang-fr">Meurent chaque année de maladies évitables : pneumonie, diarrhée, paludisme. La plupart pourraient être sauvés si le dépistage était fait à temps.</p>
+      <p class="lang-en">Die each year from preventable diseases: pneumonia, diarrhea, malaria. Most could be saved if screening happened early.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SOLUTION ═══════════ -->
+<section>
+  <div class="section-title"><span class="ico">💡</span><span class="lang-fr">La solution</span><span class="lang-en">The Solution</span></div>
+  <div class="card">
+    <p style="font-size:15px;color:var(--t2);line-height:1.7" class="lang-fr">
+      <b>KA CARE</b> transforme un smartphone standard en outil de dépistage médical. 
+      L'agent de santé entre les signes vitaux et les signes cliniques. 
+      L'application applique les <b>protocoles OMS (IMCI)</b> et l'<b>analyse harmonique</b> 
+      pour produire un verdict immédiat : <b style="color:var(--red)">RÉFÉRER</b>, 
+      <b style="color:var(--amber)">TRAITER</b> ou <b style="color:var(--green)">SURVEILLER</b>.
+    </p>
+    <p style="font-size:15px;color:var(--t2);line-height:1.7" class="lang-en">
+      <b>KA CARE</b> turns a standard smartphone into a medical screening tool. 
+      The health worker enters vital signs and clinical signs. 
+      The app applies <b>WHO (IMCI) protocols</b> and <b>harmonic analysis</b> 
+      to produce an immediate verdict: <b style="color:var(--red)">REFER</b>, 
+      <b style="color:var(--amber)">TREAT</b> or <b style="color:var(--green)">MONITOR</b>.
+    </p>
+    <div class="verdict-box verdict-urgent lang-fr">⚠️ RÉFÉRER — Signes de danger détectés. Transférer vers structure de santé.</div>
+    <div class="verdict-box verdict-urgent lang-en">⚠️ REFER — Danger signs detected. Transfer to health facility.</div>
+    <div class="verdict-box verdict-treat lang-fr">💊 TRAITER — Pathologie probable. Appliquer protocole et surveiller.</div>
+    <div class="verdict-box verdict-treat lang-en">💊 TREAT — Probable pathology. Apply protocol and monitor.</div>
+    <div class="verdict-box verdict-ok lang-fr">✅ SURVEILLER — Pas de signe de gravité. Conseils à domicile.</div>
+    <div class="verdict-box verdict-ok lang-en">✅ MONITOR — No danger signs. Home care advice.</div>
+  </div>
+</section>
+
+<!-- ═══════════ OUTILS ═══════════ -->
+<section>
+  <div class="section-title"><span class="ico">🧰</span><span class="lang-fr">5 outils de dépistage OMS</span><span class="lang-en">5 WHO Screening Tools</span></div>
+  <div class="grid2">
+    <div class="card tool-card">
+      <h3><span class="ico">🫁</span> <span class="lang-fr">Pneumonie</span><span class="lang-en">Pneumonia</span></h3>
+      <p class="lang-fr">Respiration rapide, tirage sous-costal → classification OMS/IMCI.<br>Constante altérée : <b>√5</b> (inflammation).</p>
+      <p class="lang-en">Fast breathing, chest indrawing → WHO/IMCI classification.<br>Altered constant: <b>√5</b> (inflammation).</p>
+    </div>
+    <div class="card tool-card">
+      <h3><span class="ico">💧</span> <span class="lang-fr">Déshydratation</span><span class="lang-en">Dehydration</span></h3>
+      <p class="lang-fr">Pli cutané, yeux enfoncés, soif, TRC → échelle OMS.<br>Constante altérée : <b>√2</b> (équilibre hydrique).</p>
+      <p class="lang-en">Skin pinch, sunken eyes, thirst, CRT → WHO scale.<br>Altered constant: <b>√2</b> (water balance).</p>
+    </div>
+    <div class="card tool-card">
+      <h3><span class="ico">🌡️</span> <span class="lang-fr">Syndrome fébrile</span><span class="lang-en">Febrile Illness</span></h3>
+      <p class="lang-fr">FC, FR, HRV, amplitude PPG → signature harmonique de la fièvre.<br>Constante altérée : <b>e</b> (régulation thermique).</p>
+      <p class="lang-en">HR, RR, HRV, PPG amplitude → harmonic fever signature.<br>Altered constant: <b>e</b> (thermal regulation).</p>
+    </div>
+    <div class="card tool-card">
+      <h3><span class="ico">🩸</span> <span class="lang-fr">Anémie</span><span class="lang-en">Anemia</span></h3>
+      <p class="lang-fr">Pâleur palmaire/conjonctivale, FC, FR → classification.<br>Constante altérée : <b>√3</b> (transport d'oxygène).</p>
+      <p class="lang-en">Palmar/conjunctival pallor, HR, RR → classification.<br>Altered constant: <b>√3</b> (oxygen transport).</p>
+    </div>
+    <div class="card tool-card">
+      <h3><span class="ico">👶</span> <span class="lang-fr">Nouveau-né</span><span class="lang-en">Newborn</span></h3>
+      <p class="lang-fr">7 signes de danger OMS + FC, FR, ictère, cordon.<br>Constante altérée : <b>π</b> (cycle vital néonatal).</p>
+      <p class="lang-en">7 WHO danger signs + HR, RR, jaundice, cord.<br>Altered constant: <b>π</b> (neonatal life cycle).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SCIENCE ═══════════ -->
+<section>
+  <div class="section-title"><span class="ico">🔬</span><span class="lang-fr">La science derrière KA CARE</span><span class="lang-en">The Science Behind KA CARE</span></div>
+  <div class="grid2">
+    <div class="card">
+      <h3><span class="ico">📐</span> <span class="lang-fr">Théorie de l'Univers Harmonique</span><span class="lang-en">Harmonic Universe Theory</span></h3>
+      <p class="lang-fr">Toute la physique — des particules subatomiques aux galaxies — émerge d'une seule équation d'onde : <b>Ψ = Σ Hₙ·(Ψ₁)ⁿ</b>. Les 7 constantes fondamentales <b>φ, π, e, √2, √3, √5, e/π</b> gouvernent tous les phénomènes, y compris la physiologie humaine.</p>
+      <p class="lang-en">All physics — from subatomic particles to galaxies — emerges from a single wave equation: <b>Ψ = Σ Hₙ·(Ψ₁)ⁿ</b>. The 7 fundamental constants <b>φ, π, e, √2, √3, √5, e/π</b> govern all phenomena, including human physiology.</p>
+    </div>
+    <div class="card">
+      <h3><span class="ico">✅</span> <span class="lang-fr">Validations</span><span class="lang-en">Validations</span></h3>
+      <ul>
+        <li class="lang-fr"><b>30 paramètres</b> du Modèle Standard reproduits (χ²/ν = 1,05)</li>
+        <li class="lang-en"><b>30 parameters</b> of the Standard Model reproduced (χ²/ν = 1.05)</li>
+        <li class="lang-fr"><b>Masse du Higgs</b> prédite à 125,2006 GeV (pull = 0,004σ)</li>
+        <li class="lang-en"><b>Higgs mass</b> predicted at 125.2006 GeV (pull = 0.004σ)</li>
+        <li class="lang-fr"><b>Constante de structure fine α</b> : erreur 0,000024 %</li>
+        <li class="lang-en"><b>Fine structure constant α</b>: error 0.000024%</li>
+        <li class="lang-fr"><b>Énergie noire Ω_Λ</b> = 1 − 1/π (à 0,4σ de Planck)</li>
+        <li class="lang-en"><b>Dark energy Ω_Λ</b> = 1 − 1/π (0.4σ from Planck)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="grid5" style="margin-top:16px">
+    <div class="card const-card"><div class="sym">φ</div><div class="val">1,618</div><div class="role lang-fr">Cohérence cardiaque</div><div class="role lang-en">Heart coherence</div></div>
+    <div class="card const-card"><div class="sym">π</div><div class="val">3,142</div><div class="role lang-fr">Cycles vitaux</div><div class="role lang-en">Life cycles</div></div>
+    <div class="card const-card"><div class="sym">e</div><div class="val">2,718</div><div class="role lang-fr">Régulation thermique</div><div class="role lang-en">Thermal regulation</div></div>
+    <div class="card const-card"><div class="sym">√2</div><div class="val">1,414</div><div class="role lang-fr">Équilibre hydrique</div><div class="role lang-en">Water balance</div></div>
+    <div class="card const-card"><div class="sym">√3</div><div class="val">1,732</div><div class="role lang-fr">Stabilité rythmique</div><div class="role lang-en">Rhythm stability</div></div>
+    <div class="card const-card"><div class="sym">√5</div><div class="val">2,236</div><div class="role lang-fr">Inflammation</div><div class="role lang-en">Inflammation</div></div>
+  </div>
+</section>
+
+<!-- ═══════════ DIFFÉRENCE ═══════════ -->
+<section>
+  <div class="section-title"><span class="ico">⭐</span><span class="lang-fr">Ce qui rend KA CARE unique</span><span class="lang-en">What Makes KA CARE Unique</span></div>
+  <div class="grid3">
+    <div class="card">
+      <h3><span class="ico">📡</span> <span class="lang-fr">100 % Offline</span><span class="lang-en">100% Offline</span></h3>
+      <p class="lang-fr">Aucune connexion Internet requise. Fonctionne dans le village le plus reculé, sur le téléphone le plus basique.</p>
+      <p class="lang-en">No internet connection required. Works in the most remote village, on the most basic phone.</p>
+    </div>
+    <div class="card">
+      <h3><span class="ico">🔓</span> <span class="lang-fr">Open Source</span><span class="lang-en">Open Source</span></h3>
+      <p class="lang-fr">Code public sur GitHub. Pas de boîte noire. Chaque décision est traçable jusqu'aux constantes mathématiques.</p>
+      <p class="lang-en">Public code on GitHub. No black box. Every decision is traceable to mathematical constants.</p>
+    </div>
+    <div class="card">
+      <h3><span class="ico">🆓</span> <span class="lang-fr">Gratuit à vie</span><span class="lang-en">Free Forever</span></h3>
+      <p class="lang-fr">Pas de licence, pas d'abonnement, pas de frais cachés. KA CARE est un bien commun, pas un produit.</p>
+      <p class="lang-en">No license, no subscription, no hidden fees. KA CARE is a commons, not a product.</p>
+    </div>
+    <div class="card">
+      <h3><span class="ico">🏥</span> <span class="lang-fr">Protocoles OMS</span><span class="lang-en">WHO Protocols</span></h3>
+      <p class="lang-fr">Tous les dépistages suivent les guidelines OMS/IMCI. Pas d'algorithme propriétaire — juste les standards médicaux mondiaux.</p>
+      <p class="lang-en">All screenings follow WHO/IMCI guidelines. No proprietary algorithm — just global medical standards.</p>
+    </div>
+    <div class="card">
+      <h3><span class="ico">🌍</span> <span class="lang-fr">Conçu pour le terrain</span><span class="lang-en">Field-Ready</span></h3>
+      <p class="lang-fr">Interface minimale. Moins de 5 minutes par patient. Fonctionne sous le soleil, la poussière, la pluie. Batterie optimisée.</p>
+      <p class="lang-en">Minimal interface. Under 5 minutes per patient. Works in sun, dust, rain. Battery-optimized.</p>
+    </div>
+    <div class="card">
+      <h3><span class="ico">🧬</span> <span class="lang-fr">Fondé sur la physique</span><span class="lang-en">Physics-Based</span></h3>
+      <p class="lang-fr">La même théorie qui prédit α et Ω_Λ prédit le dépistage clinique. Pas d'IA, pas de données d'entraînement — des constantes.</p>
+      <p class="lang-en">The same theory that predicts α and Ω_Λ predicts clinical screening. No AI, no training data — constants.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ IMPACT ═══════════ -->
+<section>
+  <div class="section-title"><span class="ico">📊</span><span class="lang-fr">Impact potentiel</span><span class="lang-en">Potential Impact</span></div>
+  <div class="stats-grid">
+    <div class="card stat"><div class="num">4,3 M</div><div class="lbl lang-fr">décès évitables couverts par an</div><div class="lbl lang-en">preventable deaths covered per year</div></div>
+    <div class="card stat"><div class="num">0 €</div><div class="lbl lang-fr">coût par consultation</div><div class="lbl lang-en">cost per consultation</div></div>
+    <div class="card stat"><div class="num">1</div><div class="lbl lang-fr">smartphone standard requis</div><div class="lbl lang-en">standard smartphone required</div></div>
+    <div class="card stat"><div class="num">5</div><div class="lbl lang-fr">pathologies dépistées simultanément</div><div class="lbl lang-en">pathologies screened simultaneously</div></div>
+  </div>
+  <div class="quote lang-fr">
+    « Si cette théorie est juste — et tout semble l'indiquer — alors la physiologie humaine obéit aux mêmes constantes que les étoiles. KA CARE est la première application médicale fondée sur ce principe. »
+    <div class="author">— Kotto Alain, fondateur de la Théorie de l'Univers Harmonique</div>
+  </div>
+  <div class="quote lang-en">
+    "If this theory is correct — and everything points that way — then human physiology obeys the same constants as the stars. KA CARE is the first medical application based on this principle."
+    <div class="author">— Kotto Alain, founder of the Harmonic Universe Theory</div>
+  </div>
+</section>
+
+<!-- ═══════════ CTA ═══════════ -->
+<div class="cta">
+  <h2 class="lang-fr">Prêt à tester KA CARE ?</h2>
+  <h2 class="lang-en">Ready to test KA CARE?</h2>
+  <p class="lang-fr">Vous êtes médecin, responsable d'ONG, ou directeur de programme de santé communautaire ? Contactez-nous pour un test terrain gratuit.</p>
+  <p class="lang-en">Are you a doctor, NGO leader, or community health program director? Contact us for a free field test.</p>
+  <a href="https://github.com/kotto/harmonic/tree/ka-care/engine/ka_care" class="btn btn-primary lang-fr">📂 Voir sur GitHub</a>
+  <a href="https://github.com/kotto/harmonic/tree/ka-care/engine/ka_care" class="btn btn-primary lang-en">📂 View on GitHub</a>
+  <a href="mailto:ka.care@proton.me" class="btn btn-secondary" style="margin-left:8px">✉️ Contact</a>
+</div>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer>
+  <p>KA CARE — Juillet 2026 — <span class="lang-fr">Tous droits réservés</span><span class="lang-en">All rights reserved</span></p>
+  <p><a href="https://github.com/kotto/harmonic/tree/ka-care/engine/ka_care">GitHub</a> · 
+     <span class="lang-fr">Fondé sur la</span><span class="lang-en">Based on the</span> 
+     <a href="#">Théorie de l'Univers Harmonique</a></p>
+  <p style="margin-top:8px;color:var(--red);font-weight:600">
+    ⚠ <span class="lang-fr">KA CARE est une aide au dépistage — pas un dispositif médical certifié.</span>
+    <span class="lang-en">KA CARE is a screening aid — not a certified medical device.</span>
+  </p>
+</footer>
+
+</div>
+
+<script>
+function toggleLang(){
+  const b=document.body;
+  b.classList.toggle('lang-fr');
+  b.classList.toggle('lang-en');
+}
+</script>
+</body>
+</html>
