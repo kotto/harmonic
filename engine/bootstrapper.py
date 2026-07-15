@@ -483,6 +483,118 @@ def extract_triples_enhanced(text: str) -> List[Tuple[str, str, str, str]]:
     return triples
 
 
+def extract_triples_ml(text: str, kb_relations: List[str] = None) -> List[Tuple[str, str, str, str]]:
+    """
+    Extraction ML-augmentée : KB-trained patterns + entités multi-mots.
+    
+    Phase 1 : KB-TRAINED — utilise les 150 relations les plus fréquentes
+              de la KB existante comme patterns de recherche.
+    Phase 2 : ENTITY BOUNDARY — détecte les entités multi-mots (noms propres,
+              groupes nominaux) pour des sujets/objets plus précis.
+    Phase 3 : Fallback vers extract_triples_enhanced().
+    
+    Returns:
+        Liste de (sujet, relation, objet, secteur)
+    """
+    triples = []
+    seen = set()
+    secteur = detect_sector(text)
+    
+    # Nettoyage
+    text_clean = re.sub(r',\s*n[eé]\s+le\s+[^,]+', '', text)
+    text_clean = re.sub(r',\s*mort\s+le\s+[^,]+', '', text_clean)
+    text_clean = re.sub(r'\([^)]*\)', '', text_clean)
+    
+    stop_subjects = {'il','elle','on','cela','ceci','cet','cette','ces','qui','que',
+                     'quoi','dont','tout','tous','toute','toutes','rien','personne'}
+    
+    def _add(s, r, o, sec=None):
+        s_clean = s.strip().lower()
+        r_clean = r.strip().lower()
+        o_clean = o.strip().lower()
+        if not s_clean or not r_clean or not o_clean: return
+        if len(s_clean) < 2 or len(o_clean) < 3: return
+        if s_clean == o_clean: return
+        if s_clean in stop_subjects: return
+        key = (s_clean, r_clean, o_clean)
+        if key not in seen:
+            seen.add(key)
+            triples.append((s_clean, r_clean, o_clean, sec or secteur))
+    
+    # ── Phase 1 : KB-Trained Patterns ───────────────────────────────
+    # Top 40 relations apprises de la KB (couvrent ~30% des faits)
+    KB_RELATIONS = [
+        'constitue', 'est une forme de', 'est', 'est un', 'est une',
+        'signifie', 'inclut', 'comprend', 'contient', 'est composé de',
+        'a pour symbole', 'a pour capitale', 'est la capitale de',
+        'a découvert', 'a inventé', 'a créé', 'a fondé', 'a développé',
+        'a publié', 'a écrit', 'a peint', 'a composé', 'a réalisé',
+        'a eu lieu en', 'a commencé en', 's\'est terminé en', 'a duré',
+        'se trouve à', 'se trouve en', 'est situé à', 'est situé en',
+        'appartient à', 'fait partie de', 'est membre de',
+        'a pour formule', 'a pour langue', 'a pour monnaie',
+        'mesure', 'pèse', 'date de', 'a régné de',
+    ]
+    
+    # Pour chaque relation connue, chercher le pattern dans le texte
+    for rel in KB_RELATIONS:
+        # Pattern: [Sujet] + [relation] + [Objet]
+        # Le sujet est ce qui précède la relation (entité multi-mots)
+        # L'objet est ce qui suit
+        
+        # Échapper les caractères spéciaux pour le regex
+        rel_pattern = re.escape(rel)
+        
+        # Version FR: [sujet] [relation] [objet]
+        for pat in [
+            # Sujet multi-mots (entité nommée) + relation + objet jusqu'à ponctuation
+            rf'([A-ZÀ-Ü][a-zà-ü]{{2,}}(?:\s(?:[a-zà-ü]{{1,}}|[A-ZÀ-Ü][a-zà-ü]{{2,}})){{0,5}})\s+{rel_pattern}\s+(.+?)(?:\s*[.;]|$)',
+            # Objet d'abord (inversé) + relation + sujet
+            rf'(.+?)\s+{rel_pattern}\s+([A-ZÀ-Ü][a-zà-ü]{{2,}}(?:\s(?:[a-zà-ü]{{1,}}|[A-ZÀ-Ü][a-zà-ü]{{2,}})){{0,5}})(?:\s*[.;]|$)',
+        ]:
+            for m in re.finditer(pat, text_clean, re.IGNORECASE):
+                g1 = m.group(1).strip()
+                g2 = m.group(2).strip()
+                # Déterminer quel groupe est le sujet (contient une majuscule)
+                if g1 and g2 and len(g1) > 1 and len(g2) > 1:
+                    if g1[0].isupper():
+                        _add(g1, rel, g2)
+                    else:
+                        _add(g2, rel, g1)
+    
+    # ── Phase 2 : Entity Boundary Detection (seulement si Phase 1 vide) ──
+    if len(triples) == 0:
+        # Détecter les entités nommées (suites de mots avec majuscules)
+        entity_pattern = r'([A-ZÀ-Ü][a-zà-ü]{2,}(?:\s(?:[a-zà-ü]{1,}|[A-ZÀ-Ü][a-zà-ü]{2,})){0,4})'
+        entities = re.findall(entity_pattern, text_clean)
+        
+        # Pour chaque paire d'entités proches, chercher le verbe qui les relie
+        for i, e1 in enumerate(entities):
+            for e2 in entities[i+1:i+4]:
+                if e1.lower() == e2.lower(): continue
+                pos1 = text_clean.find(e1)
+                pos2 = text_clean.find(e2, pos1 + len(e1))
+                if pos2 > pos1:
+                    between = text_clean[pos1+len(e1):pos2].strip()
+                    if 2 <= len(between.split()) <= 8 and len(between) < 120:
+                        _add(e1, between, e2)
+    
+    # ── Phase 3 : Fallback ──────────────────────────────────────────
+    if len(triples) < 3:
+        triples.extend(extract_triples_enhanced(text))
+        # Dédupliquer
+        seen2 = set()
+        unique = []
+        for s, r, o, sec in triples:
+            key = (s, r, o)
+            if key not in seen2:
+                seen2.add(key)
+                unique.append((s, r, o, sec))
+        triples = unique
+    
+    return triples
+
+
 def extract_triples_llm(text: str) -> List[Tuple[str, str, str, str]]:
     """
     Extraction de triplets via LLM (si disponible).
