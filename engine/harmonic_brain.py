@@ -1074,12 +1074,12 @@ class EntityIndex:
             amp = record.amplitude
             # Indexer par sujet complet
             self._entity_index[s].append((s, r, o, amp))
-            # Indexer par chaque mot significatif du sujet et de l'objet
+            # Indexer par chaque mot (y compris courts: "or", "fe", "au", "os")
             for word in s.split():
-                if len(word) > 2:
+                if len(word) >= 1:
                     self._entity_index[word].append((s, r, o, amp))
             for word in o.split():
-                if len(word) > 2:
+                if len(word) >= 1:
                     self._entity_index[word].append((s, r, o, amp))
             # Indexer bigrammes sujet+objet
             s_words = s.split()
@@ -1135,7 +1135,7 @@ class EntityIndex:
                      'savoir','pouvoir','vouloir','what','is','are','was','were','the',
                      'a','an','of','in','on','at','to','for','and','or','how','when',
                      'who','where','why','which'}
-        q_words = [w for w in q_lower.split() if len(w) > 2 and w not in stopwords]
+        q_words = [w for w in q_lower.split() if len(w) >= 1 and w not in stopwords]
         
         if not q_words:
             return []
@@ -2181,6 +2181,20 @@ class HarmonicBrain:
         # ── 1. INCONSCIENT : retrieval entity-centric + TF-IDF fallback ──
         # 🔍 ENTITY SEARCH (O(1) lookup, inspiré Obsidian)
         entity_candidates = self._entity_index.search(question, max_results=10)
+        
+        # 🆕 DIRECT FACT RESPONSE : si le top résultat a une relation matchee ET score > 20
+        if entity_candidates and entity_candidates[0][1] > 20.0:
+            top_rec, top_score = entity_candidates[0]
+            direct = f'{top_rec.sujet.title()} {top_rec.relation} {top_rec.objet}.'
+            self._update_conv_context(question, direct, use_conversation)
+            return BrainResult(
+                response=direct,
+                confidence=min(1.0, top_score / 30.0),
+                facts_used=[top_rec],
+                facts_rejected=[],
+                retrieval_count=1,
+                total_time_ms=(time.time() - t_start) * 1000,
+            )
         
         if entity_candidates and entity_candidates[0][1] > 5.0:
             candidates = entity_candidates
