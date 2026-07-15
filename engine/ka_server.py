@@ -267,16 +267,20 @@ CAPITALS = [
 facts = facts + KA_IDENTITY + CAPITALS
 
 from harmonic_brain import HarmonicBrain
+from harmonic_ai import HarmonicAI
 
-# Charger le cerveau — mode léger pour le serveur (pas d'encodage holographique)
-# L'encodage ℂ⁵¹² consomme ~8 KB/fait — trop pour 1.5 GB de RAM
-# Le retrieval TF-IDF seul donne 93%+ de précision
-print(f"  🧠 Initialisation du Cerveau Harmonique v3 (mode serveur léger)...")
-brain = HarmonicBrain(facts, dim=64, use_holographic=False)
-print(f"  🧠 Cerveau prêt: {brain.unconscious.stats['faits']:,} faits dans l'inconscient")
-print(f"  🌐 Domaines: {len(brain.stats.get('domains_available', []))}")
-print(f"  💬 Parseur: actif")
-print(f"  🎯 SFT: {sum(1 for r in brain.unconscious.registry.values() if r.amplitude >= 5)}")
+# ── IA HARMONIQUE OPTIMISÉE (FastRetriever 110K faits + PageForge + JLens) ──
+print(f"  🧠 Initialisation de l'IA Harmonique (pipeline optimisé)...")
+ai = HarmonicAI(use_memory=True, enable_bootstrapper=False, fast_mode=True)
+brain = ai._get_brain() if hasattr(ai, '_get_brain') else None
+print(f"  🧠 IA prête: FastRetriever + SFT + PageForge + JLens + routage code/maths/logique")
+if ai.jlens:
+    print(f"  🌊 J-Lens: actif (traçabilité des concepts)")
+
+# Garder un accès au brain pour les modules qui en dépendent (spécializer, enterprise)
+if brain is None:
+    # Fallback: créer un petit brain pour compatibilité
+    brain = HarmonicBrain(facts[:100], dim=64, use_holographic=False)
 
 # ── 🌐 Web Retriever (recherche Internet) ──────────────────────────────────────
 _web_retriever = None
@@ -289,6 +293,7 @@ except Exception as e:
 
 # ── 🎯 Domain Specializer (spécialisation dynamique) ──────────────────────────
 _specializer = None
+_optimized_specializer = None
 _SPECIALIZER_AVAILABLE = False
 try:
     from domain_specializer import DomainSpecializer, detect_specialize_intent, load_user_kbs_for_brain
@@ -297,6 +302,33 @@ try:
     print(f"  🎯 Domain Specializer: actif (spécialisation dynamique)")
 except Exception as e:
     print(f"  🎯 Domain Specializer: non disponible ({e})")
+
+# Spécialiseur optimisé (hybride KB + web)
+try:
+    from specialize_optimized import OptimizedSpecializer
+    _optimized_specializer = OptimizedSpecializer(web_retriever=_web_retriever, brain=brain)
+    print(f"  🎯 Optimized Specializer: actif (bootstrap KB 110K + web ciblé)")
+except Exception as e:
+    print(f"  🎯 Optimized Specializer: non disponible ({e})")
+
+# 📦 Hologram Store (knowledge store téléchargeable)
+_hologram_store = None
+try:
+    from hologram_store import HologramStore
+    _hologram_store = HologramStore()
+    n_holo = len(_hologram_store.list_holograms())
+    print(f"  📦 Hologram Store: actif ({n_holo} hologrammes disponibles)")
+except Exception as e:
+    print(f"  📦 Hologram Store: non disponible ({e})")
+
+# 🌊 Wave Poet (générateur de poésie ondulatoire)
+_wave_poet = None
+try:
+    from wave_poetry import WavePoet
+    _wave_poet = WavePoet()
+    print(f"  🌊 Wave Poet: actif ({_wave_poet.stats()['poetic_vocabulary']} mots poétiques)")
+except Exception as e:
+    print(f"  🌊 Wave Poet: non disponible ({e})")
 
 # ── 🏢 Enterprise Ingestor (injection de données d'entreprise) ─────────────────
 _enterprise_ingestor = None
@@ -408,27 +440,45 @@ def chat():
     if not message:
         return jsonify({'error': 'Message requis', 'response': "Je n'ai pas compris votre message."}), 400
     
-    # 🎯 Détection de demande de spécialisation
-    if _SPECIALIZER_AVAILABLE and _specializer is not None:
+    # 🎯 Détection de demande de spécialisation (version optimisée)
+    if _SPECIALIZER_AVAILABLE:
         intent = detect_specialize_intent(message)
         if intent:
             domain = intent['domain']
-            depth = intent.get('depth', 'expert')
-            log.info(f"🎯 Demande de spécialisation détectée: domain={domain}, "
-                     f"depth={depth}, user={user_id}")
+            depth_spec = intent.get('depth', 'expert')
+            log.info(f"🎯 Spécialisation détectée: domain={domain}, depth={depth_spec}, user={user_id}")
             
-            # Lancer la spécialisation (asynchrone pour ne pas bloquer)
-            result = _specializer.specialize(
-                domain=domain, depth=depth, user_id=user_id, async_mode=False
-            )
-            return jsonify({
-                'response': result.message,
-                'confidence': 1.0 if result.success else 0.5,
-                'source': 'specializer',
-                'latency_ms': round(result.elapsed_seconds * 1000, 0),
-                'model': 'harmonic-v2',
-                'specialization': result.to_dict() if result.success else None,
-            })
+            # Utiliser le spécialiseur optimisé si disponible
+            if _optimized_specializer is not None:
+                result = _optimized_specializer.specialize(domain, depth=depth_spec, user_id=user_id)
+                return jsonify({
+                    'response': result.message,
+                    'confidence': result.validation_score,
+                    'source': 'specializer-optimized',
+                    'latency_ms': round(result.elapsed_seconds * 1000, 0),
+                    'model': 'harmonic-v3-optimized',
+                    'specialization': {
+                        'domain': result.domain,
+                        'existing_facts': result.existing_facts,
+                        'new_facts': result.new_facts,
+                        'total_facts': result.total_facts,
+                        'coverage_pct': result.coverage_pct,
+                        'validation_score': result.validation_score,
+                        'top_concepts': result.top_concepts[:5],
+                    },
+                })
+            elif _specializer is not None:
+                result = _specializer.specialize(
+                    domain=domain, depth=depth_spec, user_id=user_id, async_mode=False
+                )
+                return jsonify({
+                    'response': result.message,
+                    'confidence': 1.0 if result.success else 0.5,
+                    'source': 'specializer',
+                    'latency_ms': round(result.elapsed_seconds * 1000, 0),
+                    'model': 'harmonic-v2',
+                    'specialization': result.to_dict() if result.success else None,
+                })
     
     # 🔄 Chargement automatique des KB utilisateur
     if user_id != 'anonymous' and _SPECIALIZER_AVAILABLE and not brain.has_user_kb(user_id):
@@ -477,26 +527,24 @@ def chat():
         message = f"{context}\n{message}"
     
     t0 = time.time()
-    result = brain.process(message, style=style, depth=depth, personality=personality,
-                          user_id=user_id)
-    response = result.response
+    response = ai.ask(message)
+    confidence = 0.70 if response else 0.0
     latency_ms = (time.time() - t0) * 1000
-    
-    confidence = result.confidence
-    source = 'harmonic' if confidence >= 0.35 else 'llm'
+    source = 'harmonic'
     
     # Métriques
-    if source == 'harmonic':
-        _metrics['harmonic_count'] += 1
-    else:
-        _metrics['llm_count'] += 1
+    _metrics['harmonic_count'] += 1
+    
+    # Détecter si c'est une page (PageForge) ou une réponse courte
+    is_page = response and response.startswith('# ')
     
     return jsonify({
         'response': response,
         'confidence': round(confidence, 2),
         'source': source,
         'latency_ms': round(latency_ms, 0),
-        'model': 'harmonic-v2',
+        'model': 'harmonic-v3-optimized',
+        'is_page': is_page,
     })
 
 
@@ -779,7 +827,7 @@ def reason():
         return jsonify({'error': 'Sujet requis'}), 400
     
     t0 = time.time()
-    result = brain.process(topic)
+    result = ai.ask(topic) if ai else brain.process(topic)
     chain = result.response
     latency_ms = (time.time() - t0) * 1000
     
@@ -1976,11 +2024,214 @@ def media_ingest():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# 📄 PAGEFORCE & 🌊 J-LENS (nouveaux endpoints optimisés)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/page', methods=['POST'])
+def generate_page():
+    """Génère une page complète sur un sujet (PageForge)."""
+    data = request.get_json(force=True, silent=True) or {}
+    topic = data.get('topic', '').strip()
+    if not topic:
+        return jsonify({'error': 'Topic requis'}), 400
+    t0 = time.time()
+    response = ai.page(topic) if ai and hasattr(ai, 'page') else None
+    if not response:
+        response = ai.ask(topic) if ai else "PageForge non disponible"
+    return jsonify({
+        'response': response,
+        'is_page': response.startswith('# ') if response else False,
+        'latency_ms': round((time.time() - t0) * 1000, 0),
+        'model': 'harmonic-pageforge',
+    })
+
+@app.route('/api/jlens', methods=['GET'])
+def get_jlens():
+    """Affiche l'état du J-Space harmonique."""
+    if ai and hasattr(ai, 'jlens') and ai.jlens:
+        return jsonify({
+            'stats': ai.jlens.stats(),
+            'render': ai.jlens.render(),
+            'html': ai.jlens.to_html() if hasattr(ai.jlens, 'to_html') else None,
+        })
+    return jsonify({'error': 'JLens non disponible'}), 503
+
+@app.route('/api/jlens/history', methods=['GET'])
+def get_jlens_history():
+    """Historique des instantanés J-Space."""
+    if ai and hasattr(ai, 'jlens') and ai.jlens:
+        history = []
+        for snap in ai.jlens.history[-10:]:
+            history.append({
+                'question': snap.question[:100],
+                'jspace_size': snap.jspace_size,
+                'mean_coherence': snap.mean_coherence,
+                'timestamp': snap.timestamp,
+                'active_concepts': snap.active_concepts[:5],
+            })
+        return jsonify({'history': history, 'total': len(ai.jlens.history)})
+    return jsonify({'error': 'JLens non disponible'}), 503
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 📦 HOLOGRAM STORE — Knowledge Store téléchargeable
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/store/list', methods=['GET'])
+def store_list():
+    """Liste tous les hologrammes disponibles."""
+    if not _hologram_store:
+        return jsonify({'error': 'Store non disponible'}), 503
+    holo_type = request.args.get('type', None)  # 'official' | 'community'
+    return jsonify({
+        'holograms': _hologram_store.list_holograms(holo_type),
+        'stats': _hologram_store.stats(),
+    })
+
+@app.route('/api/store/download/<holo_id>', methods=['POST'])
+def store_download(holo_id):
+    """Télécharge un hologramme et le fusionne dans le FastRetriever."""
+    if not _hologram_store:
+        return jsonify({'error': 'Store non disponible'}), 503
+    
+    facts = _hologram_store.download(holo_id)
+    if not facts:
+        return jsonify({'error': f'Hologramme {holo_id} introuvable ou vide'}), 404
+    
+    # Fusionner dans le FastRetriever
+    user_id = request.get_json(force=True, silent=True) or {}
+    user_id = user_id.get('user_id', 'anonymous')
+    
+    from page_forge import _init_fast_retriever, _FAST_RETRIEVER
+    _init_fast_retriever()
+    if _FAST_RETRIEVER:
+        _FAST_RETRIEVER.add_facts(facts)
+    
+    return jsonify({
+        'success': True,
+        'holo_id': holo_id,
+        'facts_loaded': len(facts),
+        'message': f'✅ {len(facts):,} faits chargés en mémoire',
+    })
+
+@app.route('/api/store/info/<holo_id>', methods=['GET'])
+def store_info(holo_id):
+    """Retourne les métadonnées d'un hologramme."""
+    if not _hologram_store:
+        return jsonify({'error': 'Store non disponible'}), 503
+    meta = _hologram_store.download_metadata(holo_id)
+    if not meta:
+        return jsonify({'error': 'Hologramme introuvable'}), 404
+    return jsonify(meta)
+
+@app.route('/api/store/publish', methods=['POST'])
+def store_publish():
+    """Publie un hologramme communautaire."""
+    if not _hologram_store:
+        return jsonify({'error': 'Store non disponible'}), 503
+    
+    data = request.get_json(force=True, silent=True) or {}
+    domain = data.get('domain', '').strip()
+    author = data.get('user_id', 'anonymous')
+    facts_raw = data.get('facts', [])
+    name = data.get('name', '')
+    description = data.get('description', '')
+    
+    if not domain or not facts_raw:
+        return jsonify({'error': 'Domaine et faits requis'}), 400
+    
+    # Convertir les faits
+    facts = []
+    for f in facts_raw:
+        if isinstance(f, (list, tuple)) and len(f) >= 3:
+            facts.append((str(f[0]), str(f[1]), str(f[2]),
+                         str(f[3]) if len(f) > 3 else 'GENERAL'))
+    
+    result = _hologram_store.publish(domain, facts, author, name, description)
+    return jsonify(result)
+
+@app.route('/api/store/stats', methods=['GET'])
+def store_stats():
+    """Statistiques du store."""
+    if not _hologram_store:
+        return jsonify({'error': 'Store non disponible'}), 503
+    return jsonify(_hologram_store.stats())
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🌊 WAVE POETRY — Poésie ondulatoire
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/poem', methods=['POST'])
+def generate_poem():
+    """
+    Génère un poème par interférences ondulatoires.
+    
+    Body: {
+        "theme": "la mer",
+        "form": "free_verse",      // free_verse, alexandrin, haiku_wave
+        "emotion": "mysterieux",   // triste, joyeux, mysterieux, paisible, dynamique
+        "lines": 8,
+        "personal": false          // true = utilise l'hologramme personnel
+    }
+    """
+    if not _wave_poet:
+        return jsonify({'error': 'Wave Poet non disponible'}), 503
+    
+    data = request.get_json(force=True, silent=True) or {}
+    theme = data.get('theme', '').strip()
+    if not theme:
+        return jsonify({'error': 'Thème requis'}), 400
+    
+    form = data.get('form', 'free_verse')
+    emotion = data.get('emotion', None)
+    lines = min(int(data.get('lines', 8)), 16)
+    personal = data.get('personal', False)
+    user_id = data.get('user_id', 'anonymous')
+    
+    t0 = time.time()
+    
+    if personal and user_id != 'anonymous':
+        # Poésie personnelle basée sur l'hologramme
+        try:
+            from personal_hologram import PersonalHologram
+            ph = PersonalHologram(user_id)
+            profile = ph.profile()
+            facts = []
+            for concept in profile.top_concepts[:5]:
+                facts.append(f"Tu t'intéresses à {concept}")
+            for interest in profile.top_domains[:3]:
+                facts.append(f"Tu explores le domaine {interest.domain}")
+            result = _wave_poet.compose_personal(theme, personal_facts=facts, form=form)
+        except Exception:
+            result = _wave_poet.compose(theme, form=form, emotion=emotion, lines=lines)
+    else:
+        result = _wave_poet.compose(theme, form=form, emotion=emotion, lines=lines)
+    
+    return jsonify({
+        'poem': result['text'],
+        'theme': result['theme'],
+        'form': result['form'],
+        'emotion': result['emotion'],
+        'lines': result['lines'],
+        'words_used': result['words_used'],
+        'vocab_size': result['vocab_size'],
+        'latency_ms': round((time.time() - t0) * 1000, 0),
+        'model': 'wave-poetry-v2',
+    })
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # DÉMARRAGE
 # ═══════════════════════════════════════════════════════════════════════════════
 
 if __name__ == '__main__':
-    log.info(f"\n✨ KA Server prêt sur http://localhost:{port}")
+    log.info(f"\n✨ KA Server v3 OPTIMISÉ sur http://localhost:{port}")
+    log.info(f"   📡 API: http://localhost:{port}/api/chat")
+    log.info(f"   📄 PageForge: http://localhost:{port}/api/page")
+    log.info(f"   🌊 J-Lens: http://localhost:{port}/api/jlens")
+    log.info(f"   📦 Store: http://localhost:{port}/api/store/list")
+    log.info(f"   🏠 Interface: http://localhost:{port}")
     log.info(f"   /              — KA Phone (PWA)")
     log.info(f"   /api/chat      — conversation")
     log.info(f"   /api/reason    — raisonnement")

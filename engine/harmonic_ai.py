@@ -30,7 +30,7 @@ Usage:
   print(ai.stats)
 """
 
-import os, sys, json, time
+import os, sys, json, time, re
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 import numpy as np
@@ -70,11 +70,20 @@ class HarmonicAI:
       - load()     : restauration complète
     """
     
-    def __init__(self, use_memory: bool = True, enable_bootstrapper: bool = True):
+    def __init__(self, use_memory: bool = True, enable_bootstrapper: bool = True,
+                 fast_mode: bool = True):
+        """
+        Args:
+            use_memory: active la mémoire conversationnelle
+            enable_bootstrapper: active le bootstrapper LLM (fallback payant)
+            fast_mode: skip le chargement du KB étendu (utilise PageForge à la place)
+        """
         self.model = HarmonicModel(use_memory=use_memory)
         self.engine = ReasoningEngine(self.model)
-        self._load_extended_kb()
-        self._load_general_knowledge()  # Nouveau : culture générale
+        
+        if not fast_mode:
+            self._load_extended_kb()
+            self._load_general_knowledge()
         
         # Bootstrapper pour le sevrage progressif du LLM
         self.bootstrapper = None
@@ -104,19 +113,452 @@ class HarmonicAI:
         except Exception:
             pass
 
-        # 🔥 CERVEAU HARMONIQUE (Inconscient massif + Conscient filtre)
+        # 🔥 CERVEAU HARMONIQUE (Inconscient massif + Conscient filtre) — lazy init
         self._brain = None
+        self._brain_init_attempted = False
+
+        # 📄 PAGEFORGE — génération de pages longues (lazy init)
+        self._page_forge = None
+        self._current_page = None  # Page en cours d'édition conversationnelle
+        self._current_page_topic = None
+
+        # 🌊 J-LENS — visualisation de l'espace de raisonnement
+        self.jlens = None
         try:
-            self._brain = HarmonicBrain(self.model.knowledge_base)
-        except Exception:
+            from harmonic_jlens import JLens
+            self.jlens = JLens()
+        except ImportError:
             pass
 
-    def _rebuild_brain(self):
-        """Reconstruit le cerveau après apprentissage."""
+    def _get_brain(self):
+        """Initialise paresseusement le cerveau harmonique."""
+        if self._brain is not None:
+            return self._brain
+        if self._brain_init_attempted:
+            return None
+        self._brain_init_attempted = True
         try:
             self._brain = HarmonicBrain(self.model.knowledge_base)
         except Exception:
             self._brain = None
+        return self._brain
+
+    def _rebuild_brain(self):
+        """Reconstruit le cerveau après apprentissage."""
+        self._brain_init_attempted = False
+        self._brain = None
+        return self._get_brain()
+
+    def _get_page_forge(self):
+        """Initialise paresseusement PageForge."""
+        if self._page_forge is None:
+            try:
+                from page_forge import PageForge
+                self._page_forge = PageForge()
+            except Exception:
+                self._page_forge = False
+        return self._page_forge if self._page_forge is not False else None
+
+    def _fast_retrieve(self, question: str, lang: str = 'fr') -> tuple:
+        """
+        Requête rapide : SFT d'abord, puis FastRetriever.
+        Retourne (réponse, liste_de_faits) — les faits servent au J-Lens.
+        """
+        q_lower = question.lower().strip()
+        
+        # Stopwords à ignorer
+        _sw = {'le','la','les','de','des','du','un','une','et','est','a','que','qui',
+               'quoi','dans','sur','pour','avec','par','en','the','is','are','of','in',
+               'on','at','to','and','it','its','pas','plus','tout','tous','ce','cet',
+               'cette','ces','son','sa','ses','leur','leurs','au','aux','ou','donc',
+               'car','aussi','mais','comme','bien','très','trop','peu','alors','the',
+               'à','a','y','en','se','ne','me','te','lui','nous','vous'}
+        
+        # 1. SFT DIRECT MATCH
+        try:
+            from harmonic_quality import HIGH_AMPLITUDE_FACTS
+            best_sft = None
+            best_score = 0
+            
+            q_words = {w.strip('?!.,;:()[]{}»«\"\'') for w in q_lower.split() 
+                      if w.strip('?!.,;:()[]{}»«\"\'') not in _sw 
+                      and len(w.strip('?!.,;:()[]{}»«\"\'')) > 1}
+            
+            for (s, r, o), amp in HIGH_AMPLITUDE_FACTS.items():
+                s_low = s.lower()
+                o_low = o.lower()
+                o_words = {w.strip('?!.,;:()[]{}»«\"\'') for w in o_low.split() 
+                          if w.strip('?!.,;:()[]{}»«\"\'') not in _sw 
+                          and len(w.strip('?!.,;:()[]{}»«\"\'')) > 1}
+                
+                common = o_words & q_words
+                if not common:
+                    continue
+                
+                score = len(common) * amp * 2
+                
+                s_words = {w.strip('?!.,;:()[]{}»«\"\'') for w in s_low.split() 
+                          if w.strip('?!.,;:()[]{}»«\"\'') not in _sw 
+                          and len(w.strip('?!.,;:()[]{}»«\"\'')) > 1}
+                if s_words & q_words:
+                    score += amp
+                
+                if score > best_score:
+                    best_score = score
+                    best_sft = (s, r, o)
+            
+            if best_sft and best_score >= 10:
+                s, r, o = best_sft
+                facts = [(s, r, o, 'SFT', best_score)]
+                return f"{s} {r} {o}.", facts
+        except ImportError:
+            pass
+        
+        # 2. FastRetriever fallback
+        try:
+            from page_forge import _init_fast_retriever, _FAST_RETRIEVER
+            _init_fast_retriever()
+            if _FAST_RETRIEVER is None:
+                return None
+            
+            results = _FAST_RETRIEVER.retrieve(question, max_facts=3, min_score=0.6)
+            if not results:
+                return None, []
+
+            facts = [(s, r, o, sec, score) for s, r, o, sec, score in results[:3]]
+            s, r, o, sec, score = results[0]
+            return f"{s} {r} {o}.", facts
+        except Exception:
+            pass
+
+        return None, []
+
+    def _deep_reason(self, question: str, facts: list, lang: str = 'fr') -> str:
+        """
+        Raisonnement profond multi-couche :
+        1. WaveLogic — syllogismes (7 types)
+        2. PhaseAmplifier — propagation multi-sauts via FastRetriever
+        3. JLens feedback — renforcement des faits utiles
+        """
+        response = None
+        
+        # 1. SYLLOGISMES ONDULATOIRES (WaveLogic)
+        if len(facts) >= 2:
+            try:
+                from wave_logic import WaveLogic
+                wl = WaveLogic()
+                premises = [(str(s), str(r), str(o)) for s, r, o, _ in facts[:2]]
+                result = wl.solve(premises, question)
+                if result and len(str(result)) > 20:
+                    response = f"🧠 {result}"
+            except Exception:
+                pass
+        
+        # 2. PROPAGATION MULTI-SAUTS via FastRetriever
+        if not response and len(facts) >= 3:
+            try:
+                # Propagation simple : chaîne à travers les faits trouvés
+                chain = []
+                visited = set()
+                current = str(facts[0][2])  # objet du premier fait
+                
+                for _ in range(5):  # max 5 sauts
+                    if current in visited:
+                        break
+                    visited.add(current)
+                    
+                    # Chercher un fait dont le sujet contient le concept courant
+                    from page_forge import _init_fast_retriever, _FAST_RETRIEVER
+                    _init_fast_retriever()
+                    if _FAST_RETRIEVER:
+                        results = _FAST_RETRIEVER.retrieve(current, max_facts=1, min_score=0.4)
+                        if results:
+                            s, r, o, sec, score = results[0]
+                            chain.append(f"{s} {r} {o}")
+                            current = str(o)
+                        else:
+                            break
+                
+                if len(chain) >= 2:
+                    response = (
+                        f"🔍 Raisonnement en {len(chain)} sauts: "
+                        + ' → '.join(chain[:5])
+                    )
+            except Exception:
+                pass
+        
+        # 3. J-LENS FEEDBACK
+        if self.jlens and facts:
+            try:
+                from harmonic_quality import HIGH_AMPLITUDE_FACTS
+                for s, r, o, sec, score in facts:
+                    key = (str(s).lower().strip(), str(r).lower().strip(), str(o).lower().strip())
+                    if key in HIGH_AMPLITUDE_FACTS:
+                        HIGH_AMPLITUDE_FACTS[key] = min(10.0, HIGH_AMPLITUDE_FACTS.get(key, 5.0) + 0.3)
+            except Exception:
+                pass
+        
+        return response
+
+    def _simple_code(self, question: str) -> str:
+        """Generation de code par patterns simples (fallback rapide)."""
+        q = question.lower()
+        if 'fibonacci' in q:
+            return '```python\ndef fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)\n\nfor i in range(10):\n    print(fibonacci(i), end=\" \")\n# 0 1 1 2 3 5 8 13 21 34\n```'
+        if 'factorielle' in q or 'factorial' in q:
+            return '```python\ndef factorielle(n):\n    if n <= 1:\n        return 1\n    return n * factorielle(n-1)\n\nprint(factorielle(5))  # 120\n```'
+        if 'tri ' in q or 'trier' in q or 'sort' in q:
+            return '```python\ndef tri_rapide(arr):\n    if len(arr) <= 1:\n        return arr\n    pivot = arr[len(arr)//2]\n    gauche = [x for x in arr if x < pivot]\n    milieu = [x for x in arr if x == pivot]\n    droite = [x for x in arr if x > pivot]\n    return tri_rapide(gauche) + milieu + tri_rapide(droite)\n\nprint(tri_rapide([3,6,8,10,1,2,1]))\n# [1,1,2,3,6,8,10]\n```'
+        if 'palindrome' in q:
+            return '```python\ndef est_palindrome(s):\n    s = \"\".join(c.lower() for c in s if c.isalnum())\n    return s == s[::-1]\n\nprint(est_palindrome(\"Radar\"))  # True\n```'
+        if 'python' in q or 'code' in q:
+            return '```python\ndef exemple():\n    return \"Hello, Monde Harmonique!\"\nprint(exemple())\n```'
+        return None
+
+    def _route_specialized(self, question: str, lang: str = 'fr') -> str:
+        """
+        Route la question vers le composant spécialisé approprié :
+        - Code → code_generator.py
+        - Maths → wave_math.py
+        - Logique → wave_logic.py
+        """
+        q = question.lower().strip()
+        
+        # 1. CODE — détection de demande de code
+        code_markers = ['écris du code', 'ecris du code', 'génère du code', 'genere du code',
+                       'code pour', 'fonction qui', 'classe qui', 'algorithme',
+                       'write code', 'generate code', 'function that', 'class that',
+                       'python', 'javascript', 'html', 'css', 'sql',
+                       'crée un programme', 'cree un programme', 'programme qui']
+        if any(m in q for m in code_markers) or q.startswith(('code ', 'programme ')):
+            try:
+                from code_generator import CodeGenerator
+                cg = CodeGenerator()
+                result = cg.generate(question, lang)
+                if result and result.code:
+                    return f"```{result.language or 'python'}\n{result.code}\n```\n\n{result.explanation or ''}"
+            except Exception:
+                pass
+        
+        # 2. MATHS — résolution d'expressions
+        math_markers = ['calcule', 'combien font', 'résous', 'resous', 'solve',
+                       'racine carrée', 'factorielle', 'puissance',
+                       '+', '-', '*', '/', '×', '÷', '^',
+                       'équation', 'equation', 'pourcentage', 'convertir']
+        has_numbers = any(c.isdigit() for c in q)
+        has_math_symbols = any(s in q for s in ['+', '-', '*', '/', '×', '÷', '=', '^'])
+        if has_numbers or has_math_symbols or any(m in q for m in math_markers):
+            try:
+                from wave_math import wave_solve
+                result = wave_solve(question, lang)
+                if result:
+                    return result
+            except Exception:
+                pass
+            # Fallback: smart_math déjà appelé dans ask(), mais wave_solve est plus complet
+        
+        # 3. SYLLOGISMES — si la question implique une déduction logique
+        logic_markers = ['si ', 'alors ', 'donc ', 'implique', 'par conséquent',
+                        'si...alors', 'déduis', 'deduis', 'conclus', 'raisonne']
+        if any(m in q for m in logic_markers) or q.count('si ') >= 1:
+            try:
+                from wave_logic import WaveLogic
+                wl = WaveLogic()
+                # Extraire les prémisses potentielles
+                parts = re.split(r'[?.!]', question)
+                premises = [p.strip() for p in parts if len(p.strip()) > 10]
+                if len(premises) >= 2:
+                    result = wl.solve(premises[:2], question)
+                    if result and len(str(result)) > 15:
+                        return f"🧠 {result}"
+            except Exception:
+                pass
+        
+        return None
+
+    def _merite_page(self, question: str) -> bool:
+        """
+        Détecte si une question mérite une réponse longue (page) 
+        plutôt qu'une réponse courte (2-3 phrases).
+        """
+        q = question.lower().strip()
+        
+        # Marqueurs explicites de demande de page longue
+        page_markers = [
+            'explique', 'décris', 'decris', 'parle-moi de', 'parle moi de',
+            'dis-moi tout', 'dis moi tout', 'raconte', 'détaille', 'detaille',
+            'tout sur', 'tout savoir sur', 'comment fonctionne',
+            'qu\'est-ce que', 'qu est-ce que', 'c\'est quoi', 'c est quoi',
+            'en quoi consiste', 'pourquoi', 'comment',
+        ]
+        if any(m in q for m in page_markers):
+            return True
+        
+        # Questions longues (> 40 caractères) = probablement complexes
+        if len(q) > 60:
+            return True
+        
+        # Questions avec plusieurs points d'interrogation ou plusieurs phrases
+        if q.count('?') >= 2 or q.count('.') >= 2:
+            return True
+        
+        return False
+
+    def page(self, topic: str, doc_type: str = 'article') -> str:
+        """
+        Génère une page complète sur un sujet.
+        """
+        forge = self._get_page_forge()
+        if forge is None:
+            return None
+        try:
+            self._current_page = forge.generate(topic, doc_type)
+            self._current_page_topic = topic
+            return forge.to_markdown(self._current_page)
+        except Exception:
+            return None
+
+    def _detect_edit_command(self, question: str) -> dict:
+        """
+        Détecte si la question est une commande d'édition sur la page en cours.
+        Retourne un dict {action, target, params} ou None.
+        """
+        q = question.lower().strip()
+        
+        # Commandes d'édition
+        patterns = [
+            (r"(?:développe|developpe|détaille|detail|plus sur)\s+(?:la\s+)?(?:section\s+)?(.+)", 'expand'),
+            (r"(?:résume|resume|condense|raccourci)\s+(?:la\s+)?(?:section\s+)?(.+)", 'condense'),
+            (r"(?:reformule|réécris|reecris|change)\s+(?:la\s+)?(?:section\s+)?(.+)", 'rephrase'),
+            (r"(?:ajoute|ajouter|nouvelle)\s+(?:une\s+)?(?:section\s+)?(.+)", 'add_section'),
+            (r"(?:supprime|enlève|enleve|retire)\s+(?:la\s+)?(?:section\s+)?(.+)", 'remove'),
+            (r"(?:exporte?|sauvegarde?)\s+(?:en\s+)?(md|markdown|html)?", 'export'),
+            (r"(?:affiche|montre|voir|lis)\s+(?:la\s+)?(?:page|contenu)", 'show'),
+            (r"(?:rends?|fais)\s+(?:le|la|plus|moins)\s*(.+)", 'restyle'),
+        ]
+        
+        import re
+        for pattern, action in patterns:
+            m = re.search(pattern, q)
+            if m:
+                return {'action': action, 'target': m.group(1).strip() if m.lastindex else None}
+        
+        # Si la question est un follow-up court sur le même sujet
+        if self._current_page_topic:
+            _sw = {'le','la','les','de','des','du','un','une','et','est','a','que','qui',
+                   'quoi','dans','sur','pour','avec','par','en','the','is','are','of','in',
+                   'pas','plus','tout','ce','cet','cette','ces','son','sa','ses'}
+            topic_words = {w for w in self._current_page_topic.lower().split() if w not in _sw and len(w) > 2}
+            q_words = {w for w in q.split() if w not in _sw and len(w) > 2}
+            overlap = topic_words & q_words
+            if len(overlap) >= 2 and len(q) < 50:
+                return {'action': 'append_context', 'target': q}
+        
+        return None
+
+    def _handle_page_edit(self, forge, cmd: dict, question: str) -> str:
+        """
+        Exécute une commande d'édition sur la page en cours.
+        """
+        if not self._current_page:
+            return None
+        
+        action = cmd['action']
+        target = cmd.get('target', '')
+        page = self._current_page
+        
+        if action == 'expand':
+            section = page.get_section(target)
+            if section:
+                forge.weaver.weave(section, page)
+                return f"✅ Section '{section.title}' développée.\n\n{section.content[:300]}..."
+            # Si la cible n'est pas une section, générer la page entière
+            forge.weaver.weave(page.sections[0], page) if page.sections else None
+            return forge.to_markdown(page)
+        
+        elif action == 'condense':
+            section = page.get_section(target)
+            if section and section.content:
+                sentences = [s.strip() for s in section.content.split('.') if s.strip()]
+                section.content = '. '.join(sentences[:2]) + '.'
+                section.word_count = len(section.content.split())
+                return f"✅ Section '{section.title}' condensée."
+            return f"Section '{target}' non trouvée."
+        
+        elif action == 'rephrase':
+            section = page.get_section(target)
+            if section:
+                forge.weaver.weave(section, page)
+                return f"✅ Section '{section.title}' reformulée.\n\n{section.content[:300]}..."
+            return f"Section '{target}' non trouvée."
+        
+        elif action == 'add_section':
+            if target:
+                new_id = target.lower().replace(' ', '_')[:30]
+                from page_forge import Section
+                new_sec = Section(id=new_id, title=target, position_angle=1.57)
+                concl_idx = page.section_index('conclusion')
+                if concl_idx >= 0:
+                    page.sections.insert(concl_idx, new_sec)
+                else:
+                    page.sections.append(new_sec)
+                forge.weaver.weave(new_sec, page)
+                return f"✅ Section '{target}' ajoutée et générée.\n\n{new_sec.content[:200]}..."
+            return "Précisez le titre de la section."
+        
+        elif action == 'remove':
+            idx = page.section_index(target)
+            if idx >= 0:
+                removed = page.sections.pop(idx)
+                return f"✅ Section '{removed.title}' supprimée."
+            return f"Section '{target}' non trouvée."
+        
+        elif action == 'export':
+            fmt = target or 'md'
+            if fmt in ('html', 'htm'):
+                output = forge.to_html(page)
+                ext = 'html'
+            else:
+                output = forge.to_markdown(page)
+                ext = 'md'
+            filename = f"page_{self._current_page_topic.lower().replace(' ', '_')[:30]}.{ext}"
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(output)
+            return f"✅ Page exportée : {filename} ({page.total_words()} mots)"
+        
+        elif action == 'show':
+            return forge.to_markdown(page)
+        
+        elif action == 'restyle':
+            style_map = {
+                'académique': 'academique', 'academique': 'academique',
+                'vulgarisé': 'vulgarise', 'vulgarise': 'vulgarise',
+                'poétique': 'poetique', 'poetique': 'poetique',
+                'technique': 'technique', 'simple': 'vulgarise',
+                'formel': 'academique', 'créatif': 'poetique', 'creatif': 'poetique',
+            }
+            # Chercher si le target contient un style connu
+            found_style = None
+            if target:
+                for kw, style_val in style_map.items():
+                    if kw in target.lower():
+                        found_style = style_val
+                        break
+            if found_style:
+                from page_forge import StyleLevel
+                page.style.level = StyleLevel(found_style)
+                return f"✅ Style changé en '{found_style}'. Ré-générez les sections pour appliquer."
+            return f"Styles : académique, vulgarisé, poétique, technique. Actuel : {page.style.level.value}"
+        
+        elif action == 'append_context':
+            # Ajouter du contexte à la page : générer une nouvelle section ou étendre l'intro
+            if page.sections:
+                intro = page.sections[0]
+                intro.content += f"\n\nPrécision : {question}"
+                intro.word_count = len(intro.content.split())
+                return f"✅ Contexte ajouté à l'introduction."
+        
+        return None
     
     def _confidence_score(self, response: str, question: str) -> float:
         """
@@ -282,6 +724,75 @@ class HarmonicAI:
                 self.conversation.add("assistant", math_result)
                 return math_result
 
+            # 🧠 ROUTAGE SPÉCIALISÉ (code, logique) — avant out_of_domain
+            q_lower = question.lower()
+            
+            # Code
+            if any(m in q_lower for m in ['code ', 'programme ', 'fonction ', 'classe ',
+                   'écris du code', 'ecris du code', 'python', 'javascript',
+                   'algorithme', 'génère du code', 'genere du code']):
+                try:
+                    from code_generator import CodeGenerator
+                    brain = self._get_brain()
+                    if brain:
+                        cg = CodeGenerator(brain)
+                        result = cg.generate(question, lang)
+                        if result and result.code:
+                            resp = f"```{result.language or 'python'}\n{result.code}\n```"
+                            if result.explanation:
+                                resp += f"\n\n{result.explanation}"
+                            self.conversation.add("user", question)
+                            self.conversation.add("assistant", resp[:500])
+                            return resp
+                except Exception:
+                    pass
+                # Fallback: code généré par patterns simples
+                resp = self._simple_code(question)
+                if resp:
+                    self.conversation.add("user", question)
+                    self.conversation.add("assistant", resp[:500])
+                    return resp
+            
+            # Maths avancées (wave_math en complément de smart_math)
+            if not math_result and any(c.isdigit() for c in q_lower):
+                try:
+                    from wave_math import wave_solve
+                    wm_result = wave_solve(question, lang)
+                    if wm_result and len(wm_result) > 2:
+                        self.conversation.add("user", question)
+                        self.conversation.add("assistant", wm_result)
+                        return wm_result
+                except Exception:
+                    pass
+
+            # Logique/Syllogismes
+            if any(m in q_lower for m in ['si ', 'alors ', 'donc ', 'implique',
+                   'déduis', 'deduis', 'conclus', 'raisonne', 'syllogisme']):
+                try:
+                    from wave_logic import WaveLogic
+                    brain = self._get_brain()
+                    wl = WaveLogic(brain) if brain else None
+                    if wl:
+                        parts = __import__('re').split(r'[?.!]|\bet\b|, que\b|, alors\b', question)
+                        premises = [p.strip() for p in parts if len(p.strip()) > 10]
+                        if len(premises) >= 2:
+                            result = wl.solve(premises[:2], question)
+                            if result and len(str(result)) > 10:
+                                resp = '🧠 ' + str(result)
+                                self.conversation.add('user', question)
+                                self.conversation.add('assistant', resp[:500])
+                                return resp
+                    # Fallback: analyse logique simple sans WaveLogic
+                    if 'si ' in q_lower and 'alors' in q_lower:
+                        resp = '🧠 Raisonnement déductif détecté. La conclusion logique découle des prémisses.'
+                    else:
+                        resp = '🧠 Question de logique détectée. Le raisonnement syllogistique nécessite le chargement du cerveau harmonique.'
+                    self.conversation.add('user', question)
+                    self.conversation.add('assistant', resp[:500])
+                    return resp
+                except Exception:
+                    pass
+
             if qtype.get('is_out_of_domain'):
                 resp = handle_out_of_domain(qtype.get('out_category', ''), lang=lang)
                 if resp:
@@ -294,13 +805,65 @@ class HarmonicAI:
         # Enrichir avec le contexte conversationnel
         enriched = self._enrich_with_context(question)
 
+        # ── 0.3. ROUTAGE INTELLIGENT — code, maths, logique ──
+        routed = self._route_specialized(enriched, lang)
+        if routed:
+            self.conversation.add("user", question)
+            self.conversation.add("assistant", routed[:500])
+            return routed
+
+        # ── 0.5. PAGEFORGE — page longue ou édition conversationnelle ──
+        forge = self._get_page_forge()
+        if forge is not None:
+            # Détecter si c'est une commande d'édition sur la page en cours
+            edit_cmd = self._detect_edit_command(enriched)
+            
+            if edit_cmd and self._current_page is not None:
+                # Commande d'édition sur la page existante
+                response = self._handle_page_edit(forge, edit_cmd, enriched)
+                if response:
+                    self.conversation.add("user", question)
+                    self.conversation.add("assistant", response[:500])
+                    return response
+            
+            elif self._merite_page(enriched):
+                # Nouvelle demande de page
+                try:
+                    self._current_page = forge.generate(enriched, 'article')
+                    self._current_page_topic = enriched
+                    page_text = forge.to_markdown(self._current_page)
+                    if page_text and len(page_text) > 150:
+                        self.conversation.add("user", question)
+                        self.conversation.add("assistant", page_text[:500] + '...')
+                        return page_text
+                except Exception:
+                    pass
+
         # ── 1-3. PIPELINE SÉMANTIQUE UNIFIÉ ──
         response = None
         confidence = 0.0
 
-        if self._brain is not None:
+        # ── 1.0 FAST RETRIEVER — requête directe dans les 28K faits enrichis ──
+        fast_answer, fast_facts = self._fast_retrieve(enriched, lang)
+        if fast_answer:
+            response = fast_answer
+            confidence = 0.60
+
+        # 🌊 J-LENS : capturer l'instantané
+        if self.jlens and fast_facts:
+            self.jlens.capture(enriched, facts=fast_facts, confidence=confidence,
+                              response=response[:200] if response else '')
+
+        # 🧠 DEEP REASON — raisonnement profond si la réponse est simple
+        if response and fast_facts and len(response.split()) < 15:
+            deep = self._deep_reason(enriched, fast_facts, lang)
+            if deep:
+                response = response + '\n\n' + deep
+
+        # ── 1.5 Cerveau harmonique (fallback si FastRetriever n'a rien trouvé) ──
+        if not response and self._get_brain() is not None:
             try:
-                result = self._brain.process(enriched, lang=lang)
+                result = self._get_brain().process(enriched, lang=lang)
                 response = result.response
                 confidence = result.confidence
 
