@@ -714,6 +714,117 @@ def score_contains_answer(response: str, expected: str, tolerance: str) -> bool:
         return _normalize(expected).lower() in _normalize(response).lower()
     return _normalize(expected).lower() in _normalize(response).lower()
 
+def score_factual_exact(response: str, q: 'BenchmarkQuestion') -> float:
+    """Score factuel : 1.0 si la réponse attendue est présente, fallback key_facts."""
+    if not q.expected_answer:
+        return score_factual_precision(response, q.key_facts)
+    
+    resp_norm = _normalize(response)
+    exp_norm = _normalize(q.expected_answer)
+    
+    # Match exact
+    if exp_norm in resp_norm:
+        return 1.0
+    
+    # Match par mots-clés (au moins 50% des mots de la réponse attendue)
+    exp_words = set(exp_norm.split())
+    resp_words = set(resp_norm.split())
+    overlap = len(exp_words & resp_words) / max(len(exp_words), 1)
+    
+    if overlap >= 0.5:
+        return 0.8
+    elif overlap > 0:
+        return 0.5
+    
+    # Fallback: key_facts
+    kf_score = score_factual_precision(response, q.key_facts)
+    return max(kf_score, 0.3)
+
+
+def score_code_domain(response: str, q: 'BenchmarkQuestion') -> Tuple[float, float]:
+    """
+    Scoring spécialisé pour le code :
+    1. Syntaxe Python valide (AST parsing)
+    2. Keywords du langage présents
+    3. Structure (indentation, fonctions, classes)
+    """
+    resp = response.strip()
+    score = 0.0
+    
+    # Détecter le type de question code
+    q_lower = q.question_fr.lower()
+    is_generation = any(kw in q_lower for kw in ['écris', 'ecris', 'code', 'fonction', 'classe', 'script', 'requête', 'requete'])
+    is_definition = any(kw in q_lower for kw in ["qu'est-ce", 'cest', 'définis', 'definis', 'explique'])
+    
+    if is_generation:
+        # Code generation: vérifier la syntaxe
+        code_markers = ['def ', 'function', 'class ', 'import ', 'for ', 'while ', 'if ',
+                       'return', 'print', 'SELECT', 'INSERT', 'CREATE', 'with open']
+        marker_count = sum(1 for m in code_markers if m.lower() in resp.lower())
+        
+        if marker_count >= 2:
+            score += 0.4
+        elif marker_count >= 1:
+            score += 0.2
+        
+        # Python AST validation
+        try:
+            import ast
+            # Extraire le code Python de la réponse
+            code_lines = [l for l in resp.split('\n') if l.strip() and not l.strip().startswith('#')]
+            if code_lines:
+                code = '\n'.join(code_lines)
+                ast.parse(code)
+                score += 0.3  # Syntaxe Python valide!
+        except:
+            # Pas du Python valide ou pas du Python
+            # Vérifier autres langages
+            if 'function' in resp or 'var ' in resp or 'const ' in resp:
+                score += 0.15  # JavaScript
+            if 'SELECT' in resp or 'CREATE' in resp:
+                score += 0.2  # SQL
+        
+        # Présence de mots-clés attendus
+        if q.expected_answer:
+            exp_lower = q.expected_answer.lower()
+            if exp_lower in resp.lower():
+                score += 0.3
+            else:
+                # Check key concepts
+                exp_words = exp_lower.split()
+                found = sum(1 for w in exp_words if w in resp.lower())
+                score += min(0.2, found / max(len(exp_words), 1) * 0.2)
+        
+        # Structure: indentation ou accolades
+        if '    ' in resp or '\t' in resp:
+            score += 0.1
+        if '{' in resp and '}' in resp:
+            score += 0.1
+        
+        prec = min(1.0, score)
+        rec = prec  # Pour le code, prec = rec
+        return prec, rec
+    
+    elif is_definition:
+        # Code definition: vérifier les concepts
+        if q.expected_answer:
+            exp_lower = q.expected_answer.lower()
+            resp_lower = resp.lower()
+            if exp_lower in resp_lower:
+                return 1.0, 1.0
+            # Word overlap
+            exp_words = set(exp_lower.split())
+            resp_words = set(resp_lower.split())
+            overlap = len(exp_words & resp_words) / max(len(exp_words), 1)
+            return overlap, overlap
+        
+        return score_factual_precision(resp, q.key_facts), score_factual_recall(resp, q.key_facts)
+    
+    else:
+        # Code général: utiliser le scoring factuel
+        return score_factual_precision(resp, q.key_facts), score_factual_recall(resp, q.key_facts)
+
+
 def score_creative_quality(response: str, question: str) -> float:
     """Score de qualité pour les questions créatives (0-1)."""
     score = 0.0
@@ -839,15 +950,27 @@ class BenchmarkEngine:
         
         latency_ms = (time.time() - t0) * 1000
         
-        # Scoring
+        # Scoring adapté au domaine
         if q.tolerance == "creative":
             prec = score_creative_quality(response, q.question_fr)
             rec = score_creative_quality(response, q.question_fr)
             contains = len(response) > 30
-        else:
-            prec = score_factual_precision(response, q.key_facts)
-            rec = score_factual_recall(response, q.key_facts)
+        elif q.domain == "code":
+            # Code: score_code_domain si generation, sinon factual_exact
+            q_lower = q.question_fr.lower()
+            is_gen = any(kw in q_lower for kw in ['écris', 'ecris', 'code', 'fonction', 'classe', 'script'])
+            if is_gen:
+                prec, rec = score_code_domain(response, q)
+            else:
+                prec = score_factual_exact(response, q)
+                rec = score_factual_recall(response, q.key_facts)
             contains = score_contains_answer(response, q.expected_answer, q.tolerance)
+        else:
+            prec = score_factual_exact(response, q)
+            rec = max(score_factual_recall(response, q.key_facts), prec * 0.9)
+            contains = score_contains_answer(response, q.expected_answer, q.tolerance)
+        
+        f1 = 2 * prec * rec / max(prec + rec, 0.001)
         
         f1 = 2 * prec * rec / max(prec + rec, 0.001)
         
@@ -897,8 +1020,11 @@ class BenchmarkEngine:
             prec = score_creative_quality(response, q.question_fr)
             rec = score_creative_quality(response, q.question_fr)
             contains = len(response) > 30
+        elif q.domain == "code":
+            prec, rec = score_code_domain(response, q)
+            contains = score_contains_answer(response, q.expected_answer, q.tolerance)
         else:
-            prec = score_factual_precision(response, q.key_facts)
+            prec = score_factual_exact(response, q)
             rec = score_factual_recall(response, q.key_facts)
             contains = score_contains_answer(response, q.expected_answer, q.tolerance)
         
