@@ -722,6 +722,107 @@ class WebRetriever:
         except (URLError, HTTPError, OSError) as e:
             return {"url": url, "error": str(e), "text": ""}
 
+    # ── Wikipedia Full Article ───────────────────────────────────────────
+
+    def fetch_wikipedia_full(self, title: str, lang: str = "fr") -> Optional[str]:
+        """
+        Récupère le contenu COMPLET d'un article Wikipedia (pas juste l'intro).
+
+        Args:
+            title: Titre exact de l'article Wikipedia
+            lang: Code langue ('fr', 'en', ...)
+
+        Returns:
+            Texte complet de l'article (max 50000 caractères), ou None.
+        """
+        cache_key = f"wiki:full:{lang}:{title.lower().strip()}"
+        cached = _cached(cache_key)
+        if cached:
+            return cached[0] if cached else None
+
+        import urllib.request
+        from urllib.parse import quote_plus
+
+        url = (
+            f"https://{lang}.wikipedia.org/w/api.php"
+            f"?action=query&prop=extracts&explaintext=1"
+            f"&titles={quote_plus(title)}&format=json"
+        )
+
+        try:
+            req = urllib.request.Request(url, headers={
+                "User-Agent": self.user_agent
+            })
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                import json as json_mod
+                data = json_mod.loads(resp.read().decode('utf-8'))
+        except Exception:
+            return None
+
+        if "query" in data and "pages" in data["query"]:
+            pages = data["query"]["pages"]
+            for page_id, page in pages.items():
+                if page_id != "-1":
+                    text = page.get("extract", "")
+                    if text and len(text) > 100:
+                        # Limiter à 50K caractères
+                        if len(text) > 50000:
+                            text = text[:50000] + "…"
+                        _cache_set(cache_key, [text])
+                        return text
+
+        return None
+
+    def search_wikipedia_links(self, title: str, lang: str = "fr") -> List[str]:
+        """
+        Récupère les titres des articles liés d'une page Wikipedia
+        (liens internes, pas juste "Voir aussi").
+
+        Args:
+            title: Titre exact de l'article
+            lang: Code langue
+
+        Returns:
+            Liste de titres d'articles liés (max 30).
+        """
+        cache_key = f"wiki:links:{lang}:{title.lower().strip()}"
+        cached = _cached(cache_key)
+        if cached:
+            return list(cached)
+
+        import urllib.request
+        from urllib.parse import quote_plus
+
+        url = (
+            f"https://{lang}.wikipedia.org/w/api.php"
+            f"?action=parse&page={quote_plus(title)}"
+            f"&prop=links&format=json&pllimit=30"
+        )
+
+        try:
+            req = urllib.request.Request(url, headers={
+                "User-Agent": self.user_agent
+            })
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                import json as json_mod
+                data = json_mod.loads(resp.read().decode('utf-8'))
+        except Exception:
+            return []
+
+        links = []
+        if "parse" in data and "links" in data["parse"]:
+            for link in data["parse"]["links"]:
+                linked_title = link.get("*", "")
+                # Filtrer les namespaces non-articles (Aide:, Catégorie:, etc.)
+                if (linked_title and
+                    ":" not in linked_title and
+                    linked_title != title):
+                    links.append(linked_title)
+
+        links = links[:30]
+        _cache_set(cache_key, links)
+        return links
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FONCTIONS DE CONVENANCE (pour import rapide)

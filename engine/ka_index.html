@@ -62,10 +62,15 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
 .hring{position:absolute;border-radius:50%;border:1px solid var(--soul-g);opacity:0;pointer-events:none}
 .hring1{inset:-16px;animation:pring 2.6s ease-out infinite}
 .hring2{inset:-32px;border-color:rgba(139,131,255,.15);animation:pring 2.6s ease-out .65s infinite}
-.home__gr{text-align:center;margin-top:24px;flex-shrink:0}
-.home__gr h1{font-size:30px;font-weight:300;letter-spacing:-.025em;color:var(--t1)}
-.home__gr p{font-size:14px;color:var(--t3);margin-top:6px}
-.home__ib{width:264px;margin-top:26px;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border:.5px solid var(--b2);border-radius:26px;padding:12px 16px;cursor:pointer;flex-shrink:0}
+	.home__gr{text-align:center;margin-top:24px;flex-shrink:0}
+	.home__gr h1{font-size:30px;font-weight:300;letter-spacing:-.025em;color:var(--t1)}
+	.home__gr p{font-size:14px;color:var(--t3);margin-top:6px}
+	.home__st{display:flex;gap:12px;justify-content:center;margin-top:20px;flex-shrink:0}
+	.home__st .stat-card{background:var(--g1);border:.5px solid var(--b2);border-radius:16px;padding:12px 16px;text-align:center;min-width:80px}
+	.home__st .stat-card .val{font-size:22px;font-weight:600;color:var(--t1);letter-spacing:-.02em}
+	.home__st .stat-card .lbl{font-size:10px;color:var(--t4);margin-top:2px}
+	.home__st .stat-card .val.green{color:var(--life)}
+	.home__ib{width:264px;margin-top:26px;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border:.5px solid var(--b2);border-radius:26px;padding:12px 16px;cursor:pointer;flex-shrink:0}
 .home__ib span{font-size:14px;color:var(--t4)}
 .home__qa{width:100%;display:flex;justify-content:center;gap:14px;padding:0 22px;margin-top:auto;flex-shrink:0}
 .qa{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;border:none;background:none}
@@ -249,7 +254,7 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
         <path d="M60 16C82 18 98 36 100 60" stroke="rgba(255,255,255,.14)" stroke-width="1.2" fill="none"/>
       </svg>
     </div>
-    <div class="home__gr"><h1>Bonjour</h1><p>Que souhaitez-vous faire ?</p></div>
+    <div class="home__gr"><h1>Bonjour</h1><p>Comment puis-je vous accompagner ?</p></div>
     <div class="home__ib" onclick="go('s-msg')" role="button" aria-label="Exprimer une intention">
       <div class="msph" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="rgba(139,131,255,.85)"/><ellipse cx="6" cy="5.5" rx="3" ry="2.2" fill="rgba(255,255,255,.28)"/></svg></div>
       <span>Intention…</span>
@@ -274,6 +279,8 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
       <div onclick="go('s-call')" style="cursor:pointer;padding:4px" role="button" aria-label="Appeler"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 5.5C5 4.7 5.7 4 6.5 4h3l1.5 4-2.5 1.5c1 2 2.8 3.8 4.8 4.8L15 12l4 1.5V17c0 .8-.7 1.5-1.5 1.5C9.5 19 5 10.5 5 5.5Z" fill="rgba(255,255,255,.45)"/></svg></div>
     </div>
     <div class="msgs" id="msglist">
+      <!-- 🎯 Indicateur de spécialisation -->
+      <div id="spec-info" style="display:none;text-align:center;padding:6px 12px;margin:6px 12px;border-radius:16px;background:rgba(139,131,255,.1);border:.5px solid rgba(139,131,255,.25);font-size:11px;color:var(--soul-l)"></div>
       <div class="msg msg--mt">Aujourd'hui · 09:38</div>
       <div class="msg msg--t">Tu es dispo demain soir ?</div>
       <div class="msg msg--m">Oui, à partir de 19h !</div>
@@ -529,7 +536,8 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
       <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px" onclick="go('s-rel');closeMore()"><span style="font-size:18px">👤</span><div><div style="font-size:13px;color:var(--t1)">Relation</div><div style="font-size:11px;color:var(--t4)">Sophie</div></div></div>
       <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px" onclick="go('s-cap');closeMore()"><span style="font-size:18px">💡</span><div><div style="font-size:13px;color:var(--t1)">Idée</div><div style="font-size:11px;color:var(--t4)">Capturer</div></div></div>
 	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-dec');closeMore()"><span style="font-size:18px">⚖️</span><div><div style="font-size:13px;color:var(--t1)">Décision</div><div style="font-size:11px;color:var(--t4)">Changer de voiture ?</div></div></div>
-	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-hpc');closeMore()"><span style="font-size:18px">🧬</span><div><div style="font-size:13px;color:var(--t1)">HPC Lab</div><div style="font-size:11px;color:var(--t4)">Protein Folding · Quantum · HCV</div></div></div>
+	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-sante');closeMore()"><span style="font-size:18px">🫀</span><div><div style="font-size:13px;color:var(--t1)">Santé</div><div style="font-size:11px;color:var(--t4)">Diagnostic harmonique · φ π e</div></div></div>
+      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-hpc');closeMore()"><span style="font-size:18px">🧬</span><div><div style="font-size:13px;color:var(--t1)">HPC Lab</div><div style="font-size:11px;color:var(--t4)">Protein Folding · Quantum · HCV</div></div></div>
 	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-code');closeMore()"><span style="font-size:18px">💻</span><div><div style="font-size:13px;color:var(--t1)">Code Studio</div><div style="font-size:11px;color:var(--t4)">Génération zero-LLM</div></div></div>
     </div>
     <div class="btn btn--ghost" onclick="closeMore()" style="margin-top:12px;text-align:center">Fermer</div>
@@ -542,9 +550,21 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
       <div style="display:flex;gap:6px;justify-content:center;margin-bottom:14px;flex-wrap:wrap">
         <span class="pill pill--life" style="cursor:pointer" onclick="hpcMode='protein';hpcRun()" id="hpc-p-protein">🧬 Protéine</span>
         <span class="pill" style="cursor:pointer;background:rgba(197,156,255,.12);border-color:rgba(197,156,255,.3);color:var(--accent-c, #c59cff)" onclick="hpcMode='quantum';hpcRun()" id="hpc-p-quantum">⚛️ Quantique</span>
-        <span class="pill pill--soul" style="cursor:pointer" onclick="hpcMode='compress';hpcRun()" id="hpc-p-compress">📦 HCV</span>
+        <span class="pill pill--soul" style="cursor:pointer" onclick="hpcMode='compress';hpcRun()" id="hpc-p-compress">📦 Mémoire</span>
       </div>
       <div id="hpc-input" style="margin-bottom:12px">
+        <div id="hpc-compress-ui" style="display:none">
+          <label style="font-size:12px;color:var(--t2);display:block;margin-bottom:6px;text-align:center">
+            Fidélité de KA · <b id="hpc-q-label" style="color:var(--life)">Standard</b>
+          </label>
+          <div style="display:flex;gap:6px;justify-content:center;margin-bottom:8px">
+            <span class="pill" id="hpc-q-eco" style="cursor:pointer;background:rgba(255,255,255,.04);border:.5px solid var(--b2);font-size:11px" onclick="setQuality(20,'Éco')">🌱 Éco</span>
+            <span class="pill pill--life" id="hpc-q-std" style="cursor:pointer;font-size:11px" onclick="setQuality(45,'Standard')">✨ Standard</span>
+            <span class="pill" id="hpc-q-pro" style="cursor:pointer;background:rgba(139,131,255,.08);border:.5px solid rgba(139,131,255,.2);font-size:11px" onclick="setQuality(70,'Fidèle')">💎 Fidèle</span>
+            <span class="pill" id="hpc-q-max" style="cursor:pointer;background:rgba(240,192,96,.08);border:.5px solid rgba(240,192,96,.2);font-size:11px" onclick="setQuality(100,'Parfaite')">🌟 Parfaite</span>
+          </div>
+          <input type="hidden" id="hpc-quality" value="45">
+        </div>
         <input id="hpc-seq" placeholder="Séquence AA (ex: ALAARGASN)…" style="width:100%;padding:11px 14px;border-radius:14px;background:var(--g1);border:.5px solid var(--b2);color:var(--t1);font-size:13px;font-family:var(--font-mono,monospace);outline:none">
       </div>
       <div id="hpc-result" class="card" style="display:none"></div>
@@ -556,6 +576,58 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
     </div>
     <div class="cta-row">
       <div class="btn btn--life" onclick="hpcRun()">▶ Lancer</div>
+      <div class="btn btn--ghost" onclick="go('s-home')">Fermer</div>
+    </div>
+  </div>
+
+  <!-- SANTÉ HARMONIQUE -->
+  <div class="sc dec" id="s-sante">
+    <div class="sph"><div class="sph__back" onclick="go('s-home')" role="button">‹ KA</div><div class="sph__badge" style="color:#ff6b8a">KA SANTÉ</div><div style="width:48px"></div></div>
+    <div class="sp-body">
+      <div style="font-size:11px;color:var(--t2);text-align:center;margin-bottom:12px;letter-spacing:.05em">
+        Diagnostic par résonance harmonique · φ π e √2 √3 √5
+      </div>
+      <!-- Symptômes -->
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;color:var(--t4);display:block;margin-bottom:4px">Symptômes (séparés par des virgules)</label>
+        <input id="sante-symptomes" placeholder="ex: palpitations, anxiete, insomnie" style="width:100%;padding:10px 14px;border-radius:10px;background:var(--g1);border:.5px solid var(--b2);color:var(--t1);font-size:13px;outline:none;box-sizing:border-box">
+      </div>
+      <!-- Constantes vitales -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div>
+          <label style="font-size:10px;color:var(--t4);display:block;margin-bottom:2px">FC (bpm)</label>
+          <input id="sante-fc" type="number" placeholder="72" style="width:100%;padding:8px 10px;border-radius:10px;background:var(--g1);border:.5px solid var(--b2);color:var(--t1);font-size:12px;outline:none;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--t4);display:block;margin-bottom:2px">Temp. (°C)</label>
+          <input id="sante-temp" type="number" step="0.1" placeholder="37.0" style="width:100%;padding:8px 10px;border-radius:10px;background:var(--g1);border:.5px solid var(--b2);color:var(--t1);font-size:12px;outline:none;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--t4);display:block;margin-bottom:2px">Systolique (mmHg)</label>
+          <input id="sante-sys" type="number" placeholder="120" style="width:100%;padding:8px 10px;border-radius:10px;background:var(--g1);border:.5px solid var(--b2);color:var(--t1);font-size:12px;outline:none;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--t4);display:block;margin-bottom:2px">Diastolique (mmHg)</label>
+          <input id="sante-dia" type="number" placeholder="80" style="width:100%;padding:8px 10px;border-radius:10px;background:var(--g1);border:.5px solid var(--b2);color:var(--t1);font-size:12px;outline:none;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--t4);display:block;margin-bottom:2px">SpO₂ (%)</label>
+          <input id="sante-spo2" type="number" placeholder="98" style="width:100%;padding:8px 10px;border-radius:10px;background:var(--g1);border:.5px solid var(--b2);color:var(--t1);font-size:12px;outline:none;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--t4);display:block;margin-bottom:2px">Âge</label>
+          <input id="sante-age" type="number" placeholder="40" style="width:100%;padding:8px 10px;border-radius:10px;background:var(--g1);border:.5px solid var(--b2);color:var(--t1);font-size:12px;outline:none;box-sizing:border-box">
+        </div>
+      </div>
+      <!-- Résultat -->
+      <div id="sante-result" class="card card--raised" style="display:none;font-size:12px;line-height:1.6;max-height:340px;overflow:auto"></div>
+      <div id="sante-loading" style="display:none;text-align:center;padding:20px">
+        <div class="ka-sphere" style="width:40px;height:40px;margin:0 auto 10px"><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div></div>
+        <div style="font-size:12px;color:var(--t4)">Analyse harmonique en cours...</div>
+      </div>
+    </div>
+    <div class="cta-row">
+      <div class="btn" style="background:linear-gradient(135deg,#ff6b8a,#e0486e);color:#fff" onclick="santeDiagnostic()">🔬 Diagnostiquer</div>
       <div class="btn btn--ghost" onclick="go('s-home')">Fermer</div>
     </div>
   </div>
@@ -592,8 +664,11 @@ const SD={'':['Sophie','Appeler','Réunion','Oui','Super','Merci','Demain'],'so'
 	const RP=['Je suis KA, votre assistant personnel intelligent. Posez-moi une question !','Que voulez-vous savoir ? Je suis là pour vous aider.','Bonjour ! Je suis KA. Que puis-je faire pour vous ?'];
 	// Note : RP n'est utilisé qu'en mode déconnecté temporaire
 	
-	// === CONNEXION À L'IA HARMONIC ===
-		const API_URL = (location.hostname==='localhost'||location.hostname==='127.0.0.1') ? 'http://localhost:8765' : 'https://ka-api.onrender.com';
+		// === CONNEXION À L'IA HARMONIC ===
+		// Auto-détection : même serveur que la page (local/Render), sauf si override
+		const h = location.hostname;
+		const isLocal = h==='localhost'||h==='127.0.0.1'||h.startsWith('192.168.')||h.startsWith('10.')||h.startsWith('172.16.');
+		const API_URL = isLocal ? `http://${h}:8765` : 'https://ka-api.onrender.com';
 	let API_ONLINE = false;
 	
 		// Vérifier la connexion au démarrage
@@ -610,22 +685,39 @@ const SD={'':['Sophie','Appeler','Réunion','Oui','Super','Merci','Demain'],'so'
 		  }
 		})();
 	
-	async function askKA(message) {
-	  if (!API_ONLINE) return RP[Math.floor(Math.random() * RP.length)];
-	  try {
-	    const res = await fetch(API_URL + '/api/chat', {
-	      method: 'POST',
-	      headers: {'Content-Type': 'application/json'},
-	      body: JSON.stringify({message: message})
-	    });
-	    if (!res.ok) throw new Error('API error');
-	    const data = await res.json();
-	    return data.response || RP[Math.floor(Math.random() * RP.length)];
-	  } catch(e) {
-	    API_ONLINE = false;
-	    return RP[Math.floor(Math.random() * RP.length)];
-	  }
-	}
+		async function askKA(message) {
+		  if (!API_ONLINE) return RP[Math.floor(Math.random() * RP.length)];
+		  try {
+		    // Récupérer/générer un user_id persistant
+		    let uid = localStorage.getItem('ka_user_id');
+		    if (!uid) { uid = 'user_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); localStorage.setItem('ka_user_id', uid); }
+		    
+		    const res = await fetch(API_URL + '/api/chat', {
+		      method: 'POST',
+		      headers: {'Content-Type': 'application/json'},
+		      body: JSON.stringify({message: message, user_id: uid})
+		    });
+		    if (!res.ok) throw new Error('API error');
+		    const data = await res.json();
+		    
+		    // Afficher les infos de spécialisation si présentes
+		    if (data.specialization) {
+		      const spec = data.specialization;
+		      setTimeout(() => {
+		        const el = document.getElementById('spec-info');
+		        if (el && spec.success) {
+		          el.innerHTML = '🎯 '+spec.domain+' · '+spec.triplets_count.toLocaleString()+' faits';
+		          el.style.display = 'block';
+		        }
+		      }, 500);
+		    }
+		    
+		    return data.response || RP[Math.floor(Math.random() * RP.length)];
+		  } catch(e) {
+		    API_ONLINE = false;
+		    return RP[Math.floor(Math.random() * RP.length)];
+		  }
+		}
 
 const CALL_SCREENS=new Set(['s-call']);
 const NAV_MAP={'s-home':'nb-h','s-msg':'nb-m','s-mem':'nb-mm'};
@@ -646,6 +738,25 @@ function go(id){
   closeMore();
 }
 function showMore(){document.getElementById('more-panel').style.display='block';document.getElementById('nb-more').classList.add('nb--on');}
+
+// ── QUALITÉ INTUITIVE ──
+function setQuality(val, label){
+  document.getElementById('hpc-quality').value = val;
+  document.getElementById('hpc-q-label').textContent = label;
+  // Reset pill styles
+  ['eco','std','pro','max'].forEach(id=>{
+    const el=document.getElementById('hpc-q-'+id);
+    el.style.background='rgba(255,255,255,.04)';
+    el.style.border='.5px solid var(--b2)';
+    el.style.color='var(--t3)';
+  });
+  // Highlight selected
+  const map={20:'eco',45:'std',70:'pro',100:'max'};
+  const sel=document.getElementById('hpc-q-'+map[val]);
+  if(sel){sel.style.background='var(--life-d)';sel.style.border='.5px solid var(--life)';sel.style.color='var(--life)';}
+  hpcRun();
+}
+
 function closeMore(){const p=document.getElementById('more-panel');if(p)p.style.display='none';document.getElementById('nb-more')?.classList.remove('nb--on');}
 
 function mk(lbl,alt,w,cls,fn){
@@ -745,6 +856,12 @@ function hpcRun(){
   const res=document.getElementById('hpc-result');
   res.style.display='block';res.innerHTML='<span style="color:var(--soul-l);animation:pulse 1.2s ease-in-out infinite">●</span> Calcul en cours…';
   const inp=document.getElementById('hpc-input');
+  const seqEl=document.getElementById('hpc-seq');
+  const compressUI=document.getElementById('hpc-compress-ui');
+  
+  // Reset visibility
+  seqEl.style.display=(mode==='protein')?'block':'none';
+  if(compressUI) compressUI.style.display=(mode==='compress')?'block':'none';
   
   if(mode==='protein'){
     const seq=(document.getElementById('hpc-seq')?.value||'ALAARGASN').toUpperCase().replace(/[^A-Z]/g,'');
@@ -759,12 +876,99 @@ function hpcRun(){
       .then(r=>r.json()).then(d=>{
         res.innerHTML=`<div class="sec-lbl">⚛️ SIMULATION QUANTIQUE</div><div style="font-size:13px;color:var(--t2);line-height:1.6">Énergie fondamentale : <b style="color:var(--soul-l)">${d.ground_state_energy}</b><br>Spectre : ${d.energy_spectrum.slice(0,4).map(e=>e.toFixed(3)).join(', ')}…<br><span style="color:var(--soul-l)">Efficacité harmonique : ${d.harmonic_efficiency}</span></div>`;
       }).catch(()=>{res.innerHTML='<span style="color:var(--coral)">⚠️ API inaccessible</span>';});
-  }else{
-    inp.style.display='none';
-    fetch(API_URL+'/api/hpc/compress',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({size_bytes:12400000,type:'image'})})
-      .then(r=>r.json()).then(d=>{
-        res.innerHTML=`<div class="sec-lbl">📦 HCV COMPRESSION</div><div style="font-size:13px;color:var(--t2);line-height:1.6">${(d.original_bytes/1e6).toFixed(1)} Mo → <b style="color:var(--life)">${(d.compressed_bytes/1e3).toFixed(0)} Ko</b><br>Gain : <b>${d.gain_percent}%</b> · Sans perte perceptible<br><span style="color:var(--life)">${d.method}</span></div>`;
-      }).catch(()=>{res.innerHTML='<span style="color:var(--coral)">⚠️ API inaccessible</span>';});
+	  }else if(mode==='compress'){
+	    inp.style.display='block';
+	    document.getElementById('hpc-seq').style.display='none';
+	    document.getElementById('hpc-compress-ui').style.display='block';
+	    const q=parseInt(document.getElementById('hpc-quality').value)||45;
+	    const label=document.getElementById('hpc-q-label');
+	    fetch(API_URL+'/api/harmonic/encode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({quality:q,mode:'image'})})
+	      .then(r=>r.json()).then(d=>{
+	        if(d.error){res.innerHTML='<span style=\"color:var(--coral)\">'+d.error+'</span>';return;}
+	        const qualLabel=d.psnr_db>=99?'🌟 Parfaite — sans aucune perte':d.psnr_db>=50?'✨ Excellente — indiscernable':'🌱 Économique — très légère';
+	        res.innerHTML=`<div class=\"sec-lbl\">📦 COMPRESSION HARMONIQUE</div>
+	          <div style=\"font-size:13px;color:var(--t2);line-height:1.8\">
+	          ${d.resolution} · ${(d.original_bytes/1024).toFixed(0)} Ko → <b style=\"color:var(--life)\">${(d.compressed_bytes/1024).toFixed(1)} Ko</b><br>
+	          <b style=\"color:var(--life)\">${d.ratio}x</b> plus léger · ${d.gain_percent}% d'espace libéré<br>
+	          Qualité : <b>${qualLabel}</b><br>
+	          <span style=\"color:var(--t4);font-size:11px\">${d.dict_patches.toLocaleString()} fragments de mémoire · ${d.encode_ms} ms</span></div>`;
+	      }).catch(()=>{res.innerHTML='<span style=\"color:var(--coral)\">⚠️ KA ne peut pas accéder au serveur</span>';});
+	  }
+}
+
+// ── SANTÉ HARMONIQUE ──
+async function santeDiagnostic(){
+  const r=document.getElementById('sante-result');
+  const l=document.getElementById('sante-loading');
+  r.style.display='none'; l.style.display='block';
+  // Collecter les données
+  const symptomes=document.getElementById('sante-symptomes').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const vitaux={};
+  const fc=parseFloat(document.getElementById('sante-fc').value);
+  const temp=parseFloat(document.getElementById('sante-temp').value);
+  const sys=parseFloat(document.getElementById('sante-sys').value);
+  const dia=parseFloat(document.getElementById('sante-dia').value);
+  const spo2=parseFloat(document.getElementById('sante-spo2').value);
+  const age=parseInt(document.getElementById('sante-age').value)||null;
+  if(fc)vitaux.frequence_cardiaque=fc;
+  if(temp)vitaux.temperature=temp;
+  if(sys)vitaux.pression_systolique=sys;
+  if(dia)vitaux.pression_diastolique=dia;
+  if(spo2)vitaux.saturation_oxygene=spo2;
+  try{
+    const resp=await fetch(API_URL+'/api/health/diagnostic',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({symptomes,vitaux,age})
+    });
+    const d=await resp.json();
+    l.style.display='none'; r.style.display='block';
+    let html='';
+    // Score global
+    const sc=d.score_harmonique_global||0;
+    const color=sc>0.75?'var(--life)':sc>0.5?'var(--sun)':'var(--coral)';
+    html+=`<div style="text-align:center;margin-bottom:12px"><div style="font-size:28px;font-weight:700;color:${color}">${(sc*100).toFixed(0)}%</div><div style="font-size:10px;color:var(--t4)">Score harmonique global</div></div>`;
+    // Diagnostic principal
+    if(d.diagnostic_harmonique){
+      const diag=d.diagnostic_harmonique;
+      html+=`<div class="sec-lbl" style="color:var(--sun)">🧬 DIAGNOSTIC</div>`;
+      html+=`<div style="font-size:14px;color:var(--t1);font-weight:600;margin-bottom:4px">${diag.pathologie_principale||'—'}</div>`;
+      html+=`<div style="font-size:11px;color:var(--t2);margin-bottom:2px">Constante altérée : <b style="color:var(--soul-l)">${diag.constante_alteree||'—'}</b></div>`;
+      html+=`<div style="font-size:11px;color:var(--t4);margin-bottom:8px">${diag.mecanisme_harmonique||''}</div>`;
+    }
+    // Différentiel
+    if(d.analyse_symptomes&&d.analyse_symptomes.resultats){
+      html+=`<div class="sec-lbl">📊 DIFFÉRENTIEL</div>`;
+      d.analyse_symptomes.resultats.slice(0,4).forEach(x=>{
+        const bar='█'.repeat(Math.round(x.score_resonance*25));
+        html+=`<div style="font-size:11px;margin-bottom:3px;color:var(--t1)"><span style="color:var(--t4)">${x.pathologie}</span> <span style="font-size:9px;color:var(--t4)">${(x.score_resonance*100).toFixed(1)}%</span><br><span style="font-family:monospace;color:var(--soul-l)">${bar}</span></div>`;
+      });
+    }
+    // Vitaux
+    if(d.analyse_vitales&&d.analyse_vitales.scores_individuels){
+      html+=`<div class="sec-lbl" style="margin-top:8px">🩺 CONSTANTES</div>`;
+      Object.entries(d.analyse_vitales.scores_individuels).forEach(([k,v])=>{
+        const em=v.score_coherence>0.7?'✓':v.score_coherence>0.4?'⚠':'✗';
+        html+=`<div style="font-size:10px;color:var(--t2)">${em} ${k}: <b>${v.valeur}</b> ${v.unite} (écart ${v.ecart_pct}%)</div>`;
+      });
+    }
+    // Fréquences
+    if(d.frequences_therapeutiques){
+      html+=`<div class="sec-lbl" style="margin-top:8px">🎵 FRÉQUENCES</div>`;
+      d.frequences_therapeutiques.forEach(f=>{
+        html+=`<div style="font-size:10px;color:var(--t2)">• ${f.freq_hz.toFixed(1)} Hz — ${f.effet}</div>`;
+      });
+    }
+    // Recommandations
+    if(d.recommandations){
+      html+=`<div class="sec-lbl" style="margin-top:8px">💡 RECOMMANDATIONS</div>`;
+      d.recommandations.slice(0,3).forEach((rec,i)=>{
+        html+=`<div style="font-size:10px;color:var(--t2);margin-bottom:2px">${i+1}. ${rec}</div>`;
+      });
+    }
+    r.innerHTML=html||'<div style="color:var(--t4);text-align:center">Aucun résultat. Fournir symptômes et/ou constantes.</div>';
+  }catch(e){
+    l.style.display='none'; r.style.display='block';
+    r.innerHTML=`<span style="color:var(--coral)">⚠️ Erreur: ${e.message}</span>`;
   }
 }
 

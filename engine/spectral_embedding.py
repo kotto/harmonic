@@ -36,6 +36,7 @@ Usage :
 import sys, os, math, time, json, logging
 from pathlib import Path
 from collections import Counter, defaultdict
+import collections
 from typing import List, Dict, Optional, Tuple
 import numpy as np
 
@@ -567,6 +568,229 @@ def demo():
     print(f"  ⟨coeur|cardiaque⟩ = {dot_cc:+.4f}  (devrait être élevé)")
     print(f"  ⟨coeur|galaxie⟩   = {dot_cg:+.4f}  (devrait être faible)")
     print(f"  Δ = {abs(dot_cc - dot_cg):.4f}  (écart de discriminabilité)")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# GAP DETECTION — Détection de communautés et trous de connaissance
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class KnowledgeGapAnalyzer:
+    """
+    Analyse le graphe de connaissance pour détecter :
+    1. Les communautés de concepts (clusters thématiques)
+    2. Les GAPS — paires de communautés proches sémantiquement mais sans edges
+    
+    Usage :
+        analyzer = KnowledgeGapAnalyzer()
+        analyzer.build_from_facts(facts)  # liste de (s, r, o, sec)
+        gaps = analyzer.find_gaps(min_gap_score=0.3)
+        for gap in gaps:
+            print(f"Gap: {gap['cluster_a']} ↔ {gap['cluster_b']} (score={gap['score']:.2f})")
+            print(f"  Suggestion: {gap['distill_prompt']}")
+    """
+    
+    def __init__(self, max_nodes: int = 5000):
+        self.max_nodes = max_nodes
+        self.adj_matrix: Optional[np.ndarray] = None      # sparse adjacency
+        self.node_list: List[str] = []                     # index → concept
+        self.node_to_idx: Dict[str, int] = {}
+        self.communities: Dict[int, List[int]] = {}        # cluster_id → [node indices]
+        self.node_community: Dict[int, int] = {}            # node_idx → cluster_id
+        self.community_labels: Dict[int, str] = {}          # cluster_id → label
+        self.gaps: List[Dict] = []
+        self._spectral: Optional[SpectralEmbedding] = None
+    
+    def build_from_facts(self, facts: List[Tuple[str, str, str, str]]):
+        """
+        Construit le graphe de co-occurrence à partir des triplets.
+        
+        Chaque triplet (s, r, o) crée une arête entre s et o dans le graphe.
+        """
+        import collections
+        
+        # Compter les co-occurrences sujet-objet
+        cooc = collections.Counter()
+        concept_freq = collections.Counter()
+        
+        for s, r, o, sec in facts:
+            s_clean = s.lower().strip()
+            o_clean = o.lower().strip()
+            if s_clean and o_clean and s_clean != o_clean:
+                cooc[(s_clean, o_clean)] += 1
+                concept_freq[s_clean] += 1
+                concept_freq[o_clean] += 1
+        
+        # Garder les N concepts les plus fréquents
+        top_concepts = [c for c, _ in concept_freq.most_common(self.max_nodes)]
+        self.node_list = top_concepts
+        self.node_to_idx = {c: i for i, c in enumerate(top_concepts)}
+        
+        n = len(top_concepts)
+        self.adj_matrix = np.zeros((n, n), dtype=np.float32)
+        
+        for (a, b), weight in cooc.items():
+            if a in self.node_to_idx and b in self.node_to_idx:
+                i, j = self.node_to_idx[a], self.node_to_idx[b]
+                self.adj_matrix[i, j] += weight
+                self.adj_matrix[j, i] += weight  # symétrique
+        
+        log.info(f"KnowledgeGapAnalyzer: graphe {n}x{n}, "
+                 f"{int(np.count_nonzero(self.adj_matrix)//2)} arêtes")
+        
+        # Exécuter l'analyse complète
+        self._find_communities()
+        self._label_communities()
+        self.find_gaps()
+    
+    def _find_communities(self):
+        """
+        Détection de communautés par propagation de labels (Louvain simplifié).
+        """
+        if self.adj_matrix is None or len(self.node_list) < 3:
+            return
+        
+        n = len(self.node_list)
+        # Initialiser chaque nœud dans sa propre communauté
+        self.node_community = {i: i for i in range(n)}
+        
+        # Propagation simple : chaque nœud rejoint la communauté majoritaire
+        # de ses voisins (poids des arêtes)
+        for _ in range(10):  # max 10 itérations
+            changed = 0
+            for i in range(n):
+                if self.adj_matrix[i].sum() == 0:
+                    continue
+                # Compter les votes des voisins
+                neighbor_votes = collections.Counter()
+                for j in range(n):
+                    if self.adj_matrix[i, j] > 0:
+                        neighbor_votes[self.node_community[j]] += self.adj_matrix[i, j]
+                if neighbor_votes:
+                    best_community = neighbor_votes.most_common(1)[0][0]
+                    if self.node_community[i] != best_community:
+                        self.node_community[i] = best_community
+                        changed += 1
+            if changed == 0:
+                break
+        
+        # Regrouper par communauté
+        self.communities = {}
+        for node_idx, comm_id in self.node_community.items():
+            if comm_id not in self.communities:
+                self.communities[comm_id] = []
+            self.communities[comm_id].append(node_idx)
+        
+        # Garder les communautés avec ≥ 3 nœuds
+        self.communities = {k: v for k, v in self.communities.items() if len(v) >= 3}
+        log.info(f"  → {len(self.communities)} communautés détectées")
+    
+    def _label_communities(self):
+        """Nomme chaque communauté d'après ses 3 concepts les plus fréquents."""
+        for comm_id, nodes in self.communities.items():
+            labels = [self.node_list[i] for i in nodes[:3]]
+            self.community_labels[comm_id] = ' / '.join(labels)
+    
+    def find_gaps(self, min_gap_score: float = 0.2, max_gaps: int = 20) -> List[Dict]:
+        """
+        Détecte les gaps : paires de communautés qui DEVRAIENT être connectées
+        (proches sémantiquement) mais ont peu/pas d'arêtes entre elles.
+        
+        Args:
+            min_gap_score: score minimum pour considérer un gap (0-1)
+            max_gaps: nombre maximum de gaps à retourner
+        
+        Returns:
+            Liste de gaps triés par score décroissant
+        """
+        self.gaps = []
+        comm_ids = list(self.communities.keys())
+        if len(comm_ids) < 2:
+            return []
+        
+        # 1. Calculer la connectivité inter-communautés
+        inter_edges = {}
+        for i, ci in enumerate(comm_ids):
+            for cj in comm_ids[i+1:]:
+                edges_ij = 0
+                for ni in self.communities[ci]:
+                    for nj in self.communities[cj]:
+                        edges_ij += self.adj_matrix[ni, nj]
+                inter_edges[(ci, cj)] = int(edges_ij)
+        
+        # 2. Calculer la similarité sémantique (via co-occurrence partagée)
+        # Deux communautés sont proches si elles partagent des mots dans leurs sujets
+        semantic_sim = {}
+        for ci in comm_ids:
+            words_i = set()
+            for ni in self.communities[ci]:
+                words_i.update(self.node_list[ni].split())
+            
+            for cj in comm_ids:
+                if ci >= cj: continue
+                words_j = set()
+                for nj in self.communities[cj]:
+                    words_j.update(self.node_list[nj].split())
+                
+                # Similarité Jaccard sur les mots
+                intersection = len(words_i & words_j)
+                union = len(words_i | words_j)
+                semantic_sim[(ci, cj)] = intersection / max(union, 1)
+        
+        # 3. Calculer le gap score
+        # Gap élevé = forte similarité sémantique MAIS faible connectivité
+        max_edges = max(inter_edges.values()) if inter_edges else 1
+        max_sim = max(semantic_sim.values()) if semantic_sim else 1
+        
+        for (ci, cj) in inter_edges:
+            connectivity_norm = inter_edges[(ci, cj)] / max(max_edges, 1)
+            sim = semantic_sim.get((ci, cj), 0)
+            sim_norm = sim / max(max_sim, 0.01)
+            
+            # Gap = similarité élevée + connectivité faible
+            gap_score = sim_norm * (1.0 - connectivity_norm)
+            
+            if gap_score >= min_gap_score:
+                label_a = self.community_labels.get(ci, str(ci))
+                label_b = self.community_labels.get(cj, str(cj))
+                
+                # Générer un prompt de distillation pour combler ce gap
+                prompt = (f"Liste 30 faits reliant {label_a} et {label_b}. "
+                         f"Format: sujet | relation | objet. Un par ligne.")
+                
+                self.gaps.append({
+                    'cluster_a': label_a,
+                    'cluster_b': label_b,
+                    'score': round(gap_score, 3),
+                    'connectivity': round(connectivity_norm, 3),
+                    'semantic_sim': round(sim, 3),
+                    'distill_prompt': prompt,
+                    'nodes_a': len(self.communities[ci]),
+                    'nodes_b': len(self.communities[cj]),
+                })
+        
+        self.gaps.sort(key=lambda g: -g['score'])
+        self.gaps = self.gaps[:max_gaps]
+        
+        log.info(f"  → {len(self.gaps)} gaps détectés (top score: "
+                 f"{self.gaps[0]['score']:.3f})" if self.gaps else "  → 0 gaps")
+        
+        return self.gaps
+    
+    def print_report(self):
+        """Affiche un rapport des gaps détectés."""
+        if not self.gaps:
+            print("Aucun gap détecté.")
+            return
+        
+        print(f"\n{'='*70}")
+        print(f"  🔍 GAPS DE CONNAISSANCE — Top {min(10, len(self.gaps))}")
+        print(f"{'='*70}")
+        for i, g in enumerate(self.gaps[:10]):
+            print(f"\n  #{i+1} [{g['score']:.2f}] {g['cluster_a']} ↔ {g['cluster_b']}")
+            print(f"      Similarité: {g['semantic_sim']:.2f} | Connectivité: {g['connectivity']:.2f}")
+            print(f"      Nœuds: {g['nodes_a']} + {g['nodes_b']}")
+            print(f"      → Prompt: {g['distill_prompt'][:80]}...")
+        print()
 
 
 if __name__ == '__main__':

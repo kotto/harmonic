@@ -252,7 +252,8 @@ class WaveStyler:
     # ─── RENDU PRINCIPAL ────────────────────────────────────────
 
     def render(self, facts: List[Tuple[str, str, str, str]],
-               question: str = "", lang: str = 'fr') -> str:
+               question: str = "", lang: str = 'fr',
+               style: str = 'auto', personality: str = 'ka') -> str:
         """
         Transforme une liste de faits en réponse naturelle.
 
@@ -260,17 +261,30 @@ class WaveStyler:
             facts: liste de (sujet, relation, objet, secteur)
             question: question originale (pour adapter le registre)
             lang: 'fr' ou 'en'
-
-        Returns:
-            texte formaté, accentué, naturel
+            style: "auto"|"concise"|"elegant"|"pedagogique"|"chaleureux"
+            personality: "ka"|"savant"|"vulgarisateur"|"poete"
         """
         if not facts:
             sujet = question.strip('?.,!;: ')[:80]
             return (f"Je n'ai pas assez d'éléments sur « {sujet} » "
                     f"pour répondre avec confiance.")
 
-        register = self.detect_register(question) if question else 'courant'
+        # Déterminer le registre : style explicite > détection auto
+        if style != 'auto':
+            register = {'concise': 'courant', 'elegant': 'formel', 
+                        'pedagogique': 'courant', 'chaleureux': 'familier'}.get(style, 'courant')
+        else:
+            register = self.detect_register(question) if question else 'courant'
+        
         structures = self.STRUCTURES.get(lang, self.STRUCTURES['courant'])
+
+        # Appliquer la personnalité via le choix des connecteurs
+        personality_prefix = {
+            'ka': '',  # neutre, chaleureux
+            'savant': '',  # précis, citations
+            'vulgarisateur': 'En termes simples, ',
+            'poete': '',  # métaphores
+        }.get(personality, '')
         if register not in self.STRUCTURES:
             register = 'courant'
         structures = self.STRUCTURES[register]
@@ -326,6 +340,25 @@ class WaveStyler:
 
         # Assembler
         text = ' '.join(parts)
+
+        # Appliquer la personnalité
+        if personality_prefix:
+            # Ajouter le préfixe de personnalité au début
+            text = personality_prefix + text[0].lower() + text[1:]
+
+        # Appliquer le style
+        if style == 'concise':
+            # Garder seulement la première phrase
+            sentences = re.split(r'(?<=[.!?])\s+', text)
+            text = sentences[0] if sentences else text
+        elif style == 'pedagogique':
+            # Ajouter une explication si un seul fait
+            if len(facts) == 1:
+                text += " C'est un concept important à retenir."
+        elif style == 'chaleureux':
+            # Terminer par une note personnelle
+            if not text.endswith('?'):
+                text = text.rstrip('.') + '. Je reste à votre écoute pour approfondir.'
 
         # Appliquer les accents
         text = apply_accents(text)

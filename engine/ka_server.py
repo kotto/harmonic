@@ -1095,6 +1095,94 @@ def health():
         'bootstrapper': None  # brain has no bootstrapper is not None,
     })
 
+
+@app.route('/api/health/diagnostic', methods=['POST'])
+def health_diagnostic():
+    """
+    Diagnostic médical harmonique.
+    
+    Body (JSON):
+    {
+        "symptomes": ["palpitations", "anxiete", ...],
+        "vitaux": {
+            "frequence_cardiaque": 88,
+            "temperature": 37.1,
+            "pression_systolique": 135,
+            "pression_diastolique": 85,
+            "saturation_oxygene": 97
+        },
+        "age": 45,
+        "sexe": "H"
+    }
+    
+    Returns: Diagnostic complet avec scores harmoniques, analyse de cohérence,
+             diagnostic différentiel par résonance, et recommandations.
+    """
+    try:
+        from harmonic_health import full_diagnostic, therapeutic_frequencies
+        
+        data = request.get_json(force=True, silent=True) or {}
+        symptomes = data.get('symptomes', [])
+        vitaux = data.get('vitaux', None)
+        age = data.get('age', None)
+        sexe = data.get('sexe', None)
+        
+        if not symptomes and not vitaux:
+            return jsonify({
+                'error': 'Fournir au moins symptomes et/ou vitaux',
+                'example': {
+                    'symptomes': ['palpitations', 'anxiete'],
+                    'vitaux': {'frequence_cardiaque': 88, 'temperature': 37.1}
+                }
+            }), 400
+        
+        result = full_diagnostic(symptomes, vitaux, age, sexe)
+        
+        # Ajouter fréquences thérapeutiques si diagnostic trouvé
+        if result.get('diagnostic_harmonique'):
+            constante = result['diagnostic_harmonique'].get('constante_alteree', '')
+            if constante:
+                result['frequences_therapeutiques'] = therapeutic_frequencies(constante)
+        
+        return jsonify(result)
+    
+    except ImportError:
+        return jsonify({'error': 'Module harmonic_health non disponible'}), 503
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/health/vitals', methods=['POST'])
+def health_vitals():
+    """
+    Analyse harmonique des constantes vitales uniquement.
+    
+    Body (JSON):
+    {
+        "vitaux": {
+            "frequence_cardiaque": 72,
+            "temperature": 37.0,
+            ...
+        }
+    }
+    """
+    try:
+        from harmonic_health import vital_harmonic_score
+        
+        data = request.get_json(force=True, silent=True) or {}
+        vitaux = data.get('vitaux', {})
+        
+        if not vitaux:
+            return jsonify({'error': 'Fournir les constantes vitales'}), 400
+        
+        result = vital_harmonic_score(vitaux)
+        return jsonify(result)
+    
+    except ImportError:
+        return jsonify({'error': 'Module harmonic_health non disponible'}), 503
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # ENDPOINTS HCV (actifs si codecs disponibles)
 # ═══════════════════════════════════════════════════════════════════════════════

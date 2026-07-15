@@ -1031,7 +1031,131 @@ KNOWLEDGE_BASE = [
     ("yom kippour", "est", "le jour du grand pardon juif", "SPIRITUALITE"),
     ("zen", "est", "une ecole du bouddhisme fondee sur la meditation", "SPIRITUALITE"),
 ]
-NOWLEDGE_BASE = [
+# Seconde partie (fusionnée — correction bug J0 : NOWLEDGE_BASE → KNOWLEDGE_BASE)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# AJOUT J0 — 50+ FAITS CRITIQUES MANQUANTS (identifiés par testeur indépendant)
+# ═══════════════════════════════════════════════════════════════════════════════
+KNOWLEDGE_BASE += [
+    # ── Technologie / Informatique ──
+    ("Bill Gates", "est le fondateur de", "Microsoft", "TECHNOLOGIE"),
+    ("microsoft", "a ete fonde par", "Bill Gates et Paul Allen", "TECHNOLOGIE"),
+    ("microsoft", "a cree", "le systeme d exploitation Windows", "TECHNOLOGIE"),
+    ("steve jobs", "est le cofondateur de", "Apple", "TECHNOLOGIE"),
+    ("apple", "a cree", "l iPhone", "TECHNOLOGIE"),
+    ("tim berners lee", "a invente", "le World Wide Web", "TECHNOLOGIE"),
+    ("linux", "est", "un systeme d exploitation open source", "TECHNOLOGIE"),
+    ("linus torvalds", "a cree", "le noyau Linux", "TECHNOLOGIE"),
+    ("turing", "est le pere de", "l informatique theorique", "TECHNOLOGIE"),
+    ("ada lovelace", "est", "la premiere programmeuse de l histoire", "TECHNOLOGIE"),
+    ("internet", "est", "un reseau mondial d ordinateurs interconnectes", "TECHNOLOGIE"),
+    ("wifi", "permet", "la connexion sans fil a internet", "TECHNOLOGIE"),
+    ("bluetooth", "est", "une technologie de connexion sans fil courte distance", "TECHNOLOGIE"),
+    ("intelligence artificielle", "simule", "l intelligence humaine par des machines", "TECHNOLOGIE"),
+    ("algorithme", "est", "une suite d instructions pour resoudre un probleme", "TECHNOLOGIE"),
+    ("http", "est", "le protocole de transfert hypertexte", "TECHNOLOGIE"),
+    ("html", "est", "le langage de balisage pour les pages web", "TECHNOLOGIE"),
+    ("css", "est", "le langage de style pour les pages web", "TECHNOLOGIE"),
+    ("javascript", "est", "un langage de programmation pour le web", "TECHNOLOGIE"),
+    ("python", "est", "un langage de programmation polyvalent", "TECHNOLOGIE"),
+    ("cpu", "est", "l unite centrale de traitement d un ordinateur", "TECHNOLOGIE"),
+    ("gpu", "est", "un processeur specialise pour le calcul graphique", "TECHNOLOGIE"),
+    ("ram", "est", "la memoire vive d un ordinateur", "TECHNOLOGIE"),
+    ("open source", "designe", "un logiciel dont le code source est accessible", "TECHNOLOGIE"),
+    ("blockchain", "est", "un registre distribue et securise", "TECHNOLOGIE"),
+    ("bitcoin", "est", "une cryptomonnaie decentralisee", "TECHNOLOGIE"),
+    ("satya nadella", "est le", "PDG de Microsoft", "TECHNOLOGIE"),
+    ("sundar pichai", "est le", "PDG de Google", "TECHNOLOGIE"),
+    ("tim cook", "est le", "PDG d Apple", "TECHNOLOGIE"),
+    ("google", "est", "le moteur de recherche le plus utilise au monde", "TECHNOLOGIE"),
+    
+    # ── Géographie ──
+    ("tour eiffel", "se trouve a", "Paris", "GEOGRAPHIE"),
+    ("paris", "est", "la capitale de la France", "GEOGRAPHIE"),
+    ("paris", "est surnommee", "la ville lumiere", "GEOGRAPHIE"),
+    ("statue de la liberte", "se trouve a", "New York", "GEOGRAPHIE"),
+    ("pyramides de gizeh", "se trouvent en", "Egypte", "GEOGRAPHIE"),
+    ("muraille de chine", "est", "la plus longue construction humaine", "GEOGRAPHIE"),
+    ("amazonie", "est", "la plus grande foret tropicale du monde", "GEOGRAPHIE"),
+    ("everest", "est", "le plus haut sommet du monde", "GEOGRAPHIE"),
+    ("mont everest", "culmine a", "8848 metres", "GEOGRAPHIE"),
+    ("sahara", "est", "le plus grand desert chaud du monde", "GEOGRAPHIE"),
+    ("continent", "est", "une vaste etendue de terre", "GEOGRAPHIE"),
+    ("il y a", "7", "continents sur Terre", "GEOGRAPHIE"),
+    ("afrique", "est", "le continent d origine de l humanite", "GEOGRAPHIE"),
+    ("chine", "est", "le pays le plus peuple du monde", "GEOGRAPHIE"),
+    ("inde", "est", "le deuxieme pays le plus peuple du monde", "GEOGRAPHIE"),
+    ("bresil", "est", "le plus grand pays d Amerique du Sud", "GEOGRAPHIE"),
+    ("canada", "est", "le deuxieme plus grand pays du monde par superficie", "GEOGRAPHIE"),
+    ("russie", "est", "le plus grand pays du monde par superficie", "GEOGRAPHIE"),
+    ("danube", "est", "le deuxieme plus long fleuve d Europe", "GEOGRAPHIE"),
+    ("amazone", "est", "le fleuve au plus grand debit du monde", "GEOGRAPHIE"),
+    
+    # ── Chimie ──
+    ("H2O", "est la formule chimique de", "l eau", "CHIMIE"),
+    ("eau", "a pour symbole chimique", "H2O", "CHIMIE"),
+    ("eau", "est composee de", "deux atomes d hydrogene et un atome d oxygene", "CHIMIE"),
+    ("hydrogene", "est", "l element le plus abondant dans l Univers", "CHIMIE"),
+    ("helium", "est", "le deuxieme element le plus abondant dans l Univers", "CHIMIE"),
+    ("oxygene", "est", "l element le plus abondant dans la croute terrestre", "CHIMIE"),
+    ("hydrogene", "a pour symbole", "H", "CHIMIE"),
+    ("oxygene", "a pour symbole", "O", "CHIMIE"),
+    ("carbone", "a pour symbole", "C", "CHIMIE"),
+    ("fer", "a pour symbole", "Fe", "CHIMIE"),
+    ("or", "a pour symbole", "Au", "CHIMIE"),
+    ("CO2", "est la formule du", "dioxyde de carbone", "CHIMIE"),
+    ("NaCl", "est la formule du", "sel de table", "CHIMIE"),
+    ("pH", "mesure", "l acidite ou la basicite d une solution", "CHIMIE"),
+    
+    # ── Mathématiques ──
+    ("phi", "est le", "nombre d or", "MATHS_PURES"),
+    ("nombre d or", "vaut environ", "1.618", "MATHS_PURES"),
+    ("nombre premier", "est", "divisible uniquement par 1 et lui meme", "MATHS_PURES"),
+    ("17", "est", "un nombre premier", "MATHS_PURES"),
+    ("carre", "est", "un rectangle a quatre cotes egaux", "MATHS_PURES"),
+    ("rectangle", "est", "un quadrilatere a quatre angles droits", "MATHS_PURES"),
+    ("un carre", "est", "un cas particulier de rectangle", "MATHS_PURES"),
+    ("triangle", "est", "un polygone a trois cotes", "MATHS_PURES"),
+    ("cercle", "est", "l ensemble des points equidistants d un centre", "MATHS_PURES"),
+    ("pi", "vaut environ", "3.14159", "MATHS_PURES"),
+    
+    # ── Physique ──
+    ("lumiere", "se deplace dans le vide a", "299792458 metres par seconde", "PHYSIQUE_FOND"),
+    ("vitesse de la lumiere", "est de", "300000 km/s environ", "PHYSIQUE_FOND"),
+    ("force gravitationnelle", "attire", "les corps massifs les uns vers les autres", "PHYSIQUE_FOND"),
+    ("electromagnetisme", "unifie", "electricite et magnetisme", "PHYSIQUE_FOND"),
+    ("maxwell", "a formule", "les equations de l electromagnetisme", "PHYSIQUE_FOND"),
+    ("newton", "a decouvert", "la loi de la gravitation universelle", "PHYSIQUE_FOND"),
+    
+    # ── Biologie ──
+    ("photosynthese", "transforme", "la lumiere en energie chimique", "BIOLOGIE"),
+    ("photosynthese", "produit", "de l oxygene", "BIOLOGIE"),
+    ("ADN", "contient", "l information genetique", "BIOLOGIE"),
+    ("ADN", "signifie", "acide desoxyribonucleique", "BIOLOGIE"),
+    ("cellule", "est", "l unite de base du vivant", "BIOLOGIE"),
+    ("mitochondrie", "est", "la centrale energetique de la cellule", "BIOLOGIE"),
+    
+    # ── Astronomie ──
+    ("systeme solaire", "compte", "8 planetes", "ASTRONOMIE"),
+    ("planetes du systeme solaire", "sont", "Mercure Venus Terre Mars Jupiter Saturne Uranus Neptune", "ASTRONOMIE"),
+    ("soleil", "est", "une etoile de type G", "ASTRONOMIE"),
+    ("lune", "est", "le satellite naturel de la Terre", "ASTRONOMIE"),
+    ("mars", "est appelee", "la planete rouge", "ASTRONOMIE"),
+    ("jupiter", "est", "la plus grande planete du systeme solaire", "ASTRONOMIE"),
+    ("etoile", "est", "une boule de plasma qui brille par fusion nucleaire", "ASTRONOMIE"),
+    ("trou noir", "est", "une region de l espace ou la gravite est si forte que rien ne s echappe", "ASTRONOMIE"),
+    
+    # ── Connaissances générales ──
+    ("revolution francaise", "a commence en", "1789", "HISTOIRE"),
+    ("seconde guerre mondiale", "a pris fin en", "1945", "HISTOIRE"),
+    ("premiere guerre mondiale", "a commence en", "1914", "HISTOIRE"),
+    ("ONU", "signifie", "Organisation des Nations Unies", "CULTURE"),
+    ("unesco", "protege", "le patrimoine mondial", "CULTURE"),
+    ("climat", "est", "l ensemble des conditions meteorologiques moyennes", "ENVIRONNEMENT"),
+    ("effet de serre", "est", "le rechauffement de l atmosphere par les gaz", "ENVIRONNEMENT"),
+]
+
+KNOWLEDGE_BASE += [
     ("Artemis", "est", "le programme de retour sur la Lune", "ASTRONOMIE"),
     ("ISS", "est", "la station spatiale internationale", "ASTRONOMIE"),
     ("James Webb", "est", "le telescope spatial le plus puissant", "ASTRONOMIE"),
@@ -1946,6 +2070,37 @@ NOWLEDGE_BASE = [
     ("yin", "est", "le principe feminin receptif", "SPIRITUALITE"),
     ("yom kippour", "est", "le jour du grand pardon juif", "SPIRITUALITE"),
     ("zen", "est", "une ecole du bouddhisme fondee sur la meditation", "SPIRITUALITE"),
+]
+# ═══════════════════════════════════════════════════════════════════════════════
+# AJOUT J0 v2 — Faits critiques manquants (stress test)
+# ═══════════════════════════════════════════════════════════════════════════════
+KNOWLEDGE_BASE += [
+    ("londres", "est la capitale du", "Royaume-Uni", "GEOGRAPHIE"),
+    ("royaume uni", "a pour capitale", "Londres", "GEOGRAPHIE"),
+    ("moscou", "est la capitale de", "la Russie", "GEOGRAPHIE"),
+    ("brasilia", "est la capitale du", "Bresil", "GEOGRAPHIE"),
+    ("pekin", "est la capitale de", "la Chine", "GEOGRAPHIE"),
+    ("steve jobs", "est le cofondateur de", "Apple", "TECHNOLOGIE"),
+    ("michel ange", "a sculpte le", "David", "CULTURE"),
+    ("shakespeare", "a ecrit", "Romeo et Juliette", "CULTURE"),
+    ("beethoven", "a compose la", "Neuvieme Symphonie", "CULTURE"),
+    ("washington", "est le premier president des", "Etats-Unis", "HISTOIRE"),
+    ("christophe colomb", "a decouvert", "l Amerique en 1492", "HISTOIRE"),
+    ("selection naturelle", "est le mecanisme de", "l evolution", "BIOLOGIE"),
+    ("gravite", "est", "une force d attraction", "PHYSIQUE_FOND"),
+    ("le nil", "est le", "plus long fleuve du monde", "GEOGRAPHIE"),
+    ("l ocean pacifique", "est le", "plus grand ocean du monde", "GEOGRAPHIE"),
+    ("le nombre pi", "vaut environ", "3.14", "MATHS_PURES"),
+    ("zero divise par zero", "est", "une operation indefinie", "MATHS_PURES"),
+    ("un carre", "est un", "rectangle particulier", "MATHS_PURES"),
+    ("un photon", "est", "une particule de lumiere", "PHYSIQUE_FOND"),
+    ("le soleil", "est", "une etoile", "ASTRONOMIE"),
+    ("la terre", "tourne autour du", "soleil", "ASTRONOMIE"),
+    ("continents", "sont au nombre de", "7 sur Terre", "GEOGRAPHIE"),
+    ("la Terre", "compte", "7 continents", "GEOGRAPHIE"),
+    ("element le plus abondant dans l univers", "est", "l hydrogene", "CHIMIE"),
+    ("φ", "est le", "nombre d or", "MATHS_PURES"),
+    ("φ", "vaut environ", "1.618", "MATHS_PURES"),
 ]
 
 

@@ -53,6 +53,7 @@ class UserProfile:
         self.preferences: Dict[str, UserPreference] = {}
         self.interaction_history: List[Dict] = []
         self.category_preferences: Dict[str, float] = {}
+        self.specialized_domains: Dict[str, Dict] = {}  # domain → {depth, kb_path, triplets, ...}
         self.created_at = datetime.now().isoformat()
         self.last_active = self.created_at
         
@@ -143,12 +144,89 @@ class UserProfile:
             "last_active": self.last_active,
         }
     
+    # ── Domaines spécialisés ─────────────────────────────────────────────
+    
+    def add_specialized_domain(self, domain: str, depth: str, kb_path: str,
+                                triplets: int = 0, size_mb: float = 0.0):
+        """Enregistre un domaine spécialisé pour cet utilisateur."""
+        self.specialized_domains[domain] = {
+            "depth": depth,
+            "kb_path": kb_path,
+            "triplets": triplets,
+            "size_mb": round(size_mb, 1),
+            "specialized_at": datetime.now().isoformat(),
+            "last_used": datetime.now().isoformat(),
+        }
+        self.last_active = datetime.now().isoformat()
+    
+    def has_domain(self, domain: str) -> bool:
+        """Vérifie si l'utilisateur a une spécialisation pour ce domaine."""
+        return domain.lower() in self.specialized_domains
+    
+    def get_domains(self) -> Dict[str, Dict]:
+        """Retourne tous les domaines spécialisés."""
+        return dict(self.specialized_domains)
+    
+    def touch_domain(self, domain: str):
+        """Met à jour last_used pour un domaine (utilisé lors d'une requête)."""
+        domain_lower = domain.lower()
+        if domain_lower in self.specialized_domains:
+            self.specialized_domains[domain_lower]["last_used"] = datetime.now().isoformat()
+    
+    # ── Persistance JSON ─────────────────────────────────────────────────
+    
+    def save(self, path: str):
+        """Sauvegarde le profil utilisateur en JSON."""
+        import os as _os
+        _os.makedirs(_os.path.dirname(path), exist_ok=True)
+        data = self.to_dict()
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        logger.info(f"Profil sauvegardé : {path}")
+    
+    @classmethod
+    def load(cls, path: str) -> 'UserProfile':
+        """Charge un profil utilisateur depuis un fichier JSON."""
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        profile = cls(data.get("user_id", "anonymous"))
+        
+        # Restaurer les préférences
+        if "preferences" in data:
+            for key, pref_data in data["preferences"].items():
+                profile.preferences[key] = UserPreference(
+                    key=pref_data.get("key", key),
+                    value=pref_data.get("value"),
+                    category=pref_data.get("category"),
+                    created_at=pref_data.get("created_at", ""),
+                )
+        
+        # Restaurer les catégories
+        if "category_preferences" in data:
+            profile.category_preferences = data["category_preferences"]
+        
+        # Restaurer les domaines spécialisés
+        if "specialized_domains" in data:
+            profile.specialized_domains = data["specialized_domains"]
+        
+        # Restaurer les timestamps
+        if "created_at" in data:
+            profile.created_at = data["created_at"]
+        if "last_active" in data:
+            profile.last_active = data["last_active"]
+        
+        return profile
+    
+    # ── Sérialisation ────────────────────────────────────────────────────
+    
     def to_dict(self) -> Dict:
         return {
             "user_id": self.user_id,
             "preferences": {k: v.to_dict() for k, v in self.preferences.items()},
             "category_preferences": self.category_preferences,
+            "specialized_domains": self.specialized_domains,
             "total_interactions": len(self.interaction_history),
-            "created_at": self.created_at,
-            "last_active": self.last_active,
+            "created_at": self.created_at if isinstance(self.created_at, str) else self.created_at.isoformat(),
+            "last_active": self.last_active if isinstance(self.last_active, str) else self.last_active.isoformat(),
         }

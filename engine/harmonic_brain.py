@@ -348,11 +348,12 @@ class HolographicStore:
         if self._subword_index is not None:
             return
         self._subword_index = defaultdict(list)
-        for key, vec in self.encoder.word_vectors.items():
-            for sub in key.split():
-                if len(sub) >= 2:
-                    self._subword_index[sub].append((key, vec))
-        log.info(f"Subword index: {len(self._subword_index)} sous-mots")
+        if self.encoder is not None:
+            for key, vec in self.encoder.word_vectors.items():
+                for sub in key.split():
+                    if len(sub) >= 2:
+                        self._subword_index[sub].append((key, vec))
+            log.info(f"Subword index: {len(self._subword_index)} sous-mots")
 
     def _calibrate_spectral(self):
         """
@@ -922,6 +923,126 @@ class ConsciousFilter:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# MULTI-HOLOGRAMME — Domain Stores + Routeur
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@dataclass
+class DomainStore:
+    """Un hologramme spécialisé pour un domaine de connaissance."""
+    domain: str
+    store: 'HolographicStore'
+    sectors: List[str] = field(default_factory=list)
+    keywords: List[str] = field(default_factory=list)
+    
+    @property
+    def stats(self) -> Dict:
+        return {
+            'domain': self.domain,
+            'facts': self.store.total_ingested,
+            'registry_size': len(self.store.registry),
+            'sectors': self.sectors,
+        }
+
+
+# Mapping des 26 secteurs → 5 domaines
+DOMAIN_SECTOR_MAP: Dict[str, str] = {
+    # ── SCIENCES ──
+    'PHYSIQUE_FOND': 'sciences',
+    'PHYSIQUE_APPLI': 'sciences',
+    'MATHS_PURES': 'sciences',
+    'MATHS_APPLI': 'sciences',
+    'BIOLOGIE': 'sciences',
+    'ECOLOGIE': 'sciences',
+    'ASTRONOMIE': 'sciences',
+    'COSMOLOGIE': 'sciences',
+    # ── CULTURE GÉNÉRALE ──
+    'GEOGRAPHIE': 'culture_generale',
+    'CULTURE': 'culture_generale',
+    'POLITIQUE': 'culture_generale',
+    'ECONOMIE': 'culture_generale',
+    'SANTE': 'culture_generale',
+    'EXPRESSION': 'culture_generale',
+    'NATURE_ANIM': 'culture_generale',
+    'NATURE_VEGET': 'culture_generale',
+    'CORPS_ORGANES': 'culture_generale',
+    'CORPS_SENS': 'culture_generale',
+    # ── HISTOIRE ──
+    'PASSE': 'histoire',
+    'FUTUR': 'histoire',
+    # ── CODE ──
+    'CODE': 'code',
+    'DISTILL': 'code',
+    # ── HUMAIN ──
+    'CONSCIENCE': 'humain',
+    'INTELLIGENCE': 'humain',
+    'EMOTION_POS': 'humain',
+    'EMOTION_NEG': 'humain',
+    'METAPHYSIQUE': 'humain',
+    'SPIRITUALITE': 'humain',
+    'CREATION': 'humain',
+}
+
+# Mots-clés de routage par domaine
+DOMAIN_KEYWORDS: Dict[str, List[str]] = {
+    'sciences': [
+        'physique', 'onde', 'atome', 'quantique', 'particule', 'force', 'energie',
+        'cellule', 'adn', 'gene', 'proteine', 'organe', 'espece', 'evolution',
+        'mathematique', 'nombre', 'geometrie', 'algebre', 'theoreme', 'equation',
+        'planete', 'etoile', 'galaxie', 'soleil', 'lune', 'astre', 'univers',
+        'cosmos', 'trou noir', 'big bang', 'biologie', 'chimie', 'element',
+        'formule', 'molecule', 'reaction', 'acide', 'science', 'scientifique',
+        'photosynthese', 'gravite', 'relativite', 'electromagnetique',
+    ],
+    'culture_generale': [
+        'pays', 'capitale', 'continent', 'ville', 'region', 'frontiere',
+        'montagne', 'fleuve', 'ocean', 'mer', 'geographie',
+        'art', 'musique', 'litterature', 'cinema', 'theatre', 'peinture',
+        'politique', 'democratie', 'justice', 'loi', 'etat', 'gouvernement',
+        'economie', 'marche', 'commerce', 'monnaie', 'banque', 'entreprise',
+        'sante', 'maladie', 'medecin', 'medicament', 'vaccin', 'virus',
+        'animal', 'mammifere', 'oiseau', 'poisson', 'plante', 'arbre', 'fleur',
+        'corps', 'coeur', 'sang', 'poumon', 'cerveau', 'muscle',
+    ],
+    'histoire': [
+        'histoire', 'guerre', 'revolution', 'empire', 'roi', 'reine',
+        'bataille', 'traite', 'independance', 'decouverte', 'inventeur',
+        'president', 'pharaon', 'empereur', 'civilisation', 'ancien',
+        'siecle', 'moyen age', 'renaissance', 'colonisation',
+        'premiere guerre', 'seconde guerre', 'guerre mondiale',
+    ],
+    'code': [
+        'fonction', 'algorithme', 'variable', 'classe', 'objet', 'api',
+        'python', 'javascript', 'java', 'html', 'css', 'sql', 'react',
+        'docker', 'git', 'linux', 'serveur', 'base de donnees', 'framework',
+        'bibliotheque', 'compiler', 'debugger', 'code', 'programmation',
+        'kubernetes', 'node', 'typescript', 'json', 'xml', 'http',
+    ],
+    'humain': [
+        'conscience', 'esprit', 'pensee', 'perception', 'meditation', 'reve',
+        'emotion', 'sentiment', 'amour', 'joie', 'bonheur', 'paix', 'compassion',
+        'peur', 'tristesse', 'colere', 'stress', 'angoise', 'souffrance',
+        'philosophie', 'etre', 'existence', 'realite', 'verite', 'essence',
+        'dieu', 'ame', 'spirituel', 'religion', 'foi', 'transcendance', 'sacre',
+        'creation', 'creer', 'oeuvre', 'artiste', 'sculpture', 'poesie',
+    ],
+    'culture_arts': [
+        'art', 'peinture', 'musique', 'litterature', 'cinema', 'theatre',
+        'sculpture', 'architecture', 'danse', 'poesie', 'opera', 'peintre',
+        'ecrivain', 'compositeur', 'realisateur', 'acteur', 'film', 'roman',
+        'symphonie', 'jazz', 'rock', 'mozart', 'beethoven', 'shakespeare',
+        'mona lisa', 'impressionnisme', 'picasso', 'oscar', 'hollywood',
+    ],
+    'corps_sante': [
+        'corps', 'coeur', 'sang', 'cerveau', 'organe', 'muscle', 'os',
+        'poumon', 'foie', 'rein', 'nerf', 'anatomie', 'sante', 'maladie',
+        'medecin', 'medicament', 'vaccin', 'virus', 'bacterie', 'chirurgie',
+        'sport', 'football', 'tennis', 'athletisme', 'olympique', 'cancer',
+        'diagnostic', 'traitement', 'symptome', 'infection',
+    ],
+}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # CERVEAU COMPLET — HarmonicBrain
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -949,10 +1070,25 @@ class HarmonicBrain:
                  dim: int = 512, use_holographic: bool = True):
         t0 = time.time()
 
-        # L'INCONSCIENT
+        # 👥 MULTI-HOLOGRAMME : 5 stores spécialisés + 1 global (backward-compat)
+        domain_dim = max(32, dim // 2)  # dim réduit par domaine (max 50K faits)
+        self._domain_stores: Dict[str, DomainStore] = {}
+        self._sector_to_domain_cache: Dict[str, str] = dict(DOMAIN_SECTOR_MAP)
+        
+        for domain_name in ['sciences', 'culture_generale', 'histoire', 'code', 'humain', 'culture_arts', 'corps_sante']:
+            store = HolographicStore(dim=domain_dim, use_holographic=use_holographic)
+            self._domain_stores[domain_name] = DomainStore(
+                domain=domain_name,
+                store=store,
+                sectors=[s for s, d in DOMAIN_SECTOR_MAP.items() if d == domain_name],
+                keywords=DOMAIN_KEYWORDS.get(domain_name, []),
+            )
+        
+        # L'INCONSCIENT GLOBAL (backward-compatible, reçoit tous les faits)
         self.unconscious = HolographicStore(dim=dim, use_holographic=use_holographic)
+        self._global_store = self.unconscious
 
-        # LE CONSCIENT
+        # LE CONSCIENT (fonctionne avec l'inconscient global)
         self.conscious = ConsciousFilter(self.unconscious)
 
         # LE PARSEUR DE PROMPT
@@ -1068,10 +1204,13 @@ class HarmonicBrain:
         self._domain_adapters: Dict[str, DomainAdapter] = {}
         self._current_domain: str = 'faits'
 
-        # Pré-charger la KB existante dans l'inconscient (sans filtrage)
+        # Pré-charger la KB existante (global + domain stores)
         if knowledge_base:
             for s, r, o, sec in knowledge_base:
+                # Ingest dans le global (backward-compat)
                 self.unconscious.ingest(s, r, o, sec)
+                # Router vers le store de domaine
+                self._route_ingest(s, r, o, sec)
 
         # 🔥 INJECTER LES SFT (faits validés manuellement, amplitude 5.0)
         sft_injected = 0
@@ -1079,12 +1218,18 @@ class HarmonicBrain:
             record = self.unconscious.ingest(sf_s, sf_r, sf_o, "SFT")
             if record.amplitude < amp:
                 record.amplitude = amp  # forcer l'amplitude SFT
+            # Router aussi vers les domaines
+            self._route_ingest(sf_s, sf_r, sf_o, "SFT")
             sft_injected += 1
         if sft_injected > 0:
             log.info(f"SFT injectés: {sft_injected} faits avec amplitude {amp}")
+        
+        # Log des stats par domaine
+        for ds in self._domain_stores.values():
+            if ds.store.total_ingested > 0:
+                log.info(f"  Domaine {ds.domain}: {ds.store.total_ingested} faits")
 
-        # 🔥 RÉ-ENCODAGE SÉMANTIQUE : aligner les ψ avec les phases de co-occurrence
-        # Transforme les vecteurs FNV1a (quasi-orthogonaux) en vecteurs sémantiques
+        # 🔥 RÉ-ENCODAGE SÉMANTIQUE (sur le global seulement)
         try:
             n_reencoded = self.unconscious.encoder.reencode_all_with_semantics()
             if n_reencoded > 0:
@@ -1092,6 +1237,9 @@ class HarmonicBrain:
         except Exception:
             pass
 
+        # 👤 KB UTILISATEUR : dictionnaire de cerveaux personnels par user_id
+        self._user_kbs: Dict[str, 'HarmonicBrain'] = {}
+        
         self._init_time = time.time() - t0
         log.info(f"HarmonicBrain initialisé en {self._init_time:.1f}s "
                  f"({len(self.unconscious.registry)} faits dans l'inconscient)")
@@ -1115,6 +1263,148 @@ class HarmonicBrain:
     def from_kb_list(cls, kb: List[Tuple[str, str, str, str]]) -> 'HarmonicBrain':
         """Charge le cerveau depuis une liste de faits (compatibilité HarmonicModel)."""
         return cls(kb)
+
+    # ── ROUTEUR MULTI-HOLOGRAMME ────────────────────────────────────────
+    
+    def _sector_to_domain(self, secteur: str) -> Optional[str]:
+        """Mappe un secteur vers son domaine. Retourne None si inconnu."""
+        return self._sector_to_domain_cache.get(secteur.upper().strip())
+    
+    def _route_ingest(self, sujet: str, relation: str, objet: str, secteur: str):
+        """Ingère un fait dans le(s) store(s) de domaine approprié(s)."""
+        domain = self._sector_to_domain(secteur)
+        if domain and domain in self._domain_stores:
+            self._domain_stores[domain].store.ingest(sujet, relation, objet, secteur)
+    
+    def _detect_domains(self, question: str) -> List[str]:
+        """
+        Détecte le(s) domaine(s) d'une question.
+        Retourne 1-2 domaines les plus pertinents.
+        """
+        q = question.lower()
+        scores = {}
+        
+        for domain, ds in self._domain_stores.items():
+            if not ds.store.registry:
+                continue  # domaine vide
+            score = sum(1 for kw in ds.keywords if kw in q)
+            if score > 0:
+                scores[domain] = score
+        
+        if not scores:
+            return ['culture_generale']  # défaut
+        
+        # Retourner les domaines avec score ≥ 50% du max (max 2)
+        max_score = max(scores.values())
+        domains = [d for d, s in scores.items() if s >= max_score * 0.5]
+        return domains[:2]
+    
+    def _cross_domain_merge(
+        self,
+        domain_candidates: List[Tuple[str, List[Tuple]]]
+    ) -> List[Tuple]:
+        """
+        Fusionne les candidats de N domaines avec bonus cross-domaine.
+        
+        Un fait qui apparaît dans plusieurs domaines reçoit +20% par domaine supplémentaire.
+        """
+        if len(domain_candidates) == 1:
+            return domain_candidates[0][1]
+        
+        merged = []
+        seen = set()
+        domain_names = [d for d, _ in domain_candidates]
+        
+        for domain, cands in domain_candidates:
+            for rec, score in cands:
+                key = (rec.sujet.lower().strip(), 
+                       rec.relation.lower().strip(), 
+                       rec.objet.lower().strip())
+                
+                # Bonus cross-domaine : le fait apparaît dans combien d'autres domaines ?
+                cross_count = 0
+                for d2 in domain_names:
+                    if d2 != domain and d2 in self._domain_stores:
+                        if key in self._domain_stores[d2].store.registry:
+                            cross_count += 1
+                
+                cross_bonus = 1.0 + 0.2 * cross_count  # +20% par domaine
+                
+                if key not in seen:
+                    seen.add(key)
+                    merged.append((rec, score * cross_bonus))
+        
+        merged.sort(key=lambda x: -x[1])
+        return merged[:50]
+    
+    # ── KB UTILISATEUR (spécialisation personnelle) ───────────────────────
+
+    def load_user_kb(self, user_id: str, kb_path: str):
+        """
+        Charge une base de connaissances personnelle depuis un NPZ.
+
+        Args:
+            user_id: Identifiant utilisateur (ex: "user_123")
+            kb_path: Chemin vers le fichier NPZ
+        """
+        user_brain = HarmonicBrain.from_npz(kb_path, max_facts=50000)
+        self._user_kbs[user_id] = user_brain
+        log.info(f"KB utilisateur chargée : user={user_id}, "
+                 f"path={kb_path}, "
+                 f"facts={len(user_brain.unconscious.registry)}")
+
+    def unload_user_kb(self, user_id: str):
+        """Décharge la KB personnelle d'un utilisateur (libère la mémoire)."""
+        if user_id in self._user_kbs:
+            n_facts = len(self._user_kbs[user_id].unconscious.registry)
+            del self._user_kbs[user_id]
+            log.info(f"KB utilisateur déchargée : user={user_id}, facts={n_facts}")
+
+    def has_user_kb(self, user_id: str) -> bool:
+        """Vérifie si un utilisateur a une KB personnelle chargée."""
+        return user_id in self._user_kbs
+
+    @staticmethod
+    def _merge_candidates(
+        global_candidates: List[Tuple],
+        user_candidates: List[Tuple],
+        user_boost: float = 1.5,
+    ) -> List[Tuple]:
+        """
+        Fusionne les candidats globaux et personnels.
+
+        Les candidats personnels sont boostés (×user_boost) et apparaissent
+        en premier. Déduplication par clé (sujet, relation, objet).
+
+        Args:
+            global_candidates: Liste de (FactRecord, score) du cerveau global
+            user_candidates: Liste de (FactRecord, score) du cerveau personnel
+            user_boost: Multiplicateur de score pour les candidats personnels
+
+        Returns:
+            Liste fusionnée triée par score décroissant, max 50 éléments.
+        """
+        seen = set()
+        merged = []
+
+        # D'abord les candidats personnels (boostés, priorité utilisateur)
+        for rec, score in user_candidates:
+            key = (rec.sujet.lower().strip(), rec.relation.lower().strip(),
+                   rec.objet.lower().strip())
+            seen.add(key)
+            merged.append((rec, score * user_boost))
+
+        # Puis les candidats globaux non redondants
+        for rec, score in global_candidates:
+            key = (rec.sujet.lower().strip(), rec.relation.lower().strip(),
+                   rec.objet.lower().strip())
+            if key not in seen:
+                seen.add(key)
+                merged.append((rec, score))
+
+        # Trier par score décroissant
+        merged.sort(key=lambda x: -x[1])
+        return merged[:50]
 
     # ── INGESTION ──────────────────────────────────────────────────────────
 
@@ -1321,24 +1611,28 @@ class HarmonicBrain:
 
     def _style_response(self, response: str, question: str, facts_used: list,
                         lang: str, candidates: list = None) -> str:
-        """Applique le WaveStyler à une réponse, quel que soit son chemin d'origine."""
+        """Applique le WaveStyler avec style/depth/personality configurés."""
         if not response:
             return response
         
-        # Utiliser les faits acceptés, ou les candidats si accepté est vide
         facts_to_style = list(facts_used) if facts_used else []
         if not facts_to_style and candidates:
-            # Extraire les 3 meilleurs candidats comme faits pour le stylage
             facts_to_style = [rec for rec, score in candidates[:3]]
-        
         if not facts_to_style:
             return response
-        
+
+        # Contrôle de profondeur
+        max_facts = {'court': 1, 'standard': 2, 'détaillé': 4}.get(
+            getattr(self, '_current_depth', 'standard'), 2)
+        facts_to_style = facts_to_style[:max_facts]
+
         try:
             from wave_styler import WaveStyler
             styler = WaveStyler(self.unconscious.encoder if self.unconscious else None)
             fact_tuples = [(f.sujet, f.relation, f.objet, f.secteur) for f in facts_to_style]
-            styled = styler.render(fact_tuples, question, lang)
+            style = getattr(self, '_current_style', 'auto')
+            personality = getattr(self, '_current_personality', 'ka')
+            styled = styler.render(fact_tuples, question, lang, style=style, personality=personality)
             if styled and len(styled) > 5:
                 return styled
         except Exception:
@@ -1372,7 +1666,9 @@ class HarmonicBrain:
             pass
 
     def process(self, question: str, lang: str = 'fr',
-                max_accepted: int = 3, use_conversation: bool = False) -> BrainResult:
+                max_accepted: int = 3, use_conversation: bool = False,
+                style: str = 'auto', depth: str = 'standard',
+                personality: str = 'ka', user_id: str = None) -> BrainResult:
         """
         Traitement complet par le cerveau harmonique.
         
@@ -1380,15 +1676,24 @@ class HarmonicBrain:
         0.5. Math bridge (interception mathématique)
         0.6. Wave logic (syllogismes, déductions)
         0.7. Wave reasoning (propagation de chaîne)
-        1. Inconscient → retrieval pur (tokens pondérés, seuils du domaine)
+        1. Inconscient → retrieval pur (token pondérés, seuils du domaine)
         2. Conscient → filtre + feedback
         3. Expression → langage naturel (format adapté au type)
         
         Args:
+            style: "auto"|"concise"|"elegant"|"pedagogique"|"chaleureux"
+            depth: "court"|"standard"|"détaillé"
+            personality: "ka"|"savant"|"vulgarisateur"|"poete"
+            user_id: si fourni, fusionne avec la KB personnelle de l'utilisateur
             use_conversation: si True, utilise le contexte de conversation ψ
                               (follow-up detection, enrichissement, mémoire)
         """
         t_start = time.time()
+
+        # Stocker pour usage dans _style_response / _try_compose
+        self._current_style = style
+        self._current_depth = depth
+        self._current_personality = personality
 
         # ── 0.0 FAST PATH : Salutations, Identité, Conversation ──
         try:
@@ -1521,7 +1826,42 @@ class HarmonicBrain:
                 pass
 
         # ── 1. INCONSCIENT : retrieval hybride (TF-IDF + résonance ψ) ──
+        # 🆕 ROUTAGE MULTI-HOLOGRAMME : détecter le domaine et booster les faits pertinents
         candidates = self.unconscious.retrieve(weighted_question, max_results=15)
+        
+        # Boost des candidats qui appartiennent au(x) domaine(s) détecté(s)
+        detected_domains = self._detect_domains(question)
+        if detected_domains and candidates:
+            domain_sectors = set()
+            for d in detected_domains:
+                if d in self._domain_stores:
+                    domain_sectors.update(self._domain_stores[d].sectors)
+            
+            if domain_sectors:
+                boosted = []
+                for rec, score in candidates:
+                    if rec.secteur.upper().strip() in domain_sectors:
+                        boosted.append((rec, score * 1.3))  # +30% boost domaine
+                    else:
+                        boosted.append((rec, score))
+                boosted.sort(key=lambda x: -x[1])
+                candidates = boosted
+
+        # 👤 FUSION KB PERSONNELLE : si l'utilisateur a une KB spécialisée
+        if user_id and user_id in self._user_kbs:
+            try:
+                user_brain = self._user_kbs[user_id]
+                user_candidates = user_brain.unconscious.retrieve(
+                    weighted_question, max_results=10
+                )
+                if user_candidates:
+                    candidates = self._merge_candidates(
+                        candidates, user_candidates, user_boost=1.5
+                    )
+                    log.debug(f"Fusion KB utilisateur {user_id}: "
+                              f"{len(user_candidates)} perso + {len(candidates)} total")
+            except Exception as e:
+                log.debug(f"Fusion KB utilisateur ignorée ({e})")
 
         # Vérifier que les faits remontés correspondent BIEN à la question
         # Si un mot-clé important de la question n'apparaît nulle part → web
@@ -2071,13 +2411,19 @@ class HarmonicBrain:
 
     def _try_compose(self, facts: List[FactRecord], question: str,
                      parsed: StructuredPrompt = None, lang: str = 'fr') -> str:
-        """Compose une réponse naturelle avec le WaveStyler."""
-        # Si WaveStyler disponible → rendu naturel (registre, pronoms, subordonnées)
+        """Compose une réponse naturelle avec style/depth/personality."""
+        # Contrôle de profondeur
+        max_facts = {'court': 1, 'standard': 2, 'détaillé': 4}.get(
+            getattr(self, '_current_depth', 'standard'), 2)
+        facts = facts[:max_facts]
+
         try:
             from wave_styler import WaveStyler
             styler = WaveStyler(self.unconscious.encoder if self.unconscious else None)
             fact_tuples = [(f.sujet, f.relation, f.objet, f.secteur) for f in facts]
-            return styler.render(fact_tuples, question, lang)
+            style = getattr(self, '_current_style', 'auto')
+            personality = getattr(self, '_current_personality', 'ka')
+            return styler.render(fact_tuples, question, lang, style=style, personality=personality)
         except Exception:
             pass
 

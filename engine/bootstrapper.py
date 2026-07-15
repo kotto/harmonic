@@ -99,80 +99,386 @@ def detect_sector(text: str) -> str:
 
 
 def extract_triples_simple(text: str) -> List[Tuple[str, str, str, str]]:
+    """Compatibilité : appelle extract_triples_enhanced()."""
+    return extract_triples_enhanced(text)
+
+
+def extract_triples_enhanced(text: str) -> List[Tuple[str, str, str, str]]:
     """
-    Extraction ROBUSTE de triplets par DECOUPAGE puis PATTERNS.
+    Extraction ENRICHIE de triplets — 25+ patterns regex.
     
-    Deux passes :
-      1. Decouper le texte en segments (par ponctuation)
-      2. Appliquer des patterns simples sur chaque segment
+    Groupes de patterns :
+      1. Définitions (est un/une, signifie, is a/an, means)
+      2. Découverte/création (a découvert, a inventé, discovered, created)
+      3. Voix passive (a été V par, was V by)
+      4. Composition (se compose de, contient, consists of)
+      5. Relations numériques (a X habitants, mesure X m)
+      6. Relations temporelles (a eu lieu en, a duré X ans)
+      7. Relations causales (cause, entraîne, provoque)
+      8. Relations de localisation (se trouve à, is located in)
+      9. Relations d'appartenance (appartient à, fait partie de)
+      10. Relations comparatives (est plus grand que)
     
-    Gere les incidentes Wikipedia (ne le..., mort le...).
+    Returns:
+        Liste de (sujet, relation, objet, secteur)
     """
     triples = []
+    seen_keys = set()
     secteur = detect_sector(text)
     
-    # Nettoyer les incidentes Wikipedia : "X, né le..., est Y" → "X est Y"
+    # ── Nettoyage ───────────────────────────────────────────────────────
     text_clean = re.sub(r',\s*n[eé]\s+le\s+[^,]+', '', text)
     text_clean = re.sub(r',\s*mort\s+le\s+[^,]+', '', text_clean)
-    text_clean = re.sub(r'\([^)]*\)', '', text_clean)  # parentheses
-    # Virgule avant "est" : "X, est Y" → "X est Y"
+    text_clean = re.sub(r'\([^)]*\)', '', text_clean)
     text_clean = re.sub(r',\s+(est\s+(?:un|une|le|la|les|l)\s)', r' \1', text_clean)
     
-    # Decouper en segments
+    # Découper en segments
     segments = re.split(r'[.;]', text_clean)
     segments = [s.strip() for s in segments if len(s.strip()) > 10]
-    segments.append(text_clean)  # aussi le texte complet nettoye
+    segments.append(text_clean)
     
-    # Stopwords a filtrer
+    # Stopwords
     stop_subjects = {'il', 'elle', 'on', 'cela', 'ceci', 'cet', 'cette', 'ces',
                      'qui', 'que', 'quoi', 'dont', 'tout', 'tous', 'toute', 'toutes',
-                     'rien', 'personne', 'plusieurs', 'certains'}
+                     'rien', 'personne', 'plusieurs', 'certains', 'cela', 'ce', 'ils',
+                     'elles', 'the', 'this', 'that', 'these', 'those', 'it', 'he', 'she'}
     
-    for segment in segments:
-        seg = segment.strip()
+    def _add(sujet: str, relation: str, objet: str, sec: str = None):
+        """Ajoute un triplet avec déduplication."""
+        s_clean = sujet.strip().lower()
+        r_clean = relation.strip().lower()
+        o_clean = objet.strip().lower()
+        if not s_clean or not r_clean or not o_clean:
+            return
+        if len(s_clean) < 2 or len(o_clean) < 3:
+            return
+        if s_clean == o_clean:
+            return
+        if s_clean in stop_subjects:
+            return
+        key = (s_clean, r_clean, o_clean)
+        if key not in seen_keys:
+            seen_keys.add(key)
+            triples.append((s_clean, r_clean, o_clean, sec or secteur))
+    
+    for seg in segments:
         if len(seg) < 15:
             continue
         
-        # Pattern 1: "X est un/une Y" ou "X is a/an Y" (definition)
-        m = re.match(r'([A-Za-zà-ÿ][a-zà-ÿ]{1,}(?:\s[A-Za-zà-ÿ][a-zà-ÿ]{1,})?)\s+(?:est|is)\s+(?:un|une|le|la|les|l|a|an|the)\s+(.+)', seg, re.IGNORECASE)
-        if not m:
-            # Pattern 1b: "X est d'origine/de/du Y"
-            m = re.match(r'([A-Za-zà-ÿ][a-zà-ÿ]{1,}(?:\s[A-Za-zà-ÿ][a-zà-ÿ]{1,})?)\s+est\s+(d|de|du|des)\s+(.+)', seg, re.IGNORECASE)
-        if m:
-            sujet = m.group(1).strip().lower()
-            objet = m.group(2).strip(' .,;').lower() if len(m.groups()) >= 3 else m.group(2).strip(' .,;').lower()
-            if len(m.groups()) >= 3 and m.group(2) in ('d','de','du','des'):
-                objet = m.group(3).strip(' .,;').lower()
-            if sujet not in stop_subjects and len(sujet) >= 2 and len(objet) >= 5:
-                triples.append((sujet, "est", objet, secteur))
-                continue
+        # ═══════════════════════════════════════════════════════════════
+        # GROUPE 1 — Définitions
+        # ═══════════════════════════════════════════════════════════════
         
-        # Pattern 2: "X a decouvert/invente/cree Y" (decouverte)
-        m = re.match(r'([A-Z][a-zà-ÿ]+(?:\s[A-Z][a-zà-ÿ]+)?)\s+a\s+(decouvert|invente|cree|fonde|developpe|publie|formule|introduit)\s+(.+)', seg, re.IGNORECASE)
+        # 1a: "X est un/une/le/la/les/l'/des Y"
+        m = re.match(
+            r'([A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}(?:\s[A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}){0,3})\s+'
+            r'est\s+(?:un|une|le|la|les|l\'|des|du|de la)\s+(.+)',
+            seg, re.IGNORECASE)
         if m:
-            sujet, verbe, objet = m.group(1).strip().lower(), m.group(2), m.group(3).strip(' .,;').lower()
-            if len(sujet) >= 3 and len(objet) >= 5:
-                triples.append((sujet, f"a {verbe}", objet, secteur))
-                continue
+            _add(m.group(1), "est", m.group(2).strip(' .,;'))
+            continue
         
-        # Pattern 3: "X a ete V par Y" — plus flexible
-        m = re.search(r'(.+?)\s+a\s+ete\s+(decouvert|invente|cree|fonde)\s+par\s+(.+)', seg, re.IGNORECASE)
+        # 1b: "X signifie/désigne/représente/définit Y"
+        m = re.match(
+            r'([A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}(?:\s[A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}){0,3})\s+'
+            r'(?:signifie|désigne|designe|représente|represente|définit|definit)\s+(.+)',
+            seg, re.IGNORECASE)
         if m:
-            objet, verbe, suite = m.group(1).strip(' .,;').lower(), m.group(2), m.group(3).strip(' .,;').lower()
-            if len(objet) >= 5:
-                # Extraire un sujet potentiel de la suite
-                sujet_words = [w for w in suite.split() if w[0].isupper() and len(w) > 2]
-                sujet = sujet_words[0].lower() if sujet_words else suite.split()[0].lower() if suite.split() else 'inconnu'
-                triples.append((sujet, f"a ete {verbe} par", objet, secteur))
-                continue
+            _add(m.group(1), "signifie", m.group(2).strip(' .,;'))
+            continue
         
-        # Pattern 4: "X se compose de / comprend Y"
-        m = re.match(r'([A-Za-zà-ÿ][a-zà-ÿ]{1,}(?:\s[A-Za-zà-ÿ][a-zà-ÿ]{1,})?)\s+(?:se compose de|est compose de|comprend|contient)\s+(.+)', seg, re.IGNORECASE)
+        # 1c: "X is a/an/the Y" (EN)
+        m = re.match(
+            r'([A-Z][a-z]{1,}(?:\s[A-Z][a-z]{1,}){0,3})\s+'
+            r'is\s+(?:a|an|the)\s+(.+)',
+            seg, re.IGNORECASE)
         if m:
-            sujet, objet = m.group(1).strip().lower(), m.group(2).strip(' .,;').lower()
-            if sujet not in stop_subjects and len(sujet) >= 2 and len(objet) >= 5:
-                triples.append((sujet, "comprend", objet, secteur))
-                continue
+            _add(m.group(1), "is", m.group(2).strip(' .,;'))
+            continue
+        
+        # 1d: "X means/designates/represents/defines Y" (EN)
+        m = re.match(
+            r'([A-Z][a-z]{1,}(?:\s[A-Z][a-z]{1,}){0,3})\s+'
+            r'(?:means|designates|represents|defines)\s+(.+)',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), "means", m.group(2).strip(' .,;'))
+            continue
+        
+        # ═══════════════════════════════════════════════════════════════
+        # GROUPE 2 — Découverte/création (FR + EN)
+        # ═══════════════════════════════════════════════════════════════
+        
+        discovery_verbs_fr = (
+            'découvert|decouvert|inventé|invente|cree|créé|fondé|fonde|developpe|développé|'
+            'publié|publie|formulé|formule|introduit|mesuré|mesure|observé|observe|'
+            'détecté|detecte|détecte|analysé|analyse|synthétisé|synthetise|calculé|calcule|'
+            'démontré|demontre|prouvé|prouve|établi|etabli|proposé|propose|conçu|concu|'
+            'réalisé|realise|écrit|ecrit|composé|compose|peint|construit|bâti|bati'
+        )
+        discovery_verbs_en = (
+            'discovered|invented|created|founded|developed|published|formulated|'
+            'introduced|measured|observed|detected|analyzed|synthesised|synthesized|'
+            'calculated|demonstrated|proved|established|proposed|designed|built|wrote|composed'
+        )
+        
+        # 2a: "X a VERBE Y" (FR)
+        m = re.match(
+            r'([A-Z][a-zà-ÿ]+(?:\s[A-Z][a-zà-ÿ]+){0,2})\s+'
+            r'a\s+(' + discovery_verbs_fr + r')\s+'
+            r'(?:le |la |les |l\'|un |une |des |de |du )?(.+)',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), f"a {m.group(2).lower()}", m.group(3).strip(' .,;'))
+            continue
+        
+        # 2b: "X VERBED Y" (EN, past tense)
+        m = re.match(
+            r'([A-Z][a-z]+(?:\s[A-Z][a-z]+){0,2})\s+'
+            r'(' + discovery_verbs_en + r')\s+'
+            r'(?:the |a |an )?(.+)',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), m.group(2).lower(), m.group(3).strip(' .,;'))
+            continue
+        
+        # ═══════════════════════════════════════════════════════════════
+        # GROUPE 3 — Voix passive
+        # ═══════════════════════════════════════════════════════════════
+        
+        # 3a: "Y a été VERBE par X" (FR)
+        m = re.search(
+            r'(.+?)\s+a\s+été\s+(' + discovery_verbs_fr + r')\s+par\s+(.+)',
+            seg, re.IGNORECASE)
+        if m:
+            objet, verbe, sujet_raw = m.group(1).strip().lower(), m.group(2).lower(), m.group(3).strip()
+            # Extraire le sujet (premier nom propre ou premier mot capitalisé)
+            sujet_words = sujet_raw.split()
+            sujet = sujet_words[0].lower() if sujet_words else 'inconnu'
+            _add(sujet, f"a été {verbe} par", objet)
+            continue
+        
+        # 3b: "Y was/were VERBED by X" (EN)
+        m = re.search(
+            r'(.+?)\s+(?:was|were)\s+(' + discovery_verbs_en + r')\s+by\s+(.+)',
+            seg, re.IGNORECASE)
+        if m:
+            objet, verbe, sujet_raw = m.group(1).strip().lower(), m.group(2).lower(), m.group(3).strip()
+            sujet = sujet_raw.split()[0].lower() if sujet_raw.split() else 'inconnu'
+            _add(sujet, f"was {verbe} by", objet)
+            continue
+        
+        # ═══════════════════════════════════════════════════════════════
+        # GROUPE 4 — Composition
+        # ═══════════════════════════════════════════════════════════════
+        
+        # 4a: "X se compose de / est composé de / comprend / contient / inclut / est constitué de Y"
+        m = re.match(
+            r'([A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}(?:\s[A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}){0,3})\s+'
+            r'(?:se compose de|est composé de|est compose de|comprend|contient|'
+            r'inclut|renferme|est constitué de|est constitue de)\s+(.+)',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), "comprend", m.group(2).strip(' .,;'))
+            continue
+        
+        # 4b: "X consists of / is composed of / contains / includes Y" (EN)
+        m = re.match(
+            r'([A-Z][a-z]{1,}(?:\s[A-Z][a-z]{1,}){0,3})\s+'
+            r'(?:consists of|is composed of|contains|includes|comprises)\s+(.+)',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), "contains", m.group(2).strip(' .,;'))
+            continue
+        
+        # ═══════════════════════════════════════════════════════════════
+        # GROUPE 5 — Relations numériques/quantitatives
+        # ═══════════════════════════════════════════════════════════════
+        
+        # 5a: "X a Y habitants/employés/membres/..."
+        m = re.match(
+            r'([A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}(?:\s[A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}){0,3})\s+'
+            r'a\s+(\d[\d\s]*(?:millions?|milliards?)?\s*(?:habitants?|employés?|employes?|'
+            r'membres?|salariés?|salaries?|élèves?|eleves?|étudiants?|etudiants?|'
+            r'habitants?|résidents?|residents?|citoyens?))',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), "a", m.group(2).strip(' .,;'))
+            continue
+        
+        # 5b: "X mesure Y (mètres/km/...)"
+        m = re.match(
+            r'([A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}(?:\s[A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}){0,3})\s+'
+            r'mesure\s+(\d[\d\s,.]*\s*(?:mètres?|metres?|m|km|kilomètres?|kg|g|'
+            r'tonnes?|litres?|L|hectares?|km²|m²))',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), "mesure", m.group(2).strip(' .,;'))
+            continue
+        
+        # 5c: "X date de Y" (origine temporelle)
+        m = re.match(
+            r'([A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}(?:\s[A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}){0,3})\s+'
+            r'date\s+(?:de|d\')\s*(\d{3,4}.*)',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), "date de", m.group(2).strip(' .,;'))
+            continue
+        
+        # 5d: "X pèse Y (kg/tonnes)"
+        m = re.match(
+            r'([A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}(?:\s[A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}){0,3})\s+'
+            r'pèse\s+(\d[\d\s,.]*\s*(?:kg|g|tonnes?|mg))',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), "pèse", m.group(2).strip(' .,;'))
+            continue
+        
+        # 5e: "X has Y inhabitants/employees/..." (EN)
+        m = re.match(
+            r'([A-Z][a-z]{1,}(?:\s[A-Z][a-z]{1,}){0,3})\s+'
+            r'has\s+(\d[\d\s,]*(?:million|billion|thousand)?\s*(?:inhabitants?|'
+            r'employees?|members?|residents?|citizens?))',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), "has", m.group(2).strip(' .,;'))
+            continue
+        
+        # ═══════════════════════════════════════════════════════════════
+        # GROUPE 6 — Relations temporelles
+        # ═══════════════════════════════════════════════════════════════
+        
+        # 6a: "X a eu lieu en/à Y"
+        m = re.match(
+            r'([A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}(?:\s[A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}){0,5})\s+'
+            r'a\s+(?:eu|pris)\s+lieu\s+(?:en|à|au|aux|le)\s+(.+)',
+            seg, re.IGNORECASE)
+        if m and len(m.group(2)) > 2:
+            _add(m.group(1), "a eu lieu en", m.group(2).strip(' .,;'))
+            continue
+        
+        # 6b: "X a commencé/débuté en Y"
+        m = re.match(
+            r'([A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}(?:\s[A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}){0,3})\s+'
+            r'a\s+(?:commencé|commence|débuté|debute)\s+(?:en|à|au|aux|le)\s+(.+)',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), "a commencé en", m.group(2).strip(' .,;'))
+            continue
+        
+        # 6c: "X a duré Y (ans/mois/jours)"
+        m = re.match(
+            r'([A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}(?:\s[A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}){0,3})\s+'
+            r'a\s+duré\s+(\d[\d\s]*(?:ans?|mois|jours?|heures?|minutes?|siècles?|siecles?))',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), "a duré", m.group(2).strip(' .,;'))
+            continue
+        
+        # 6d: "X took place in Y" / "X began in Y" / "X lasted Y" (EN)
+        for en_verb, rel in [('took place in', 'took place in'), 
+                              ('began in', 'began in'),
+                              ('lasted', 'lasted')]:
+            m = re.match(
+                r'([A-Z][a-z]{1,}(?:\s[A-Z][a-z]{1,}){0,5})\s+'
+                + en_verb + r'\s+(.+)',
+                seg, re.IGNORECASE)
+            if m:
+                _add(m.group(1), rel, m.group(2).strip(' .,;'))
+                break
+        
+        # ═══════════════════════════════════════════════════════════════
+        # GROUPE 7 — Relations causales
+        # ═══════════════════════════════════════════════════════════════
+        
+        # 7a: "X cause/entraîne/provoque/déclenche/engendre Y"
+        m = re.match(
+            r'([A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}(?:\s[A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}){0,3})\s+'
+            r'(?:cause|entraîne|entraine|provoque|déclenche|declenche|engendre|génère|genere)\s+(.+)',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), "cause", m.group(2).strip(' .,;'))
+            continue
+        
+        # 7b: "X causes/leads to/triggers/results in Y" (EN)
+        m = re.match(
+            r'([A-Z][a-z]{1,}(?:\s[A-Z][a-z]{1,}){0,3})\s+'
+            r'(?:causes|leads to|triggers|results in|provokes)\s+(.+)',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), "causes", m.group(2).strip(' .,;'))
+            continue
+        
+        # ═══════════════════════════════════════════════════════════════
+        # GROUPE 8 — Relations de localisation
+        # ═══════════════════════════════════════════════════════════════
+        
+        # 8a: "X se trouve à/en/au/aux/dans/sur Y"
+        m = re.match(
+            r'([A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}(?:\s[A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}){0,3})\s+'
+            r'(?:se trouve|est situé|est situe|se situe)\s+(?:à|en|au|aux|dans|sur|'
+            r'près de|pres de|au bord de)\s+(.+)',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), "se trouve", m.group(2).strip(' .,;'))
+            continue
+        
+        # 8b: "X is located in/at/on/near Y" (EN)
+        m = re.match(
+            r'([A-Z][a-z]{1,}(?:\s[A-Z][a-z]{1,}){0,3})\s+'
+            r'(?:is located|lies|is situated)\s+(?:in|at|on|near|by)\s+(.+)',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), "is located in", m.group(2).strip(' .,;'))
+            continue
+        
+        # ═══════════════════════════════════════════════════════════════
+        # GROUPE 9 — Relations d'appartenance
+        # ═══════════════════════════════════════════════════════════════
+        
+        # 9a: "X appartient à Y" / "X fait partie de Y"
+        m = re.match(
+            r'([A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}(?:\s[A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}){0,3})\s+'
+            r'(?:appartient à|appartient a|fait partie de|fait partie du|'
+            r'est membre de|est un élément de|est un element de)\s+(.+)',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), "appartient à", m.group(2).strip(' .,;'))
+            continue
+        
+        # 9b: "X belongs to / is part of Y" (EN)
+        m = re.match(
+            r'([A-Z][a-z]{1,}(?:\s[A-Z][a-z]{1,}){0,3})\s+'
+            r'(?:belongs to|is part of|is a member of)\s+(.+)',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), "belongs to", m.group(2).strip(' .,;'))
+            continue
+        
+        # ═══════════════════════════════════════════════════════════════
+        # GROUPE 10 — Relations comparatives
+        # ═══════════════════════════════════════════════════════════════
+        
+        adj_fr = 'grand|petit|rapide|lent|haut|bas|fort|faible|léger|leger|lourd|cher|bon|mauvais|jeune|vieux|ancien|récent|recent|long|court|large|étroit|etroit|chaud|froid'
+        adj_en = 'big|small|fast|slow|high|low|strong|weak|light|heavy|expensive|cheap|good|bad|young|old|recent|long|short|wide|narrow|hot|cold'
+        
+        # 10a: "X est plus/moins ADJ que Y" (FR)
+        m = re.match(
+            r'([A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}(?:\s[A-ZÀ-Üa-zà-ÿ][a-zà-ÿ]{1,}){0,3})\s+'
+            r'est\s+(?:plus|moins)\s+(' + adj_fr + r')\s+que\s+(.+)',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), f"est plus {m.group(2)} que", m.group(3).strip(' .,;'))
+            continue
+        
+        # 10b: "X is ADJ-er / more ADJ than Y" (EN)
+        m = re.match(
+            r'([A-Z][a-z]{1,}(?:\s[A-Z][a-z]{1,}){0,3})\s+'
+            r'is\s+(?:more|less)\s+(' + adj_en + r')\s+than\s+(.+)',
+            seg, re.IGNORECASE)
+        if m:
+            _add(m.group(1), f"is more {m.group(2)} than", m.group(3).strip(' .,;'))
+            continue
     
     return triples
 
@@ -183,13 +489,13 @@ def extract_triples_llm(text: str) -> List[Tuple[str, str, str, str]]:
     Le LLM recoit le texte et doit retourner des triplets structures.
     """
     if not _LLM_AVAILABLE:
-        return extract_triples_simple(text)
+        return extract_triples_enhanced(text)
     
     prompt = f"""Extrait TOUS les faits du texte ci-dessous sous forme de triplets.
 Format EXACT : sujet | relation | objet
 Un triplet par ligne. Sujet et objet en minuscules. Max 10 mots.
 
-Texte : {text[:500]}
+Texte : {text[:2000]}
 
 Triplets :"""
     
@@ -206,9 +512,70 @@ Triplets :"""
                 if len(s) > 1 and len(o) > 2:
                     sec = detect_sector(f"{s} {r} {o}")
                     triples.append((s, r, o, sec))
-        return triples if triples else extract_triples_simple(text)
+        if triples:
+            log.info(f"extract_triples_llm: {len(triples)} triplets via LLM")
+            return triples
+        else:
+            return extract_triples_enhanced(text)
     except Exception:
-        return extract_triples_simple(text)
+        return extract_triples_enhanced(text)
+
+
+def extract_triples_batch(texts: List[str], use_llm: bool = True,
+                           max_per_text: int = 500) -> List[Tuple[str, str, str, str]]:
+    """
+    Extrait des triplets d'une liste de textes, avec déduplication.
+
+    Args:
+        texts: Liste de textes à analyser
+        use_llm: Si True, utilise le LLM (DeepSeek) pour l'extraction riche
+        max_per_text: Nombre max de triplets par texte
+
+    Returns:
+        Liste de tuples (sujet, relation, objet, secteur) dédupliqués.
+    """
+    all_triplets = []
+    seen = set()
+    extract_fn = extract_triples_llm if (use_llm and _LLM_AVAILABLE) else extract_triples_simple
+    
+    total = len(texts)
+    for i, text in enumerate(texts):
+        if not text or len(text.strip()) < 50:
+            continue
+        
+        try:
+            triples = extract_fn(text)
+            for s, r, o, sec in triples:
+                s_clean = s.strip().lower()
+                r_clean = r.strip().lower()
+                o_clean = o.strip().lower()
+                
+                if not s_clean or not r_clean or not o_clean:
+                    continue
+                if len(s_clean) < 2 or len(o_clean) < 2:
+                    continue
+                if s_clean == o_clean:
+                    continue
+                
+                key = (s_clean, r_clean, o_clean)
+                if key not in seen:
+                    seen.add(key)
+                    all_triplets.append((s_clean, r_clean, o_clean, sec))
+                    
+                    if len(all_triplets) % 1000 == 0:
+                        log.info(f"  extract_triples_batch: {len(all_triplets)} "
+                                 f"triplets ({i+1}/{total} textes)")
+        except Exception as e:
+            log.debug(f"  Erreur extraction texte {i+1}/{total}: {e}")
+            continue
+        
+        # Limiter par texte
+        if len(all_triplets) >= max_per_text * (i + 1):
+            all_triplets = all_triplets[:max_per_text * (i + 1)]
+    
+    log.info(f"extract_triples_batch terminé: {len(all_triplets)} triplets "
+             f"de {total} textes")
+    return all_triplets
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

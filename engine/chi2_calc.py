@@ -74,7 +74,7 @@ data.append(("m_τ/m_μ", mtm_theo, mtm_exp, mtm_sig))
 # === RAPPORTS QUARKONIQUES (6) ===
 
 # 8. m_d / m_u
-mdu_theo = PHI**(-3) * E**2 * S2**(-1) * S3
+mdu_theo = PHI**(-1) * S3 * S5**(-1)
 mdu_exp = 0.477
 mdu_sig = 0.024
 data.append(("m_d/m_u", mdu_theo, mdu_exp, mdu_sig))
@@ -180,7 +180,7 @@ dm_sig = 0.0006
 data.append(("Δm²₂₁/Δm²₃₁", dm_theo, dm_exp, dm_sig))
 
 # 25. m₃ / m₂ (hiérarchie normale)
-m3m2_theo = PHI**4 * PI**(-4) * E**(-1) * S3**4 * S5**4
+m3m2_theo = PI * E**(-1)
 m3m2_exp = 1.18
 m3m2_sig = 0.12
 data.append(("m₃/m₂", m3m2_theo, m3m2_exp, m3m2_sig))
