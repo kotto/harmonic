@@ -2081,7 +2081,7 @@ class HarmonicBrain:
             if entity_candidates:
                 candidates = self._merge_candidates(candidates, entity_candidates, user_boost=1.2)
 
-        # Ondulatoire désactivé (prêt, calibration ψ nécessaire)
+        # Ondulatoire désactivé (prêt, calibration ψ nécessaire : dim≥512 requis)
         
         # Boost des candidats qui appartiennent au(x) domaine(s) détecté(s)
         detected_domains = self._detect_domains(question)
