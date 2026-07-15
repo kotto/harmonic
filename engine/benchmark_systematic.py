@@ -671,10 +671,15 @@ def score_factual_precision(response: str, key_facts: List[Tuple[str, str, str]]
         s_overlap = _word_overlap(response, kf_s)
         # Score de chevauchement pour l'objet
         o_overlap = _word_overlap(response, kf_o)
-        # Combinaison : les deux doivent être présents à >50%
-        if s_overlap > 0.4 and o_overlap > 0.4:
+        # 🆕 Substring match : plus permissif pour les courtes chaînes
+        resp_norm = _normalize(response)
+        s_sub = _normalize(kf_s) in resp_norm
+        o_sub = _normalize(kf_o) in resp_norm
+        
+        # Combinaison : word overlap OU substring
+        if (s_overlap > 0.4 or s_sub) and (o_overlap > 0.4 or o_sub):
             correct += 1
-        elif s_overlap > 0.4 or o_overlap > 0.4:
+        elif (s_overlap > 0.4 or s_sub) or (o_overlap > 0.4 or o_sub):
             correct += 0.5
     
     return correct / len(key_facts)
@@ -688,12 +693,15 @@ def score_factual_recall(response: str, key_facts: List[Tuple[str, str, str]]) -
         return 1.0
     
     found = 0
+    resp_norm = _normalize(response)
     for kf_s, kf_r, kf_o in key_facts:
         s_overlap = _word_overlap(response, kf_s)
         o_overlap = _word_overlap(response, kf_o)
-        if s_overlap > 0.4 and o_overlap > 0.4:
+        s_sub = _normalize(kf_s) in resp_norm
+        o_sub = _normalize(kf_o) in resp_norm
+        if (s_overlap > 0.4 or s_sub) and (o_overlap > 0.4 or o_sub):
             found += 1
-        elif s_overlap > 0.4 or o_overlap > 0.4:
+        elif (s_overlap > 0.4 or s_sub) or (o_overlap > 0.4 or o_sub):
             found += 0.5
     
     return found / len(key_facts)

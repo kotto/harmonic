@@ -2081,7 +2081,11 @@ class HarmonicBrain:
             if entity_candidates:
                 candidates = self._merge_candidates(candidates, entity_candidates, user_boost=1.2)
 
-        # Ondulatoire désactivé (prêt, calibration ψ nécessaire : dim≥512 requis)
+        # 🌊 OndulatoireIndex : fallback si EntityIndex + TF-IDF échouent
+        if not candidates or candidates[0][1] < 2.0:
+            wave_candidates = self._wave_index.search(question, max_results=10, coherence_threshold=0.4)
+            if wave_candidates:
+                candidates = wave_candidates
         
         # Boost des candidats qui appartiennent au(x) domaine(s) détecté(s)
         detected_domains = self._detect_domains(question)
@@ -2772,9 +2776,16 @@ class HarmonicBrain:
         return found
 
     def _clean_response(self, response: str, lang: str) -> str:
-        """Nettoie la réponse : déduplication des phrases et filtre de langue."""
+        """Nettoie et formate la réponse."""
         if not response:
             return response
+        
+        # 🆕 Formater : capitaliser la première lettre, ponctuation finale
+        response = response.strip()
+        if response and response[0].islower():
+            response = response[0].upper() + response[1:]
+        if response and response[-1] not in '.!?':
+            response += '.'
         
         # Découper en phrases
         sentences = [s.strip() for s in response.replace('?', '.').replace('!', '.').split('.') if s.strip()]
