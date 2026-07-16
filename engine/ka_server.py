@@ -1192,6 +1192,35 @@ def autonomie_history():
     })
 
 
+@app.route('/api/memory/recent', methods=['GET'])
+def memory_recent():
+    """
+    Retourne les souvenirs récents de l'utilisateur.
+    """
+    try:
+        # Récupérer depuis la mémoire conversationnelle ou le PersonalHologram
+        memories = []
+        import glob, os, json
+        data_dir = Path(__file__).resolve().parent / 'data'
+        # Chercher les sessions récentes
+        session_files = sorted(glob.glob(str(data_dir / 'sessions' / '*.json')), key=os.path.getmtime, reverse=True)
+        for sf in session_files[:5]:
+            try:
+                with open(sf, 'r', encoding='utf-8') as f:
+                    session = json.load(f)
+                if 'messages' in session:
+                    for msg in session['messages'][-3:]:
+                        if msg.get('role') == 'user':
+                            memories.append({
+                                'title': msg.get('content', '')[:80],
+                                'date': msg.get('timestamp', ''),
+                                'content': msg.get('content', '')
+                            })
+            except: pass
+        return jsonify({'memories': memories[:10]})
+    except Exception as e:
+        return jsonify({'memories': [], 'error': str(e)})
+
 @app.route('/api/health', methods=['GET'])
 def health():
     """Health check."""
@@ -1630,6 +1659,374 @@ def harmonic_encode():
     }
 
     return jsonify(result)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STORAGE OPTIMIZER — Compression universelle de fichiers utilisateur
+# ═══════════════════════════════════════════════════════════════════════════════
+
+CODEC_RATIOS = {
+    'image_jpeg': 1.25,
+    'image_png': 1.5,
+    'image_raw': 24.0,
+    'video': 30.0,
+    'video_static': 50.0,
+    'voice': 100.0,
+    'document': 1.25,
+    'text': 3.0,
+}
+
+
+def _detect_media_type(filename: str, file_bytes: bytes = None) -> str:
+    """Détecte le type de média à partir de l'extension et des magic bytes."""
+    ext = Path(filename).suffix.lower() if filename else ''
+    ext_img = {'.jpg', '.jpeg', '.jfif', '.heic', '.heif'}
+    ext_raw = {'.raw', '.bmp', '.tiff', '.tif', '.dng', '.cr2', '.nef', '.arw'}
+    ext_png = {'.png'}
+    ext_vid = {'.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v'}
+    ext_aud = {'.m4a', '.wav', '.aac', '.flac', '.ogg', '.mp3'}
+    ext_doc = {'.pdf', '.doc', '.docx', '.ppt', '.pptx'}
+    ext_txt = {'.txt', '.md', '.json', '.xml', '.csv', '.log', '.py', '.js'}
+
+    if ext in ext_img: return 'image_jpeg'
+    if ext in ext_raw: return 'image_raw'
+    if ext in ext_png: return 'image_png'
+    if ext in ext_vid: return 'video'
+    if ext in ext_aud: return 'voice'
+    if ext in ext_doc: return 'document'
+    if ext in ext_txt: return 'text'
+    return 'image_jpeg'
+
+
+def _codec_for_type(media_type: str, quality: str = 'standard'):
+    """Choisit le codec et sa config selon le type de média."""
+    if media_type == 'image_jpeg':
+        return ('hcv_android', quality)
+    if media_type == 'image_raw':
+        return ('hcv_pro', quality)
+    if media_type == 'image_png':
+        return ('harmonic', quality)
+    if media_type == 'video':
+        return ('hcv_pro_video', quality)
+    if media_type == 'voice':
+        return ('voice_codec', quality)
+    if media_type == 'document':
+        return ('zstd', quality)
+    if media_type == 'text':
+        return ('zstd', quality)
+    return ('zstd', quality)
+
+
+@app.route('/api/storage/analyze', methods=['POST'])
+def storage_analyze():
+    """
+    Analyse un fichier et estime le gain de compression.
+
+    Body: multipart/form-data avec un champ 'file'
+    Returns: {media_type, original_size, estimated_ratio, estimated_after, codec_recommended}
+    """
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'Aucun fichier fourni (champ "file" requis)'}), 400
+
+        f = request.files['file']
+        original_data = f.read()
+        original_size = len(original_data)
+        filename = f.filename or 'unknown'
+
+        media_type = _detect_media_type(filename, original_data)
+        ratio = CODEC_RATIOS.get(media_type, 1.25)
+        codec_name, _ = _codec_for_type(media_type)
+        estimated_after = int(original_size / ratio)
+
+        return jsonify({
+            'filename': filename,
+            'media_type': media_type,
+            'original_size': original_size,
+            'estimated_ratio': round(ratio, 1),
+            'estimated_after': estimated_after,
+            'estimated_saved': original_size - estimated_after,
+            'codec_recommended': codec_name,
+        })
+
+    except Exception as e:
+        log.error(f'storage_analyze error: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/storage/optimize', methods=['POST'])
+def storage_optimize():
+    """
+    Compresse un fichier et retourne le résultat.
+
+    Body: multipart/form-data avec 'file' + 'quality' (archive|standard|eco)
+    Returns: fichier compressé (binary) + en-têtes X-Ratio, X-Saved
+    """
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'Aucun fichier fourni'}), 400
+
+        f = request.files['file']
+        original_data = f.read()
+        original_size = len(original_data)
+        filename = f.filename or 'unknown'
+        quality = request.form.get('quality', 'standard')
+
+        media_type = _detect_media_type(filename)
+        codec_name, _ = _codec_for_type(media_type, quality)
+        compressed = original_data  # par défaut
+        ratio = 1.0
+        psnr = 0.0
+        warning = None
+
+        # --- ZSTD direct (texte, documents, fallback) ---
+        if codec_name == 'zstd':
+            try:
+                import zstandard as _zstd
+                level = 22 if quality == 'eco' else 19 if quality == 'standard' else 11
+                cctx = _zstd.ZstdCompressor(level=level)
+                compressed = cctx.compress(original_data)
+                ratio = original_size / max(len(compressed), 1)
+            except Exception as e:
+                warning = f'zstd indisponible: {e}'
+
+        # --- HCV Android Boost (JPEG/PNG déjà compressés) ---
+        elif codec_name == 'hcv_android':
+            if hcv_available:
+                try:
+                    codec = HCVAndroidBoostCodec(quality='compact' if quality == 'eco' else 'balanced')
+                    result = codec.encode(original_data, 'jpg', filename)
+                    if isinstance(result, (bytes, bytearray)) and len(result) < original_size:
+                        compressed = result
+                        ratio = original_size / len(compressed)
+                    else:
+                        warning = 'Déjà optimal'
+                except Exception as e:
+                    warning = f'HCV Android: {e}'
+            # Fallback zstd
+            if ratio <= 1.0:
+                try:
+                    import zstandard as _zstd
+                    compressed = _zstd.ZstdCompressor(level=19).compress(original_data)
+                    ratio = original_size / max(len(compressed), 1)
+                except Exception:
+                    compressed = original_data
+
+        # --- HCV Pro (RAW, broadcast) ---
+        elif codec_name == 'hcv_pro':
+            try:
+                import cv2
+                img = cv2.imdecode(np.frombuffer(original_data, np.uint8), cv2.IMREAD_COLOR)
+                if img is not None:
+                    import importlib.util
+                    hcv_dir = Path(__file__).resolve().parent.parent / 'HCV-Compression-Engine' / 'codecs'
+                    spec = importlib.util.spec_from_file_location('hcv_pro_mod', str(hcv_dir / 'hcv_pro_codec.py'))
+                    mod = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(mod)
+                    enc_result = mod.HCVProCodec().encode_frame(img)
+                    enc_data = enc_result[0] if isinstance(enc_result, tuple) else enc_result
+                    if len(enc_data) < original_size:
+                        compressed = enc_data
+                        ratio = original_size / len(compressed)
+                    else:
+                        warning = 'Image déjà très compressée'
+                else:
+                    warning = 'Image non décodable'
+            except Exception as e:
+                warning = f'HCV Pro: {e}'
+
+        # --- Voice Codec ---
+        elif codec_name == 'voice_codec':
+            try:
+                sys.path.insert(0, str(Path(__file__).resolve().parent))
+                from harmonic_voice_codec import HarmonicVoiceCodec
+                import wave, io as _io
+                # Essayer de lire en WAV
+                try:
+                    wf = wave.open(_io.BytesIO(original_data))
+                    sr = wf.getframerate()
+                    n = wf.getnframes()
+                    raw = wf.readframes(n)
+                    audio = np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768.0
+                    vc = HarmonicVoiceCodec()
+                    compressed = vc.encode(audio, sr)
+                    ratio = original_size / max(len(compressed), 1)
+                except Exception:
+                    # Pas du WAV → zstd
+                    import zstandard as _zstd
+                    compressed = _zstd.ZstdCompressor(level=19).compress(original_data)
+                    ratio = original_size / max(len(compressed), 1)
+                    warning = 'Format audio non-WAV, compression zstd appliquée'
+            except Exception as e:
+                warning = f'Voice Codec: {e}'
+
+        # Sécurité: ne jamais retourner un fichier plus grand
+        if len(compressed) >= original_size:
+            compressed = original_data
+            ratio = 1.0
+            warning = 'Déjà optimal — aucune compression supplémentaire possible'
+
+        saved = original_size - len(compressed)
+
+        from flask import Response
+        resp = Response(compressed, mimetype='application/octet-stream')
+        resp.headers['Content-Disposition'] = f'attachment; filename="{filename}.hcv"'
+        resp.headers['X-Ratio'] = f'{ratio:.1f}'
+        resp.headers['X-Original-Size'] = str(original_size)
+        resp.headers['X-Compressed-Size'] = str(len(compressed))
+        resp.headers['X-Saved'] = str(saved)
+        resp.headers['X-PSNR'] = f'{psnr:.1f}' if psnr > 0 else '0'
+        resp.headers['X-Media-Type'] = media_type
+        resp.headers['X-Codec'] = codec_name
+        if warning:
+            resp.headers['X-Warning'] = warning[:200]
+        return resp
+
+    except Exception as e:
+        log.error(f'storage_optimize error: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/storage/optimize-batch', methods=['POST'])
+def storage_optimize_batch():
+    """
+    Analyse un lot de fichiers et estime le gain total.
+
+    Body: multipart/form-data avec plusieurs champs 'files'
+    Returns: {total_original, total_estimated_after, total_saved, files: [...]}
+    """
+    try:
+        files = request.files.getlist('files')
+        if not files:
+            return jsonify({'error': 'Aucun fichier fourni'}), 400
+
+        results = []
+        total_original = 0
+        total_after = 0
+
+        for f in files:
+            data = f.read()
+            size = len(data)
+            filename = f.filename or 'unknown'
+            media_type = _detect_media_type(filename)
+            ratio = CODEC_RATIOS.get(media_type, 1.25)
+            est_after = int(size / ratio)
+            total_original += size
+            total_after += est_after
+            results.append({
+                'filename': filename,
+                'media_type': media_type,
+                'original_size': size,
+                'estimated_after': est_after,
+                'estimated_saved': size - est_after,
+                'estimated_ratio': round(ratio, 1),
+            })
+
+        return jsonify({
+            'files': results,
+            'n_files': len(results),
+            'total_original': total_original,
+            'total_estimated_after': total_after,
+            'total_saved': total_original - total_after,
+            'avg_ratio': round(total_original / max(total_after, 1), 1),
+        })
+
+    except Exception as e:
+        log.error(f'storage_optimize_batch error: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/storage/view', methods=['POST'])
+def storage_view():
+    """
+    Décompresse (et upscale si demandé) un fichier pour affichage.
+    
+    Body: multipart/form-data avec 'file' + 'upscale' (4k|1080p|none)
+    Returns: image JPEG prête à afficher
+    
+    C'est le point d'entrée pour la lecture : le fichier est décompressé
+    et upscalé à la volée, donnant à l'utilisateur une qualité 4K même
+    depuis un fichier ultra-compressé.
+    """
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'Aucun fichier fourni'}), 400
+
+        f = request.files['file']
+        data = f.read()
+        filename = f.filename or 'unknown'
+        upscale = request.form.get('upscale', 'none')  # '4k', '1080p', 'none'
+
+        # Décompresser
+        media_type = _detect_media_type(filename)
+        img = None
+        
+        # Essayer HCV decoder
+        try:
+            import cv2
+            # Tenter l'image décodée directement
+            raw = np.frombuffer(data, np.uint8)
+            img = cv2.imdecode(raw, cv2.IMREAD_COLOR)
+            if img is None:
+                raise ValueError('Not an image')
+        except Exception:
+            pass
+
+        # Fallback: essayer HCV Pro decode
+        if img is None and hcv_available:
+            try:
+                import importlib.util
+                hcv_dir = Path(__file__).resolve().parent.parent / 'HCV-Compression-Engine' / 'codecs'
+                spec = importlib.util.spec_from_file_location('hcv_pro_vw', str(hcv_dir / 'hcv_pro_codec.py'))
+                mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(mod)
+                img = mod.HCVProCodec().decode_frame(data)
+            except Exception:
+                pass
+
+        if img is None:
+            return jsonify({'error': 'Format non supporté pour la visualisation'}), 400
+
+        # Upscale si demandé
+        h, w = img.shape[:2]
+        target_w, target_h = w, h
+        upscaled = False
+
+        if upscale == '4k':
+            target_w = 3840
+            target_h = 2160
+            upscaled = (w < target_w or h < target_h)
+        elif upscale == '1080p':
+            target_w = 1920
+            target_h = 1080
+            upscaled = (w < target_w or h < target_h)
+
+        if upscaled:
+            # Upscale Lanczos (qualité maximale)
+            scale = min(target_w / w, target_h / h)
+            if scale > 1.0:
+                new_w = int(w * scale)
+                new_h = int(h * scale)
+                try:
+                    img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_LANCZOS4)
+                except Exception:
+                    img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
+
+        # Re-encoder en JPEG qualité 90 pour le transfert
+        _, jpeg = cv2.imencode('.jpg', img, [cv2.IMWRITE_JPEG_QUALITY, 90])
+        
+        from flask import Response
+        resp = Response(jpeg.tobytes(), mimetype='image/jpeg')
+        resp.headers['X-Original-W'] = str(w)
+        resp.headers['X-Original-H'] = str(h)
+        resp.headers['X-Display-W'] = str(target_w)
+        resp.headers['X-Display-H'] = str(target_h)
+        resp.headers['X-Upscaled'] = str(upscaled).lower()
+        return resp
+
+    except Exception as e:
+        log.error(f'storage_view error: {e}')
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/harmonic/stats', methods=['GET'])

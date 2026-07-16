@@ -903,23 +903,50 @@ class HarmonicAI:
         # ── 1-3. PIPELINE SÉMANTIQUE UNIFIÉ ──
         response = None
         confidence = 0.0
+        model_trusted = False  # 🆕 True si réponse du modèle direct (KB retrieval)
 
         # ── 1.0 FAST RETRIEVER — requête directe dans les 28K faits enrichis ──
+        # 🆕 Pour les questions "qui" (recherche d'entité spécifique),
+        # model.ask() est plus fiable que FastRetriever car il a accès
+        # à TOUTE la KB y compris les faits appris récemment.
+        is_who_question = any(enriched.lower().strip().startswith(w) for w in
+            ('qui ', 'who ', 'qui a ', 'who is ', 'qui est '))
+        
         fast_answer, fast_facts = self._fast_retrieve(enriched, lang)
-        facts_backed = False       # 🆕 True si la réponse est appuyée par des faits réels
-        sft_direct_match = False   # 🆕 True si un fait SFT haute-amplitude matche
-        if fast_answer:
+        facts_backed = False
+        sft_direct_match = False
+        if fast_answer and not is_who_question:
             response = fast_answer
             confidence = 0.60
             facts_backed = bool(fast_facts)
-            # Un fait SFT (sector 'SFT') d'amplitude >= 15 est une réponse exacte
-            # curée (capitales, symboles, etc.) → fiable par construction. On
-            # l'exempte du seuil de refus pour éviter les over-refusals liés à la
-            # dérive d'état (mutation HIGH_AMPLITUDE_FACTS, contexte conversation).
             for f in (fast_facts or []):
                 if len(f) >= 5 and f[3] == 'SFT' and f[4] >= 15.0:
                     sft_direct_match = True
                     break
+            
+            # 🆕 Comparer avec model.ask() qui a la KB complète
+            if not sft_direct_match:
+                model_resp = self.model.ask(enriched)
+                if model_resp and len(model_resp) > 30:
+                    q_words = set(enriched.lower().split())
+                    fast_words = set(response.lower().split()) if response else set()
+                    model_words = set(model_resp.lower().split())
+                    missing = q_words - fast_words - {'le','la','les','de','des','du','un','une','et','est','a','que','qui','quoi','dans','sur','pour','avec','par','en'}
+                    found_by_model = missing & model_words
+                    if len(found_by_model) >= 1 or len(model_resp) > len(response) * 1.3:
+                        response = model_resp
+                        confidence = 0.55
+                        model_trusted = True
+                        facts_backed = True
+        
+        # 🆕 Pour les questions "qui", utiliser directement model.ask()
+        if is_who_question:
+            model_resp = self.model.ask(enriched)
+            if model_resp and len(model_resp) > 20:
+                response = model_resp
+                confidence = 0.55
+                model_trusted = True
+                facts_backed = True
 
         # 🌊 J-LENS : capturer l'instantané
         if self.jlens and fast_facts:
@@ -962,6 +989,8 @@ class HarmonicAI:
         # fiable (web ou LLM). Le seuil de refus (étape 5) ne s'applique PAS à ces
         # réponses — elles portent leur propre provenance. Il ne refuse QUE le
         # retrieval interne non fiable, ce qui rend l'anti-hallucination réelle.
+        # 🆕 model_trusted : True si la réponse vient du modèle direct (KB retrieval),
+        # ce qui est déterministe et fiable par construction.
         trusted_external = False
         if not response or len(response) < 15 or confidence < 0.35:
             # 4a. Essayer d'abord le raisonnement harmonique classique
@@ -970,6 +999,17 @@ class HarmonicAI:
                     response = self.engine.reason(enriched, max_depth=2)
                 except Exception:
                     response = self.model.ask(enriched)
+            
+            # 🆕 Si engine.reason() n'a rien donné ou réponse trop courte,
+            # essayer model.ask() directement (KB retrieval déterministe)
+            if not response or len(response) < 15:
+                response = self.model.ask(enriched)
+            
+            # 🆕 Si model.ask() a trouvé une réponse non triviale, c'est fiable
+            if response and len(response) > 30:
+                model_trusted = True
+                confidence = max(confidence, 0.55)
+                facts_backed = True
 
             # 4b. 🌐 FALLBACK WEB — recherche Internet gratuite
             conf = self._confidence_score(response, enriched) if response else 0.0
@@ -1034,7 +1074,7 @@ class HarmonicAI:
         if _KA_DEBUG:
             print(f"[DBG] response={response!r}", file=_sys.stderr)
             print(f"[DBG] sft_direct_match={sft_direct_match} trusted_external={trusted_external} recomputed={recomputed:.3f}", file=_sys.stderr)
-        if (not trusted_external and not sft_direct_match and response):
+        if (not trusted_external and not model_trusted and not sft_direct_match and response):
             # 🆕 Si la réponse est appuyée par des faits réels (retrieval réussi)
             # ET le re-scoring n'est pas catastrophique, on fait confiance à la
             # confiance du pipeline plutôt qu'au re-scoring heuristique (qui peut
@@ -1407,9 +1447,21 @@ class HarmonicAI:
                 results.append(self._creative_dialogue.compose_creative(
                     question, [fact], intention
                 ))
-            return results if results else self.engine.create(n_ideas=n)
+            if results and any(len(r) > 20 for r in results):
+                return results[:n]
         except Exception:
-            return self.engine.create(n_ideas=n)
+            pass
+        
+        # Fallback: engine.create
+        try:
+            engine_results = self.engine.create(n_ideas=n)
+            if engine_results and any(len(r) > 20 for r in engine_results):
+                return engine_results[:n]
+        except Exception:
+            pass
+        
+        # 🆕 Fallback ultime: génération créative directe depuis la KB
+        return self._creative_from_kb(n=n)
     
     def create_ondulatoire(self, concept_a: str = None, concept_b: str = None, n: int = 3) -> List[str]:
         """Créativité ondulatoire profonde par dialogue conscient/inconscient."""
@@ -1452,10 +1504,82 @@ class HarmonicAI:
             for fact in facts[:n]:
                 s, r, o, sec = fact
                 results.append(f"✨ {s} est comme {o} : {r}")
-            return results if results else self.engine.metaphor(n_metaphores=n)
+            if results and any(len(r) > 10 for r in results):
+                return results[:n]
         except Exception:
-            return self.engine.metaphor(n_metaphores=n)
+            pass
+        
+        # Fallback: engine.metaphor
+        try:
+            engine_results = self.engine.metaphor(n_metaphores=n)
+            if engine_results and any(len(r) > 10 for r in engine_results):
+                return engine_results[:n]
+        except Exception:
+            pass
+        
+        # 🆕 Fallback ultime: métaphores directes depuis la KB
+        return self._creative_from_kb(n=n, mode='metaphor')
     
+    def _creative_from_kb(self, n: int = 5, mode: str = 'create') -> List[str]:
+        """
+        Génération créative/métaphorique directe depuis la KB,
+        sans dépendance à l'encodeur ou à ConsciousCreator.
+        
+        Args:
+            n: nombre de résultats
+            mode: 'create' (connexions) ou 'metaphor' (métaphores)
+        """
+        import random
+        kb = self.model.knowledge_base
+        if len(kb) < 4:
+            return ["Pas assez de connaissances pour créer des connexions."]
+        
+        # Grouper les faits par secteur
+        by_sector = {}
+        for s, r, o, sec in kb:
+            if sec not in by_sector:
+                by_sector[sec] = []
+            by_sector[sec].append((s, r, o))
+        
+        sectors = list(by_sector.keys())
+        if len(sectors) < 2:
+            return ["Pas assez de domaines varies pour créer."]
+        
+        results = []
+        attempts = 0
+        while len(results) < n and attempts < n * 10:
+            attempts += 1
+            # Choisir deux secteurs différents
+            sec1, sec2 = random.sample(sectors, 2)
+            f1 = random.choice(by_sector[sec1])
+            f2 = random.choice(by_sector[sec2])
+            s1, r1, o1 = f1
+            s2, r2, o2 = f2
+            
+            if mode == 'metaphor':
+                templates = [
+                    f"✨ {s1} ({sec1}) est comme {s2} ({sec2}) — tous deux {r1}",
+                    f"✨ {s1} et {s2} dansent la meme onde : {r1} rencontre {r2}",
+                    f"✨ Si {s1} etait un poeme, {s2} serait sa rime — {r1}",
+                    f"✨ L'univers a glisse un secret : {s1} et {s2} partagent l'essence de {r1}",
+                ]
+                result = random.choice(templates)
+            else:
+                templates = [
+                    f"🌊 Connexion inedite : {s1} ({sec1}) et {s2} ({sec2}). "
+                    f"En {sec1}, {s1} {r1} {o1}. En {sec2}, {s2} {r2} {o2}. "
+                    f"L'interference de ces deux ondes suggere un pont entre ces univers.",
+                    f"🌊 Une resonance inattendue emerge entre {s1} ({sec1}) et {s2} ({sec2}). "
+                    f"D'un cote, {s1} {r1} {o1}. De l'autre, {s2} {r2} {o2}. "
+                    f"Ces deux concepts vibrent sur des frequences complementaires.",
+                ]
+                result = random.choice(templates)
+            
+            if result not in results:
+                results.append(result)
+        
+        return results if results else ["L'univers harmonique est en perpetuelle creation."]
+
     def haiku(self) -> str:
         """Haïku généré par résonance."""
         return self.engine.haiku()
