@@ -537,8 +537,9 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
       <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px" onclick="go('s-cap');closeMore()"><span style="font-size:18px">💡</span><div><div style="font-size:13px;color:var(--t1)">Idée</div><div style="font-size:11px;color:var(--t4)">Capturer</div></div></div>
 	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-dec');closeMore()"><span style="font-size:18px">⚖️</span><div><div style="font-size:13px;color:var(--t1)">Décision</div><div style="font-size:11px;color:var(--t4)">Changer de voiture ?</div></div></div>
 	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-sante');closeMore()"><span style="font-size:18px">🫀</span><div><div style="font-size:13px;color:var(--t1)">Santé</div><div style="font-size:11px;color:var(--t4)">Diagnostic harmonique · φ π e</div></div></div>
-      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-hpc');closeMore()"><span style="font-size:18px">🧬</span><div><div style="font-size:13px;color:var(--t1)">HPC Lab</div><div style="font-size:11px;color:var(--t4)">Protein Folding · Quantum · HCV</div></div></div>
-	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-code');closeMore()"><span style="font-size:18px">💻</span><div><div style="font-size:13px;color:var(--t1)">Code Studio</div><div style="font-size:11px;color:var(--t4)">Génération zero-LLM</div></div></div>
+      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-sms');closeMore()"><span style="font-size:18px">💬</span><div><div style="font-size:13px;color:var(--t1)">SMS</div><div style="font-size:11px;color:var(--t4)">Messages · Conversations</div></div></div>
+	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-camera');closeMore()"><span style="font-size:18px">📷</span><div><div style="font-size:13px;color:var(--t1)">Caméra</div><div style="font-size:11px;color:var(--t4)">Photo · Vidéo · Compression auto</div></div></div>
+	      
 	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-storage');closeMore()"><span style="font-size:18px">💾</span><div><div style="font-size:13px;color:var(--t1)">Espace disque</div><div style="font-size:11px;color:var(--t4)">Analyse et optimisation</div></div></div>
     </div>
     <div class="btn btn--ghost" onclick="closeMore()" style="margin-top:12px;text-align:center">Fermer</div>
@@ -712,26 +713,6 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
 	    </div>
 	  </div>
 
-  <!-- CODE STUDIO -->
-  <div class="sc dec" id="s-code">
-    <div class="sph"><div class="sph__back" onclick="go('s-home')" role="button">‹ KA</div><div class="sph__badge" style="color:var(--sky)">KA CODE</div><div style="width:48px"></div></div>
-    <div class="sp-body">
-      <div style="display:flex;gap:6px;margin-bottom:10px">
-        <select id="code-lang" style="padding:8px 12px;border-radius:10px;background:var(--g1);border:.5px solid var(--b2);color:var(--t1);font-size:12px">
-          <option value="python">Python</option>
-          <option value="javascript">JavaScript</option>
-          <option value="go">Go</option>
-          <option value="rust">Rust</option>
-        </select>
-        <input id="code-prompt" placeholder="Décrivez le code…" style="flex:1;padding:8px 14px;border-radius:10px;background:var(--g1);border:.5px solid var(--b2);color:var(--t1);font-size:13px;outline:none">
-      </div>
-      <div id="code-result" class="card card--raised" style="display:none;font-family:var(--font-mono,monospace);font-size:11px;line-height:1.5;white-space:pre-wrap;max-height:320px;overflow:auto"></div>
-      <div style="font-size:10px;color:var(--t4);text-align:center;margin-top:12px;letter-spacing:.06em">Zéro LLM · Génération par patterns harmoniques</div>
-    </div>
-    <div class="cta-row">
-      <div class="btn btn--sky" onclick="codeGen()">▶ Générer</div>
-      <div class="btn btn--ghost" onclick="go('s-home')">Fermer</div>
-    </div>
   </div>
 </div>
 
@@ -820,22 +801,6 @@ function go(id){
 function showMore(){document.getElementById('more-panel').style.display='block';document.getElementById('nb-more').classList.add('nb--on');}
 
 // ── QUALITÉ INTUITIVE ──
-function setQuality(val, label){
-  document.getElementById('hpc-quality').value = val;
-  document.getElementById('hpc-q-label').textContent = label;
-  // Reset pill styles
-  ['eco','std','pro','max'].forEach(id=>{
-    const el=document.getElementById('hpc-q-'+id);
-    el.style.background='rgba(255,255,255,.04)';
-    el.style.border='.5px solid var(--b2)';
-    el.style.color='var(--t3)';
-  });
-  // Highlight selected
-  const map={20:'eco',45:'std',70:'pro',100:'max'};
-  const sel=document.getElementById('hpc-q-'+map[val]);
-  if(sel){sel.style.background='var(--life-d)';sel.style.border='.5px solid var(--life)';sel.style.color='var(--life)';}
-  hpcRun();
-}
 
 function closeMore(){const p=document.getElementById('more-panel');if(p)p.style.display='none';document.getElementById('nb-more')?.classList.remove('nb--on');}
 
@@ -929,51 +894,6 @@ function tick(){const n=new Date();document.getElementById('clk').textContent=St
 tick();setInterval(tick,10000);
 buildKbd();renderSugs();
 
-// ── HPC LAB ──
-let hpcMode='protein';
-function hpcRun(){
-  const mode=hpcMode;
-  const res=document.getElementById('hpc-result');
-  res.style.display='block';res.innerHTML='<span style="color:var(--soul-l);animation:pulse 1.2s ease-in-out infinite">●</span> Calcul en cours…';
-  const inp=document.getElementById('hpc-input');
-  const seqEl=document.getElementById('hpc-seq');
-  const compressUI=document.getElementById('hpc-compress-ui');
-  
-  // Reset visibility
-  seqEl.style.display=(mode==='protein')?'block':'none';
-  if(compressUI) compressUI.style.display=(mode==='compress')?'block':'none';
-  
-  if(mode==='protein'){
-    const seq=(document.getElementById('hpc-seq')?.value||'ALAARGASN').toUpperCase().replace(/[^A-Z]/g,'');
-    fetch(API_URL+'/api/hpc/protein',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sequence:seq||'ALAARGASN'})})
-      .then(r=>r.json()).then(d=>{
-        res.innerHTML=`<div class="sec-lbl">🧬 PROTEIN FOLDING</div><div style="font-size:13px;color:var(--t2);line-height:1.6">Énergie libre : <b style="color:var(--life)">${d.free_energy_kcal_mol} kcal/mol</b><br>Confiance : <b>${Math.round(d.confidence*100)}%</b><br>Hélice α ${d.secondary_structure.helix_percent}% | Feuillet β ${d.secondary_structure.sheet_percent}% | Boucle ${d.secondary_structure.loop_percent}%<br><span style="color:var(--life)">Accélération φ : ${d.harmonic_speedup}</span></div>`;
-        inp.style.display='block';
-      }).catch(()=>{res.innerHTML='<span style="color:var(--coral)">⚠️ API inaccessible</span>';});
-  }else if(mode==='quantum'){
-    inp.style.display='none';
-    fetch(API_URL+'/api/hpc/quantum',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({n_qubits:8})})
-      .then(r=>r.json()).then(d=>{
-        res.innerHTML=`<div class="sec-lbl">⚛️ SIMULATION QUANTIQUE</div><div style="font-size:13px;color:var(--t2);line-height:1.6">Énergie fondamentale : <b style="color:var(--soul-l)">${d.ground_state_energy}</b><br>Spectre : ${d.energy_spectrum.slice(0,4).map(e=>e.toFixed(3)).join(', ')}…<br><span style="color:var(--soul-l)">Efficacité harmonique : ${d.harmonic_efficiency}</span></div>`;
-      }).catch(()=>{res.innerHTML='<span style="color:var(--coral)">⚠️ API inaccessible</span>';});
-	  }else if(mode==='compress'){
-	    inp.style.display='block';
-	    document.getElementById('hpc-seq').style.display='none';
-	    document.getElementById('hpc-compress-ui').style.display='block';
-	    const q=parseInt(document.getElementById('hpc-quality').value)||45;
-	    const label=document.getElementById('hpc-q-label');
-	    fetch(API_URL+'/api/harmonic/encode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({quality:q,mode:'image'})})
-	      .then(r=>r.json()).then(d=>{
-	        if(d.error){res.innerHTML='<span style=\"color:var(--coral)\">'+d.error+'</span>';return;}
-	        const qualLabel=d.psnr_db>=99?'🌟 Parfaite — sans aucune perte':d.psnr_db>=50?'✨ Excellente — indiscernable':'🌱 Économique — très légère';
-	        res.innerHTML=`<div class=\"sec-lbl\">📦 COMPRESSION HARMONIQUE</div>
-	          <div style=\"font-size:13px;color:var(--t2);line-height:1.8\">
-	          ${d.resolution} · ${(d.original_bytes/1024).toFixed(0)} Ko → <b style=\"color:var(--life)\">${(d.compressed_bytes/1024).toFixed(1)} Ko</b><br>
-	          <b style=\"color:var(--life)\">${d.ratio}x</b> plus léger · ${d.gain_percent}% d'espace libéré<br>
-	          Qualité : <b>${qualLabel}</b><br>
-	          <span style=\"color:var(--t4);font-size:11px\">${d.dict_patches.toLocaleString()} fragments de mémoire · ${d.encode_ms} ms</span></div>`;
-	      }).catch(()=>{res.innerHTML='<span style=\"color:var(--coral)\">⚠️ KA ne peut pas accéder au serveur</span>';});
-	  }
 }
 
 // ── SANTÉ : CAMÉRA PPG ──
@@ -1320,23 +1240,6 @@ async function santeDiagnostic(){
   }
 }
 
-// ── CODE STUDIO ──
-function codeGen(){
-  const prompt=document.getElementById('code-prompt')?.value?.trim();
-  const lang=document.getElementById('code-lang')?.value||'python';
-  const res=document.getElementById('code-result');
-  if(!prompt){res.style.display='block';res.innerHTML='<span style="color:var(--coral)">Veuillez décrire le code souhaité</span>';return;}
-  res.style.display='block';res.innerHTML='<span style="color:var(--soul-l);animation:pulse 1.2s ease-in-out infinite">●</span> Génération…';
-  fetch(API_URL+'/api/code/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,language:lang})})
-    .then(r=>r.json()).then(d=>{res.textContent=d.code;res.style.color='var(--life)';})
-    .catch(()=>{res.innerHTML='<span style="color:var(--coral)">⚠️ API inaccessible — essayez "tri" ou "fibonacci"</span>';
-      // Fallback local
-      const p=prompt.toLowerCase();
-      if(p.includes('tri')||p.includes('sort'))res.textContent=lang==='python'?'def tri_rapide(arr):\n    if len(arr) <= 1: return arr\n    pivot = arr[0]\n    gauche = [x for x in arr[1:] if x <= pivot]\n    droite = [x for x in arr[1:] if x > pivot]\n    return tri_rapide(gauche) + [pivot] + tri_rapide(droite)':'function quickSort(arr) {\n  if (arr.length <= 1) return arr;\n  const pivot = arr[0];\n  const left = arr.slice(1).filter(x => x <= pivot);\n  const right = arr.slice(1).filter(x => x > pivot);\n  return [...quickSort(left), pivot, ...quickSort(right)];\n}';
-      else if(p.includes('fibo'))res.textContent=lang==='python'?'def fibonacci(n):\n    a, b = 0, 1\n    for _ in range(n):\n        yield a\n        a, b = b, a + b':'function* fibonacci(n) {\n  let a = 0, b = 1;\n  for (let i = 0; i < n; i++) {\n    yield a;\n    [a, b] = [b, a + b];\n  }\n}';
-      else res.textContent=lang==='python'?`def solve(data):\n    """${prompt.slice(0,50)}"""\n    return data`:`function solve(data) {\n  // ${prompt.slice(0,50)}\n  return data;\n}`;
-    });
-}
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1485,6 +1388,96 @@ async function loadRelation() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// ── SMS ──
+var smsCurrentContact='';
+var smsHistory=JSON.parse(localStorage.getItem('ka_sms_history')||'{}');
+function smsOpen(name){
+  smsCurrentContact=name;
+  document.getElementById('sms-contacts').style.display='none';
+  document.getElementById('sms-chat').style.display='block';
+  document.getElementById('sms-chat-name').textContent=name;
+  var messages=smsHistory[name]||[];
+  var html='';
+  messages.forEach(function(m){
+    var cls=m.from==='me'?'msg--m':'msg--t';
+    html+='<div class="msg '+cls+'" style="margin-bottom:4px">'+m.text+'</div>';
+  });
+  if(!messages.length) html='<div style="text-align:center;color:var(--t4);padding:20px;font-size:12px">Aucun message</div>';
+  document.getElementById('sms-messages').innerHTML=html;
+}
+function smsSend(){
+  var input=document.getElementById('sms-input');
+  var text=input.value.trim();
+  if(!text||!smsCurrentContact) return;
+  if(!smsHistory[smsCurrentContact]) smsHistory[smsCurrentContact]=[];
+  smsHistory[smsCurrentContact].push({from:'me',text:text,time:Date.now()});
+  localStorage.setItem('ka_sms_history',JSON.stringify(smsHistory));
+  input.value='';
+  smsOpen(smsCurrentContact);
+  try{window.open('sms:?body='+encodeURIComponent(text),'_blank');}catch(e){}
+}
+function smsNew(){
+  var name=prompt('Nom du contact :');
+  if(!name) return;
+  smsHistory[name]=smsHistory[name]||[];
+  localStorage.setItem('ka_sms_history',JSON.stringify(smsHistory));
+  smsOpen(name);
+}
+
+// ── CAMERA ──
+var camStream=null,camRecorder=null,camRecording=false,camChunks=[];
+var camGallery=JSON.parse(localStorage.getItem('ka_cam_gallery')||'[]');
+function camCapture(){
+  var video=document.getElementById('cam-video');
+  var canvas=document.getElementById('cam-canvas');
+  var placeholder=document.getElementById('cam-placeholder');
+  if(!camStream){
+    navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:1920,height:1080},audio:false})
+      .then(function(s){camStream=s;video.srcObject=s;video.style.display='block';placeholder.style.display='none';setTimeout(function(){camCapture();},800);})
+      .catch(function(e){alert('Camera non disponible');});
+    return;
+  }
+  canvas.width=video.videoWidth||1920;canvas.height=video.videoHeight||1080;
+  var ctx=canvas.getContext('2d');ctx.drawImage(video,0,0);
+  var dataUrl=canvas.toDataURL('image/jpeg',0.9);
+  camAddToGallery(dataUrl,'photo');
+  canvas.toBlob(function(blob){
+    var fd=new FormData();fd.append('file',blob,'photo_'+Date.now()+'.jpg');fd.append('quality','standard');
+    fetch(API_URL+'/api/storage/optimize',{method:'POST',body:fd}).then(function(r){var ratio=r.headers.get('X-Ratio');if(ratio)console.log('Compresse '+ratio+'x');}).catch(function(){});
+  },'image/jpeg',0.9);
+}
+function camRecord(){
+  if(camRecording){camStopRecord();return;}
+  if(!camStream){
+    navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:true})
+      .then(function(s){camStream=s;document.getElementById('cam-video').srcObject=s;document.getElementById('cam-video').style.display='block';document.getElementById('cam-placeholder').style.display='none';camStartRecord();})
+      .catch(function(e){alert('Camera non disponible');});
+    return;
+  }
+  camStartRecord();
+}
+function camStartRecord(){
+  camChunks=[];camRecorder=new MediaRecorder(camStream,{mimeType:'video/webm'});
+  camRecorder.ondataavailable=function(e){if(e.data.size)camChunks.push(e.data);};
+  camRecorder.onstop=function(){var blob=new Blob(camChunks,{type:'video/webm'});var url=URL.createObjectURL(blob);camAddToGallery(url,'video');camRecording=false;};
+  camRecorder.start();camRecording=true;
+  document.querySelector('#s-camera .btn--soul').textContent='Stop';
+}
+function camStopRecord(){if(camRecorder)camRecorder.stop();document.querySelector('#s-camera .btn--soul').textContent='Video';}
+function camAddToGallery(url,type){camGallery.unshift({url:url,type:type,date:Date.now()});if(camGallery.length>12)camGallery=camGallery.slice(0,12);localStorage.setItem('ka_cam_gallery',JSON.stringify(camGallery));camRenderGallery();}
+function camRenderGallery(){
+  var el=document.getElementById('cam-gallery');
+  var html='';
+  camGallery.forEach(function(item,i){
+    var icon=item.type==='video'?'V':'';
+    html+='<div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--g1);cursor:pointer" onclick="camView('+i+')"><img src="'+item.url+'" style="width:100%;height:100%;object-fit:cover"><div style="position:absolute;top:4px;right:4px;font-size:12px">'+(item.type==='video'?'VIDEO':'')+'</div></div>';
+  });
+  el.innerHTML=html||'<div style="text-align:center;color:var(--t4);font-size:12px;grid-column:1/-1">Aucune capture</div>';
+}
+function camView(i){var item=camGallery[i];if(!item)return;window.open(item.url,'_blank');}
+function camStop(){if(camStream){camStream.getTracks().forEach(function(t){t.stop();});camStream=null;}if(camRecorder&&camRecording)camRecorder.stop();camRecording=false;document.getElementById('cam-video').style.display='none';document.getElementById('cam-placeholder').style.display='block';}
+camRenderGallery();
+
 // STORAGE OPTIMIZER
 // ═══════════════════════════════════════════════════════════════════
 let stoQuality = 'standard';
