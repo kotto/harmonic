@@ -125,15 +125,41 @@ function toggleVoice() {
   btn.classList.toggle('tbn--on', K.voice);
   btn.setAttribute('aria-pressed', K.voice);
   if (K.voice) {
-    lbl.textContent = '● Écoute…'; K.txt = '';
-    const phrases = ['Rendez-vous demain à 19h ?','Appelle Sophie','Prépare ma réunion','Envoie les photos de Rome à Sophie'];
-    const phrase = phrases[Math.floor(Math.random()*phrases.length)];
-    let i = 0;
-    K.vt = setInterval(function() {
-      if (!K.voice || i >= phrase.length) { clearInterval(K.vt); if (K.voice) { K.voice = false; btn.classList.remove('tbn--on'); lbl.textContent = 'Voix'; btn.setAttribute('aria-pressed','false'); } return; }
-      K.txt += phrase[i++]; upd();
-    }, 72);
-  } else { clearInterval(K.vt); lbl.textContent = 'Voix'; }
+    lbl.textContent = '● Écoute…';
+    // Vraie reconnaissance vocale via Web Speech API
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SR) {
+      K.rec = new SR();
+      K.rec.lang = 'fr-FR'; K.rec.continuous = false; K.rec.interimResults = true;
+      K.rec.onresult = function(ev) {
+        var txt = '';
+        for (var i = ev.resultIndex; i < ev.results.length; i++) { txt += ev.results[i][0].transcript; }
+        K.txt = txt; upd();
+      };
+      K.rec.onend = function() {
+        if (K.voice) {
+          try { K.rec.start(); } catch(e) {
+            K.voice = false; btn.classList.remove('tbn--on'); lbl.textContent = 'Voix'; btn.setAttribute('aria-pressed','false');
+          }
+        }
+      };
+      K.rec.onerror = function() { K.voice = false; btn.classList.remove('tbn--on'); lbl.textContent = 'Voix'; btn.setAttribute('aria-pressed','false'); };
+      try { K.rec.start(); } catch(e) {}
+    } else {
+      // Fallback simulation
+      lbl.textContent = 'Voix (simulé)';
+      var phrases = ['Rendez-vous demain à 19h ?','Appelle Sophie','Prépare ma réunion'];
+      var phrase = phrases[Math.floor(Math.random()*phrases.length)];
+      var i = 0;
+      K.vt = setInterval(function() {
+        if (!K.voice || i >= phrase.length) { clearInterval(K.vt); if (K.voice) { K.voice = false; btn.classList.remove('tbn--on'); lbl.textContent = 'Voix'; btn.setAttribute('aria-pressed','false'); } return; }
+        K.txt += phrase[i++]; upd();
+      }, 72);
+    }
+  } else {
+    if (K.rec) { try { K.rec.stop(); } catch(e) {} }
+    clearInterval(K.vt); lbl.textContent = 'Voix';
+  }
 }
 
 function toggleEmoji() {
