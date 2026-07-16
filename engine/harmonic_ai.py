@@ -617,15 +617,44 @@ class HarmonicAI:
         r_words = set(w.strip('.,!?;:()[]{}') for w in response.lower().split() if len(w) > 2)
         key_overlap = set(key_words) & r_words
         key_ratio = len(key_overlap) / len(key_words) if key_words else 1.0
-        
+
         # Si aucun mot-clé n'apparaît → très faible
         if key_ratio == 0:
             return 0.15
-        
+
         # Si peu de mots-clés apparaissent → faible
         if key_ratio < 0.3:
             return 0.25
-        
+
+        # 🆕 ANTI-HALLUCINATION — détecter les "bon mot, mauvaise entité".
+        # Cas type : "capitale du royaume imaginaire de Karpathie" → "Londres est
+        # la capitale du royaume uni." Le mot-outil "royaume" matche, mais
+        # l'ENTITÉ (le sujet propre, long et spécifique : "karpathie") est absente
+        # de la réponse. C'est le pattern #1 d'hallucination par partial-match.
+        # On isole les mots-spécifiques longs (>=8 chars, hors lexique générique)
+        # et on exige qu'au moins un apparaisse réellement dans la réponse.
+        # Seuil >=8 (pas 7) pour ne pas écraser les vraies réponses courtes
+        # ("Japon", 5 lettres, n'est pas une "entité longue" → pas de pénalité).
+        _GENERIC = {'capitale', 'symbole', 'chimique', 'decouvert', 'ecrit',
+                    'compose', 'peint', 'annee', 'population', 'distance',
+                    'vitesse', 'temperature', 'masse', 'nombre', 'pourcent',
+                    'pourcentage', 'reduction', 'acceleration', 'courant',
+                    'force', 'puissance', 'auteur', 'fondateur',
+                    'histoire', 'philosophe', 'roman', 'traite',
+                    'theorie', 'metal', 'element', 'planete', 'nebuleuse',
+                    'ville', 'commune', 'region', 'continent', 'royaume',
+                    'republique', 'dynastie', 'opera', 'directeur', 'president',
+                    'imaginaire', 'fictive', 'fictif', 'inexistant'}
+        entities = [w for w in q_words if len(w) >= 8 and w not in _GENERIC]
+        if entities:
+            resp_text = response.lower()
+            entity_hits = sum(1 for e in entities if e in resp_text)
+            # Si AUCUNE entité longue spécifique n'apparaît dans la réponse →
+            # très probablement un fait générique récupéré sur un mot-outil.
+            # Confiance écrasée pour déclencher le refus calibré (étape 5).
+            if entity_hits == 0:
+                return 0.15
+
         # Sinon, confiance basée sur la longueur et couverture
         base = 0.35 + key_ratio * 0.3 + min(0.25, len(response) / 400)
         return min(1.0, base)
@@ -845,9 +874,11 @@ class HarmonicAI:
 
         # ── 1.0 FAST RETRIEVER — requête directe dans les 28K faits enrichis ──
         fast_answer, fast_facts = self._fast_retrieve(enriched, lang)
+        facts_backed = False  # 🆕 True si la réponse est appuyée par des faits réels
         if fast_answer:
             response = fast_answer
             confidence = 0.60
+            facts_backed = bool(fast_facts)
 
         # 🌊 J-LENS : capturer l'instantané
         if self.jlens and fast_facts:
@@ -866,6 +897,7 @@ class HarmonicAI:
                 result = self._get_brain().process(enriched, lang=lang)
                 response = result.response
                 confidence = result.confidence
+                facts_backed = bool(result.facts_used)  # 🆕
 
                 # Apprentissage automatique si la réponse est bonne
                 if result.is_confident and result.facts_used and self._enricher:
@@ -946,8 +978,19 @@ class HarmonicAI:
         # Les sources externes fiables (web 🌐, LLM) portent leur propre
         # provenance et ne sont JAMAIS refusées (trusted_external).
         if not trusted_external and response:
-            final_conf = self._confidence_score(response, enriched)
-            if final_conf < 0.30:
+            recomputed = self._confidence_score(response, enriched)
+            # 🆕 Si la réponse est appuyée par des faits réels (retrieval réussi)
+            # ET le re-scoring n'est pas catastrophique, on fait confiance à la
+            # confiance du pipeline plutôt qu'au re-scoring heuristique (qui peut
+            # écraser de bonnes réponses courtes, ex: capitales).
+            # MAIS si le re-scoring est très bas (< 0.20), c'est le signal d'une
+            # hallucination par partial-match (entité absente) → on garde le score
+            # faible pour déclencher le refus.
+            if facts_backed and recomputed >= 0.20:
+                final_conf = max(recomputed, confidence)
+            else:
+                final_conf = recomputed
+            if final_conf < self.REFUSAL_THRESHOLD:
                 refusal = self._build_refusal(enriched, lang)
                 self.conversation.add("user", question)
                 self.conversation.add("assistant", refusal)
