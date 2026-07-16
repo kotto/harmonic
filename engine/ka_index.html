@@ -322,10 +322,11 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
     <div class="call__ti" id="ctmr">00:00</div>
     <div class="call__wv" id="cwv"></div>
     <div class="call__ctrl">
-      <div class="ctrl"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 9.34A4 4 0 0115.65 16M3 3l18 18" stroke="rgba(255,255,255,.5)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg><span>Sourdine</span></div>
+      <div class="ctrl" style="cursor:pointer" onclick="kaCallListen()" role="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" stroke="rgba(61,219,160,.8)" stroke-width="1.5" fill="none"/><path d="M5 11c0 3.9 3.1 7 7 7s7-3.1 7-7" stroke="rgba(61,219,160,.8)" stroke-width="1.5" stroke-linecap="round" fill="none"/><line x1="12" y1="18" x2="12" y2="22" stroke="rgba(61,219,160,.8)" stroke-width="1.5" stroke-linecap="round"/></svg><span style="color:var(--life)">Parler</span></div>
       <div class="ctrl"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 010 7.07" stroke="rgba(255,255,255,.5)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg><span>HP</span></div>
       <div class="ctrl"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" stroke="rgba(255,255,255,.5)" stroke-width="1.5" fill="none"/><path d="M3 9h18M9 3v6" stroke="rgba(255,255,255,.5)" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg><span>Clavier</span></div>
     </div>
+    <div id="call-transcript" style="text-align:center;font-size:13px;color:var(--t3);min-height:20px;padding:0 20px"></div>
     <div class="call__end" onclick="go('s-msg')" role="button" aria-label="Raccrocher"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2.5 16.5C4 14 7 12 12 12s8 2 9.5 4.5l-3 2a1 1 0 01-1.3-.3L16 16a14 14 0 00-8 0l-1.2 2.2a1 1 0 01-1.3.3l-3-2z" fill="rgba(240,149,149,.85)"/></svg></div>
   </div>
 
@@ -545,43 +546,6 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
     <div class="btn btn--ghost" onclick="closeMore()" style="margin-top:12px;text-align:center">Fermer</div>
   </div>
 
-  <!-- HPC LAB -->
-  <div class="sc cap" id="s-hpc">
-    <div class="sph"><div class="sph__back" onclick="go('s-home')" role="button">‹ KA</div><div class="sph__badge" style="color:var(--life)">KA HPC LAB</div><div style="width:48px"></div></div>
-    <div class="sp-body">
-      <div style="display:flex;gap:6px;justify-content:center;margin-bottom:14px;flex-wrap:wrap">
-        <span class="pill pill--life" style="cursor:pointer" onclick="hpcMode='protein';hpcRun()" id="hpc-p-protein">🧬 Protéine</span>
-        <span class="pill" style="cursor:pointer;background:rgba(197,156,255,.12);border-color:rgba(197,156,255,.3);color:var(--accent-c, #c59cff)" onclick="hpcMode='quantum';hpcRun()" id="hpc-p-quantum">⚛️ Quantique</span>
-        <span class="pill pill--soul" style="cursor:pointer" onclick="hpcMode='compress';hpcRun()" id="hpc-p-compress">📦 Mémoire</span>
-      </div>
-      <div id="hpc-input" style="margin-bottom:12px">
-        <div id="hpc-compress-ui" style="display:none">
-          <label style="font-size:12px;color:var(--t2);display:block;margin-bottom:6px;text-align:center">
-            Fidélité de KA · <b id="hpc-q-label" style="color:var(--life)">Standard</b>
-          </label>
-          <div style="display:flex;gap:6px;justify-content:center;margin-bottom:8px">
-            <span class="pill" id="hpc-q-eco" style="cursor:pointer;background:rgba(255,255,255,.04);border:.5px solid var(--b2);font-size:11px" onclick="setQuality(20,'Éco')">🌱 Éco</span>
-            <span class="pill pill--life" id="hpc-q-std" style="cursor:pointer;font-size:11px" onclick="setQuality(45,'Standard')">✨ Standard</span>
-            <span class="pill" id="hpc-q-pro" style="cursor:pointer;background:rgba(139,131,255,.08);border:.5px solid rgba(139,131,255,.2);font-size:11px" onclick="setQuality(70,'Fidèle')">💎 Fidèle</span>
-            <span class="pill" id="hpc-q-max" style="cursor:pointer;background:rgba(240,192,96,.08);border:.5px solid rgba(240,192,96,.2);font-size:11px" onclick="setQuality(100,'Parfaite')">🌟 Parfaite</span>
-          </div>
-          <input type="hidden" id="hpc-quality" value="45">
-        </div>
-        <input id="hpc-seq" placeholder="Séquence AA (ex: ALAARGASN)…" style="width:100%;padding:11px 14px;border-radius:14px;background:var(--g1);border:.5px solid var(--b2);color:var(--t1);font-size:13px;font-family:var(--font-mono,monospace);outline:none">
-      </div>
-      <div id="hpc-result" class="card" style="display:none"></div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px">
-        <div class="stat"><div class="stat__v">φ³</div><div class="stat__l">Speedup</div></div>
-        <div class="stat"><div class="stat__v">0 GPU</div><div class="stat__l">Hardware</div></div>
-        <div class="stat"><div class="stat__v">5 kW</div><div class="stat__l">Énergie</div></div>
-      </div>
-    </div>
-    <div class="cta-row">
-      <div class="btn btn--life" onclick="hpcRun()">▶ Lancer</div>
-      <div class="btn btn--ghost" onclick="go('s-home')">Fermer</div>
-    </div>
-  </div>
-
   <!-- ESPACE DISQUE (optionnel) -->
   <div class="sc cap" id="s-storage">
     <div class="sph"><div class="sph__back" onclick="go('s-home')" role="button">‹ KA</div><div class="sph__badge" style="color:var(--t4)">ESPACE DISQUE</div><div style="width:48px"></div></div>
@@ -635,6 +599,41 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
       <div class="btn btn--ghost" onclick="go('s-home')">Fermer</div>
     </div>
   </div>
+
+  <!-- SMS -->
+  <div class="sc cap" id="s-sms">
+    <div class="sph"><div class="sph__back" onclick="go('s-home')" role="button">‹ KA</div><div class="sph__badge" style="color:var(--soul-l)">KA SMS</div><div style="width:48px"></div></div>
+    <div class="sp-body">
+      <div id="sms-contacts">
+        <div class="card" style="display:flex;align-items:center;gap:10px;padding:12px;margin-bottom:6px;cursor:pointer" onclick="smsOpen('Sophie')"><div style="width:40px;height:40px;border-radius:50%;background:var(--soul-d);display:flex;align-items:center;justify-content:center;color:var(--soul-l);font-weight:700">S</div><div style="flex:1"><div style="font-size:13px;color:var(--t1)">Sophie</div><div style="font-size:11px;color:var(--t4)">On se voit demain ?</div></div><div style="font-size:10px;color:var(--t4)">09:41</div></div>
+        <div class="card" style="display:flex;align-items:center;gap:10px;padding:12px;margin-bottom:6px;cursor:pointer" onclick="smsOpen('Marc')"><div style="width:40px;height:40px;border-radius:50%;background:var(--life-d);display:flex;align-items:center;justify-content:center;color:var(--life);font-weight:700">M</div><div style="flex:1"><div style="font-size:13px;color:var(--t1)">Marc</div><div style="font-size:11px;color:var(--t4)">Le dossier est prêt</div></div><div style="font-size:10px;color:var(--t4)">Hier</div></div>
+        <div class="card" style="display:flex;align-items:center;gap:10px;padding:12px;margin-bottom:6px;cursor:pointer" onclick="smsOpen('Léa')"><div style="width:40px;height:40px;border-radius:50%;background:var(--rose-d);display:flex;align-items:center;justify-content:center;color:var(--rose);font-weight:700">L</div><div style="flex:1"><div style="font-size:13px;color:var(--t1)">Léa</div><div style="font-size:11px;color:var(--t4)">Merci pour hier !</div></div><div style="font-size:10px;color:var(--t4)">Lun</div></div>
+      </div>
+      <div id="sms-chat" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer" onclick="document.getElementById('sms-chat').style.display='none';document.getElementById('sms-contacts').style.display='block'"><span style="font-size:16px">‹</span><span id="sms-chat-name" style="font-size:15px;color:var(--t1);font-weight:600">Sophie</span></div>
+        <div id="sms-messages" style="margin-bottom:12px;max-height:320px;overflow-y:auto"></div>
+        <div style="display:flex;gap:8px"><input id="sms-input" placeholder="Message…" style="flex:1;padding:10px 14px;border-radius:12px;background:var(--g1);border:.5px solid var(--b2);color:var(--t1);font-size:13px;outline:none"><div class="btn btn--soul" style="width:auto;padding:10px 16px" onclick="smsSend()">➤</div></div>
+      </div>
+    </div>
+    <div class="cta-row"><div class="btn btn--soul" onclick="smsNew()">+ Nouveau message</div><div class="btn btn--ghost" onclick="go('s-home')">Fermer</div></div>
+  </div>
+
+  <!-- CAMERA -->
+  <div class="sc dec" id="s-camera">
+    <div class="sph"><div class="sph__back" onclick="go('s-home');camStop()" role="button">‹ KA</div><div class="sph__badge" style="color:var(--life)">KA CAMÉRA</div><div style="width:48px"></div></div>
+    <div class="sp-body">
+      <video id="cam-video" autoplay playsinline style="width:100%;border-radius:14px;background:#000;margin-bottom:10px;display:none"></video>
+      <canvas id="cam-canvas" style="display:none"></canvas>
+      <div id="cam-gallery" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px"></div>
+      <div id="cam-placeholder" style="text-align:center;padding:40px 12px;color:var(--t4);font-size:13px">📷<br>Appuyez sur Photo ou Vidéo pour capturer</div>
+    </div>
+    <div class="cta-row">
+      <div class="btn btn--life" onclick="camCapture()">📸 Photo</div>
+      <div class="btn btn--soul" onclick="camRecord()">🎬 Vidéo</div>
+      <div class="btn btn--ghost" onclick="go('s-home');camStop()">Fermer</div>
+    </div>
+  </div>
+
 	  <div class="sc dec" id="s-sante">
 	    <div class="sph"><div class="sph__back" onclick="go('s-home');santeCamStop()" role="button">‹ KA</div><div class="sph__badge" style="color:#ff6b8a">KA SANTÉ</div><div style="width:48px"></div></div>
 	    <div class="sp-body">
@@ -866,11 +865,37 @@ function toggleVoice(){
   K.voice=!K.voice;const btn=document.getElementById('tbv'),lbl=document.getElementById('vl');
   btn.classList.toggle('tbn--on',K.voice);btn.setAttribute('aria-pressed',K.voice);
   if(K.voice){
-    lbl.textContent='● Écoute…';K.txt='';
-    const phrases=['Rendez-vous demain à 19h ?','Appelle Sophie','Prépare ma réunion','Envoie les photos de Rome à Sophie'];
-    const phrase=phrases[Math.floor(Math.random()*phrases.length)];let i=0;
-    K.vt=setInterval(()=>{if(!K.voice||i>=phrase.length){clearInterval(K.vt);if(K.voice){K.voice=false;btn.classList.remove('tbn--on');lbl.textContent='Voix';btn.setAttribute('aria-pressed','false');}return;}K.txt+=phrase[i++];upd();},72);
-  }else{clearInterval(K.vt);lbl.textContent='Voix';}
+    lbl.textContent='● Écoute…';
+    // 🆕 Vraie reconnaissance vocale via Web Speech API
+    var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(SR){
+      K.rec=new SR();
+      K.rec.lang='fr-FR';K.rec.continuous=false;K.rec.interimResults=true;
+      K.rec.onresult=function(ev){
+        var txt='';
+        for(var i=ev.resultIndex;i<ev.results.length;i++){txt+=ev.results[i][0].transcript;}
+        K.txt=txt;upd();
+      };
+      K.rec.onend=function(){
+        if(K.voice){
+          try{K.rec.start();}catch(e){
+            K.voice=false;btn.classList.remove('tbn--on');lbl.textContent='Voix';btn.setAttribute('aria-pressed','false');
+          }
+        }
+      };
+      K.rec.onerror=function(){K.voice=false;btn.classList.remove('tbn--on');lbl.textContent='Voix';btn.setAttribute('aria-pressed','false');};
+      try{K.rec.start();}catch(e){}
+    }else{
+      // Fallback: simulation si Web Speech API indisponible
+      lbl.textContent='Voix (simulé)';
+      const phrases=['Rendez-vous demain à 19h ?','Appelle Sophie','Prépare ma réunion'];
+      const phrase=phrases[Math.floor(Math.random()*phrases.length)];let i=0;
+      K.vt=setInterval(()=>{if(!K.voice||i>=phrase.length){clearInterval(K.vt);if(K.voice){K.voice=false;btn.classList.remove('tbn--on');lbl.textContent='Voix';btn.setAttribute('aria-pressed','false');}return;}K.txt+=phrase[i++];upd();},72);
+    }
+  }else{
+    if(K.rec){try{K.rec.stop();}catch(e){}}
+    clearInterval(K.vt);lbl.textContent='Voix';
+  }
 }
 function toggleEmoji(){
   K.emo=!K.emo;const ep=document.getElementById('ep'),kd=document.getElementById('kbd'),btn=document.getElementById('tbe');
@@ -878,14 +903,57 @@ function toggleEmoji(){
   if(K.emo){ep.innerHTML='';EM.forEach(e=>{const b=document.createElement('div');b.className='eb';b.setAttribute('role','button');b.textContent=e;b.addEventListener('pointerdown',ev=>{ev.preventDefault();type(e);});ep.appendChild(b);});ep.classList.add('ep--on');kd.style.display='none';}
   else{ep.classList.remove('ep--on');kd.style.display='block';}
 }
-let callSecs=0,callIv=null;
+let callSecs=0,callIv=null,callTTS=null;
 function startCall(){
   callSecs=0;clearInterval(callIv);
   callIv=setInterval(()=>{callSecs++;const m=String(Math.floor(callSecs/60)).padStart(2,'0'),s=String(callSecs%60).padStart(2,'0');const el=document.getElementById('ctmr');if(el)el.textContent=m+':'+s;},1000);
   const w=document.getElementById('cwv');if(!w)return;w.innerHTML='';
   for(let i=0;i<22;i++){const b=document.createElement('div');b.className='wb';b.style.cssText='--wh:'+(3+Math.random()*22)+'px;animation-duration:'+(0.35+Math.random()*0.5)+'s;animation-delay:'+(Math.random()*0.4)+'s';w.appendChild(b);}
+  // 🆕 Synthèse vocale : KA parle après 2 secondes
+  setTimeout(function(){
+    if(cur!=='s-call')return;
+    kaCallSpeak("Bonjour, je suis KA. Comment puis-je vous aider ?");
+  },2000);
 }
-function stopCall(){clearInterval(callIv);}
+function stopCall(){clearInterval(callIv);if(callTTS){callTTS.cancel();callTTS=null;}if(window._callRec){try{window._callRec.stop();}catch(e){}}}
+// 🆕 Synthèse vocale Web (TTS)
+function kaCallSpeak(text){
+  if(!('speechSynthesis' in window))return;
+  if(callTTS)callTTS.cancel();
+  callTTS=new SpeechSynthesisUtterance(text);
+  callTTS.lang='fr-FR';callTTS.rate=1.0;callTTS.pitch=1.05;
+  // Choisir une voix française si disponible
+  var voices=speechSynthesis.getVoices();
+  for(var i=0;i<voices.length;i++){
+    if(voices[i].lang.indexOf('fr')>=0){callTTS.voice=voices[i];break;}
+  }
+  speechSynthesis.speak(callTTS);
+}
+// 🆕 Reconnaissance vocale pendant l'appel → KA répond oralement
+function kaCallListen(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('Reconnaissance vocale non disponible sur ce navigateur');return;}
+  var rec=new SR();
+  rec.lang='fr-FR';rec.continuous=false;rec.interimResults=true;
+  var tr=document.getElementById('call-transcript');
+  if(tr)tr.textContent='● Écoute…';
+  rec.onresult=function(ev){
+    var txt='';
+    for(var i=ev.resultIndex;i<ev.results.length;i++){txt+=ev.results[i][0].transcript;}
+    if(tr)tr.textContent='"'+txt+'"';
+    if(ev.results[ev.results.length-1].isFinal){
+      // Envoyer à KA et faire parler la réponse
+      askKA(txt).then(function(reply){
+        if(tr)tr.textContent=reply.slice(0,80);
+        kaCallSpeak(reply);
+      });
+    }
+  };
+  rec.onerror=function(){if(tr)tr.textContent='';};
+  rec.onend=function(){if(tr&&tr.textContent.indexOf('Écoute')>=0)tr.textContent='';};
+  window._callRec=rec;
+  try{rec.start();}catch(e){}
+}
 function buildCapWave(){
   const w=document.getElementById('capwv');if(!w)return;w.innerHTML='';
   for(let i=0;i<18;i++){const b=document.createElement('div');b.style.cssText='width:2.5px;border-radius:2px;background:rgba(61,219,160,.6);--wh:'+(3+Math.random()*16)+'px;animation:wave '+(0.35+Math.random()*0.5)+'s ease-in-out infinite alternate '+(Math.random()*0.4)+'s';w.appendChild(b);}
