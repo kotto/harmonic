@@ -290,6 +290,14 @@ class BrainResult:
     facts_rejected: List[FactRecord]
     retrieval_count: int     # combien de faits sont remontés de l'inconscient
     total_time_ms: float
+    refused: bool = False    # 🆕 True si KA a explicitement refusé (anti-hallucination)
+
+    @property
+    def is_confident(self) -> bool:
+        """🆕 True si la confiance dépasse le seuil de fiabilité.
+        Seuil 0.40 : sous ce score, la réponse n'est pas garante.
+        Utilisé par harmonic_ai.py pour le gating d'apprentissage."""
+        return self.confidence >= 0.40
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

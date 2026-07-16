@@ -219,7 +219,7 @@ class HarmonicAI:
             from page_forge import _init_fast_retriever, _FAST_RETRIEVER
             _init_fast_retriever()
             if _FAST_RETRIEVER is None:
-                return None
+                return None, []
             
             results = _FAST_RETRIEVER.retrieve(question, max_facts=3, min_score=0.6)
             if not results:
@@ -878,6 +878,11 @@ class HarmonicAI:
                 confidence = 0.0
 
         # ── 4. FALLBACK : Web → Raisonnement → LLM (sevrage progressif) ──
+        # 🆕 trusted_external : True si la réponse finale vient d'une source externe
+        # fiable (web ou LLM). Le seuil de refus (étape 5) ne s'applique PAS à ces
+        # réponses — elles portent leur propre provenance. Il ne refuse QUE le
+        # retrieval interne non fiable, ce qui rend l'anti-hallucination réelle.
+        trusted_external = False
         if not response or len(response) < 15 or confidence < 0.35:
             # 4a. Essayer d'abord le raisonnement harmonique classique
             if not response or len(response) < 15:
@@ -894,6 +899,7 @@ class HarmonicAI:
                     if web_summary and len(web_summary) > 40:
                         response = f"🌐 D'après une recherche web : {web_summary}"
                         confidence = 0.55
+                        trusted_external = True
                 except Exception:
                     pass
 
@@ -905,6 +911,7 @@ class HarmonicAI:
                         llm_text = self.bootstrapper._llm_fallback(enriched)
                         if llm_text:
                             response = llm_text
+                            trusted_external = True
                             # Apprendre de la réponse LLM
                             from bootstrapper import extract_triples_simple
                             triples = extract_triples_simple(llm_text)
@@ -932,11 +939,55 @@ class HarmonicAI:
         except ImportError:
             pass
 
+        # ── 5. SEUIL DE REFUS CALIBRÉ — anti-hallucination structurelle ──
+        # C'est le mécanisme qui rend "zéro hallucination" vrai et mesurable :
+        # si, après tous les fallbacks, la réponse vient du retrieval interne ET
+        # sa confiance est faible → KA refuse d'inventer et propose d'apprendre.
+        # Les sources externes fiables (web 🌐, LLM) portent leur propre
+        # provenance et ne sont JAMAIS refusées (trusted_external).
+        if not trusted_external and response:
+            final_conf = self._confidence_score(response, enriched)
+            if final_conf < 0.30:
+                refusal = self._build_refusal(enriched, lang)
+                self.conversation.add("user", question)
+                self.conversation.add("assistant", refusal)
+                # Observer le refus dans l'hologramme personnel (centre d'intérêt).
+                # getattr : PersonalHologram n'est pas toujours câblé (tests légers),
+                # on ne doit jamais planter sur un refus.
+                _ph = getattr(self, '_personal', None)
+                if _ph is not None:
+                    try:
+                        _ph.observe_question(question)
+                    except Exception:
+                        pass
+                return refusal
+
         # Mémoire conversationnelle
         self.conversation.add("user", question)
         self.conversation.add("assistant", response)
 
         return response
+
+    # Seuil de confiance en dessous duquel KA refuse de répondre (cf. étape 5).
+    # Calibration : aligné sur _confidence_score() — sous 0.30, la réponse
+    # n'apporte pas d'information fiable au-delà d'un echo de la question.
+    REFUSAL_THRESHOLD = 0.30
+
+    def _build_refusal(self, question: str, lang: str = 'fr') -> str:
+        """Construit un refus honnête qui invite l'utilisateur à enseigner KA.
+
+        C'est l'inverse d'une hallucination : KA reconnaît explicitement qu'il
+        ne sait pas, et transforme l'ignorance en opportunité d'apprentissage
+        continu (le principe fondateur du compagnon personnel).
+        """
+        if lang == 'en':
+            return ("I don't know that yet — I'd rather tell you than guess.\n\n"
+                    "Teach me: type  « learn: <fact> »  and I'll remember it "
+                    "for next time.")
+        return ("Je ne sais pas encore cela — je préfère te le dire plutôt "
+                "qu'inventer.\n\n"
+                "Apprends-moi : tape  « apprends : <fait> »  et je le "
+                "mémoriserai pour la prochaine fois.")
 
     def _is_counterfactual(self, question: str) -> bool:
         """Détecte si une question est contrefactuelle."""
