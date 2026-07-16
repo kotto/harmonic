@@ -97,6 +97,8 @@ OBSCURE = [
 REFUSAL_MARKERS = (
     "je ne sais pas", "je ne connais pas", "je prefere te le dire",
     "plutot qu'inventer", "i don't know", "pas assez de connaissances",
+    "je ne traite pas ce type", "je ne peux pas repondre",
+    "hors de mon domaine", "je n'ai pas l'information",
 )
 EXTERNAL_MARKERS = ("🌐", "d'apres une recherche web", "d'après une recherche web")
 

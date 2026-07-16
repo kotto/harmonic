@@ -44,6 +44,10 @@ from reasoning_engine import ReasoningEngine
 from style_engine import StyleEngine
 from harmonic_brain import HarmonicBrain, BrainResult
 
+# 🐛 Debug du seuil de refus : KA_DEBUG_REFUSAL=1 active des traces stderr
+import os as _os, sys as _sys
+_KA_DEBUG = bool(_os.environ.get('KA_DEBUG_REFUSAL'))
+
 # 🌐 Web Retriever (optionnel)
 _WEB_RETRIEVER = None
 try:
@@ -288,13 +292,19 @@ class HarmonicAI:
                 pass
         
         # 3. J-LENS FEEDBACK
+        # ⚠️ AVANT : on mutait HIGH_AMPLITUDE_FACTS en place, ce qui (a) rendait les
+        # réponses non-déterministes selon l'ordre des questions, et (b) écrasait les
+        # amplitudes SFT originales (ex: 20.0, 50.0) vers le plafond 10.0 — sous le
+        # seuil de 15.0 de l'exemption SFT, provoquant des over-refusals en cascade
+        # sur "capitale du Japon", "plus grand océan", etc.
+        # On logge désormais le renforcement dans jlens sans toucher au dictionnaire
+        # source curé. Le renforcement réel (si voulu) doit aller dans un store séparé.
         if self.jlens and facts:
             try:
-                from harmonic_quality import HIGH_AMPLITUDE_FACTS
-                for s, r, o, sec, score in facts:
-                    key = (str(s).lower().strip(), str(r).lower().strip(), str(o).lower().strip())
-                    if key in HIGH_AMPLITUDE_FACTS:
-                        HIGH_AMPLITUDE_FACTS[key] = min(10.0, HIGH_AMPLITUDE_FACTS.get(key, 5.0) + 0.3)
+                if hasattr(self.jlens, 'record_reinforcement'):
+                    for s, r, o, sec, score in facts:
+                        self.jlens.record_reinforcement(
+                            (str(s), str(r), str(o)), float(score))
             except Exception:
                 pass
         
@@ -874,19 +884,35 @@ class HarmonicAI:
 
         # ── 1.0 FAST RETRIEVER — requête directe dans les 28K faits enrichis ──
         fast_answer, fast_facts = self._fast_retrieve(enriched, lang)
-        facts_backed = False  # 🆕 True si la réponse est appuyée par des faits réels
+        facts_backed = False       # 🆕 True si la réponse est appuyée par des faits réels
+        sft_direct_match = False   # 🆕 True si un fait SFT haute-amplitude matche
         if fast_answer:
             response = fast_answer
             confidence = 0.60
             facts_backed = bool(fast_facts)
+            # Un fait SFT (sector 'SFT') d'amplitude >= 15 est une réponse exacte
+            # curée (capitales, symboles, etc.) → fiable par construction. On
+            # l'exempte du seuil de refus pour éviter les over-refusals liés à la
+            # dérive d'état (mutation HIGH_AMPLITUDE_FACTS, contexte conversation).
+            for f in (fast_facts or []):
+                if len(f) >= 5 and f[3] == 'SFT' and f[4] >= 15.0:
+                    sft_direct_match = True
+                    break
 
         # 🌊 J-LENS : capturer l'instantané
         if self.jlens and fast_facts:
             self.jlens.capture(enriched, facts=fast_facts, confidence=confidence,
                               response=response[:200] if response else '')
 
-        # 🧠 DEEP REASON — raisonnement profond si la réponse est simple
-        if response and fast_facts and len(response.split()) < 15:
+        # 🧠 DEEP REASON — raisonnement profond si la réponse est simple.
+        # ⚠️ Ne PAS appliquer aux réponses SFT (haute amplitude) : elles sont déjà
+        # exactes et complètes. _deep_reason ajoute parfois du bruit (chaîne
+        # multi-sauts hors-sujet) qui dégrade le _confidence_score et déclenche
+        # un refus abusif (over-refusal) sur des questions légitimes comme
+        # "plus grand océan" ou "capitale du Sénégal".
+        sft_fact = any(len(f) >= 5 and f[4] >= 15.0 for f in fast_facts) if fast_facts else False
+        if (response and fast_facts and len(response.split()) < 15
+                and not sft_fact):
             deep = self._deep_reason(enriched, fast_facts, lang)
             if deep:
                 response = response + '\n\n' + deep
@@ -975,10 +1001,18 @@ class HarmonicAI:
         # C'est le mécanisme qui rend "zéro hallucination" vrai et mesurable :
         # si, après tous les fallbacks, la réponse vient du retrieval interne ET
         # sa confiance est faible → KA refuse d'inventer et propose d'apprendre.
-        # Les sources externes fiables (web 🌐, LLM) portent leur propre
-        # provenance et ne sont JAMAIS refusées (trusted_external).
-        if not trusted_external and response:
-            recomputed = self._confidence_score(response, enriched)
+        # Sont EXEMPTÉS du refus (fiables par construction) :
+        #   - les sources externes (web 🌐, LLM) — trusted_external
+        #   - les matchs SFT directs (capitales, symboles curés) — sft_direct_match.
+        #     Un fait SFT qui matche directement la question est vérifié par
+        #     construction ; on ne le soumet PAS au re-scoring heuristique
+        #     (_confidence_score), qui est instable selon le contexte conversationnel
+        #     et peut écraser une bonne réponse exacte.
+        recomputed = self._confidence_score(response, enriched) if response else 0.0
+        if _KA_DEBUG:
+            print(f"[DBG] response={response!r}", file=_sys.stderr)
+            print(f"[DBG] sft_direct_match={sft_direct_match} trusted_external={trusted_external} recomputed={recomputed:.3f}", file=_sys.stderr)
+        if (not trusted_external and not sft_direct_match and response):
             # 🆕 Si la réponse est appuyée par des faits réels (retrieval réussi)
             # ET le re-scoring n'est pas catastrophique, on fait confiance à la
             # confiance du pipeline plutôt qu'au re-scoring heuristique (qui peut
