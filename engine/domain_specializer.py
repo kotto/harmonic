@@ -1729,6 +1729,7 @@ SPECIALIZE_TRIGGERS = sorted([
     "apprends", "forme-toi", "documente-toi",
     "je veux que tu maîtrises", "je veux que tu connaisses",
     "peux-tu apprendre", "peux-tu te spécialiser",
+    "spécialises", "specialises",  # formes conjuguées
     "connais-tu bien", "es-tu calé en", "es-tu spécialisé",
     "tu t'y connais en", "tu maîtrises",
     "specialize in", "become an expert in",
@@ -1760,10 +1761,19 @@ def detect_specialize_intent(message: str) -> Optional[Dict[str, str]]:
         {"domain": "...", "depth": "..."} ou None si pas d'intention détectée.
     """
     msg_lower = message.lower().strip()
+    # Normaliser les traits d'union et apostrophes pour le matching
+    # "spécialise-toi" == "spécialise toi", "l'intelligence" == "l intelligence"
+    msg_lower = msg_lower.replace('-', ' ').replace("'", " ")
+    
+    # Normaliser aussi les triggers de la même façon (un seul coup au chargement)
+    _norm_triggers = getattr(detect_specialize_intent, '_norm_triggers', None)
+    if _norm_triggers is None:
+        _norm_triggers = [t.replace('-', ' ').replace("'", " ") for t in SPECIALIZE_TRIGGERS]
+        detect_specialize_intent._norm_triggers = _norm_triggers
     
     # Vérifier si un trigger est présent
     trigger_found = None
-    for trigger in SPECIALIZE_TRIGGERS:
+    for trigger in _norm_triggers:
         if trigger in msg_lower:
             trigger_found = trigger
             break

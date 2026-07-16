@@ -321,6 +321,16 @@ try:
 except Exception as e:
     print(f"  📦 Hologram Store: non disponible ({e})")
 
+# 🧠 PersonalHologram (profil utilisateur, intérêts, suggestions)
+_personal_holograms = {}  # user_id -> PersonalHologram (lazy)
+try:
+    from personal_hologram import PersonalHologram
+    _HAS_PERSONAL = True
+    print(f"  🧠 PersonalHologram: disponible")
+except ImportError:
+    _HAS_PERSONAL = False
+    print(f"  🧠 PersonalHologram: non disponible")
+
 # 🌊 Wave Poet (générateur de poésie ondulatoire)
 _wave_poet = None
 try:
@@ -627,6 +637,55 @@ def specialize():
             'error': str(e),
             'response': f"❌ Erreur pendant la spécialisation : {e}",
         }), 500
+
+
+@app.route('/api/learn', methods=['POST'])
+def learn():
+    """
+    Apprentissage direct d'un fait par l'utilisateur.
+    
+    Body: {
+        "fact": "Kigali est la capitale du Rwanda",   # requis
+        "sujet": "Kigali",       # optionnel (extraction auto si omis)
+        "relation": "est la capitale de",
+        "objet": "Rwanda",
+        "secteur": "GEOGRAPHIE"  # défaut: GENERAL
+    }
+    
+    C'est le pendant API de la commande « apprends : <fait> » dans le chat.
+    """
+    if ai is None:
+        return jsonify({'error': 'Moteur non initialisé'}), 503
+
+    data = request.get_json(force=True, silent=True) or {}
+    fact = data.get('fact', '').strip()
+
+    if not fact and not data.get('sujet'):
+        return jsonify({
+            'error': "Paramètre 'fact' requis",
+            'example': {'fact': "Kigali est la capitale du Rwanda"}
+        }), 400
+
+    try:
+        if data.get('sujet') and data.get('relation') and data.get('objet'):
+            # Forme structurée
+            ai.learn(data['sujet'], data['relation'], data['objet'],
+                    data.get('secteur', 'GENERAL'))
+            ingested = f"{data['sujet']} {data['relation']} {data['objet']}"
+        else:
+            # Extraction automatique
+            ai.learn(fact)
+            ingested = fact
+
+        return jsonify({
+            'response': f"✅ Appris : « {ingested[:80]} »",
+            'confidence': 1.0,
+            'source': 'learn',
+            'kb_facts': ai.model.stats.get('facts', 0),
+        })
+    except Exception as e:
+        log.exception(f"Erreur /api/learn: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/specialize/status/<user_id>', methods=['GET'])
@@ -2156,6 +2215,81 @@ def store_stats():
     if not _hologram_store:
         return jsonify({'error': 'Store non disponible'}), 503
     return jsonify(_hologram_store.stats())
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🧠 PROFIL PERSONNEL — PersonalHologram
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _get_personal(user_id: str):
+    """Récupère ou crée le PersonalHologram d'un utilisateur (lazy)."""
+    if not _HAS_PERSONAL:
+        return None
+    if user_id not in _personal_holograms:
+        _personal_holograms[user_id] = PersonalHologram(user_id=user_id)
+    return _personal_holograms[user_id]
+
+
+@app.route('/api/profile/<user_id>', methods=['GET'])
+def get_profile(user_id):
+    """
+    Retourne le profil de l'utilisateur : intérêts détectés, concepts clés,
+    historique d'apprentissage, suggestions proactives.
+    
+    GET /api/profile/user_123
+    """
+    if not _HAS_PERSONAL:
+        return jsonify({'error': 'PersonalHologram non disponible'}), 503
+
+    ph = _get_personal(user_id)
+    if ph is None:
+        return jsonify({'error': 'Impossible de créer le profil'}), 500
+
+    try:
+        profile = ph.profile()
+        interests = ph.detect_interests()
+        suggestions = ph.suggestions()
+        top = ph.top_concepts(10)
+
+        return jsonify({
+            'user_id': user_id,
+            'interests': [{'domain': i.domain, 'confidence': i.confidence}
+                         for i in interests[:8]],
+            'top_concepts': top,
+            'suggestions': [{'domain': s.domain, 'reason': s.reason}
+                          for s in suggestions[:5]],
+            'session_count': profile.session_count if hasattr(profile, 'session_count') else 0,
+            'total_traces': profile.total_traces if hasattr(profile, 'total_traces') else 0,
+        })
+    except Exception as e:
+        log.exception(f"Erreur profile: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/profile/<user_id>/interests', methods=['GET'])
+def get_interests(user_id):
+    """
+    Retourne uniquement les centres d'intérêt détectés.
+    
+    GET /api/profile/user_123/interests
+    """
+    if not _HAS_PERSONAL:
+        return jsonify({'error': 'PersonalHologram non disponible'}), 503
+
+    ph = _get_personal(user_id)
+    if ph is None:
+        return jsonify({'error': 'Impossible'}), 500
+
+    try:
+        interests = ph.detect_interests()
+        return jsonify({
+            'user_id': user_id,
+            'interests': [{'domain': i.domain, 'confidence': round(i.confidence, 3),
+                          'last_seen': getattr(i, 'last_seen', None)}
+                         for i in interests],
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

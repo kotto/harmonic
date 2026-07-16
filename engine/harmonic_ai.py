@@ -841,6 +841,28 @@ class HarmonicAI:
         except ImportError:
             lang = 'fr'
 
+        # ── 0.2. COMMANDE « apprends : » — apprentissage direct ──
+        # C'est la boucle de feedback promise par le refus calibré : quand KA dit
+        # « Je ne sais pas, apprends-moi », l'utilisateur répond « apprends : <fait> »
+        # et le fait est ingéré immédiatement. Prochaine question → KA sait.
+        learn_cmd = self._parse_learn_command(question)
+        if learn_cmd:
+            try:
+                self.learn(learn_cmd)
+                ack = self._build_learn_ack(learn_cmd, lang)
+                self.conversation.add("user", question)
+                self.conversation.add("assistant", ack)
+                # Notifier le PersonalHologram si câblé
+                _ph = getattr(self, '_personal', None)
+                if _ph is not None:
+                    try:
+                        _ph.observe_correction("", learn_cmd)
+                    except Exception:
+                        pass
+                return ack
+            except Exception:
+                pass  # fall through to normal pipeline
+
         # Enrichir avec le contexte conversationnel
         enriched = self._enrich_with_context(question)
 
@@ -1065,6 +1087,47 @@ class HarmonicAI:
                 "qu'inventer.\n\n"
                 "Apprends-moi : tape  « apprends : <fait> »  et je le "
                 "mémoriserai pour la prochaine fois.")
+
+    @staticmethod
+    def _parse_learn_command(question: str) -> str:
+        """Extrait un fait d'une commande d'apprentissage.
+
+        Formes reconnues :
+          « apprends : Kigali est la capitale du Rwanda »
+          « apprends: <fait> »
+          « learn: <fact> »
+          « apprend : <fait> »
+          « apprends moi : <fait> »
+
+        Retourne le texte du fait (str) ou None si ce n'est pas une commande learn.
+        """
+        q = question.strip()
+        # Patterns classés du plus spécifique au moins spécifique
+        patterns = [
+            (r'^apprends\s*:\s*', 'apprends :'),
+            (r'^apprend\s*:\s*', 'apprend :'),
+            (r'^apprends\s+moi\s*:\s*', 'apprends moi :'),
+            (r'^learn\s*:\s*', 'learn:'),
+            (r'^apprends-moi\s*:\s*', 'apprends-moi :'),
+        ]
+        import re
+        q_lower = q.lower()
+        for pattern, _prefix in patterns:
+            m = re.match(pattern, q_lower)
+            if m:
+                fact = q[m.end():].strip()
+                if len(fact) >= 5:
+                    return fact
+        return None
+
+    def _build_learn_ack(self, fact: str, lang: str = 'fr') -> str:
+        """Accusé de réception après un apprentissage réussi."""
+        short = fact[:80] + ('…' if len(fact) > 80 else '')
+        if lang == 'en':
+            return (f"✅ I've learned: « {short} ».\n"
+                    f"I'll remember it for next time — thank you for teaching me.")
+        return (f"✅ J'ai appris : « {short} ».\n"
+                f"Je m'en souviendrai la prochaine fois — merci de m'avoir appris !")
 
     def _is_counterfactual(self, question: str) -> bool:
         """Détecte si une question est contrefactuelle."""
