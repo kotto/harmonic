@@ -355,12 +355,22 @@ except Exception as e:
 
 hcv_available = False
 HCV_DIR = Path(__file__).resolve().parent.parent / 'HCV-Compression-Engine'
+# Fallback Render: le repo peut être cloné avec HCV en sous-module
+if not HCV_DIR.exists():
+    HCV_DIR = Path(__file__).resolve().parent / 'HCV-Compression-Engine'
+if not HCV_DIR.exists():
+    # Fallback: chercher dans les sous-dossiers
+    for candidate in Path(__file__).resolve().parent.parent.glob('*HCV*'):
+        if candidate.is_dir():
+            HCV_DIR = candidate
+            break
 if HCV_DIR.exists():
     try:
         import importlib.util
         for mod_name, file_name in [
             ('hcv_android_boost', 'codecs/hcv_android_boost_codec.py'),
             ('hcv_upscaler', 'mobile/upscaler.py'),
+            ('hcv_pro_codec_mod', 'codecs/hcv_pro_codec.py'),
         ]:
             spec = importlib.util.spec_from_file_location(mod_name, str(HCV_DIR / file_name))
             if spec and spec.loader:
@@ -373,8 +383,8 @@ if HCV_DIR.exists():
         HCVUpscaler = modules['hcv_upscaler'].HCVUpscaler
         hcv_available = True
         print("  📦 HCV Compression: disponible")
-    except Exception:
-        pass  # Silencieux en production
+    except Exception as e:
+        log.warning(f"  📦 HCV Compression: erreur chargement ({e})")
 
 if not hcv_available:
     log.info("  📦 HCV Compression: non disponible (mode cloud)")

@@ -1,41 +1,38 @@
-# Render Blueprint — KA Server + Harmonic AI + HCV Compression + HPC
-# https://render.com/docs/blueprint-spec
+# Render Blueprint — KA PHONE (Harmonic AI + HCV Compression)
+# Déploiement: connecter le repo GitHub à Render, il détecte ce fichier.
 
 services:
   - type: web
-    name: ka-api
+    name: ka-phone
     env: python
     region: frankfurt
     plan: starter
     buildCommand: |
       pip install -r requirements_server.txt
       mkdir -p data/bootstrapper_output
-      if [ ! -f data/bootstrapper_output/knowledge_base_50k.npz ]; then
-        echo "Modèle 50K introuvable — sera chargé au premier démarrage"
-      fi
-    startCommand: gunicorn ka_server:app --bind 0.0.0.0:$PORT --workers 1 --preload --timeout 120
+      echo "KA PHONE build $(date)" > data/build_info.txt
+    startCommand: gunicorn ka_server:app --bind 0.0.0.0:$PORT --workers 1 --preload --timeout 120 --access-logfile -
     healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.8
+        value: "3.11"
       - key: KA_PERSONALITY
         value: "Tu es KA, assistant personnel. Ton ton est chaleureux et concis. Tu réponds en français, en 2-3 phrases."
     autoDeploy: true
 
 # Endpoints disponibles :
+#   /                  — KA Phone PWA (interface complète)
 #   /api/chat          — conversation IA
 #   /api/reason        — raisonnement
 #   /api/create        — créativité
 #   /api/haiku         — haïku
 #   /api/stats         — statistiques
-#   /api/metrics       — métriques
-#   /api/health        — santé
-#   /api/compress      — compression HCV
-#   /api/upscale       — upscaling
-#   /api/enhance       — pipeline complet
-#   /api/hpc/protein   — repliement protéique (NEW)
-#   /api/hpc/quantum   — simulation quantique (NEW)
-#   /api/hpc/compress  — simulation HCV (NEW)
-#   /api/code/generate — génération de code (NEW)
-#   /api/wave/explain  — explication scientifique (NEW)
-#   /api/wave/creative — génération créative (NEW)
+#   /api/health        — santé du serveur
+#   /api/health/diagnostic — diagnostic médical harmonique
+#   /api/memory/recent — souvenirs récents
+#   /api/storage/analyze    — analyse de fichiers
+#   /api/storage/optimize   — compression de fichiers
+#   /api/storage/optimize-batch — compression par lot
+#   /api/storage/view       — décompression + upscale 4K
+#   /api/harmonic/encode    — compression harmonique (dictionnaire)
+#   /api/harmonic/stats     — stats dictionnaire
