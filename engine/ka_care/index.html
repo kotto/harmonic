@@ -77,6 +77,34 @@ body{font-family:var(--font);background:var(--bg);color:var(--t1);min-height:100
 
 <div class="container" id="main">
 
+  <!-- 🆕 DOSSIER PATIENT -->
+  <div class="card" id="patient-card" style="border-left:3px solid var(--teal)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <h2 style="margin-bottom:0"><span class="emoji">📂</span>Dossier patient</h2>
+      <span style="font-size:11px;color:var(--teal);cursor:pointer;font-weight:600" onclick="patientToggleNew()" id="btn-new-patient">+ Nouveau</span>
+    </div>
+    <select id="patient-select" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--t1);font-size:13px;margin-bottom:6px" onchange="patientSelect(this.value)">
+      <option value="">— Sélectionner un patient —</option>
+    </select>
+    <div id="patient-info" style="display:none;font-size:12px;color:var(--t2);line-height:1.5">
+      <span id="patient-detail"></span>
+      <span style="float:right;font-size:11px;color:var(--t4);cursor:pointer" onclick="patientDelete()">🗑</span>
+    </div>
+    <div id="patient-new-form" style="display:none">
+      <input id="pnom" placeholder="Nom" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);margin-bottom:4px;font-size:13px">
+      <input id="pprenom" placeholder="Prénom" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);margin-bottom:4px;font-size:13px">
+      <div style="display:flex;gap:6px;margin-bottom:4px">
+        <input id="page" type="number" placeholder="Âge" value="5" style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--border);font-size:13px">
+        <select id="page-unit" style="padding:8px;border-radius:6px;border:1px solid var(--border);font-size:13px"><option value="mois">Mois</option><option value="ans">Ans</option></select>
+        <select id="psexe" style="padding:8px;border-radius:6px;border:1px solid var(--border);font-size:13px"><option value="M">M</option><option value="F">F</option></select>
+      </div>
+      <input id="pvillage" placeholder="Village (optionnel)" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);margin-bottom:6px;font-size:13px">
+      <div class="btn btn--assess" style="font-size:13px;padding:8px" onclick="patientCreate()">Créer le dossier</div>
+      <div style="text-align:center;margin-top:4px;font-size:11px;color:var(--t3);cursor:pointer" onclick="patientToggleNew()">Annuler</div>
+    </div>
+    <div id="patient-history" style="display:none;margin-top:6px;max-height:160px;overflow-y:auto;font-size:11px"></div>
+  </div>
+
   <!-- ÉCRAN 1 : ÉVALUATION -->
   <div id="screen-assess">
     <div class="card">
@@ -203,9 +231,11 @@ async function runAssessment(){
   };
   try{
     const resp=await fetch(API+'/api/assess',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(v)});
-    const d=await resp.json();
-    renderResult(d);
-  }catch(e){
+	    const d=await resp.json();
+	    renderResult(d);
+	    // 🆕 Sauvegarde automatique dans le dossier patient sélectionné
+	    if(currentPatientId) patientSaveScreening('assess', d);
+	  }catch(e){
     document.getElementById('result').innerHTML='<div class="verdict verdict--urgent">⚠️ '+(
       document.body.classList.contains('lang-en')?'Server unreachable. Is KA CARE running?':'Serveur inaccessible. KA CARE est-il lancé ?')+'</div>';
   }
@@ -268,6 +298,95 @@ function showScreen(id){
   document.getElementById('screen-'+id).style.display='block';
   document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
   event.target.closest('button').classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// GESTION PATIENTS
+// ═══════════════════════════════════════════════════════════════════
+
+let currentPatientId = null;
+let patientsCache = [];
+
+// Charger la liste des patients au démarrage
+(async function loadPatients(){
+  try{
+    const r=await fetch('/api/patient/list');
+    const d=await r.json();
+    patientsCache=d.patients||[];
+    patientRefreshList();
+  }catch(e){}
+})();
+
+function patientRefreshList(){
+  const sel=document.getElementById('patient-select');
+  sel.innerHTML='<option value="">— Sélectionner un patient —</option>';
+  patientsCache.forEach(function(p){
+    sel.innerHTML+='<option value="'+p.id+'">'+p.prenom+' '+p.nom+' ('+p.age+' '+p.age_unite+') — '+p.nb_screenings+' dépistage(s)</option>';
+  });
+}
+
+function patientSelect(id){
+  if(!id){currentPatientId=null;document.getElementById('patient-info').style.display='none';document.getElementById('patient-history').style.display='none';return;}
+  currentPatientId=id;
+  // Charger le dossier complet
+  fetch('/api/patient/'+id).then(function(r){return r.json();}).then(function(d){
+    var p=d.patient;
+    document.getElementById('patient-detail').textContent=p.prenom+' '+p.nom+' · '+p.age+' '+p.age_unite+' · '+p.sexe+(p.village?' · '+p.village:'');
+    document.getElementById('patient-info').style.display='block';
+    // Historique
+    var hist=document.getElementById('patient-history');
+    var html='<div style="font-weight:600;margin-bottom:2px">Historique:</div>';
+    if(p.screenings.length){
+      p.screenings.slice(-5).reverse().forEach(function(s){
+        var icon=s.type==='pneumonia'?'🫁':s.type==='dehydration'?'💧':s.type==='fever'?'🌡️':s.type==='anemia'?'🩸':s.type==='newborn'?'👶':'🩺';
+        html+='<div style="padding:3px 0;border-bottom:1px solid var(--border)">'+icon+' '+s.date+' — '+s.classification+'</div>';
+      });
+    }else{html+='<div style="color:var(--t4)">Aucun dépistage</div>';}
+    hist.innerHTML=html;
+    hist.style.display='block';
+  });
+}
+
+function patientToggleNew(){
+  var form=document.getElementById('patient-new-form');
+  form.style.display=form.style.display==='none'?'block':'none';
+}
+
+async function patientCreate(){
+  var nom=document.getElementById('pnom').value.trim();
+  var prenom=document.getElementById('pprenom').value.trim();
+  if(!nom||!prenom){alert('Nom et prénom requis');return;}
+  var r=await fetch('/api/patient/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    nom:nom,prenom:prenom,age:parseInt(document.getElementById('page').value)||0,
+    age_unite:document.getElementById('page-unit').value,sexe:document.getElementById('psexe').value,
+    village:document.getElementById('pvillage').value.trim()
+  })});
+  var d=await r.json();
+  if(d.patient){
+    patientsCache.unshift(d.patient);
+    patientRefreshList();
+    document.getElementById('patient-select').value=d.patient.id;
+    patientSelect(d.patient.id);
+    document.getElementById('patient-new-form').style.display='none';
+    ['pnom','pprenom','pvillage'].forEach(function(id){document.getElementById(id).value='';});
+  }
+}
+
+async function patientDelete(){
+  if(!currentPatientId||!confirm('Supprimer ce dossier patient ?'))return;
+  await fetch('/api/patient/'+currentPatientId+'/delete',{method:'POST'});
+  patientsCache=patientsCache.filter(function(p){return p.id!==currentPatientId;});
+  currentPatientId=null;
+  patientRefreshList();
+  document.getElementById('patient-info').style.display='none';
+  document.getElementById('patient-history').style.display='none';
+}
+
+// 🆕 Sauvegarder automatiquement le résultat dans le dossier patient
+function patientSaveScreening(type, result){
+  if(!currentPatientId)return;
+  fetch('/api/patient/'+currentPatientId+'/screening',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:type,result:result})})
+    .then(function(){patientSelect(currentPatientId);});
 }
 </script>
 </body>

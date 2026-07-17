@@ -298,6 +298,171 @@ def indicators():
         return jsonify({'error': str(e)}), 400
 
 
+# ─── GESTION DES PATIENTS ───
+
+import uuid
+import time
+from pathlib import Path
+
+PATIENTS_DIR = Path(__file__).resolve().parent / 'patients'
+PATIENTS_DIR.mkdir(exist_ok=True)
+
+
+def _patient_path(patient_id=None):
+    """Retourne le chemin du fichier patient."""
+    return PATIENTS_DIR / f'{patient_id}.json' if patient_id else None
+
+
+def _load_patient(patient_id):
+    """Charge un dossier patient."""
+    path = _patient_path(patient_id)
+    if not path or not path.exists():
+        return None
+    with open(path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def _save_patient(patient_id, data):
+    """Sauvegarde un dossier patient."""
+    path = _patient_path(patient_id)
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+@app.route('/api/patient/create', methods=['POST'])
+def patient_create():
+    """
+    Crée un dossier patient.
+    
+    Body : {
+        "nom": "Dupont",
+        "prenom": "Marie",
+        "age": 5,
+        "age_unite": "ans",  // "mois" ou "ans"
+        "sexe": "F",
+        "village": "Bamako",
+        "notes": ""
+    }
+    """
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        if not data.get('nom') or not data.get('prenom'):
+            return jsonify({'error': 'Nom et prénom requis'}), 400
+        
+        patient_id = str(uuid.uuid4())[:8]
+        patient = {
+            'id': patient_id,
+            'nom': data['nom'].strip(),
+            'prenom': data['prenom'].strip(),
+            'age': data.get('age', 0),
+            'age_unite': data.get('age_unite', 'ans'),
+            'sexe': data.get('sexe', ''),
+            'village': data.get('village', ''),
+            'notes': data.get('notes', ''),
+            'created_at': time.strftime('%Y-%m-%d %H:%M'),
+            'updated_at': time.strftime('%Y-%m-%d %H:%M'),
+            'screenings': [],
+        }
+        _save_patient(patient_id, patient)
+        return jsonify({'status': 'ok', 'patient': patient})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/patient/list', methods=['GET'])
+def patient_list():
+    """Liste tous les patients."""
+    try:
+        patients = []
+        for f in sorted(PATIENTS_DIR.glob('*.json'), key=lambda x: x.stat().st_mtime, reverse=True):
+            with open(f, 'r', encoding='utf-8') as fp:
+                p = json.load(fp)
+            # Résumé léger pour la liste
+            last = p['screenings'][-1] if p['screenings'] else None
+            patients.append({
+                'id': p['id'],
+                'nom': p['nom'],
+                'prenom': p['prenom'],
+                'age': p['age'],
+                'age_unite': p['age_unite'],
+                'sexe': p['sexe'],
+                'village': p['village'],
+                'nb_screenings': len(p['screenings']),
+                'last_screening': last['date'] if last else None,
+                'last_result': last.get('classification', last.get('score_harmonique', '—')) if last else '—',
+                'created_at': p['created_at'],
+            })
+        return jsonify({'patients': patients, 'total': len(patients)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/patient/<patient_id>', methods=['GET'])
+def patient_get(patient_id):
+    """Récupère le dossier complet d'un patient."""
+    try:
+        patient = _load_patient(patient_id)
+        if not patient:
+            return jsonify({'error': 'Patient introuvable'}), 404
+        return jsonify({'patient': patient})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/patient/<patient_id>/screening', methods=['POST'])
+def patient_add_screening(patient_id):
+    """
+    Ajoute un résultat de dépistage au dossier patient.
+    
+    Body : {
+        "type": "pneumonia",  // ou dehydration, fever, anemia, newborn, assess
+        "result": { ... }      // le résultat complet de l'outil de dépistage
+    }
+    """
+    try:
+        patient = _load_patient(patient_id)
+        if not patient:
+            return jsonify({'error': 'Patient introuvable'}), 404
+        
+        data = request.get_json(force=True, silent=True) or {}
+        screening_type = data.get('type', 'unknown')
+        result = data.get('result', {})
+        
+        screening = {
+            'date': time.strftime('%Y-%m-%d %H:%M'),
+            'type': screening_type,
+            'result': result,
+            'classification': result.get('classification', result.get('niveau_urgence', '—')),
+            'action': result.get('action', result.get('recommandation', '—')),
+        }
+        
+        patient['screenings'].append(screening)
+        patient['updated_at'] = time.strftime('%Y-%m-%d %H:%M')
+        _save_patient(patient_id, patient)
+        
+        return jsonify({
+            'status': 'ok',
+            'patient_id': patient_id,
+            'nb_screenings': len(patient['screenings']),
+            'screening': screening,
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/patient/<patient_id>/delete', methods=['DELETE', 'POST'])
+def patient_delete(patient_id):
+    """Supprime un dossier patient."""
+    try:
+        path = _patient_path(patient_id)
+        if not path or not path.exists():
+            return jsonify({'error': 'Patient introuvable'}), 404
+        path.unlink()
+        return jsonify({'status': 'ok', 'deleted': patient_id})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # ─── DÉMARRAGE ───
 
 if __name__ == '__main__':
