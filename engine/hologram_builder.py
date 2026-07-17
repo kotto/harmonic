@@ -71,9 +71,41 @@ _RELATION_PATTERNS = [
 
 def extract_triples_from_text(text: str, domain: str = "GENERAL") -> List[Tuple[str, str, str]]:
     """
-    Extrait des triplets (sujet, relation, objet) d'un texte brut.
-    Utilise 10+ patterns regex pour couvrir les relations les plus courantes.
+    Extrait des triplets d'un texte en utilisant le meilleur extracteur disponible.
+    
+    Priorité :
+      1. bootstrapper.extract_triples_ml() — KB-trained + entités multi-mots
+      2. bootstrapper.extract_triples_enhanced() — 25+ patterns regex
+      3. Fallback interne — 14 patterns simples
     """
+    # Essayer l'extracteur ML (le plus puissant)
+    try:
+        from bootstrapper import extract_triples_ml
+        enhanced = extract_triples_ml(text)
+        if enhanced:
+            return [(s, r, o) for s, r, o, sec in enhanced]
+    except ImportError:
+        pass
+    
+    # Essayer l'extracteur enrichi (25+ patterns)
+    try:
+        from bootstrapper import extract_triples_enhanced
+        enhanced = extract_triples_enhanced(text)
+        if enhanced:
+            return [(s, r, o) for s, r, o, sec in enhanced]
+    except ImportError:
+        pass
+    
+    # Fallback : patterns internes
+    return _extract_triples_simple(text)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Fallback interne si bootstrapper non disponible
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _extract_triples_simple(text: str) -> List[Tuple[str, str, str]]:
+    """Extracteur interne de secours (14 patterns regex)."""
     triples = []
     seen = set()
 
@@ -87,7 +119,6 @@ def extract_triples_from_text(text: str, domain: str = "GENERAL") -> List[Tuple[
                 rel = relation
                 obj = match.group(2).strip()
 
-            # Nettoyage
             sujet = re.sub(r'\s+', ' ', sujet).strip(' ,;:')
             obj = re.sub(r'\s+', ' ', obj).strip(' ,;:')
             if len(sujet) < 2 or len(obj) < 3:
