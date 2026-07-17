@@ -82,6 +82,14 @@ except ImportError:
     PhaseAmplifier = None
     deep_reason = None
 
+# 📖 WaveNarrative — synthèse narrative structurée (intro/dév/conclusion)
+_WAVE_NARRATIVE_AVAILABLE = False
+try:
+    from wave_narrative import WaveNarrative
+    _WAVE_NARRATIVE_AVAILABLE = True
+except ImportError:
+    WaveNarrative = None
+
 # 🧪 Few-Shot Injector — apprentissage par injection temporaire
 _FEW_SHOT_AVAILABLE = False
 try:
@@ -1541,6 +1549,14 @@ class HarmonicBrain:
         except Exception:
             pass
 
+        # 📖 WAVE NARRATIVE — synthèse structurée pour réponses détaillées
+        self._narrative = None
+        if _WAVE_NARRATIVE_AVAILABLE and WaveNarrative is not None:
+            try:
+                self._narrative = WaveNarrative(dim=dim)
+            except Exception:
+                pass
+
         # 📖 RÉSUMEUR HARMONIQUE (lecture de documents)
         self._summarizer = None
         try:
@@ -2194,7 +2210,8 @@ class HarmonicBrain:
         entity_candidates = self._entity_index.search(question, max_results=10)
         
         # 🆕 DIRECT FACT RESPONSE : si le top résultat a une relation matchee ET score > 20
-        if entity_candidates and entity_candidates[0][1] > 20.0:
+        # SAUF en mode détaillé : on veut plus de faits pour la synthèse narrative
+        if (depth != 'détaillé' and entity_candidates and entity_candidates[0][1] > 20.0):
             top_recs = [r for r,_ in entity_candidates[:1]]
             direct = f'{top_recs[0].sujet.title()} {top_recs[0].relation} {top_recs[0].objet}.'
             if len(top_recs) >= 2 and top_recs[0].sujet.lower().strip() == top_recs[1].sujet.lower().strip() if len(top_recs) > 1 else False:
@@ -2209,16 +2226,19 @@ class HarmonicBrain:
                 total_time_ms=(time.time() - t_start) * 1000,
             )
         
+        # 🆕 Mode détaillé : augmenter le périmètre de retrieval
+        _retrieval_max = 25 if depth == 'détaillé' else 15
         if entity_candidates and entity_candidates[0][1] > 5.0:
             candidates = entity_candidates
         else:
-            candidates = self.unconscious.retrieve(weighted_question, max_results=15)
+            candidates = self.unconscious.retrieve(weighted_question, max_results=_retrieval_max)
             if entity_candidates:
                 candidates = self._merge_candidates(candidates, entity_candidates, user_boost=1.2)
 
         # 🌊 OndulatoireIndex : fallback si EntityIndex + TF-IDF échouent
         if not candidates or candidates[0][1] < 2.0:
-            wave_candidates = self._wave_index.search(question, max_results=10, coherence_threshold=0.4)
+            _wave_max = 15 if depth == 'détaillé' else 10
+            wave_candidates = self._wave_index.search(question, max_results=_wave_max, coherence_threshold=0.4)
             if wave_candidates:
                 candidates = wave_candidates
         
@@ -2314,7 +2334,11 @@ class HarmonicBrain:
                 conv_meta['subject'] = best_subject
 
         # ── 2. CONSCIENT : filtrer + feedback ──
-        accepted, rejected = self.conscious.filter(question, candidates, max_accepted)
+        # 🆕 Mode détaillé : accepter plus de faits pour nourrir la synthèse narrative
+        effective_max = max_accepted
+        if depth == 'détaillé':
+            effective_max = max(6, max_accepted)
+        accepted, rejected = self.conscious.filter(question, candidates, effective_max)
         self.conscious.feedback(accepted, rejected)
 
         # 🆕 J-LENS / C-SPACE : capturer l'instantané du Conscient
@@ -2459,7 +2483,14 @@ class HarmonicBrain:
                     pass
 
         # ── 3. EXPRESSION : adaptée au type de question ──
-        response = self._try_compose(accepted, question, parsed, lang)
+        # 🆕 RÉPONSE DÉTAILLÉE : si depth='détaillé', tenter la synthèse narrative
+        # structurée (intro/corps/conclusion) avant la composition standard.
+        response = None
+        if depth == 'détaillé' and accepted and len(accepted) >= 2:
+            response = self._explain_detailed(question, accepted, lang)
+
+        if not response:
+            response = self._try_compose(accepted, question, parsed, lang)
         if not response:
             response = self._express(accepted, question, parsed)
 
@@ -3121,6 +3152,145 @@ class HarmonicBrain:
         sentences.append(concl + last[0].lower() + last[1:])
 
         return ' '.join(sentences)
+
+    # ═══ RÉPONSE DÉTAILLÉE — structurée, narrative, multi-paragraphes ═══
+
+    def _explain_detailed(self, question: str, accepted: List[FactRecord],
+                          lang: str = 'fr') -> str:
+        """
+        Génère une réponse détaillée structurée (intro → corps → conclusion).
+
+        Pour depth='détaillé', on ne se contente pas de concaténer 4 faits.
+        On :
+          1. EXPANSE les faits via EntityIndex → trouver 8-15 faits connexes
+          2. PLANIFIE la structure → intro, mécanisme, implications, synthèse
+          3. COMPOSE chaque section via WaveNarrative.synthesize()
+          4. ASSEMBLE avec transitions naturelles
+
+        Returns:
+            Une réponse multi-paragraphes structurée, ou fallback vers _express().
+        """
+        # 0. Si pas assez de faits ou pas de narrative, fallback
+        if not accepted or self._narrative is None:
+            return ""
+        if len(accepted) < 2:
+            return ""
+
+        try:
+            # ── 1. EXPANSION — élargir le champ de connaissances ──
+            all_facts = list(accepted)
+            seen = {(f.sujet.lower(), f.relation.lower(), f.objet.lower()) for f in accepted}
+
+            # EntityIndex : chercher des faits connexes (mêmes concepts, domaines voisins)
+            if hasattr(self, 'entity_index') and self.entity_index is not None:
+                try:
+                    expanded = self.entity_index.search(question, max_results=10)
+                    for rec, score in expanded:
+                        key = (rec.sujet.lower(), rec.relation.lower(), rec.objet.lower())
+                        if key not in seen and score > 0.3:
+                            all_facts.append(rec)
+                            seen.add(key)
+                            if len(all_facts) >= 12:
+                                break
+                except Exception:
+                    pass
+
+            # OndulatoireIndex : chercher par résonance ψ (faits sémantiquement proches)
+            if hasattr(self, 'psi_index') and self.psi_index is not None and len(all_facts) < 10:
+                try:
+                    psi_expanded = self.psi_index.search(question, max_results=8)
+                    for rec, score in psi_expanded:
+                        key = (rec.sujet.lower(), rec.relation.lower(), rec.objet.lower())
+                        if key not in seen and score > 0.2:
+                            all_facts.append(rec)
+                            seen.add(key)
+                except Exception:
+                    pass
+
+            # ── 2. PLANIFICATION — déterminer la structure ──
+            # On regroupe les faits par thème pour créer des sections naturelles
+            sections = self._plan_sections(all_facts, question)
+            if not sections or len(sections) < 2:
+                return ""  # fallback vers _express()
+
+            # ── 3. COMPOSITION — chaque section via WaveNarrative ──
+            paragraphs = []
+            for i, (section_type, section_facts) in enumerate(sections):
+                if not section_facts:
+                    continue
+                # Convertir les FactRecord en tuples pour WaveNarrative
+                fact_tuples = [(f.sujet, f.relation, f.objet, f.secteur)
+                              for f in section_facts[:5]]
+                para = self._narrative.synthesize(
+                    fact_tuples,
+                    topic=question,
+                    section_type=section_type,
+                    style='standard',
+                )
+                if para and len(para) > 15:
+                    paragraphs.append(para)
+
+            if not paragraphs:
+                return ""
+
+            # ── 4. ASSEMBLAGE — avec transitions entre sections ──
+            return '\n\n'.join(paragraphs)
+
+        except Exception:
+            return ""  # fallback silencieux vers _express()
+
+    def _plan_sections(self, facts: List, question: str
+                      ) -> List[Tuple[str, List]]:
+        """
+        Planifie la structure d'une réponse détaillée.
+
+        Regroupe les faits en sections logiques :
+          - 'introduction' : les faits les plus généraux/définitoires
+          - 'development' : le mécanisme, les étapes, le processus
+          - 'conclusion' : les implications, conséquences, synthèse
+
+        Returns:
+            Liste de (section_type, [facts]) pour guider WaveNarrative.
+        """
+        if len(facts) <= 3:
+            return [('development', facts)]
+
+        # Trier les faits : définitions d'abord, puis processus, puis conséquences
+        def _fact_weight(f):
+            r = (f.relation or '').lower()
+            o = (f.objet or '').lower()
+            # Définitions / propriétés → intro
+            if any(w in r for w in ('est', 'définit', 'caractérise', 'consiste')):
+                return 0
+            # Actions / mécanismes → corps
+            if any(w in r for w in ('produit', 'cause', 'implique', 'permet',
+                                     'utilise', 'transforme', 'convertit',
+                                     'génère', 'crée', 'active')):
+                return 1
+            # Conséquences / implications → conclusion
+            return 2
+
+        sorted_facts = sorted(facts, key=_fact_weight)
+
+        # Répartir en 3 sections proportionnellement
+        n = len(sorted_facts)
+        intro_n = max(1, n // 4)
+        dev_n = n - intro_n - max(1, n // 4)
+        concl_n = n - intro_n - dev_n
+
+        intro_facts = sorted_facts[:intro_n]
+        dev_facts = sorted_facts[intro_n:intro_n + dev_n]
+        concl_facts = sorted_facts[intro_n + dev_n:]
+
+        sections = []
+        if intro_facts:
+            sections.append(('introduction', intro_facts))
+        if dev_facts:
+            sections.append(('development', dev_facts))
+        if concl_facts:
+            sections.append(('conclusion', concl_facts))
+
+        return sections
 
     # ── STATS ──────────────────────────────────────────────────────────────
 
