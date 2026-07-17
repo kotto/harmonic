@@ -109,6 +109,7 @@ class JEntry:
     coherence: float       # cohérence avec ψ_question (0-1)
     amplitude: float       # amplitude dans le cerveau
     role: str              # 'subject', 'object', 'relation', 'inferred'
+    status: str = 'observed'  # 🆕 'accepted' (conscient), 'rejected' (filtré), 'observed' (brut)
     timestamp: float = 0.0
 
 
@@ -122,6 +123,8 @@ class JSnapshot:
     confidence: float = 0.0
     response_preview: str = ''
     timestamp: float = 0.0
+    accepted_count: int = 0   # 🆕 combien de faits acceptés par le Conscient
+    rejected_count: int = 0   # 🆕 combien de faits rejetés
     
     @property
     def active_concepts(self) -> List[str]:
@@ -141,6 +144,16 @@ class JSnapshot:
     def jspace_size(self) -> int:
         """Nombre de concepts actifs (> seuil)."""
         return sum(1 for e in self.entries if e.coherence > 0.5)
+    
+    @property
+    def accepted_concepts(self) -> List[str]:
+        """🆕 Concepts validés par le Conscient."""
+        return [e.concept for e in self.entries if e.status == 'accepted']
+    
+    @property
+    def rejected_concepts(self) -> List[str]:
+        """🆕 Concepts filtrés par le Conscient."""
+        return [e.concept for e in self.entries if e.status == 'rejected']
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -170,17 +183,20 @@ class JLens:
     
     def capture(self, question: str, psi_q: Optional[np.ndarray] = None,
                 facts: List[Tuple] = None, psi_context: Optional[np.ndarray] = None,
-                confidence: float = 0.0, response: str = ''):
+                confidence: float = 0.0, response: str = '',
+                accepted: List[Tuple] = None, rejected: List[Tuple] = None):
         """
-        Capture un instantané de J-space.
+        Capture un instantané de J-space (l'espace de raisonnement conscient).
         
         Args:
             question: la question posée
             psi_q: le vecteur ψ de la question (C^512)
-            facts: liste de (sujet, relation, objet, secteur, score)
+            facts: liste brute de (sujet, relation, objet, secteur, score)
             psi_context: le vecteur ψ du contexte accumulé
             confidence: score de confiance
             response: début de la réponse
+            accepted: 🆕 faits ACCEPTÉS par le ConsciousFilter (même format)
+            rejected: 🆕 faits REJETÉS par le ConsciousFilter
         """
         self.total_questions += 1
         
@@ -191,39 +207,28 @@ class JLens:
             confidence=confidence,
             response_preview=response[:120] if response else '',
             timestamp=time.time(),
+            accepted_count=len(accepted) if accepted else 0,
+            rejected_count=len(rejected) if rejected else 0,
         )
         
-        if facts:
-            for fact in facts:
-                if len(fact) >= 4:
-                    s, r, o, sec = fact[0], fact[1], fact[2], fact[3]
-                    score = fact[4] if len(fact) >= 5 else 0.5
-                    
-                    # Calculer la cohérence si ψ_q est disponible
-                    coh = score if psi_q is None else min(1.0, score)
-                    
-                    domain = _sector_to_domain(str(sec))
-                    
-                    # Ajouter le sujet comme entrée J-space
-                    if str(s).strip():
-                        snapshot.entries.append(JEntry(
-                            concept=str(s)[:60], sector=str(sec), domain=domain,
-                            coherence=coh, amplitude=score, role='subject',
-                            timestamp=time.time()
-                        ))
-                    
-                    # Ajouter l'objet comme entrée J-space
-                    if str(o).strip() and str(o).strip() != str(s).strip():
-                        snapshot.entries.append(JEntry(
-                            concept=str(o)[:60], sector=str(sec), domain=domain,
-                            coherence=coh * 0.8, amplitude=score * 0.8, role='object',
-                            timestamp=time.time()
-                        ))
-                    
-                    self.domain_activation[domain] += coh
+        # --- Faits ACCEPTÉS (Conscient) ---
+        if accepted:
+            for fact in accepted:
+                self._add_entry(snapshot, fact, status='accepted')
         
-        # Trier par cohérence
-        snapshot.entries.sort(key=lambda e: e.coherence, reverse=True)
+        # --- Faits REJETÉS (filtrés par le Conscient) ---
+        if rejected:
+            for fact in rejected:
+                self._add_entry(snapshot, fact, status='rejected', coherence_discount=0.3)
+        
+        # --- Faits bruts (sans ConsciousFilter) ---
+        if facts and not accepted:
+            for fact in facts:
+                self._add_entry(snapshot, fact, status='observed')
+        
+        # Trier : acceptés d'abord, puis observés, puis rejetés — par cohérence
+        status_rank = {'accepted': 0, 'observed': 1, 'rejected': 2}
+        snapshot.entries.sort(key=lambda e: (status_rank.get(e.status, 1), -e.coherence))
         
         self.current = snapshot
         self.history.append(snapshot)
@@ -232,6 +237,31 @@ class JLens:
         # Limiter l'historique
         if len(self.history) > self.history_size:
             self.history = self.history[-self.history_size:]
+    
+    def _add_entry(self, snapshot: JSnapshot, fact: Tuple,
+                   status: str = 'observed', coherence_discount: float = 1.0):
+        """Ajoute un fait comme entrées J-space (sujet + objet)."""
+        if len(fact) < 4:
+            return
+        s, r, o, sec = fact[0], fact[1], fact[2], fact[3]
+        score = fact[4] if len(fact) >= 5 else 0.5
+        
+        coh = score * coherence_discount
+        domain = _sector_to_domain(str(sec))
+        
+        if str(s).strip():
+            snapshot.entries.append(JEntry(
+                concept=str(s)[:60], sector=str(sec), domain=domain,
+                coherence=coh, amplitude=score, role='subject',
+                status=status, timestamp=time.time()
+            ))
+        if str(o).strip() and str(o).strip() != str(s).strip():
+            snapshot.entries.append(JEntry(
+                concept=str(o)[:60], sector=str(sec), domain=domain,
+                coherence=coh * 0.8, amplitude=score * 0.8, role='object',
+                status=status, timestamp=time.time()
+            ))
+        self.domain_activation[domain] += coh
     
     # ═══ RENDU ASCII ═══
     
@@ -248,13 +278,15 @@ class JLens:
         
         # En-tête
         lines.append("╔" + "═" * (width - 2) + "╗")
-        title = f" J-SPACE HARMONIQUE — '{snap.question[:40]}'"
+        title = f" J-SPACE / C-SPACE — '{snap.question[:38]}'"
         lines.append("║" + title.ljust(width - 2) + "║")
         lines.append("╠" + "═" * (width - 2) + "╣")
         
-        # Stats
+        # Stats avec compteurs accepted/rejected
+        acc = snap.accepted_count
+        rej = snap.rejected_count
         lines.append("║  {:48s} ║".format(
-            f"Concepts actifs: {snap.jspace_size} | Cohérence: {snap.mean_coherence:.2f} | Confiance: {snap.confidence:.2f}"
+            f"Actifs: {snap.jspace_size} | ✓{acc} acceptés ✗{rej} rejetés | Coh: {snap.mean_coherence:.2f} | Conf: {snap.confidence:.2f}"
         ))
         lines.append("╠" + "─" * (width - 2) + "╣")
         
@@ -271,16 +303,18 @@ class JLens:
         
         lines.append("╠" + "─" * (width - 2) + "╣")
         
-        # Top concepts actifs
-        lines.append("║ TOP 10 — CONCEPTS EN J-SPACE:" + " " * (width - 28) + "║")
+        # Top concepts actifs avec marqueurs accepted/rejected
+        lines.append("║ TOP 10 — CONCEPTS EN C-SPACE (Conscient):" + " " * (width - 42) + "║")
         for i, entry in enumerate(snap.entries[:10]):
             coh_bar = '█' * int(entry.coherence * 20)
             coh_spc = ' ' * (20 - int(entry.coherence * 20))
             role_icon = {'subject': 'S', 'object': 'O', 'relation': 'R', 'inferred': 'I'}.get(entry.role, '?')
-            concept = entry.concept[:35]
+            # 🆕 Marqueur de statut
+            status_mark = {'accepted': '✓', 'rejected': '✗', 'observed': ' '}.get(entry.status, ' ')
+            concept = entry.concept[:32]
             domain = entry.domain[:6]
-            lines.append("║ {:2d}. [{:1s}] {:35s} |{:20s}| {:6s} ║".format(
-                i + 1, role_icon, concept, coh_bar, domain
+            lines.append("║ {:2d}. [{}{}] {:32s} |{:20s}| {:6s} ║".format(
+                i + 1, status_mark, role_icon, concept, coh_bar, domain
             ))
         
         # Interférence pattern
@@ -315,21 +349,24 @@ class JLens:
     # ═══ RENDU HTML ═══
     
     def to_html(self) -> str:
-        """Rendu HTML interactif de J-space avec couleurs sectorielles."""
+        """Rendu HTML interactif de J-space avec couleurs sectorielles et statut conscient."""
         if not self.current:
             return "<p>J-Space: aucun instantané.</p>"
         
         snap = self.current
         
-        # Construire les entrées J-space
+        # Construire les entrées J-space avec statut accepté/rejeté
         entries_html = ''
         for i, e in enumerate(snap.entries[:15]):
             color = SECTOR_COLORS.get(e.sector, '#95A5A6')
             coh_pct = int(e.coherence * 100)
+            status_badge = {'accepted': '✅', 'rejected': '❌', 'observed': '👁️'}.get(e.status, '')
+            opacity = '0.4' if e.status == 'rejected' else '1.0'  # rejetés plus pâles
             entries_html += f'''
             <div style="display:flex;align-items:center;margin:4px 0;padding:6px;
-                        background:rgba(255,255,255,0.03);border-radius:6px;">
-              <span style="color:{color};font-weight:bold;min-width:60px;">[{e.domain[:6]}]</span>
+                        background:rgba(255,255,255,0.03);border-radius:6px;opacity:{opacity};">
+              <span style="margin-right:4px;">{status_badge}</span>
+              <span style="color:{color};font-weight:bold;min-width:55px;">[{e.domain[:6]}]</span>
               <span style="flex:1;color:#e0e0e0;">{e.concept[:50]}</span>
               <span style="color:#888;min-width:40px;text-align:right;">{e.role[:1]}</span>
               <div style="width:100px;height:8px;background:#333;border-radius:4px;margin-left:8px;">
@@ -432,14 +469,42 @@ class JLens:
     # ═══ STATS ═══
     
     def stats(self) -> dict:
+        s = self.current
         return {
             'total_questions': self.total_questions,
             'total_facts_observed': self.total_facts_observed,
-            'current_jspace_size': self.current.jspace_size if self.current else 0,
-            'mean_coherence': self.current.mean_coherence if self.current else 0,
+            'current_jspace_size': s.jspace_size if s else 0,
+            'mean_coherence': round(s.mean_coherence, 3) if s else 0,
+            'accepted_count': s.accepted_count if s else 0,     # 🆕
+            'rejected_count': s.rejected_count if s else 0,     # 🆕
+            'accepted_concepts': s.accepted_concepts if s else [],  # 🆕
             'top_domains': self.domain_activation.most_common(5),
             'history_size': len(self.history),
         }
+    
+    # ═══ FEEDBACK ═══
+    
+    def record_reinforcement(self, fact_key: Tuple[str, str, str], score: float):
+        """🆕 Enregistre le renforcement d'un fait par la boucle de feedback
+        (J-Lens feedback, ex-_deep_reason). Ne mute pas la source curée,
+        logge dans le J-Lens pour traçabilité.
+        """
+        if not hasattr(self, '_reinforcements'):
+            self._reinforcements = []
+        self._reinforcements.append({
+            'key': fact_key,
+            'score': score,
+            'timestamp': time.time(),
+        })
+        # Limiter la taille du log
+        if len(self._reinforcements) > 200:
+            self._reinforcements = self._reinforcements[-200:]
+    
+    def get_reinforcements(self, last_n: int = 20) -> list:
+        """🆕 Retourne les derniers renforcements loggés."""
+        if not hasattr(self, '_reinforcements'):
+            return []
+        return self._reinforcements[-last_n:]
     
     def __repr__(self) -> str:
         s = self.stats()

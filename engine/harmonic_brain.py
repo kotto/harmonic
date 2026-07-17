@@ -1421,6 +1421,9 @@ class HarmonicBrain:
         self._domain_stores: Dict[str, DomainStore] = {}
         self._sector_to_domain_cache: Dict[str, str] = dict(DOMAIN_SECTOR_MAP)
         
+        # 🆕 J-Lens (attached by HarmonicAI._get_brain)
+        self.jlens = None
+        
         for domain_name in ['sciences', 'culture_generale', 'histoire', 'code', 'humain', 'culture_arts', 'corps_sante']:
             store = HolographicStore(dim=domain_dim, use_holographic=use_holographic)
             self._domain_stores[domain_name] = DomainStore(
@@ -2314,6 +2317,25 @@ class HarmonicBrain:
         accepted, rejected = self.conscious.filter(question, candidates, max_accepted)
         self.conscious.feedback(accepted, rejected)
 
+        # 🆕 J-LENS / C-SPACE : capturer l'instantané du Conscient
+        # C'est ici que le J-Lens voit le résultat du ConsciousFilter —
+        # quels faits ont été acceptés (✓) et lesquels rejetés (✗).
+        if self.jlens is not None:
+            try:
+                # Convertir les FactRecord acceptés/rejetés en tuples (s,r,o,sec,amp)
+                acc_tuples = [(r.sujet, r.relation, r.objet, r.secteur, r.amplitude)
+                             for r in accepted] if accepted else []
+                rej_tuples = [(r.sujet, r.relation, r.objet, r.secteur, r.amplitude)
+                             for r in rejected[:8]] if rejected else []
+                self.jlens.capture(
+                    question,
+                    accepted=acc_tuples,
+                    rejected=rej_tuples,
+                    confidence=(accepted[0].confidence if accepted else 0.0),
+                )
+            except Exception as e:
+                log.warning(f"J-Lens capture failed: {e}")
+
         # ── 2b. INTELLIGENCE CONSCIENTE : raisonner si confiance faible ──
         # GARDE-FOU : si aucun candidat → tenter le web avant d'abandonner
         if not accepted and not candidates:
@@ -2482,6 +2504,13 @@ class HarmonicBrain:
 
         # 📚 APPRENTISSAGE CONTINU : feedback + fine-tune périodique
         self._maybe_learn(question, response, confidence, accepted)
+
+        # 🆕 Mettre à jour le snapshot J-Lens avec la réponse finale
+        if self.jlens is not None and self.jlens.current is not None:
+            try:
+                self.jlens.current.response_preview = (response or '')[:120]
+            except Exception:
+                pass
 
         return BrainResult(
             response=response,

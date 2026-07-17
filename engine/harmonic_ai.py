@@ -143,6 +143,9 @@ class HarmonicAI:
         self._brain_init_attempted = True
         try:
             self._brain = HarmonicBrain(self.model.knowledge_base)
+            # 🆕 Attacher le J-Lens au cerveau pour la capture ConsciousFilter
+            if self.jlens is not None:
+                self._brain.jlens = self.jlens
         except Exception:
             self._brain = None
         return self._brain
