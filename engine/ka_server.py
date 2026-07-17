@@ -678,24 +678,61 @@ def learn():
 
     try:
         if data.get('sujet') and data.get('relation') and data.get('objet'):
-            # Forme structurée
             ai.learn(data['sujet'], data['relation'], data['objet'],
                     data.get('secteur', 'GENERAL'))
             ingested = f"{data['sujet']} {data['relation']} {data['objet']}"
         else:
-            # Extraction automatique
             ai.learn(fact)
             ingested = fact
+
+        # 🆕 Pipeline communautaire : logger la contribution
+        community_log = Path('data/hologram_store/community_contributions.jsonl')
+        community_log.parent.mkdir(parents=True, exist_ok=True)
+        with open(community_log, 'a', encoding='utf-8') as f:
+            json.dump({
+                'timestamp': __import__('time').time(),
+                'user': data.get('user_id', 'anonymous'),
+                'fact': ingested,
+                'secteur': data.get('secteur', 'GENERAL'),
+                'domain': data.get('domain', ''),
+            }, f, ensure_ascii=False)
+            f.write('\n')
 
         return jsonify({
             'response': f"✅ Appris : « {ingested[:80]} »",
             'confidence': 1.0,
             'source': 'learn',
             'kb_facts': ai.model.stats.get('facts', 0),
+            'contributed': True,
         })
     except Exception as e:
         log.exception(f"Erreur /api/learn: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/community/contributions', methods=['GET'])
+def community_contributions():
+    """
+    Retourne les dernières contributions communautaires (apprends :).
+    GET /api/community/contributions?limit=50
+    """
+    limit = request.args.get('limit', 50, type=int)
+    log_path = Path('data/hologram_store/community_contributions.jsonl')
+    if not log_path.exists():
+        return jsonify({'contributions': [], 'total': 0})
+
+    contributions = []
+    with open(log_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            try:
+                contributions.append(json.loads(line))
+            except Exception:
+                pass
+
+    return jsonify({
+        'contributions': contributions[-limit:],
+        'total': len(contributions),
+    })
 
 
 @app.route('/api/specialize/status/<user_id>', methods=['GET'])
