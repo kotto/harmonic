@@ -542,7 +542,8 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
 	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-camera');closeMore()"><span style="font-size:18px">📷</span><div><div style="font-size:13px;color:var(--t1)">Caméra</div><div style="font-size:11px;color:var(--t4)">Photo · Vidéo · Compression auto</div></div></div>
 	      
 	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-storage');closeMore()"><span style="font-size:18px">💾</span><div><div style="font-size:13px;color:var(--t1)">Espace disque</div><div style="font-size:11px;color:var(--t4)">Analyse et optimisation</div></div></div>
-    </div>
+	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-holo');closeMore()"><span style="font-size:18px">🧠</span><div><div style="font-size:13px;color:var(--t1)">Hologrammes</div><div style="font-size:11px;color:var(--t4)">Savoirs spécialisés · Télécharger</div></div></div>
+	    </div>
     <div class="btn btn--ghost" onclick="closeMore()" style="margin-top:12px;text-align:center">Fermer</div>
   </div>
 
@@ -596,6 +597,32 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
     </div>
     <div class="cta-row">
       <div class="btn btn--life" id="sto-optimize-btn" onclick="storageOptimize()" style="opacity:.5;pointer-events:none">▶ Optimiser</div>
+      <div class="btn btn--ghost" onclick="go('s-home')">Fermer</div>
+    </div>
+  </div>
+
+  <!-- HOLOGRAM STORE -->
+  <div class="sc cap" id="s-holo">
+    <div class="sph"><div class="sph__back" onclick="go('s-home')" role="button">‹ KA</div><div class="sph__badge" style="color:var(--wisdom)">HOLOGRAMMES</div><div style="width:48px"></div></div>
+    <div class="sp-body">
+      <div style="text-align:center;padding:8px 0 14px;font-size:12px;color:var(--t4)">Savoirs spécialisés téléchargeables. Chaque hologramme rend KA expert dans un domaine.</div>
+      
+      <!-- Barre de statut -->
+      <div id="holo-status" style="display:none;text-align:center;padding:10px;margin-bottom:10px;background:rgba(120,200,255,.08);border-radius:10px;font-size:12px;color:var(--sky)"></div>
+      
+      <!-- Filtre -->
+      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;justify-content:center">
+        <span class="pill pill--life" style="cursor:pointer" onclick="holoFilter('all')" id="holo-f-all">🌟 Tous</span>
+        <span class="pill" style="cursor:pointer" onclick="holoFilter('installed')" id="holo-f-inst">✅ Installés</span>
+        <span class="pill" style="cursor:pointer" onclick="holoFilter('available')" id="holo-f-avail">📥 Disponibles</span>
+      </div>
+
+      <!-- Liste -->
+      <div id="holo-list">
+        <div style="text-align:center;padding:20px;color:var(--t4);font-size:12px"><span style="animation:pulse 1.2s ease-in-out infinite">●</span> Chargement des hologrammes…</div>
+      </div>
+    </div>
+    <div class="cta-row">
       <div class="btn btn--ghost" onclick="go('s-home')">Fermer</div>
     </div>
   </div>
@@ -1498,8 +1525,138 @@ function smsSend(){
   localStorage.setItem('ka_sms_history',JSON.stringify(smsHistory));
   input.value='';
   smsOpen(smsCurrentContact);
-  try{window.open('sms:?body='+encodeURIComponent(text),'_blank');}catch(e){}
+	try{window.open('sms:?body='+encodeURIComponent(text),'_blank');}catch(e){}
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🧠 HOLOGRAM STORE — Savoirs spécialisés téléchargeables
+// ═══════════════════════════════════════════════════════════════════════════════
+
+var holoCache = null;       // cache de la liste des hologrammes
+var holoInstalled = {};     // {id: true} pour les hologrammes installés
+var holoFilterMode = 'all'; // 'all' | 'installed' | 'available'
+
+// Récupère la liste des hologrammes depuis l'API
+async function holoFetchList() {
+  if (holoCache) return holoCache;
+  try {
+    var resp = await fetch(API_URL + '/api/store/list', {signal: AbortSignal.timeout(8000)});
+    var data = await resp.json();
+    holoCache = data.holograms || [];
+    return holoCache;
+  } catch(e) {
+    return [];
+  }
+}
+
+// Affiche la liste dans l'écran
+async function holoRender(filter) {
+  if (filter) holoFilterMode = filter;
+  var list = document.getElementById('holo-list');
+  var holos = await holoFetchList();
+  if (!holos.length) { list.innerHTML = '<div style="text-align:center;padding:16px;color:var(--t4)">Aucun hologramme disponible.</div>'; return; }
+
+  // Mettre à jour les pastilles de filtre
+  ['all','installed','available'].forEach(function(f) {
+    var el = document.getElementById('holo-f-'+f);
+    if (el) { el.className = 'pill' + (holoFilterMode===f?' pill--life':''); }
+  });
+
+  // Filtrer
+  var filtered = holos;
+  if (holoFilterMode === 'installed') filtered = holos.filter(function(h) { return holoInstalled[h.id]; });
+  if (holoFilterMode === 'available') filtered = holos.filter(function(h) { return !holoInstalled[h.id]; });
+
+  // Trier par score qualité décroissant
+  filtered.sort(function(a,b) { return (b.quality_score||0) - (a.quality_score||0); });
+
+  var html = '';
+  filtered.forEach(function(h) {
+    var installed = holoInstalled[h.id];
+    var score = (h.quality_score || 0) * 100;
+    var scoreColor = score >= 70 ? 'var(--life)' : score >= 50 ? 'var(--wisdom)' : 'var(--t4)';
+    var facts = h.facts_count || 0;
+    var domain = h.domain || h.id.replace('official_','').replace('community_KA Expander_','');
+    var author = h.author === 'KA' ? 'Officiel' : (h.author||'').replace('KA Expander','Étendu').replace('KA Builder','Construit');
+
+    html += '<div class="card" style="margin-bottom:8px;padding:12px 14px;cursor:pointer;' +
+      (installed ? 'border:1px solid var(--life);' : '') + '" ' +
+      'onclick="' + (installed ? '' : 'holoDownload(\'' + h.id + '\',\'' + domain + '\',' + facts + ')') + '">';
+
+    html += '<div style="display:flex;align-items:center;gap:10px">';
+    html += '<span style="font-size:22px">' + (installed ? '✅' : '🧠') + '</span>';
+    html += '<div style="flex:1;min-width:0">';
+    html += '<div style="font-size:13px;color:var(--t1);font-weight:600">' + domain.charAt(0).toUpperCase() + domain.slice(1) + '</div>';
+    html += '<div style="font-size:10px;color:var(--t4)">' + author + ' · ' + facts.toLocaleString() + ' faits</div>';
+    html += '</div>';
+    html += '<div style="text-align:right">';
+    html += '<div style="font-size:14px;font-weight:700;color:' + scoreColor + '">' + Math.round(score) + '%</div>';
+    html += '<div style="font-size:9px;color:var(--t4)">F1</div>';
+    html += '</div>';
+    html += '<div style="font-size:18px;margin-left:4px">' + (installed ? '' : '›') + '</div>';
+    html += '</div>';
+
+    if (installed) {
+      html += '<div style="margin-top:6px;font-size:10px;color:var(--life);text-align:center">✓ Installé — KA répond dans ce domaine</div>';
+    }
+
+    html += '</div>';
+  });
+
+  list.innerHTML = html;
+}
+
+// Télécharge et installe un hologramme
+async function holoDownload(holoId, domain, facts) {
+  var status = document.getElementById('holo-status');
+  var list = document.getElementById('holo-list');
+
+  status.style.display = 'block';
+  status.innerHTML = '<span style="animation:pulse 1.2s ease-in-out infinite">●</span> Téléchargement de l\'hologramme ' + domain + '…';
+  list.style.opacity = '0.6'; list.style.pointerEvents = 'none';
+
+  try {
+    var resp = await fetch(API_URL + '/api/store/download/' + holoId, {signal: AbortSignal.timeout(15000)});
+    var data = await resp.json();
+    if (data.error) { throw new Error(data.error); }
+
+    // Envoyer au cerveau pour intégration
+    var loadResp = await fetch(API_URL + '/api/store/load', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({holo_id: holoId, facts: data.facts}),
+      signal: AbortSignal.timeout(10000)
+    });
+    var loadData = await loadResp.json();
+
+    holoInstalled[holoId] = true;
+    status.innerHTML = '✅ <b>Hologramme ' + domain + ' installé</b> — ' + (facts||0).toLocaleString() + ' faits. Posez-moi une question sur ce domaine !';
+    status.style.background = 'rgba(120,255,180,.1)';
+    status.style.color = 'var(--life)';
+
+    // Rafraîchir la liste
+    setTimeout(function() { holoRender(); }, 800);
+    setTimeout(function() { status.style.display = 'none'; }, 6000);
+
+  } catch(e) {
+    status.innerHTML = '⚠️ Échec du téléchargement : ' + (e.message || 'réessayez');
+    status.style.background = 'rgba(255,150,150,.1)';
+    status.style.color = 'var(--coral)';
+    list.style.opacity = '1'; list.style.pointerEvents = 'auto';
+    setTimeout(function() { status.style.display = 'none'; }, 5000);
+  }
+}
+
+// Initialise l'écran hologrammes à l'ouverture
+function holoInit() {
+  holoRender('all');
+}
+// Exécuter au chargement de l'écran (via l'attribut onscreen ou appel direct)
+document.addEventListener('DOMContentLoaded', function() {
+  // Précharger la liste en arrière-plan
+  setTimeout(function() { holoFetchList().then(function() {}); }, 2000);
+});
+
 function smsNew(){
   var name=prompt('Nom du contact :');
   if(!name) return;

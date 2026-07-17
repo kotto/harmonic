@@ -2545,39 +2545,115 @@ def get_jlens_history():
 
 @app.route('/api/store/list', methods=['GET'])
 def store_list():
-    """Liste tous les hologrammes disponibles."""
+    """Liste tous les hologrammes disponibles (format UI)."""
     if not _hologram_store:
         return jsonify({'error': 'Store non disponible'}), 503
-    holo_type = request.args.get('type', None)  # 'official' | 'community'
+    holo_type = request.args.get('type', None)
+    holos = _hologram_store.list_holograms(holo_type)
+    # Enrichir avec les métadonnées complètes pour l'UI
+    enriched = []
+    for h in holos:
+        meta = _hologram_store.download_metadata(h['id']) or {}
+        enriched.append({
+            'id': h['id'],
+            'domain': meta.get('domain', h['id'].replace('official_','').replace('community_KA Expander_','')),
+            'name': meta.get('name', h.get('name','')),
+            'facts_count': meta.get('facts_count', h.get('facts_count', 0)),
+            'quality_score': meta.get('quality_score', h.get('quality_score', 0.5)),
+            'author': meta.get('author', h.get('author', 'KA')),
+            'type': meta.get('type', h.get('type', 'official')),
+            'description': meta.get('description', ''),
+            'sectors': meta.get('sectors', []),
+        })
     return jsonify({
-        'holograms': _hologram_store.list_holograms(holo_type),
+        'holograms': enriched,
         'stats': _hologram_store.stats(),
     })
 
-@app.route('/api/store/download/<holo_id>', methods=['POST'])
+@app.route('/api/store/download/<holo_id>', methods=['GET', 'POST'])
 def store_download(holo_id):
-    """Télécharge un hologramme et le fusionne dans le FastRetriever."""
+    """Télécharge les faits d'un hologramme (GET) ou les fusionne (POST)."""
     if not _hologram_store:
         return jsonify({'error': 'Store non disponible'}), 503
-    
+
     facts = _hologram_store.download(holo_id)
     if not facts:
         return jsonify({'error': f'Hologramme {holo_id} introuvable ou vide'}), 404
-    
+
+    if request.method == 'POST':
+        # Fusionner dans le FastRetriever
+        user_id = request.get_json(force=True, silent=True) or {}
+        user_id = user_id.get('user_id', 'anonymous')
+
+        from page_forge import _init_fast_retriever, _FAST_RETRIEVER
+        _init_fast_retriever()
+        if _FAST_RETRIEVER:
+            _FAST_RETRIEVER.add_facts(facts)
+
+        return jsonify({
+            'success': True,
+            'holo_id': holo_id,
+            'facts_loaded': len(facts),
+            'message': f'✅ {len(facts):,} faits chargés en mémoire',
+        })
+    else:
+        # GET : retourne les faits pour traitement côté client
+        return jsonify({
+            'holo_id': holo_id,
+            'facts': [[f[0], f[1], f[2], f[3]] for f in facts],
+            'count': len(facts),
+        })
+
+
+@app.route('/api/store/load', methods=['POST'])
+def store_load():
+    """
+    Charge un hologramme dans le cerveau actif.
+    Body: { "holo_id": "...", "facts": [...] } ou juste { "holo_id": "..." }
+    """
+    if not _hologram_store:
+        return jsonify({'error': 'Store non disponible'}), 503
+
+    data = request.get_json(force=True, silent=True) or {}
+    holo_id = data.get('holo_id', '').strip()
+    facts_raw = data.get('facts', None)
+
+    if not holo_id:
+        return jsonify({'error': 'holo_id requis'}), 400
+
+    # Si les faits sont fournis par le client, les utiliser directement
+    if facts_raw:
+        facts = [(str(f[0]), str(f[1]), str(f[2]), str(f[3]) if len(f) > 3 else 'GENERAL')
+                 for f in facts_raw]
+    else:
+        facts = _hologram_store.download(holo_id)
+
+    if not facts:
+        return jsonify({'error': 'Aucun fait à charger'}), 404
+
     # Fusionner dans le FastRetriever
-    user_id = request.get_json(force=True, silent=True) or {}
-    user_id = user_id.get('user_id', 'anonymous')
-    
-    from page_forge import _init_fast_retriever, _FAST_RETRIEVER
-    _init_fast_retriever()
-    if _FAST_RETRIEVER:
-        _FAST_RETRIEVER.add_facts(facts)
-    
+    try:
+        from page_forge import _init_fast_retriever, _FAST_RETRIEVER
+        _init_fast_retriever()
+        if _FAST_RETRIEVER:
+            _FAST_RETRIEVER.add_facts(facts)
+    except Exception:
+        pass
+
+    # Injecter aussi dans le modèle harmonique si disponible
+    try:
+        if ai is not None and hasattr(ai, 'model'):
+            for s, r, o, sec in facts[:500]:
+                ai.model.add_fact(s, r, o, sec)
+            ai.model.rebuild_waves()
+    except Exception:
+        pass
+
     return jsonify({
         'success': True,
         'holo_id': holo_id,
         'facts_loaded': len(facts),
-        'message': f'✅ {len(facts):,} faits chargés en mémoire',
+        'message': f'✅ Hologramme chargé : {len(facts):,} faits actifs',
     })
 
 @app.route('/api/store/info/<holo_id>', methods=['GET'])
