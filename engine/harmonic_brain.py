@@ -2479,9 +2479,6 @@ class HarmonicBrain:
         # 🔥 Mise à jour du contexte de conversation
         self._update_conv_context(question, response, use_conversation)
 
-        # 🔥 Appliquer le WaveStyler (améliore TOUTES les réponses)
-        response = self._style_response(response, question, accepted, lang, candidates)
-
         # 🔥 DÉDUPLICATION + FILTRE LANGUE : nettoyer la réponse
         response = self._clean_response(response, lang)
 
@@ -3053,11 +3050,17 @@ class HarmonicBrain:
 
         lang = parsed.lang if parsed else 'fr'
 
-        # 🔥 TENTATIVE COMPOSER (style naturel, 30+ structures)
+        # 🔥 COMPOSER NATUREL (30+ micro-structures linguistiques)
+        # Remplace la concaténation brute "X relation Y. Z relation W."
+        # par un discours naturel adapté au type de question.
         if self.composer is not None:
             try:
-                composed = self._try_compose(facts, question, parsed, lang)
-                if composed:
+                from question_analyzer import analyze_question
+                intent = analyze_question(question)
+                fact_tuples = [(f.sujet, f.relation, f.objet, f.secteur)
+                              for f in facts]
+                composed = self.composer.compose(intent, fact_tuples, lang=lang)
+                if composed and len(composed) > 10:
                     return composed
             except Exception:
                 pass  # Fallback vers les templates simples

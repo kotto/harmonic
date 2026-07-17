@@ -1104,11 +1104,40 @@ class HarmonicAI:
                         pass
                 return refusal
 
+        # 🎭 DIALOGUE HARMONIQUE — injecter le ton conversationnel sur TOUS les chemins
+        # (SFT, brain, web, LLM). Sans cela, les réponses SFT sont brutes et
+        # mécaniques ; avec, elles deviennent naturelles (« Paris est la capitale
+        # de la France » → « Paris est la capitale de la France. » avec le ton KA).
+        response = self._apply_dialogue_wrapper(question, response, lang)
+
         # Mémoire conversationnelle
         self.conversation.add("user", question)
         self.conversation.add("assistant", response)
 
         return response
+
+    def _apply_dialogue_wrapper(self, question: str, response: str, lang: str = 'fr') -> str:
+        """Applique le HarmonicDialogue du cerveau à la réponse si disponible.
+        
+        Le cerveau (_brain) possède un _dialogue (HarmonicDialogue) qui ajoute
+        le ton conversationnel KA. On l'applique ici pour que le chemin SFT
+        (FastRetriever) bénéficie du même habillage que le chemin brain.process().
+        """
+        if not response:
+            return response
+        brain = self._get_brain()
+        if brain is None or brain._dialogue is None:
+            return response
+        try:
+            wrapped = brain._dialogue.respond(
+                question=question,
+                facts=None,           # pas de faits à fournir, on a déjà la réponse
+                brain_response=response,
+                confidence=0.60,
+            )
+            return wrapped if wrapped else response
+        except Exception:
+            return response
 
     # Seuil de confiance en dessous duquel KA refuse de répondre (cf. étape 5).
     # Calibration : aligné sur _confidence_score() — sous 0.30, la réponse
