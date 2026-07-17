@@ -134,6 +134,7 @@ class HologramMeta:
     downloads: int = 0         # nombre de téléchargements
     quality_score: float = 1.0 # score de qualité (0-1)
     top_concepts: List[str] = field(default_factory=list)
+    benchmark_questions: int = 0  # 🆕 nombre de questions benchmark (0 = pas mesuré)
     
     def to_dict(self) -> dict:
         return {
