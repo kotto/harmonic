@@ -200,28 +200,46 @@ def build_massive_hologram(domain: str, target_facts: int = 50000,
     # ═══ 1. FILTRAGE RELÂCHÉ ═══
     print("\n  1/5 — FILTRAGE DU KB (critères relâchés)...")
 
-    # Source : tous les hologrammes officiels fusionnés
-    from hologram_store import HologramStore
-    store = HologramStore()
+    # Source : charger le plus gros KB disponible
+    import numpy as np
+    kb_dir = Path('data/bootstrapper_output')
+    kb_candidates = sorted(kb_dir.glob('knowledge_base_*.npz'), key=lambda p: p.stat().st_size, reverse=True)
     
     all_source_facts = []
-    for h in store.list_holograms(holo_type='official'):
-        facts = store.download(h['id'])
-        all_source_facts.extend(facts)
+    for kb_path in kb_candidates[:3]:  # top 3 plus gros
+        try:
+            data = np.load(str(kb_path), allow_pickle=True)
+            if 'facts' in data:
+                for f in data['facts']:
+                    if len(f) >= 4:
+                        all_source_facts.append((str(f[0]), str(f[1]), str(f[2]), str(f[3])))
+            elif 'subjects' in data:
+                for i in range(len(data['subjects'])):
+                    all_source_facts.append((
+                        str(data['subjects'][i]), str(data['relations'][i]),
+                        str(data['objects'][i]),
+                        str(data['sectors'][i]) if 'sectors' in data else 'GENERAL'
+                    ))
+        except Exception as e:
+            continue
     
-    # Ajouter aussi les hologrammes communautaires
-    for h in store.list_holograms(holo_type='community'):
-        facts = store.download(h['id'])
-        all_source_facts.extend(facts)
+    # Déduplication rapide
+    seen = set()
+    unique_facts = []
+    for s, r, o, sec in all_source_facts:
+        key = (s.lower()[:80], r.lower()[:60], o.lower()[:80])
+        if key not in seen:
+            seen.add(key)
+            unique_facts.append((s, r, o, sec))
     
-    print(f"     → {len(all_source_facts):,} faits sources (tous hologrammes)")
+    print(f"     → {len(unique_facts):,} faits uniques (chargés depuis {len(kb_candidates)} fichiers)")
     sectors = set(config.get('sectors', []))
     keywords = set(kw.lower() for kw in config.get('keywords', []))
     
     filtered = []
     seen = set()
     
-    for s, r, o, sec in all_source_facts:
+    for s, r, o, sec in unique_facts:
         sec_str = str(sec).upper()
         text = f"{s} {r} {o}".lower()
         
@@ -272,6 +290,9 @@ def build_massive_hologram(domain: str, target_facts: int = 50000,
     # ═══ 5. PUBLICATION ═══
     print("\n  5/5 — PUBLICATION...")
     try:
+        from hologram_store import HologramStore
+        store = HologramStore()
+        
         # Garder les meilleurs (plus informatifs = sujets/objets plus longs)
         final = list(expanded[:target_facts])
         final.sort(key=lambda x: len(str(x[0])) + len(str(x[2])), reverse=True)
