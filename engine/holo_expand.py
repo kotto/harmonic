@@ -36,31 +36,116 @@ DOMAIN_EXPANSIONS = {
             'immunité', 'inflammation', 'douleur', 'fièvre', 'respiration',
             'médical', 'clinique', 'pathologie', 'anatomie', 'physiologie',
             'neurotransmetteur', 'récepteur', 'mutation', 'chromosome', 'ADN',
+            'allergie', 'asthme', 'tuberculose', 'paludisme', 'sida', 'covid',
+            'anesthésie', 'transplantation', 'greffe', 'radiologie', 'scanner',
+            'irm', 'échographie', 'prisesang', 'tension', 'cholestérol',
+            'disease', 'treatment', 'surgery', 'therapy', 'drug', 'pharmacy',
         ],
     },
-    'astronomie': {
-        'sectors': ['PHYSIQUE_FOND', 'PHYSIQUE_APPLI', 'SCIENCES', 'GEOGRAPHIE'],
+    'sciences': {
+        'sectors': ['PHYSIQUE_FOND', 'PHYSIQUE_APPLI', 'SCIENCES', 'MATHS_PURES',
+                     'MATHS_APPLI', 'BIOLOGIE', 'CHIMIE', 'ASTRONOMIE'],
         'keywords': [
-            'étoile', 'planète', 'galaxie', 'univers', 'soleil', 'lune', 'orbite',
-            'télescope', 'cosmos', 'nébuleuse', 'trou noir', 'lumière', 'gravité',
-            'espace', 'satellite', 'astéroïde', 'comète', 'constellation',
-            'astronome', 'observatoire', 'rayonnement', 'spectre', 'supernova',
-            'exoplanète', 'système solaire', 'voie lactée', 'cosmologie',
-            'big bang', 'matière noire', 'énergie sombre', 'relativité',
-            'star', 'planet', 'galaxy', 'universe', 'moon', 'orbit', 'space',
-            'nasa', 'hubble', 'james webb', 'mars', 'jupiter', 'saturne',
+            'physique quantique', 'relativité', 'mécanique classique', 'électromagnétisme',
+            'thermodynamique', 'optique', 'acoustique', 'physique nucléaire',
+            'chimie organique', 'chimie inorganique', 'tableau périodique', 'réaction chimique',
+            'biologie moléculaire', 'génétique', 'évolution des espèces', 'photosynthèse',
+            'mitose', 'méiose', 'cellule eucaryote', 'cellule procaryote',
+            'théorème de pythagore', 'calcul différentiel', 'algèbre linéaire', 'probabilités',
+            'loi de newton', 'loi de coulomb', 'équation de schrödinger', 'principe d exclusion',
+            'quantum mechanics', 'general relativity', 'molecular biology', 'periodic table',
+            'chromosome', 'ribosome', 'mitochondrie', 'atp', 'enzyme de restriction',
+        ],
+    },
+    'geographie': {
+        'sectors': ['GEOGRAPHIE', 'GEO', 'HISTOIRE', 'CULTURE', 'ECONOMIE'],
+        'keywords': [
+            'pays', 'capitale', 'continent', 'océan', 'mer', 'fleuve', 'rivière',
+            'montagne', 'volcan', 'désert', 'forêt', 'lac', 'île', 'péninsule',
+            'population', 'superficie', 'altitude', 'climat', 'frontière', 'région',
+            'ville', 'village', 'province', 'état', 'département', 'cartographie',
+            'fuseau horaire', 'latitude', 'longitude', 'équateur', 'tropique',
+            'afrique', 'europe', 'asie', 'amérique', 'océanie', 'antarctique',
+            'france', 'allemagne', 'chine', 'inde', 'brésil', 'canada', 'japon',
+            'country', 'capital', 'mountain', 'river', 'ocean', 'island', 'city',
+            'paris', 'londres', 'new york', 'tokyo', 'pékin', 'moscou', 'rome',
         ],
     },
     'histoire': {
-        'sectors': ['HISTOIRE', 'CULTURE', 'GEOGRAPHIE', 'PHILOSOPHIE'],
+        'sectors': ['HISTOIRE', 'CULTURE', 'GEOGRAPHIE', 'PHILOSOPHIE', 'POLITIQUE'],
         'keywords': [
             'guerre', 'révolution', 'empire', 'roi', 'président', 'civilisation',
             'siècle', 'bataille', 'traité', 'indépendance', 'découverte',
-            'antiquité', 'moyen âge', 'renaissance', 'colonisation',
-            'démocratie', 'république', 'monarchie', 'constitution',
-            'rome', 'grèce', 'égypte', 'france', 'angleterre', 'chine',
-            'napoléon', 'alexandre', 'césar', 'gengis khan', 'churchill',
-            'war', 'revolution', 'empire', 'king', 'president', 'century',
+            'antiquité', 'moyen âge', 'renaissance', 'colonisation', 'décolonisation',
+            'démocratie', 'république', 'monarchie', 'constitution', 'élection',
+            'rome', 'grèce', 'égypte', 'france', 'angleterre', 'chine', 'inde',
+            'napoléon', 'alexandre', 'césar', 'gengis khan', 'churchill', 'de gaulle',
+            'mandela', 'gandhi', 'lincoln', 'marx', 'darwin', 'einstein', 'newton',
+            'préhistoire', 'néolithique', 'sumer', 'babylone', 'pharaon', 'viking',
+            'croisade', 'inquisition', 'esclavage', 'abolition', 'suffrage',
+            'war', 'king', 'revolution', 'century', 'battle', 'crown', 'conquest',
+            'world war', 'cold war', 'renaissance', 'enlightenment', 'industrial',
+        ],
+    },
+    'nature': {
+        'sectors': ['NATURE', 'BIOLOGIE', 'ECOLOGIE', 'BIODIVERSITE', 'ENVIRONNEMENT',
+                     'CLIMAT', 'GEOLOGIE', 'OCEANOGRAPHIE'],
+        'keywords': [
+            'animal', 'plante', 'espèce', 'écosystème', 'forêt', 'océan', 'rivière',
+            'montagne', 'désert', 'volcan', 'corail', 'mammifère', 'oiseau', 'poisson',
+            'insecte', 'reptile', 'amphibien', 'champignon', 'bactérie', 'algue',
+            'photosynthèse', 'pollinisation', 'migration', 'hibernation', 'prédateur',
+            'proie', 'chaîne alimentaire', 'biodiversité', 'conservation', 'extinction',
+            'climat', 'réchauffement', 'pollution', 'recyclage', 'développement durable',
+            'énergie renouvelable', 'solaire', 'éolien', 'hydraulique', 'géothermie',
+            'animal', 'species', 'forest', 'ocean', 'climate', 'wildlife', 'nature',
+            'earth', 'planet', 'habitat', 'wetland', 'savanna', 'tundra', 'rainforest',
+        ],
+    },
+    'technologie': {
+        'sectors': ['TECHNOLOGIE', 'TECH', 'INFORMATIQUE', 'ROBOTIQUE', 'IA',
+                     'TELECOM', 'ENERGIE', 'TRANSPORT'],
+        'keywords': [
+            'ordinateur', 'logiciel', 'internet', 'réseau', 'serveur', 'donnée',
+            'algorithme', 'programmation', 'code', 'application', 'mobile', 'web',
+            'intelligence artificielle', 'machine learning', 'deep learning', 'robot',
+            'drone', 'automatisation', 'blockchain', 'cryptomonnaie', 'bitcoin',
+            'smartphone', 'tablette', 'processeur', 'mémoire', 'stockage', 'cloud',
+            'cybersécurité', 'hacking', 'chiffrement', 'firewall', 'vpn', 'wifi',
+            'bluetooth', '5g', 'fibre optique', 'satellite', 'gps', 'iot',
+            'impression 3d', 'réalité virtuelle', 'réalité augmentée', 'quantique',
+            'computer', 'software', 'hardware', 'network', 'server', 'algorithm',
+            'python', 'javascript', 'linux', 'android', 'ios', 'windows', 'mac',
+        ],
+    },
+    'economie': {
+        'sectors': ['ECONOMIE', 'FINANCE', 'POLITIQUE', 'ENTREPRISE', 'COMMERCE'],
+        'keywords': [
+            'produit intérieur brut', 'taux d inflation', 'politique monétaire', 'banque centrale',
+            'marché financier', 'bourse des valeurs', 'fonds monétaire international',
+            'croissance économique', 'récession', 'dette publique', 'déficit budgétaire',
+            'commerce international', 'libre échange', 'protectionnisme', 'balance commerciale',
+            'investissement direct', 'capital risque', 'marché émergent', 'indice boursier',
+            'produit dérivé', 'obligation d état', 'cotation en bourse', 'introduction en bourse',
+            'théorie keynésienne', 'école de chicago', 'main invisible', 'avantage comparatif',
+            'gdp', 'inflation rate', 'central bank', 'stock exchange', 'monetary policy',
+            'bull market', 'bear market', 'dividend yield', 'price earning ratio',
+        ],
+    },
+    'culture': {
+        'sectors': ['CULTURE', 'CREATION', 'EXPRESSION', 'ART', 'LITTERATURE',
+                     'MUSIQUE', 'CINEMA', 'PHILOSOPHIE'],
+        'keywords': [
+            'art', 'peinture', 'sculpture', 'architecture', 'musique', 'littérature',
+            'poésie', 'roman', 'théâtre', 'cinéma', 'photographie', 'danse', 'opéra',
+            'jazz', 'rock', 'classique', 'hip hop', 'blues', 'symphonie', 'concerto',
+            'musée', 'galerie', 'exposition', 'festival', 'biennale', 'conservatoire',
+            'artiste', 'peintre', 'écrivain', 'poète', 'musicien', 'compositeur',
+            'réalisateur', 'acteur', 'sculpteur', 'architecte', 'designer', 'chef',
+            'renaissance', 'baroque', 'impressionnisme', 'cubisme', 'surréalisme',
+            'art', 'music', 'painting', 'literature', 'poetry', 'film', 'theatre',
+            'museum', 'gallery', 'concert', 'exhibition', 'symphony', 'opera',
+            'mozart', 'beethoven', 'bach', 'picasso', 'van gogh', 'davinci', 'monet',
         ],
     },
 }
@@ -72,12 +157,16 @@ DEFAULT_EXPANSION = {
 
 def _get_domain_config(domain: str) -> dict:
     """Récupère la config d'expansion pour un domaine, avec fallback intelligent."""
+    # Normaliser le nom du domaine
+    domain_lower = domain.lower().strip().replace('é','e').replace('è','e')
+    
+    # Chercher une correspondance exacte ou partielle
     for key in DOMAIN_EXPANSIONS:
-        if key in domain.lower():
+        key_norm = key.lower().replace('é','e').replace('è','e')
+        if key_norm in domain_lower or domain_lower in key_norm:
             return DOMAIN_EXPANSIONS[key]
     
-    # Fallback intelligent : utiliser le nom du domaine comme mot-clé
-    # + les secteurs de l'hologramme officiel correspondant
+    # Fallback intelligent : utiliser les secteurs de l'hologramme officiel
     try:
         from hologram_store import HologramStore
         store = HologramStore()
@@ -86,15 +175,15 @@ def _get_domain_config(domain: str) -> dict:
             meta = store._registry[official_id]
             return {
                 'sectors': list(meta.sectors),
-                'keywords': [domain.lower()] + meta.top_concepts[:5],
+                'keywords': [domain.lower()] + meta.top_concepts[:10],
             }
     except Exception:
         pass
     
-    # Fallback ultime : juste le nom du domaine
+    # Fallback ultime : nom du domaine + variantes
     return {
         'sectors': [],
-        'keywords': [domain.lower()],
+        'keywords': [domain.lower(), domain.replace('é','e'), domain.replace('è','e')],
     }
 
 
