@@ -46,16 +46,27 @@ DOMAIN_EXPANSIONS = {
         'sectors': ['PHYSIQUE_FOND', 'PHYSIQUE_APPLI', 'SCIENCES', 'MATHS_PURES',
                      'MATHS_APPLI', 'BIOLOGIE', 'CHIMIE', 'ASTRONOMIE'],
         'keywords': [
-            'physique quantique', 'relativité', 'mécanique classique', 'électromagnétisme',
-            'thermodynamique', 'optique', 'acoustique', 'physique nucléaire',
-            'chimie organique', 'chimie inorganique', 'tableau périodique', 'réaction chimique',
-            'biologie moléculaire', 'génétique', 'évolution des espèces', 'photosynthèse',
-            'mitose', 'méiose', 'cellule eucaryote', 'cellule procaryote',
-            'théorème de pythagore', 'calcul différentiel', 'algèbre linéaire', 'probabilités',
-            'loi de newton', 'loi de coulomb', 'équation de schrödinger', 'principe d exclusion',
-            'quantum mechanics', 'general relativity', 'molecular biology', 'periodic table',
-            'chromosome', 'ribosome', 'mitochondrie', 'atp', 'enzyme de restriction',
+            'physique', 'chimie', 'atome', 'énergie', 'force', 'lumière', 'onde',
+            'quantique', 'relativité', 'gravité', 'électron', 'proton', 'neutron',
+            'molécule', 'équation', 'théorème', 'nombre', 'calcul', 'dérivée',
+            'élément', 'réaction', 'catalyseur', 'température', 'pression', 'volume',
+            'masse', 'vitesse', 'accélération', 'fréquence', 'longueur', 'vecteur',
+            'électricité', 'magnétisme', 'optique', 'thermodynamique', 'mécanique',
+            'biologie', 'évolution', 'espèce', 'écosystème', 'cellule', 'organisme',
+            'physics', 'chemistry', 'biology', 'atom', 'energy', 'wave', 'force',
+            'quantum', 'electron', 'molecule', 'equation', 'theorem', 'element',
+            'mitose', 'méiose', 'atp', 'photosynthèse', 'chlorophylle', 'ribosome',
+            'mitochondrie', 'enzyme', 'catalyse', 'oxygène', 'carbone', 'azote',
+            'laser', 'spectre', 'diffraction', 'interférence', 'polarisation',
+            'isotope', 'radioactivité', 'fission', 'fusion nucléaire', 'plasma',
         ],
+        # 🆕 Filtre de qualité : exclut les faits trop génériques
+        'quality_filter': {
+            'min_object_len': 6,          # objet d'au moins 6 caractères
+            'min_relation_len': 4,         # relation d'au moins 4 caractères
+            'exclude_relations': ['est', 'a', 'sont', 'et'],  # relations trop vagues
+            'exclude_objects': ['oui', 'non', 'true', 'false'],
+        },
     },
     'geographie': {
         'sectors': ['GEOGRAPHIE', 'GEO', 'HISTOIRE', 'CULTURE', 'ECONOMIE'],
@@ -146,7 +157,15 @@ DOMAIN_EXPANSIONS = {
             'art', 'music', 'painting', 'literature', 'poetry', 'film', 'theatre',
             'museum', 'gallery', 'concert', 'exhibition', 'symphony', 'opera',
             'mozart', 'beethoven', 'bach', 'picasso', 'van gogh', 'davinci', 'monet',
+            'chanson', 'album', 'disque', 'orchestre', 'piano', 'violon', 'guitare',
+            'fresque', 'portrait', 'paysage', 'nature morte', 'aquarelle', 'gravure',
+            'tragédie', 'comédie', 'drame', 'essai', 'biographie', 'nouvelle',
         ],
+        'quality_filter': {
+            'min_object_len': 6,
+            'min_relation_len': 4,
+            'exclude_relations': ['est', 'a', 'sont', 'et'],
+        },
     },
 }
 
@@ -342,6 +361,22 @@ def build_massive_hologram(domain: str, target_facts: int = 50000,
         domain_match = domain.lower() in text
         
         if sector_match or kw_match or domain_match:
+            # 🆕 Filtre de qualité optionnel (configuré dans DOMAIN_EXPANSIONS)
+            qf = config.get('quality_filter', {})
+            if qf:
+                r_lower = str(r).lower().strip()
+                o_lower = str(o).lower().strip()
+                # Exclure les relations trop vagues
+                if r_lower in qf.get('exclude_relations', []):
+                    continue
+                # Exclure les objets trop courts ou génériques
+                if len(o_lower) < qf.get('min_object_len', 0):
+                    continue
+                if o_lower in qf.get('exclude_objects', []):
+                    continue
+                # Exclure les relations trop courtes
+                if len(r_lower) < qf.get('min_relation_len', 0):
+                    continue
             key = (s.lower()[:80], r.lower()[:60], o.lower()[:80])
             if key not in seen:
                 seen.add(key)
