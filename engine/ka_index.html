@@ -843,23 +843,44 @@ function renderSugs(){
   });
 }
 function paste(){const w=['Sophie','Réunion demain ?','Ok pour 19h !','Super idée !'];K.txt+=w[Math.floor(Math.random()*w.length)];upd();}
-	function sendMsg(){
-	  const val=K.txt.trim();if(!val)return;
-	  const c=document.getElementById('msglist');
-	  // Message utilisateur
-	  const m=document.createElement('div');m.className='msg msg--m';m.textContent=val;c.appendChild(m);c.scrollTop=c.scrollHeight;
-	  K.txt='';upd();
-	  // Indicateur "KA réfléchit..."
-	  const think=document.createElement('div');think.className='msg msg--t';think.style.opacity='0.6';
-	  think.innerHTML='<span style="animation:pulse 1.2s ease-in-out infinite">●</span> KA réfléchit…';
-	  think.id='ka-thinking';c.appendChild(think);c.scrollTop=c.scrollHeight;
-	  // Appeler l'IA
-	  askKA(val).then(reply => {
-	    const t = document.getElementById('ka-thinking');
-	    if (t) t.remove();
-	    const r=document.createElement('div');r.className='msg msg--t';r.textContent=reply;c.appendChild(r);c.scrollTop=c.scrollHeight;
-	  });
-	}
+function sendMsg(){
+  const val=K.txt.trim();if(!val)return;
+  const c=document.getElementById('msglist');
+  // Message utilisateur
+  const m=document.createElement('div');m.className='msg msg--m';m.textContent=val;c.appendChild(m);c.scrollTop=c.scrollHeight;
+  K.txt='';upd();
+  
+  // 🆕 Détection commandes de compression/stockage
+  const vlow=val.toLowerCase();
+  const stoKeywords=['compresse','compresser','compression','libère','liberer','espace','stockage','optimise','optimiser','fichiers','photos lourdes','disque plein','sature'];
+  const isStorageCmd=stoKeywords.some(function(k){return vlow.indexOf(k)>=0;}) && vlow.length<80;
+  
+  if(isStorageCmd){
+    const think=document.createElement('div');think.className='msg msg--t';think.style.opacity='0.6';
+    think.innerHTML='<span style="animation:pulse 1.2s ease-in-out infinite">●</span> KA analyse…';
+    think.id='ka-thinking';c.appendChild(think);c.scrollTop=c.scrollHeight;
+    
+    // Ouvrir l'optimiseur et répondre
+    setTimeout(function(){
+      const t=document.getElementById('ka-thinking');if(t)t.remove();
+      const r=document.createElement('div');r.className='msg msg--t';
+      r.innerHTML='💾 <b>Optimiseur de stockage</b><br><br>Je peux compresser vos photos (jusqu\'à 30×), vidéos (30×) et fichiers (3×) sans perte visible.<br><br><span style="display:inline-block;background:var(--life);color:#fff;padding:8px 18px;border-radius:10px;cursor:pointer;font-weight:600;margin-top:4px" onclick="go(\'s-storage\')">📂 Ouvrir l\'optimiseur</span>';
+      c.appendChild(r);c.scrollTop=c.scrollHeight;
+    },800);
+    return;
+  }
+  
+  // Indicateur "KA réfléchit..."
+  const think=document.createElement('div');think.className='msg msg--t';think.style.opacity='0.6';
+  think.innerHTML='<span style="animation:pulse 1.2s ease-in-out infinite">●</span> KA réfléchit…';
+  think.id='ka-thinking';c.appendChild(think);c.scrollTop=c.scrollHeight;
+  // Appeler l'IA
+  askKA(val).then(reply => {
+    const t = document.getElementById('ka-thinking');
+    if (t) t.remove();
+    const r=document.createElement('div');r.className='msg msg--t';r.textContent=reply;c.appendChild(r);c.scrollTop=c.scrollHeight;
+  });
+}
 function toggleVoice(){
   K.voice=!K.voice;const btn=document.getElementById('tbv'),lbl=document.getElementById('vl');
   btn.classList.toggle('tbn--on',K.voice);btn.setAttribute('aria-pressed',K.voice);
