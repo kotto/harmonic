@@ -35,4 +35,28 @@ services:
 #   /api/storage/optimize-batch — compression par lot
 #   /api/storage/view       — décompression + upscale 4K
 #   /api/harmonic/encode    — compression harmonique (dictionnaire)
-#   /api/harmonic/stats     — stats dictionnaire
+
+  - type: web
+    name: ka-care
+    env: python
+    region: frankfurt
+    plan: starter
+    rootDir: engine/ka_care
+    buildCommand: pip install flask flask-cors
+    startCommand: gunicorn ka_care:app --bind 0.0.0.0:$PORT --workers 1 --timeout 60
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+    autoDeploy: true
+
+# KA CARE — Endpoints :
+#   /                   — Interface de santé PWA
+#   /api/health         — État du serveur
+#   /api/screen/pneumonia    — Dépistage pneumonie (OMS/IMCI)
+#   /api/screen/dehydration  — Évaluation déshydratation (OMS)
+#   /api/screen/fever        — Détection syndrome fébrile
+#   /api/screen/anemia       — Dépistage anémie
+#   /api/screen/newborn      — Signes danger nouveau-né
+#   /api/assess              — Évaluation communautaire complète
+#   /api/indicators          — Indicateurs harmoniques depuis PPG
