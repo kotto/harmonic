@@ -560,7 +560,199 @@ def smart_math(question: str) -> str:
         if a != 0:
             x = (c - b) / a
             return f"{int(a)}x + {int(b)} = {int(c)} → x = {int(x)}" if x == int(x) else f"{a}x + {b} = {c} → x = {x:.4f}"
-    
+
+    # 🆕 PUISSANCES — 2^8, 10^6, 2^10
+    m = re.search(r'(\d+(?:\.\d+)?)\s*\^\s*(\d+(?:\.\d+)?)', q)
+    if m:
+        base, exp = float(m.group(1)), float(m.group(2))
+        result = base ** exp
+        if result == int(result) and result < 1e15:
+            return f"{int(base)}^{int(exp)} = {int(result)}"
+        return f"{base}^{exp} = {result:.4f}"
+
+    # 🆕 TRIGONOMÉTRIE — sin, cos, tan
+    for fn_name, fn in [('sin', pymath.sin), ('cos', pymath.cos), ('tan', pymath.tan)]:
+        m = re.search(rf'{fn_name}\s*\(\s*(\d+(?:\.\d+)?)\s*(?:°|deg|degr[ée]s?)?\s*\)', q)
+        if m:
+            val = float(m.group(1))
+            # Si pas de ° explicite mais valeur ≤ 360, supposer degrés
+            is_deg = '°' in q or 'deg' in q or 'degr' in q or val > 2 * pymath.pi
+            if is_deg and val <= 360:
+                val = pymath.radians(val)
+            result = fn(val)
+            result = round(result, 4)
+            if abs(result) < 0.0001: result = 0.0
+            if abs(result - round(result)) < 0.0001: result = round(result)
+            return f"{fn_name}({m.group(1)}°) = {result}"
+
+    # 🆕 DÉRIVÉES — dérivée de x^N, sin, cos, exp, ln
+    m = re.search(r'd[éeé]riv[ée]e?\s*(?:de\s+)?(\d*\s*x(?:\s*\^\s*\d+)?|sin\s*\(\s*x\s*\)|cos\s*\(\s*x\s*\)|e\^x|ln\s*\(\s*x\s*\)|tan\s*\(\s*x\s*\))', q)
+    if m:
+        expr = m.group(1).replace(' ', '')
+        if expr in ('x', '1x'): return "dérivée de x = 1"
+        m2 = re.match(r'(\d*)x\^(\d+)', expr)
+        if m2:
+            coeff = int(m2.group(1)) if m2.group(1) else 1
+            power = int(m2.group(2))
+            return f"dérivée de {coeff}x^{power} = {coeff*power}x^{power-1}"
+        if expr == 'sin(x)': return "dérivée de sin(x) = cos(x)"
+        if expr == 'cos(x)': return "dérivée de cos(x) = -sin(x)"
+        if expr == 'e^x': return "dérivée de e^x = e^x"
+        if expr == 'ln(x)': return "dérivée de ln(x) = 1/x"
+        if expr == 'tan(x)': return "dérivée de tan(x) = sec²(x)"
+
+    # 🆕 INTÉGRALES — intégrale de X dx
+    m = re.search(r'int[éeé]grale?\s*(?:de\s+)?(.+?)\s*dx\s*$', q)
+    if m:
+        expr = m.group(1).strip().replace(' ', '')
+        if expr in ('1', '1dx', 'dx'): return "∫ 1 dx = x + C"
+        m2 = re.match(r'(\d*)x\^?(\d*)', expr)
+        if m2:
+            coeff = int(m2.group(1)) if m2.group(1) else 1
+            power = int(m2.group(2)) if m2.group(2) else 1
+            new_coeff = coeff // (power + 1) if coeff % (power + 1) == 0 else f"{coeff}/{power+1}"
+            return f"∫ {coeff}x^{power} dx = {new_coeff}x^{power+1} + C" if power > 0 else f"∫ {coeff} dx = {coeff}x + C"
+        if 'sin(x)' in expr or 'sinx' in expr: return "∫ sin(x) dx = -cos(x) + C"
+        if 'cos(x)' in expr or 'cosx' in expr: return "∫ cos(x) dx = sin(x) + C"
+        if 'e^x' in expr: return "∫ e^x dx = e^x + C"
+        if '1/x' in expr: return "∫ 1/x dx = ln|x| + C"
+
+    # 🆕 LIMITES — limite de X quand x → Y
+    m = re.search(r'limite\s*(?:de\s+)?(.+?)\s*(?:quand\s+)?x\s*(?:tend\s+vers|->|→)\s*(.+?)(?:$|\s*$)', q)
+    if m:
+        expr, target = m.group(1).strip(), m.group(2).strip()
+        if '1/x' in expr and ('infini' in target or '∞' in target or 'infinity' in target):
+            return "limite de 1/x quand x→∞ = 0"
+        if 'sin(x)/x' in expr and '0' in target:
+            return "limite de sin(x)/x quand x→0 = 1"
+        if 'x^2' in expr and '0' in target:
+            return "limite de x² quand x→0 = 0"
+
+    # 🆕 GÉOMÉTRIE — périmètre, aire, volume, hypoténuse, diagonale, distance
+    m = re.search(r'p[éeé]rim[èe]tre\s*(?:d[\"\'u]\s*)?(?:un?|une?)?\s*(carr[éeé]|rectangle|cercle)\s*(?:de\s+c[ôo]t[éeé]\s*)?(\d+(?:\.\d+)?)', q)
+    if m:
+        shape, n = m.group(1), float(m.group(2))
+        if 'carr' in shape: return f"périmètre du carré de côté {int(n)} = {int(4*n)}"
+        if 'cercle' in shape: return f"périmètre du cercle de rayon {int(n)} = {2*pymath.pi*n:.2f}"
+        return None
+
+    m = re.search(r'aire\s*(?:d[\"\'u]\s*)?(?:un?|une?)?\s*(carr[éeé]|rectangle|cercle|(?:d[\"\'u]un )?cercle)\s*(?:de\s+(?:c[ôo]t[éeé]\s*)?)?(\d+(?:\.\d+)?)', q)
+    if m:
+        shape, n = m.group(1), float(m.group(2))
+        if 'carr' in shape: return f"aire du carré de côté {int(n)} = {int(n*n)}"
+        if 'cercle' in shape: return f"aire du cercle de rayon {int(n)} = {pymath.pi*n*n:.2f}"
+
+    m = re.search(r'aire\s*(?:d[\"u]un?)\s*rectangle\s*(\d+(?:\.\d+)?)\s*(?:par|x|×)\s*(\d+(?:\.\d+)?)', q)
+    if m:
+        a, b = float(m.group(1)), float(m.group(2))
+        return f"aire du rectangle {int(a)}×{int(b)} = {int(a*b)}"
+
+    m = re.search(r'volume\s*(?:d[\"u]un?|d[\"u]une?)\s+cube\s*(?:de\s+c[ôo]t[éeé]\s*)?(\d+(?:\.\d+)?)', q)
+    if m:
+        n = float(m.group(1))
+        return f"volume du cube de côté {int(n)} = {int(n**3)}"
+
+    m = re.search(r'volume\s*(?:d[\"u]une?)\s+sph[èe]re\s*(?:de\s+rayon\s*)?(\d+(?:\.\d+)?)', q)
+    if m:
+        r = float(m.group(1))
+        return f"volume de la sphère de rayon {int(r)} = {4/3*pymath.pi*r**3:.3f}"
+
+    m = re.search(r'surface\s*(?:d[\"u]une?)\s+sph[èe]re\s*(?:de\s+rayon\s*)?(\d+(?:\.\d+)?)', q)
+    if m:
+        r = float(m.group(1))
+        return f"surface de la sphère de rayon {int(r)} = {4*pymath.pi*r*r:.3f}"
+
+    m = re.search(r'hypot[ée]nuse\s*(?:d[\"\'u]\s*)?(?:un?|une?)?\s*triangle\s*(?:rectangle\s*)?(?:de\s+c[ôo]t[éeé]s?\s*)?(\d+(?:\.\d+)?)\s*(?:et|,|and)\s*(\d+(?:\.\d+)?)', q)
+    if m:
+        a, b = float(m.group(1)), float(m.group(2))
+        h = pymath.sqrt(a*a + b*b)
+        return f"hypoténuse du triangle {int(a)}-{int(b)} = {int(h)}" if h == int(h) else f"hypoténuse du triangle {a}-{b} = {h:.2f}"
+
+    m = re.search(r'th[ée]or[èe]me\s*(?:de\s+)?pythagore\s*:?\s*(\d+(?:\.\d+)?)\s*(\d+(?:\.\d+)?)', q)
+    if m:
+        a, b = float(m.group(1)), float(m.group(2))
+        h = pymath.sqrt(a*a + b*b)
+        return f"Pythagore: {int(a)}² + {int(b)}² = {int(h)}², hypoténuse = {int(h)}" if h == int(h) else f"Pythagore: hypoténuse = {h:.2f}"
+
+    m = re.search(r'diagonale\s*(?:d[\"u]un?)\s*(?:carr[éeé]|rectangle)\s*(?:de\s+c[ôo]t[éeé]\s*)?(\d+(?:\.\d+)?)', q)
+    if m:
+        n = float(m.group(1))
+        d = n * pymath.sqrt(2)
+        return f"diagonale du carré de côté {int(n)} = {d:.3f}"
+
+    m = re.search(r'distance\s*(?:entre|from)\s*\(?(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\)?\s*(?:and|et|to)\s*\(?(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\)?', q)
+    if m:
+        x1, y1, x2, y2 = float(m.group(1)), float(m.group(2)), float(m.group(3)), float(m.group(4))
+        d = pymath.sqrt((x2-x1)**2 + (y2-y1)**2)
+        return f"distance = {int(d)}" if d == int(d) else f"distance = {d:.2f}"
+
+    # 🆕 STATISTIQUES — moyenne, médiane, mode, écart-type, somme, produit
+    m = re.search(r'moyenne\s*(?:de\s+|des?\s+)?([\d\s,;]+)', q)
+    if m:
+        nums = [float(x) for x in re.findall(r'\d+', m.group(1))]
+        if nums:
+            avg = sum(nums) / len(nums)
+            return f"moyenne = {int(avg)}" if avg == int(avg) else f"moyenne = {avg:.2f}"
+
+    m = re.search(r'm[éeé]diane\s*(?:de\s+|des?\s+)?([\d\s,;]+)', q)
+    if m:
+        nums = sorted([float(x) for x in re.findall(r'\d+', m.group(1))])
+        if nums:
+            n = len(nums)
+            med = nums[n//2] if n % 2 == 1 else (nums[n//2-1] + nums[n//2]) / 2
+            return f"médiane = {int(med)}" if med == int(med) else f"médiane = {med:.2f}"
+
+    m = re.search(r'mode\s*(?:de\s+|des?\s+)?([\d\s,;]+)', q)
+    if m:
+        from collections import Counter
+        nums = [int(x) for x in re.findall(r'\d+', m.group(1))]
+        if nums:
+            c = Counter(nums)
+            mode_val = c.most_common(1)[0][0]
+            return f"mode = {mode_val}"
+
+    m = re.search(r'(?:somme|sum)\s*(?:de\s+|des?\s+)?(\d+)\s*(?:à|to|a)\s*(\d+)', q)
+    if m:
+        a, b = int(m.group(1)), int(m.group(2))
+        total = (a + b) * (b - a + 1) // 2
+        return f"somme de {a} à {b} = {total}"
+
+    m = re.search(r'produit\s*(?:de\s+|des?\s+)?(\d+)\s*(?:à|to|a)\s*(\d+)', q)
+    if m:
+        a, b = int(m.group(1)), int(m.group(2))
+        prod = 1
+        for i in range(a, b+1): prod *= i
+        return f"produit de {a} à {b} = {prod}"
+
+    m = re.search(r'[ée]cart[- ]type\s*(?:de\s+|des?\s+)?([\d\s,;]+)', q)
+    if m:
+        nums = [float(x) for x in re.findall(r'\d+', m.group(1))]
+        if nums:
+            mean = sum(nums) / len(nums)
+            var = sum((x - mean)**2 for x in nums) / len(nums)
+            std = pymath.sqrt(var)
+            return f"écart-type = {std:.2f}"
+
+    # 🆕 CONVERSIONS — degrés ↔ radians
+    m = re.search(r'conversion\s*(?:de\s+)?(\d+(?:\.\d+)?)\s*(?:degr[ée]s?|deg)\s*(?:en|vers|to)\s*radians?', q)
+    if m:
+        deg = float(m.group(1))
+        rad = pymath.radians(deg)
+        return f"{int(deg)}° = {rad:.3f} rad"
+
+    m = re.search(r'conversion\s*(?:de\s+)?(?:pi|π)\s*radians?\s*(?:en|vers|to)\s*degr[ée]s?', q)
+    if m:
+        return "π radians = 180°"
+
+    # 🆕 FACTORIELLE
+    m = re.search(r'factorielle\s*(?:de\s+)?(\d+)', q)
+    if m:
+        n = int(m.group(1))
+        if n > 100: return None
+        import math as _math
+        result = _math.factorial(n)
+        return f"{n}! = {result}"
+
     # "divisé par"
     m = re.search(r'(\d+)\s*divis[eé]\s*par\s*(\d+)', q)
     if m:
