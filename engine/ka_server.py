@@ -557,7 +557,21 @@ def chat():
     
     # Détecter si c'est une page (PageForge) ou une réponse courte
     is_page = response and response.startswith('# ')
-    
+
+    # 🆕 Visual Knowledge : enrichir la réponse avec un visuel si pertinent
+    visual = None
+    try:
+        from visual_knowledge import augment_response
+        # Récupérer les derniers faits utilisés (via le cerveau si dispo)
+        brain = ai._get_brain() if ai else None
+        facts = []
+        if brain and hasattr(brain, '_last_accepted'):
+            facts = [(f.sujet, f.relation, f.objet, f.secteur) for f in brain._last_accepted]
+        if facts:
+            visual = augment_response(message, facts[:8])
+    except Exception:
+        pass
+
     return jsonify({
         'response': response,
         'confidence': round(confidence, 2),
@@ -565,6 +579,7 @@ def chat():
         'latency_ms': round(latency_ms, 0),
         'model': 'harmonic-v3-optimized',
         'is_page': is_page,
+        'visual': visual,  # 🆕 base64 PNG ou null
     })
 
 

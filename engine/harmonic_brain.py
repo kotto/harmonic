@@ -2340,6 +2340,7 @@ class HarmonicBrain:
             effective_max = max(6, max_accepted)
         accepted, rejected = self.conscious.filter(question, candidates, effective_max)
         self.conscious.feedback(accepted, rejected)
+        self._last_accepted = accepted  # 🆕 pour Visual Knowledge
 
         # 🆕 J-LENS / C-SPACE : capturer l'instantané du Conscient
         # C'est ici que le J-Lens voit le résultat du ConsciousFilter —
