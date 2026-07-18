@@ -314,18 +314,50 @@ class HarmonicAI:
         return response
 
     def _simple_code(self, question: str) -> str:
-        """Generation de code par patterns simples (fallback rapide)."""
+        """Generation de code par patterns (20+ templates)."""
         q = question.lower()
         if 'fibonacci' in q:
-            return '```python\ndef fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)\n\nfor i in range(10):\n    print(fibonacci(i), end=\" \")\n# 0 1 1 2 3 5 8 13 21 34\n```'
+            return '```python\ndef fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)\n\nfor i in range(10):\n    print(fibonacci(i), end=" ")\n# 0 1 1 2 3 5 8 13 21 34\n```'
         if 'factorielle' in q or 'factorial' in q:
             return '```python\ndef factorielle(n):\n    if n <= 1:\n        return 1\n    return n * factorielle(n-1)\n\nprint(factorielle(5))  # 120\n```'
-        if 'tri ' in q or 'trier' in q or 'sort' in q:
-            return '```python\ndef tri_rapide(arr):\n    if len(arr) <= 1:\n        return arr\n    pivot = arr[len(arr)//2]\n    gauche = [x for x in arr if x < pivot]\n    milieu = [x for x in arr if x == pivot]\n    droite = [x for x in arr if x > pivot]\n    return tri_rapide(gauche) + milieu + tri_rapide(droite)\n\nprint(tri_rapide([3,6,8,10,1,2,1]))\n# [1,1,2,3,6,8,10]\n```'
+        if 'premier' in q or 'prime' in q:
+            return '```python\ndef est_premier(n):\n    if n < 2:\n        return False\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0:\n            return False\n    return True\n\nprint(est_premier(17))  # True\n```'
+        if 'inverser' in q or 'inverse' in q or 'reverse' in q:
+            return '```python\ndef inverser_chaine(s):\n    return s[::-1]\n\nprint(inverser_chaine("bonjour"))  # ruojnob\n```'
+        if 'tri ' in q or 'trier' in q or 'sort' in q or 'bulle' in q or 'bubble' in q:
+            return '```python\ndef tri_bulles(arr):\n    n = len(arr)\n    for i in range(n):\n        for j in range(0, n-i-1):\n            if arr[j] > arr[j+1]:\n                arr[j], arr[j+1] = arr[j+1], arr[j]\n    return arr\n\nprint(tri_bulles([64,34,25,12,22,11,90]))\n```'
+        if 'maximum' in q or 'max ' in q:
+            return '```python\ndef trouver_max(liste):\n    if not liste:\n        return None\n    max_val = liste[0]\n    for x in liste:\n        if x > max_val:\n            max_val = x\n    return max_val\n\nprint(trouver_max([3,7,2,9,1]))  # 9\n```'
+        if 'moyenne' in q or 'mean' in q:
+            return '```python\ndef moyenne(liste):\n    if not liste:\n        return 0\n    return sum(liste) / len(liste)\n\nprint(moyenne([10,20,30,40]))  # 25.0\n```'
         if 'palindrome' in q:
-            return '```python\ndef est_palindrome(s):\n    s = \"\".join(c.lower() for c in s if c.isalnum())\n    return s == s[::-1]\n\nprint(est_palindrome(\"Radar\"))  # True\n```'
+            return '```python\ndef est_palindrome(s):\n    s = "".join(c.lower() for c in s if c.isalnum())\n    return s == s[::-1]\n\nprint(est_palindrome("Radar"))  # True\n```'
+        if 'voyelle' in q or 'vowel' in q:
+            return '```python\ndef compter_voyelles(texte):\n    voyelles = "aeiouyAEIOUY"\n    return sum(1 for c in texte if c in voyelles)\n\nprint(compter_voyelles("Bonjour le monde"))  # 6\n```'
+        if 'premiers' in q and ('nombre' in q or 'n ' in q):
+            return '```python\ndef nombres_premiers(n):\n    premiers = []\n    for i in range(2, n+1):\n        est_premier = True\n        for j in range(2, int(i**0.5)+1):\n            if i % j == 0:\n                est_premier = False\n                break\n        if est_premier:\n            premiers.append(i)\n    return premiers\n\nprint(nombres_premiers(50))\n```'
+        if 'dichotom' in q or 'binary' in q:
+            return '```python\ndef recherche_dichotomique(arr, cible):\n    gauche, droite = 0, len(arr) - 1\n    while gauche <= droite:\n        milieu = (gauche + droite) // 2\n        if arr[milieu] == cible:\n            return milieu\n        elif arr[milieu] < cible:\n            gauche = milieu + 1\n        else:\n            droite = milieu - 1\n    return -1\n\nprint(recherche_dichotomique([1,3,5,7,9], 7))  # 3\n```'
+        if ('générateur' in q or 'generateur' in q) and 'fibonacci' in q:
+            return '```python\ndef fibonacci_gen():\n    a, b = 0, 1\n    while True:\n        yield a\n        a, b = b, a + b\n\nfib = fibonacci_gen()\nfor _ in range(10):\n    print(next(fib), end=" ")\n# 0 1 1 2 3 5 8 13 21 34\n```'
+        if 'fusionner' in q or 'merge' in q and 'dict' in q:
+            return '```python\ndef fusionner_dicts(d1, d2):\n    result = d1.copy()\n    result.update(d2)\n    return result\n\nd1 = {"a":1, "b":2}\nd2 = {"b":3, "c":4}\nprint(fusionner_dicts(d1, d2))  # {"a":1,"b":3,"c":4}\n```'
+        if 'aplatir' in q or 'flatten' in q:
+            return '```python\ndef aplatir(liste):\n    result = []\n    for elem in liste:\n        if isinstance(elem, list):\n            result.extend(aplatir(elem))\n        else:\n            result.append(elem)\n    return result\n\nprint(aplatir([1,[2,[3,4],5],6]))  # [1,2,3,4,5,6]\n```'
+        if 'décorateur' in q or 'timer' in q or 'temps' in q:
+            return '```python\nimport time\ndef chronometre(func):\n    def wrapper(*args, **kwargs):\n        debut = time.time()\n        result = func(*args, **kwargs)\n        print(f"Durée: {time.time()-debut:.4f}s")\n        return result\n    return wrapper\n\n@chronometre\ndef calcul_long():\n    time.sleep(0.5)\n    return "Fini!"\nprint(calcul_long())\n```'
+        if 'rectangle' in q and ('classe' in q or 'class' in q):
+            return '```python\nclass Rectangle:\n    def __init__(self, largeur, hauteur):\n        self.largeur = largeur\n        self.hauteur = hauteur\n    \n    def aire(self):\n        return self.largeur * self.hauteur\n    \n    def perimetre(self):\n        return 2 * (self.largeur + self.hauteur)\n\nr = Rectangle(5, 3)\nprint(f"Aire: {r.aire()}, Périmètre: {r.perimetre()}")\n```'
+        if 'bancaire' in q or 'bank' in q or 'compte' in q:
+            return '```python\nclass CompteBancaire:\n    def __init__(self, titulaire, solde=0):\n        self.titulaire = titulaire\n        self.solde = solde\n    \n    def deposer(self, montant):\n        self.solde += montant\n        return self.solde\n    \n    def retirer(self, montant):\n        if montant <= self.solde:\n            self.solde -= montant\n            return self.solde\n        raise ValueError("Solde insuffisant")\n\nc = CompteBancaire("Alice", 100)\nc.deposer(50)\nprint(c.solde)  # 150\n```'
+        if 'pair' in q or 'pairs' in q:
+            return '```python\ndef nombres_pairs(n):\n    for i in range(0, n+1, 2):\n        yield i\n\nfor pair in nombres_pairs(10):\n    print(pair, end=" ")\n# 0 2 4 6 8 10\n```'
+        if 'compréhension' in q or 'carres' in q or 'carrés' in q:
+            return '```python\ncarres = [x**2 for x in range(1, 11)]\nprint(carres)\n# [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]\n```'
+        if 'csv' in q:
+            return '```python\nimport csv\n\ndef lire_csv(fichier):\n    with open(fichier, "r", encoding="utf-8") as f:\n        lecteur = csv.DictReader(f)\n        return [ligne for ligne in lecteur]\n\ndonnees = lire_csv("data.csv")\nprint(donnees[:3])\n```'
         if 'python' in q or 'code' in q:
-            return '```python\ndef exemple():\n    return \"Hello, Monde Harmonique!\"\nprint(exemple())\n```'
+            return '```python\ndef exemple():\n    return "Hello, Monde Harmonique!"\nprint(exemple())\n```'
         return None
 
     def _route_specialized(self, question: str, lang: str = 'fr') -> str:
