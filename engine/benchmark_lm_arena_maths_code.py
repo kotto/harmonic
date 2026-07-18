@@ -204,16 +204,20 @@ def _normalize(text: str) -> str:
 
 def _check_math(response: str, expected: str) -> bool:
     """Vérifie une réponse mathématique (tolérance numérique)."""
-    r = _normalize(response[:200])
+    r = _normalize(response[:300])
     e = _normalize(expected)
 
-    if e in r:
+    # Nettoyage avancé : strip |x|→x, +C, 1x→x, espaces
+    r_clean = r.replace('|','').replace('+c','').replace('1x','x')
+    e_clean = e.replace('|','').replace('+c','')
+
+    if e_clean in r_clean:
         return True
 
     # Tolérance numérique
     try:
-        rn = float(re.findall(r'[\d.]+', r)[0])
-        en = float(e)
+        rn = float(re.findall(r'[\d.]+', r_clean)[0])
+        en = float(e_clean)
         if en != 0:
             return abs(rn - en) / abs(en) < 0.02
     except (ValueError, IndexError):

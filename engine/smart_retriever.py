@@ -561,6 +561,22 @@ def smart_math(question: str) -> str:
             x = (c - b) / a
             return f"{int(a)}x + {int(b)} = {int(c)} → x = {int(x)}" if x == int(x) else f"{a}x + {b} = {c} → x = {x:.4f}"
 
+    # Équation simple : résoudre a*x - b = c (ou ax - b = c) — le pattern manquant !
+    m = re.search(r'r[éeé]soudre\s+(\d+(?:\.\d+)?)\s*[\*x×]?\s*x\s*-\s*(\d+(?:\.\d+)?)\s*=\s*(\d+(?:\.\d+)?)', q)
+    if m:
+        a, b, c = float(m.group(1)), float(m.group(2)), float(m.group(3))
+        if a != 0:
+            x = (c + b) / a
+            return f"{int(a)}x - {int(b)} = {int(c)} → x = {int(x)}" if x == int(x) else f"{a}x - {b} = {c} → x = {x:.4f}"
+
+    # Équation simple : résoudre a*x - b = 0 (cas spécial fréquent)
+    m = re.search(r'r[éeé]soudre\s+(\d+(?:\.\d+)?)\s*[\*x×]?\s*x\s*-\s*(\d+(?:\.\d+)?)\s*=\s*0', q)
+    if m:
+        a, b = float(m.group(1)), float(m.group(2))
+        if a != 0:
+            x = b / a
+            return f"{int(a)}x - {int(b)} = 0 → x = {int(x)}" if x == int(x) else f"{a}x - {b} = 0 → x = {x:.4f}"
+
     # 🆕 PUISSANCES — 2^8, 10^6, 2^10
     m = re.search(r'(\d+(?:\.\d+)?)\s*\^\s*(\d+(?:\.\d+)?)', q)
     if m:
@@ -768,6 +784,37 @@ def smart_math(question: str) -> str:
         import math as _math
         result = _math.factorial(n)
         return f"{n}! = {result}"
+
+    # 🆕 OPÉRATIONS CHAÎNÉES — 3*4*5, 1+2+3+4+5 (AVANT les patterns simples !)
+    m = re.search(r'(\d+)\s*[\*×xX]\s*(\d+)\s*[\*×xX]\s*(\d+)', q)
+    if m:
+        a, b, c = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        return f"{a} × {b} × {c} = {a * b * c}"
+
+    m = re.search(r'(\d+)\s*\+\s*(\d+)\s*\+\s*(\d+)\s*\+\s*(\d+)\s*\+\s*(\d+)', q)
+    if m:
+        nums = [int(m.group(i)) for i in range(1, 6)]
+        return ' + '.join(str(n) for n in nums) + f" = {sum(nums)}"
+
+    # 🆕 DÉRIVÉE de constante — ax → a (sans ^)
+    m = re.search(r'd[éeé]riv[ée]e?\s*(?:de\s+)?(\d+)\s*x\b', q)
+    if m:
+        a = int(m.group(1))
+        return f"dérivée de {a}x = {a}"
+
+    # 🆕 INTÉGRALE de constante — a dx → ax + C (sans ^)
+    m = re.search(r'int[éeé]grale?\s*(?:de\s+)?(\d+)\s*dx', q)
+    if m:
+        a = int(m.group(1))
+        if a == 0: return "∫ 0 dx = C"
+        return f"∫ {a} dx = {a}x + C"
+
+    # 🆕 DIAGONALE rectangle — √(a²+b²), pas a√2
+    m = re.search(r'diagonale.*?rectangle.*?(\d+(?:\.\d+)?)\s*(?:par|x|×|et)\s*(\d+(?:\.\d+)?)', q)
+    if m:
+        a, b = float(m.group(1)), float(m.group(2))
+        d = pymath.sqrt(a*a + b*b)
+        return f"diagonale du rectangle = {int(d)}" if d == int(d) else f"diagonale du rectangle = {d:.3f}"
 
     # "divisé par"
     m = re.search(r'(\d+)\s*divis[eé]\s*par\s*(\d+)', q)
