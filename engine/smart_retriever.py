@@ -791,7 +791,27 @@ def smart_math(question: str) -> str:
     if m:
         a, b = int(m.group(1)), int(m.group(2))
         return f"{a} × {b} = {a * b}"
-    
+
+    # 🆕 FACTORISATION x^2 - N → (x+√N)(x-√N) — AVANT la soustraction !
+    m = re.search(r'factoris(?:er?|ation)\s*x\s*(?:\^|²)\s*(\d+)\s*-\s*(\d+)', q)
+    if m:
+        exp_n, n = int(m.group(1)), int(m.group(2))
+        if exp_n == 2:
+            root = int(pymath.sqrt(n))
+            if root * root == n:
+                return f"x² - {n} = (x + {root})(x - {root})"
+            return f"x² - {n} = (x + √{n})(x - √{n})"
+
+    # 🆕 RÉSOUDRE x^2 = N — AVANT la soustraction
+    m = re.search(r'r[éeé]soudre\s*x\s*(?:\^|²)\s*(\d+)\s*=\s*(\d+)', q)
+    if m:
+        exp_n, n = int(m.group(1)), int(m.group(2))
+        if exp_n == 2:
+            root = int(pymath.sqrt(n))
+            if root * root == n:
+                return f"x² = {n} → x = ±{root}"
+            return f"x² = {n} → x = ±{pymath.sqrt(n):.4f}"
+
     # Soustraction
     m = re.search(r'(\d+)\s*-\s*(\d+)', q)
     if m:
