@@ -229,10 +229,10 @@ DOMAIN_EXPANSIONS = {
             'platon académie', 'lycée aristote', 'université médiévale', 'bologne',
             'confucius', 'éducation spartiate', 'éducation athénienne', 'trivium',
             'quadrivium', 'imprimerie gutenberg', 'encyclopédie diderot',
-            'loi jules ferry', 'école obligatoire', 'gratuité', 'laïcité',
+            'loi jules ferry', 'école obligatoire', 'gratuité scolaire', 'laïcité',
         ],
         'quality_filter': {
-            'min_object_len': 6,
+            'min_object_len': 8,
             'min_relation_len': 4,
             'exclude_relations': ['est', 'a', 'sont', 'et'],
         },
@@ -300,19 +300,23 @@ DOMAIN_EXPANSIONS = {
     'langues': {
         'sectors': ['CULTURE', 'LINGUISTIQUE', 'HISTOIRE', 'GEOGRAPHIE', 'EDUCATION'],
         'keywords': [
-            'langue', 'linguistique', 'grammaire', 'syntaxe', 'phonétique', 'phonologie',
-            'morphologie', 'sémantique', 'pragmatique', 'étymologie', 'dialecte', 'patois',
-            'français', 'anglais', 'espagnol', 'mandarin', 'arabe', 'hindi', 'portugais',
-            'russe', 'japonais', 'allemand', 'italien', 'néerlandais', 'suédois', 'latin',
-            'grec ancien', 'sanskrit', 'hébreu', 'swahili', 'wolof', 'bambara', 'lingala',
-            'alphabet', 'idéogramme', 'hiéroglyphe', 'cyrillique', 'caractère chinois',
-            'traduction', 'interprétation', 'bilinguisme', 'multilinguisme', 'langue maternelle',
-            'espéranto', 'langue des signes', 'braille', 'académie française', 'dictionnaire',
-            'language', 'grammar', 'syntax', 'phonetics', 'etymology', 'dialect', 'bilingual',
+            'linguistique', 'phonétique', 'phonologie', 'morphologie', 'sémantique',
+            'pragmatique', 'étymologie', 'dialecte', 'patois', 'créole', 'pidgin',
             'indo européen', 'langues romanes', 'langues germaniques', 'langues slaves',
+            'langues sémitiques', 'langues bantoues', 'langues sino-tibétaines',
+            'alphabet latin', 'alphabet cyrillique', 'alphabet grec', 'alphabet arabe',
+            'idéogramme chinois', 'hiéroglyphe égyptien', 'écriture cunéiforme',
+            'sanskrit', 'latin classique', 'grec ancien', 'hébreu biblique',
+            'académie française', 'dictionnaire de', 'grammaire de', 'conjugaison de',
+            'déclinaison', 'genre grammatical', 'accord du participe', 'subjonctif',
+            'traduction automatique', 'interprétation simultanée', 'bilinguisme précoce',
+            'langue maternelle', 'langue officielle de', 'langue véhiculaire',
+            'esperanto', 'langue des signes', 'braille', 'phonème', 'morphème',
+            'linguistics', 'phoneme', 'morpheme', 'syntax tree', 'grammatical case',
+            'indo european', 'romance languages', 'germanic languages', 'slavic',
         ],
         'quality_filter': {
-            'min_object_len': 6,
+            'min_object_len': 8,
             'min_relation_len': 4,
             'exclude_relations': ['est', 'a', 'sont', 'et'],
         },
@@ -541,6 +545,21 @@ def build_massive_hologram(domain: str, target_facts: int = 50000,
             unique_facts.append((s, r, o, sec))
     
     print(f"     → {len(unique_facts):,} faits uniques (chargés depuis {len(kb_candidates)} fichiers)")
+
+    # 🆕 CROSS-LINGUAL sur le KB source (bénéficie à TOUS les domaines)
+    # Double le nombre de faits disponibles en ajoutant les versions EN des faits FR
+    en_added = 0
+    for s, r, o, sec in unique_facts[:200000]:  # limiter pour la perf
+        r_lower = r.lower().strip()
+        if r_lower in FR_TO_EN:
+            en_rel = FR_TO_EN[r_lower]
+            en_key = (s.lower()[:80], en_rel.lower()[:60], o.lower()[:80])
+            if en_key not in seen:
+                seen.add(en_key)
+                unique_facts.append((s, en_rel, o, sec))
+                en_added += 1
+    print(f"     → +{en_added:,} faits EN (cross-lingual), total: {len(unique_facts):,}")
+
     sectors = set(config.get('sectors', []))
     keywords = set(kw.lower() for kw in config.get('keywords', []))
     
