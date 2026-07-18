@@ -2970,7 +2970,7 @@ def lm_arena_models():
     return jsonify({
         "object": "list",
         "data": [{
-            "id": "ka-harmonic-v4",
+            "id": "KA",
             "object": "model",
             "created": 1750000000,
             "owned_by": "KA",
@@ -3026,7 +3026,7 @@ def lm_arena_chat():
         "id": f"chatcmpl-{int(time.time() * 1000)}",
         "object": "chat.completion",
         "created": int(time.time()),
-        "model": data.get('model', 'ka-harmonic-v4'),
+        "model": data.get('model', 'KA'),
         "choices": [{
             "index": 0,
             "message": {
