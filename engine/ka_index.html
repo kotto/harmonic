@@ -268,6 +268,41 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
     <div style="height:16px;flex-shrink:0"></div>
   </div>
 
+  <!-- ONBOARDING -->
+  <div class="sc" id="s-onboard">
+    <div class="sp-body" style="padding:20px 16px;overflow-y:auto">
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:40px;margin-bottom:8px">🧠</div>
+        <div style="font-size:18px;color:var(--t1);font-weight:700;margin-bottom:4px">Bienvenue sur KA</div>
+        <div style="font-size:13px;color:var(--t2)">Votre compagnon personnel. Pour commencer, choisissez ce qui vous intéresse.</div>
+      </div>
+
+      <!-- Sélection domaines -->
+      <div class="sec-lbl" style="margin-bottom:8px">VOS CENTRES D'INTÉRÊT (3-7 recommandés)</div>
+      <div id="onboard-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+        <!-- Rempli dynamiquement -->
+      </div>
+
+      <!-- Domaine personnalisé -->
+      <div class="sec-lbl" style="margin-bottom:6px">✨ DOMAINE PERSONNALISÉ</div>
+      <div style="display:flex;gap:6px;margin-bottom:16px">
+        <input id="onboard-custom" placeholder="ex: droit congolais, jardinage bio..." style="flex:1;padding:10px 14px;border-radius:12px;background:var(--g1);border:.5px solid var(--b2);color:var(--t1);font-size:13px;outline:none" onkeydown="if(event.key==='Enter')onboardAddCustom()">
+        <div class="btn btn--soul" style="width:auto;padding:10px 14px" onclick="onboardAddCustom()">+ Ajouter</div>
+      </div>
+      <div id="onboard-custom-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px"></div>
+
+      <!-- Résumé -->
+      <div id="onboard-summary" style="text-align:center;font-size:12px;color:var(--t4);margin-bottom:16px">
+        Sélectionnez au moins 3 centres d'intérêt pour continuer.
+      </div>
+
+      <!-- Bouton -->
+      <div class="btn btn--life" id="onboard-btn" onclick="onboardFinish()" style="opacity:.4;pointer-events:none;text-align:center;padding:14px">
+        ✨ Construire mon KA personnel
+      </div>
+    </div>
+  </div>
+
   <!-- MESSAGES -->
   <div class="sc" id="s-msg">
     <div class="sph">
@@ -847,6 +882,199 @@ const SD={'':['Sophie','Appeler','Réunion','Oui','Super','Merci','Demain'],'so'
 const CALL_SCREENS=new Set(['s-call']);
 const NAV_MAP={'s-home':'nb-h','s-msg':'nb-m','s-mem':'nb-mm'};
 let cur='s-home';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🧠 ONBOARDING — Personnalisation de KA
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Domaines disponibles pour sélection
+const KA_DOMAINS = [
+  {id:'medecine',name:'Médecine',icon:'🏥',f1:0.76},
+  {id:'droit',name:'Droit',icon:'⚖️',f1:0.72},
+  {id:'education',name:'Éducation',icon:'📚',f1:0.53},
+  {id:'sciences',name:'Sciences',icon:'🔬',f1:0.71},
+  {id:'geographie',name:'Géographie',icon:'🌍',f1:0.79},
+  {id:'histoire',name:'Histoire',icon:'📜',f1:0.82},
+  {id:'informatique',name:'Informatique',icon:'💻',f1:0.64},
+  {id:'economie',name:'Économie',icon:'💰',f1:0.83},
+  {id:'cuisine',name:'Cuisine',icon:'🍳',f1:0.90},
+  {id:'sport',name:'Sport',icon:'🏅',f1:0.72},
+  {id:'psychologie',name:'Psychologie',icon:'🧠',f1:0.94},
+  {id:'nature',name:'Nature',icon:'🌿',f1:0.78},
+  {id:'culture',name:'Culture',icon:'🎨',f1:0.76},
+  {id:'langues',name:'Langues',icon:'🗣️',f1:0.37},
+  {id:'mathematiques',name:'Maths',icon:'📐',f1:0.84},
+  {id:'technologie',name:'Technologie',icon:'🔧',f1:0.65},
+];
+var kaUser = {domains:[], custom:[]}; // {domains:['medecine','cuisine'], custom:['droit congolais']}
+
+// Charger le profil utilisateur depuis localStorage
+function kaUserLoad() {
+  try {
+    var raw = localStorage.getItem('ka_user');
+    if (raw) kaUser = JSON.parse(raw);
+  } catch(e) {}
+  return kaUser;
+}
+function kaUserSave() {
+  localStorage.setItem('ka_user', JSON.stringify(kaUser));
+}
+kaUserLoad();
+
+// Vérifier si onboarding nécessaire
+function kaNeedsOnboard() {
+  return (kaUser.domains||[]).length < 2;
+}
+
+// Remplir la grille d'onboarding
+function onboardRender() {
+  var grid = document.getElementById('onboard-grid');
+  if (!grid) return;
+  var selected = new Set(kaUser.domains||[]);
+  var customSet = new Set(kaUser.custom||[]);
+  var html = '';
+  KA_DOMAINS.forEach(function(d) {
+    var on = selected.has(d.id);
+    html += '<div class="card" style="cursor:pointer;padding:10px 12px;text-align:center;' +
+      (on ? 'border:2px solid var(--life);background:var(--life-d)' : '') +
+      '" onclick="onboardToggle(\'' + d.id + '\')" id="onb-' + d.id + '">';
+    html += '<div style="font-size:22px">' + d.icon + '</div>';
+    html += '<div style="font-size:11px;color:var(--t1);font-weight:600;margin-top:3px">' + d.name + '</div>';
+    html += '<div style="font-size:9px;color:' + (d.f1>=0.80?'var(--life)':d.f1>=0.70?'var(--wisdom)':'var(--t4)') + '">' + Math.round(d.f1*100) + '%</div>';
+    html += '</div>';
+  });
+  grid.innerHTML = html;
+  // Custom tags
+  var tagsEl = document.getElementById('onboard-custom-tags');
+  tagsEl.innerHTML = '';
+  customSet.forEach(function(c) {
+    tagsEl.innerHTML += '<span class="pill pill--life" style="cursor:pointer" onclick="onboardRemoveCustom(\'' + c + '\')">✨ ' + c + ' ✕</span>';
+  });
+  onboardUpdateSummary();
+}
+
+function onboardToggle(id) {
+  var idx = kaUser.domains.indexOf(id);
+  if (idx >= 0) kaUser.domains.splice(idx, 1);
+  else kaUser.domains.push(id);
+  kaUserSave();
+  onboardRender();
+}
+
+function onboardAddCustom() {
+  var inp = document.getElementById('onboard-custom');
+  var val = inp.value.trim().toLowerCase();
+  if (!val || val.length < 3) return;
+  if (!kaUser.custom) kaUser.custom = [];
+  if (kaUser.custom.indexOf(val) < 0) kaUser.custom.push(val);
+  inp.value = '';
+  kaUserSave();
+  onboardRender();
+}
+
+function onboardRemoveCustom(val) {
+  kaUser.custom = (kaUser.custom||[]).filter(function(c) { return c !== val; });
+  kaUserSave();
+  onboardRender();
+}
+
+function onboardUpdateSummary() {
+  var n = (kaUser.domains||[]).length + (kaUser.custom||[]).length;
+  var el = document.getElementById('onboard-summary');
+  var btn = document.getElementById('onboard-btn');
+  if (n >= 3) {
+    el.innerHTML = '✅ <b>' + n + ' centres d\'intérêt sélectionnés</b> — KA va se spécialiser pour vous.';
+    btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+  } else {
+    el.innerHTML = 'Sélectionnez au moins 3 centres d\'intérêt (' + n + '/' + '3).';
+    btn.style.opacity = '.4'; btn.style.pointerEvents = 'none';
+  }
+}
+
+// Finaliser l'onboarding → construire les hologrammes
+async function onboardFinish() {
+  var n = (kaUser.domains||[]).length + (kaUser.custom||[]).length;
+  if (n < 3) return;
+  var btn = document.getElementById('onboard-btn');
+  btn.textContent = '⏳ Construction de vos hologrammes…';
+  btn.style.opacity = '.7'; btn.style.pointerEvents = 'none';
+
+  var status = document.getElementById('onboard-summary');
+  var built = 0;
+  var all = (kaUser.domains||[]).concat(kaUser.custom||[]);
+
+  for (var i = 0; i < all.length; i++) {
+    var d = all[i];
+    status.innerHTML = '⏳ ' + d + '… (' + (i+1) + '/' + all.length + ')';
+    try {
+      // Construire via l'API
+      var resp = await fetch(API_URL + '/api/personalize/build', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({domain: d, user_id: 'user_' + Date.now()}),
+        signal: AbortSignal.timeout(30000)
+      });
+      var data = await resp.json();
+      if (data.success) built++;
+    } catch(e) {
+      // Continuer même si échec
+    }
+  }
+
+  kaUser.onboarded = true;
+  kaUserSave();
+  status.innerHTML = '✅ ' + built + '/' + all.length + ' hologrammes construits. KA est prêt !';
+  btn.textContent = '✨ Accéder à mon KA personnel →';
+  btn.onclick = function() { go('s-home'); };
+}
+
+// Modifier l'écran d'accueil pour n'afficher que les domaines de l'utilisateur
+function homePersonalize() {
+  var holoCard = document.querySelector('[onclick*=\"s-holo\"]');
+  if (!holoCard) return;
+  var domains = (kaUser.domains||[]).concat(kaUser.custom||[]);
+  if (domains.length < 2) return;
+
+  // Ajouter une section 'Mes domaines' en haut du More panel
+  var panel = document.getElementById('more-panel');
+  if (!panel) return;
+  var existing = document.getElementById('my-domains-section');
+  if (existing) existing.remove();
+
+  var html = '<div id=\"my-domains-section\" style=\"margin-bottom:14px\">';
+  html += '<div style=\"font-size:9.5px;letter-spacing:.1em;color:var(--t4);margin-bottom:8px\">MES DOMAINES</div>';
+  html += '<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:6px\">';
+  domains.slice(0,8).forEach(function(d) {
+    var found = KA_DOMAINS.find(function(k) { return k.id === d; });
+    var name = found ? found.name : d;
+    var icon = found ? found.icon : '✨';
+    html += '<div class=\"card\" style=\"cursor:pointer;padding:8px 10px;text-align:center;font-size:11px;color:var(--t1)\" onclick=\"go(\'s-msg\');closeMore();document.getElementById(\'msg-input\').value=\'explique-moi ' + name + '\';msgSend()\">';
+    html += '<div style=\"font-size:16px\">' + icon + '</div>';
+    html += '<div style=\"margin-top:2px\">' + name + '</div>';
+    html += '</div>';
+  });
+  html += '</div></div>';
+  panel.insertAdjacentHTML('afterbegin', html);
+}
+
+// ═══ INIT ═══
+// Au démarrage : si premier visite → onboarding, sinon accueil personnalisé
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    if (kaNeedsOnboard()) {
+      go('s-onboard');
+      onboardRender();
+    }
+    homePersonalize();
+  }, 500);
+});
+
+// Hook : rafraîchir la personnalisation quand on ouvre le More panel
+var _origShowMore = showMore;
+showMore = function() {
+  homePersonalize();
+  _origShowMore();
+};
 
 function go(id){
   if(id===cur)return;

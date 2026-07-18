@@ -735,6 +735,76 @@ def community_contributions():
     })
 
 
+@app.route('/api/personalize/build', methods=['POST'])
+def personalize_build():
+    """
+    Construit un hologramme personnalisé pour un domaine utilisateur.
+    
+    Body: {
+        "domain": "droit congolais",     # domaine demandé
+        "user_id": "user_123"            # utilisateur
+    }
+    
+    Utilise holo_expand en mode léger : filtrage + cross-lingual
+    + transitivité → hologramme dédié.
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    domain = data.get('domain', '').strip().lower()
+    user_id = data.get('user_id', 'anonymous')
+
+    if not domain or len(domain) < 2:
+        return jsonify({'success': False, 'error': 'Domaine requis (min 2 caractères)'}), 400
+
+    try:
+        # Importer le builder interne
+        from holo_expand import build_massive_hologram, DOMAIN_EXPANSIONS, _get_domain_config
+        from hologram_store import HologramStore
+
+        # Vérifier si un hologramme existe déjà pour ce domaine
+        store = HologramStore()
+        existing = [h for h in store.list_holograms()
+                   if domain.replace(' ','_') in h['id'].lower() or domain in h.get('domain','').lower()]
+        
+        if existing:
+            # Télécharger et fusionner directement
+            facts = store.download(existing[0]['id'])
+            if facts:
+                from page_forge import _init_fast_retriever, _FAST_RETRIEVER
+                _init_fast_retriever()
+                if _FAST_RETRIEVER:
+                    _FAST_RETRIEVER.add_facts(facts)
+                return jsonify({
+                    'success': True,
+                    'domain': domain,
+                    'holo_id': existing[0]['id'],
+                    'facts': len(facts),
+                    'source': 'existing',
+                })
+
+        # Construire un nouvel hologramme
+        result = build_massive_hologram(domain=domain, target_facts=10000, skip_benchmark=True)
+        
+        if result.get('status') == 'completed':
+            return jsonify({
+                'success': True,
+                'domain': domain,
+                'holo_id': result.get('hologram_id', ''),
+                'facts': result.get('published_facts', 0),
+                'quality_score': result.get('quality_score', 0),
+                'source': 'built',
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result.get('status', 'unknown'),
+                'domain': domain,
+            })
+
+    except Exception as e:
+        log.exception(f"Erreur personalize/build: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/api/specialize/status/<user_id>', methods=['GET'])
 def specialize_status(user_id):
     """
