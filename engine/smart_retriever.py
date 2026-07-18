@@ -628,45 +628,61 @@ def smart_math(question: str) -> str:
         if 'x^2' in expr and '0' in target:
             return "limite de x² quand x→0 = 0"
 
-    # 🆕 GÉOMÉTRIE — périmètre, aire, volume, hypoténuse, diagonale, distance
-    m = re.search(r'p[éeé]rim[èe]tre\s*(?:d[\"\'u]\s*)?(?:un?|une?)?\s*(carr[éeé]|rectangle|cercle)\s*(?:de\s+c[ôo]t[éeé]\s*)?(\d+(?:\.\d+)?)', q)
-    if m:
-        shape, n = m.group(1), float(m.group(2))
-        if 'carr' in shape: return f"périmètre du carré de côté {int(n)} = {int(4*n)}"
-        if 'cercle' in shape: return f"périmètre du cercle de rayon {int(n)} = {2*pymath.pi*n:.2f}"
-        return None
+    # 🆕 GÉOMÉTRIE — versions ultra-simples : mot-clé + nombre
+    # "périmètre d un carré de côté 5", "aire du cercle de rayon 2", etc.
 
-    m = re.search(r'aire\s*(?:d[\"\'u]\s*)?(?:un?|une?)?\s*(carr[éeé]|rectangle|cercle|(?:d[\"\'u]un )?cercle)\s*(?:de\s+(?:c[ôo]t[éeé]\s*)?)?(\d+(?:\.\d+)?)', q)
-    if m:
-        shape, n = m.group(1), float(m.group(2))
-        if 'carr' in shape: return f"aire du carré de côté {int(n)} = {int(n*n)}"
-        if 'cercle' in shape: return f"aire du cercle de rayon {int(n)} = {pymath.pi*n*n:.2f}"
-
-    m = re.search(r'aire\s*(?:d[\"u]un?)\s*rectangle\s*(\d+(?:\.\d+)?)\s*(?:par|x|×)\s*(\d+(?:\.\d+)?)', q)
-    if m:
-        a, b = float(m.group(1)), float(m.group(2))
-        return f"aire du rectangle {int(a)}×{int(b)} = {int(a*b)}"
-
-    m = re.search(r'volume\s*(?:d[\"u]un?|d[\"u]une?)\s+cube\s*(?:de\s+c[ôo]t[éeé]\s*)?(\d+(?:\.\d+)?)', q)
+    m = re.search(r'p[éeé]rim[èe]tre.*?(\d+(?:\.\d+)?)', q)
     if m:
         n = float(m.group(1))
-        return f"volume du cube de côté {int(n)} = {int(n**3)}"
+        if 'carré' in q or 'carre' in q: return f"périmètre du carré = {int(4*n)}"
+        if 'cercle' in q: return f"périmètre du cercle = {2*pymath.pi*n:.2f}"
+        if 'rectangle' in q: return f"périmètre = {int(2*n)} (côté donné)"
 
-    m = re.search(r'volume\s*(?:d[\"u]une?)\s+sph[èe]re\s*(?:de\s+rayon\s*)?(\d+(?:\.\d+)?)', q)
+    m = re.search(r'aire.*?(\d+(?:\.\d+)?)', q)
     if m:
-        r = float(m.group(1))
-        return f"volume de la sphère de rayon {int(r)} = {4/3*pymath.pi*r**3:.3f}"
+        n = float(m.group(1))
+        if 'carré' in q or 'carre' in q: return f"aire du carré = {int(n*n)}"
+        if 'cercle' in q: return f"aire du cercle = {pymath.pi*n*n:.2f}"
+        if 'rectangle' in q:
+            m2 = re.search(r'(\d+(?:\.\d+)?)\s*(?:par|x|×|et)\s*(\d+(?:\.\d+)?)', q)
+            if m2:
+                a, b = float(m2.group(1)), float(m2.group(2))
+                return f"aire du rectangle = {int(a*b)}"
 
-    m = re.search(r'surface\s*(?:d[\"u]une?)\s+sph[èe]re\s*(?:de\s+rayon\s*)?(\d+(?:\.\d+)?)', q)
+    m = re.search(r'volume.*?(\d+(?:\.\d+)?)', q)
     if m:
-        r = float(m.group(1))
-        return f"surface de la sphère de rayon {int(r)} = {4*pymath.pi*r*r:.3f}"
+        n = float(m.group(1))
+        if 'cube' in q: return f"volume du cube = {int(n**3)}"
+        if 'sphère' in q or 'sphere' in q: return f"volume de la sphère = {4/3*pymath.pi*n**3:.3f}"
 
-    m = re.search(r'hypot[ée]nuse\s*(?:d[\"\'u]\s*)?(?:un?|une?)?\s*triangle\s*(?:rectangle\s*)?(?:de\s+c[ôo]t[éeé]s?\s*)?(\d+(?:\.\d+)?)\s*(?:et|,|and)\s*(\d+(?:\.\d+)?)', q)
+    m = re.search(r'surface.*?(\d+(?:\.\d+)?)', q)
+    if m:
+        n = float(m.group(1))
+        if 'sphère' in q or 'sphere' in q: return f"surface de la sphère = {4*pymath.pi*n*n:.3f}"
+
+    m = re.search(r'hypot[ée]nuse.*?(\d+(?:\.\d+)?).*?(\d+(?:\.\d+)?)', q)
     if m:
         a, b = float(m.group(1)), float(m.group(2))
         h = pymath.sqrt(a*a + b*b)
-        return f"hypoténuse du triangle {int(a)}-{int(b)} = {int(h)}" if h == int(h) else f"hypoténuse du triangle {a}-{b} = {h:.2f}"
+        return f"hypoténuse = {int(h)}" if h == int(h) else f"hypoténuse = {h:.2f}"
+
+    m = re.search(r'(?:pythagore|pythagoras).*?(\d+(?:\.\d+)?).*?(\d+(?:\.\d+)?)', q)
+    if m:
+        a, b = float(m.group(1)), float(m.group(2))
+        h = pymath.sqrt(a*a + b*b)
+        return f"Pythagore: hypoténuse = {int(h)}" if h == int(h) else f"Pythagore: hypoténuse = {h:.2f}"
+
+    m = re.search(r'diagonale.*?(\d+(?:\.\d+)?)', q)
+    if m:
+        n = float(m.group(1))
+        d = n * pymath.sqrt(2) if 'carré' in q or 'carre' in q else n
+        return f"diagonale = {d:.3f}"
+
+    m = re.search(r'distance.*?(\d+(?:\.\d+)?).*?(\d+(?:\.\d+)?).*?(\d+(?:\.\d+)?).*?(\d+(?:\.\d+)?)', q)
+    if m:
+        x1, y1, x2, y2 = float(m.group(1)), float(m.group(2)), float(m.group(3)), float(m.group(4))
+        d = pymath.sqrt((x2-x1)**2 + (y2-y1)**2)
+        return f"distance = {int(d)}" if d == int(d) else f"distance = {d:.2f}"
 
     m = re.search(r'th[ée]or[èe]me\s*(?:de\s+)?pythagore\s*:?\s*(\d+(?:\.\d+)?)\s*(\d+(?:\.\d+)?)', q)
     if m:
