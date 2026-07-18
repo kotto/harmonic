@@ -207,9 +207,9 @@ def _check_math(response: str, expected: str) -> bool:
     r = _normalize(response[:300])
     e = _normalize(expected)
 
-    # Nettoyage avancé : strip |x|→x, +C, 1x→x, espaces
-    r_clean = r.replace('|','').replace('+c','').replace('1x','x')
-    e_clean = e.replace('|','').replace('+c','')
+    # Nettoyage : strip |x|→x, +C, parenthèses
+    r_clean = r.replace('|','').replace('+c','').replace('(','').replace(')','')
+    e_clean = e.replace('|','').replace('+c','').replace('(','').replace(')','')
 
     if e_clean in r_clean:
         return True

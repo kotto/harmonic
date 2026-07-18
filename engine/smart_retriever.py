@@ -706,7 +706,14 @@ def smart_math(question: str) -> str:
         h = pymath.sqrt(a*a + b*b)
         return f"Pythagore: {int(a)}² + {int(b)}² = {int(h)}², hypoténuse = {int(h)}" if h == int(h) else f"Pythagore: hypoténuse = {h:.2f}"
 
-    m = re.search(r'diagonale\s*(?:d[\"u]un?)\s*(?:carr[éeé]|rectangle)\s*(?:de\s+c[ôo]t[éeé]\s*)?(\d+(?:\.\d+)?)', q)
+    # 🆕 DIAGONALE rectangle — √(a²+b²), AVANT la diagonale carré (a√2)
+    m = re.search(r'diagonale.*?rectangle.*?(\d+(?:\.\d+)?)\s*(?:par|x|×|et)\s*(\d+(?:\.\d+)?)', q)
+    if m:
+        a, b = float(m.group(1)), float(m.group(2))
+        d = pymath.sqrt(a*a + b*b)
+        return f"diagonale du rectangle = {int(d)}" if d == int(d) else f"diagonale du rectangle = {d:.3f}"
+
+    m = re.search(r'diagonale\s*(?:d[\"u]un?)\s*(?:carr[éeé])\s*(?:de\s+c[ôo]t[éeé]\s*)?(\d+(?:\.\d+)?)', q)
     if m:
         n = float(m.group(1))
         d = n * pymath.sqrt(2)
@@ -808,13 +815,6 @@ def smart_math(question: str) -> str:
         a = int(m.group(1))
         if a == 0: return "∫ 0 dx = C"
         return f"∫ {a} dx = {a}x + C"
-
-    # 🆕 DIAGONALE rectangle — √(a²+b²), pas a√2
-    m = re.search(r'diagonale.*?rectangle.*?(\d+(?:\.\d+)?)\s*(?:par|x|×|et)\s*(\d+(?:\.\d+)?)', q)
-    if m:
-        a, b = float(m.group(1)), float(m.group(2))
-        d = pymath.sqrt(a*a + b*b)
-        return f"diagonale du rectangle = {int(d)}" if d == int(d) else f"diagonale du rectangle = {d:.3f}"
 
     # "divisé par"
     m = re.search(r'(\d+)\s*divis[eé]\s*par\s*(\d+)', q)
