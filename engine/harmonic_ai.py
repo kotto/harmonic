@@ -803,7 +803,7 @@ class HarmonicAI:
             
             # Code
             if any(m in q_lower for m in ['code ', 'programme ', 'fonction ', 'classe ',
-                   'écris du code', 'ecris du code', 'python', 'javascript',
+                   'écris du code', 'ecris du code', 'écris ', 'ecris ', 'python', 'javascript',
                    'algorithme', 'génère du code', 'genere du code']):
                 try:
                     from code_generator import CodeGenerator
