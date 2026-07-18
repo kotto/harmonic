@@ -513,7 +513,16 @@ def smart_math(question: str) -> str:
             return f"x² = {n}, so x = ±{int(root)}"
         return f"x² = {n}, so x = ±{root:.4f}"
     
-    # Racine carrée
+    # Racine carrée — sqrt(N) avec parenthèses
+    m = re.search(r'sqrt\s*\(\s*(\d+(?:\.\d+)?)\s*\)', q)
+    if m:
+        n = float(m.group(1))
+        root = pymath.sqrt(n)
+        if root == int(root):
+            return f"√{int(n)} = {int(root)}"
+        return f"√{int(n)} = {root:.4f}"
+
+    # Racine carrée — square root of N, racine carrée de N
     m = re.search(r'(?:square root of|sqrt\s*(?:of\s*)?|racine carr[eé]e?\s*(?:de\s+|d\')?\s*)(\d+)', q)
     if m:
         n = float(m.group(1))
@@ -521,6 +530,36 @@ def smart_math(question: str) -> str:
         if root == int(root):
             return f"√{int(n)} = {int(root)}"
         return f"√{int(n)} = {root:.4f}"
+
+    # Équation simple : résoudre x + a = b
+    m = re.search(r'r[éeé]soudre\s+x\s*\+\s*(\d+(?:\.\d+)?)\s*=\s*(\d+(?:\.\d+)?)', q)
+    if m:
+        a, b = float(m.group(1)), float(m.group(2))
+        x = b - a
+        return f"x + {int(a)} = {int(b)} → x = {int(x)}" if x == int(x) else f"x + {a} = {b} → x = {x:.4f}"
+
+    # Équation simple : résoudre x - a = b
+    m = re.search(r'r[éeé]soudre\s+x\s*-\s*(\d+(?:\.\d+)?)\s*=\s*(\d+(?:\.\d+)?)', q)
+    if m:
+        a, b = float(m.group(1)), float(m.group(2))
+        x = b + a
+        return f"x - {int(a)} = {int(b)} → x = {int(x)}" if x == int(x) else f"x - {a} = {b} → x = {x:.4f}"
+
+    # Équation simple : résoudre a*x = b (ou ax = b)
+    m = re.search(r'r[éeé]soudre\s+(\d+(?:\.\d+)?)\s*[\*x×]?\s*x\s*=\s*(\d+(?:\.\d+)?)', q)
+    if m:
+        a, b = float(m.group(1)), float(m.group(2))
+        if a != 0:
+            x = b / a
+            return f"{int(a)}x = {int(b)} → x = {int(x)}" if x == int(x) else f"{a}x = {b} → x = {x:.4f}"
+
+    # Équation simple : résoudre a*x + b = c (ou ax + b = c)
+    m = re.search(r'r[éeé]soudre\s+(\d+(?:\.\d+)?)\s*[\*x×]?\s*x\s*\+\s*(\d+(?:\.\d+)?)\s*=\s*(\d+(?:\.\d+)?)', q)
+    if m:
+        a, b, c = float(m.group(1)), float(m.group(2)), float(m.group(3))
+        if a != 0:
+            x = (c - b) / a
+            return f"{int(a)}x + {int(b)} = {int(c)} → x = {int(x)}" if x == int(x) else f"{a}x + {b} = {c} → x = {x:.4f}"
     
     # "divisé par"
     m = re.search(r'(\d+)\s*divis[eé]\s*par\s*(\d+)', q)
