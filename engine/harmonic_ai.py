@@ -424,27 +424,27 @@ class HarmonicAI:
     def _merite_page(self, question: str) -> bool:
         """
         Détecte si une question mérite une réponse longue (page) 
-        plutôt qu'une réponse courte (2-3 phrases).
+        plutôt qu'une réponse courte. Plus strict : ne déclenche que
+        pour les demandes EXPLICITES de développement long.
         """
         q = question.lower().strip()
         
-        # Marqueurs explicites de demande de page longue
+        # Marqueurs de demande EXPLICITE de développement long
         page_markers = [
-            'explique', 'décris', 'decris', 'parle-moi de', 'parle moi de',
-            'dis-moi tout', 'dis moi tout', 'raconte', 'détaille', 'detaille',
-            'tout sur', 'tout savoir sur', 'comment fonctionne',
-            'qu\'est-ce que', 'qu est-ce que', 'c\'est quoi', 'c est quoi',
-            'en quoi consiste', 'pourquoi', 'comment',
+            'dis-moi tout', 'dis moi tout', 'raconte en détail', 'raconte en detail',
+            'tout sur', 'tout savoir sur', 'fais-moi une page', 'fais moi une page',
+            'page sur', 'article sur', 'dossier sur', 'explique en détail',
+            'explique tout', 'explique-moi tout', 'explique moi tout',
         ]
         if any(m in q for m in page_markers):
             return True
         
-        # Questions longues (> 40 caractères) = probablement complexes
-        if len(q) > 60:
+        # Questions très longues (> 100 caractères) ET avec mot-clé explicatif
+        if len(q) > 100 and any(m in q for m in ['explique', 'comment', 'pourquoi']):
             return True
         
-        # Questions avec plusieurs points d'interrogation ou plusieurs phrases
-        if q.count('?') >= 2 or q.count('.') >= 2:
+        # Questions avec 3+ phrases
+        if q.count('.') >= 3:
             return True
         
         return False

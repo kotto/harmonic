@@ -668,6 +668,14 @@ class HolographicStore:
         self.total_retrieved += 1
         return scored[:max_results]
 
+    @property
+    def psi_dominant(self) -> np.ndarray:
+        """🆕 Vecteur ψ dominant : moyenne des ψ des 10 faits de plus haute amplitude."""
+        if not self.registry:
+            return np.zeros(self.dim, dtype=np.complex128)
+        top = sorted(self.registry.values(), key=lambda r: r.amplitude, reverse=True)[:10]
+        return np.mean([r.psi for r in top], axis=0) if top else np.zeros(self.dim, dtype=np.complex128)
+
     def retrieve_resonance(self, question: str, max_results: int = 50,
                            sector_boost: str = None) -> List[Tuple[FactRecord, float]]:
         """
