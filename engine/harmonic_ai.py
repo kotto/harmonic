@@ -1080,6 +1080,20 @@ class HarmonicAI:
                     except Exception:
                         pass
 
+        # 🆕 WEB FALLBACK hors-bloc — se déclenche même si le cerveau a répondu
+        # (le cerveau peut produire des réponses faibles avec confiance > 0.35,
+        # ce qui court-circuitait le fallback web interne. On le teste ici.)
+        if response and not trusted_external:
+            conf = self._confidence_score(response, enriched)
+            if conf < 0.35 and _WEB_RETRIEVER is not None:
+                try:
+                    web_summary = _WEB_RETRIEVER.search_quick(enriched)
+                    if web_summary and len(web_summary) > 40:
+                        response = f"🌐 D'après une recherche web : {web_summary}"
+                        trusted_external = True
+                except Exception:
+                    pass
+
         # ── POST-PROCESSING ──
         try:
             from harmonic_quality import post_process
