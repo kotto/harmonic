@@ -178,7 +178,7 @@ CODE_QUESTIONS = [
     ("écris un générateur de nombres de Fibonacci", r"fibonacci|yield"),
     ("écris une fonction pour fusionner deux dictionnaires", r"def.*fusion|def.*merge.*dict"),
     ("écris une fonction pour aplatir une liste imbriquée", r"def.*aplatir|def.*flatten"),
-    ("écris un décorateur qui mesure le temps d'exécution", r"def.*decorat|@.*timer"),
+    ("écris un décorateur qui mesure le temps d'exécution", r"def.*decorat|@.*timer|def chronom"),
     ("écris une classe Rectangle avec aire et périmètre", r"class Rectangle"),
     ("écris une classe CompteBancaire avec dépôt et retrait", r"class.*Bancaire|class.*Bank"),
     ("écris un générateur de nombres pairs", r"def.*pair|yield"),
