@@ -379,8 +379,282 @@ def health():
 
 
 # ════════════════════════════════════════════════════════════════
-# FRONTEND DASHBOARD
+# 📤 UPLOAD & INGESTION — Construction de l'hologramme entreprise
 # ════════════════════════════════════════════════════════════════
+
+import re as _re
+from werkzeug.utils import secure_filename
+
+UPLOAD_DIR = _ENGINE_DIR / "data" / "enterprise_uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+ALLOWED_EXTENSIONS = {'txt', 'log', 'md', 'csv', 'json', 'xml', 'py', 'js', 'ts', 
+                      'java', 'go', 'rs', 'rb', 'swift', 'kt', 'cs', 'cpp', 'h',
+                      'html', 'css', 'yaml', 'yml', 'toml', 'cfg', 'ini', 'env',
+                      'pdf', 'docx'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def extract_text_from_file(filepath: str, filename: str) -> str:
+    """Extrait le texte d'un fichier selon son type."""
+    ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+    
+    if ext == 'pdf':
+        try:
+            import PyPDF2
+            text = ""
+            with open(filepath, 'rb') as f:
+                reader = PyPDF2.PdfReader(f)
+                for page in reader.pages:
+                    text += page.extract_text() or ""
+            return text
+        except ImportError:
+            return "[PDF nécessite PyPDF2] Contenu binaire non extrait."
+    
+    if ext == 'docx':
+        try:
+            import docx
+            doc = docx.Document(filepath)
+            return "\n".join(p.text for p in doc.paragraphs)
+        except ImportError:
+            return "[DOCX nécessite python-docx] Contenu binaire non extrait."
+    
+    # Fichiers texte
+    try:
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+            return f.read()
+    except Exception:
+        return ""
+
+
+def ingest_file_to_patterns(content: str, filename: str, tenant_id: str) -> dict:
+    """
+    Analyse le contenu d'un fichier et crée des patterns personnalisés.
+    
+    Stratégies par type de fichier :
+      - Logs → extraction d'erreurs
+      - Code → patterns d'exception, null safety, concurrence
+      - Docs → extraction de vocabulaire métier
+      - CSV/JSON → patterns de données
+    """
+    ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+    stats = {"patterns_created": 0, "symptoms_found": 0, "filename": filename}
+    
+    # ── LOGS : extraction d'erreurs ──
+    if ext in ('log', 'txt'):
+        error_lines = _re.findall(r'(?i)(error|exception|fail|crash|panic|fatal|warn)[^\n]{10,200}', content)
+        patterns = defaultdict(list)
+        for line in error_lines:
+            line_lower = line.lower()
+            if any(kw in line_lower for kw in ['null', 'undefined', 'none', 'missing', 'not found']):
+                patterns["Absence Fréquence"].append(line[:120])
+            elif any(kw in line_lower for kw in ['timeout', 'overload', 'exceed', 'limit', 'rate limit']):
+                patterns["Saturation"].append(line[:120])
+            elif any(kw in line_lower for kw in ['race', 'deadlock', 'concurrent', 'lock', 'mutex']):
+                patterns["Collision Phase"].append(line[:120])
+            elif any(kw in line_lower for kw in ['memory', 'leak', 'heap', 'oom', 'out of memory']):
+                patterns["Onde Fantome"].append(line[:120])
+            elif any(kw in line_lower for kw in ['cache', 'stale', 'outdated', 'expired', 'session']):
+                patterns["Déphasage Temporel"].append(line[:120])
+            elif any(kw in line_lower for kw in ['injection', 'xss', 'csrf', 'sanitize', 'validate', 'escape']):
+                patterns["Résonance Parasite"].append(line[:120])
+            elif any(kw in line_lower for kw in ['slow', 'performance', 'bottleneck', 'latency', 'timeout']):
+                patterns["Interférence Multiple"].append(line[:120])
+            elif any(kw in line_lower for kw in ['regression', 'broke', 'was working', 'update', 'deploy']):
+                patterns["Résonance Forcée"].append(line[:120])
+            else:
+                patterns["Exception Technique"].append(line[:120])
+        
+        for name, syms in patterns.items():
+            if syms:
+                tenants.add_pattern(tenant_id, f"📄 {filename}: {name}", syms[:30])
+                stats["patterns_created"] += 1
+                stats["symptoms_found"] += len(syms[:30])
+    
+    # ── CODE SOURCE : patterns structurels ──
+    elif ext in ('py', 'js', 'ts', 'java', 'go', 'rs', 'rb', 'swift', 'kt', 'cs', 'cpp', 'h'):
+        code_patterns = {
+            "🔒 Null Safety": [
+                r'NullPointerException', r'NullReference', r'NoneType', r'undefined is not',
+                r'cannot read propert', r'Optional\.empty', r'\.nil\b', r'null\s*!',
+            ],
+            "🔄 Concurrency": [
+                r'race condition', r'deadlock', r'ConcurrentModification', r'synchronized',
+                r'@GuardedBy', r'Lock\(', r'Mutex', r'Semaphore', r'thread-safe',
+            ],
+            "💧 Resource Leak": [
+                r'memory leak', r'out of memory', r'Heap.*exceed', r'close\(\)',
+                r'dispose\(\)', r'try-with-resources', r'context manager', r'defer\s+',
+            ],
+            "🛡️ Error Handling": [
+                r'catch\s*\(', r'except\s+', r'rescue\s+', r'panic\(', r'throw\s+new',
+                r'raise\s+', r'\.onError', r'\.catchError',
+            ],
+            "🔐 Input Safety": [
+                r'sanitize', r'validate', r'escape', r'SQL injection', r'XSS', r'CSRF',
+                r'prepared\s*statement', r'input\.check',
+            ],
+        }
+        for pattern_name, regexes in code_patterns.items():
+            symptoms = set()
+            for regex in regexes:
+                matches = _re.findall(regex, content, _re.IGNORECASE)
+                for match in matches:
+                    if isinstance(match, tuple): match = match[0]
+                    idx = content.find(str(match))
+                    ctx = content[max(0,idx-40):min(len(content),idx+60)].replace('\n',' ')
+                    symptoms.add(f"{pattern_name}: {ctx.strip()[:120]}")
+            if symptoms:
+                tenants.add_pattern(tenant_id, f"📄 {filename}: {pattern_name}", list(symptoms)[:20])
+                stats["patterns_created"] += 1
+                stats["symptoms_found"] += min(len(symptoms), 20)
+    
+    # ── DOCS / MD / JSON : vocabulaire métier ──
+    elif ext in ('md', 'json', 'csv', 'yaml', 'yml', 'xml', 'html'):
+        # Extraction de termes techniques (mots en camelCase, snake_case, termes > 8 lettres)
+        tech_terms = _re.findall(r'\b[A-Z][a-z]+(?:[A-Z][a-z]+)+\b|\b[a-z]+_[a-z]+_[a-z]+\b|\b[A-Z]{2,8}\b', content)
+        if tech_terms:
+            unique_terms = list(set(tech_terms))[:100]
+            # Créer un pattern "Vocabulaire Métier" avec ces termes
+            tenants.add_pattern(tenant_id, f"📄 {filename}: Vocabulaire Métier", unique_terms)
+            stats["patterns_created"] += 1
+            stats["symptoms_found"] += len(unique_terms)
+        
+        # JSON/CSV : extraire les clés comme concepts
+        if ext in ('json', 'csv'):
+            try:
+                if ext == 'json':
+                    data = json.loads(content)
+                    if isinstance(data, dict):
+                        keys = list(data.keys())[:50]
+                        tenants.add_pattern(tenant_id, f"📄 {filename}: Structure", 
+                                          [f"champ: {k}" for k in keys])
+                        stats["patterns_created"] += 1
+                        stats["symptoms_found"] += len(keys)
+                elif ext == 'csv':
+                    header = content.split('\n')[0] if '\n' in content else ''
+                    cols = [c.strip() for c in header.split(',') if c.strip()]
+                    if cols:
+                        tenants.add_pattern(tenant_id, f"📄 {filename}: Colonnes",
+                                          [f"colonne: {c}" for c in cols[:30]])
+                        stats["patterns_created"] += 1
+                        stats["symptoms_found"] += len(cols[:30])
+            except Exception:
+                pass
+    
+    # ── PDF / DOCX : déjà extrait en texte, analyser comme logs ──
+    elif ext in ('pdf', 'docx'):
+        # Analyser comme des logs/docs
+        error_lines = _re.findall(r'(?i)(error|exception|bug|issue|problem|fail|crash)[^\n]{10,200}', content)
+        if error_lines:
+            tenants.add_pattern(tenant_id, f"📄 {filename}: Erreurs", error_lines[:30])
+            stats["patterns_created"] += 1
+            stats["symptoms_found"] += min(len(error_lines), 30)
+    
+    return stats
+
+
+@app.route('/api/v2/enterprise/upload', methods=['POST'])
+@require_tenant
+def upload_files():
+    """
+    📤 Upload de fichiers pour construire l'hologramme entreprise.
+    
+    Accepte : PDF, DOCX, TXT, LOG, MD, CSV, JSON, code source (py, js, java, etc.)
+    Max : 10 fichiers par requête, 10 Mo par fichier.
+    
+    L'IA analyse chaque fichier, extrait les patterns, et construit
+    l'hologramme personnalisé de l'entreprise.
+    """
+    tid = request.tenant_id
+    
+    if 'files' not in request.files:
+        return jsonify({"error": "Aucun fichier. Utilisez le champ 'files' (multipart)."}), 422
+    
+    files = request.files.getlist('files')
+    if not files:
+        return jsonify({"error": "Liste de fichiers vide."}), 422
+    
+    results = []
+    total_patterns = 0
+    total_symptoms = 0
+    
+    # Créer un dossier par tenant
+    tenant_dir = UPLOAD_DIR / tid
+    tenant_dir.mkdir(exist_ok=True)
+    
+    for file in files:
+        if file.filename == '':
+            continue
+        
+        if not allowed_file(file.filename):
+            results.append({"filename": file.filename, "status": "skipped", 
+                          "reason": "Type non supporté"})
+            continue
+        
+        filename = secure_filename(file.filename)
+        filepath = tenant_dir / f"{int(time.time())}_{filename}"
+        
+        try:
+            file.save(str(filepath))
+            
+            # Extraire le texte
+            content = extract_text_from_file(str(filepath), filename)
+            
+            if not content or len(content) < 10:
+                results.append({"filename": filename, "status": "empty", 
+                              "reason": "Fichier vide ou illisible"})
+                continue
+            
+            # Ingérer dans les patterns
+            stats = ingest_file_to_patterns(content, filename, tid)
+            total_patterns += stats["patterns_created"]
+            total_symptoms += stats["symptoms_found"]
+            
+            results.append({
+                "filename": filename,
+                "status": "ingested",
+                "size_kb": len(content) // 1024,
+                "patterns_created": stats["patterns_created"],
+                "symptoms_found": stats["symptoms_found"],
+            })
+            
+        except Exception as e:
+            results.append({"filename": filename, "status": "error", "reason": str(e)})
+    
+    # Stats globales du tenant après ingestion
+    tenant_stats = tenants.get_stats(tid)
+    
+    return jsonify({
+        "status": "completed",
+        "files_processed": len(results),
+        "total_patterns_created": total_patterns,
+        "total_symptoms_ingested": total_symptoms,
+        "tenant_patterns_total": tenant_stats.get("custom_patterns", 0),
+        "details": results,
+        "message": f"✅ {total_patterns} nouveaux patterns créés. L'IA connaît maintenant votre contexte."
+    })
+
+
+@app.route('/api/v2/enterprise/upload/status', methods=['GET'])
+@require_tenant
+def upload_status():
+    """Statut de l'hologramme entreprise (patterns créés par uploads)."""
+    tid = request.tenant_id
+    custom = tenants.get_patterns(tid)
+    
+    uploaded_patterns = {k: len(v) for k, v in custom.items() if k.startswith("📄")}
+    manual_patterns = {k: len(v) for k, v in custom.items() if not k.startswith("📄")}
+    
+    return jsonify({
+        "tenant": tenants.get(tid)["name"],
+        "uploaded_patterns": len(uploaded_patterns),
+        "uploaded_symptoms": sum(uploaded_patterns.values()),
+        "manual_patterns": len(manual_patterns),
+        "manual_symptoms": sum(manual_patterns.values()),
+        "total_hologram_entries": sum(len(v) for v in custom.values()),
+        "files_uploaded": len(uploaded_patterns),
+    })
 
 @app.route('/')
 def dashboard():

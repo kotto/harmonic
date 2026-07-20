@@ -120,6 +120,31 @@ Ex: 'race condition sur le compteur partagé'"></textarea>
       <h2>🔖 Patterns personnalisés</h2>
       <div id="patterns-list" style="font-size:0.85em;color:var(--dim)"></div>
     </div>
+
+    <!-- Upload -->
+    <div class="card" id="upload-card" style="display:none">
+      <h2>📤 Construire l'hologramme</h2>
+      <p style="color:var(--dim);font-size:0.85em;margin-bottom:12px">
+        Uploadez vos fichiers (logs, code source, documentation, tickets). 
+        L'IA les analyse et crée des patterns personnalisés pour votre entreprise.
+      </p>
+      <div id="drop-zone" style="border:2px dashed var(--border);border-radius:var(--radius);padding:30px;text-align:center;cursor:pointer;transition:all 0.2s"
+           onclick="document.getElementById('file-input').click()"
+           ondragover="this.style.borderColor='var(--cyan)';this.style.background='rgba(0,188,212,0.05)'"
+           ondragleave="this.style.borderColor='var(--border)';this.style.background=''"
+           ondrop="handleDrop(event)">
+        <p style="font-size:1.5em;margin-bottom:8px">📂</p>
+        <p style="color:var(--dim)">Glissez vos fichiers ici ou cliquez</p>
+        <p style="font-size:0.75em;color:var(--dim);margin-top:4px">
+          PDF, DOCX, TXT, LOG, CSV, JSON, PY, JS, JAVA, GO, et plus...
+        </p>
+      </div>
+      <input type="file" id="file-input" multiple style="display:none" 
+             accept=".txt,.log,.md,.csv,.json,.xml,.py,.js,.ts,.java,.go,.rs,.rb,.swift,.kt,.cs,.cpp,.h,.html,.css,.yaml,.yml,.toml,.cfg,.ini,.env,.pdf,.docx"
+             onchange="uploadFiles()">
+      <div id="upload-progress" style="margin-top:12px"></div>
+      <div id="upload-result" style="margin-top:12px"></div>
+    </div>
   </div>
 </main>
 
@@ -172,8 +197,10 @@ function showApp() {
   document.getElementById('stats-card').style.display = 'block';
   document.getElementById('history-card').style.display = 'block';
   document.getElementById('patterns-card').style.display = 'block';
+  document.getElementById('upload-card').style.display = 'block';
   document.getElementById('tenant-name').textContent = TENANT_NAME;
   refreshStats();
+  refreshUploadStatus();
 }
 
 // Auto-login si clé existante
@@ -329,6 +356,100 @@ function toast(msg, type) {
 
 // Rafraîchir périodiquement
 setInterval(refreshStats, 30000);
+
+// ════════════════════════════════════════════════════════════════
+// UPLOAD
+// ════════════════════════════════════════════════════════════════
+
+function handleDrop(e) {
+  e.preventDefault();
+  e.target.style.borderColor = 'var(--border)';
+  e.target.style.background = '';
+  const files = e.dataTransfer.files;
+  uploadFileList(files);
+}
+
+async function uploadFiles() {
+  const files = document.getElementById('file-input').files;
+  uploadFileList(files);
+}
+
+async function uploadFileList(files) {
+  if (!files.length) return;
+  
+  const progress = document.getElementById('upload-progress');
+  const result = document.getElementById('upload-result');
+  
+  progress.innerHTML = `<p style="color:var(--cyan)">📤 Upload de ${files.length} fichier(s) en cours...</p>`;
+  result.innerHTML = '';
+  
+  const formData = new FormData();
+  for (const file of files) {
+    formData.append('files', file);
+  }
+  
+  try {
+    const r = await fetch(BASE + '/api/v2/enterprise/upload', {
+      method: 'POST',
+      headers: { 'X-API-Key': API_KEY },
+      body: formData,
+    });
+    const d = await r.json();
+    
+    if (d.error) {
+      progress.innerHTML = `<p style="color:var(--red)">${d.error}</p>`;
+      return;
+    }
+    
+    progress.innerHTML = `<p style="color:var(--green)">✅ ${d.message}</p>`;
+    
+    // Afficher les détails
+    let detailsHtml = '<div style="font-size:0.85em;margin-top:8px">';
+    for (const f of d.details) {
+      const icon = f.status === 'ingested' ? '✅' : f.status === 'skipped' ? '⏭️' : '❌';
+      detailsHtml += `<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.03)">
+        ${icon} <b>${f.filename}</b> `;
+      if (f.status === 'ingested') {
+        detailsHtml += `— ${f.patterns_created} patterns, ${f.symptoms_found} symptômes (${f.size_kb} KB)`;
+      } else {
+        detailsHtml += `— ${f.reason || f.status}`;
+      }
+      detailsHtml += '</div>';
+    }
+    detailsHtml += '</div>';
+    result.innerHTML = detailsHtml;
+    
+    refreshStats();
+    refreshUploadStatus();
+    
+    toast(`✅ ${d.total_patterns_created} patterns créés !`, 'success');
+  } catch(e) {
+    progress.innerHTML = `<p style="color:var(--red)">Erreur: ${e.message}</p>`;
+  }
+}
+
+async function refreshUploadStatus() {
+  try {
+    const r = await fetch(BASE + '/api/v2/enterprise/upload/status', {headers: headers()});
+    const d = await r.json();
+    
+    const list = document.getElementById('patterns-list');
+    if (d.total_hologram_entries > 0) {
+      let html = '';
+      if (d.uploaded_patterns > 0) {
+        html += `<div style="margin-bottom:8px"><b>📄 Fichiers uploadés :</b> ${d.uploaded_patterns} patterns (${d.uploaded_symptoms} entrées)</div>`;
+      }
+      if (d.manual_patterns > 0) {
+        html += `<div><b>🧠 Appris manuellement :</b> ${d.manual_patterns} patterns (${d.manual_symptoms} entrées)</div>`;
+      }
+      html += `<div style="margin-top:8px;color:var(--gold)">🧠 Hologramme : ${d.total_hologram_entries} entrées totales</div>`;
+      list.innerHTML = html;
+    }
+  } catch(e) {}
+}
+
+// Rafraîchir le statut d'upload
+setInterval(refreshUploadStatus, 15000);
 </script>
 
 </body>
