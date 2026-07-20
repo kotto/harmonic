@@ -2,6 +2,25 @@
 
 **L'IA qui ne se trompe jamais. Littéralement.**
 
+> **Écosystème Harmonic AI** : [KA (téléphone)](https://github.com/kotto/ka-phone) | **KA Enterprise** (vous êtes ici) | [Harmonic AI (chat public)](https://github.com/kotto/harmonic)
+> 
+> *Même moteur. Trois déploiements. Zéro hallucination.*
+>
+> Voir [ARCHITECTURE_ECOSYSTEME.md](../docs/ARCHITECTURE_ECOSYSTEME.md) pour la vue d'ensemble.
+
+---
+
+## Positionnement
+
+KA Enterprise AI partage le **même moteur harmonique** que KA (le compagnon personnel sur téléphone) et Harmonic AI (le chat public). La différence : **il apprend de VOTRE entreprise**.
+
+| | KA (Phone) | **KA Enterprise** | Harmonic AI |
+|---|---|---|---|
+| **Pour qui** | Grand public | **Entreprises** | Tout le monde |
+| **Apprend de** | L'utilisateur | **Vos fichiers, logs, tickets** | La communauté |
+| **Déploiement** | Sur le téléphone | **Sur vos serveurs** | Cloud public |
+| **Données** | Personnelles (locales) | **Confidentielles (on-premise)** | Publiques |
+
 ---
 
 ## Le problème
