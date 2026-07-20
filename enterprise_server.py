@@ -22,8 +22,8 @@ from typing import Dict
 from collections import defaultdict
 import logging
 
-_ROOT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(_ROOT_DIR))
+# Pont vers le moteur commun (engine/)
+import engine_bridge
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS

@@ -20,8 +20,8 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 import numpy as np
 
-_ROOT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(_ROOT_DIR))
+# Pont vers le moteur commun (engine/)
+import engine_bridge
 
 from harmonic_ai_v2 import HarmonicAIv2
 from generative_encoder import WAVE_CONCEPTS
