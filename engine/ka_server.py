@@ -429,6 +429,71 @@ def _after_request(response):
 # ENDPOINTS HARMONIC AI
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# ── Wave Debugger (import paresseux) ──────────────────────────────────────────
+_wave_debugger = None
+
+def _get_wave_debugger():
+    """Import paresseux du wave_debugger (évite les imports circulaires)."""
+    global _wave_debugger
+    if _wave_debugger is None:
+        try:
+            from wave_debugger import diagnose_for_api, format_debug_response
+            _wave_debugger = (diagnose_for_api, format_debug_response)
+            log.info("🌊 Wave Debugger chargé")
+        except Exception as e:
+            log.warning(f"🌊 Wave Debugger non disponible: {e}")
+            _wave_debugger = (None, None)
+    return _wave_debugger
+
+
+@app.route('/api/debug', methods=['POST'])
+def debug_diagnose():
+    """
+    🌊 Diagnostic ondulatoire de bug.
+    
+    Body: {
+        "symptom": "NullPointerException quand...",  # requis
+        "language": "python",                         # optionnel
+        "code": "def foo(): ..."                      # optionnel — snippet de code
+    }
+    
+    Returns: diagnostic complet avec interférence, stratégie, action.
+    """
+    diagnose_fn, _ = _get_wave_debugger()
+    
+    data = request.get_json(force=True, silent=True) or {}
+    symptom = data.get('symptom', '').strip()
+    language = data.get('language', '').strip()
+    code_snippet = data.get('code', '').strip()
+    
+    if not symptom:
+        return jsonify({
+            'error': 'Le champ "symptom" est requis.',
+            'example': {
+                'symptom': 'NullPointerException quand utilisateur sans profil',
+                'language': 'java',
+                'code': 'user.getProfile().getName()'
+            },
+            'methodology': 'Les 4 étapes : Traduire → Diagnostiquer → Prescrire → Vérifier'
+        }), 422
+    
+    if diagnose_fn is None:
+        return jsonify({
+            'error': 'Wave Debugger non disponible sur ce serveur.',
+            'fallback': 'Consultez docs/METHODOLOGIE_RESOLUTION_ONDULATOIRE.md'
+        }), 503
+    
+    t0 = time.time()
+    result = diagnose_fn(symptom, language, code_snippet)
+    latency_ms = (time.time() - t0) * 1000
+    
+    return jsonify({
+        **result,
+        'latency_ms': round(latency_ms, 1),
+        'model': 'wave-debugger-v1',
+    })
+
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
     """
@@ -459,6 +524,42 @@ def chat():
     
     if not message:
         return jsonify({'error': 'Message requis', 'response': "Je n'ai pas compris votre message."}), 400
+    
+    # 🌊 Détection de demande de diagnostic ondulatoire
+    debug_prefixes = ['/debug', 'debug:', 'diagnostic:', 'wave:', '🌊']
+    is_debug = any(message.lower().startswith(p.lower()) for p in debug_prefixes)
+    
+    # Aussi détecter les descriptions de bugs naturelles
+    bug_keywords = ['bug', 'plante', 'crash', 'exception', 'erreur', 'null', 'race condition',
+                    'memory leak', 'deadlock', 'boucle infinie', 'timeout', 'regression',
+                    'ne marche pas', 'fonctionne pas', 'casse', 'debug', 'debugger',
+                    'nullpointer', 'undefined', 'segfault', 'stack overflow']
+    is_bug_description = not is_debug and any(kw in message.lower() for kw in bug_keywords)
+    
+    if is_debug or is_bug_description:
+        diagnose_fn, format_fn = _get_wave_debugger()
+        if diagnose_fn and format_fn:
+            # Extraire le symptôme (enlever le préfixe /debug)
+            symptom = message
+            for p in debug_prefixes:
+                if symptom.lower().startswith(p.lower()):
+                    symptom = symptom[len(p):].strip()
+                    break
+            if not symptom:
+                symptom = message
+            
+            result = diagnose_fn(symptom, '', '')
+            response_text = format_fn(result)
+            
+            log.info(f"🌊 Diagnostic ondulatoire: {result['diagnosis']['interference']}")
+            return jsonify({
+                'response': response_text,
+                'confidence': result['diagnosis']['confidence'],
+                'source': 'wave-debugger',
+                'latency_ms': 1.0,
+                'model': 'wave-debugger-v1',
+                'debug_data': result['diagnosis'],
+            })
     
     # 🎯 Détection de demande de spécialisation (version optimisée)
     if _SPECIALIZER_AVAILABLE:
@@ -501,9 +602,10 @@ def chat():
                 })
     
     # 🔄 Chargement automatique des KB utilisateur
-    if user_id != 'anonymous' and _SPECIALIZER_AVAILABLE and not brain.has_user_kb(user_id):
+    _brain = ai._get_brain() if ai else None
+    if user_id != 'anonymous' and _SPECIALIZER_AVAILABLE and _brain and not _brain.has_user_kb(user_id):
         try:
-            n_loaded = load_user_kbs_for_brain(brain, user_id)
+            n_loaded = load_user_kbs_for_brain(_brain, user_id)
             if n_loaded > 0:
                 log.info(f"🔄 {n_loaded} KB utilisateur chargées pour user={user_id}")
         except Exception as e:
@@ -563,10 +665,9 @@ def chat():
     try:
         from visual_knowledge import augment_response
         # Récupérer les derniers faits utilisés (via le cerveau si dispo)
-        brain = ai._get_brain() if ai else None
         facts = []
-        if brain and hasattr(brain, '_last_accepted'):
-            facts = [(f.sujet, f.relation, f.objet, f.secteur) for f in brain._last_accepted]
+        if _brain and hasattr(_brain, '_last_accepted'):
+            facts = [(f.sujet, f.relation, f.objet, f.secteur) for f in _brain._last_accepted]
         if facts:
             visual = augment_response(message, facts[:8])
     except Exception:
