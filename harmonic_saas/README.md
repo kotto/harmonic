@@ -26,9 +26,44 @@ Dashboard SaaS complet pour l'intÃ©gration avec les services LM Arena et les t
 ### Gestion SaaS
 - **Authentification** JWT avec refresh tokens
 - **Abonnements** (Free, Pro, Enterprise)
-- **Facturation** intÃ©gration Stripe
+- **Facturation** intégration Stripe
 - **API Keys** avec permissions granulaires
 - **Monitoring** Prometheus + Grafana
+
+### 🧠 Datacenter Holographique (NEW)
+- **Ingestion One-Pass** — Entraînement holographique CPU, zéro GPU
+- **Génération Enrichie** — Réponses augmentées par hologramme 32 Ko
+- **Sessions Multi-Clients** — Un .holo par client
+- **Dashboard** — Métriques temps réel (tokens, énergie, stockage)
+
+### 🔬 HPC / Calcul Scientifique (NEW)
+- **Protein Folding** — Repliement protéique par résonance harmonique (φ-accélération)
+- **Quantum Simulation** — Simulation quantique avec optimisation harmonique
+- **NP-Complet** — Solveur SAT, TSP par optimisation φ
+- **Médecine, Physique, Chimie** — Calcul scientifique 6-37x plus rapide
+
+### 📚 Base de Connaissances (NEW)
+- **Ingestion Intelligente** — Extraction de triplets (sujet, relation, objet)
+- **Recherche Sémantique** — Retrieval par résonance harmonique
+- **Émergence de Patterns** — Détection automatique de régularités
+- **Cross-Lingual FR/EN** — Alignement Procrustes
+
+### 🧠 Raisonnement Conscient (NEW)
+- **Chaînage** — Inférence transitive par cohérence de phase
+- **Analogie** — A:B :: C:? par arithmétique vectorielle
+- **Contradictions** — Détection par interférence destructive
+- **Généralisation** — Abstraction automatique
+
+### 💻 Code Intelligent (NEW)
+- **Génération Zero-LLM** — Code sans GPU, sans LLM
+- **Explication** — Analyse ligne par ligne
+- **Traduction** — Python ↔ JavaScript ↔ Go ↔ Rust
+- **Refactoring** — Patterns, performance, lisibilité
+
+### 🌊 Wave & Créativité (NEW)
+- **Explication Scientifique** — Physique, biologie, astronomie, quantique
+- **Cross-Lingual** — Alignement conceptuel FR/EN sans traduction
+- **Créativité** — Haïkus, métaphores, poèmes par résonance φ
 
 ## ðŸ—ï¸ Architecture
 

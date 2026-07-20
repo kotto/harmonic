@@ -39,6 +39,9 @@ class User(Base):
     api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
     audio_jobs = relationship("AudioJob", back_populates="user")
     video_jobs = relationship("VideoJob", back_populates="user")
+    hpc_jobs = relationship("HPCJob", back_populates="user")
+    hologram_sessions = relationship("HologramSession", back_populates="user")
+    knowledge_jobs = relationship("KnowledgeJob", back_populates="user")
     usage_records = relationship("UsageRecord", back_populates="user")
     invoices = relationship("Invoice", back_populates="user")
     

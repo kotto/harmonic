@@ -61,9 +61,19 @@ Checklist complÃ¨te pour vÃ©rifier que le dashboard SaaS Harmonic AI est pr�
 - [ ] **DÃ©terminisme** : Mode greedy (temperature=0) activÃ©
 
 ### Services Existants
-- [ ] **HCV-PROF** : Service compression opÃ©rationnel
+- [ ] **HCV-PRO** : Service compression opérationnel
 - [ ] **Audio Harmonique** : Service accessible (si disponible)
 - [ ] **Video Harmonique** : Service accessible (si disponible)
+
+### Nouveaux Services Datacenter & HPC (v2.0)
+- [ ] **Datacenter Holographique** : `/api/v1/datacenter/train`, `/generate`, `/sessions`
+- [ ] **HPC Protein Folding** : `/api/v1/hpc/protein-folding` — Repliement protéique φ
+- [ ] **HPC Quantum Sim** : `/api/v1/hpc/quantum-sim` — Simulation quantique
+- [ ] **HPC NP-Complet** : `/api/v1/hpc/np-compute` — Solveur SAT/TSP
+- [ ] **Knowledge Base** : `/api/v1/knowledge/ingest`, `/retrieve`
+- [ ] **Reasoning** : `/api/v1/reasoning/reason`, `/analogy`
+- [ ] **Code Studio** : `/api/v1/code/generate`, `/explain`, `/translate`
+- [ ] **Wave Tools** : `/api/v1/wave/explain`, `/cross-lingual`, `/creative`
 
 ## ðŸ”’ SÃ©curitÃ©
 

@@ -31,10 +31,24 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
     MONGODB_URL: str = "mongodb://localhost:27017/harmonic_saas"
     
+    # Engine Path (for harmonic modules)
+    ENGINE_PATH: str = ""
+    
     # External Services
     AUDIO_SERVICE_URL: str = "http://localhost:9017"
     VIDEO_SERVICE_URL: str = "http://localhost:9018"
     LM_ARENA_SERVICE_URL: str = "http://localhost:8000"
+    DATACENTER_STORAGE_PATH: str = "datacenter_storage"
+    
+    # HPC / Scientific Computing
+    HPC_MAX_SEQUENCE_LENGTH: int = 5000
+    HPC_DEFAULT_ENSEMBLE_SIZE: int = 10
+    HPC_MAX_QUBITS: int = 64
+    HPC_TIME_LIMIT_SECONDS: int = 3600
+    
+    # Knowledge Base
+    KNOWLEDGE_MAX_FACTS_PER_INGEST: int = 100000
+    KNOWLEDGE_MAX_RETRIEVAL_RESULTS: int = 100
     
     # AWS
     AWS_ACCESS_KEY_ID: Optional[str] = None
