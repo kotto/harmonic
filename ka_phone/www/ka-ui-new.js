@@ -1,4 +1,4 @@
-// KA Phone UI — canonic endpoint: port 8420 /api/ask
+// KA Phone UI — canonic endpoint: port 8420 /api/chat
 var API='';
 function showScreen(name){
   document.querySelectorAll('.ka-screen').forEach(function(s){s.classList.remove('active')});
@@ -26,7 +26,7 @@ async function sendChat(txt){
   var inp=document.getElementById('ka-inp'),t=txt||inp.value.trim();
   if(!t)return;addMsg(t,'user');if(!txt)inp.value='';
   try{
-    var r=await fetch(API+'/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:t})});
+    var r=await fetch(API+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:t})});
     var d=await r.json();
     var meta={source:d.source||'',confidence:d.confidence!=null?d.confidence:d.confiance,latency:d.temps_ms||''};
     var txt=d.text||d.reponse||'';
