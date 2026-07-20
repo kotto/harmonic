@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harmonic AI — Enterprise Dashboard</title>
+<style>
+:root {
+  --bg: #0a0a14; --surface: #141428; --border: #252540;
+  --gold: #d4a843; --cyan: #00bcd4; --green: #4caf50;
+  --red: #ff4757; --text: #e0e0f0; --dim: #8080a0;
+  --radius: 8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:1.2em;color:var(--gold)}
+header .tenant{font-size:0.85em;color:var(--dim)}
+main{max-width:1200px;margin:0 auto;padding:20px;display:grid;grid-template-columns:1fr 360px;gap:20px}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+.card h2{font-size:1em;margin-bottom:12px;color:var(--cyan)}
+.card h3{font-size:0.9em;color:var(--dim);margin-bottom:8px}
+textarea,input[type=text]{width:100%;background:#0a0a14;border:1px solid var(--border);border-radius:var(--radius);padding:10px;color:var(--text);font-family:monospace;font-size:0.9em;resize:vertical}
+textarea:focus,input:focus{outline:none;border-color:var(--cyan)}
+button{background:var(--cyan);color:#000;border:none;border-radius:var(--radius);padding:10px 20px;cursor:pointer;font-weight:600;font-size:0.9em;transition:all 0.2s}
+button:hover{background:#00e5ff}
+button.secondary{background:var(--border);color:var(--text)}
+button.gold{background:var(--gold)}
+.result{margin-top:12px;padding:12px;background:#0a0a14;border-radius:var(--radius);border-left:3px solid var(--cyan)}
+.result h3{margin:0 0 4px 0;font-size:0.95em;color:var(--cyan)}
+.result .conf{font-size:0.8em;color:var(--dim);margin-bottom:8px}
+.result .action{background:rgba(0,188,212,0.08);padding:8px;border-radius:4px;margin-top:8px;font-style:italic}
+.feedback{display:flex;gap:8px;margin-top:8px}
+.feedback button{padding:6px 12px;font-size:0.8em}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{padding:10px;background:#0a0a14;border-radius:var(--radius);text-align:center}
+.stat .val{font-size:1.4em;font-weight:700;color:var(--cyan)}
+.stat .lbl{font-size:0.75em;color:var(--dim)}
+.learn-section{margin-top:12px;border-top:1px solid var(--border);padding-top:12px}
+.log-entry{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.8em;display:flex;justify-content:space-between}
+.log-entry .diag{color:var(--cyan)}
+.log-entry .conf{color:var(--dim)}
+.toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:var(--radius);color:#fff;font-weight:600;z-index:999;animation:slideUp 0.3s ease}
+.toast.success{background:var(--green)}
+.toast.error{background:var(--red)}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.setup{text-align:center;padding:40px}
+.setup input{margin:8px 0}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌊 Harmonic AI Enterprise</h1>
+  <span class="tenant" id="tenant-name">Configuration...</span>
+</header>
+
+<main>
+  <!-- Colonne gauche : Diagnostic -->
+  <div>
+    <!-- Setup (si pas de clé API) -->
+    <div class="card" id="setup-card">
+      <h2>🔑 Configuration de votre entreprise</h2>
+      <p style="color:var(--dim);font-size:0.85em;margin-bottom:12px">
+        Créez votre tenant entreprise pour commencer. Chaque entreprise a ses propres patterns et son historique d'apprentissage.
+      </p>
+      <div class="setup">
+        <input type="text" id="company-name" placeholder="Nom de votre entreprise" style="max-width:300px">
+        <br><br>
+        <button onclick="createTenant()">Créer mon espace</button>
+      </div>
+      <div id="tenant-info" style="display:none;margin-top:12px;padding:8px;background:#0a0a14;border-radius:4px">
+        <strong>API Key :</strong> <code id="api-key-display" style="color:var(--gold)"></code>
+        <br><small style="color:var(--dim)">Conservez cette clé. Utilisez-la dans le header X-API-Key.</small>
+      </div>
+    </div>
+
+    <!-- Diagnostic -->
+    <div class="card" id="debug-card" style="display:none">
+      <h2>🔬 Diagnostic de bug</h2>
+      <textarea id="symptom-input" rows="3" placeholder="Décrivez le symptôme du bug...
+Ex: 'NullPointerException when accessing user profile'
+Ex: 'fuite de mémoire après 24 heures'
+Ex: 'race condition sur le compteur partagé'"></textarea>
+      <br>
+      <button onclick="diagnose()" style="margin-top:8px">🌊 Diagnostiquer</button>
+      <div id="debug-result"></div>
+    </div>
+
+    <!-- Apprentissage -->
+    <div class="card" id="learn-card" style="display:none">
+      <h2>🧠 Apprentissage</h2>
+      <p style="color:var(--dim);font-size:0.85em;margin-bottom:8px">
+        Enseignez de nouveaux patterns à votre IA. Elle apprendra de chaque cas.
+      </p>
+      <input type="text" id="learn-symptom" placeholder="Symptôme (ex: 'le paiement est refusé sans raison')">
+      <input type="text" id="learn-diagnosis" placeholder="Diagnostic (ex: 'Bug Métier Paiement')" style="margin-top:8px">
+      <button onclick="learnPattern()" style="margin-top:8px" class="gold">🧠 Apprendre</button>
+      <div id="learn-result"></div>
+    </div>
+  </div>
+
+  <!-- Colonne droite : Stats + Historique -->
+  <div>
+    <!-- Stats -->
+    <div class="card" id="stats-card" style="display:none">
+      <h2>📊 Statistiques</h2>
+      <div class="stats" id="stats-container"></div>
+    </div>
+
+    <!-- Historique -->
+    <div class="card" id="history-card" style="display:none">
+      <h2>📋 Derniers diagnostics</h2>
+      <div id="history-list"></div>
+    </div>
+
+    <!-- Patterns -->
+    <div class="card" id="patterns-card" style="display:none">
+      <h2>🔖 Patterns personnalisés</h2>
+      <div id="patterns-list" style="font-size:0.85em;color:var(--dim)"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════
+let API_KEY = localStorage.getItem('hk_enterprise_key') || '';
+let TENANT_NAME = localStorage.getItem('hk_enterprise_name') || '';
+const BASE = window.location.origin;
+
+function headers() {
+  return { 'Content-Type': 'application/json', 'X-API-Key': API_KEY };
+}
+
+// ════════════════════════════════════════════════════════════════
+// SETUP
+// ════════════════════════════════════════════════════════════════
+
+async function createTenant() {
+  const name = document.getElementById('company-name').value.trim();
+  if (!name) return toast('Entrez un nom d\'entreprise', 'error');
+  
+  try {
+    const r = await fetch(BASE + '/api/v2/enterprise/tenant', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name})
+    });
+    const d = await r.json();
+    API_KEY = d.api_key;
+    TENANT_NAME = d.name;
+    localStorage.setItem('hk_enterprise_key', API_KEY);
+    localStorage.setItem('hk_enterprise_name', TENANT_NAME);
+    
+    document.getElementById('api-key-display').textContent = API_KEY;
+    document.getElementById('tenant-info').style.display = 'block';
+    document.getElementById('tenant-name').textContent = TENANT_NAME;
+    
+    showApp();
+    toast('✅ Entreprise créée !', 'success');
+  } catch(e) {
+    toast('Erreur: ' + e.message, 'error');
+  }
+}
+
+function showApp() {
+  document.getElementById('setup-card').style.display = 'none';
+  document.getElementById('debug-card').style.display = 'block';
+  document.getElementById('learn-card').style.display = 'block';
+  document.getElementById('stats-card').style.display = 'block';
+  document.getElementById('history-card').style.display = 'block';
+  document.getElementById('patterns-card').style.display = 'block';
+  document.getElementById('tenant-name').textContent = TENANT_NAME;
+  refreshStats();
+}
+
+// Auto-login si clé existante
+if (API_KEY) {
+  document.getElementById('tenant-name').textContent = TENANT_NAME || 'Connecté';
+  showApp();
+}
+
+// ════════════════════════════════════════════════════════════════
+// DIAGNOSTIC
+// ════════════════════════════════════════════════════════════════
+
+async function diagnose() {
+  const symptom = document.getElementById('symptom-input').value.trim();
+  if (!symptom) return toast('Décrivez le symptôme', 'error');
+  
+  const resultDiv = document.getElementById('debug-result');
+  resultDiv.innerHTML = '<p style="color:var(--dim)">🌊 Analyse en cours...</p>';
+  
+  try {
+    const r = await fetch(BASE + '/api/v2/enterprise/debug', {
+      method: 'POST', headers: headers(),
+      body: JSON.stringify({symptom})
+    });
+    const d = await r.json();
+    
+    if (d.error) { resultDiv.innerHTML = `<p style="color:var(--red)">${d.error}</p>`; return; }
+    
+    const confPct = (d.confidence * 100).toFixed(0);
+    const bar = '█'.repeat(Math.round(d.confidence * 10)) + '░'.repeat(10 - Math.round(d.confidence * 10));
+    
+    resultDiv.innerHTML = `
+      <div class="result">
+        <h3>${d.learning_applied ? '🧠 ' : ''}${d.diagnosis}</h3>
+        <div class="conf">Confiance : ${bar} ${confPct}% | ${d.latency_ms}ms | ${d.tenant}</div>
+        <p style="margin:8px 0;font-size:0.9em">${d.explanation}</p>
+        <div class="action">💊 <strong>${d.strategy}</strong><br>→ ${d.action}</div>
+        <div class="feedback">
+          <span style="font-size:0.8em;color:var(--dim);line-height:2">Diagnostic correct ?</span>
+          <button class="secondary" onclick="giveFeedback('${escapeHtml(symptom)}', '${escapeHtml(d.diagnosis)}', true)">✅ Oui</button>
+          <button class="secondary" onclick="showCorrection('${escapeHtml(symptom)}', '${escapeHtml(d.diagnosis)}')">❌ Non</button>
+        </div>
+        <div id="correction-box-${Date.now()}" style="margin-top:8px"></div>
+      </div>
+    `;
+    
+    refreshStats();
+  } catch(e) {
+    resultDiv.innerHTML = `<p style="color:var(--red)">Erreur: ${e.message}</p>`;
+  }
+}
+
+function escapeHtml(s) { return s.replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+
+function showCorrection(symptom, predicted) {
+  const correct = prompt('Quel est le diagnostic correct ?');
+  if (correct) giveFeedback(symptom, predicted, false, correct);
+}
+
+async function giveFeedback(symptom, predicted, wasCorrect, correctDiagnosis) {
+  if (wasCorrect) {
+    await fetch(BASE + '/api/v2/enterprise/learn', {
+      method: 'POST', headers: headers(),
+      body: JSON.stringify({symptom, diagnosis: predicted, category: 'standard'})
+    });
+    toast('✅ Feedback enregistré', 'success');
+  } else if (correctDiagnosis) {
+    await fetch(BASE + '/api/v2/enterprise/feedback', {
+      method: 'POST', headers: headers(),
+      body: JSON.stringify({symptom, predicted, correct: correctDiagnosis})
+    });
+    toast('🔄 Correction apprise !', 'success');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// APPRENTISSAGE
+// ════════════════════════════════════════════════════════════════
+
+async function learnPattern() {
+  const symptom = document.getElementById('learn-symptom').value.trim();
+  const diagnosis = document.getElementById('learn-diagnosis').value.trim();
+  if (!symptom || !diagnosis) return toast('Remplissez les deux champs', 'error');
+  
+  try {
+    const r = await fetch(BASE + '/api/v2/enterprise/learn', {
+      method: 'POST', headers: headers(),
+      body: JSON.stringify({symptom, diagnosis, category: 'custom'})
+    });
+    const d = await r.json();
+    document.getElementById('learn-result').innerHTML = 
+      `<p style="color:var(--green);margin-top:8px">✅ Appris ! Total: ${d.total_learned} (tenant: ${d.tenant_learned})</p>`;
+    document.getElementById('learn-symptom').value = '';
+    document.getElementById('learn-diagnosis').value = '';
+    refreshStats();
+  } catch(e) {
+    toast('Erreur: ' + e.message, 'error');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// STATS
+// ════════════════════════════════════════════════════════════════
+
+async function refreshStats() {
+  try {
+    const r = await fetch(BASE + '/api/v2/enterprise/stats', {headers: headers()});
+    const d = await r.json();
+    
+    // Stats
+    document.getElementById('stats-container').innerHTML = `
+      <div class="stat"><div class="val">${d.tenant.requests}</div><div class="lbl">Requêtes</div></div>
+      <div class="stat"><div class="val">${d.tenant.learned}</div><div class="lbl">Appris</div></div>
+      <div class="stat"><div class="val">${d.global.patterns}</div><div class="lbl">Patterns</div></div>
+      <div class="stat"><div class="val">${d.global.concepts}</div><div class="lbl">Concepts</div></div>
+    `;
+    
+    // Historique
+    const history = d.recent || [];
+    document.getElementById('history-list').innerHTML = history.length ? 
+      history.reverse().map(h => `
+        <div class="log-entry">
+          <span>${h.symptom ? h.symptom.substring(0,50)+'...' : ''}</span>
+          <span class="diag">${h.diagnosis}</span>
+          <span class="conf">${Math.round((h.confidence||0)*100)}%</span>
+        </div>
+      `).join('') : '<p style="color:var(--dim)">Aucun diagnostic</p>';
+    
+    // Patterns
+    const rp = await fetch(BASE + '/api/v2/enterprise/patterns', {headers: headers()});
+    const pd = await rp.json();
+    const custom = pd.custom_patterns || {};
+    document.getElementById('patterns-list').innerHTML = Object.entries(custom).length ?
+      Object.entries(custom).map(([n,c]) => `<div>🔹 <b>${n}</b> (${c} symptômes)</div>`).join('') :
+      '<p>Aucun pattern personnalisé. Utilisez l\'apprentissage pour en créer.</p>';
+    
+  } catch(e) {
+    console.error('Stats error:', e);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════════════════
+
+function toast(msg, type) {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// Rafraîchir périodiquement
+setInterval(refreshStats, 30000);
+</script>
+
+</body>
+</html>
