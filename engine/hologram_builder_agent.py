@@ -1,38 +1,34 @@
 """
-🤖 HologramBuilder Agent — Création autonome d'hologrammes de qualité
-========================================================================
+🤖 HologramBuilder Agent v2 — Alimenté par le KB 110K + Web
+=============================================================
 Agent qui crée, valide, enrichit et publie des hologrammes spécialisés
-de façon autonome, efficace et sécurisée.
+en EXRAYANT les faits du KB existant (110K+) et du web.
 
-CAPACITÉS :
-  - Génération automatique de faits à partir d'un domaine
-  - Détection des faiblesses (cohérence, complétude, diversité)
-  - Enrichissement itératif jusqu'au score cible (80+)
-  - Validation de sécurité intégrée
-  - Publication automatique quand prêt
+SOURCE DE CONNAISSANCE (priorité) :
+  1. KB local (110K faits) — extraction par mots-clés domaine
+  2. Web Retrieval (DuckDuckGo + Wikipedia) — enrichissement
+  3. Templates — fallback uniquement si aucune source disponible
 
 CYCLE :
-  1. GENERATE  → produire des faits initiaux
+  1. EXTRACT   → extraire les faits du KB pertinents au domaine
   2. VALIDATE  → filtrer les faits invalides
-  3. SCORE     → mesurer la qualité
+  3. SCORE     → mesurer la qualité (0-100)
   4. DIAGNOSE  → identifier les faiblesses
-  5. ENRICH    → générer des faits correctifs
-  6. REPEAT    → jusqu'à score ≥ 80 ou max itérations
+  5. ENRICH    → générer des faits croisés + web retrieval
+  6. REPEAT    → jusqu'à score ≥ 80
   7. PUBLISH   → soumettre au pipeline qualité
-
-Usage :
-  agent = HologramBuilderAgent()
-  result = agent.build("génétique", target_score=80)
-  # → hologramme publié avec score 85/100
 """
 
-import sys, os, json, time, re
+import sys, os, json, time, re, logging
 from pathlib import Path
 from typing import List, Tuple, Dict, Optional, Set
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+import numpy as np
 
-_ENGINE_DIR = Path(__file__).resolve().parent.parent / "engine"
+log = logging.getLogger(__name__)
+
+_ENGINE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_ENGINE_DIR))
 
 from hologram_quality import (
@@ -41,13 +37,170 @@ from hologram_quality import (
 
 
 # ════════════════════════════════════════════════════════════════
-# TEMPLATES DE CONNAISSANCE PAR DOMAINE
+# KB LOADER — Source de connaissance principale
+# ════════════════════════════════════════════════════════════════
+
+class KnowledgeBaseSource:
+    """
+    Source de faits depuis le KB local (110K+ faits).
+    """
+    
+    def __init__(self):
+        self._facts: List[Tuple] = []
+        self._loaded = False
+        self._index: Dict[str, List[int]] = defaultdict(list)  # mot → indices
+    
+    def load(self) -> int:
+        """Charge le KB depuis le fichier npz. Retourne le nombre de faits."""
+        if self._loaded:
+            return len(self._facts)
+        
+        search_paths = [
+            _ENGINE_DIR / 'data' / 'bootstrapper_output' / 'knowledge_base_merged_v3.npz',
+            _ENGINE_DIR.parent / 'data' / 'bootstrapper_output' / 'knowledge_base_merged_v3.npz',
+        ]
+        
+        for path in search_paths:
+            if path.exists():
+                try:
+                    data = np.load(str(path), allow_pickle=True)
+                    raw_facts = data['facts']
+                    self._facts = [
+                        (str(f[0]), str(f[1]), str(f[2]), str(f[3]) if len(f) > 3 else "GENERAL")
+                        for f in raw_facts
+                    ]
+                    self._loaded = True
+                    
+                    # Indexer par mot
+                    for i, (s, r, o, sec) in enumerate(self._facts):
+                        for word in f"{s} {r} {o} {sec}".lower().split():
+                            w = word.strip('.,;:()[]{}')
+                            if len(w) >= 3:
+                                self._index[w].append(i)
+                    
+                    log.info(f"📂 KB chargé: {len(self._facts):,} faits, "
+                            f"{len(self._index):,} mots indexés")
+                    return len(self._facts)
+                except Exception as e:
+                    log.warning(f"Erreur chargement KB: {e}")
+        
+        return 0
+    
+    def extract_by_domain(self, domain: str, keywords: List[str] = None, 
+                          max_facts: int = 200) -> List[Tuple]:
+        """
+        Extrait les faits pertinents pour un domaine.
+        
+        Stratégie :
+        1. Chercher les faits dont le sujet/objet/secteur contient les mots-clés
+        2. Trier par pertinence (nombre de mots-clés matchés)
+        3. Limiter à max_facts
+        """
+        if not self._loaded:
+            self.load()
+        
+        if not self._facts:
+            return []
+        
+        # Construire les mots-clés de recherche
+        search_terms = set()
+        domain_lower = domain.lower()
+        
+        # Mots du domaine
+        for word in re.findall(r'\w+', domain_lower):
+            if len(word) >= 3:
+                search_terms.add(word)
+        
+        # Mots-clés additionnels
+        if keywords:
+            for kw in keywords:
+                for word in re.findall(r'\w+', kw.lower()):
+                    if len(word) >= 3:
+                        search_terms.add(word)
+        
+        if not search_terms:
+            return []
+        
+        # Trouver les indices des faits pertinents
+        fact_scores = Counter()
+        for term in search_terms:
+            if term in self._index:
+                for idx in self._index[term]:
+                    fact_scores[idx] += 1
+        
+        # Trier par score de pertinence
+        ranked = fact_scores.most_common(max_facts * 3)
+        
+        # Extraire les faits
+        extracted = []
+        seen = set()
+        for idx, score in ranked:
+            f = self._facts[idx]
+            key = (f[0].lower().strip(), f[1].lower().strip(), f[2].lower().strip())
+            if key not in seen:
+                seen.add(key)
+                extracted.append(f)
+                if len(extracted) >= max_facts:
+                    break
+        
+        log.info(f"🔍 Extraction '{domain}': {len(search_terms)} termes, "
+                f"{len(extracted)} faits extraits (sur {len(self._facts):,})")
+        
+        return extracted
+
+
+# ════════════════════════════════════════════════════════════════
+# WEB RETRIEVAL — Source secondaire
+# ════════════════════════════════════════════════════════════════
+
+class WebRetrievalSource:
+    """
+    Enrichissement par recherche web (DuckDuckGo + Wikipedia).
+    """
+    
+    def __init__(self):
+        self._available = False
+        try:
+            from web_retriever import WebRetriever
+            self.retriever = WebRetriever()
+            self._available = True
+        except Exception:
+            self.retriever = None
+    
+    def search_facts(self, domain: str, max_facts: int = 20) -> List[Tuple]:
+        """Recherche des faits sur le web."""
+        if not self._available:
+            return []
+        
+        try:
+            results = self.retriever.search(domain, max_results=5)
+            facts = []
+            for r in results:
+                snippet = r.get('snippet', '')[:200]
+                if len(snippet) > 20:
+                    # Transformer le snippet en fait simple
+                    facts.append((
+                        domain.title(),
+                        "est décrit comme",
+                        snippet,
+                        "WEB"
+                    ))
+            return facts[:max_facts]
+        except Exception:
+            return []
+
+
+# ════════════════════════════════════════════════════════════════
+# TEMPLATES DE CONNAISSANCE PAR DOMAINE (fallback uniquement)
 # ════════════════════════════════════════════════════════════════
 
 DOMAIN_TEMPLATES = {
     "biologie": {
         "aliases": ["biologie", "génétique", "genetique", "biologie moléculaire", 
                     "biochimie", "microbiologie", "botanique", "zoologie"],
+        "keywords": ["adn", "arn", "gène", "gene", "cellule", "protéine", "mutation",
+                     "chromosome", "génome", "genome", "enzyme", "mitose", "meiose",
+                     "crispr", "clonage", "séquençage", "heredité", "évolution"],
         "sectors": ["BIOLOGIE", "SANTE", "NATURE", "HISTOIRE", "CHIMIE"],
         "seed_facts": [
             ("La cellule", "est l'unité de base de", "la vie", "BIOLOGIE"),
@@ -150,6 +303,16 @@ class HologramBuilderAgent:
     def __init__(self):
         self.validator = FactValidator()
         self.publisher = HologramPublisher()
+        self.kb = KnowledgeBaseSource()       # 🔥 Source principale (110K faits)
+        self.web = WebRetrievalSource()       # 🌐 Source secondaire
+        self._kb_loaded = False
+    
+    def _ensure_kb_loaded(self):
+        if not self._kb_loaded:
+            n = self.kb.load()
+            self._kb_loaded = True
+            return n
+        return len(self.kb._facts)
     
     def build(self, domain: str, author: str = "agent",
               target_score: float = 80, language: str = "fr") -> BuildReport:
@@ -281,16 +444,25 @@ class HologramBuilderAgent:
         }
     
     def _generate_facts(self, domain: str, template: dict) -> List[Tuple]:
-        """Génère les faits initiaux."""
-        facts = list(template.get("seed_facts", []))
+        """
+        Génère les faits initiaux. Priorité : KB > Web > Templates.
+        """
+        facts = []
         
-        # Générer des faits supplémentaires à partir du nom du domaine
-        domain_words = re.findall(r'\w+', domain.lower())
+        # ── 1. KB LOCAL (110K faits) ──
+        n_kb = self._ensure_kb_loaded()
+        if n_kb > 0:
+            extra_kw = template.get("keywords", [])
+            kb_facts = self.kb.extract_by_domain(domain, keywords=extra_kw, max_facts=150)
+            facts.extend(kb_facts)
         
-        for word in domain_words[:5]:
-            if len(word) >= 3:
-                facts.append((word.title(), "est un concept de", domain.title(), 
-                             template.get("sectors", ["GENERAL"])[0]))
+        # ── 2. TEMPLATE SEEDS ──
+        facts.extend(template.get("seed_facts", []))
+        
+        # ── 3. WEB (si KB pauvre) ──
+        if len(facts) < 30:
+            web_facts = self.web.search_facts(domain, max_facts=10)
+            facts.extend(web_facts)
         
         # Dédupliquer
         seen = set()
@@ -301,7 +473,7 @@ class HologramBuilderAgent:
                 seen.add(key)
                 unique.append(f)
         
-        return unique
+        return unique[:self.MAX_FACTS]
     
     def _validate_batch(self, facts: List[Tuple]) -> List[Tuple]:
         """Valide et filtre les faits."""
