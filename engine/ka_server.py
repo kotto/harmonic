@@ -432,6 +432,25 @@ def _after_request(response):
 # ── Wave Debugger (import paresseux) ──────────────────────────────────────────
 _wave_debugger = None
 
+# ── Harmonic Style (import paresseux) ─────────────────────────────────────────
+_harmonic_styler = None
+
+def _style_response(response_text: str, user_message: str = "") -> str:
+    """Applique le style harmonique (empathie + vocabulaire + diversité)."""
+    global _harmonic_styler
+    if _harmonic_styler is None:
+        try:
+            from harmonic_style import HarmonicStyler
+            _harmonic_styler = HarmonicStyler()
+        except Exception:
+            return response_text
+    if not response_text or len(response_text) < 20:
+        return response_text
+    try:
+        return _harmonic_styler.style(response_text, user_message, 0.5)
+    except Exception:
+        return response_text
+
 def _get_wave_debugger():
     """Import paresseux du wave_debugger (évite les imports circulaires)."""
     global _wave_debugger
@@ -673,6 +692,10 @@ def chat():
     except Exception:
         pass
 
+    # 🎨 Style harmonique : rendre la réponse plus agréable
+    if not is_page and response and len(response) > 30:
+        response = _style_response(response, message)
+
     return jsonify({
         'response': response,
         'confidence': round(confidence, 2),
@@ -680,7 +703,7 @@ def chat():
         'latency_ms': round(latency_ms, 0),
         'model': 'harmonic-v3-optimized',
         'is_page': is_page,
-        'visual': visual,  # 🆕 base64 PNG ou null
+        'visual': visual,
     })
 
 
@@ -3119,6 +3142,10 @@ def lm_arena_chat():
             response_text = "KA n'est pas disponible."
     except Exception as e:
         response_text = f"Erreur: {str(e)}"
+    
+    # 🎨 Style harmonique
+    if response_text and len(response_text) > 30:
+        response_text = _style_response(response_text, question)
 
     prompt_tokens = len(question.split()) + len(system_prompt.split())
     completion_tokens = len(response_text.split())
