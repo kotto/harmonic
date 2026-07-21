@@ -312,6 +312,69 @@ def api_status():
     return jsonify({"status": "online", "version": "5.0", "name": "KA Phone — Ton Double Numérique", "harmonic_engine": "v3.0 (Conscience + DHF)", "llm_local": bridge.llm is not None if bridge else False, "llm_model": "Qwen 2.5-3B" if bridge and bridge.llm else "Non chargé", "mgh_bigrams": len(mgh.bigram_index) if mgh else 0, "mgh_vocab": len(mgh.vocab) if mgh else 0, "cache_tokens": len(_engines.get("cache", {})), "domains": 11, "offline_capable": True, "tagline": "Il se souvient de tout. Il ne ment jamais."})
 
 # =========================================================================
+# =========================================================================
+# 🌟 HOLOGRAM QUALITY — Validation & Scoring local
+# =========================================================================
+
+# Import léger (sans HologramStore pour rester rapide)
+try:
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "engine"))
+    from hologram_quality import FactValidator, QualityScorer
+    _quality_available = True
+except Exception:
+    _quality_available = False
+
+
+@app.route("/api/holograms/validate", methods=["POST"])
+def api_validate_facts():
+    """
+    Valide des faits localement (sans publication).
+    L'utilisateur peut vérifier la qualité avant de publier.
+    """
+    if not _quality_available:
+        return jsonify({"error": "Module qualité non disponible"}), 503
+    
+    data = request.get_json(force=True, silent=True) or {}
+    facts = data.get("facts", [])
+    if not facts:
+        return jsonify({"error": "Aucun fait fourni"}), 422
+    
+    validation = FactValidator.validate_batch(facts)
+    quality = QualityScorer.compute_total(facts) if facts else {}
+    return jsonify({"validation": validation, "quality": quality})
+
+
+@app.route("/api/holograms/my-quality", methods=["POST"])
+def api_my_hologram_quality():
+    """
+    Score de qualité de l'hologramme personnel de l'utilisateur.
+    Permet de savoir si l'hologramme est prêt à être partagé.
+    """
+    global _mon_hologramme
+    if not _quality_available:
+        return jsonify({"error": "Module qualité non disponible"}), 503
+    
+    # Récupérer les faits de l'hologramme personnel
+    faits_perso = _mon_hologramme if "_mon_hologramme" in dir() and _mon_hologramme else []
+    if not faits_perso:
+        return jsonify({"facts_count": 0, "message": "Aucun fait personnel. Utilisez KA pour apprendre."})
+    
+    quality = QualityScorer.compute_total(faits_perso)
+    readiness = (
+        "✅ Prêt à publier !" if quality["total"] >= 60 else
+        "🔧 Enrichissez-le (ajoutez plus de faits variés)" if quality["total"] >= 30 else
+        "🌱 Débutant (continuez à utiliser KA pour apprendre)"
+    )
+    
+    return jsonify({
+        "facts_count": len(faits_perso),
+        "quality": quality,
+        "readiness": readiness,
+    })
+
+
+# =========================================================================
 # ROUTES STATIQUES
 # =========================================================================
 @app.route("/")
