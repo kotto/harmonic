@@ -301,7 +301,9 @@ class AutoSeedGenerator:
         key = (s.lower().strip(), r.lower().strip(), o.lower().strip())
         if key not in self.seen:
             self.seen.add(key)
-            self.facts.append((s[:120], r[:120], o[:120], sec or self.sector))
+            # 🔑 Ajouter le secteur en tag pour que la recherche par mot-clé le trouve
+            sector_tag = sec or self.sector
+            self.facts.append((f"[{sector_tag}] {s}"[:120], r[:120], o[:120], sector_tag))
     
     def _add_bidirectional(self, s: str, r: str, o: str, inv_r: str):
         """Ajoute un fait ET son inverse."""
@@ -322,18 +324,21 @@ class AutoSeedGenerator:
             for part in parts:
                 self._add_bidirectional(whole, "contient", part, "fait partie de")
         
-        # 3. RELATIONS CROISÉES (explosion combinatoire)
-        # Pour chaque paire d'entités proches, créer une relation
+        # 3. RELATIONS CROISÉES (explosion combinatoire massive)
+        # Pour chaque paire d'entités, créer une relation
         rng = random.Random(42)  # Déterministe
-        for i, e1 in enumerate(self.entities[:60]):
-            for j, e2 in enumerate(self.entities[:60]):
+        entity_limit = min(100, len(self.entities))  # Augmenté à 100
+        for i, e1 in enumerate(self.entities[:entity_limit]):
+            for j, e2 in enumerate(self.entities[:entity_limit]):
                 if i >= j or e1 == e2:
                     continue
-                # Ne connecter que si un lien logique est possible
-                # (éviter les connexions absurdes)
                 if self._should_connect(e1, e2):
                     rel = self.relations[(i * j) % len(self.relations)]
                     self._add(e1, rel, e2)
+                    # Variante : ajouter aussi avec une 2ème relation (×2 seeds)
+                    rel2 = self.relations[((i + j) * 3) % len(self.relations)]
+                    if rel2 != rel:
+                        self._add(e1, rel2, e2)
         
         # 4. CHAÎNES : A→B→C
         for category, members in self.hierarchy.items():
@@ -343,7 +348,7 @@ class AutoSeedGenerator:
                     self._add(members[i+1], "a succédé à", members[i])
         
         # 5. AUTO-RÉFÉRENCES : chaque entité est déclarée
-        for e in self.entities[:80]:
+        for e in self.entities[:120]:
             self._add(e, "est un concept de", self.sector.lower().replace("_", " "))
         
         elapsed = time.time() - t0
@@ -365,7 +370,7 @@ class AutoSeedGenerator:
             if e1 in parts and e2 in parts:
                 return True
         # Lien aléatoire avec probabilité 20% (pour la diversité)
-        return random.Random(hash(e1 + e2) % 2**32).random() < 0.2
+        return random.Random(hash(e1 + e2) % 2**32).random() < 0.8  # 80% connexions
 
 
 # ════════════════════════════════════════════════════════════════
