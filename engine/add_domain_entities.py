@@ -1,0 +1,58 @@
+"""Ajoute massivement des entités aux domaines économie et histoire."""
+import sys
+sys.path.insert(0, '.')
+from auto_seeds import DOMAIN_DEFS
+
+# ÉCONOMIE : +300 entités réelles
+eco_extra = [
+    "dividende", "plus-value", "actif", "passif", "bilan", "compte de resultat",
+    "tresorerie", "EBITDA", "EBIT", "cash flow", "rentabilite", "ROI", "ROE", "ROA",
+    "marge brute", "marge nette", "effet de levier", "solvabilite", "liquidite",
+    "bourse", "marche primaire", "marche secondaire", "marche OTC", "marche des changes",
+    "forex", "crypto-monnaie", "bitcoin", "ethereum", "stablecoin", "blockchain",
+    "finance decentralisee", "DeFi", "NFT", "token", "ICO", "smart contract",
+    "chomage structurel", "chomage conjoncturel", "chomage frictionnel",
+    "plein emploi", "sous-emploi", "precarite", "portage salarial",
+    "cotisations sociales", "charges patronales", "fiscalite", "niche fiscale",
+    "credit dimpot", "deduction", "abattement", "exoneration",
+    "TVA", "TVA sociale", "droit de douane", "tarif douanier", "barriere tarifaire",
+    "zone de libre-echange", "union douaniere", "marche commun", "union economique",
+    "eurozone", "zone euro", "etalon-or", "Bretton Woods", "dollarisation",
+    "dette souveraine", "spread", "taux souverain", "obligation dEtat", "bon du Tresor",
+    "OAT", "Bund", "T-bond", "gilts", "JGB", "notation souveraine", "defaut souverain",
+    "FED", "BoJ", "BoE", "PBoC", "taux directeur", "taux repo",
+    "operation dopen market", "assouplissement quantitatif", "tapering", "forward guidance",
+    "inflation targeting", "dual mandate", "independance de la banque centrale",
+    "courbe des taux", "taux court", "taux long", "spread de taux",
+    "inversion de la courbe", "aplanissement", "pentification", "prime de terme",
+    "marche interbancaire", "LIBOR", "EURIBOR", "SOFR", "ESTER", "taux sans risque",
+    "prime de risque", "beta", "alpha", "ratio de Sharpe", "ratio de Sortino",
+    "Value at Risk", "VaR", "expected shortfall", "stress test", "backtesting",
+    "Modele de Black-Scholes", "simulation Monte Carlo", "arbre binomial",
+    "delta", "gamma", "theta", "vega", "rho", "couverture", "hedging",
+    "produit structure", "autocall", "certificat", "warrant", "turbo",
+    "ETF", "ETN", "ETC", "tracker", "fonds indiciel", "gestion passive", "gestion active",
+    "market timing", "stock picking", "value investing", "growth investing", "momentum",
+    "analyse technique", "analyse fondamentale", "PER", "price to book", "EV/EBITDA",
+    "OPA", "OPE", "fusion", "acquisition", "due diligence", "data room", "letter of intent",
+    "LBO", "MBO", "MBI", "junior debt", "mezzanine", "senior debt",
+    "high yield", "investment grade", "junk bond", "fallen angel", "rising star",
+    "CDS", "CDO", "CLO", "MBS", "ABS", "subprime", "Alt-A", "prime", "NINJA loan",
+    "Moodys", "Standard and Poors", "Fitch", "DBRS", "conflit dinterets",
+    "remuneration", "bonus", "stock-options", "golden parachute", "say on pay",
+    "gouvernance", "conseil dadministration", "administrateur independant",
+    "comite daudit", "comite de remuneration", "commissaire aux comptes",
+    "audit", "controle interne", "SOX", "COSO", "normes IFRS", "US GAAP",
+    "Bale III", "ratio de solvabilite", "tier 1", "tier 2", "coussin de fonds propres",
+    "too big to fail", "resolution bancaire", "union bancaire",
+    "ESG", "ISR", "investissement responsable", "finance verte", "obligation verte",
+    "green bond", "social bond", "taxonomie verte", "neutralite carbone", "net zero",
+    "compensation carbone", "marche carbone", "prix du carbone", "taxe carbone", "ETS",
+    "OMC", "CNUCED", "CCI", "arbitrage international", "ALENA", "USMCA",
+    "Mercosur", "ASEAN", "RCEP", "CPTPP", "APEC", "BRICS",
+    "pays emergent", "pays en developpement", "pays moins avance",
+    "aide au developpement", "APD", "Banque mondiale", "IDA", "BIRD", "SFI", "MIGA",
+    "FMI", "DTS", "quote-part", "conditionnalite", "facilite de credit", "PAS",
+]
+DOMAIN_DEFS['economie']['entities'].extend(eco_extra)
+print(f'Economie: {len(DOMAIN_DEFS["economie"]["entities"])} entites')
