@@ -117,9 +117,11 @@ class KnowledgeBaseSource:
             "génétique": "BIOLOGIE", "informatique": "INFORMATIQUE",
             "python": "INFORMATIQUE", "musique": "MUSIQUE",
         }
+        priority_sector = None
         for key, sec in sector_map.items():
             if key in domain_lower:
                 search_terms.add(sec.lower())
+                priority_sector = sec
                 break
         
         # Mots-clés additionnels
@@ -138,6 +140,25 @@ class KnowledgeBaseSource:
             if term in self._index:
                 for idx in self._index[term]:
                     fact_scores[idx] += 1
+        
+        # 🔑 BOOST QUALITÉ + SECTEUR PRIORITAIRE
+        subjects_set = set()
+        objects_set = set()
+        for idx in fact_scores:
+            f = self._facts[idx]
+            subjects_set.add(f[0].lower().strip())
+            objects_set.add(f[2].lower().strip())
+        
+        for idx in list(fact_scores.keys()):
+            f = self._facts[idx]
+            s = f[0].lower().strip()
+            o = f[2].lower().strip()
+            # Bonus pivot (interconnecté)
+            if s in objects_set or o in subjects_set:
+                fact_scores[idx] += 3
+            # Bonus secteur prioritaire (massif)
+            if priority_sector and f[3] == priority_sector:
+                fact_scores[idx] += 5  # Dominance assurée
         
         # Trier par score de pertinence
         ranked = fact_scores.most_common(max_facts * 3)
