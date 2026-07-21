@@ -110,8 +110,10 @@ def load_facts(model_name='best'):
         '100k': 'knowledge_base_100k.npz',
         '110k': 'knowledge_base_merged_v3.npz',
         '217k': 'knowledge_base_clean.npz',
+        '300k': 'knowledge_base_300k.npz',
         '500k': 'knowledge_base_500k.npz',
-        'best': 'knowledge_base_merged_v3.npz',
+        'enriched': 'knowledge_base_enriched.npz',
+        'best': 'knowledge_base_merged_v3.npz',  # 110K — stable, charge en mémoire
     }
     filename = model_files.get(model_name)
     if not filename:
