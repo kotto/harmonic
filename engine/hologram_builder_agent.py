@@ -57,9 +57,9 @@ class KnowledgeBaseSource:
         
         search_paths = [
             _ENGINE_DIR / 'data' / 'bootstrapper_output' / 'knowledge_base_enriched.npz',
+            _ENGINE_DIR / 'data' / 'bootstrapper_output' / 'knowledge_base_300k.npz',
+            _ENGINE_DIR / 'data' / 'bootstrapper_output' / 'kb_250k_sectorized.npz',
             _ENGINE_DIR / 'data' / 'bootstrapper_output' / 'knowledge_base_merged_v3.npz',
-            _ENGINE_DIR.parent / 'data' / 'bootstrapper_output' / 'knowledge_base_enriched.npz',
-            _ENGINE_DIR.parent / 'data' / 'bootstrapper_output' / 'knowledge_base_merged_v3.npz',
         ]
         
         for path in search_paths:
