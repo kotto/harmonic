@@ -432,6 +432,54 @@ def generate_and_inject(domains: List[str] = None):
 # TEST
 # ════════════════════════════════════════════════════════════════
 
+
+# === ENTITÉS SUPPLÉMENTAIRES (doublement) ===
+_extra_astro = [
+    "Io", "Europa", "Ganymède", "Callisto", "Titan", "Encelade", "Triton",
+    "ceinture d'astéroïdes", "ceinture de Kuiper", "nuage d'Oort",
+    "héliosphère", "tache solaire", "éruption solaire", "cycle solaire",
+    "ALMA", "VLT", "SKA", "ELT", "Arecibo", "LIGO", "Virgo", "IceCube",
+    "trou de ver", "multivers", "inflation cosmique", "équation de Drake", "paradoxe de Fermi",
+    "point de Lagrange", "L1", "L2", "L3", "L4", "L5",
+    "orbite géostationnaire", "orbite polaire", "orbite héliosynchrone",
+    "mission DART", "mission Hera", "Artemis", "Lunar Gateway", "Mars Sample Return",
+    "Europa Clipper", "Dragonfly", "JUICE", "BepiColombo", "Solar Orbiter", "Parker Solar Probe",
+]
+_extra_eco = [
+    "PIB nominal", "PIB réel", "PIB PPA", "taux de croissance", "cycle économique",
+    "coefficient de Gini", "salaire minimum", "revenu universel", "protection sociale",
+    "épargne", "investissement", "consommation", "multiplicateur keynésien",
+    "trappe à liquidité", "CDI", "CDD", "intérim", "freelance", "auto-entrepreneur",
+    "PME", "ETI", "multinationale", "startup", "licorne", "introduction en bourse",
+    "fusion-acquisition", "OPA", "scission", "joint-venture", "franchise",
+    "TVA", "CSG", "IR", "IS", "taxe carbone", "taxe Tobin", "taxe GAFA",
+    "paradis fiscal", "évasion fiscale", "optimisation fiscale", "guerre commerciale",
+    "or", "pétrole", "gaz", "charbon", "cuivre", "lithium", "cobalt", "terres rares",
+    "OPEP", "AIE", "transition énergétique", "neutralité carbone", "marché carbone",
+]
+_extra_hist = [
+    "Mésolithique", "Néolithique", "Âge du bronze", "Âge du fer", "Gaulois", "Vercingétorix",
+    "Alésia", "Gaule romaine", "Lutèce", "Mérovingiens", "Clovis", "Carolingiens",
+    "Vikings", "Normandie", "Guillaume le Conquérant", "Croisades", "Templiers",
+    "Guerre de Cent Ans", "Azincourt", "Charles VII", "Louis XI", "Guerres d'Italie",
+    "Marignan", "Léonard de Vinci", "Chambord", "Guerres de religion", "Saint-Barthélemy",
+    "Édit de Nantes", "Versailles", "Colbert", "Vauban", "Révocation de l'édit de Nantes",
+    "États généraux", "Serment du Jeu de paume", "Fuite à Varennes", "Valmy", "Convention",
+    "Girondins", "Montagnards", "Thermidor", "Directoire", "Campagne d'Italie",
+    "18 Brumaire", "Consulat", "Code civil", "Austerlitz", "Trafalgar", "Waterloo",
+    "Congrès de Vienne", "Louis XVIII", "Charles X", "Trois Glorieuses", "Louis-Philippe",
+    "Révolution de 1848", "Lamartine", "Coup d'État 1851", "Haussmann", "Canal de Suez",
+    "Commune de Paris", "Séparation Églises-État", "Première Guerre mondiale", "Verdun",
+    "Occupation de la Ruhr", "Cartel des gauches", "6 février 1934", "Front Populaire",
+    "Congés payés", "Accords Matignon", "Drôle de guerre", "Résistance", "Jean Moulin",
+    "Débarquement Provence", "Libération de Paris", "Guerre d'Indochine", "Diên Biên Phu",
+    "Guerre d'Algérie", "De Gaulle 1958", "Accords d'Évian", "Pompidou", "Giscard",
+    "Mitterrand", "Chirac", "Sarkozy", "Hollande", "Macron",
+]
+DOMAIN_DEFS['astronomie']['entities'].extend(_extra_astro)
+DOMAIN_DEFS['economie']['entities'].extend(_extra_eco)
+DOMAIN_DEFS['histoire_france']['entities'].extend(_extra_hist)
+
 if __name__ == "__main__":
     # Test standalone : générer sans injecter
     for name in ["astronomie", "economie", "histoire_france"]:

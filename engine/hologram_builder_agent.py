@@ -80,6 +80,14 @@ class KnowledgeBaseSource:
                             if len(w) >= 3:
                                 self._index[w].append(i)
                     
+                    # 🔑 Index d'interconnexion
+                    from collections import Counter
+                    self._subject_obj_count = Counter()
+                    self._obj_subject_count = Counter()
+                    for s, r, o, sec in self._facts:
+                        self._subject_obj_count[s.lower().strip()] += 1
+                        self._obj_subject_count[o.lower().strip()] += 1
+                    
                     log.info(f"📂 KB chargé: {len(self._facts):,} faits, "
                             f"{len(self._index):,} mots indexés")
                     return len(self._facts)
@@ -163,17 +171,36 @@ class KnowledgeBaseSource:
         # Trier par score de pertinence
         ranked = fact_scores.most_common(max_facts * 3)
         
-        # Extraire les faits
+        # 🔑 STRATÉGIE : prendre les faits les PLUS INTERCONNECTÉS
+        # quel que soit le secteur (les seeds dominent naturellement)
         extracted = []
         seen = set()
-        for idx, score in ranked:
+        
+        # Collecter TOUS les faits matchés avec leur score d'interconnexion
+        all_candidates = []
+        for idx in fact_scores:
             f = self._facts[idx]
-            key = (f[0].lower().strip(), f[1].lower().strip(), f[2].lower().strip())
-            if key not in seen:
-                seen.add(key)
-                extracted.append(f)
-                if len(extracted) >= max_facts:
-                    break
+            s = f[0].lower().strip()
+            o = f[2].lower().strip()
+            # Score d'interconnexion : combien de fois le sujet apparaît comme objet
+            # et l'objet apparaît comme sujet (bidirectionalité)
+            interconnect = getattr(self, '_subject_obj_count', Counter()).get(s, 0) + \
+                          getattr(self, '_obj_subject_count', Counter()).get(o, 0)
+            # Bonus secteur
+            sector_bonus = 3 if (priority_sector and f[3] == priority_sector) else 0
+            all_candidates.append((idx, interconnect + sector_bonus + fact_scores.get(idx, 0)))
+        
+        # Trier par interconnexion (les seeds sont naturellement en tête)
+        all_candidates.sort(key=lambda x: x[1], reverse=True)
+        
+        for idx, score in all_candidates:
+                f = self._facts[idx]
+                key = (f[0].lower().strip(), f[1].lower().strip(), f[2].lower().strip())
+                if key not in seen:
+                    seen.add(key)
+                    extracted.append(f)
+                    if len(extracted) >= max_facts:
+                        break
         
         log.info(f"🔍 Extraction '{domain}': {len(search_terms)} termes, "
                 f"{len(extracted)} faits extraits (sur {len(self._facts):,})")
