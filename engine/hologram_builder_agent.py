@@ -56,7 +56,9 @@ class KnowledgeBaseSource:
             return len(self._facts)
         
         search_paths = [
+            _ENGINE_DIR / 'data' / 'bootstrapper_output' / 'knowledge_base_enriched.npz',
             _ENGINE_DIR / 'data' / 'bootstrapper_output' / 'knowledge_base_merged_v3.npz',
+            _ENGINE_DIR.parent / 'data' / 'bootstrapper_output' / 'knowledge_base_enriched.npz',
             _ENGINE_DIR.parent / 'data' / 'bootstrapper_output' / 'knowledge_base_merged_v3.npz',
         ]
         
