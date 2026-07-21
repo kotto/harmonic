@@ -120,10 +120,16 @@ class KnowledgeBaseSource:
         # 🔑 Ajouter le SECTEUR comme terme de recherche
         sector_map = {
             "astronomie": "ASTRONOMIE", "économie": "ECONOMIE", "economie": "ECONOMIE",
-            "histoire": "HISTOIRE", "médecine": "SANTE", "medecine": "SANTE",
-            "sante": "SANTE", "biologie": "BIOLOGIE", "genetique": "BIOLOGIE",
-            "génétique": "BIOLOGIE", "informatique": "INFORMATIQUE",
-            "python": "INFORMATIQUE", "musique": "MUSIQUE",
+            "histoire": "HISTOIRE", "médecine": "CORPS_ORGANES", "medecine": "CORPS_ORGANES",
+            "sante": "CORPS_ORGANES", "biologie": "BIOLOGIE", "genetique": "BIOLOGIE",
+            "génétique": "BIOLOGIE", "informatique": "CODE", "code": "CODE",
+            "python": "CODE", "javascript": "CODE", "programmation": "CODE",
+            "musique": "CULTURE", "art": "CULTURE", "litterature": "CULTURE",
+            "physique": "PHYSIQUE_FOND", "maths": "MATHS_PURES", "mathématiques": "MATHS_PURES",
+            "chimie": "SCIENCES", "politique": "POLITIQUE", "geographie": "GEOGRAPHIE",
+            "géographie": "GEOGRAPHIE", "ecologie": "ECOLOGIE", "écologie": "ECOLOGIE",
+            "spiritualite": "SPIRITUALITE", "philosophie": "SPIRITUALITE",
+            "cosmologie": "COSMOLOGIE", "intelligence": "INTELLIGENCE",
         }
         priority_sector = None
         for key, sec in sector_map.items():
