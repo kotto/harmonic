@@ -92,41 +92,13 @@ class KnowledgeBaseSource:
                           max_facts: int = 200) -> List[Tuple]:
         """
         Extrait les faits pertinents pour un domaine.
-        
-        Stratégie :
-        1. PRIORITÉ : faits du secteur exact (ASTRONOMIE, ECONOMIE...)
-        2. COMPLÉMENT : faits par mots-clés
-        3. Trier par pertinence (nombre de mots-clés matchés)
-        4. Limiter à max_facts
+        Stratégie simple : mots-clés → score → top N.
         """
         if not self._loaded:
             self.load()
         
         if not self._facts:
             return []
-        
-        # Secteur prioritaire (mapping domaine → secteur)
-        sector_map = {
-            "astronomie": "ASTRONOMIE", "économie": "ECONOMIE", "economie": "ECONOMIE",
-            "histoire": "HISTOIRE", "médecine": "SANTE", "medecine": "SANTE",
-            "sante": "SANTE", "biologie": "BIOLOGIE", "genetique": "BIOLOGIE",
-            "génétique": "BIOLOGIE", "informatique": "INFORMATIQUE",
-            "python": "INFORMATIQUE", "musique": "MUSIQUE",
-        }
-        priority_sector = None
-        for key, sec in sector_map.items():
-            if key in domain.lower():
-                priority_sector = sec
-                break
-        
-        # 1. Faits du secteur prioritaire
-        priority_facts = []
-        if priority_sector:
-            for i, f in enumerate(self._facts):
-                if f[3] == priority_sector:
-                    priority_facts.append(f)
-                    if len(priority_facts) >= max_facts // 2:
-                        break
         
         # Construire les mots-clés de recherche
         search_terms = set()
@@ -136,6 +108,19 @@ class KnowledgeBaseSource:
         for word in re.findall(r'\w+', domain_lower):
             if len(word) >= 3:
                 search_terms.add(word)
+        
+        # 🔑 Ajouter le SECTEUR comme terme de recherche
+        sector_map = {
+            "astronomie": "ASTRONOMIE", "économie": "ECONOMIE", "economie": "ECONOMIE",
+            "histoire": "HISTOIRE", "médecine": "SANTE", "medecine": "SANTE",
+            "sante": "SANTE", "biologie": "BIOLOGIE", "genetique": "BIOLOGIE",
+            "génétique": "BIOLOGIE", "informatique": "INFORMATIQUE",
+            "python": "INFORMATIQUE", "musique": "MUSIQUE",
+        }
+        for key, sec in sector_map.items():
+            if key in domain_lower:
+                search_terms.add(sec.lower())
+                break
         
         # Mots-clés additionnels
         if keywords:
@@ -157,18 +142,9 @@ class KnowledgeBaseSource:
         # Trier par score de pertinence
         ranked = fact_scores.most_common(max_facts * 3)
         
-        # Extraire les faits — PRIORITÉ au secteur
+        # Extraire les faits
         extracted = []
         seen = set()
-        
-        # 1. Ajouter les faits du secteur prioritaire EN PREMIER
-        for f in priority_facts:
-            key = (f[0].lower().strip(), f[1].lower().strip(), f[2].lower().strip())
-            if key not in seen:
-                seen.add(key)
-                extracted.append(f)
-        
-        # 2. Compléter avec les faits par mots-clés
         for idx, score in ranked:
             f = self._facts[idx]
             key = (f[0].lower().strip(), f[1].lower().strip(), f[2].lower().strip())
