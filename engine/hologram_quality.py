@@ -452,6 +452,8 @@ def register_contribution_endpoints(app):
     Enregistre les endpoints de contribution sur une app Flask.
     À appeler depuis le serveur principal.
     """
+    from flask import request, jsonify
+    
     publisher = HologramPublisher()
     
     @app.route('/api/holograms/submit', methods=['POST'])

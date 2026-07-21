@@ -3153,6 +3153,18 @@ def lm_arena_chat():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# 🌟 HOLOGRAM QUALITY — Création communautaire contrôlée
+# ═══════════════════════════════════════════════════════════════════════════════
+
+try:
+    from hologram_quality import register_contribution_endpoints
+    register_contribution_endpoints(app)
+    log.info("🌟 Hologram Quality Pipeline: actif")
+except Exception as e:
+    log.warning(f"🌟 Hologram Quality Pipeline: non disponible ({e})")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # DÉMARRAGE
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -3183,5 +3195,9 @@ if __name__ == '__main__':
     log.info(f"   /api/media/ingest    — ingestion d'image (apprentissage)")
     log.info(f"   /v1/chat/completions — LM Arena (OpenAI-compatible)")
     log.info(f"   /v1/models           — LM Arena model list")
+    log.info(f"   /api/holograms/submit    — 🌟 Soumettre hologramme (qualité)")
+    log.info(f"   /api/holograms/validate  — Valider des faits")
+    log.info(f"   /api/holograms/reputation/:id — Réputation contributeur")
+    log.info(f"   /api/holograms/quality/:id    — Score qualité hologramme")
     log.info("")
     app.run(host='0.0.0.0', port=port, debug=False)
