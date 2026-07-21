@@ -1687,74 +1687,114 @@ def enhance():
 
 PHI = 1.618033988749895
 
-# Acides aminés → propriétés harmoniques
-AMINO_PROPS = {
-    'A': {'hydrophobic': 1.8, 'size': 0.5, 'charge': 0.0, 'phi': 0.62},
-    'R': {'hydrophobic': -4.5, 'size': 2.0, 'charge': 1.0, 'phi': 0.38},
-    'N': {'hydrophobic': -3.5, 'size': 1.0, 'charge': 0.0, 'phi': 0.45},
-    'D': {'hydrophobic': -3.5, 'size': 1.0, 'charge': -1.0, 'phi': 0.41},
-    'C': {'hydrophobic': 2.5, 'size': 0.8, 'charge': 0.0, 'phi': 0.71},
-    'Q': {'hydrophobic': -3.5, 'size': 1.2, 'charge': 0.0, 'phi': 0.43},
-    'E': {'hydrophobic': -3.5, 'size': 1.2, 'charge': -1.0, 'phi': 0.40},
-    'G': {'hydrophobic': -0.4, 'size': 0.0, 'charge': 0.0, 'phi': 0.50},
-    'H': {'hydrophobic': -3.2, 'size': 1.2, 'charge': 0.5, 'phi': 0.44},
-    'I': {'hydrophobic': 4.5, 'size': 1.2, 'charge': 0.0, 'phi': 0.65},
-    'L': {'hydrophobic': 3.8, 'size': 1.2, 'charge': 0.0, 'phi': 0.64},
-    'K': {'hydrophobic': -3.9, 'size': 1.5, 'charge': 1.0, 'phi': 0.37},
-    'M': {'hydrophobic': 1.9, 'size': 1.3, 'charge': 0.0, 'phi': 0.59},
-    'F': {'hydrophobic': 2.8, 'size': 1.5, 'charge': 0.0, 'phi': 0.72},
-    'P': {'hydrophobic': -1.6, 'size': 0.8, 'charge': 0.0, 'phi': 0.33},
-    'S': {'hydrophobic': -0.8, 'size': 0.5, 'charge': 0.0, 'phi': 0.48},
-    'T': {'hydrophobic': -0.7, 'size': 0.8, 'charge': 0.0, 'phi': 0.49},
-    'W': {'hydrophobic': -0.9, 'size': 2.0, 'charge': 0.0, 'phi': 0.68},
-    'Y': {'hydrophobic': -1.3, 'size': 1.5, 'charge': 0.0, 'phi': 0.66},
-    'V': {'hydrophobic': 4.2, 'size': 1.0, 'charge': 0.0, 'phi': 0.63},
-}
-
 @app.route('/api/hpc/protein', methods=['POST'])
 def hpc_protein():
     """
-    Simulation de repliement protéique par résonance harmonique.
-    Body: { "sequence": "ALAARGASN...", "temperature": 310.0, "ph": 7.0 }
+    ALPHAFOLD — Repliement protéique par résonance harmonique déterministe.
+
+    Body: {
+        "sequence": "NLYIQWLKDGGPSSGRPPPS",   # Séquence (code 1 ou 3 lettres)
+        "mode": "predict",                      # "predict" (déterministe) ou "fold" (recuit)
+        "temperature": 310.0,                   # Température initiale (K)
+        "n_steps": 2000,                        # Nombre de pas max
+        "cooling_rate": 0.999,                  # Taux de refroidissement
+        "include_structure": true,              # Inclure les coordonnées 3D
+        "include_energy": true,                 # Inclure la décomposition d'énergie
+    }
+
+    Returns:
+        Résultat complet du repliement harmonique.
     """
     data = request.get_json(force=True, silent=True) or {}
-    sequence = data.get('sequence', '').upper().strip()
+    sequence = data.get('sequence', '').strip().upper()
+    mode = data.get('mode', 'predict')
     temperature = float(data.get('temperature', 310.0))
-    ph = float(data.get('ph', 7.0))
+    n_steps = int(data.get('n_steps', 2000))
+    cooling_rate = float(data.get('cooling_rate', 0.999))
+    include_structure = data.get('include_structure', True)
+    include_energy = data.get('include_energy', True)
 
     if not sequence:
         return jsonify({'error': 'Séquence requise'}), 400
 
-    # Filtrer les acides aminés valides
-    valid = [c for c in sequence if c in AMINO_PROPS]
-    if not valid:
-        return jsonify({'error': 'Aucun acide aminé valide trouvé'}), 400
+    try:
+        from alphafold import (
+            parse_sequence, get_harmonic_profile,
+            ABCProteinFolder, compute_energy, compute_rama_score,
+            structure_summary,
+        )
 
-    n = len(valid)
-    # Énergie libre harmonique (proportionnelle à φ)
-    phi_sum = sum(AMINO_PROPS[aa]['phi'] for aa in valid)
-    free_energy = -phi_sum * 4.2 * PHI
-    confidence = min(0.99, 0.75 + 0.02 * n)
+        # Valider la séquence
+        aas = parse_sequence(sequence)
+        n = len(aas)
+        if n < 3:
+            return jsonify({'error': f'Séquence trop courte ({n} résidus), minimum 3'}), 400
+        if n > 500:
+            return jsonify({'error': f'Séquence trop longue ({n} résidus), maximum 500'}), 400
 
-    # Structure secondaire (approximation harmonique)
-    hydrophobic_sum = sum(AMINO_PROPS[aa]['hydrophobic'] for aa in valid)
-    helix = max(5, min(70, 30 + int(hydrophobic_sum / n * 8)))
-    sheet = max(5, min(50, 25 - int(hydrophobic_sum / n * 5)))
-    loop = 100 - helix - sheet
+        # Profil harmonique
+        profile = get_harmonic_profile(sequence)
 
-    return jsonify({
-        'sequence_length': n,
-        'free_energy_kcal_mol': round(free_energy, 2),
-        'confidence': round(confidence, 3),
-        'secondary_structure': {
-            'helix_percent': helix,
-            'sheet_percent': sheet,
-            'loop_percent': loop,
-        },
-        'harmonic_score': round(confidence, 3),
-        'harmonic_speedup': f'{PHI ** 3:.1f}x',
-        'method': 'Harmonic Wave Interference (φ-optimized)',
-    })
+        # Repliement
+        folder = ABCProteinFolder(sequence)
+
+        if mode == 'predict':
+            result = folder.predict_structure(n_steps=n_steps)
+        else:
+            result = folder.fold(
+                n_steps=n_steps,
+                temperature=temperature,
+                cooling_rate=cooling_rate,
+                learning_rate=1.0,
+                abc_memory=64,
+                verbose=False,
+            )
+
+        # Énergie
+        energy = result.energy.to_dict() if include_energy else None
+
+        # Structure (coordonnées simplifiées)
+        structure_data = None
+        if include_structure and result.structure:
+            structure_data = {
+                'n_residues': result.structure.n_residues,
+                'ca_trace': result.structure.ca_trace.tolist(),
+                'phi_angles': [round(r.phi, 1) for r in result.structure.residues],
+                'psi_angles': [round(r.psi, 1) for r in result.structure.residues],
+                'rama_score': compute_rama_score(result.structure) if n > 3 else None,
+            }
+
+        response_data = {
+            'status': 'completed',
+            'method': 'ALPHAFOLD — Harmonic Deterministic (ABC Fractional Dynamics)',
+            'sequence': sequence,
+            'sequence_length': n,
+            'harmonic_profile': profile,
+            'folding': {
+                'mode': mode,
+                'n_steps': result.n_steps,
+                'converged': result.converged,
+                'elapsed_time_s': round(result.elapsed_time, 2),
+                'harmonic_speedup': f'{PHI ** 3:.1f}x',
+                'initial_energy': result.metadata.get('initial_energy', 0.0),
+                'final_energy': energy.get('total', 0.0) if energy else None,
+                'rmsd_to_initial': round(result.final_rmsd_to_initial, 3),
+            },
+            'energy': energy,
+            'structure': structure_data,
+            'summary': str(result) if not include_structure else None,
+        }
+
+        return jsonify(response_data)
+
+    except ValueError as e:
+        return jsonify({'error': f'Séquence invalide : {str(e)}'}), 400
+    except ImportError as e:
+        return jsonify({'error': f'Module alphafold non disponible : {str(e)}'}), 500
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Erreur de repliement : {str(e)}'}), 500
 
 
 @app.route('/api/hpc/quantum', methods=['POST'])
