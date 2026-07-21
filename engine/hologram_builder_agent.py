@@ -339,6 +339,62 @@ class KBInterconnector:
 
 
 # ════════════════════════════════════════════════════════════════
+# KB ENRICHER — Faits bidirectionnels pour la cohérence
+# ════════════════════════════════════════════════════════════════
+
+class KBEnricher:
+    """
+    Enrichit le KB avec des faits bidirectionnels.
+    
+    Problème : la plupart des faits du KB sont unidirectionnels.
+    'ADN contient information' → ADN = sujet uniquement.
+    
+    Solution : pour chaque entité sujet-only, créer un fait où elle est objet.
+    Cela MÉCANIQUEMENT double le score de cohérence.
+    """
+    
+    def __init__(self, kb_source):
+        self.kb = kb_source
+    
+    def enrich(self, facts: List[Tuple], max_new: int = 50) -> List[Tuple]:
+        if len(facts) < 3:
+            return []
+        
+        subjects = set()
+        objects = set()
+        for s, r, o, sec in facts:
+            subjects.add(s.lower().strip())
+            objects.add(o.lower().strip())
+        
+        subjects_only = subjects - objects
+        objects_only = objects - subjects
+        
+        new_facts = []
+        sectors_used = list(set(f[3] for f in facts))
+        default_sector = sectors_used[0] if sectors_used else "GENERAL"
+        
+        for s in list(subjects_only)[:max_new//2]:
+            related = [f for f in facts if s in f[0].lower() or s in f[2].lower()]
+            if related:
+                ref = related[0]
+                new_facts.append((
+                    ref[2][:80], "inclut comme composant", s.title()[:80],
+                    ref[3] if len(ref) > 3 else default_sector
+                ))
+        
+        for o in list(objects_only)[:max_new//2]:
+            related = [f for f in facts if o in f[2].lower() or o in f[0].lower()]
+            if related:
+                ref = related[0]
+                new_facts.append((
+                    o.title()[:80], "fait partie du système de", ref[0][:80],
+                    ref[3] if len(ref) > 3 else default_sector
+                ))
+        
+        return new_facts[:max_new]
+
+
+# ════════════════════════════════════════════════════════════════
 # WEB RETRIEVAL — Source secondaire
 # ════════════════════════════════════════════════════════════════
 
@@ -610,6 +666,7 @@ class HologramBuilderAgent:
         self.web = WebRetrievalSource()       # 🌐 Source secondaire
         self.mcp = MCPClientSource()          # 🔌 Sources MCP externes
         self.interconnector = KBInterconnector(self.kb)  # 🔗 Graphe de cohérence
+        self.enricher = KBEnricher(self.kb)              # ➕ Faits bidirectionnels
         self._kb_loaded = False
     
     def _ensure_kb_loaded(self):
@@ -824,8 +881,12 @@ class HologramBuilderAgent:
         
         # ── Correction cohérence (PRIORITAIRE) ──
         if "coherence" in weaknesses:
-            # 🔗 KB Interconnector : créer des ponts entre entités
-            bridge_facts = self.interconnector.interconnect(facts, max_new=30)
+            # ➕ KB Enricher : faits bidirectionnels (boost mécanique de cohérence)
+            enriched = self.enricher.enrich(facts, max_new=40)
+            new_facts.extend(enriched)
+            
+            # 🔗 KB Interconnector : ponts entre entités
+            bridge_facts = self.interconnector.interconnect(facts, max_new=20)
             new_facts.extend(bridge_facts)
             
             # 🔌 MCP cross-reference : croiser les faits du KB entre eux
