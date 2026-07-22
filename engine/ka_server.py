@@ -437,6 +437,29 @@ _wave_debugger = None
 # ── Harmonic Style (import paresseux) ─────────────────────────────────────────
 _harmonic_styler = None
 
+# ── DeepSeek Style Fallback (import paresseux) ────────────────────────────────
+_deepseek_styler = None
+
+def _polish_with_deepseek(response_text: str, user_message: str = "") -> str:
+    """Polissage final par DeepSeek — reformule sans ajouter d'information."""
+    global _deepseek_styler
+    if _deepseek_styler is None:
+        try:
+            from llm.deepseek_styler import DeepSeekStyleFormatter
+            _deepseek_styler = DeepSeekStyleFormatter()
+            if not _deepseek_styler.enabled:
+                _deepseek_styler = False  # marqueur: désactivé, ne pas réessayer
+        except Exception:
+            _deepseek_styler = False
+    if _deepseek_styler is False:
+        return response_text
+    if not response_text or len(response_text) < 30:
+        return response_text
+    try:
+        return _deepseek_styler.polish(response_text, user_message)
+    except Exception:
+        return response_text
+
 def _style_response(response_text: str, user_message: str = "") -> str:
     """Applique le style harmonique (empathie + vocabulaire + diversité)."""
     global _harmonic_styler
@@ -697,6 +720,10 @@ def chat():
     # 🎨 Style harmonique : rendre la réponse plus agréable
     if not is_page and response and len(response) > 30:
         response = _style_response(response, message)
+
+    # 🎨 DeepSeek Style Fallback : reformulation élégante (sans ajout d'info)
+    if not is_page and response and len(response) > 30:
+        response = _polish_with_deepseek(response, message)
 
     return jsonify({
         'response': response,

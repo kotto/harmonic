@@ -1108,6 +1108,14 @@ class HarmonicAI:
         except ImportError:
             pass
 
+        # 🎨 DeepSeek Style Fallback : reformulation élégante (sans ajout d'info)
+        if response and len(response) > 30:
+            try:
+                from llm.deepseek_styler import polish_response
+                response = polish_response(response, question)
+            except Exception:
+                pass
+
         # ── 5. SEUIL DE REFUS CALIBRÉ — anti-hallucination structurelle ──
         # C'est le mécanisme qui rend "zéro hallucination" vrai et mesurable :
         # si, après tous les fallbacks, la réponse vient du retrieval interne ET
