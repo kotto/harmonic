@@ -500,16 +500,17 @@ class WaveGPT:
 
             # a) Mots de contenu sémantiquement proches du contexte (top-K par cohérence)
             if seed_psis:
-                # Pool dominé par les seeds et leurs voisins
-                for sw, psi_sw in seed_psis:
-                    candidate_pool.add(sw)
-                    # Ajouter les mots les plus cohérents avec ce seed
-                    pool_scores = {}
-                    for w, psi_w in vocab.items():
-                        if len(w) >= 4 and w not in FUNCTION_WORDS:
-                            pool_scores[w] = float(np.real(np.dot(psi_w.conj(), psi_sw)))
-                    for w, _ in sorted(pool_scores.items(), key=lambda x: -x[1])[:10]:
-                        candidate_pool.add(w)
+                    # Pool dominé par les seeds et leurs voisins
+                    for sw, psi_sw in seed_psis:
+                        candidate_pool.add(sw)
+                        # Ajouter les mots les plus cohérents avec ce seed
+                        pool_scores = {}
+                        for w, psi_w in vocab.items():
+                            if len(w) >= 3 and w not in FUNCTION_WORDS:
+                                pool_scores[w] = float(np.real(np.dot(psi_w.conj(), psi_sw)))
+                        # Top 25 voisins par seed (plus de diversité)
+                        for w, _ in sorted(pool_scores.items(), key=lambda x: -x[1])[:25]:
+                            candidate_pool.add(w)
             else:
                 # Pas de seeds : prendre les top-K par cohérence avec le contexte
                 pool_scores = {}
