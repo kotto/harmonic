@@ -315,6 +315,7 @@ class WaveGPT:
 
         # Bigram transition table (construit depuis le corpus si disponible)
         self._bigram_followers: Dict[str, List[str]] = {}
+        self._trigram_followers: Dict[tuple, List[str]] = {}
         self._bigram_boost: float = 0.4  # poids de la contrainte bigramme
 
         # Tokens spéciaux
@@ -820,8 +821,8 @@ class WaveGPT:
                                 perplexity=0, n_tokens=len(selected),
                                 elapsed_ms=(time.time()-t_start)*1000)
 
-        # 3. Ordonner les mots sélectionnés par compatibilité bigramme (algorithme glouton)
-        # Commencer par le mot le plus proche du prompt
+        # 3. Ordonner les mots sélectionnés par compatibilité n-gramme
+        # Utiliser bigrammes + trigrammes pour un ordonnancement naturel
         prompt_last = prompt_tokens[-1].lower()
         followers = self._bigram_followers.get(prompt_last, [])
 
@@ -834,8 +835,7 @@ class WaveGPT:
         for w in remaining:
             score = 0
             if w in followers:
-                score = len(followers) - followers.index(w)  # rang élevé = bon
-            # Aussi vérifier la cohérence avec le prompt
+                score = len(followers) - followers.index(w)
             if w in vocab and prompt_last in vocab:
                 score += float(np.real(np.dot(vocab[w].conj(), vocab[prompt_last])))
             if score > best_first_score:
@@ -846,7 +846,7 @@ class WaveGPT:
             ordered.append(best_first)
             remaining.remove(best_first)
 
-        # Mots suivants: greedy best bigram match
+        # Mots suivants: greedy avec bigram + trigram
         while remaining:
             last = ordered[-1]
             last_followers = self._bigram_followers.get(last, [])
@@ -854,16 +854,28 @@ class WaveGPT:
             best_next_score = -999
 
             for w in remaining:
-                score = 0
+                score = 0.0
+                # Bigram score
                 if w in last_followers:
-                    score = len(last_followers) - last_followers.index(w)
+                    score += len(last_followers) - last_followers.index(w)
                 if w in vocab and last in vocab:
-                    score += float(np.real(np.dot(vocab[w].conj(), vocab[last])))
-                # Bonus: éviter de prendre un mot déjà proche du précédent
+                    score += float(np.real(np.dot(vocab[w].conj(), vocab[last]))) * 3.0
+
+                # Trigram score (si on a au moins 2 mots dans ordered)
                 if len(ordered) >= 2:
-                    prev = ordered[-2]
-                    if w in self._bigram_followers.get(prev, []):
-                        score -= 2  # pénalité si ça formerait un trigramme trop attendu
+                    prev2 = ordered[-2]
+                    # Chercher dans le modèle trigramme
+                    trigram_key = (prev2, last)
+                    trigram_followers = self._trigram_followers.get(trigram_key, [])
+                    if w in trigram_followers:
+                        score += (len(trigram_followers) - trigram_followers.index(w)) * 2.0
+
+                # Pénalité si le mot suivrait trop bien le mot d'avant (évite monotonie)
+                if len(ordered) >= 2:
+                    prev2 = ordered[-2]
+                    if w in self._bigram_followers.get(prev2, [])[:5]:
+                        score -= 1.0
+
                 if score > best_next_score:
                     best_next_score = score
                     best_next = w
@@ -872,38 +884,41 @@ class WaveGPT:
                 ordered.append(best_next)
                 remaining.remove(best_next)
             else:
-                # Aucun bon candidat: prendre le meilleur score restant
                 ordered.extend(remaining)
                 break
 
-        # 4. Insérer des mots fonctionnels pour fluidifier (avec PARCIMONIE)
-        function_bridges = ['de', 'du', 'des', 'dans', 'sur', 'avec', 'pour', 'par',
-                           'et', 'qui', 'que', 'est', 'un', 'une', 'le', 'la', 'les',
-                           'son', 'sa', 'ses', 'leur', 'leurs']
-
+        # 4. Formater avec des PATTERNS NATURELS: X et Y, X, Y et Z, X de Y
         final_tokens = list(prompt_tokens)
         prev = prompt_tokens[-1].lower() if prompt_tokens else 'le'
 
-        for word in ordered:
+        i = 0
+        while i < len(ordered):
+            group = [ordered[i]]
+            if i + 1 < len(ordered):
+                w1, w2 = ordered[i], ordered[i+1]
+                # Transition directe possible?
+                if w2 in self._bigram_followers.get(w1, [])[:30]:
+                    group.append(w2)
+                    i += 1
+                # "et" connecteur?
+                elif 'et' in self._bigram_followers.get(w1, [])[:30]:
+                    group.extend(['et', w2])
+                    i += 1
+                # "de" description?
+                elif 'de' in self._bigram_followers.get(w1, [])[:30]:
+                    group.extend(['de', w2])
+                    i += 1
+                # virgule par défaut
+                else:
+                    group.append(',')
+            i += 1
 
-            # Insérer un pont fonctionnel SEULEMENT si la transition directe est impossible
-            need_bridge = False
-            if prev not in self._bigram_followers or word not in self._bigram_followers.get(prev, [])[:10]:
-                # Vérifier si un pont existe
-                best_bridge = None
-                for bridge in ['de', 'du', 'des', 'le', 'la', 'les', 'et', 'dans', 'sur', 'avec', 'pour', 'par', 'qui', 'que']:
-                    if bridge in vocab:
-                        fwd = bridge in self._bigram_followers.get(prev, [])[:15]
-                        bwd = word in self._bigram_followers.get(bridge, [])[:15]
-                        if fwd or bwd:
-                            best_bridge = bridge
-                            break
-                if best_bridge:
-                    final_tokens.append(best_bridge)
-                    prev = best_bridge
-
-            final_tokens.append(word)
-            prev = word
+            for token in group:
+                if token == ',':
+                    if final_tokens and not final_tokens[-1].endswith(','):
+                        final_tokens[-1] = final_tokens[-1] + ','
+                else:
+                    final_tokens.append(token)
 
         generated_text = " ".join(final_tokens)
 
