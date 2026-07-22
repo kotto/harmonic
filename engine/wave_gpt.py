@@ -687,6 +687,250 @@ class WaveGPT:
             elapsed_ms=elapsed,
         )
 
+    # ═══════════════════════════════════════════════════════════════════════
+    # GÉNÉRATION SIMULTANÉE (bag-of-words ordonné par bigrammes)
+    # ═══════════════════════════════════════════════════════════════════════
+
+    def generate_simultaneous(self, prompt: str,
+                               max_tokens: int = 20,
+                               seed_words: Optional[List[str]] = None,
+                               function_penalty: float = 0.4) -> WaveGPTResult:
+        """
+        Génère du texte en DÉCODAGE SIMULTANÉ (non-séquentiel).
+
+        Au lieu de générer mot par mot (ce qui crée des cycles), cette méthode :
+        1. Sélectionne TOUS les mots de contenu d'un coup (top-K par cohérence)
+        2. Les ordonne par compatibilité bigramme (algorithme glouton)
+        3. Insère des mots fonctionnels minimaux entre les mots de contenu
+
+        Cela évite l'effet de cycle car il n'y a pas de boucle de rétroaction.
+
+        Args:
+            prompt: texte de départ
+            max_tokens: nombre de mots de contenu à générer
+            seed_words: mots de contenu à privilégier
+            function_penalty: pénalité pour les mots fonctionnels
+
+        Returns:
+            WaveGPTResult
+        """
+        t_start = time.time()
+
+        prompt_tokens = prompt.strip().split()
+        if not prompt_tokens:
+            prompt_tokens = ["le"]
+
+        vocab = self._build_vocabulary(prompt_tokens)
+        # 🌊 Pour la génération simultanée, on utilise le vocabulaire COMPLET de l'encodeur
+        if hasattr(self.encoder, 'vocab') and isinstance(self.encoder.vocab, dict):
+            for w in self.encoder.vocab:
+                if w not in vocab:
+                    vocab[w] = self._encode_word(w)
+
+        FUNCTION_WORDS = frozenset([
+            'le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'au', 'aux',
+            'et', 'ou', 'donc', 'car', 'mais', 'ni', 'or', 'si', 'ce', 'cette',
+            'ces', 'son', 'sa', 'ses', 'leur', 'leurs', 'mon', 'ton', 'notre',
+            'votre', 'mes', 'tes', 'nos', 'vos', 'qui', 'que', 'quoi',
+        ])
+
+        # 🎯 MOTS GÉNÉRIQUES EXCLUS du pool (jamais sélectionnés comme contenu)
+        HARD_GENERIC = frozenset([
+            'très', 'bien', 'tout', 'tous', 'toute', 'toutes',
+            'petit', 'petite', 'petits', 'petites',
+            'grand', 'grande', 'grands', 'grandes',
+            'toujours', 'jamais', 'encore', 'déjà',
+            'faire', 'fait', 'être', 'avoir', 'peut', 'peuvent',
+            'vrai', 'faux', 'bon', 'mal', 'autre', 'même', 'autres',
+            'nouveau', 'nouvelle', 'nouveaux', 'nouvelles',
+            'sans', 'avec', 'dans', 'sur', 'sous', 'pour', 'par',
+            'plus', 'moins', 'trop', 'peu', 'beaucoup',
+            'celui', 'celle', 'ceux', 'celles',
+            'alors', 'ainsi', 'donc', 'car', 'mais', 'ou', 'et',
+            'comme', 'que', 'qui', 'quoi', 'dont', 'où',
+            'aussi', 'très', 'si', 'non', 'oui',
+            'cela', 'ceci', 'cette', 'ces',
+            'tout', 'rien', 'chaque', 'quelque', 'plusieurs',
+            'leur', 'leurs', 'notre', 'nos', 'votre', 'vos',
+        ])
+
+        # 1. Construire le pool de mots de contenu
+        seed_psis = []
+        if seed_words:
+            for sw in seed_words:
+                psi = self._encode_word(sw.lower().strip())
+                if psi is not None:
+                    seed_psis.append((sw.lower().strip(), psi))
+
+        # Pool: seeds + top voisins sémantiques
+        content_pool = set()
+        if seed_psis:
+            for sw, psi_sw in seed_psis:
+                content_pool.add(sw)
+                pool_scores = {}
+                for w, psi_w in vocab.items():
+                    if len(w) >= 4 and w not in FUNCTION_WORDS and w not in HARD_GENERIC:
+                        pool_scores[w] = float(np.real(np.dot(psi_w.conj(), psi_sw)))
+                for w, _ in sorted(pool_scores.items(), key=lambda x: -x[1])[:20]:
+                    content_pool.add(w)
+
+        if not content_pool:
+            # Fallback: prendre les mots les plus cohérents avec le prompt
+            psi_prompt = self._encode_word(prompt_tokens[-1])
+            pool_scores = {}
+            for w, psi_w in vocab.items():
+                if len(w) >= 4 and w not in FUNCTION_WORDS:
+                    pool_scores[w] = float(np.real(np.dot(psi_w.conj(), psi_prompt)))
+            for w, _ in sorted(pool_scores.items(), key=lambda x: -x[1])[:max_tokens * 2]:
+                content_pool.add(w)
+
+        # 2. Scorer tous les mots du pool
+        psi_ctx = np.zeros(self.dim, dtype=complex)
+        if seed_psis:
+            psi_ctx = np.mean([p for _, p in seed_psis], axis=0)
+            psi_ctx = psi_ctx / np.linalg.norm(psi_ctx)
+        else:
+            psi_ctx = self._encode_word(prompt_tokens[-1])
+
+        genericity = getattr(self.encoder, 'genericity', {})
+        scored_words = []
+        for w in content_pool:
+            if w not in vocab:
+                continue
+            psi_w = vocab[w]
+            score = float(np.real(np.dot(psi_ctx.conj(), psi_w)))
+            gen = genericity.get(w, 0)
+            score -= gen * 1.5  # pénalité généricité IDF
+            if w in FUNCTION_WORDS:
+                score -= function_penalty
+            # Seed boost
+            if w in [s for s, _ in seed_psis]:
+                score += 1.5
+            scored_words.append((w, score))
+
+        # Trier et prendre les max_tokens meilleurs (en excluant les mots du prompt)
+        prompt_words_set = set(p.lower() for p in prompt_tokens)
+        scored_words = [(w, s) for w, s in scored_words if w.lower() not in prompt_words_set]
+        scored_words.sort(key=lambda x: -x[1])
+        selected = [w for w, _ in scored_words[:max_tokens]]
+
+        if len(selected) < 3:
+            return WaveGPTResult(text=" ".join(selected), tokens=selected,
+                                psi_sequence=[], coherence_scores=[],
+                                perplexity=0, n_tokens=len(selected),
+                                elapsed_ms=(time.time()-t_start)*1000)
+
+        # 3. Ordonner les mots sélectionnés par compatibilité bigramme (algorithme glouton)
+        # Commencer par le mot le plus proche du prompt
+        prompt_last = prompt_tokens[-1].lower()
+        followers = self._bigram_followers.get(prompt_last, [])
+
+        ordered = []
+        remaining = list(selected)
+
+        # Premier mot: celui qui suit le plus naturellement le prompt
+        best_first = None
+        best_first_score = -999
+        for w in remaining:
+            score = 0
+            if w in followers:
+                score = len(followers) - followers.index(w)  # rang élevé = bon
+            # Aussi vérifier la cohérence avec le prompt
+            if w in vocab and prompt_last in vocab:
+                score += float(np.real(np.dot(vocab[w].conj(), vocab[prompt_last])))
+            if score > best_first_score:
+                best_first_score = score
+                best_first = w
+
+        if best_first:
+            ordered.append(best_first)
+            remaining.remove(best_first)
+
+        # Mots suivants: greedy best bigram match
+        while remaining:
+            last = ordered[-1]
+            last_followers = self._bigram_followers.get(last, [])
+            best_next = None
+            best_next_score = -999
+
+            for w in remaining:
+                score = 0
+                if w in last_followers:
+                    score = len(last_followers) - last_followers.index(w)
+                if w in vocab and last in vocab:
+                    score += float(np.real(np.dot(vocab[w].conj(), vocab[last])))
+                # Bonus: éviter de prendre un mot déjà proche du précédent
+                if len(ordered) >= 2:
+                    prev = ordered[-2]
+                    if w in self._bigram_followers.get(prev, []):
+                        score -= 2  # pénalité si ça formerait un trigramme trop attendu
+                if score > best_next_score:
+                    best_next_score = score
+                    best_next = w
+
+            if best_next and best_next_score > -100:
+                ordered.append(best_next)
+                remaining.remove(best_next)
+            else:
+                # Aucun bon candidat: prendre le meilleur score restant
+                ordered.extend(remaining)
+                break
+
+        # 4. Insérer des mots fonctionnels pour fluidifier (avec PARCIMONIE)
+        function_bridges = ['de', 'du', 'des', 'dans', 'sur', 'avec', 'pour', 'par',
+                           'et', 'qui', 'que', 'est', 'un', 'une', 'le', 'la', 'les',
+                           'son', 'sa', 'ses', 'leur', 'leurs']
+
+        final_tokens = list(prompt_tokens)
+        prev = prompt_tokens[-1].lower() if prompt_tokens else 'le'
+
+        for word in ordered:
+
+            # Insérer un pont fonctionnel SEULEMENT si la transition directe est impossible
+            need_bridge = False
+            if prev not in self._bigram_followers or word not in self._bigram_followers.get(prev, [])[:10]:
+                # Vérifier si un pont existe
+                best_bridge = None
+                for bridge in ['de', 'du', 'des', 'le', 'la', 'les', 'et', 'dans', 'sur', 'avec', 'pour', 'par', 'qui', 'que']:
+                    if bridge in vocab:
+                        fwd = bridge in self._bigram_followers.get(prev, [])[:15]
+                        bwd = word in self._bigram_followers.get(bridge, [])[:15]
+                        if fwd or bwd:
+                            best_bridge = bridge
+                            break
+                if best_bridge:
+                    final_tokens.append(best_bridge)
+                    prev = best_bridge
+
+            final_tokens.append(word)
+            prev = word
+
+        generated_text = " ".join(final_tokens)
+
+        # Supprimer les doublons consécutifs
+        words = generated_text.split()
+        cleaned = []
+        for w in words:
+            if not cleaned or w.lower() != cleaned[-1].lower():
+                cleaned.append(w)
+        generated_text = " ".join(cleaned)
+
+        # Capitalize
+        if generated_text:
+            generated_text = generated_text[0].upper() + generated_text[1:]
+
+        elapsed = (time.time() - t_start) * 1000
+
+        return WaveGPTResult(
+            text=generated_text,
+            tokens=final_tokens,
+            psi_sequence=[],
+            coherence_scores=[],
+            perplexity=1.0,
+            n_tokens=len(final_tokens) - len(prompt_tokens),
+            elapsed_ms=elapsed,
+        )
+
     def stream_generate(self, prompt: str, **kwargs):
         """
         Génération en streaming (generator).
