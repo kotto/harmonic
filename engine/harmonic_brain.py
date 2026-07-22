@@ -201,6 +201,41 @@ try:
 except ImportError:
     WaveConversation = None
 
+# 🌊 Wave Sampling — échantillonnage par cohérence (température, top-p, top-k)
+_WAVE_SAMPLER_AVAILABLE = False
+try:
+    from wave_sampling import WaveSampler
+    _WAVE_SAMPLER_AVAILABLE = True
+except ImportError:
+    WaveSampler = None
+
+# 📊 Wave Perplexity — entropie ondulatoire et métriques de confiance
+_WAVE_PERPLEXITY_AVAILABLE = False
+try:
+    from wave_perplexity import (
+        wave_entropy, wave_perplexity, generation_quality,
+        coherence_perplexity, confidence as wave_confidence,
+        coherence_margin,
+    )
+    _WAVE_PERPLEXITY_AVAILABLE = True
+except ImportError:
+    wave_entropy = None
+    wave_perplexity = None
+    generation_quality = None
+    coherence_perplexity = None
+    wave_confidence = None
+    coherence_margin = None
+
+# 🔀 Wave Beam Search — interférence multi-chemin
+_WAVE_BEAM_AVAILABLE = False
+try:
+    from beam_search import WaveBeamSearch, interference_matrix, select_constructive
+    _WAVE_BEAM_AVAILABLE = True
+except ImportError:
+    WaveBeamSearch = None
+    interference_matrix = None
+    select_constructive = None
+
 log = logging.getLogger(__name__)
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1559,9 +1594,25 @@ class HarmonicBrain:
 
         # 📖 WAVE NARRATIVE — synthèse structurée pour réponses détaillées
         self._narrative = None
-        if _WAVE_NARRATIVE_AVAILABLE and WaveNarrative is not None:
+        if _WAVE_NARRATIVE_AVAILABLE:
             try:
                 self._narrative = WaveNarrative(dim=dim)
+            except Exception:
+                pass
+
+        # 🌊 Wave Sampler — génération mot par mot par cohérence de phase
+        self._wave_sampler = None
+        if _WAVE_SAMPLER_AVAILABLE:
+            try:
+                self._wave_sampler = WaveSampler()
+            except Exception:
+                pass
+
+        # 🔀 Wave Beam Search — raisonnement multi-chemin avec interférence
+        self._wave_beam = None
+        if _WAVE_BEAM_AVAILABLE:
+            try:
+                self._wave_beam = WaveBeamSearch(beam_width=5)
             except Exception:
                 pass
 
@@ -2453,43 +2504,74 @@ class HarmonicBrain:
                     total_time_ms=total_time,
                 )
 
-        # ── 2c. RAISONNEMENT PROFOND (Phase Amplifier) ──
-        # Si le conscient intelligent n'a pas trouvé, tenter la propagation amplifiée
-        if self._deep_reasoner is not None and (not accepted or
-                (accepted and accepted[0].confidence < 0.5)):
-            try:
-                # Essayer d'abord le multi-branche (plus puissant)
-                deep_answer = self._deep_reasoner.reason_deep_multi(
-                    question, max_depth=7, beam_width=3
-                )
-                if deep_answer and len(deep_answer) > 40:
-                    response = self._style_response(deep_answer, question, accepted, lang, candidates)
-                    total_time = (time.time() - t_start) * 1000
-                    return BrainResult(
-                        response=response,
-                        confidence=0.70,
-                        facts_used=accepted,
-                        facts_rejected=rejected,
-                        retrieval_count=retrieval_count,
-                        total_time_ms=total_time,
-                    )
-            except Exception:
-                # Fallback : mono-branche simple
+        # ── 2c. RAISONNEMENT PROFOND (Phase Amplifier + Beam Search) ──
+        # 🌊 UPGRADE : exécuté SYSTÉMATIQUEMENT (plus seulement en fallback)
+        # Le raisonnement profond par propagation de phase est le cœur du système.
+        # Il s'exécute en parallèle du retrieval, pas seulement quand celui-ci échoue.
+        if self._deep_reasoner is not None:
+            deep_answer = None
+            deep_confidence = 0.0
+
+            # 🔀 Beam Search ondulatoire : interférence multi-chemin
+            if self._wave_beam is not None and self.unconscious.encoder is not None:
                 try:
-                    deep_answer = self._deep_reasoner.reason_deep(question, max_depth=7)
-                    if deep_answer and len(deep_answer) > 40:
-                        response = self._style_response(deep_answer, question, accepted, lang, candidates)
-                        total_time = (time.time() - t_start) * 1000
-                        return BrainResult(
-                            response=response,
-                            confidence=0.65,
-                            facts_used=accepted,
-                            facts_rejected=rejected,
-                            retrieval_count=retrieval_count,
-                            total_time_ms=total_time,
-                        )
+                    psi_q = self.unconscious.encoder.encode_query(weighted_question)
+                    # Utiliser le vocabulaire des faits acceptés comme espace de recherche
+                    if accepted and psi_q is not None:
+                        vocab = {}
+                        for rec in accepted:
+                            if rec.psi is not None:
+                                vocab[rec.sujet] = rec.psi
+                        if vocab:
+                            self._wave_beam.vocabulary = vocab
+                            paths = self._wave_beam.search(psi_q, max_steps=8,
+                                                           interference_strength=0.3)
+                            if paths and paths[0].amplitude > 0.3:
+                                deep_answer = " ".join(paths[0].tokens)
+                                deep_confidence = paths[0].amplitude
                 except Exception:
-                    pass
+                    pass  # Fallback vers PhaseAmplifier simple
+
+            # PhaseAmplifier : fallback si Beam Search n'a pas donné
+            if not deep_answer:
+                try:
+                    deep_answer = self._deep_reasoner.reason_deep_multi(
+                        question, max_depth=7, beam_width=3
+                    )
+                    if deep_answer:
+                        deep_confidence = 0.70
+                except Exception:
+                    try:
+                        deep_answer = self._deep_reasoner.reason_deep(
+                            question, max_depth=7
+                        )
+                        if deep_answer:
+                            deep_confidence = 0.65
+                    except Exception:
+                        pass
+
+            # Fusionner le raisonnement profond avec le retrieval
+            if deep_answer and len(deep_answer) > 30:
+                # Si le retrieval a aussi des résultats, fusionner par cohérence
+                if accepted:
+                    # Ajouter le raisonnement profond comme un « fait » supplémentaire
+                    response = self._style_response(
+                        deep_answer, question, accepted, lang, candidates
+                    )
+                else:
+                    response = self._style_response(
+                        deep_answer, question, [], lang, candidates
+                    )
+                total_time = (time.time() - t_start) * 1000
+                return BrainResult(
+                    response=response,
+                    confidence=max(0.70, deep_confidence),
+                    facts_used=accepted,
+                    facts_rejected=rejected,
+                    retrieval_count=retrieval_count,
+                    reasoning_method='phase_amplifier' + ('_beam' if self._wave_beam else ''),
+                    total_time_ms=total_time,
+                )
 
         # ── 3. EXPRESSION : adaptée au type de question ──
         # 🆕 RÉPONSE DÉTAILLÉE : si depth='détaillé', tenter la synthèse narrative
@@ -2505,9 +2587,54 @@ class HarmonicBrain:
 
         total_time = (time.time() - t_start) * 1000
 
+        # 🌊 UPGRADE : Confiance hybride (TF-IDF + Cohérence de phase + Perplexité)
         confidence = 0.0
+        confidence_detail = {}
+
         if accepted:
-            confidence = sum(r.confidence for r in accepted) / len(accepted)
+            # 1. Confiance TF-IDF classique
+            tfidf_conf = sum(r.confidence for r in accepted) / len(accepted)
+
+            # 2. Confiance par cohérence de phase
+            wave_scores = {}
+            if self.unconscious.encoder is not None:
+                try:
+                    psi_q = self.unconscious.encoder.encode_query(weighted_question)
+                    if psi_q is not None and not np.all(psi_q == 0):
+                        for rec in accepted:
+                            if rec.psi is not None:
+                                wave_scores[rec.sujet] = float(
+                                    np.real(np.dot(rec.psi, np.conj(psi_q)))
+                                )
+                        if wave_scores:
+                            # Confiance = concentration des scores de cohérence
+                            ppl = None
+                            if coherence_perplexity is not None:
+                                ppl = coherence_perplexity(wave_scores)
+                                # Basse perplexité → haute confiance
+                                wave_conf = 1.0 / (1.0 + math.log(max(ppl, 1.0)))
+                            elif wave_confidence is not None:
+                                wave_conf = wave_confidence(wave_scores)
+                            else:
+                                wave_conf = (max(wave_scores.values()) + 1.0) / 2.0
+
+                            confidence_detail['wave_coherence'] = round(wave_conf, 3)
+                            confidence_detail['coherence_perplexity'] = round(ppl, 1) if ppl is not None else None
+                        else:
+                            wave_conf = tfidf_conf
+                    else:
+                        wave_conf = tfidf_conf
+                except Exception:
+                    wave_conf = tfidf_conf
+            else:
+                wave_conf = tfidf_conf
+
+            # 3. Fusion : moyenne pondérée (TF-IDF + Cohérence)
+            confidence = 0.4 * tfidf_conf + 0.6 * wave_conf
+            confidence_detail['tfidf'] = round(tfidf_conf, 3)
+            confidence_detail['hybrid'] = round(confidence, 3)
+        else:
+            confidence_detail = {'tfidf': 0.0, 'wave_coherence': 0.0, 'hybrid': 0.0}
 
         # 🌐 FALLBACK WEB : si confiance trop faible, tenter Internet
         if confidence < 0.35 and self._web is not None:
@@ -3081,7 +3208,11 @@ class HarmonicBrain:
 
     def _express(self, facts: List[FactRecord], question: str,
                  parsed: StructuredPrompt = None) -> str:
-        """Exprime les faits validés — adaptatif au type de question."""
+        """Exprime les faits validés — adaptatif au type de question.
+
+        🌊 UPGRADE : utilise WaveSampler (sélection par cohérence de phase)
+        comme alternative aux templates pour plus de fluidité et diversité.
+        """
         if not facts:
             sujet = question.strip('?.,!;: ')[:80]
             if parsed and parsed.lang == 'en':
@@ -3089,6 +3220,66 @@ class HarmonicBrain:
             return f"Je n'ai pas assez d'éléments sur « {sujet} » pour répondre avec confiance."
 
         lang = parsed.lang if parsed else 'fr'
+
+        # 🌊 WAVE SAMPLING : génération mot par mot par cohérence de phase
+        # Active si le sampler est disponible ET que le mode n'est pas strictement template
+        if self._wave_sampler is not None and self.unconscious.encoder is not None:
+            try:
+                psi_q = self.unconscious.encoder.encode_query(question)
+                if psi_q is not None and not np.all(psi_q == 0):
+                    # Construire le vocabulaire à partir des faits acceptés
+                    vocab = {}
+                    for rec in facts:
+                        if rec.psi is not None:
+                            vocab[rec.sujet] = rec.psi
+                            vocab[rec.relation] = rec.psi * 0.8  # pondération réduite
+                            vocab[rec.objet] = rec.psi * 0.7
+
+                    if len(vocab) >= 2:
+                        # Sélectionner les mots par cohérence avec la question
+                        sampler = self._wave_sampler
+                        sampler.set_vocabulary(vocab)
+
+                        # Générer une séquence de mots cohérents
+                        words = []
+                        psi_current = psi_q.copy()
+                        for _ in range(min(len(facts) * 5, 30)):  # max 30 mots
+                            word = sampler.deterministic(psi_current)
+                            if not word:
+                                break
+                            words.append(word)
+                            # Faire évoluer le contexte : superposition
+                            if word in vocab:
+                                psi_current = psi_current + vocab[word]
+                                psi_current = psi_current / np.linalg.norm(psi_current)
+
+                        # Dédupliquer et assembler
+                        seen = set()
+                        unique_words = []
+                        for w in words:
+                            if w not in seen:
+                                seen.add(w)
+                                unique_words.append(w)
+
+                        if len(unique_words) >= 2:
+                            # Assembler en phrase avec le composer si disponible
+                            wave_response = " ".join(unique_words).capitalize() + "."
+                            if self.composer is not None:
+                                try:
+                                    from question_analyzer import analyze_question
+                                    intent = analyze_question(question)
+                                    fact_tuples = [(f.sujet, f.relation, f.objet, f.secteur)
+                                                  for f in facts]
+                                    composed = self.composer.compose(intent, fact_tuples, lang=lang)
+                                    if composed and len(composed) > 10:
+                                        return composed
+                                except Exception:
+                                    pass
+                            # Fallback : enrichir la réponse wave avec le premier fait
+                            if len(wave_response) > 20:
+                                return wave_response
+            except Exception:
+                pass  # Fallback silencieux vers les templates
 
         # 🔥 COMPOSER NATUREL (30+ micro-structures linguistiques)
         # Remplace la concaténation brute "X relation Y. Z relation W."
