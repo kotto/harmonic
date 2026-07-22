@@ -2599,6 +2599,15 @@ class HarmonicBrain:
                     total_time_ms=total_time,
                 )
 
+        # ── 2.5. PLAN SÉMANTIQUE WAVE GPT ──
+        # Si des faits sont disponibles, Wave GPT planifie les mots de contenu
+        semantic_plan = None
+        if accepted and self._wave_gpt is not None:
+            try:
+                semantic_plan = self.structure_response(question, accepted, max_tokens=15)
+            except Exception:
+                pass
+
         # ── 3. EXPRESSION : adaptée au type de question ──
         # 🆕 RÉPONSE DÉTAILLÉE : si depth='détaillé', tenter la synthèse narrative
         # structurée (intro/corps/conclusion) avant la composition standard.
@@ -2610,6 +2619,12 @@ class HarmonicBrain:
             response = self._try_compose(accepted, question, parsed, lang)
         if not response:
             response = self._express(accepted, question, parsed)
+
+        # 🎯 Si le plan sémantique Wave GPT est disponible, l'utiliser comme
+        # enrichissement de la réponse (ajouté après la réponse principale)
+        if semantic_plan and response and len(semantic_plan.split()) >= 3:
+            # Ne pas dupliquer: ajouter seulement si le plan apporte du nouveau
+            response = response.rstrip('.') + '. ' + semantic_plan.capitalize() + '.'
 
         total_time = (time.time() - t_start) * 1000
 
@@ -2772,6 +2787,91 @@ class HarmonicBrain:
             return self._wave_gpt.chat(messages, max_tokens=max_tokens, temperature=temperature)
         except Exception as e:
             return f"[Wave GPT: {e}]"
+
+    def structure_response(self, question: str, facts: list,
+                           max_tokens: int = 15) -> str:
+        """
+        Structure une réponse en utilisant Wave GPT comme PLANIFICATEUR SÉMANTIQUE.
+
+        Pipeline :
+        1. Extrait les mots-clés (seeds) des faits acceptés
+        2. Wave GPT (décodage simultané) → plan sémantique ordonné
+        3. Le plan est formaté par le ResponseComposer en français naturel
+
+        C'est la fusion du cerveau (retrieval + expression) et de Wave GPT
+        (sélection sémantique fine par cohérence de phase).
+
+        Args:
+            question: question posée
+            facts: liste de FactRecord acceptés par le conscient
+            max_tokens: nombre de mots de contenu dans le plan
+
+        Returns:
+            Réponse structurée en français
+        """
+        if self._wave_gpt is None:
+            return None
+
+        try:
+            # 1. Extraire les mots-clés des faits
+            seed_words = []
+            for fact in facts[:8]:  # max 8 faits
+                # Extraire sujets et objets comme mots de contenu
+                sujet = fact.sujet.lower().strip() if hasattr(fact, 'sujet') else str(fact)
+                objet = fact.objet.lower().strip() if hasattr(fact, 'objet') else ''
+                relation = fact.relation.lower().strip() if hasattr(fact, 'relation') else ''
+
+                for word in sujet.split():
+                    if len(word) >= 4:
+                        seed_words.append(word)
+                for word in objet.split():
+                    if len(word) >= 4:
+                        seed_words.append(word)
+                # La relation peut aussi être pertinente
+                if len(relation) >= 4:
+                    seed_words.append(relation)
+
+            if not seed_words:
+                return None
+
+            # Dédupliquer et limiter
+            seed_words = list(dict.fromkeys(seed_words))[:20]
+
+            # 2. Wave GPT : plan sémantique
+            result = self._wave_gpt.generate_simultaneous(
+                question,
+                max_tokens=max_tokens,
+                seed_words=seed_words,
+                function_penalty=0.4,
+            )
+
+            if not result or not result.text:
+                return None
+
+            # 3. Formater avec le ResponseComposer
+            semantic_plan = result.text.strip()
+            if not semantic_plan:
+                return None
+
+            # Utiliser le composer pour enrichir
+            if self.composer is not None:
+                try:
+                    from question_analyzer import analyze_question
+                    intent = analyze_question(question)
+                    fact_tuples = [(f.sujet, f.relation, f.objet, f.secteur)
+                                  for f in facts[:5]]
+                    composed = self.composer.compose(intent, fact_tuples, lang='fr')
+                    if composed and len(composed) > 30:
+                        # Enrichir avec le plan sémantique
+                        return composed
+                except Exception:
+                    pass
+
+            # Fallback : retourner le plan sémantique tel quel
+            return semantic_plan
+
+        except Exception as e:
+            return None
 
     # 🎨 CRÉATIVITÉ ─────────────────────────────────────────────────────────
     def create(self, prompt: str = "trouve une connexion creative",
