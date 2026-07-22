@@ -45,6 +45,7 @@ class SVDEncoder:
         self.rev_vocab: Dict[int, str] = {}
         self.embeddings: Optional[np.ndarray] = None  # [N, k] réels
         self.k = 0
+        self.genericity: Dict[str, float] = {}  # mots génériques à pénaliser
         self._cache: Dict[str, np.ndarray] = {}
 
     def build_from_ppmi(self, ppmi, vocab: Dict[str, int], k: int = 16):
@@ -148,13 +149,58 @@ class SVDEncoder:
         neighbors.sort(key=lambda x: -x[1])
         return neighbors[:k]
 
+    def compute_genericity(self, sentences=None) -> Dict[str, float]:
+        """
+        Calcule la 'généricité' de chaque mot.
+
+        Si sentences est fourni : utilise la fréquence documentaire (IDF inverse).
+        Sinon : utilise la cohérence avec le centroïde SVD.
+
+        Les mots génériques (petit, grand, vrai, bon, mal...) ont une généricité
+        élevée car ils apparaissent partout. On les pénalisera.
+
+        Returns:
+            {mot: score_de_genericite} ∈ [0, 1]
+        """
+        if sentences is not None:
+            # Fréquence documentaire : proportion de phrases contenant le mot
+            from collections import Counter
+            doc_count = Counter()
+            total_docs = len(sentences)
+            for sent in sentences:
+                unique_words = set(w.lower() for w in sent if len(w) >= 2)
+                for w in unique_words:
+                    if w in self.vocab:
+                        doc_count[w] += 1
+            genericity = {}
+            for w in self.vocab:
+                df = doc_count.get(w, 0) / max(total_docs, 1)
+                genericity[w] = min(1.0, df * 3.0)  # échelle
+            return genericity
+
+        # Fallback : centroïde SVD
+        if self.embeddings is None:
+            return {}
+        centroid = np.mean(self.embeddings, axis=0)
+        centroid = centroid / (np.linalg.norm(centroid) + 1e-10)
+        genericity = {}
+        rev = self.rev_vocab
+        for i in range(len(self.vocab)):
+            u = self.embeddings[i]
+            coh = float(np.dot(u, centroid))
+            genericity[rev[i]] = max(0, coh)
+        return genericity
+
     def save(self, path: str):
         """Sauvegarde au format JSON."""
+        # Calculer et sauvegarder aussi la généricité
+        genericity = self.compute_genericity()
         data = {
             'dim': self.dim,
             'k': self.k,
             'vocab': {w: int(i) for w, i in self.vocab.items()},
             'embeddings': self.embeddings.tolist() if self.embeddings is not None else None,
+            'genericity': genericity,
         }
         with open(path, 'w') as f:
             json.dump(data, f)
@@ -169,6 +215,7 @@ class SVDEncoder:
         self.vocab = {w: int(i) for w, i in data['vocab'].items()}
         self.rev_vocab = {i: w for w, i in self.vocab.items()}
         self.embeddings = np.array(data['embeddings']) if data['embeddings'] else None
+        self.genericity = data.get('genericity', {})
         self._cache.clear()
         return True
 

@@ -425,21 +425,37 @@ class WaveGPT:
 
         # 🌱 Seed words : encoder leurs psis pour le guidage
         seed_psis = []
+        seed_psis_words = set()
         if seed_words:
             for sw in seed_words:
                 psi = self._encode_word(sw.lower().strip())
                 if psi is not None:
                     seed_psis.append((sw.lower().strip(), psi))
+                    seed_psis_words.add(sw.lower().strip())
 
         # Encoder le prompt
         prompt_tokens = prompt.strip().split()
         if not prompt_tokens:
             prompt_tokens = ["le"]
 
+        # 🎯 FILTRAGE DU CONTEXTE : ne garder que les mots de contenu dans l'historique
+        # Les mots fonctionnels (le, la, de...) polluent le contexte avec leur phase générique.
+        # On construit DEUX historiques :
+        #   - psi_history : tous les mots (pour la grammaire bigramme)
+        #   - content_history : seulement les mots de contenu (pour l'attention sémantique)
         psi_history = [self._encode_word(w) for w in prompt_tokens]
+        content_history = [
+            self._encode_word(w) for w in prompt_tokens
+            if w.lower() not in FUNCTION_WORDS and len(w) > 2
+        ]
+        if not content_history:
+            content_history = [self._encode_word(prompt_tokens[-1])]
 
-        # ψ initial = dernière position du prompt
-        psi_current = psi_history[-1].copy() if psi_history else self.encoder.encode(prompt) if not self._external_encoder else self._encode_word(prompt_tokens[0])
+        # ψ initial : moyenne des mots de contenu du prompt (pas des fonctionnels!)
+        psi_current = np.mean(content_history, axis=0)
+        norm = np.linalg.norm(psi_current)
+        if norm > 1e-10:
+            psi_current = psi_current / norm
 
         tokens = list(prompt_tokens)
         coherence_scores = []
@@ -448,11 +464,28 @@ class WaveGPT:
         vocab = self._build_vocabulary(prompt_tokens)
 
         for step in range(max_tokens):
-            # 1. Self-attention : ψ_ctx = Σ_j α_j · ψ_j
-            # 🌊 Time decay: positions récentes boostées
+            # 1. Self-attention : ψ_ctx calculé SUR LES MOTS DE CONTENU uniquement
+            # 🎯 FILTRAGE : content_history ne contient que les mots sémantiquement porteurs
             time_decay = (1.0 - self.context_decay) * 0.5
-            psi_ctx = self.attention.attend(psi_current, psi_history[-self.max_context:],
-                                            time_decay=time_decay)
+
+            # 🌱 Si des seeds sont fournis, ils DOMINENT le contexte
+            # Le contexte est une moyenne pondérée : 70% seeds + 30% historique de contenu
+            if seed_psis and len(content_history) > 0:
+                psi_from_seeds = np.mean([psi for _, psi in seed_psis], axis=0)
+                psi_from_seeds = psi_from_seeds / np.linalg.norm(psi_from_seeds)
+                psi_from_history = self.attention.attend(
+                    psi_current, content_history[-self.max_context:],
+                    time_decay=time_decay)
+                # 70% seeds + 30% history récent
+                psi_ctx = 0.7 * psi_from_seeds + 0.3 * psi_from_history
+                psi_ctx = psi_ctx / np.linalg.norm(psi_ctx)
+            elif seed_psis:
+                # Pas encore d'historique de contenu : 100% seeds
+                psi_ctx = np.mean([psi for _, psi in seed_psis], axis=0)
+                psi_ctx = psi_ctx / np.linalg.norm(psi_ctx)
+            else:
+                psi_ctx = self.attention.attend(psi_current, content_history[-self.max_context:],
+                                                time_decay=time_decay)
 
             # 2. Scores de cohérence + contrainte bigramme
             # 🎯 VOCABULAIRE FOCALISÉ : ne scorer que les mots pertinents
@@ -473,35 +506,39 @@ class WaveGPT:
                     # Ajouter les mots les plus cohérents avec ce seed
                     pool_scores = {}
                     for w, psi_w in vocab.items():
-                        if len(w) > 2:
-                            pool_scores[w] = float(np.real(np.dot(psi_w, psi_sw.conj())))
-                    for w, _ in sorted(pool_scores.items(), key=lambda x: -x[1])[:15]:
+                        if len(w) >= 4 and w not in FUNCTION_WORDS:
+                            pool_scores[w] = float(np.real(np.dot(psi_w.conj(), psi_sw)))
+                    for w, _ in sorted(pool_scores.items(), key=lambda x: -x[1])[:10]:
                         candidate_pool.add(w)
             else:
                 # Pas de seeds : prendre les top-K par cohérence avec le contexte
                 pool_scores = {}
                 for w, psi_w in vocab.items():
-                    if len(w) > 3:  # mots de contenu (>3 lettres)
+                    if len(w) >= 4:  # mots de contenu (>= 4 lettres)
                         pool_scores[w] = float(np.real(np.dot(psi_ctx, psi_w.conj())))
                 for w, _ in sorted(pool_scores.items(), key=lambda x: -x[1])[:30]:
                     candidate_pool.add(w)
 
-            # b) Bigram followers du dernier mot (grammaire)
+            # b) Bigram followers du dernier mot (grammaire) — UNIQUEMENT les mots de contenu
             for w in allowed_followers[:20]:
-                if w in vocab:
+                if w in vocab and len(w) >= 3:
                     candidate_pool.add(w)
 
-            # c) Mots du prompt (ancrage)
+            # c) Mots du prompt de contenu
             for pt in prompt_tokens:
-                candidate_pool.add(pt.lower())
+                if len(pt) >= 3:
+                    candidate_pool.add(pt.lower())
 
-            # d) Mots fonctionnels minimaux (pour la grammaire)
-            for fw in ['le', 'la', 'les', 'un', 'une', 'de', 'du', 'des', 'et',
-                       'dans', 'sur', 'est', 'qui', 'que', 'pour', 'par', 'avec']:
+            # d) Mots fonctionnels MINIMAUX (juste assez pour la grammaire)
+            # On en met très peu et ils seront pénalisés
+            for fw in ['le', 'la', 'les', 'un', 'une', 'de', 'du', 'et',
+                       'dans', 'sur', 'est', 'qui', 'que', 'pour', 'par']:
                 if fw in vocab:
                     candidate_pool.add(fw)
 
             # Scorer seulement le pool focalisé
+            # 🎯 PÉNALITÉ DE GÉNÉRICITÉ : les mots qui résonnent avec tout sont pénalisés
+            genericity = getattr(self.encoder, 'genericity', {})
             for word in candidate_pool:
                 if word not in vocab:
                     continue
@@ -514,45 +551,81 @@ class WaveGPT:
                 # Pénalité mots fonctionnels
                 if function_penalty > 0 and word in FUNCTION_WORDS:
                     score -= function_penalty
-                # Seed boost
+                # 🎯 Pénalité de généricité : mots fréquents dans tout le corpus
+                gen_score = genericity.get(word, 0.0)
+                score -= gen_score * 1.5  # pénalité TRÈS forte pour les mots omniprésents
+                # 🎯 Pénalité pour mots courts non-fonctionnels (petit, grand, vrai...)
+                # Ces mots ont un score brut élevé mais peu de contenu sémantique
+                if len(word) <= 6 and word not in seed_psis_words:
+                    score -= 0.15  # malus pour mots courts
+                # 🌱 Seed boost TRÈS FORT — les seeds doivent dominer absolument
                 if seed_psis:
+                    max_seed_boost = 0.0
                     for sw, psi_sw in seed_psis:
                         if word == sw:
-                            score += 0.3  # boost direct pour le seed exact
+                            max_seed_boost = max(max_seed_boost, 2.0)  # boost MASSIF pour les seeds
                         else:
-                            seed_coh = float(np.real(np.dot(psi_w, psi_sw.conj())))
-                            score += max(0, seed_coh) * 0.15
+                            seed_coh = float(np.real(np.dot(psi_w.conj(), psi_sw)))
+                            if seed_coh > 0.5:  # seuil plus strict
+                                max_seed_boost = max(max_seed_boost, seed_coh * 0.8)
+                    score += max_seed_boost
                 scores[word] = score
 
-            # 3. Échantillonnage
-            if self._sampler is not None and len(scores) >= 3:
-                self._sampler.set_vocabulary(vocab)
-                next_word = self._sampler.sample(
-                    psi_ctx,
-                    temperature=temperature,
-                    top_p=top_p,
-                    top_k=top_k,
-                    candidates=list(scores.keys()),
-                )
+            # 3. Échantillonnage — utiliser NOS scores (avec boost seeds + pénalité)
+            # Pas le sampler externe qui recalcule ses propres cohérences.
+            if temperature <= 0.01:
+                # Déterministe : argmax de nos scores
+                next_word = max(scores, key=scores.get) if scores else ""
             else:
-                # Fallback: argmax de cohérence
-                if scores:
-                    next_word = max(scores, key=scores.get)
-                else:
-                    break
+                # Sampling pondéré par nos scores
+                words_list = list(scores.keys())
+                score_values = np.array([scores[w] for w in words_list])
+                # Convertir en probabilités (softmax avec température)
+                score_values = score_values - score_values.max()
+                probs = np.exp(score_values / max(temperature, 0.01))
+                probs = probs / probs.sum()
+                # Top-k
+                if top_k and top_k < len(words_list):
+                    top_indices = np.argsort(probs)[-top_k:]
+                    probs_filtered = np.zeros_like(probs)
+                    probs_filtered[top_indices] = probs[top_indices]
+                    probs = probs_filtered / probs_filtered.sum()
+                # Top-p
+                if top_p and top_p < 1.0:
+                    sorted_idx = np.argsort(probs)[::-1]
+                    cumsum = 0
+                    cutoff = len(probs)
+                    for i in sorted_idx:
+                        cumsum += probs[i]
+                        if cumsum >= top_p:
+                            cutoff = i + 1
+                            break
+                    mask = np.zeros_like(probs)
+                    mask[sorted_idx[:cutoff]] = 1
+                    probs = probs * mask
+                    probs = probs / probs.sum()
+                # Échantillonner
+                idx = np.random.choice(len(words_list), p=probs)
+                next_word = words_list[idx]
 
             # 4. Vérifier l'arrêt
             if next_word in stop_tokens or next_word == self.EOS:
                 break
 
-            # Éviter les répétitions immédiates
-            if tokens and next_word == tokens[-1]:
-                # Chercher le deuxième meilleur
+            # 🔄 Anti-répétition + anti-2-cycle : bannir temporairement les 2 derniers mots
+            recent_words = set(tokens[-3:] if len(tokens) >= 3 else tokens)
+            if next_word in recent_words:
+                # Chercher le meilleur mot qui n'est PAS dans les 3 derniers
                 sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-                for w, s in sorted_scores[1:4]:
-                    if w != tokens[-1]:
+                found_alternative = False
+                for w, s in sorted_scores[:20]:
+                    if w not in recent_words and w not in stop_tokens:
                         next_word = w
+                        found_alternative = True
                         break
+                if not found_alternative:
+                    # Accepter quand même (pas d'alternative)
+                    pass
 
             tokens.append(next_word)
             coherence_scores.append(scores.get(next_word, 0.0))
@@ -562,6 +635,14 @@ class WaveGPT:
                 vocab[next_word] = self._encode_word(next_word)
 
             psi_next_word = vocab[next_word]
+
+            # 🎯 FILTRAGE : ajouter AUSSI au content_history si c'est un mot de contenu
+            # Les mots fonctionnels ne polluent plus le contexte sémantique
+            if next_word not in FUNCTION_WORDS and len(next_word) > 2:
+                content_history.append(psi_next_word)
+
+            # Garder aussi l'historique complet (pour référence future)
+            psi_history.append(psi_next_word)
 
             # 5. Mise à jour de l'état : moyenne exponentielle (ρ = context_decay)
             # 🌊 EXPONENTIAL CONTEXT — les mots récents pèsent plus lourd
