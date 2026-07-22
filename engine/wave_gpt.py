@@ -175,19 +175,31 @@ class WaveSelfAttention:
         self._freqs = [PHI ** k for k in range(n_heads)]
 
     def attend(self, psi_current: np.ndarray,
-               psi_history: List[np.ndarray]) -> np.ndarray:
+               psi_history: List[np.ndarray],
+               time_decay: float = 0.0) -> np.ndarray:
         """
         Calcule le contexte attentionné.
         
         Args:
             psi_current: vecteur d'onde de la position courante (query)
             psi_history: historique des vecteurs d'onde (keys + values)
+            time_decay: décroissance temporelle (0 = pas de decay, 0.3 = modéré)
+                        Les positions récentes reçoivent un boost.
             
         Returns:
             ψ_context = Σ_j α_j · ψ_j  (attention-weighted sum, normalized)
         """
         if not psi_history:
             return psi_current
+
+        n_hist = len(psi_history)
+        
+        # Pré-calculer les poids temporels (exponentiels, normalisés)
+        if time_decay > 0:
+            time_weights = np.exp(time_decay * np.arange(n_hist))
+            time_weights = time_weights / time_weights.sum()
+        else:
+            time_weights = np.ones(n_hist) / n_hist
 
         # Multi-head : rotation par fréquence
         head_outputs = []
@@ -204,12 +216,15 @@ class WaveSelfAttention:
             # Softmax (température naturelle)
             scores = scores - scores.max()  # stabilité numérique
             alpha = np.exp(scores / 0.8)  # température implicite
+            
+            # 🌊 Combiner attention + décroissance temporelle
+            alpha = alpha * (1.0 + time_weights * 2.0)  # boost positions récentes
             alpha = alpha / alpha.sum()
 
             # Attention-weighted sum
             head_out = np.sum([
                 alpha[j] * psi_history[j]
-                for j in range(len(psi_history))
+                for j in range(n_hist)
             ], axis=0)
 
             head_out = head_out / (np.linalg.norm(head_out) + 1e-10)
@@ -263,7 +278,8 @@ class WaveGPT:
 
     def __init__(self, dim: int = 512, n_heads: int = 4,
                  max_context: int = 512,
-                 external_encoder = None):
+                 external_encoder = None,
+                 context_decay: float = 0.7):
         """
         Args:
             dim: dimension de l'espace complexe
@@ -271,9 +287,13 @@ class WaveGPT:
             max_context: taille maximale du contexte (mémoire ABC)
             external_encoder: encodeur holographique externe (ex: celui du HarmonicBrain)
                               Si fourni, on l'utilise au lieu de l'encodeur standalone.
+            context_decay: ρ pour la moyenne exponentielle du contexte (0-1).
+                          ρ=0.7 → les mots récents pèsent ~3× plus que les anciens.
+                          ρ=1.0 → moyenne uniforme (ancien comportement).
         """
         self.dim = dim
         self.max_context = max_context
+        self.context_decay = context_decay
         
         # Utiliser l'encodeur externe s'il est fourni (encodeur du cerveau)
         if external_encoder is not None:
@@ -406,7 +426,10 @@ class WaveGPT:
 
         for step in range(max_tokens):
             # 1. Self-attention : ψ_ctx = Σ_j α_j · ψ_j
-            psi_ctx = self.attention.attend(psi_current, psi_history[-self.max_context:])
+            # 🌊 Time decay: positions récentes boostées
+            time_decay = (1.0 - self.context_decay) * 0.5
+            psi_ctx = self.attention.attend(psi_current, psi_history[-self.max_context:],
+                                            time_decay=time_decay)
 
             # 2. Scores de cohérence + contrainte bigramme
             # 🌊 BIGRAM CONSTRAINT : préférer les followers fréquents du dernier mot
@@ -465,8 +488,12 @@ class WaveGPT:
 
             psi_next_word = vocab[next_word]
 
-            # 5. Mise à jour de l'état : superposition + normalisation
-            psi_new = psi_ctx + 0.3 * psi_next_word  # résiduel pondéré
+            # 5. Mise à jour de l'état : moyenne exponentielle (ρ = context_decay)
+            # 🌊 EXPONENTIAL CONTEXT — les mots récents pèsent plus lourd
+            # Ancien (uniforme) : ψ_new = ψ_ctx + 0.3·ψ_token
+            # Nouveau (exponentiel) : ψ_new = ρ·ψ_ctx + (1-ρ)·ψ_token
+            rho = self.context_decay
+            psi_new = rho * psi_ctx + (1.0 - rho) * psi_next_word
             psi_current = psi_new / np.linalg.norm(psi_new)
 
             # 6. Ajouter à l'historique (mémoire ABC implicite)
