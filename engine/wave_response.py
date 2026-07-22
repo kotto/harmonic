@@ -182,24 +182,49 @@ class WaveResponder:
         # 1. Encoder la question
         psi_q = self._encode(question)
 
-        # 2. Encoder les faits pertinents
+        # 2. Encoder les faits pertinents — UN PAR UN (pas de superposition plate)
         if facts and len(facts) > 0:
-            # Chaque fait est un binding HRR
-            psi_facts_list = []
+            # Interférence question ⊗ chaque fait → ne garder que les mots
+            # qui résonnent FORTEMENT avec la question
+            all_response_words = []
             fact_vocab = {}
+            
             for sujet, relation, objet in facts:
                 psi_s = self._encode(sujet)
                 psi_r = self._encode(relation)
                 psi_o = self._encode(objet)
-                # Binding: ψ_fait = ψ_sujet ⊗ ψ_relation ⊗ ψ_objet
+                # Binding du fait
                 psi_fait = self._interfere(self._interfere(psi_s, psi_r), psi_o)
-                psi_facts_list.append(psi_fait)
-                # Ajouter les mots au vocabulaire de décodage
+                
+                # Interférence question ⊗ ce fait spécifique
+                psi_qf = self._interfere(psi_q, psi_fait)
+                
+                # Ajouter les mots du fait au vocabulaire
                 for word in f"{sujet} {relation} {objet}".lower().split():
                     if len(word) >= 3:
                         fact_vocab[word] = self._encode_word(word)
-
-            # Hologramme des faits = superposition normalisée
+                
+                # Décoder ce fait : mots les plus cohérents avec ψ_qf
+                fact_words = self._decode_response(psi_qf, fact_vocab, 
+                                                   temperature=temperature, max_words=4)
+                all_response_words.append(fact_words)
+            
+            # Fusionner les mots de tous les faits (en gardant l'ordre des faits)
+            response_words = []
+            seen = set()
+            for fact_words in all_response_words:
+                for w in fact_words:
+                    if w not in seen:
+                        response_words.append(w)
+                        seen.add(w)
+            
+            # Construire ψ_faits pour le contexte (superposition des faits utilisés)
+            psi_facts_list = []
+            for sujet, relation, objet in facts:
+                psi_fait = self._interfere(
+                    self._interfere(self._encode(sujet), self._encode(relation)),
+                    self._encode(objet))
+                psi_facts_list.append(psi_fait)
             psi_facts = np.sum(psi_facts_list, axis=0)
             norm = np.linalg.norm(psi_facts)
             if norm > 1e-10:
@@ -208,6 +233,7 @@ class WaveResponder:
         else:
             psi_facts = psi_q.copy()
             fact_vocab = {}
+            response_words = []
             has_facts = False
 
         # 3. Récupérer le contexte (mémoire ABC)
@@ -229,7 +255,7 @@ class WaveResponder:
                 psi_response, fact_vocab, temperature=temperature
             )
             # Ajouter des connecteurs pour fluidifier
-            text = self._format_response(response_words)
+            text = self._format_response(response_words, facts)
         else:
             text = "Je ne trouve pas d'information pertinente."
 
@@ -250,41 +276,25 @@ class WaveResponder:
             elapsed_ms=elapsed,
         )
 
-    def _format_response(self, words: List[str]) -> str:
+    def _format_response(self, words: List[str], facts: List[Tuple[str, str, str]] = None) -> str:
         """
-        Formate une liste de mots en réponse naturelle.
+        Formate une réponse à partir des faits sources.
 
-        Au lieu de juste lister les mots, on crée des groupes de 2-3 mots
-        avec des connecteurs simples pour donner une structure de phrase.
+        Chaque fait devient une phrase simple : Sujet relation objet.
         """
+        if facts and len(facts) > 0:
+            sentences = []
+            for s, r, o in facts:
+                sujet = s[0].upper() + s[1:] if len(s) > 1 else s.upper()
+                phrase = f"{sujet} {r} {o}."
+                sentences.append(phrase)
+            if sentences:
+                return " ".join(sentences)
+
+        # Fallback si pas de faits
         if len(words) <= 1:
-            return " ".join(words) + "."
-
-        # Grouper les mots avec des connecteurs
-        connectors = ["et", "avec", "de", "du", "dans", "pour", "qui"]
-        result = [words[0]]
-        conn_idx = 0
-
-        for i in range(1, len(words)):
-            if i % 3 == 0:
-                # Tous les 3 mots, mettre un point et recommencer
-                result.append(".")
-                result.append(words[i][0].upper() + words[i][1:] if len(words[i]) > 1 else words[i])
-            elif i % 2 == 0:
-                result.append(connectors[conn_idx % len(connectors)])
-                result.append(words[i])
-                conn_idx += 1
-            else:
-                result.append(words[i])
-
-        text = " ".join(result)
-        # Nettoyer les espaces avant les points
-        text = text.replace(" .", ".")
-        if not text.endswith("."):
-            text += "."
-        # Capitaliser
-        text = text[0].upper() + text[1:]
-        return text
+            return " ".join(words).capitalize() + "."
+        return " ".join(words).capitalize() + "."
 
     def _encode(self, text: str) -> np.ndarray:
         """Encode un texte en vecteur d'onde (FNV1a + φ-spacing)."""
@@ -460,28 +470,47 @@ class WaveBrainResponder:
                 if len(word) >= 3 and word not in self.knowledge:
                     self.knowledge[word] = self.responder._encode_word(word)
 
-    def _retrieve(self, question: str, k: int = 8) -> List[Tuple[str, str, str]]:
+    def _retrieve(self, question: str, k: int = 5) -> List[Tuple[str, str, str]]:
         """
-        Retrieval simple : trouve les faits dont le sujet ou l'objet
-        apparaît dans la question, ou dont les mots ont une forte cohérence.
+        Retrieval strict + contexte ABC.
+
+        Les faits sont scorés selon :
+          1. Overlap lexical avec la question
+          2. Cohérence de phase question↔fait
+          3. Cohérence avec le CONTEXTE ABC (conversation précédente)
+
+        Le contexte ABC permet de retrouver des faits liés à la discussion
+        en cours, même s'ils n'apparaissent pas dans la question.
         """
         psi_q = self.responder._encode(question)
+        psi_ctx = self.responder.context.get_context()
+        has_context = not np.all(psi_ctx == 0)
+        
+        q_words = set(question.lower().split())
+        
         scored = []
         for s, r, o in self.facts_db:
-            # Score lexical (mots partagés avec la question)
-            lexical = 0
-            q_words = set(question.lower().split())
-            for w in f"{s} {r} {o}".lower().split():
-                if w in q_words:
-                    lexical += 2
-            # Score ondulatoire (cohérence de phase)
-            psi_fact_text = self.responder._encode(f"{s} {r} {o}")
-            coherence = float(np.real(np.dot(psi_q.conj(), psi_fact_text)))
-            score = lexical * 3 + coherence
-            scored.append((score, s, r, o))
+            fact_words = set(f"{s} {r} {o}".lower().split())
+            lexical_overlap = len(q_words & fact_words)
+            
+            # Cohérence avec la question
+            psi_fact = self.responder._encode(f"{s} {r} {o}")
+            coh_q = float(np.real(np.dot(psi_q.conj(), psi_fact)))
+            
+            # Cohérence avec le contexte ABC (mémoire de la conversation)
+            coh_ctx = 0.0
+            if has_context:
+                coh_ctx = float(np.real(np.dot(psi_ctx.conj(), psi_fact)))
+            
+            # Score combiné
+            score = lexical_overlap * 5 + max(0, coh_q) * 2 + max(0, coh_ctx) * 3
+            
+            # Garder si : overlap lexical OU forte cohérence question OU forte cohérence contexte
+            if lexical_overlap > 0 or coh_q > 0.15 or coh_ctx > 0.2:
+                scored.append((score, s, r, o))
         
         scored.sort(key=lambda x: -x[0])
-        return [(s, r, o) for _, s, r, o in scored[:k]]
+        return [(s, r, o) for score, s, r, o in scored[:k]]
 
     def ask(self, question: str, temperature: float = 0.5) -> str:
         """
@@ -490,8 +519,8 @@ class WaveBrainResponder:
           - Le contexte ABC (historique de conversation)
           - La question
         """
-        # 1. Retrieval des faits pertinents
-        relevant_facts = self._retrieve(question, k=10)
+        # 1. Retrieval des faits pertinents (strict, top-5)
+        relevant_facts = self._retrieve(question, k=5)
 
         # 2. Réponse par interférence (faits + contexte + question)
         result = self.responder.respond(
