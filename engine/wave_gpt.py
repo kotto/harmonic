@@ -293,6 +293,10 @@ class WaveGPT:
         except ImportError:
             pass
 
+        # Bigram transition table (construit depuis le corpus si disponible)
+        self._bigram_followers: Dict[str, List[str]] = {}
+        self._bigram_boost: float = 0.4  # poids de la contrainte bigramme
+
         # Tokens spéciaux
         self.EOS = "<eos>"
         self.BOS = "<bos>"
@@ -404,13 +408,22 @@ class WaveGPT:
             # 1. Self-attention : ψ_ctx = Σ_j α_j · ψ_j
             psi_ctx = self.attention.attend(psi_current, psi_history[-self.max_context:])
 
-            # 2. Scores de cohérence pour chaque mot candidat
+            # 2. Scores de cohérence + contrainte bigramme
+            # 🌊 BIGRAM CONSTRAINT : préférer les followers fréquents du dernier mot
             scores = {}
+            last_word = tokens[-1] if tokens else None
+            allowed_followers = self._bigram_followers.get(last_word, []) if last_word else []
+            
             for word, psi_w in vocab.items():
-                # Éviter les tokens trop courts ou déjà générés récemment
                 if len(word) <= 1:
                     continue
                 score = float(np.real(np.dot(psi_ctx, psi_w.conj())))
+                # Boost bigramme : si le mot est un follower fréquent du dernier mot
+                if allowed_followers and word in allowed_followers:
+                    # Plus le follower est fréquent (proche du début de la liste), plus le boost est fort
+                    rank = allowed_followers.index(word)
+                    boost = self._bigram_boost * (1.0 - rank / max(len(allowed_followers), 1))
+                    score += boost
                 scores[word] = score
 
             # 3. Échantillonnage
