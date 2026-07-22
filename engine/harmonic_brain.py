@@ -236,6 +236,17 @@ except ImportError:
     interference_matrix = None
     select_constructive = None
 
+# 🧠 Wave GPT — générateur de texte purement ondulatoire (token par token)
+_WAVE_GPT_AVAILABLE = False
+try:
+    from wave_gpt import WaveGPT, WaveGPTResult, WaveEncoder, WaveSelfAttention
+    _WAVE_GPT_AVAILABLE = True
+except ImportError:
+    WaveGPT = None
+    WaveGPTResult = None
+    WaveEncoder = None
+    WaveSelfAttention = None
+
 log = logging.getLogger(__name__)
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1616,6 +1627,21 @@ class HarmonicBrain:
             except Exception:
                 pass
 
+        # 🧠 Wave GPT — générateur purement ondulatoire (GPT-like, zéro paramètre)
+        self._wave_gpt = None
+        if _WAVE_GPT_AVAILABLE:
+            try:
+                # Construire un vocabulaire à partir de l'encoder holographique du cerveau
+                brain_encoder = self.unconscious.encoder if hasattr(self.unconscious, 'encoder') else None
+                self._wave_gpt = WaveGPT(
+                    dim=dim,
+                    n_heads=4,
+                    max_context=512,
+                    external_encoder=brain_encoder,  # utiliser l'encoder du cerveau
+                )
+            except Exception:
+                pass
+
         # 📖 RÉSUMEUR HARMONIQUE (lecture de documents)
         self._summarizer = None
         try:
@@ -2686,6 +2712,66 @@ class HarmonicBrain:
         )
 
     # ── EXPRESSION ─────────────────────────────────────────────────────────
+
+    # 🧠 WAVE GPT ────────────────────────────────────────────────────────────
+    def wave_gpt_complete(self, prompt: str,
+                          max_tokens: int = 50,
+                          temperature: float = 0.8,
+                          top_p: float = 0.9,
+                          top_k: int = 50) -> str:
+        """
+        Génération de texte purement ondulatoire — GPT-like, zéro paramètre.
+
+        Utilise le Wave GPT intégré au cerveau pour générer du texte
+        token par token par auto-attention ondulatoire sur l'historique.
+        
+        Équivalent ondulatoire de : response = openai.Completion.create(prompt=...)
+        
+        Args:
+            prompt: texte de départ
+            max_tokens: nombre maximum de tokens
+            temperature: 0 = déterministe, > 0 = créatif
+            top_p: seuil de cohérence cumulée
+            top_k: nombre maximum de candidats
+            
+        Returns:
+            Texte généré
+        """
+        if self._wave_gpt is None:
+            return self._express([], prompt, None)
+        
+        try:
+            result = self._wave_gpt.generate(
+                prompt,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                top_p=top_p,
+                top_k=top_k,
+            )
+            return result.text
+        except Exception as e:
+            return f"[Wave GPT: {e}]"
+    
+    def wave_gpt_chat(self, messages: list,
+                      max_tokens: int = 100,
+                      temperature: float = 0.8) -> str:
+        """
+        Interface chat compatible OpenAI.
+        
+        Args:
+            messages: [{"role": "user", "content": "..."}, ...]
+            max_tokens: nombre max de tokens
+            
+        Returns:
+            Réponse générée
+        """
+        if self._wave_gpt is None:
+            return self.process(messages[-1]['content'] if messages else "")
+        
+        try:
+            return self._wave_gpt.chat(messages, max_tokens=max_tokens, temperature=temperature)
+        except Exception as e:
+            return f"[Wave GPT: {e}]"
 
     # 🎨 CRÉATIVITÉ ─────────────────────────────────────────────────────────
     def create(self, prompt: str = "trouve une connexion creative",
