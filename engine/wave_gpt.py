@@ -379,7 +379,9 @@ class WaveGPT:
                  temperature: float = 0.8,
                  top_p: float = 0.9,
                  top_k: int = 50,
-                 stop_tokens: Optional[List[str]] = None) -> WaveGPTResult:
+                 stop_tokens: Optional[List[str]] = None,
+                 seed_words: Optional[List[str]] = None,
+                 function_penalty: float = 0.15) -> WaveGPTResult:
         """
         Génère du texte à partir d'un prompt.
 
@@ -399,6 +401,10 @@ class WaveGPT:
             top_p: seuil de cohérence cumulée
             top_k: nombre maximum de candidats
             stop_tokens: tokens d'arrêt (défaut: [".", "!", "?", "\n\n"])
+            seed_words: mots de contenu à privilégier (guidage par retrieval).
+                        Ces mots reçoivent un boost de cohérence.
+            function_penalty: pénalité appliquée aux mots fonctionnels (le, la, de...).
+                              Plus élevé = moins de déterminants. Défaut: 0.15.
 
         Returns:
             WaveGPTResult
@@ -407,6 +413,23 @@ class WaveGPT:
 
         if stop_tokens is None:
             stop_tokens = [".", "!", "?", "\n\n", self.EOS]
+
+        # 🎯 Mots fonctionnels à pénaliser (déterminants, prépositions, conjonctions)
+        FUNCTION_WORDS = frozenset([
+            'le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'au', 'aux',
+            'et', 'ou', 'donc', 'car', 'mais', 'ni', 'or', 'si', 'ce', 'cette',
+            'ces', 'son', 'sa', 'ses', 'leur', 'leurs', 'mon', 'ton', 'notre',
+            'votre', 'mes', 'tes', 'nos', 'vos', 'qui', 'que', 'quoi', "qu'", "l'",
+            "d'", "j'", "m'", "t'", "s'", "c'", "n'",
+        ])
+
+        # 🌱 Seed words : encoder leurs psis pour le guidage
+        seed_psis = []
+        if seed_words:
+            for sw in seed_words:
+                psi = self._encode_word(sw.lower().strip())
+                if psi is not None:
+                    seed_psis.append((sw.lower().strip(), psi))
 
         # Encoder le prompt
         prompt_tokens = prompt.strip().split()
@@ -432,21 +455,73 @@ class WaveGPT:
                                             time_decay=time_decay)
 
             # 2. Scores de cohérence + contrainte bigramme
-            # 🌊 BIGRAM CONSTRAINT : préférer les followers fréquents du dernier mot
+            # 🎯 VOCABULAIRE FOCALISÉ : ne scorer que les mots pertinents
+            # Au lieu de scorer 32K mots (dont la plupart ont coh > 0.5),
+            # on restreint à ~100 candidats pertinents pour le contexte.
             scores = {}
             last_word = tokens[-1] if tokens else None
             allowed_followers = self._bigram_followers.get(last_word, []) if last_word else []
-            
-            for word, psi_w in vocab.items():
-                if len(word) <= 1:
+
+            # Construire le pool de candidats focalisé
+            candidate_pool = set()
+
+            # a) Mots de contenu sémantiquement proches du contexte (top-K par cohérence)
+            if seed_psis:
+                # Pool dominé par les seeds et leurs voisins
+                for sw, psi_sw in seed_psis:
+                    candidate_pool.add(sw)
+                    # Ajouter les mots les plus cohérents avec ce seed
+                    pool_scores = {}
+                    for w, psi_w in vocab.items():
+                        if len(w) > 2:
+                            pool_scores[w] = float(np.real(np.dot(psi_w, psi_sw.conj())))
+                    for w, _ in sorted(pool_scores.items(), key=lambda x: -x[1])[:15]:
+                        candidate_pool.add(w)
+            else:
+                # Pas de seeds : prendre les top-K par cohérence avec le contexte
+                pool_scores = {}
+                for w, psi_w in vocab.items():
+                    if len(w) > 3:  # mots de contenu (>3 lettres)
+                        pool_scores[w] = float(np.real(np.dot(psi_ctx, psi_w.conj())))
+                for w, _ in sorted(pool_scores.items(), key=lambda x: -x[1])[:30]:
+                    candidate_pool.add(w)
+
+            # b) Bigram followers du dernier mot (grammaire)
+            for w in allowed_followers[:20]:
+                if w in vocab:
+                    candidate_pool.add(w)
+
+            # c) Mots du prompt (ancrage)
+            for pt in prompt_tokens:
+                candidate_pool.add(pt.lower())
+
+            # d) Mots fonctionnels minimaux (pour la grammaire)
+            for fw in ['le', 'la', 'les', 'un', 'une', 'de', 'du', 'des', 'et',
+                       'dans', 'sur', 'est', 'qui', 'que', 'pour', 'par', 'avec']:
+                if fw in vocab:
+                    candidate_pool.add(fw)
+
+            # Scorer seulement le pool focalisé
+            for word in candidate_pool:
+                if word not in vocab:
                     continue
+                psi_w = vocab[word]
                 score = float(np.real(np.dot(psi_ctx, psi_w.conj())))
-                # Boost bigramme : si le mot est un follower fréquent du dernier mot
-                if allowed_followers and word in allowed_followers:
-                    # Plus le follower est fréquent (proche du début de la liste), plus le boost est fort
+                # Boost bigramme
+                if word in allowed_followers:
                     rank = allowed_followers.index(word)
-                    boost = self._bigram_boost * (1.0 - rank / max(len(allowed_followers), 1))
-                    score += boost
+                    score += self._bigram_boost * (1.0 - rank / max(len(allowed_followers), 1))
+                # Pénalité mots fonctionnels
+                if function_penalty > 0 and word in FUNCTION_WORDS:
+                    score -= function_penalty
+                # Seed boost
+                if seed_psis:
+                    for sw, psi_sw in seed_psis:
+                        if word == sw:
+                            score += 0.3  # boost direct pour le seed exact
+                        else:
+                            seed_coh = float(np.real(np.dot(psi_w, psi_sw.conj())))
+                            score += max(0, seed_coh) * 0.15
                 scores[word] = score
 
             # 3. Échantillonnage
