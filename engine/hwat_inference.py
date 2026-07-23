@@ -221,19 +221,22 @@ def encode(text: str) -> np.ndarray:
 
 
 def generate(prompt: str, max_tokens: int = 30,
-            temperature: float = 0.8, repetition_penalty: float = 1.2) -> str:
+            temperature: float = 0.8, repetition_penalty: float = 1.2,
+            top_k: int = 40) -> str:
     """Génère du texte à partir d'un prompt.
 
     Args:
         prompt: texte de départ
         max_tokens: nombre max de tokens à générer
-        temperature: 0 = greedy, > 0 = sampling (conseillé: 0.7-0.9)
-        repetition_penalty: > 1 pénalise les tokens déjà vus (1.0 = pas de pénalité)
+        temperature: 0 = greedy, > 0 = sampling
+        repetition_penalty: > 1 pénalise les tokens déjà vus
+        top_k: nombre de tokens les plus probables à considérer (0 = tous)
     """
     model, tok = load_hwat()
     ids = tok.encode(prompt)
     max_len = model.embed.pos_enc.shape[0]
-    seen = set(ids)  # pour pénalité de répétition
+    seen = set(ids)
+    recently_seen = []
 
     with torch.no_grad():
         for _ in range(max_tokens):
@@ -249,21 +252,35 @@ def generate(prompt: str, max_tokens: int = 30,
                     else:
                         next_logits[tid] /= repetition_penalty
 
+            # Top-k filtering
+            if top_k > 0:
+                topk_vals, topk_idx = torch.topk(next_logits, min(top_k, len(next_logits)))
+                mask = torch.ones_like(next_logits) * float('-inf')
+                mask[topk_idx] = next_logits[topk_idx]
+                next_logits = mask
+
             if temperature < 0.01:
                 next_id = next_logits.argmax().item()
             else:
                 probs = F.softmax(next_logits, dim=-1).numpy()
                 probs = np.nan_to_num(probs, nan=0.0)
-                probs = probs / probs.sum()
-                next_id = np.random.choice(len(probs), p=probs)
+                s = probs.sum()
+                if s > 0:
+                    probs = probs / s
+                    next_id = np.random.choice(len(probs), p=probs)
+                else:
+                    next_id = next_logits.argmax().item()
 
             ids.append(next_id)
             seen.add(next_id)
-            # Stop si nouvelle ligne ou token de fin
+            recently_seen.append(next_id)
+            if len(recently_seen) > 20:
+                old = recently_seen.pop(0)
+                if old not in recently_seen:
+                    seen.discard(old)
+
             if next_id == tok.word_to_id.get('\n', -1):
                 break
-            if len(seen) > 50:  # reset périodique pour éviter de tout pénaliser
-                seen = set(ids[-20:])
 
     return tok.decode(ids)
 
