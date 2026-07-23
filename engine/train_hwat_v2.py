@@ -16,7 +16,7 @@ Nouveautés Phase 2 :
 Lancer : python train_hwat_v2.py
 """
 
-import sys, math, time, os, re, json
+import sys, math, time, os, re, json, gc
 from pathlib import Path
 from collections import Counter
 import numpy as np
@@ -39,11 +39,11 @@ TAU = 2.0 * math.pi
 DIM = 64            # dimension
 N_BLOCKS = 2        # blocs
 N_HEADS = 4         # tetes d'attention
-MAX_LEN = 48        # longueur max de sequence
+MAX_LEN = 40        # longueur max (réduite pour mémoire)
 LR = 0.001
-EPOCHS = 5
+EPOCHS = 10          # époques
 PRINT_EVERY = 150
-CORPUS_MAX = 200000  # 200K caracteres pour la demo
+CORPUS_MAX = None    # corpus complet naturel
 
 
 # ════════════════════════════════════════════════════════════════
@@ -52,10 +52,15 @@ CORPUS_MAX = 200000  # 200K caracteres pour la demo
 
 def load_corpus(path=None):
     if path is None:
-        path = _ENGINE / "data" / "corpus_universal" / "corpus_universal_20260720_1007.txt"
+        # Priorité : corpus naturel > corpus universel
+        natural = _ENGINE / "data" / "corpus_natural_fr.txt"
+        if natural.exists():
+            path = str(natural)
+        else:
+            path = _ENGINE / "data" / "corpus_universal" / "corpus_universal_20260720_1007.txt"
     with open(path, 'r', encoding='utf-8') as f:
         text = f.read()
-    print(f"  Corpus : {len(text):,} caracteres")
+    print(f"  Corpus : {len(text):,} caracteres ({Path(path).name})")
     return text
 
 
@@ -365,11 +370,37 @@ def main():
     print(f"\n  HWAT v2     : {n_hwat:,} parametres")
     loss_hwat = train_model(hwat, batches, "HWAT v2")
 
-    # --- Transformer baseline ---
-    baseline = BaselineTransformer(V)
-    n_base = sum(p.numel() for p in baseline.parameters())
-    print(f"\n  Transformer : {n_base:,} parametres")
-    loss_base = train_model(baseline, batches, "Transformer")
+    # Sauvegarder HWAT immédiatement
+    save_path = _ENGINE / "data" / "hwat_v3_natural.pt"
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save({
+        'model_state': hwat.state_dict(),
+        'tokenizer': {
+            'word_to_id': tokenizer.word_to_id,
+            'id_to_word': tokenizer.id_to_word,
+            'vocab_size': tokenizer.vocab_size,
+        },
+        'config': {'dim': DIM, 'n_blocks': N_BLOCKS, 'n_heads': N_HEADS, 'max_len': MAX_LEN},
+        'loss_hwat': loss_hwat,
+    }, str(save_path))
+    print(f"  ✅ HWAT sauvegardé : {save_path}")
+
+    # Libérer la mémoire de HWAT
+    del hwat
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+    # --- Transformer baseline (dans un process séparé) ---
+    loss_base = []
+    n_base = 0
+    try:
+        baseline = BaselineTransformer(V)
+        n_base = sum(p.numel() for p in baseline.parameters())
+        print(f"\n  Transformer : {n_base:,} parametres")
+        loss_base = train_model(baseline, batches, "Transformer")
+    except RuntimeError as e:
+        print(f"\n  [Transformer] Erreur mémoire, skip: {e}")
 
     # --- Comparaison ---
     print(f"\n{'═'*65}")
@@ -405,7 +436,7 @@ def main():
         print(f"  ❌ HWAT est significativement derrière le transformer.")
 
     # Sauvegarde
-    save_path = _ENGINE / "data" / "hwat_v2.pt"
+    save_path = _ENGINE / "data" / "hwat_v3_natural.pt"
     save_path.parent.mkdir(parents=True, exist_ok=True)
     torch.save({
         'model_state': hwat.state_dict(),

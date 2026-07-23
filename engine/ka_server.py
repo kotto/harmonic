@@ -284,7 +284,22 @@ if brain is None:
     # Fallback: créer un petit brain pour compatibilité
     brain = HarmonicBrain(facts[:100], dim=64, use_holographic=False)
 
-# ── 🌐 Web Retriever (recherche Internet) ──────────────────────────────────────
+# ── 🌊 HWAT Bridge (nouveau modèle harmonique) ─────────────────────────
+_hwat_bridge = None
+_HWAT_AVAILABLE = False
+try:
+    from hwat_bridge import HwatBridge
+    _hwat_bridge = HwatBridge(auto_load=True)
+    _HWAT_AVAILABLE = _hwat_bridge.is_available
+    if _HWAT_AVAILABLE:
+        info = _hwat_bridge.info()
+        print(f"  🌊 HWAT connecté : {info['params']:,} params, "
+              f"dim={info['dim']}, blocs={info['blocks']}, "
+              f"vocab={info['vocab']}")
+except Exception as e:
+    print(f"  🌊 HWAT erreur chargement: {e}")
+
+# ── 🌐 Web Retriever (recherche Internet) ──────────────────────────────
 _web_retriever = None
 try:
     from web_retriever import WebRetriever
@@ -568,7 +583,15 @@ def chat():
     
     if not message:
         return jsonify({'error': 'Message requis', 'response': "Je n'ai pas compris votre message."}), 400
-    
+
+    # 🌊 HWAT ENRICHMENT — Encodage du message par le nouveau modèle harmonique
+    if _HWAT_AVAILABLE and _hwat_bridge:
+        try:
+            hwat_vec = _hwat_bridge.encode_pooled(message)
+            print(f"  🌊 HWAT: '{message[:50]}...' → vecteur norme={np.linalg.norm(hwat_vec):.1f}")
+        except Exception:
+            pass  # Bonus silencieux
+
     # 🌊 Détection de demande de diagnostic ondulatoire
     debug_prefixes = ['/debug', 'debug:', 'diagnostic:', 'wave:', '🌊']
     is_debug = any(message.lower().startswith(p.lower()) for p in debug_prefixes)
@@ -1513,8 +1536,43 @@ def health():
         'status': 'ok',
         'harmonic': len(brain.unconscious.registry) > 0,
         'hcv': hcv_available,
-        'bootstrapper': None  # brain has no bootstrapper is not None,
+        'hwat': _HWAT_AVAILABLE,
+        'bootstrapper': None
     })
+
+
+@app.route('/api/hwat', methods=['GET', 'POST'])
+def hwat_endpoint():
+    """Endpoint HWAT — encode ou génère via le nouveau modèle harmonique.
+    
+    GET  /api/hwat           → statut du modèle
+    POST /api/hwat           → encode ou génère
+         Body: {"text": "...", "action": "encode"|"generate"}
+    """
+    if not _HWAT_AVAILABLE:
+        return jsonify({'status': 'unavailable'}), 503
+    
+    if request.method == 'GET':
+        return jsonify({'status': 'ok', **_hwat_bridge.info()})
+    
+    data = request.get_json(force=True, silent=True) or {}
+    text = data.get('text', '').strip()
+    action = data.get('action', 'encode')
+    
+    if not text:
+        return jsonify({'error': 'Texte requis'}), 400
+    
+    if action == 'generate':
+        result = _hwat_bridge.generate(text, max_tokens=data.get('max_tokens', 30))
+        return jsonify({'generated': result})
+    else:
+        vec = _hwat_bridge.encode_pooled(text)
+        return jsonify({
+            'encoded': True,
+            'dim': len(vec),
+            'norm': float(np.linalg.norm(vec)),
+            'vector_preview': vec[:8].tolist()
+        })
 
 
 @app.route('/api/health/diagnostic', methods=['POST'])

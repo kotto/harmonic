@@ -179,7 +179,14 @@ def load_hwat(model_path: str = None):
         return _model_cache, _tokenizer_cache
 
     if model_path is None:
-        model_path = _ENGINE / "data" / "hwat_v2.pt"
+        # Priorité : v3 naturel > v2 universel
+        for candidate in ["hwat_v3_natural.pt", "hwat_v2.pt"]:
+            p = _ENGINE / "data" / candidate
+            if p.exists():
+                model_path = str(p)
+                break
+        if model_path is None:
+            raise FileNotFoundError("Aucun modèle trouvé dans data/")
 
     ckpt = torch.load(str(model_path), weights_only=False, map_location='cpu')
 

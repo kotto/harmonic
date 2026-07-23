@@ -64,8 +64,9 @@ class HwatBridge:
       - is_available() → bool      : True si HWAT chargé
     """
 
-    def __init__(self, auto_load: bool = True):
+    def __init__(self, auto_load: bool = True, model_path: str = None):
         self._loaded = False
+        self._model_path = model_path  # None = auto-detect (v3 > v2)
         if auto_load:
             self._loaded = _try_load_hwat()
 
