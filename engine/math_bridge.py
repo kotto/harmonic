@@ -17,11 +17,6 @@ def _get_math_engine():
     global _MATH_ENGINE
     if _MATH_ENGINE is None:
         try:
-            # Ajouter aussi le projet cerveau_harmonique_v1 au path
-            projet_dir = os.path.join(os.path.dirname(__file__), '..', 'projet', 'cerveau_harmonique_v1')
-            if projet_dir not in sys.path:
-                sys.path.insert(0, projet_dir)
-            
             from harmonic_math_engine import HarmonicMathEngine
             _MATH_ENGINE = HarmonicMathEngine()
             print("  🧮 Moteur mathématique LM Arena chargé")
@@ -44,7 +39,16 @@ def try_math_solve(question: str, lang: str = 'fr') -> str:
     result = _try_simple_calc(question, lang)
     if result:
         return result
-    
+
+    # Niveau 1.5 : CAS symbolique (SymPy) — dérivées, intégrales, limites, équations
+    try:
+        from harmonic_cas import cas_solve
+        cas_result = cas_solve(question)
+        if cas_result:
+            return cas_result
+    except ImportError:
+        pass
+
     # Niveau 2 : Moteur mathématique LM Arena (algèbre, géométrie, trigonométrie, etc.)
     engine = _get_math_engine()
     if engine:

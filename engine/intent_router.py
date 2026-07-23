@@ -1,0 +1,216 @@
+"""
+Intent Router — Routeur unifié d'intention
+===========================================
+Détecte le type de question et route vers le bon moteur.
+
+  Question → intent_router → {math | code_frontend | code_algo | kb | conversation}
+                               ↓
+                    Dispatch vers le bon moteur
+"""
+
+import re
+from typing import Optional, Tuple, Dict
+
+# Mots-clés mathématiques (FR + EN)
+MATH_KEYWORDS = frozenset([
+    'dérivée', 'dérivé', 'derivative', 'diff', 'd/dx',
+    'intégrale', 'integrál', 'integral', 'intégration', 'primitive',
+    'limite', 'limit', 'tend vers', 'as x approaches',
+    'résoudre', 'résous', 'solve', 'trouver x',
+    'matrice', 'matrix', 'déterminant', 'determinant', 'eigenvalue', 'valeur propre',
+    'équation', 'equation', 'polynôme', 'polynomial',
+    'factoriser', 'factor', 'développer', 'expand',
+    'simplifier', 'simplify', 'réduire',
+    'série de taylor', 'taylor series', 'développement limité',
+    'fonction', 'cosinus', 'sinus', 'tangente', 'logarithme', 'exponentielle',
+    'calculer', 'compute', 'combien',
+    'théorème', 'theorem', 'preuve', 'proof', 'démontrer',
+    'nombre premier', 'prime number',
+    'probabilité', 'probability', 'espérance', 'variance', 'écart-type',
+    'aire', 'surface', 'périmètre', 'volume',
+    'produit scalaire', 'dot product', 'vecteur', 'vector',
+])
+
+# Mots-clés code frontend
+CODE_FRONTEND_KEYWORDS = frozenset([
+    'react', 'vue', 'angular', 'svelte', 'solid',
+    'css', 'scss', 'sass', 'tailwind', 'bootstrap',
+    'html', 'jsx', 'tsx', 'sfc',
+    'composant', 'component', 'widget',
+    'flexbox', 'grid', 'responsive', 'media query',
+    'dark mode', 'thème', 'theme',
+    'hook', 'usestate', 'useeffect', 'usecontext',
+    'pinia', 'vuex', 'redux', 'context api',
+    'props', 'v-model', 'v-for', 'slot',
+    'formulaire', 'form', 'modal', 'dialog',
+    'navbar', 'sidebar', 'card', 'button', 'input',
+    'vite', 'webpack', 'rollup', 'esbuild',
+    'darkmode', 'animation css', 'transition',
+])
+
+# Mots-clés code algorithmique
+CODE_ALGO_KEYWORDS = frozenset([
+    'fonction', 'function', 'algorithme', 'algorithm',
+    'python', 'javascript', 'typescript', 'java', 'rust', 'go', 'c++', 'sql',
+    'tri', 'sort', 'recherche', 'search', 'binary search',
+    'liste chaînée', 'linked list', 'arbre', 'tree', 'graphe', 'graph',
+    'récursion', 'recursion', 'recursive',
+    'hashtable', 'hash map', 'pile', 'stack', 'file', 'queue',
+    'pointeur', 'pointer', 'classe', 'class', 'objet', 'object',
+    'api', 'endpoint', 'rest', 'graphql',
+    'regex', 'parsing', 'serialize', 'deserialize',
+    'fizzbuzz', 'fibonacci', 'palindrome',
+    'écris du code', 'code en', 'génère', 'génère un',
+    'script', 'débug', 'debug', 'bug', 'fix',
+])
+
+
+def detect_intent(question: str) -> Dict:
+    """
+    Détecte l'intention principale de la question.
+
+    Returns:
+        Dictionnaire avec:
+          - intent: 'math' | 'code_frontend' | 'code_algo' | 'kb' | 'conversation'
+          - confidence: 0-1
+          - detected_keywords: liste des mots-clés trouvés
+          - frontend_template: nom du template frontend (si applicable)
+    """
+    q = question.lower()
+
+    # Compter les matchs par catégorie
+    math_hits = sum(1 for kw in MATH_KEYWORDS if kw in q)
+    fe_hits = sum(1 for kw in CODE_FRONTEND_KEYWORDS if kw in q)
+    algo_hits = sum(1 for kw in CODE_ALGO_KEYWORDS if kw in q)
+
+    detected = []
+    for kw in MATH_KEYWORDS:
+        if kw in q: detected.append(kw)
+    for kw in CODE_FRONTEND_KEYWORDS:
+        if kw in q: detected.append(kw)
+    for kw in CODE_ALGO_KEYWORDS:
+        if kw in q: detected.append(kw)
+
+    # Décider
+    scores = {
+        'math': math_hits,
+        'code_frontend': fe_hits,
+        'code_algo': algo_hits,
+    }
+
+    best = max(scores, key=scores.get)
+    best_score = scores[best]
+
+    result = {
+        'intent': best if best_score > 0 else 'kb',
+        'confidence': min(1.0, best_score / 3.0),
+        'detected_keywords': detected[:10],
+    }
+
+    # Détection de template frontend spécifique
+    if best == 'code_frontend' or fe_hits > 0:
+        try:
+            from frontend_templates import detect_frontend_intent
+            fe_result = detect_frontend_intent(question)
+            if fe_result:
+                result['frontend_template'] = fe_result[0]
+                result['frontend_language'] = fe_result[1]
+        except ImportError:
+            pass
+
+    # Cas spécial: salutation
+    if any(w in q for w in ['bonjour', 'salut', 'hello', 'merci', 'au revoir']):
+        result['intent'] = 'conversation'
+
+    return result
+
+
+def route(question: str) -> Optional[str]:
+    """
+    Route une question vers le bon moteur et retourne la réponse.
+
+    Returns:
+        La réponse, ou None si la question doit aller au cerveau harmonique.
+    """
+    intent = detect_intent(question)
+
+    # 1. MATH → CAS symbolique + micro-calculateur
+    if intent['intent'] == 'math':
+        try:
+            from math_bridge import try_math_solve
+            result = try_math_solve(question)
+            if result:
+                return result
+        except Exception:
+            pass
+
+    # 2. CODE FRONTEND → templates frontend
+    if intent.get('frontend_template'):
+        try:
+            from frontend_templates import generate_frontend
+            code = generate_frontend(intent['frontend_template'])
+            if code:
+                lang = intent.get('frontend_language', 'jsx')
+                return f"```{lang}\n{code}\n```"
+        except Exception:
+            pass
+
+    # 3. CODE ALGO → code_generator
+    if intent['intent'] == 'code_algo':
+        # Le cerveau gère déjà le code via harmonic_ai.py
+        return None
+
+    # 4. KB / conversation → cerveau harmonique
+    return None
+
+
+# ═══════════════════════════════════════════════════════════════
+# TEST
+# ═══════════════════════════════════════════════════════════════
+
+def _test():
+    print("=" * 60)
+    print("TEST : Intent Router")
+    print("=" * 60)
+
+    tests = [
+        ("dérivée de x^3 + 2x", "math"),
+        ("résoudre x^2 - 5x + 6 = 0", "math"),
+        ("intégrale de sin(x)", "math"),
+        ("limite de sin(x)/x quand x tend vers 0", "math"),
+        ("crée un formulaire React", "code_frontend"),
+        ("composant Vue avec script setup", "code_frontend"),
+        ("CSS grid responsive", "code_frontend"),
+        ("glassmorphism effect", "code_frontend"),
+        ("écris une fonction de tri en Python", "code_algo"),
+        ("algorithme de recherche binaire", "code_algo"),
+        ("qu'est-ce que la photosynthèse", "kb"),
+        ("bonjour comment ça va", "conversation"),
+        ("qui a écrit Les Misérables", "kb"),
+    ]
+
+    correct = 0
+    for q, expected in tests:
+        result = detect_intent(q)
+        intent = result['intent']
+        template = result.get('frontend_template', '')
+        ok = "✅" if intent == expected else "❌"
+        extra = f" → {template}" if template else ""
+        print(f"  {ok} '{q[:40]}' → {intent}{extra}")
+        if intent == expected:
+            correct += 1
+
+    print(f"\n{correct}/{len(tests)} corrects")
+
+    # Test routing
+    print("\n─── Routing ───")
+    for q in ["dérivée de x^3 + 2x", "crée un composant React modal", "CSS flexbox layout"]:
+        result = route(q)
+        if result:
+            print(f"  '{q}' → {result[:80]}...")
+        else:
+            print(f"  '{q}' → (delegated to brain)")
+
+
+if __name__ == '__main__':
+    _test()
