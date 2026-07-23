@@ -496,13 +496,24 @@ class HarmonicBlock:
     """
     Un bloc = [SpectralOp → PhaseAttn] (résiduel) → [MLP] (résiduel)
 
+    Deux modes :
+      - adaptive=False (défaut) : STFT fixe (SpectralOperator, fenêtres Hann)
+      - adaptive=True           : FFT adaptative (AdaptiveSpectralOperator,
+                                  base de Fourier apprise par contexte)
+
     Pre-normalisation sur l'amplitude (LayerNorm adapté au module).
     """
 
     def __init__(self, dim: int, n_heads: int = 4,
                  window_sizes: Tuple[int, ...] = (16, 32, 64),
-                 hidden_mult: int = 4, block_id: int = 0):
-        self.spectral = SpectralOperator(dim, window_sizes)
+                 hidden_mult: int = 4, block_id: int = 0,
+                 adaptive: bool = False):
+        if adaptive:
+            from adaptive_spectral_operator import AdaptiveSpectralOperator
+            self.spectral = AdaptiveSpectralOperator(
+                dim, window_sizes, layer_id=block_id)
+        else:
+            self.spectral = SpectralOperator(dim, window_sizes)
         self.attn = PhaseAttention(dim, n_heads=n_heads)
         self.mlp = HarmonicMLP(dim, hidden_mult=hidden_mult, seed_salt=block_id)
         # Paramètres de LayerNorm (déterministes, apprenables plus tard)
@@ -549,14 +560,16 @@ class HWAT:
                  n_heads: int = 4,
                  max_len: int = 512,
                  window_sizes: Tuple[int, ...] = (16, 32, 64),
-                 hidden_mult: int = 4):
+                 hidden_mult: int = 4,
+                 adaptive: bool = False):
         self.vocab_size = vocab_size
         self.dim = dim
         self.n_blocks = n_blocks
         self.embedder = HarmonicEmbedding(vocab_size, dim=dim, max_len=max_len)
         self.blocks = [
             HarmonicBlock(dim, n_heads=n_heads, window_sizes=window_sizes,
-                          hidden_mult=hidden_mult, block_id=i)
+                          hidden_mult=hidden_mult, block_id=i,
+                          adaptive=adaptive)
             for i in range(n_blocks)
         ]
         # Tête LM : projette ψ (complexe) sur le vocab (réel)

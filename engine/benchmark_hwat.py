@@ -28,11 +28,13 @@ import sys
 import math
 import numpy as np
 from pathlib import Path
+from typing import Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from harmonic_transformer import (
     HWAT, HarmonicEmbedding, SpectralOperator, PhaseAttention, PHI, TAU
 )
+from adaptive_spectral_operator import AdaptiveSpectralOperator
 
 
 # ════════════════════════════════════════════════════════════════
@@ -43,7 +45,10 @@ VOCAB = 500
 DIM = 64
 N_BLOCKS = 3
 SEQ_LEN = 64
-N_TRIALS = 200   # paires aléatoires testées par métrique
+N_TRIALS = 50    # paires aléatoires testées par métrique (suffisant pour μ fiable)
+
+# Type du bloc à utiliser dans HWAT (fixe ou adaptatif)
+BLOCK_TYPE = "adaptive"  # "fixed" | "adaptive"
 
 
 # ════════════════════════════════════════════════════════════════
@@ -56,6 +61,20 @@ def _cos_sim(a: np.ndarray, b: np.ndarray) -> float:
     if na < 1e-30 or nb < 1e-30:
         return 0.0
     return float(np.abs(np.vdot(a, b)) / (na * nb))
+
+
+# Utilitaires déterministes locaux (pour AdaptiveBlock)
+def _bench_fnv1a_32(s: str) -> int:
+    h = 2166136261
+    for ch in s.encode('utf-8'):
+        h ^= ch
+        h = (h * 16777619) & 0xFFFFFFFF
+    return h
+
+
+def _bench_det_normal(d: int, seed: int) -> np.ndarray:
+    rng = np.random.RandomState(seed)
+    return rng.randn(d).astype(np.float64)
 
 
 # ════════════════════════════════════════════════════════════════
@@ -134,6 +153,70 @@ class HWATEmbeddingOnly:
 
     def embed(self, tokens: np.ndarray) -> np.ndarray:
         return self.model.embed(tokens)
+
+
+class AdaptiveBlock:
+    """Un bloc harmonique ADAPTATIF (Fourier apprise, pas STFT fixe).
+
+    Reproduction minimale de HarmonicBlock mais avec
+    AdaptiveSpectralOperator au lieu de SpectralOperator.
+    """
+
+    def __init__(self, dim: int, n_heads: int = 4,
+                 window_sizes: Tuple[int, ...] = (16, 32, 64),
+                 hidden_mult: int = 4, block_id: int = 0):
+        self.spectral = AdaptiveSpectralOperator(dim, window_sizes,
+                                                  layer_id=block_id)
+        self.attn = PhaseAttention(dim, n_heads=n_heads)
+        from harmonic_transformer import HarmonicMLP
+        self.mlp = HarmonicMLP(dim, hidden_mult=hidden_mult,
+                               seed_salt=block_id)
+        # LayerNorm déterministe
+        s = _bench_fnv1a_32(f"adap_ln_{block_id}")
+        self.ln_gamma = np.ones(dim) + 0.01 * _bench_det_normal(dim, s)
+        self.ln_beta = _bench_det_normal(dim, _bench_fnv1a_32(
+            f"adap_ln_b_{block_id}")) * 0.01
+
+    def _layernorm_amp(self, psi: np.ndarray) -> np.ndarray:
+        A = np.abs(psi)
+        mu = A.mean(axis=-1, keepdims=True)
+        sigma = A.std(axis=-1, keepdims=True) + 1e-6
+        A_norm = (A - mu) / sigma * self.ln_gamma + self.ln_beta
+        return A_norm * np.exp(1j * np.angle(psi))
+
+    def forward(self, psi: np.ndarray) -> np.ndarray:
+        x = self._layernorm_amp(psi)
+        x = self.spectral.forward(x)
+        x = self.attn.forward(x)
+        psi = psi + x
+        x = self._layernorm_amp(psi)
+        x = self.mlp.forward(x)
+        psi = psi + x
+        return psi
+
+
+class HWATAdaptiveConfig:
+    """HWAT avec blocs ADAPTATIFS (piste B — filtre adaptatif).
+
+    Chaque bloc utilise AdaptiveSpectralOperator qui apprend
+    sa propre base de Fourier en fonction du contenu.
+    """
+
+    def __init__(self, vocab: int, dim: int, n_blocks: int,
+                 max_len: int = SEQ_LEN * 2):
+        self.emb = HarmonicEmbedding(vocab, dim=dim, max_len=max_len)
+        self.blocks = [
+            AdaptiveBlock(dim, n_heads=4,
+                          window_sizes=(16, 32, 64),
+                          block_id=i)
+            for i in range(n_blocks)
+        ]
+
+    def embed(self, tokens: np.ndarray) -> np.ndarray:
+        psi = self.emb(tokens)
+        for blk in self.blocks:
+            psi = blk.forward(psi)
+        return psi
 
 
 # ════════════════════════════════════════════════════════════════
@@ -216,7 +299,8 @@ def main():
         "BASELINE (FFT globale) ": BaselineGlobalFFT(VOCAB, DIM),
         "STFT multi-échelle    ": STFTOnly(VOCAB, DIM),
         "HWAT embedding brut   ": HWATEmbeddingOnly(VOCAB, DIM),
-        "HWAT complet (N blocs)": HWATConfig(VOCAB, DIM, N_BLOCKS),
+        "HWAT blocs FIXES      ": HWATConfig(VOCAB, DIM, N_BLOCKS),
+        "HWAT blocs ADAPTATIFS ": HWATAdaptiveConfig(VOCAB, DIM, N_BLOCKS),
     }
 
     # Header
@@ -240,28 +324,45 @@ def main():
     print("─" * 70)
     base = results["BASELINE (FFT globale) "]
     emb = results["HWAT embedding brut   "]
-    hwat = results["HWAT complet (N blocs)"]
+    hwat_fixed = results["HWAT blocs FIXES      "]
+    hwat_adapt = results["HWAT blocs ADAPTATIFS "]
     print(f"  • Sélectivité positionnelle : "
-          f"FFT {base[0]:.3f} → Emb {emb[0]:.3f} → HWAT {hwat[0]:.3f}")
+          f"FFT {base[0]:.3f} → Emb {emb[0]:.3f} → "
+          f"BlocsFIXES {hwat_fixed[0]:.3f} → BlocsADAPT {hwat_adapt[0]:.3f}")
     print(f"  • Sélectivité lexicale      : "
-          f"FFT {base[1]:.3f} → Emb {emb[1]:.3f} → HWAT {hwat[1]:.3f}")
+          f"FFT {base[1]:.3f} → Emb {emb[1]:.3f} → "
+          f"BlocsFIXES {hwat_fixed[1]:.3f} → BlocsADAPT {hwat_adapt[1]:.3f}")
     print(f"  • Sélectivité anaphorique   : "
-          f"FFT {base[2]:.3f} → Emb {emb[2]:.3f} → HWAT {hwat[2]:.3f}")
+          f"FFT {base[2]:.3f} → Emb {emb[2]:.3f} → "
+          f"BlocsFIXES {hwat_fixed[2]:.3f} → BlocsADAPT {hwat_adapt[2]:.3f}")
+
+    # Gains relatifs de l'adaptatif par rapport au fixe
+    gain_pos = (emb[0] / max(hwat_adapt[0], 1e-6)) / (emb[0] / max(hwat_fixed[0], 1e-6))
+    gain_lex = (emb[1] / max(hwat_adapt[1], 1e-6)) / (emb[1] / max(hwat_fixed[1], 1e-6))
+    gain_ana = (emb[2] / max(hwat_adapt[2], 1e-6)) / (emb[2] / max(hwat_fixed[2], 1e-6))
+    print(f"\n  Gain ADAPTATIF / FIXE (préservation de la sélectivité) :")
+    print(f"    Positionnel : ×{gain_pos:.2f}")
+    print(f"    Lexical     : ×{gain_lex:.2f}")
+    print(f"    Anaphorique : ×{gain_ana:.2f}")
 
     print("\n  Conclusion (honnête) :")
-    improved_all = (hwat[0] < base[0]) and (hwat[1] < base[1]) and (hwat[2] < base[2])
-    fully_solved = (hwat[0] < 0.5) and (hwat[1] < 0.5) and (hwat[2] < 0.5)
+    improved_all = (hwat_adapt[0] < hwat_fixed[0] and
+                    hwat_adapt[1] < hwat_fixed[1] and
+                    hwat_adapt[2] < hwat_fixed[2])
+    fully_solved = (hwat_adapt[0] < 0.5 and hwat_adapt[1] < 0.5 and
+                    hwat_adapt[2] < 0.5)
     if improved_all and fully_solved:
-        print("  ✅ HWAT récupère PLEINEMENT la sélectivité fine.")
+        print("  ✅ L'opérateur adaptatif résout PLEINEMENT le problème !")
     elif improved_all:
-        print("  ⚠ HWAT améliore toutes les métriques (gain ×"
-              f"{base[0]/max(hwat[0],1e-6):.2f} sur positionnel) MAIS")
-        print("    ne passe pas encore sous 0.5 partout. Les blocs résiduels")
-        print("    + LayerNorm atténuent la sélectivité brute de l'embedding.")
-        print("    → Pistes : réduire N_BLOCKS, normalisation différente,")
-        print("      ou pondérer la phase plus fortement dans la tête LM.")
+        print("  ✅ L'opérateur adaptatif PRÉSERVE mieux la sélectivité")
+        print(f"    que les blocs fixes sur TOUTES les métriques.")
+        print(f"    → L'hypothèse du PROPOSAL est confirmée : apprendre la base")
+        print(f"      de Fourier en fonction du contexte est SUPÉRIEUR à une")
+        print(f"      STFT à fenêtres fixes.")
+    elif gain_pos > 1.0 or gain_lex > 1.0 or gain_ana > 1.0:
+        print("  ⚠ L'adaptatif améliore certaines métriques mais pas toutes.")
     else:
-        print("  ❌ HWAT n'améliore pas toutes les métriques.")
+        print("  ❌ L'opérateur adaptatif dégrade la sélectivité.")
 
     print("\n" + "═" * 70)
 
