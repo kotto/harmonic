@@ -118,67 +118,107 @@ def _try_simple_calc(q: str, lang: str) -> str:
         return f"{c/f:.1f} m."
     
     # === ARITHMÉTIQUE ===
+    # Nettoyer les préfixes
+    arithmetic_q = re.sub(r'^(combien\s+font\s+|calcule\s+|que\s+vaut\s+|calculer?\s+|compute\s+|what\s+is\s+)', '', q)
+
+    # Si la question contient des variables algébriques (x, y, z suivies d'exposant)
+    # ou un signe =, c'est une expression algébrique → ne pas traiter ici
+    if re.search(r'[xyznt]\s*[\^2-9]', arithmetic_q) or '=' in arithmetic_q:
+        return None  # Laisser le CAS gérer
+    arithmetic_q = re.sub(r'^(combien\s+font\s+|calcule\s+|que\s+vaut\s+|calculer?\s+|compute\s+|what\s+is\s+)', '', q)
+
     # Addition : X + Y, X plus Y
-    m = re.search(r'(\d+)\s*(\+|plus)\s*(\d+)(?!\s*(%|pourcent|fois|×|\*|x|divise|/))', q)
+    m = re.search(r'(\d+)\s*(\+|plus)\s*(\d+)(?!\s*(%|pourcent|fois|×|\*|x|divise|/))', arithmetic_q)
     if m:
         return f"{float(m.group(1)) + float(m.group(3)):.0f}"
-    
+
     # Soustraction : X - Y, X moins Y
-    m = re.search(r'(\d+)\s*(-|moins)\s*(\d+)', q)
+    m = re.search(r'(\d+)\s*(-|moins)\s*(\d+)', arithmetic_q)
     if m:
         return f"{float(m.group(1)) - float(m.group(3)):.0f}"
-    m = re.search(r'(\d+)\s*(divise\s*par|/)\s*(\d+)', q)
-    if m:
-        a, b = float(m.group(1)), float(m.group(3))
-        return f"{a/b:.1f}" if a % b != 0 else f"{int(a/b)}"
-    
-    # Multiplication + addition : X fois Y plus Z, X*Y+Z
-    m = re.search(r'(\d+)\s*(fois|×|\*|x)\s*(\d+)\s*(plus|\+)\s*(\d+)', q)
+
+    # Division : X / Y, X divise par Y
+    for pat in [r'(\d+)\s*(divise\s*par|/)\s*(\d+)', r'(\d+)\s*//\s*(\d+)']:
+        m = re.search(pat, arithmetic_q)
+        if m:
+            groups = m.groups()
+            if len(groups) == 3:
+                a, b = float(groups[0]), float(groups[2])
+            else:
+                a, b = float(groups[0]), float(groups[1])
+            if b == 0: return "∞"
+            return f"{int(a/b)}" if a % b == 0 else f"{a/b:.1f}"
+
+    # Multiplication + addition : X fois Y plus Z, X*Y+Z, 3+4*5
+    m = re.search(r'(\d+)\s*(fois|×|\*|x)\s*(\d+)\s*(plus|\+)\s*(\d+)', arithmetic_q)
     if m:
         a, b, c = float(m.group(1)), float(m.group(3)), float(m.group(5))
         return f"{a * b + c:.0f}"
-    
+
+    # Addition + multiplication (respect precedence): X + Y * Z
+    m = re.search(r'(\d+)\s*(\+)\s*(\d+)\s*(\*)\s*(\d+)', arithmetic_q)
+    if m:
+        a, b, c = float(m.group(1)), float(m.group(3)), float(m.group(5))
+        return f"{a + b * c:.0f}"
+
     # Distance : X km/h (ou km h) pendant Y min/h
-    m = re.search(r'(\d+)\s*km[/\s]*h.*?(\d+)\s*(minute|min|heure|h)', q)
+    m = re.search(r'(\d+)\s*km[/\s]*h.*?(\d+)\s*(minute|min|heure|h)', arithmetic_q)
     if m:
         v, t, unit = float(m.group(1)), float(m.group(2)), m.group(3)
         d = v * t if unit in ('heure', 'h') else v * t / 60
         return f"{d:.0f} km."
-    
+
     # Pourcentage : X% de Y
     for pat in [r'(\d+)\s*%\s*(de|of|sur)\s*(\d+)', r'(\d+)\s*(%|pourcent|pour cent).*?(\d+)']:
-        m = re.search(pat, q)
+        m = re.search(pat, arithmetic_q)
         if m:
             groups = m.groups()
-            if '%' in str(groups[1]) or 'pourcent' in str(groups[1]):
-                pct, val = float(groups[0]), float(groups[2])
-            else:
-                pct, val = float(groups[0]), float(groups[2])
-            return f"{pct * val / 100:.1f}"
-    
+            pct = float(groups[0])
+            val = float(groups[-1])
+            result = pct * val / 100
+            return f"{int(result)}" if result == int(result) else f"{result:.1f}"
+
     # Réduction : X€/Y%
-    m = re.search(r'(\d+)\s*(€|euros?).*?(\d+)\s*(%|pourcent).*?(reduction|remise|solde)', q)
+    m = re.search(r'(\d+)\s*(€|euros?).*?(\d+)\s*(%|pourcent).*?(reduction|remise|solde)', arithmetic_q)
     if m:
         prix, pct = float(m.group(1)), float(m.group(3))
         return f"{prix * (1 - pct/100):.2f} €."
-    
-    # Multiplication simple : X fois Y
-    m = re.search(r'(\d+)\s*(fois|×|\*|x)\s*(\d+)', q)
+
+    # Factorielle : factorielle de X, X!, factorial X
+    for pat in [r'factorielle\s+(?:de\s+)?(\d+)', r'factorial\s+(?:of\s+)?(\d+)', r'(\d+)\s*!']:
+        m = re.search(pat, arithmetic_q)
+        if m:
+            n = int(m.group(1))
+            if n > 50: break
+            fact = 1
+            for i in range(2, n+1): fact *= i
+            return f"{fact}"
+
+    # Puissance : X^Y, X puissance Y
+    for pat in [r'(\d+)\s*\^\s*(\d+)', r'(\d+)\s+puissance\s+(\d+)', r'(\d+)\s*\*\*\s*(\d+)']:
+        m = re.search(pat, arithmetic_q)
+        if m:
+            a, b = float(m.group(1)), float(m.group(2))
+            if b <= 20:
+                result = a ** b
+                return f"{int(result)}" if result == int(result) else f"{result:.1f}"
+
+    # Multiplication simple : X fois Y, X * Y
+    m = re.search(r'(\d+)\s*(fois|×|\*|x)\s*(\d+)', arithmetic_q)
     if m:
         return f"{float(m.group(1)) * float(m.group(3)):.0f}"
-    
-    # Puissance : X^Y, X puissance Y
-    m = re.search(r'(\d+)\s*(\^|puissance)\s*(\d+)', q)
+
+    # Carré : X², X au carre
+    m = re.search(r'(\d+)\s*(au\s+carre|carre|²)', arithmetic_q)
     if m:
-        a, b = float(m.group(1)), float(m.group(3))
-        if b <= 10:
-            return f"{a ** b:.0f}"
+        return f"{float(m.group(1))**2:.0f}"
     
     # Racine carrée (FR + EN)
-    for pat in [r'racine\s*carree?\s*(de\s*)?(\d+)', r'sqrt\s*(of\s*)?(\d+)', r'square\s*root\s*(of\s*)?(\d+)']:
+    # Patterns: "racine carrée de X", "racine de X", "sqrt(X)", "square root of X"
+    for pat in [r'racine\s+carree?\s+(?:de\s+)?(\d+)', r'racine\s+de\s+(\d+)', r'racine\s+(\d+)', r'sqrt\s*(?:of\s*)?(\d+)', r'square\s*root\s*(?:of\s*)?(\d+)']:
         m = re.search(pat, q)
         if m:
-            val = float(m.group(2))
+            val = float(m.group(1))
             s = math.sqrt(val)
             return f"{int(s)}" if s == int(s) else f"{s:.3f}"
     

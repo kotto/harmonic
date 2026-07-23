@@ -13,6 +13,7 @@ from typing import Optional, Tuple, Dict
 
 # Mots-clés mathématiques (FR + EN)
 MATH_KEYWORDS = frozenset([
+    # Calcul symbolique
     'dérivée', 'dérivé', 'derivative', 'diff', 'd/dx',
     'intégrale', 'integrál', 'integral', 'intégration', 'primitive',
     'limite', 'limit', 'tend vers', 'as x approaches',
@@ -23,12 +24,22 @@ MATH_KEYWORDS = frozenset([
     'simplifier', 'simplify', 'réduire',
     'série de taylor', 'taylor series', 'développement limité',
     'fonction', 'cosinus', 'sinus', 'tangente', 'logarithme', 'exponentielle',
-    'calculer', 'compute', 'combien',
     'théorème', 'theorem', 'preuve', 'proof', 'démontrer',
     'nombre premier', 'prime number',
     'probabilité', 'probability', 'espérance', 'variance', 'écart-type',
     'aire', 'surface', 'périmètre', 'volume',
     'produit scalaire', 'dot product', 'vecteur', 'vector',
+    # Arithmétique
+    'calculer', 'compute', 'combien', 'calcule',
+    'racine', 'sqrt', 'square root', 'carrée', 'carré', 'carre', 'cube',
+    'puissance', 'power', 'exponent', 'exposant',
+    'factorielle', 'factorial',
+    'pourcent', 'pourcentage', 'percent', '%',
+    'fois', 'multiplié', 'multiplier', 'divisé', 'diviser',
+    'addition', 'additionner', 'soustraction', 'soustraire',
+    'plus', 'moins', 'divise',
+    # Motifs numériques (détection de pattern)
+    'km/h', 'm/s', '€', 'euros', 'dollars',
 ])
 
 # Mots-clés code frontend
@@ -97,6 +108,21 @@ def detect_intent(question: str) -> Dict:
         'code_frontend': fe_hits,
         'code_algo': algo_hits,
     }
+
+    # Détection arithmétique par pattern numérique (fallback)
+    if math_hits == 0:
+        # Chercher des patterns numériques: X + Y, X - Y, X * Y, X / Y, X^Y
+        if re.search(r'\d+\s*[\+\-\*/×\^]\s*\d+', q):
+            math_hits = 1
+            scores['math'] = 1
+        # Pourcentage: X% de Y
+        elif re.search(r'\d+\s*%', q):
+            math_hits = 1
+            scores['math'] = 1
+        # Puissance: X^Y, X**Y
+        elif re.search(r'\d+\s*\^', q):
+            math_hits = 1
+            scores['math'] = 1
 
     best = max(scores, key=scores.get)
     best_score = scores[best]

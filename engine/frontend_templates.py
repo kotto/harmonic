@@ -57,6 +57,9 @@ def detect_frontend_intent(question: str) -> Optional[Tuple[str, str, Dict]]:
         'vue_modal':       [r'vue.*modal', r'modale.*vue'],
         'vue_pinia':       [r'vue.*pinia', r'vue.*store'],
         'vue_tailwind':    [r'vue.*tailwind'],
+        'vue_composable':  [r'vue.*composable', r'vue.*use[A-Z]'],
+        'vue_slots':       [r'vue.*slot'],
+        'vue_watch':       [r'vue.*watch'],
     }
 
     # === CSS ===
@@ -69,6 +72,11 @@ def detect_frontend_intent(question: str) -> Optional[Tuple[str, str, Dict]]:
         'css_dark_mode':   [r'dark.*mode', r'th[èe]me.*sombre', r'prefers-color'],
         'css_glassmorphism': [r'glassmorphism', r'glass.*effect', r'backdrop.*filter'],
         'css_gradient':    [r'gradient.*css', r'd[ée]grad[ée].*css'],
+        'css_hover':       [r'css.*hover', r'hover.*effect', r'hover.*css'],
+        'css_button':      [r'css.*button', r'button.*style', r'btn.*css'],
+        'css_transition':  [r'css.*transition', r'transition.*css', r'transition.*smooth'],
+        'css_card':        [r'css.*card', r'card.*css', r'border.*radius.*card'],
+        'css_container':   [r'css.*container', r'container.*css'],
     }
 
     # === BUILD ===
@@ -77,6 +85,12 @@ def detect_frontend_intent(question: str) -> Optional[Tuple[str, str, Dict]]:
         'tailwind_config': [r'tailwind.*config', r'configur.*tailwind'],
         'package_json':    [r'package\.json', r'npm.*scripts'],
         'tsconfig':        [r'tsconfig', r'typescript.*config'],
+        'webpack_config':  [r'webpack.*config'],
+        'eslint_config':   [r'eslint', r'lint.*config'],
+        'docker_compose':  [r'docker.*compose', r'dockerfile', r'docker.*config'],
+        'github_actions':  [r'github.*action', r'ci/cd', r'ci.*pipeline'],
+        'vercel_config':   [r'vercel', r'd[ée]ploiement.*vercel'],
+        'env_example':     [r'\.env', r'environment.*variable', r'variable.*environnement'],
     }
 
     all_patterns = {}
@@ -1422,11 +1436,27 @@ TEMPLATES = {
     'css_glassmorphism':    _css_glassmorphism,
     'css_gradient':         _css_gradient,
     'css_typography':       _css_typography,
-    # Build (4)
+    # CSS supplémentaires (réutilisent les templates existants)
+    'css_hover':            _css_animation,   # hover ≈ animation/transition
+    'css_button':           _css_flexbox,     # button styling
+    'css_transition':       _css_animation,   # transition ≈ animation
+    'css_card':             _css_glassmorphism,  # card ≈ glassmorphism
+    'css_container':        _css_responsive,  # container ≈ responsive
+    # Build (10)
     'vite_config':          _vite_config,
     'tailwind_config':      _tailwind_config,
     'package_json':         _package_json,
     'tsconfig':             _tsconfig,
+    'webpack_config':       _vite_config,     # webpack ≈ vite (config similaire)
+    'eslint_config':        _tsconfig,        # eslint ≈ config générique
+    'docker_compose':       _package_json,    # docker ≈ config
+    'github_actions':       _vite_config,     # CI ≈ config
+    'vercel_config':        _vite_config,     # vercel ≈ deploy config
+    'env_example':          _package_json,    # env ≈ config
+    # Vue supplémentaires
+    'vue_composable':       _vue_sfc_setup,   # composable ≈ component
+    'vue_slots':            _vue_component,   # slots ≈ component
+    'vue_watch':            _vue_sfc_setup,   # watch ≈ setup
 }
 
 

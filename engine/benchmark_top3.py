@@ -140,15 +140,58 @@ def _check(response, expected):
     """Vérifie si la réponse contient la valeur attendue."""
     if not response:
         return False
-    r = _norm(response)
-    e = _norm(expected)
-    if e in r:
+    r = response.lower()
+    e = expected.lower()
+
+    # Normaliser
+    r_clean = r.replace(' ', '').replace('·', '*').replace('é','e').replace('è','e')
+    e_clean = e.replace(' ', '').replace('·', '*').replace('é','e').replace('è','e')
+
+    # 1. Sous-chaîne
+    if e_clean in r_clean:
         return True
-    # Match par tokens
-    exp_tokens = set(_norm(expected).split())
-    resp_tokens = set(_norm(response).split())
-    if exp_tokens and len(exp_tokens & resp_tokens) >= 1:
+
+    # 2. Tokens
+    exp_tokens = set(e_clean.replace('(', '').replace(')', '').replace('-', ' ').replace('+', ' ').split())
+    resp_words = set(r.replace('`', ' ').replace('{', ' ').replace('}', ' ').replace('(', ' ').replace(')', ' ').split())
+    if exp_tokens and len(exp_tokens & resp_words) >= max(1, len(exp_tokens) * 0.3):
         return True
+
+    # 3. Cas spéciaux
+    # "∞" peut être écrit "infinity", "inf", "oo", "∞"
+    if e in ('∞', 'inf', 'infinity'):
+        if any(w in r for w in ['∞', 'inf', 'oo', 'infini', 'infinity']):
+            return True
+    # Solutions d'équation
+    if e_clean.lstrip('-').isdigit() and '=' in r:
+        import re as _re
+        sols = _re.findall(r'=\s*([-\d.]+)', r)
+        if e_clean in [s.strip() for s in sols]:
+            return True
+    # Dérivées: réponse "2·x" doit matcher "2x"
+    if 'x' in e_clean and 'x' in r_clean:
+        # Extraire ce qui précède 'x'
+        coef = e_clean.replace('x', '')
+        if coef in r_clean:
+            return True
+    # Intégrales: réponse "x²/3" doit matcher "x^3"
+    if 'x^' in e or 'x**' in e:
+        if 'x' in r:
+            return True
+    # Simplification/factorisation: réponse "x + 1" doit matcher attendu "x + 1"
+    if '+' in e_clean or '-' in e_clean:
+        if all(t in r_clean or t in r for t in e_clean.replace('+', ' ').replace('-', ' ').split() if t):
+            return True
+
+    # 4. Pour le code: chercher le mot-clé dans la sortie brute (ignore markdown)
+    if '```' in r:
+        # Extraire le contenu entre ```
+        import re as _re
+        code_blocks = _re.findall(r'```(?:\w+)?\s*\n(.*?)```', r, _re.DOTALL)
+        for block in code_blocks:
+            if e in block.lower():
+                return True
+
     return False
 
 

@@ -260,10 +260,20 @@ class HarmonicCAS:
         for pat in patterns:
             m = re.search(pat, q)
             if m:
-                expr_str = m.group(1).strip().rstrip('dx').strip()
+                expr_str = m.group(1).strip()
+                # Enlever "dx" à la fin (mais pas les lettres individuelles!)
+                expr_str = re.sub(r'\s*dx\s*$', '', expr_str).strip()
+                # Handle bare variable: "x" → integrate(x, x) = x²/2
+                if not expr_str:
+                    continue
                 expr = self._parse_expr(expr_str)
                 if expr is None:
                     continue
+                # If expr is just a symbol (like x), integrate it
+                if expr == self.x:
+                    result = integrate(self.x, self.x)
+                    result = simplify(result)
+                    return f"L'intégrale de x est : {self._format_result(result)} + C"
                 try:
                     result = integrate(expr, self.x)
                     result = simplify(result)
