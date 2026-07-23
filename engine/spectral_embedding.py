@@ -351,6 +351,12 @@ class SpectralEmbedding:
         # Si on a une phase sémantique → l'injecter fortement
         phase = self.phases.get(word)
         if phase is not None:
+            # Normaliser : phase peut être un float ou une liste de phases
+            if isinstance(phase, list):
+                phase_list = phase
+            else:
+                phase_list = [float(phase)]
+            
             # Injecter la phase dans plusieurs paires de dimensions
             # pour qu'elle DOMINE le produit scalaire
             # Stratégie : utiliser les 32 premières paires de dimensions
@@ -358,7 +364,9 @@ class SpectralEmbedding:
             boost = math.sqrt(self.dim / (2.0 * n_phase_dims)) * sigma
             for k in range(n_phase_dims):
                 # Chaque paire de dimensions porte une harmonique de la phase
-                phase_k = phase * (1.0 + k * PHI_INV)
+                # Utiliser les phases sémantiques disponibles (cycliquement si moins que n_phase_dims)
+                p = phase_list[k % len(phase_list)]
+                phase_k = p * (1.0 + k * PHI_INV)
                 real[2*k] = math.cos(phase_k) * boost
                 imag[2*k] = math.sin(phase_k) * boost
         
