@@ -716,10 +716,65 @@ def chat():
         message = f"{context}\n{message}"
     
     t0 = time.time()
-    response = ai.ask(message)
-    confidence = 0.70 if response else 0.0
-    latency_ms = (time.time() - t0) * 1000
+    
+    # 🌊 Pipeline harmonique complet (HWAT + routeur + logique + templates)
+    response = None
     source = 'harmonic'
+    
+    # 1. Normaliser la requête (questions courtes → langage naturel)
+    normalized = message
+    try:
+        from query_normalizer import normalize
+        normalized = normalize(message)
+    except Exception:
+        pass
+    
+    # 2. Router vers le bon moteur (maths, code, raisonnement)
+    try:
+        from intent_router import route
+        result = route(normalized)
+        if result:
+            response = result
+            source = 'router'
+    except Exception:
+        pass
+    
+    # 3. Logic engine (raisonnement direct)
+    if not response:
+        try:
+            from logic_engine import solve_logic
+            result = solve_logic(normalized)
+            if result:
+                response = result
+                source = 'logic'
+        except Exception:
+            pass
+    
+    # 4. HWAT — retrieval de faits depuis les hologrammes
+    if not response and _HWAT_AVAILABLE and _hwat_bridge:
+        try:
+            from hologram_router import HologramRouter
+            router = HologramRouter('data/holograms')
+            domains = router.route(normalized, top_k=2)
+            facts = []
+            for domain, _ in domains:
+                facts.extend(router.retrieve_facts(domain, normalized, top_k=3))
+            if facts:
+                lines = [f"🌊 {message}", ""]
+                for f in facts[:5]:
+                    lines.append(f"• {f['sujet'][:60]} {f['relation'][:30]} {f['objet'][:60]}")
+                response = '\n'.join(lines)
+                source = 'hologram'
+        except Exception:
+            pass
+    
+    # 5. Fallback : HarmonicAI
+    if not response:
+        response = ai.ask(message)
+        source = 'harmonic'
+    
+    confidence = 0.85 if source != 'harmonic' else 0.70
+    latency_ms = (time.time() - t0) * 1000
     
     # Métriques
     _metrics['harmonic_count'] += 1
