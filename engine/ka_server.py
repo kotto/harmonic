@@ -2581,18 +2581,33 @@ def serve_benchmark():
 
 @app.route('/')
 def serve_index():
-    """Page d'accueil — KA Phone PWA."""
-    return send_from_directory(str(_ENGINE_DIR), 'ka_index.html')
+    """Page d'accueil — KA Phone PWA (redesign)."""
+    return send_from_directory(str(_ENGINE_DIR / 'ka_redesign'), 'index.html')
 
 @app.route('/manifest.json')
 def serve_manifest():
     """Manifest PWA pour installation sur l'écran d'accueil."""
-    return send_from_directory(str(_ENGINE_DIR), 'manifest.json')
+    return send_from_directory(str(_ENGINE_DIR / 'ka_redesign'), 'manifest.json')
 
 @app.route('/sw.js')
 def serve_service_worker():
     """Service Worker pour le mode hors-ligne."""
-    return send_from_directory(str(_ENGINE_DIR), 'sw.js', mimetype='application/javascript')
+    return send_from_directory(str(_ENGINE_DIR / 'ka_redesign'), 'sw.js', mimetype='application/javascript')
+
+@app.route('/js/<path:filename>')
+def serve_js(filename):
+    """Fichiers JavaScript du redesign."""
+    return send_from_directory(str(_ENGINE_DIR / 'ka_redesign' / 'js'), filename)
+
+@app.route('/css/<path:filename>')
+def serve_css(filename):
+    """Fichiers CSS du redesign."""
+    return send_from_directory(str(_ENGINE_DIR / 'ka_redesign' / 'css'), filename)
+
+@app.route('/screens/<path:filename>')
+def serve_screens(filename):
+    """Captures d'écran."""
+    return send_from_directory(str(_ENGINE_DIR / 'ka_redesign' / 'screens'), filename)
 
 @app.route('/icons/<path:filename>')
 def serve_icons(filename):
