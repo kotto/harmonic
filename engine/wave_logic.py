@@ -72,8 +72,12 @@ class WaveOps:
         words = _normalize(text).split()
         psi = np.zeros(self.enc.dim, dtype=np.complex128)
         for w in words:
-            if w in self.enc.word_vectors:
-                psi += self.enc.word_vectors[w]
+            # Utiliser encode_word() qui génère à la volée + cache
+            v = self.enc.encode_word(w) if hasattr(self.enc, 'encode_word') else None
+            if v is None and hasattr(self.enc, 'word_vectors'):
+                v = self.enc.word_vectors.get(w)
+            if v is not None:
+                psi += v
         norm = np.sqrt(np.sum(np.abs(psi)**2))
         return psi / norm if norm > 0 else psi
     

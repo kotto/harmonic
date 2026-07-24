@@ -42,6 +42,28 @@ MATH_KEYWORDS = frozenset([
     'km/h', 'm/s', '€', 'euros', 'dollars',
 ])
 
+# Mots-clés raisonnement (FR + EN)
+REASONING_KEYWORDS = frozenset([
+    'si', 'alors', 'donc', 'déduire', 'déduis', 'deduire', 'deduis',
+    'syllogisme', 'prémisse', 'premisse', 'premise',
+    'conclusion', 'raisonnement', 'reasoning',
+    'logique', 'logic', 'inférence', 'inference',
+    'tous les', 'tout les', 'chaque', 'aucun', 'certains',
+    'est un', 'sont des', 'fait partie',
+    'modus ponens', 'modus tollens',
+    'contraposée', 'contraposee', 'reciproque',
+    'vrai ou faux', 'vrai/faux', 'true/false',
+    'que peut-on', 'que peut on', 'qu\'est-ce qu\'on',
+    'peut-on conclure', 'peut on conclure',
+    'est-il vrai', 'est il vrai',
+    'prouver', 'démontrer', 'demonter', 'montrer que',
+    'supposons', 'hypothèse', 'hypothese',
+    'implique', 'entraîne', 'entraine',
+    'contradiction', 'paradoxe',
+    'nécessairement', 'obligatoirement', 'forcement',
+    'analogie', 'analogue', 'similaire à',
+])
+
 # Mots-clés code frontend
 CODE_FRONTEND_KEYWORDS = frozenset([
     'react', 'vue', 'angular', 'svelte', 'solid',
@@ -102,11 +124,20 @@ def detect_intent(question: str) -> Dict:
     for kw in CODE_ALGO_KEYWORDS:
         if kw in q: detected.append(kw)
 
+    # Détection raisonnement
+    reason_hits = 0
+    reason_detected = []
+    for kw in REASONING_KEYWORDS:
+        if kw in q:
+            reason_hits += 1
+            reason_detected.append(kw)
+
     # Décider
     scores = {
         'math': math_hits,
         'code_frontend': fe_hits,
         'code_algo': algo_hits,
+        'reasoning': reason_hits,
     }
 
     # Détection arithmétique par pattern numérique (fallback)
@@ -130,7 +161,9 @@ def detect_intent(question: str) -> Dict:
     result = {
         'intent': best if best_score > 0 else 'kb',
         'confidence': min(1.0, best_score / 3.0),
-        'detected_keywords': detected[:10],
+        'detected_keywords': detected[:10] + reason_detected[:5],
+        'reason_hits': reason_hits,
+        'math_hits': math_hits,
     }
 
     # Détection de template frontend spécifique
@@ -161,7 +194,7 @@ def route(question: str) -> Optional[str]:
     intent = detect_intent(question)
 
     # 1. MATH → CAS symbolique + micro-calculateur
-    if intent['intent'] == 'math':
+    if intent['intent'] == 'math' or intent.get('math_hits', 0) > 0:
         try:
             from math_bridge import try_math_solve
             result = try_math_solve(question)
@@ -169,6 +202,15 @@ def route(question: str) -> Optional[str]:
                 return result
         except Exception:
             pass
+        # Fallback pour questions courtes sans mot-clé : tenter le CAS directement
+        if len(question.split()) <= 5:
+            try:
+                from math_bridge import try_math_solve
+                result = try_math_solve(question)
+                if result and len(result) > 2:
+                    return result
+            except Exception:
+                pass
 
     # 2. CODE FRONTEND → templates frontend
     if intent.get('frontend_template'):
@@ -183,10 +225,19 @@ def route(question: str) -> Optional[str]:
 
     # 3. CODE ALGO → code_generator
     if intent['intent'] == 'code_algo':
-        # Le cerveau gère déjà le code via harmonic_ai.py
         return None
 
-    # 4. KB / conversation → cerveau harmonique
+    # 4. RAISONNEMENT → wave_logic
+    if intent['intent'] == 'reasoning' or intent.get('reason_hits', 0) > 0:
+        try:
+            from reasoning_router import solve_reasoning
+            result = solve_reasoning(question)
+            if result:
+                return result
+        except Exception:
+            pass
+
+    # 5. KB / conversation → cerveau harmonique
     return None
 
 
