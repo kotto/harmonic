@@ -33,7 +33,88 @@
     selectedInterests: [],
     isOnboarded: localStorage.getItem('ka_onboarded') === 'true',
     loadedScreens: {},
+    // Voice state
+    voiceEnabled: localStorage.getItem('ka_voice_enabled') !== 'false',
+    voiceEmotion: localStorage.getItem('ka_voice_emotion') || 'warm',
+    voiceAutoPlay: localStorage.getItem('ka_voice_autoplay') !== 'false',
   };
+
+  // ═══ VOICE / TTS ═══
+  let audioCtx = null;
+  let currentAudioSource = null;
+
+  function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  async function playAudioResponse(audioBase64, sampleRate = 24000) {
+    if (!audioBase64) return;
+    try {
+      // Decode base64 → ArrayBuffer
+      const binaryStr = atob(audioBase64);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+      
+      // Convert int16 → float32
+      const int16 = new Int16Array(bytes.buffer);
+      const float32 = new Float32Array(int16.length);
+      for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768.0;
+      
+      const ctx = getAudioCtx();
+      const buffer = ctx.createBuffer(1, float32.length, sampleRate);
+      buffer.getChannelData(0).set(float32);
+      
+      // Stop previous audio
+      if (currentAudioSource) {
+        try { currentAudioSource.stop(); } catch(e) {}
+      }
+      
+      currentAudioSource = ctx.createBufferSource();
+      currentAudioSource.buffer = buffer;
+      currentAudioSource.connect(ctx.destination);
+      currentAudioSource.start();
+      
+      return true;
+    } catch (e) {
+      console.warn('Audio playback failed:', e);
+      return false;
+    }
+  }
+
+  function stopAudio() {
+    if (currentAudioSource) {
+      try { currentAudioSource.stop(); } catch(e) {}
+      currentAudioSource = null;
+    }
+  }
+
+  function toggleVoice() {
+    state.voiceEnabled = !state.voiceEnabled;
+    localStorage.setItem('ka_voice_enabled', state.voiceEnabled);
+    updateVoiceButton();
+    return state.voiceEnabled;
+  }
+
+  function setVoiceEmotion(emotion) {
+    state.voiceEmotion = emotion;
+    localStorage.setItem('ka_voice_emotion', emotion);
+    updateVoiceEmotionDisplay();
+  }
+
+  function updateVoiceButton() {
+    const btn = document.getElementById('voice-toggle-btn');
+    if (btn) {
+      btn.textContent = state.voiceEnabled ? '🔊' : '🔇';
+      btn.title = state.voiceEnabled ? 'Voix activée — cliquer pour couper' : 'Voix coupée — cliquer pour activer';
+    }
+  }
+
+  function updateVoiceEmotionDisplay() {
+    const el = document.getElementById('voice-emotion-display');
+    if (el) el.textContent = state.voiceEmotion;
+  }
 
   // ═══ API CLIENT ═══
   const api = new KAApiClient();
@@ -133,13 +214,28 @@
       }
       
       try {
-        const data = await api.chat(text, { personality: state.personality });
+        // Use voice endpoint if enabled
+        const useVoice = state.voiceEnabled && state.voiceAutoPlay;
+        const data = useVoice 
+          ? await api.chatWithVoice(text, state.voiceEmotion)
+          : await api.chat(text, { personality: state.personality });
+        
         if (container && data.response) {
           container.innerHTML += `<div class="chat__msg chat__msg--ka">
             <div class="chat__msg-avatar">KA</div>
-            <div class="chat__msg-bubble"><p>${data.response}</p><span class="chat__msg-time">${getTime()}</span></div>
+            <div class="chat__msg-bubble">
+              <p>${data.response}</p>
+              <span class="chat__msg-time">${getTime()}</span>
+              ${data.audio_base64 ? '<span class="chat__msg-audio" onclick="KA.playLastAudio()" title="🔊 Réécouter">🔊</span>' : ''}
+            </div>
           </div>`;
           container.scrollTop = container.scrollHeight;
+          
+          // Auto-play voice
+          if (data.audio_base64) {
+            KA._lastAudio = data;
+            playAudioResponse(data.audio_base64, data.audio_sample_rate || 24000);
+          }
         }
       } catch (err) {
         if (container) {
@@ -296,6 +392,33 @@
     searchMemory(query) {
       console.log('Searching memory:', query);
     },
+
+    // ═══ VOICE CONTROLS ═══
+    toggleVoice() { return toggleVoice(); },
+    setVoiceEmotion(e) { setVoiceEmotion(e); },
+    playLastAudio() {
+      if (KA._lastAudio && KA._lastAudio.audio_base64) {
+        playAudioResponse(KA._lastAudio.audio_base64, KA._lastAudio.audio_sample_rate || 24000);
+      }
+    },
+    stopAudio() { stopAudio(); },
+    async speakText(text, emotion) {
+      try {
+        const buffer = await api.speak(text, emotion || state.voiceEmotion);
+        const int16 = new Int16Array(buffer);
+        const float32 = new Float32Array(int16.length);
+        for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768.0;
+        const ctx = getAudioCtx();
+        const audioBuf = ctx.createBuffer(1, float32.length, 24000);
+        audioBuf.getChannelData(0).set(float32);
+        if (currentAudioSource) { try { currentAudioSource.stop(); } catch(e) {} }
+        currentAudioSource = ctx.createBufferSource();
+        currentAudioSource.buffer = audioBuf;
+        currentAudioSource.connect(ctx.destination);
+        currentAudioSource.start();
+      } catch (e) { console.error('Speak error:', e); }
+    },
+    getVoiceInfo() { return api.getVoiceInfo(); },
   });
 
   // ═══ UTILS ═══

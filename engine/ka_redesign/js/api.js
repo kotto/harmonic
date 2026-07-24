@@ -50,13 +50,39 @@
 
     // ═══ CORE AI ═══
     async chat(message, context = {}) {
-      return this.post('/api/chat', {
+      const path = context.voice ? '/api/chat/voice' : '/api/chat';
+      return this.post(path, {
         message, user_id: this.userId,
         style: context.style || 'balanced',
         depth: context.depth || 3,
-        personality: context.personality || 'ka'
+        personality: context.personality || 'ka',
+        voice: context.voice || false,
+        emotion: context.emotion || 'warm',
       });
     }
+    
+    // ═══ VOICE / TTS ═══
+    async speak(text, emotion = 'warm') {
+      const resp = await fetch(this.baseUrl + '/api/voice/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, emotion })
+      });
+      if (!resp.ok) throw new Error('Voice TTS failed');
+      return resp.arrayBuffer();
+    }
+    
+    async chatWithVoice(message, emotion = 'warm') {
+      return this.post('/api/chat/voice', {
+        message, user_id: this.userId,
+        emotion, voice: true,
+        personality: 'ka', depth: 'standard',
+      });
+    }
+    
+    async getVoices() { return this.get('/api/voice/voices'); }
+    async setEmotion(emotion) { return this.post('/api/voice/emotion', { emotion }); }
+    async getVoiceInfo() { return this.get('/api/voice/info'); }
 
     async reason(topic) { return this.post('/api/reason', { topic }); }
     async create(n = 3, conceptA = '', conceptB = '') { 

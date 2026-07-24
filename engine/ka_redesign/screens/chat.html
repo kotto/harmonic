@@ -39,7 +39,19 @@
     </div>
     
     <div class="chat__input-bar">
-      <button class="chat__input-btn" title="Micro" aria-label="Dictée vocale">🎤</button>
+      <button class="chat__input-btn" id="voice-toggle-btn" title="Voix activée — cliquer pour couper" onclick="KA.toggleVoice()">🔊</button>
+      <select class="chat__emotion-select" id="voice-emotion-select" onchange="KA.setVoiceEmotion(this.value)" title="Émotion de KA">
+        <option value="warm">🤗 Chaleureux</option>
+        <option value="joyful">😊 Joyeux</option>
+        <option value="calm">😌 Calme</option>
+        <option value="sad">😢 Triste</option>
+        <option value="urgent">⚡ Urgent</option>
+        <option value="playful">😜 Joueur</option>
+        <option value="authoritative">🎓 Autoritaire</option>
+        <option value="whisper">🤫 Chuchoté</option>
+        <option value="excited">🎉 Excité</option>
+        <option value="neutral">😐 Neutre</option>
+      </select>
       <input type="text" class="chat__input" id="chat-input" 
              placeholder="Écrivez votre message..." 
              onkeydown="if(event.key==='Enter')KA.sendMessage(this.value)">
@@ -186,6 +198,27 @@
     color: var(--color-text-muted);
     margin-top: 8px;
   }
+  .chat__emotion-select {
+    padding: 6px 10px;
+    border-radius: 20px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    font-size: 0.75rem;
+    cursor: pointer;
+    max-width: 130px;
+    outline: none;
+  }
+  .chat__emotion-select:focus {
+    border-color: var(--color-primary);
+  }
+  .chat__msg-audio {
+    cursor: pointer;
+    margin-left: 8px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+  .chat__msg-audio:hover { opacity: 1; }
 </style>
 
 <script>

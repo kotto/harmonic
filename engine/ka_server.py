@@ -3392,18 +3392,272 @@ except Exception as e:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# 🎵 KA VOICE — Synthèse Vocale Conversationnelle (mode compagnon)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_KA_VOICE_AVAILABLE = False
+_ka_voice_engine = None
+_ka_voice_store = None
+
+try:
+    from ka_conversational_engine import KAConversationalEngine
+    _ka_voice_engine = KAConversationalEngine(voice_name='KA', emotion='warm')
+    
+    # Charger la voix KA par défaut si un fichier existe
+    default_voice_path = Path(__file__).resolve().parent / 'data' / 'ka_default_voice.wav'
+    if default_voice_path.exists():
+        _ka_voice_engine.load_voice('KA', audio_path=str(default_voice_path))
+    
+    _KA_VOICE_AVAILABLE = True
+    log.info("🎵 KA Voice Engine: actif (10 émotions, streaming <50ms)")
+except Exception as e:
+    log.warning(f"🎵 KA Voice Engine: non disponible ({e})")
+
+
+# ── API Voice Endpoints ────────────────────────────────────────────────────────
+
+@app.route('/api/voice/speak', methods=['POST'])
+def voice_speak():
+    """
+    Synthèse vocale — texte → audio WAV.
+    Body: { "text": "...", "emotion": "warm|joyful|sad|...", "voice_id": "..." }
+    Returns: audio/wav binary
+    """
+    if not _KA_VOICE_AVAILABLE:
+        return jsonify({'error': 'KA Voice Engine non disponible'}), 503
+    
+    data = request.get_json(force=True, silent=True) or {}
+    text = data.get('text', '').strip()
+    emotion = data.get('emotion', 'warm')
+    voice_id = data.get('voice_id', None)
+    
+    if not text:
+        return jsonify({'error': 'Texte requis'}), 400
+    
+    try:
+        _ka_voice_engine.set_emotion(emotion)
+        audio = _ka_voice_engine.speak(text, emotion=emotion)
+        
+        # Convertir en WAV 16-bit PCM
+        audio_int16 = (audio * 32767).astype(np.int16)
+        wav_buffer = io.BytesIO()
+        
+        import struct as _struct
+        n_samples = len(audio_int16)
+        # Header WAV
+        wav_buffer.write(b'RIFF')
+        wav_buffer.write(_struct.pack('<I', 36 + n_samples * 2))
+        wav_buffer.write(b'WAVE')
+        wav_buffer.write(b'fmt ')
+        wav_buffer.write(_struct.pack('<I', 16))       # chunk size
+        wav_buffer.write(_struct.pack('<H', 1))         # PCM
+        wav_buffer.write(_struct.pack('<H', 1))         # mono
+        wav_buffer.write(_struct.pack('<I', 24000))     # sample rate
+        wav_buffer.write(_struct.pack('<I', 48000))     # byte rate
+        wav_buffer.write(_struct.pack('<H', 2))         # block align
+        wav_buffer.write(_struct.pack('<H', 16))        # bits per sample
+        wav_buffer.write(b'data')
+        wav_buffer.write(_struct.pack('<I', n_samples * 2))
+        wav_buffer.write(audio_int16.tobytes())
+        wav_buffer.seek(0)
+        
+        return send_file(wav_buffer, mimetype='audio/wav',
+                        as_attachment=False,
+                        download_name='ka_speech.wav')
+    except Exception as e:
+        log.error(f"Voice speak error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/voice/stream', methods=['POST'])
+def voice_stream():
+    """
+    Synthèse vocale streamée — retourne du WAV par phrases.
+    Body: { "text": "...", "emotion": "warm" }
+    Returns: audio/wav (streamed via Transfer-Encoding: chunked)
+    """
+    if not _KA_VOICE_AVAILABLE:
+        return jsonify({'error': 'KA Voice Engine non disponible'}), 503
+    
+    data = request.get_json(force=True, silent=True) or {}
+    text = data.get('text', '').strip()
+    emotion = data.get('emotion', 'warm')
+    
+    if not text:
+        return jsonify({'error': 'Texte requis'}), 400
+    
+    try:
+        _ka_voice_engine.set_emotion(emotion)
+        
+        def generate():
+            # Découper en phrases
+            import re
+            sentences = re.split(r'(?<=[.!?])\s+', text)
+            
+            for sentence in sentences:
+                if not sentence.strip():
+                    continue
+                audio = _ka_voice_engine.speak(sentence, emotion=emotion)
+                audio_int16 = (audio * 32767).astype(np.int16)
+                yield audio_int16.tobytes()
+        
+        from flask import Response
+        return Response(generate(), mimetype='audio/wav')
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/voice/clone', methods=['POST'])
+def voice_clone():
+    """
+    Clone une voix à partir d'un fichier audio uploadé.
+    Form: audio (file .wav), name (string)
+    Returns: { "voice_id": "...", "name": "..." }
+    """
+    if not _KA_VOICE_AVAILABLE:
+        return jsonify({'error': 'KA Voice Engine non disponible'}), 503
+    
+    if 'audio' not in request.files:
+        return jsonify({'error': 'Fichier audio requis (champ "audio")'}), 400
+    
+    file = request.files['audio']
+    name = request.form.get('name', 'Custom Voice')
+    
+    try:
+        # Lire l'audio
+        audio_data = file.read()
+        audio_int16 = np.frombuffer(audio_data, dtype=np.int16)
+        audio_float = audio_int16.astype(np.float64) / 32768.0
+        
+        # Cloner
+        voice_id = _ka_voice_engine.load_voice(name, audio=audio_float)
+        
+        return jsonify({
+            'voice_id': voice_id,
+            'name': name,
+            'emotions': _ka_voice_engine.prosody.available_emotions,
+        })
+    except Exception as e:
+        log.error(f"Voice clone error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/voice/voices', methods=['GET'])
+def voice_list():
+    """Liste les voix disponibles."""
+    if not _KA_VOICE_AVAILABLE:
+        return jsonify({'voices': [], 'default': None})
+    
+    voices = _ka_voice_engine.voice_store.list_voices()
+    return jsonify({
+        'voices': voices,
+        'default': _ka_voice_engine.state.voice_id,
+        'current_emotion': _ka_voice_engine.state.emotion,
+        'available_emotions': _ka_voice_engine.prosody.available_emotions,
+    })
+
+
+@app.route('/api/voice/emotion', methods=['POST'])
+def voice_emotion():
+    """
+    Change l'émotion courante.
+    Body: { "emotion": "warm|joyful|sad|..." }
+    """
+    if not _KA_VOICE_AVAILABLE:
+        return jsonify({'error': 'KA Voice Engine non disponible'}), 503
+    
+    data = request.get_json(force=True, silent=True) or {}
+    emotion = data.get('emotion', 'warm')
+    
+    try:
+        _ka_voice_engine.set_emotion(emotion)
+        return jsonify({
+            'emotion': emotion,
+            'params': _ka_voice_engine.prosody._emotion_params.get(emotion, {}),
+        })
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@app.route('/api/voice/info', methods=['GET'])
+def voice_info():
+    """Informations sur le moteur vocal."""
+    if not _KA_VOICE_AVAILABLE:
+        return jsonify({'available': False})
+    
+    return jsonify({
+        'available': True,
+        **{k: (v if not isinstance(v, np.ndarray) else '...') 
+           for k, v in _ka_voice_engine.info.items()},
+    })
+
+
+# ── Chat avec voix (extension du endpoint /api/chat) ─────────────────────────
+
+@app.route('/api/chat/voice', methods=['POST'])
+def chat_with_voice():
+    """
+    Conversation avec réponse texte + audio.
+    Body: { "message": "...", "voice": true, "emotion": "warm", ... }
+    Returns: { "response": "...", "audio_base64": "...", ... }
+    """
+    if not _KA_VOICE_AVAILABLE:
+        # Fallback: chat normal sans audio
+        return chat()
+    
+    data = request.get_json(force=True, silent=True) or {}
+    message = data.get('message', '').strip()
+    emotion = data.get('emotion', 'warm')
+    
+    if not message:
+        return jsonify({'error': 'Message requis'}), 400
+    
+    # Réutiliser le endpoint chat existant pour le texte
+    with app.test_request_context('/api/chat', method='POST', json=data):
+        text_response = chat()
+    
+    response_data = text_response.get_json() if text_response.status_code == 200 else {}
+    response_text = response_data.get('response', '')
+    
+    # Synthèse vocale
+    try:
+        if response_text:
+            _ka_voice_engine.set_emotion(emotion)
+            audio = _ka_voice_engine.speak(response_text, emotion=emotion)
+            
+            import base64
+            audio_int16 = (audio * 32767).astype(np.int16)
+            audio_b64 = base64.b64encode(audio_int16.tobytes()).decode('utf-8')
+            
+            response_data['audio_base64'] = audio_b64
+            response_data['audio_sample_rate'] = 24000
+            response_data['audio_duration_s'] = len(audio) / 24000.0
+    except Exception as e:
+        log.error(f"Voice chat error: {e}")
+        response_data['audio_error'] = str(e)
+    
+    return jsonify(response_data)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # DÉMARRAGE
 # ═══════════════════════════════════════════════════════════════════════════════
 
 if __name__ == '__main__':
     log.info(f"\n✨ KA Server v3 OPTIMISÉ sur http://localhost:{port}")
     log.info(f"   📡 API: http://localhost:{port}/api/chat")
+    log.info(f"   🎵 Voice: http://localhost:{port}/api/voice/speak")
     log.info(f"   📄 PageForge: http://localhost:{port}/api/page")
     log.info(f"   🌊 J-Lens: http://localhost:{port}/api/jlens")
     log.info(f"   📦 Store: http://localhost:{port}/api/store/list")
     log.info(f"   🏠 Interface: http://localhost:{port}")
     log.info(f"   /              — KA Phone (PWA)")
     log.info(f"   /api/chat      — conversation")
+    log.info(f"   /api/chat/voice — conversation + voix 🎵")
+    log.info(f"   /api/voice/speak — synthèse vocale")
+    log.info(f"   /api/voice/clone — clonage vocal 3s")
+    log.info(f"   /api/voice/voices — voix disponibles")
+    log.info(f"   /api/voice/emotion — changer l'émotion")
     log.info(f"   /api/reason    — raisonnement")
     log.info(f"   /api/create    — créativité")
     log.info(f"   /api/haiku     — haïku")
