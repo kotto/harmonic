@@ -191,6 +191,15 @@ def route(question: str) -> Optional[str]:
     Returns:
         La réponse, ou None si la question doit aller au cerveau harmonique.
     """
+    # 🌊 Normaliser les questions courtes → langage naturel
+    original = question
+    if len(question.split()) <= 5:
+        try:
+            from query_normalizer import normalize
+            question = normalize(question)
+        except Exception:
+            pass
+
     intent = detect_intent(question)
 
     # 1. MATH → CAS symbolique + micro-calculateur
