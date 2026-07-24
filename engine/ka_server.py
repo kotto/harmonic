@@ -738,36 +738,39 @@ def chat():
             source = 'router'
     except Exception:
         pass
-    
-    # 3. Logic engine (raisonnement direct)
-    if not response:
+
+    # 3. Logic engine (raisonnement PUR)
+    if not response and any(w in message.lower() for w in 
+        ['si ', 'alors', 'donc', 'déduire', 'conclure', 'implique', 'tous les',
+         'aucun', 'vrai', 'faux', '>', '<', '=', '→']):
         try:
             from logic_engine import solve_logic
             result = solve_logic(normalized)
-            if result:
+            if result and len(result) > 2:
                 response = result
                 source = 'logic'
         except Exception:
             pass
-    
-    # 4. HWAT — retrieval de faits depuis les hologrammes
+
+    # 4. Hologrammes — retrieval de faits (connaissances)
     if not response and _HWAT_AVAILABLE and _hwat_bridge:
         try:
             from hologram_router import HologramRouter
-            router = HologramRouter('data/holograms')
-            domains = router.route(normalized, top_k=2)
+            hologram_dir = str(_ENGINE_DIR / 'data' / 'holograms')
+            r = HologramRouter(hologram_dir)
+            domains = r.route(message, top_k=2)
             facts = []
             for domain, _ in domains:
-                facts.extend(router.retrieve_facts(domain, normalized, top_k=3))
+                facts.extend(r.retrieve_facts(domain, message, top_k=4))
             if facts:
                 lines = [f"🌊 {message}", ""]
                 for f in facts[:5]:
-                    lines.append(f"• {f['sujet'][:60]} {f['relation'][:30]} {f['objet'][:60]}")
+                    lines.append(f"• {f['sujet'][:70]} {f['relation'][:30]} {f['objet'][:70]}")
                 response = '\n'.join(lines)
                 source = 'hologram'
-        except Exception:
-            pass
-    
+        except Exception as e:
+            print(f"  ⚠ Hologram: {e}")
+
     # 5. Fallback : HarmonicAI
     if not response:
         response = ai.ask(message)
