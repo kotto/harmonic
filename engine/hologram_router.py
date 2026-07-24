@@ -167,26 +167,42 @@ class HologramRouter:
         # Mots-clés par domaine (dérivés des noms de secteur + communs)
         domain_keywords = {
             'MATHS_PURES': ['math', 'théorème', 'équation', 'calcul', 'nombre', 'algèbre',
-                          'géométrie', 'phi', 'golden', 'fraction', 'polynôme'],
+                          'géométrie', 'phi', 'golden', 'fraction', 'polynôme', 'pythagore'],
             'PHYSIQUE_FOND': ['physique', 'lumière', 'onde', 'énergie', 'force', 'masse',
                             'vitesse', 'électromagnétique', 'quantique', 'relativité'],
             'BIOLOGIE': ['biologie', 'cellule', 'adn', 'gène', 'protéine', 'organisme',
-                        'évolution', 'espèce', 'photosynthèse', 'enzyme'],
+                        'évolution', 'espèce', 'photosynthèse', 'enzyme', 'biodiversité'],
             'HISTOIRE': ['histoire', 'siècle', 'guerre', 'roi', 'empire', 'révolution',
-                        'ancien', 'médiéval', 'napoléon', 'rome', 'gréce', 'égypte'],
+                        'ancien', 'médiéval', 'napoléon', 'rome', 'gréce', 'égypte',
+                        'découvert', 'amérique'],
             'GEOGRAPHIE': ['géographie', 'pays', 'capitale', 'montagne', 'fleuve', 'océan',
-                         'continent', 'climat', 'population', 'superficie'],
+                         'continent', 'climat', 'population', 'superficie', 'france', 'paris'],
             'ECONOMIE': ['économie', 'pib', 'inflation', 'marché', 'monnaie', 'banque',
-                        'croissance', 'commerce', 'dette', 'budget'],
+                        'croissance', 'commerce', 'dette', 'budget', 'ca', 'chiffre'],
             'CODE': ['code', 'python', 'fonction', 'algorithme', 'programmation', 'bug',
-                    'compilateur', 'javascript', 'api', 'json', 'html'],
+                    'compilateur', 'javascript', 'api', 'json', 'html', 'script'],
             'CULTURE': ['culture', 'art', 'musique', 'littérature', 'peinture', 'cinéma',
                        'théâtre', 'poésie', 'sculpture', 'architecture'],
             'SPIRITUALITE': ['dieu', 'âme', 'esprit', 'religion', 'méditation', 'conscience',
                            'philosophie', 'bouddhisme', 'christianisme', 'islam'],
             'POLITIQUE': ['politique', 'gouvernement', 'élection', 'président', 'loi',
                         'constitution', 'parlement', 'démocratie', 'état'],
-            'BIOLOGIE': ['biologie', 'cellule', 'organisme', 'écosystème', 'biodiversité'],
+            # ── Mots-clés ENTREPRISE ──
+            'FINANCE': ['ca', 'chiffre', 'facture', 'montant', 'budget', 'trésorerie',
+                       'bilan', 'comptable', 'fiscal', 'tva', 'revenu', 'dépense',
+                       'client', 'paiement', 'banque', 'profit', 'marge'],
+            'RH': ['employé', 'manager', 'congé', 'salaire', 'recrutement', 'démission',
+                   'département', 'équipe', 'formation', 'entretien', 'évaluation',
+                   'organigramme', 'poste', 'cv', 'embauche'],
+            'COMMERCIAL': ['client', 'prospect', 'deal', 'vente', 'contrat', 'négociation',
+                          'pipeline', 'opportunité', 'relation client', 'crm'],
+            'LOGISTIQUE': ['commande', 'stock', 'livraison', 'expédition', 'entrepôt',
+                          'transport', 'fournisseur', 'inventaire', 'suivi', 'colis',
+                          'statut', 'cmd'],
+            'JURIDIQUE': ['contrat', 'conformité', 'rgpd', 'litige', 'propriété',
+                         'intellectuelle', 'brevet', 'clause', 'avocat'],
+            'IT': ['serveur', 'réseau', 'sécurité', 'vpn', 'firewall', 'cloud',
+                  'sauvegarde', 'incident', 'maintenance', 'déploiement'],
         }
 
         for domain in self.list_domains():
@@ -196,8 +212,12 @@ class HologramRouter:
                 scores[domain] = score
 
         if not scores:
-            # Aucun mot-clé → domaines par défaut
-            scores = {'GENERAL': 0.5, 'HISTOIRE': 0.3, 'CULTURE': 0.2}
+            # Aucun mot-clé → retourner tous les domaines avec score faible
+            available = self.list_domains()
+            if available:
+                scores = {d: 0.1 for d in available[:5]}
+            else:
+                return []
 
         # Normaliser et trier
         total = sum(scores.values()) or 1

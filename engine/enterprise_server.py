@@ -151,7 +151,6 @@ tenants = TenantStore()
 if not tenants.tenants:
     demo = tenants.create("Demo Company")
     log.info(f"Tenant démo créé: {demo['tenant_id']} (clé: {demo['api_key'][:8]}...)")
-    # Ajouter des patterns personnalisés pour le tenant démo
     tenants.add_pattern(demo["tenant_id"], "Bug Métier Paiement", [
         "le paiement est refusé sans raison",
         "double débit sur la carte bancaire",
@@ -159,6 +158,26 @@ if not tenants.tenants:
         "payment declined but amount still charged",
         "invoice total mismatch after discount applied",
     ])
+
+# ── 🧠 Harmoniq Enterprise Holograms ──────────────────────────
+_enterprise_holograms = None
+_HOLOGRAMS_READY = False
+try:
+    from enterprise_holograms import EnterpriseHolograms
+    _enterprise_holograms = EnterpriseHolograms()
+    # Vérifier si des hologrammes existent déjà
+    router_path = _enterprise_holograms.holograms_dir / "router.json"
+    if router_path.exists():
+        _enterprise_holograms._ready = True
+        _HOLOGRAMS_READY = True
+        import json
+        with open(router_path) as f:
+            r = json.load(f)
+        log.info(f"🧠 Hologrammes entreprise: {len(r['domains'])} domaines chargés")
+    else:
+        log.info("🧠 Hologrammes entreprise: non entraînés (lancez .train_all())")
+except Exception as e:
+    log.info(f"🧠 Hologrammes entreprise: non disponibles ({e})")
 
 
 # ════════════════════════════════════════════════════════════════
@@ -668,6 +687,55 @@ def dashboard():
 @app.route('/www/<path:filename>')
 def serve_static(filename):
     return send_from_directory(str(_ENGINE_DIR / "www"), filename)
+
+
+# ════════════════════════════════════════════════════════════════
+# API HARMONIQ HOLOGRAMS
+# ════════════════════════════════════════════════════════════════
+
+@app.route('/api/v2/enterprise/holograms/status', methods=['GET'])
+def holograms_status():
+    """Statut des hologrammes entreprise."""
+    if _enterprise_holograms is None:
+        return jsonify({'status': 'unavailable', 'reason': 'Module non chargé'})
+    return jsonify(_enterprise_holograms.info())
+
+
+@app.route('/api/v2/enterprise/holograms/train', methods=['POST'])
+def holograms_train():
+    """Lance l'entraînement des hologrammes."""
+    if _enterprise_holograms is None:
+        return jsonify({'error': 'Module non disponible'}), 503
+
+    data = request.get_json(force=True, silent=True) or {}
+    min_faits = data.get('min_facts', 5)
+    max_domaines = data.get('max_domains', 10)
+
+    try:
+        results = _enterprise_holograms.train_all(
+            min_faits=min_faits, max_domaines=max_domaines)
+        return jsonify({
+            'status': 'trained',
+            'domains': len(results),
+            'list': list(results.keys()),
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/v2/enterprise/holograms/ask', methods=['POST'])
+def holograms_ask():
+    """Interroge les hologrammes entreprise."""
+    if not _HOLOGRAMS_READY:
+        return jsonify({'error': 'Hologrammes non entraînés'}), 503
+
+    data = request.get_json(force=True, silent=True) or {}
+    question = data.get('question', '').strip()
+    if not question:
+        return jsonify({'error': 'Question requise'}), 400
+
+    result = _enterprise_holograms.ask(question)
+    return jsonify(result)
 
 
 # ════════════════════════════════════════════════════════════════
