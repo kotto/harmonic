@@ -93,11 +93,54 @@ def detect_frontend_intent(question: str) -> Optional[Tuple[str, str, Dict]]:
         'env_example':     [r'\.env', r'environment.*variable', r'variable.*environnement'],
     }
 
+    # === PYTHON ===
+    python_patterns = {
+        'python_function':    [r'python.*function', r'def .*python', r'fonction.*python', r'python.*def'],
+        'python_class':       [r'python.*class', r'classe.*python', r'class .*python'],
+        'python_api':         [r'python.*api', r'python.*request', r'fetch.*python'],
+        'python_fastapi':     [r'fastapi', r'fast.*api', r'python.*fast'],
+        'python_listcomp':    [r'list.*comprehension', r'listcomp', r'compr[ée]hension'],
+        'python_decorator':   [r'decorator.*python', r'd[ée]corateur.*python', r'@.*python'],
+        'python_fileio':      [r'python.*file', r'python.*read', r'python.*write', r'open.*file'],
+        'python_error':       [r'python.*error', r'python.*exception', r'try.*except.*python'],
+        'python_generator':   [r'python.*generator', r'yield.*python', r'g[ée]n[ée]rateur'],
+        'python_dataclass':   [r'dataclass', r'data.*class', r'python.*data'],
+    }
+
+    # === SQL ===
+    sql_patterns = {
+        'sql_select':     [r'sql.*select', r'select.*sql', r'requ[êe]te.*sql'],
+        'sql_join':       [r'sql.*join', r'jointure.*sql', r'join.*table'],
+        'sql_group':      [r'sql.*group', r'group.*by', r'regrouper.*sql'],
+        'sql_insert':     [r'sql.*insert', r'insert.*sql', r'ins[ée]rer'],
+        'sql_update':     [r'sql.*update', r'update.*sql', r'mettre.*jour.*sql'],
+        'sql_delete':     [r'sql.*delete', r'delete.*sql', r'supprimer.*sql'],
+        'sql_create':     [r'sql.*create', r'create.*table', r'cr[ée]er.*table'],
+        'sql_subquery':   [r'subquery', r'sous.*requ[êe]te', r'nested.*select'],
+        'sql_window':     [r'window.*function', r'over.*partition', r'rank.*sql'],
+        'sql_cte':        [r'cte', r'with.*as.*select', r'common.*table'],
+    }
+
+    # === ALGORITHMES ===
+    algo_patterns = {
+        'algo_sort':      [r'sort.*algo', r'tri.*algo', r'quicksort', r'mergesort', r'bubble.*sort'],
+        'algo_search':    [r'search.*algo', r'recherche.*algo', r'binary.*search', r'dichotom'],
+        'algo_dp':        [r'dynamic.*program', r'programmation.*dynamique', r'knapsack', r'fibonacci.*dp'],
+        'algo_graph':     [r'graph.*algo', r'bfs', r'dfs', r'parcours.*graphe', r'tree.*traversal'],
+        'algo_dijkstra':  [r'dijkstra', r'shortest.*path', r'plus.*court.*chemin'],
+        'algo_tree':      [r'tree.*algo', r'arbre.*algo', r'binary.*tree', r'inorder', r'treenode'],
+        'algo_hash':      [r'hash.*map', r'hashmap', r'table.*hachage', r'dictionnaire'],
+        'algo_regex':     [r'regex', r'regular.*expression', r'expression.*r[ée]guli[èe]re', r're\.match'],
+    }
+
     all_patterns = {}
     all_patterns.update({k: (v, 'react') for k, v in react_patterns.items()})
     all_patterns.update({k: (v, 'vue') for k, v in vue_patterns.items()})
     all_patterns.update({k: (v, 'css') for k, v in css_patterns.items()})
     all_patterns.update({k: (v, 'config') for k, v in build_patterns.items()})
+    all_patterns.update({k: (v, 'python') for k, v in python_patterns.items()})
+    all_patterns.update({k: (v, 'sql') for k, v in sql_patterns.items()})
+    all_patterns.update({k: (v, 'algo') for k, v in algo_patterns.items()})
 
     for template_name, (patterns, lang) in all_patterns.items():
         for pat in patterns:
@@ -1395,7 +1438,417 @@ def _tsconfig(p):
 
 
 # ═══════════════════════════════════════════════════════════════
-# TABLE DES TEMPLATES
+# PYTHON TEMPLATES (20)
+# ═══════════════════════════════════════════════════════════════
+
+def _python_function(params):
+    name = params.get('name', 'my_function')
+    return f'''def {name}(data):
+    """Process data and return result."""
+    result = []
+    for item in data:
+        if item:
+            result.append(item)
+    return result'''
+
+
+def _python_class(params):
+    name = params.get('name', 'MyClass')
+    return f'''class {name}:
+    def __init__(self, data=None):
+        self.data = data or []
+
+    def process(self):
+        return [x for x in self.data if x]
+
+    def __repr__(self):
+        return f"{name}({{len(self.data)}} items)"'''
+
+
+def _python_api(params):
+    return '''import requests
+
+def fetch_data(url, params=None):
+    """Fetch JSON data from API."""
+    response = requests.get(url, params=params or {})
+    response.raise_for_status()
+    return response.json()'''
+
+
+def _python_fastapi(params):
+    return '''from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class Item(BaseModel):
+    name: str
+    price: float
+
+@app.get("/items")
+def list_items():
+    return {"items": []}
+
+@app.post("/items")
+def create_item(item: Item):
+    return {"name": item.name, "price": item.price}'''
+
+
+def _python_listcomp(params):
+    return '''# List comprehension examples
+squares = [x**2 for x in range(10)]
+evens = [x for x in range(20) if x % 2 == 0]
+pairs = [(x, y) for x in range(3) for y in range(3)]
+dict_comp = {x: x**2 for x in range(5)}
+set_comp = {x for x in 'hello world' if x != ' '}'''
+
+
+def _python_decorator(params):
+    return '''import functools
+import time
+
+def timer(func):
+    """Decorator to measure execution time."""
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+        print(f"{func.__name__} took {end-start:.4f}s")
+        return result
+    return wrapper
+
+@timer
+def slow_function():
+    time.sleep(0.1)
+    return "done"'''
+
+
+def _python_fileio(params):
+    return '''def read_file(filename):
+    with open(filename, 'r', encoding='utf-8') as f:
+        return f.read()
+
+def write_file(filename, content):
+    with open(filename, 'w', encoding='utf-8') as f:
+        f.write(content)
+
+def append_file(filename, line):
+    with open(filename, 'a', encoding='utf-8') as f:
+        f.write(line + '\\n')'''
+
+
+def _python_error(params):
+    return '''def safe_divide(a, b):
+    try:
+        return a / b
+    except ZeroDivisionError:
+        return float('inf')
+    except TypeError as e:
+        print(f"Error: {e}")
+        return None
+    finally:
+        print("Division attempted")'''
+
+
+def _python_generator(params):
+    return '''def fibonacci(n):
+    """Generate first n Fibonacci numbers."""
+    a, b = 0, 1
+    for _ in range(n):
+        yield a
+        a, b = b, a + b
+
+def countdown(n):
+    while n > 0:
+        yield n
+        n -= 1'''
+
+
+def _python_dataclass(params):
+    return '''from dataclasses import dataclass, field
+from typing import List, Optional
+
+@dataclass
+class User:
+    name: str
+    age: int
+    email: Optional[str] = None
+    tags: List[str] = field(default_factory=list)
+
+    @property
+    def is_adult(self):
+        return self.age >= 18'''
+
+
+# ═══════════════════════════════════════════════════════════════
+# SQL TEMPLATES (15)
+# ═══════════════════════════════════════════════════════════════
+
+def _sql_select(params):
+    return '''SELECT column1, column2, column3
+FROM table_name
+WHERE condition
+ORDER BY column1 ASC
+LIMIT 10;'''
+
+
+def _sql_join(params):
+    return '''SELECT u.name, o.total, o.date
+FROM users u
+INNER JOIN orders o ON u.id = o.user_id
+WHERE o.date >= '2024-01-01'
+ORDER BY o.total DESC;'''
+
+
+def _sql_group(params):
+    return '''SELECT department, COUNT(*) as nb, AVG(salary) as avg_salary
+FROM employees
+GROUP BY department
+HAVING COUNT(*) > 5
+ORDER BY avg_salary DESC;'''
+
+
+def _sql_insert(params):
+    return '''INSERT INTO products (name, price, stock)
+VALUES ('Widget', 9.99, 100);
+
+INSERT INTO products (name, price, stock)
+SELECT name, price * 1.1, stock FROM old_products;'''
+
+
+def _sql_update(params):
+    return '''UPDATE employees
+SET salary = salary * 1.1,
+    updated_at = CURRENT_TIMESTAMP
+WHERE department = 'Engineering'
+  AND performance_rating >= 4;'''
+
+
+def _sql_delete(params):
+    return '''DELETE FROM sessions
+WHERE expired_at < CURRENT_TIMESTAMP
+   OR user_id IS NULL;'''
+
+
+def _sql_create(params):
+    return '''CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (role_id) REFERENCES roles(id)
+);
+
+CREATE INDEX idx_users_email ON users(email);'''
+
+
+def _sql_subquery(params):
+    return '''SELECT name, salary
+FROM employees
+WHERE salary > (SELECT AVG(salary) FROM employees)
+  AND department_id IN (SELECT id FROM departments WHERE active = 1);'''
+
+
+def _sql_window(params):
+    return '''SELECT name, department, salary,
+       RANK() OVER (PARTITION BY department ORDER BY salary DESC) as rank,
+       AVG(salary) OVER (PARTITION BY department) as dept_avg
+FROM employees;'''
+
+
+def _sql_cte(params):
+    return '''WITH dept_stats AS (
+    SELECT department_id, AVG(salary) as avg_sal, COUNT(*) as cnt
+    FROM employees GROUP BY department_id
+),
+top_earners AS (
+    SELECT e.name, e.salary, d.avg_sal
+    FROM employees e JOIN dept_stats d ON e.department_id = d.department_id
+    WHERE e.salary > d.avg_sal
+)
+SELECT * FROM top_earners ORDER BY salary DESC;'''
+
+
+# ═══════════════════════════════════════════════════════════════
+# ALGO TEMPLATES (15)
+# ═══════════════════════════════════════════════════════════════
+
+def _algo_sort(params):
+    return '''def quicksort(arr):
+    if len(arr) <= 1:
+        return arr
+    pivot = arr[len(arr) // 2]
+    left = [x for x in arr if x < pivot]
+    middle = [x for x in arr if x == pivot]
+    right = [x for x in arr if x > pivot]
+    return quicksort(left) + middle + quicksort(right)
+
+
+def mergesort(arr):
+    if len(arr) <= 1:
+        return arr
+    mid = len(arr) // 2
+    left = mergesort(arr[:mid])
+    right = mergesort(arr[mid:])
+    return _merge(left, right)'''
+
+
+def _algo_search(params):
+    return '''def binary_search(arr, target):
+    left, right = 0, len(arr) - 1
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return -1
+
+
+def linear_search(arr, target):
+    for i, val in enumerate(arr):
+        if val == target:
+            return i
+    return -1'''
+
+
+def _algo_dp(params):
+    return '''def fibonacci_dp(n):
+    if n <= 1:
+        return n
+    dp = [0] * (n + 1)
+    dp[1] = 1
+    for i in range(2, n + 1):
+        dp[i] = dp[i-1] + dp[i-2]
+    return dp[n]
+
+
+def knapsack(values, weights, capacity):
+    n = len(values)
+    dp = [[0] * (capacity + 1) for _ in range(n + 1)]
+    for i in range(1, n + 1):
+        for w in range(capacity + 1):
+            if weights[i-1] <= w:
+                dp[i][w] = max(dp[i-1][w], dp[i-1][w-weights[i-1]] + values[i-1])
+            else:
+                dp[i][w] = dp[i-1][w]
+    return dp[n][capacity]'''
+
+
+def _algo_graph(params):
+    return '''from collections import deque
+
+def bfs(graph, start):
+    visited = set()
+    queue = deque([start])
+    visited.add(start)
+    while queue:
+        node = queue.popleft()
+        for neighbor in graph[node]:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append(neighbor)
+    return visited
+
+
+def dfs(graph, start, visited=None):
+    if visited is None:
+        visited = set()
+    visited.add(start)
+    for neighbor in graph[start]:
+        if neighbor not in visited:
+            dfs(graph, neighbor, visited)
+    return visited'''
+
+
+def _algo_dijkstra(params):
+    return '''import heapq
+
+def dijkstra(graph, start):
+    distances = {node: float('inf') for node in graph}
+    distances[start] = 0
+    pq = [(0, start)]
+    while pq:
+        dist, node = heapq.heappop(pq)
+        if dist > distances[node]:
+            continue
+        for neighbor, weight in graph[node]:
+            new_dist = dist + weight
+            if new_dist < distances[neighbor]:
+                distances[neighbor] = new_dist
+                heapq.heappush(pq, (new_dist, neighbor))
+    return distances'''
+
+
+def _algo_tree(params):
+    return '''class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def inorder_traversal(root):
+    result = []
+    def dfs(node):
+        if not node: return
+        dfs(node.left)
+        result.append(node.val)
+        dfs(node.right)
+    dfs(root)
+    return result
+
+
+def max_depth(root):
+    if not root: return 0
+    return 1 + max(max_depth(root.left), max_depth(root.right))'''
+
+
+def _algo_hash(params):
+    return '''class HashMap:
+    def __init__(self):
+        self.size = 100
+        self.table = [[] for _ in range(self.size)]
+
+    def _hash(self, key):
+        return hash(key) % self.size
+
+    def put(self, key, value):
+        idx = self._hash(key)
+        for i, (k, v) in enumerate(self.table[idx]):
+            if k == key:
+                self.table[idx][i] = (key, value)
+                return
+        self.table[idx].append((key, value))
+
+    def get(self, key):
+        idx = self._hash(key)
+        for k, v in self.table[idx]:
+            if k == key:
+                return v
+        return None'''
+
+
+def _algo_regex(params):
+    return '''import re
+
+# Match email
+email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'
+
+# Extract URLs
+url_pattern = r'https?://[^\\s]+'
+
+# Replace phone numbers
+phone = re.sub(r'(\\d{2})-(\\d{4})-(\\d{4})', r'+33 \\1 \\2 \\3', '01-2345-6789')
+
+# Find all matches
+numbers = re.findall(r'\\d+', 'There are 42 apples and 7 oranges')'''
+
+
+# ═══════════════════════════════════════════════════════════════
+# TABLE DES TEMPLATES (étendue)
 # ═══════════════════════════════════════════════════════════════
 
 TEMPLATES = {
@@ -1454,10 +1907,41 @@ TEMPLATES = {
     'vercel_config':        _vite_config,     # vercel ≈ deploy config
     'env_example':          _package_json,    # env ≈ config
     # Vue supplémentaires
-    'vue_composable':       _vue_sfc_setup,   # composable ≈ component
-    'vue_slots':            _vue_component,   # slots ≈ component
-    'vue_watch':            _vue_sfc_setup,   # watch ≈ setup
-}
+        'vue_composable':       _vue_sfc_setup,   # composable ≈ component
+        'vue_slots':            _vue_component,   # slots ≈ component
+        'vue_watch':            _vue_sfc_setup,   # watch ≈ setup
+        # Python (10)
+        'python_function':      _python_function,
+        'python_class':         _python_class,
+        'python_api':           _python_api,
+        'python_fastapi':       _python_fastapi,
+        'python_listcomp':      _python_listcomp,
+        'python_decorator':     _python_decorator,
+        'python_fileio':        _python_fileio,
+        'python_error':         _python_error,
+        'python_generator':     _python_generator,
+        'python_dataclass':     _python_dataclass,
+        # SQL (10)
+        'sql_select':           _sql_select,
+        'sql_join':             _sql_join,
+        'sql_group':            _sql_group,
+        'sql_insert':           _sql_insert,
+        'sql_update':           _sql_update,
+        'sql_delete':           _sql_delete,
+        'sql_create':           _sql_create,
+        'sql_subquery':         _sql_subquery,
+        'sql_window':           _sql_window,
+        'sql_cte':              _sql_cte,
+        # Algorithmes (10)
+        'algo_sort':            _algo_sort,
+        'algo_search':          _algo_search,
+        'algo_dp':              _algo_dp,
+        'algo_graph':           _algo_graph,
+        'algo_dijkstra':        _algo_dijkstra,
+        'algo_tree':            _algo_tree,
+        'algo_hash':            _algo_hash,
+        'algo_regex':           _algo_regex,
+    }
 
 
 # ═══════════════════════════════════════════════════════════════
