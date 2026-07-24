@@ -280,6 +280,14 @@ def train_hologram(sector: str, facts: list, output_dir: Path) -> dict:
     print(f"  ✅ {sector:<25} | {n_facts:>5d} faits | "
           f"loss={avg_loss:.3f} ppl={ppl:.1f} | {dt:.0f}s | {save_path.name}")
 
+    # ── Sauvegarder les faits originaux pour retrieval ──
+    facts_path = output_dir / f"{sector}_facts.json"
+    import json
+    with open(facts_path, 'w', encoding='utf-8') as f:
+        json.dump([{'s': str(f[0]), 'r': str(f[1]), 'o': str(f[2]), 'sec': str(f[3])}
+                   for f in facts], f, ensure_ascii=False, indent=2)
+    print(f"     📋 {len(facts)} faits sauvegardés → {facts_path.name}")
+
     return {
         'sector': sector,
         'path': str(save_path),

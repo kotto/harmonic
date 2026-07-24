@@ -52,8 +52,8 @@ class HarmoniqStyler:
         # Routeur HWAT
         try:
             from hologram_router import HologramRouter
-            # Essayer les hologrammes enterprise d'abord, puis standard
-            for d in ["data/holograms_enterprise", "data/holograms"]:
+            # Priorité : holograms (KB 250K) > holograms_enterprise
+            for d in ["data/holograms", "data/holograms_enterprise"]:
                 p = _ENGINE / d
                 if (p / "router.json").exists():
                     self._router = HologramRouter(str(p))
@@ -106,39 +106,49 @@ class HarmoniqStyler:
             return self._fallback(question)
 
         # 1. Router vers les hologrammes
-        result = self._router.query(question)
-        facts = result.get('facts', [])
-        domains = result.get('domains', [])
+        domains = self._router.route(question, top_k=2)
 
-        if not facts:
+        if not domains:
             return self._fallback(question)
 
-        # 2. Extraire les faits bruts (sujet, relation, objet)
-        raw_facts = []
-        for f in facts:
-            domain = f['domain']
-            # Pour l'instant, on a juste le domaine et la confiance
-            # Dans une version future, les faits seraient récupérés
-            raw_facts.append({
-                'sujet': question[:30],
-                'relation': 'concerne',
-                'objet': domain,
-                'source': f"hologramme {domain}"
-            })
+        # 2. Retrouver les faits dans chaque hologramme sélectionné
+        all_facts = []
+        for domain, confidence in domains:
+            facts = self._router.retrieve_facts(domain, question, top_k=5)
+            for f in facts:
+                f['domain'] = domain
+                f['confidence'] = round(confidence, 2)
+            all_facts.extend(facts)
 
-        # 3. WaveStyler : transformer en prose
+        if not all_facts:
+            return self._fallback(question)
+
+        # 3. WaveStyler : transformer les faits en prose fluide
         if self._styler:
             try:
+                # Formater les faits pour le WaveStyler
+                raw_facts = []
+                for f in all_facts[:8]:  # max 8 faits
+                    raw_facts.append({
+                        'sujet': f.get('sujet', ''),
+                        'relation': f.get('relation', ''),
+                        'objet': f.get('objet', ''),
+                    })
+
                 prose = self._styler.render(raw_facts, question)
                 if prose and len(prose) > 20:
                     return self._apply_style(prose, style)
-            except Exception:
-                pass
+            except Exception as e:
+                pass  # Fallback ci-dessous
 
-        # 4. Fallback : assemblage simple
-        lines = [f"🌊 {question}"]
-        for d in domains:
-            lines.append(f"  • [{d['name']}] {d['confidence']:.0%} de pertinence")
+        # 4. Fallback : assemblage structuré des faits
+        lines = [f"🌊 {question}", ""]
+        for f in all_facts[:5]:
+            lines.append(
+                f"  • {f.get('sujet', '?')} "
+                f"{f.get('relation', '?')} "
+                f"{f.get('objet', '?')}"
+            )
         return '\n'.join(lines)
 
     # ════════════════════════════════════════════════════════════

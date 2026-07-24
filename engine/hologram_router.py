@@ -155,6 +155,55 @@ class HologramRouter:
     def list_domains(self) -> List[str]:
         return list(self.router_config['domains'].keys())
 
+    def retrieve_facts(self, domain: str, question: str,
+                       top_k: int = 10) -> List[dict]:
+        """Retrouve les faits les plus pertinents dans un hologramme.
+
+        Stratégie : matching par mots-clés sur les faits stockés
+        dans le fichier {domain}_facts.json.
+        """
+        facts_path = self.dir / f"{domain}_facts.json"
+        if not facts_path.exists():
+            # Fallback : utiliser les faits du routeur
+            return []
+
+        import json
+        with open(facts_path, 'r', encoding='utf-8') as f:
+            all_facts = json.load(f)
+
+        if not all_facts:
+            return []
+
+        # Tokenisation simple de la question
+        q_words = set(question.lower().split())
+
+        # Score chaque fait par chevauchement de mots
+        scored = []
+        for fact in all_facts:
+            s = str(fact.get('s', '')).lower()
+            r = str(fact.get('r', '')).lower()
+            o = str(fact.get('o', '')).lower()
+            fact_text = f"{s} {r} {o}"
+            fact_words = set(fact_text.split())
+
+            if not fact_words:
+                continue
+            intersection = len(q_words & fact_words)
+            # Bonus : mot de la question dans le sujet
+            for qw in q_words:
+                if len(qw) > 2 and qw in s:
+                    intersection += 1.5
+            score = intersection / max(len(q_words), 1)
+
+            if score > 0:
+                scored.append((score, fact))
+
+        # Trier par score décroissant
+        scored.sort(key=lambda x: -x[0])
+        return [{'sujet': f['s'], 'relation': f['r'],
+                 'objet': f['o'], 'score': round(s, 3)}
+                for s, f in scored[:top_k]]
+
     def route(self, question: str, top_k: int = 3) -> List[Tuple[str, float]]:
         """Route une question vers les meilleurs domaines.
 
