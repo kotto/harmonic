@@ -221,7 +221,7 @@ def route(question: str) -> Optional[str]:
             except Exception:
                 pass
 
-    # 2. CODE FRONTEND → templates frontend
+    # 2. CODE FRONTEND → templates frontend + hologramme CODE
     if intent.get('frontend_template'):
         try:
             from frontend_templates import generate_frontend
@@ -231,13 +231,37 @@ def route(question: str) -> Optional[str]:
                 return f"```{lang}\n{code}\n```"
         except Exception:
             pass
+    
+    # Fallback CODE : chercher dans l'hologramme CODE
+    if intent['intent'] in ('code_frontend', 'code_algo') or fe_hits > 0 or algo_hits > 0:
+        try:
+            from hologram_router import HologramRouter
+            router = HologramRouter('data/holograms')
+            facts = router.retrieve_facts('CODE', question, top_k=3)
+            if facts:
+                lines = []
+                for f in facts:
+                    lines.append(f"// {f['sujet'][:60]}")
+                    lines.append(f"{f['objet'][:120]}")
+                return '\n'.join(lines[:8])
+        except Exception:
+            pass
 
     # 3. CODE ALGO → code_generator
     if intent['intent'] == 'code_algo':
         return None
 
-    # 4. RAISONNEMENT → wave_logic
+    # 4. RAISONNEMENT → wave_logic + logic_engine
     if intent['intent'] == 'reasoning' or intent.get('reason_hits', 0) > 0:
+        # Essayer d'abord le moteur de logique directe (rapide, déterministe)
+        try:
+            from logic_engine import solve_logic
+            result = solve_logic(question)
+            if result:
+                return result
+        except Exception:
+            pass
+        # Fallback : WaveLogic
         try:
             from reasoning_router import solve_reasoning
             result = solve_reasoning(question)
