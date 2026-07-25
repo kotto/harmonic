@@ -42,6 +42,35 @@
     voiceAutoPlay: localStorage.getItem('ka_voice_autoplay') !== 'false',
   };
 
+  // ═══ TRANSLATIONS (FR/EN) ═══
+  const T = {
+    fr: {
+      home:'Accueil', chat:'Chat', agent:'Agent', memory:'Mémoire',
+      code:'Code', store:'Store', media:'Média', contacts:'Contacts',
+      calls:'Appels', research:'Recherche', creative:'Créatif', files:'Fichiers',
+      admin:'Admin', dashboard:'Dashboard', team:'Équipe',
+      knowledge:'Connaissance', upload:'Upload', security:'Sécurité',
+      profile:'Profil', health:'Santé', enterprise:'Enterprise',
+      send:'Envoyer', typeMessage:'Écrivez votre message...',
+      hello:'Bonjour ! Je suis KA, votre assistant harmonique.',
+      error:'Désolé, le serveur KA n\'est pas accessible.',
+      more:'Plus',
+    },
+    en: {
+      home:'Home', chat:'Chat', agent:'Agent', memory:'Memory',
+      code:'Code', store:'Store', media:'Media', contacts:'Contacts',
+      calls:'Calls', research:'Research', creative:'Creative', files:'Files',
+      admin:'Admin', dashboard:'Dashboard', team:'Team',
+      knowledge:'Knowledge', upload:'Upload', security:'Security',
+      profile:'Profile', health:'Health', enterprise:'Enterprise',
+      send:'Send', typeMessage:'Type your message...',
+      hello:'Hello! I am KA, your harmonic assistant.',
+      error:'Sorry, the KA server is not accessible.',
+      more:'More',
+    },
+  };
+  function __(key) { return (T[state.language] || T.fr)[key] || key; }
+
   // ═══ VOICE / TTS ═══
   let audioCtx = null;
   let currentAudioSource = null;
@@ -370,7 +399,13 @@
     // Profile
     setPersonality(p) { state.personality = p; localStorage.setItem('ka_personality', p); },
     setTheme(t) { state.theme = t; localStorage.setItem('ka_theme', t); document.body.dataset.theme = t; },
-    setLanguage(l) { state.language = l; localStorage.setItem('ka_language', l); },
+    setLanguage(l) { state.language = l; localStorage.setItem('ka_language', l); 
+      document.documentElement.lang = l;
+      // Refresh labels
+      rebuildNavBar();
+      const input = document.getElementById('chat-input');
+      if (input) input.placeholder = __('typeMessage');
+    },
     resetProfile() {
       localStorage.clear();
       state.isOnboarded = false;
@@ -653,16 +688,7 @@
   }
 
   function getScreenLabel(id) {
-    const labels = {
-      home:'Accueil', chat:'Chat', agent:'Agent', memory:'Mémoire',
-      code:'Code', store:'Store', media:'Média', contacts:'Contacts', calls:'Appels',
-      research:'Recherche', creative:'Créatif', files:'Fichiers',
-      admin:'Admin', dashboard:'Dashboard', team:'Équipe',
-      knowledge:'Connaissance', upload:'Upload', security:'Sécurité',
-      profile:'Profil', health:'Santé', enterprise:'Enterprise',
-      jlens:'J-Lens', storage:'Stockage',
-    };
-    return labels[id] || id;
+    return __(id) || id;
   }
 
   function rebuildNavBar() {

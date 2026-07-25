@@ -83,6 +83,15 @@
     async getVoices() { return this.get('/api/voice/voices'); }
     async setEmotion(emotion) { return this.post('/api/voice/emotion', { emotion }); }
     async getVoiceInfo() { return this.get('/api/voice/info'); }
+    
+    // ═══ MEDIA (compression) ═══
+    async compressImage(file, quality = 80) {
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('quality', quality);
+      const resp = await fetch(this.baseUrl + '/api/compress', { method: 'POST', body: formData });
+      return resp.json();
+    }
 
     async reason(topic) { return this.post('/api/reason', { topic }); }
     async create(n = 3, conceptA = '', conceptB = '') { 
