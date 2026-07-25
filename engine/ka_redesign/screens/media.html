@@ -149,7 +149,15 @@
   const screen = document.getElementById('screen-media');
   if (!screen) return;
   
-  // Load storage stats
-  KA.mediaLoadStats();
+  // Charger les stats stockage RÉELLES
+  KA.mediaScanStorage();
+  
+  // Rafraîchir quand l'écran devient visible
+  const observer = new MutationObserver(() => {
+    if (screen.style.display !== 'none' && screen.classList.contains('active')) {
+      KA.mediaScanStorage();
+    }
+  });
+  observer.observe(screen, { attributes: true, attributeFilter: ['class','style'] });
 })();
 </script>
