@@ -146,33 +146,145 @@ function draw() {
     }
   }
 
-  // ── ACTE 3 : Couplage — naissance d'une direction (11-21s) ──
+  // ── ACTE 3 : Couplage Atangana-Oyibo — D^{1/φ}[Ψ] = G[Ψ] (11-21s) ──
   if (act3 > 0) {
-    // Deux points de condensation émergent de Ψ₁
-    // Ils créent la PREMIÈRE direction (la ligne qui les relie)
     const separation = act3 * 200;
     const x1 = cx - separation/2;
     const y1 = cy;
     const x2 = cx + separation/2;
     const y2 = cy;
 
-    // La ligne qui les relie = la première dimension spatiale
+    // ═══════════════════════════════════════════════════════
+    // CÔTÉ DROIT : Oyibo — l'ESPACE (jauge GAGUT, 1/φ)
+    // ═══════════════════════════════════════════════════════
+    // Visualisé comme une grille violette qui RÉSISTE à la déformation
+    if (separation > 20) {
+      const gridAlpha = act3 * 0.4;
+      const gridSize = 25;
+      // Grille déformée par la contrainte 1/φ
+      for (let gx = cx - 180; gx <= cx + 180; gx += gridSize) {
+        ctx.strokeStyle = `rgba(139,92,246,${gridAlpha * 0.5})`;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        let first = true;
+        for (let gy = cy - 120; gy <= cy + 120; gy += 3) {
+          const dx = Math.abs(gx - cx);
+          const warp = (1 / 1.618) * 30 * Math.exp(-dx / 150) * Math.sin(gx * 0.03 + T * 0.2);
+          const wy = gy + warp * act3;
+          if (first) { ctx.moveTo(gx, wy); first = false; }
+          else { ctx.lineTo(gx, wy); }
+        }
+        ctx.stroke();
+      }
+      // Ligne de jauge horizontale
+      for (let gy = cy - 120; gy <= cy + 120; gy += gridSize) {
+        ctx.strokeStyle = `rgba(139,92,246,${gridAlpha * 0.5})`;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        let first = true;
+        for (let gx = cx - 180; gx <= cx + 180; gx += 3) {
+          const dx = Math.abs(gx - cx);
+          const warp = (1 / 1.618) * 30 * Math.exp(-dx / 150) * Math.cos(gx * 0.03 + T * 0.2);
+          const wx = gx + warp * act3;
+          if (first) { ctx.moveTo(wx, gy); first = false; }
+          else { ctx.lineTo(wx, gy); }
+        }
+        ctx.stroke();
+      }
+    }
+
+    // Label Oyibo
+    if (act3 > 0.3 && act3 < 0.9) {
+      ctx.fillStyle = `rgba(139,92,246,${act3 * 0.9})`;
+      ctx.font = '13px Inter, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('G[Ψ] — Oyibo', cx + 120, cy - 80);
+      ctx.fillText('ESPACE (1/φ)', cx + 120, cy - 62);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // CÔTÉ GAUCHE : Atangana — le TEMPS (ABC, α=1/φ)
+    // ═══════════════════════════════════════════════════════
+    // Visualisé comme des traînées ambrées avec mémoire décroissante
+    for (const [sx, sy] of [[x1, y1], [x2, y2]]) {
+      const phi = 1.618;
+      for (let i = 0; i < 40; i++) {
+        const delay = i * 0.08;
+        const tPast = T - delay;
+        if (tPast < 5) continue;
+
+        // Décroissance ABC : ~ exp(-α/(1-α) * delay^α)
+        const alpha = 1 / phi;
+        const abcDecay = Math.exp(-alpha / (1 - alpha) * Math.pow(Math.max(0, delay), alpha));
+
+        const trailAlpha = act3 * abcDecay * 0.6;
+        if (trailAlpha < 0.01) continue;
+
+        const trailR = 8 + abcDecay * 40;
+        const trailAngle = tPast * 0.5 + i * 0.3;
+        const tx = sx + trailR * Math.cos(trailAngle);
+        const ty = sy + trailR * Math.sin(trailAngle);
+
+        ctx.fillStyle = `rgba(245,200,80,${trailAlpha})`;
+        ctx.beginPath(); ctx.arc(tx, ty, 1.5, 0, Math.PI*2); ctx.fill();
+      }
+    }
+
+    // Label Atangana
+    if (act3 > 0.3 && act3 < 0.9) {
+      ctx.fillStyle = `rgba(245,200,80,${act3 * 0.9})`;
+      ctx.font = '13px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('D^{1/φ}[Ψ] — Atangana', cx - 220, cy - 80);
+      ctx.fillText('TEMPS (ABC)', cx - 220, cy - 62);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // LE COUPLAGE — D^{1/φ}[Ψ] = G[Ψ]
+    // ═══════════════════════════════════════════════════════
+    // La première dimension (ligne entre les deux masses)
     if (separation > 10) {
-      ctx.strokeStyle = `rgba(139,92,246,${act3 * 0.6})`;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4, 6]);
+      // Ligne de couplage pulsante
+      const couplingPulse = 0.5 + 0.5 * Math.sin(T * 3);
+      const couplingAlpha = act3 * (0.3 + couplingPulse * 0.4);
+
+      ctx.strokeStyle = `rgba(255,255,255,${couplingAlpha})`;
+      ctx.lineWidth = 2 + couplingPulse;
+      ctx.setLineDash([8, 4]);
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Label : première dimension
-      if (act3 > 0.4) {
+      // Éclair au centre = le couplage se verrouille
+      if (act3 > 0.45 && act3 < 0.55) {
+        const flashAlpha = (1 - Math.abs(act3 - 0.5) * 20) * 0.6;
+        const flashGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 50);
+        flashGrad.addColorStop(0, `rgba(255,255,255,${flashAlpha})`);
+        flashGrad.addColorStop(0.5, `rgba(245,200,80,${flashAlpha*0.5})`);
+        flashGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = flashGrad;
+        ctx.beginPath(); ctx.arc(cx, cy, 50, 0, Math.PI*2); ctx.fill();
+      }
+
+      // Équation au centre
+      if (act3 > 0.5) {
+        const eqAlpha = Math.min(1, (act3 - 0.5) * 5);
+        ctx.fillStyle = `rgba(255,255,255,${eqAlpha * 0.9})`;
+        ctx.font = 'bold 14px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('D^{1/φ}[Ψ] = G[Ψ]', cx, cy - 15);
+        ctx.fillStyle = `rgba(245,200,80,${eqAlpha * 0.7})`;
+        ctx.font = '11px Inter, sans-serif';
+        ctx.fillText('Atangana = Oyibo', cx, cy + 5);
+      }
+
+      if (act3 > 0.6) {
         ctx.fillStyle = `rgba(139,92,246,${act3 * 0.8})`;
         ctx.font = '12px Inter, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('première dimension (x)', cx, cy + 25);
+        ctx.fillText('première dimension (x)', cx, cy + 30);
       }
     }
 
@@ -185,14 +297,12 @@ function draw() {
       grad.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = grad;
       ctx.beginPath(); ctx.arc(x, y, massGlow, 0, Math.PI*2); ctx.fill();
-
       ctx.fillStyle = '#fff';
       ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2); ctx.fill();
     }
 
     // L'interférence entre les deux masses = proto-gravité
     if (separation > 30) {
-      const midX = cx;
       for (let i = 0; i < 60; i++) {
         const t_frac = i / 60;
         const ix = x1 + (x2 - x1) * t_frac;
@@ -203,12 +313,19 @@ function draw() {
       }
     }
 
-    if (act3 < 0.5) {
+    // Sous-titres
+    if (act3 < 0.3) {
       document.getElementById('subtitle').textContent =
-        '🔗 Couplage — deux condensations de Ψ₁ créent la PREMIÈRE direction.';
+        '🔗 n=2 — Deux masses émergent. À GAUCHE : le temps (Atangana, ABC). À DROITE : l\'espace (Oyibo, GAGUT).';
+    } else if (act3 < 0.55) {
+      document.getElementById('subtitle').textContent =
+        '🔗 Le couplage se verrouille — D^{1/φ}[Ψ] = G[Ψ] — la première dimension NAÎT.';
+    } else if (act3 < 0.8) {
+      document.getElementById('subtitle').textContent =
+        '🔗 L\'égalité est atteinte. Le temps (ambre) et l\'espace (violet) oscillent en phase. φ les relie.';
     } else {
       document.getElementById('subtitle').textContent =
-        '🔗 L\'interférence entre les deux masses = proto-gravité. L\'espace NAÎT.';
+        '🔗 GRAVITÉ = le couplage Atangana-Oyibo. L\'espace-temps EST cette égalité.';
     }
   }
 
