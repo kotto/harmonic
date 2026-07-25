@@ -315,22 +315,23 @@ class EnterpriseEngine:
                     source: str = "direct input") -> int:
         """
         Ingère du texte dans l'hologramme d'un département.
-        
-        Le texte est découpé en phrases, chaque phrase est encodée en ψ
-        et superposée dans H_departement.
         """
         dept = self.departments.get(department_id)
         if not dept:
             raise ValueError(f"Département {department_id} non trouvé")
         
-        # Découpage en phrases
+        # Découpage en phrases — mais on garde le texte complet si c'est un QCM
         import re
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        # Ne PAS couper sur '?' pour préserver les paires Q/R
+        if '?' in text and ('reponse' in text.lower() or 'answer' in text.lower()):
+            sentences = [text]  # Garder la paire Q/R ensemble
+        else:
+            sentences = re.split(r'(?<=[.!])\s+', text)
         
         count = 0
         for sentence in sentences:
             sentence = sentence.strip()
-            if len(sentence) < 10:
+            if len(sentence) < 5:
                 continue
             
             # Encodage ψ
@@ -443,7 +444,24 @@ class EnterpriseEngine:
         return path.read_text(encoding='utf-8', errors='ignore')
     
     def _text_to_psi(self, text: str) -> np.ndarray:
-        """Encodage déterministe texte → ψ ∈ ℂ⁵¹²."""
+        """
+        Encodage déterministe texte → ψ ∈ ℂ⁵¹².
+        Utilise SemanticWave si disponible, sinon FNV-1a.
+        """
+        # Essayer d'utiliser SemanticWave pour la généralisation sémantique
+        try:
+            from semantic_wave_embedding import SemanticWaveEmbedding
+            if not hasattr(self, '_swe'):
+                try:
+                    self._swe = SemanticWaveEmbedding.load('data/swe_extended.pkl')
+                except:
+                    self._swe = None
+            if self._swe and self._swe.trained:
+                return self._swe.encode_text(text)
+        except ImportError:
+            pass
+        
+        # Fallback FNV-1a
         words = text.lower().split()
         psi = np.zeros(self.dim, dtype=np.complex128)
         
@@ -505,21 +523,21 @@ class EnterpriseEngine:
         # ConsciousFilter φ : vérifier si on a VRAIMENT trouvé l'info
         top_facts = self._retrieve_top_facts(question, department_id, k=5)
         
-        # Score basé sur la qualité du meilleur match de fait
-        if top_facts:
-            # Re-score avec une normalisation plus stricte
+        # Score de confiance basé sur le meilleur match (keyword + psi combiné)
+        if top_facts and len(top_facts) > 0:
+            q_words = set(w for w in question.lower().split() if len(w) > 2)
             psi_q_norm = psi_q / (np.linalg.norm(psi_q) + 1e-10)
-            fact_scores = []
+            best_score = 0.0
             for f in top_facts:
+                f_words = set(w for w in f.text.lower().split() if len(w) > 2)
+                kw_score = len(q_words & f_words) / max(len(q_words), 1)
                 f_norm = f.psi_vector / (np.linalg.norm(f.psi_vector) + 1e-10)
-                s = np.real(np.dot(psi_q_norm, np.conj(f_norm)))
-                fact_scores.append(s)
-            best_fact_score = max(fact_scores) if fact_scores else 0
-            confidence = max(0.0, best_fact_score * 2.0)  # Scale: 0.5 score → 1.0 confidence
-            confidence = min(1.0, confidence)
+                psi_s = np.real(np.dot(psi_q_norm, np.conj(f_norm)))
+                combined = 0.7 * kw_score + 0.3 * max(0, psi_s)
+                best_score = max(best_score, combined)
+            confidence = min(1.0, best_score)
         else:
             confidence = 0.0
-            best_fact_score = 0
         
         if confidence < min_confidence or dept.fact_count == 0:
             answer = (f"Je ne trouve pas cette information dans le département {dept.name}. "
@@ -590,21 +608,35 @@ class EnterpriseEngine:
         return results
     
     def _retrieve_top_facts(self, question: str, department_id: str, k: int = 3) -> List[StoredFact]:
-        """Retrouve les faits les plus pertinents par résonance."""
+        """Retrouve les faits les plus pertinents par résonance + keyword overlap."""
         dept_facts = self.facts.get(department_id, [])
         if not dept_facts:
             return []
         
+        dept = self.departments.get(department_id)
         psi_q = self._text_to_psi(question)
+        if dept:
+            psi_q = psi_q * np.exp(1j * dept.phase_offset)
+        q_norm = psi_q / (np.linalg.norm(psi_q) + 1e-10)
+        
+        # Extraire les mots-clés de la question (sans stopwords)
+        q_words = set(w for w in question.lower().split() if len(w) > 2)
         
         scored = []
-        for fact in dept_facts:  # Chercher dans TOUS les faits
-            score = np.real(np.dot(psi_q, np.conj(fact.psi_vector)))
-            score /= (np.linalg.norm(psi_q) * np.linalg.norm(fact.psi_vector) + 1e-10)
-            scored.append((score, fact))
+        for fact in dept_facts:
+            f_norm = fact.psi_vector / (np.linalg.norm(fact.psi_vector) + 1e-10)
+            psi_score = np.real(np.dot(q_norm, np.conj(f_norm)))
+            
+            # Bonus de keyword overlap (déterministe, puissant)
+            f_words = set(w for w in fact.text.lower().split() if len(w) > 2)
+            keyword_overlap = len(q_words & f_words) / max(len(q_words), 1)
+            
+            # Score combiné : 70% keyword + 30% psi
+            combined = 0.7 * keyword_overlap + 0.3 * max(0, psi_score)
+            scored.append((combined, psi_score, fact))
         
         scored.sort(key=lambda x: -x[0])
-        return [f for _, f in scored[:k] if f is not None]
+        return [f for _, _, f in scored[:k] if f is not None]
     
     # ═══════════════════════════════════════════════════════════════════════════
     # AUDIT
