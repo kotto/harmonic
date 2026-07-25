@@ -173,12 +173,12 @@ class TwoLevelQueryEngine:
         result = self.engine.ask(question, department_id)
         
         # Fusion
-        if result.confidence > 0.5:
+        if result.confidence > 0.35:
             # L'info est dans les documents → réponse factuelle
             final_answer = result.answer
             final_confidence = result.confidence
             source = "documents entreprise"
-        elif global_score > 0.3:
+        elif global_score > 0.25:
             # L'info n'est pas dans les docs mais H_GLOBAL peut aider
             final_answer = self._generate_from_global(question, psi_q, result)
             final_confidence = global_score * 0.6

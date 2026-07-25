@@ -525,11 +525,14 @@ class EnterpriseEngine:
         
         # Score de confiance basé sur le meilleur match (keyword + psi combiné)
         if top_facts and len(top_facts) > 0:
-            q_words = set(w for w in question.lower().split() if len(w) > 2)
+            import re
+            q_clean = re.sub(r'[^\w\s]', ' ', question.lower())
+            q_words = set(w for w in q_clean.split() if len(w) > 2)
             psi_q_norm = psi_q / (np.linalg.norm(psi_q) + 1e-10)
             best_score = 0.0
             for f in top_facts:
-                f_words = set(w for w in f.text.lower().split() if len(w) > 2)
+                f_clean = re.sub(r'[^\w\s]', ' ', f.text.lower())
+                f_words = set(w for w in f_clean.split() if len(w) > 2)
                 kw_score = len(q_words & f_words) / max(len(q_words), 1)
                 f_norm = f.psi_vector / (np.linalg.norm(f.psi_vector) + 1e-10)
                 psi_s = np.real(np.dot(psi_q_norm, np.conj(f_norm)))
@@ -619,8 +622,10 @@ class EnterpriseEngine:
             psi_q = psi_q * np.exp(1j * dept.phase_offset)
         q_norm = psi_q / (np.linalg.norm(psi_q) + 1e-10)
         
-        # Extraire les mots-clés de la question (sans stopwords)
-        q_words = set(w for w in question.lower().split() if len(w) > 2)
+        # Extraire les mots-clés de la question (sans stopwords, sans ponctuation)
+        import re
+        q_clean = re.sub(r'[^\w\s]', ' ', question.lower())
+        q_words = set(w for w in q_clean.split() if len(w) > 2)
         
         scored = []
         for fact in dept_facts:
@@ -628,7 +633,8 @@ class EnterpriseEngine:
             psi_score = np.real(np.dot(q_norm, np.conj(f_norm)))
             
             # Bonus de keyword overlap (déterministe, puissant)
-            f_words = set(w for w in fact.text.lower().split() if len(w) > 2)
+            f_clean = re.sub(r'[^\w\s]', ' ', fact.text.lower())
+            f_words = set(w for w in f_clean.split() if len(w) > 2)
             keyword_overlap = len(q_words & f_words) / max(len(q_words), 1)
             
             # Score combiné : 70% keyword + 30% psi
