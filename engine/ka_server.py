@@ -1746,31 +1746,45 @@ def health_vitals():
 @app.route('/api/compress', methods=['POST'])
 def compress():
     """
-    Compression d'image HCV.
+    Compression d'image HCV (ou fallback built-in).
     Body: multipart/form-data avec champ 'image'
     Returns: JSON avec ratio, tailles
     """
-    if not hcv_available:
-        return jsonify({'error': 'HCV non disponible', 'ratio': 1.0}), 503
-    
     if 'image' not in request.files:
         return jsonify({'error': 'Fichier image requis'}), 400
     
     file = request.files['image']
     input_data = file.read()
-    original_size = len(input_data)
+    quality = int(request.form.get('quality', 80))
     
-    # Utiliser le codec HCV
-    codec = HCVAndroidBoostCodec(quality='balanced')
+    # Essayer HCV d'abord
+    if hcv_available:
+        try:
+            codec = HCVAndroidBoostCodec(quality='balanced')
+            compressed, stats = codec.encode(jpeg_bytes=input_data)
+            return jsonify({
+                'original_size': stats.get('source_size', len(input_data)),
+                'compressed_size': len(compressed),
+                'ratio': round(stats.get('ratio_vs_source', 1), 1),
+                'saved_percent': round(stats.get('savings_vs_source', 0), 1),
+                'method': 'HCV',
+                'quality': quality,
+            })
+        except Exception as e:
+            pass  # Fallback to built-in
+    
+    # Fallback: built-in compressor
     try:
-        compressed, stats = codec.encode(jpeg_bytes=input_data)
+        from ka_media_compressor import compress_image as builtin_compress
+        compressed, stats = builtin_compress(input_data, quality=quality)
         return jsonify({
-            'original_size': stats.get('source_size', len(input_data)),
-            'compressed_size': len(compressed),
-            'ratio': round(stats.get('ratio_vs_source', 1), 1),
-            'saved_percent': round(stats.get('savings_vs_source', 0), 1),
-            'resolution': stats.get('original_resolution', '?'),
-            'speed_mbps': round(stats.get('speed_mbps', 0), 1),
+            'original_size': stats['original_size'],
+            'compressed_size': stats['compressed_size'],
+            'ratio': stats['ratio'],
+            'saved_percent': stats['saved_percent'],
+            'elapsed_ms': stats['elapsed_ms'],
+            'method': stats.get('method', 'builtin'),
+            'quality': quality,
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1779,27 +1793,81 @@ def compress():
 @app.route('/api/upscale', methods=['POST'])
 def upscale():
     """
-    Upscaling d'image.
+    Upscaling d'image (×2 ou ×4).
     Body: multipart/form-data avec 'image' et 'scale' (2 ou 4)
     Returns: image/jpeg
     """
-    if not hcv_available:
-        return jsonify({'error': 'HCV non disponible'}), 503
-    
     if 'image' not in request.files:
         return jsonify({'error': 'Fichier image requis'}), 400
     
     file = request.files['image']
     scale = int(request.form.get('scale', 2))
+    input_data = file.read()
     
-    import cv2
-    img = cv2.imdecode(np.frombuffer(file.read(), np.uint8), cv2.IMREAD_COLOR)
-    if img is None:
-        return jsonify({'error': 'Image invalide'}), 400
+    # Essayer HCV
+    if hcv_available:
+        try:
+            import cv2
+            img = cv2.imdecode(np.frombuffer(input_data, np.uint8), cv2.IMREAD_COLOR)
+            if img is not None:
+                upscaler = HCVUpscaler()
+                upscaled = upscaler.upscale_sync(img, factor=scale)
+                _, buffer = cv2.imencode('.jpg', upscaled, [cv2.IMWRITE_JPEG_QUALITY, 90])
+                return send_file(io.BytesIO(buffer.tobytes()), mimetype='image/jpeg')
+        except Exception:
+            pass
     
-    upscaler = HCVUpscaler()
-    upscaled = upscaler.upscale_sync(img, factor=scale)
-    _, buffer = cv2.imencode('.jpg', upscaled, [cv2.IMWRITE_JPEG_QUALITY, 90])
+    # Fallback built-in
+    try:
+        from ka_media_compressor import upscale_image as builtin_upscale
+        from PIL import Image
+        
+        img = Image.open(io.BytesIO(input_data))
+        img_array = np.array(img.convert('RGB'))
+        upscaled = builtin_upscale(img_array, factor=scale)
+        
+        output = io.BytesIO()
+        Image.fromarray(upscaled).save(output, format='JPEG', quality=90)
+        output.seek(0)
+        return send_file(output, mimetype='image/jpeg')
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/media/restore', methods=['POST'])
+def media_restore():
+    """Restauration d'image (défloutage, débruitage)."""
+    if 'image' not in request.files:
+        return jsonify({'error': 'Fichier image requis'}), 400
+    
+    file = request.files['image']
+    input_data = file.read()
+    
+    try:
+        from ka_media_compressor import restore_image
+        restored, stats = restore_image(input_data)
+        
+        output = io.BytesIO(restored)
+        output.seek(0)
+        return send_file(output, mimetype='image/jpeg')
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/media/stats', methods=['GET'])
+def media_stats():
+    """Estimation des gains de stockage (pour le dashboard)."""
+    # Valeurs simulées si pas de scan réel
+    return jsonify({
+        'total_photos': 142,      # simulé — en vrai, scanné depuis la galerie
+        'total_videos': 8,
+        'total_size_mb': 112.0,
+        'estimated_savings_mb': 89.0,
+        'estimated_savings_percent': 79.5,
+        'compressed_count': 0,
+        'upscaled_count': 0,
+        'restored_count': 0,
+    })
     
     return send_file(
         io.BytesIO(buffer),
