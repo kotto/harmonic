@@ -596,6 +596,18 @@ def chat():
     if not message:
         return jsonify({'error': 'Message requis', 'response': "Je n'ai pas compris votre message."}), 400
 
+    # 🌐 Détection automatique de la langue
+    detected_lang = 'fr'
+    try:
+        from holographic_encoder import _detect_language
+        detected_lang = _detect_language(message)
+    except Exception:
+        # Fallback simple : détection par mots-clés
+        msg_lower = message.lower()
+        en_markers = [' the ', ' is ', ' are ', ' what ', ' how ', ' why ', ' when ', ' where ', ' who ']
+        if any(m in msg_lower for m in en_markers):
+            detected_lang = 'en'
+
     # 🌊 HWAT ENRICHMENT — Encodage du message par le nouveau modèle harmonique
     if _HWAT_AVAILABLE and _hwat_bridge:
         try:
@@ -826,6 +838,7 @@ def chat():
         'model': 'harmonic-v3-optimized',
         'is_page': is_page,
         'visual': visual,
+        'language': detected_lang,    # 🌐 langue détectée
     })
 
 
