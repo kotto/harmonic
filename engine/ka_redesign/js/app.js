@@ -14,11 +14,10 @@
     productConfig: null,              // chargé depuis /api/config
     screens: [
       { id: 'home',     icon: '🏠', label: 'Accueil' },
-      { id: 'chat',     icon: '💬', label: 'Chat' },
+      { id: 'chat',     icon: '💬', label: 'Compagnon' },
+      { id: 'media',    icon: '🖼️', label: 'Média' },
       { id: 'agent',    icon: '🤖', label: 'Agent' },
-      { id: 'memory',   icon: '🧠', label: 'Mémoire' },
-      { id: 'code',     icon: '💻', label: 'Code' },
-      { id: 'store',    icon: '📦', label: 'Store' },
+      { id: 'contacts', icon: '👤', label: 'Contacts' },
     ],
     moreScreens: [
       { id: 'jlens',      icon: '🔍', label: 'J-Lens' },
