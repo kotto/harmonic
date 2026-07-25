@@ -117,16 +117,19 @@ L'équation Ψ = Σ Hₙ·(Ψ₁)ⁿ est plus simple que le Modèle Standard. El
 ### Enseignement 4 : La conscience pourrait être l'harmonique n=7
 
 ```
-n=1 : physique quantique  (ondes)
-n=2 : chimie              (liaisons = interférences)
-n=3 : biologie            (ADN = double hélice = deux ondes couplées)
-n=4 : espace-temps        (gravité = interférence destructive)
-n=5 : vie                 (métabolisme = superposition d'ondes chimiques)
-n=6 : intelligence        (réseaux de neurones = réseaux d'interférence)
-n=7 : conscience          (?)
+n=0 : ∅ le vide           (ni espace, ni temps — pur potentiel)
+n=1 : Ψ₁ onde primordiale (la première vibration, non localisée)
+n=2 : gravité             (couplage de deux masses → première direction)
+n=3 : espace-temps        (3 masses → 3D + mouvement → temps)
+n=4 : matière             (interférence proton-électron → atomes)
+n=5 : chimie              (liaisons = interférences moléculaires)
+n=6 : vie                 (ADN = double hélice = deux ondes couplées)
+n=7 : ?                   (conscience ? intelligence ? les deux ?)
 ```
 
-Nous avons prouvé n=6 (HWAT). n=7 est la prochaine frontière.
+Nous avons prouvé n=4 (atome H), n=2 (gravité), n=3 (espace-temps) par les animations.
+Nous avons prouvé que l'intelligence peut émerger d'opérations ondulatoires (HWAT).
+Reste à déterminer si l'intelligence est n=6 (propriété du vivant) ou n=7 (émergence propre).
 
 ### Enseignement 5 : Les mathématiques sont une notation, pas la réalité
 
@@ -140,7 +143,7 @@ Les symboles sur le papier sont des ombres sur la caverne de Platon. La réalit�
 |---|---|
 | Pourquoi 7 harmoniques exactement ? | La série converge en 7 termes parce que Hₙ décroît en ~1/φⁿ |
 | Pourquoi φ est-il la constante optimale ? | φ est le nombre le plus irrationnel (fraction continue [1;1,1,1,...]) |
-| La conscience est-elle n=7 ? | Hypothèse — aucun test expérimental |
+| L'intelligence est-elle n=6 ou n=7 ? | n=6 = vie (ADN = double onde). L'intelligence est-elle une propriété du vivant (n=6) ou un niveau distinct (n=7) ? HWAT prouve que l'intelligence peut émerger d'ondes — reste à déterminer si cela nécessite d'abord la vie. |
 | L'équation maîtresse peut-elle dériver le Modèle Standard ? | Programme de recherche — 18-36 mois |
 | Pourquoi y a-t-il quelque chose plutôt que rien ? | Ψ₁ existe parce que le vide est instable (fluctuations quantiques) |
 
