@@ -13,6 +13,7 @@
     screens: [
       { id: 'home',     icon: '🏠', label: 'Accueil' },
       { id: 'chat',     icon: '💬', label: 'Chat' },
+      { id: 'agent',    icon: '🤖', label: 'Agent' },
       { id: 'memory',   icon: '🧠', label: 'Mémoire' },
       { id: 'code',     icon: '💻', label: 'Code' },
       { id: 'store',    icon: '📦', label: 'Store' },
@@ -419,6 +420,122 @@
       } catch (e) { console.error('Speak error:', e); }
     },
     getVoiceInfo() { return api.getVoiceInfo(); },
+
+    // ═══ AGENT ═══
+    async agentRun(goal) {
+      if (!goal || !goal.trim()) return;
+      const input = document.getElementById('agent-input');
+      if (input) input.value = '';
+      
+      // Add pending task card
+      const container = document.getElementById('agent-tasks');
+      if (container) {
+        const existing = container.querySelector('div[style*="text-align:center"]');
+        if (existing) existing.remove();
+        
+        container.innerHTML = `<div class="agent-task" id="agent-task-pending" style="
+          padding:12px 16px;background:var(--color-bg-alt);border-radius:12px;
+          border:1px solid var(--color-border);animation:fadeIn 0.3s;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <strong>${goal}</strong>
+            <span style="color:var(--color-primary);">⏳ En cours...</span>
+          </div>
+          <div class="progress-bar" style="margin-top:8px;">
+            <div class="progress-fill gold" id="agent-progress" style="width:0%;"></div>
+          </div>
+        </div>` + container.innerHTML;
+      }
+      
+      try {
+        const data = await api.post('/api/agent/run', { goal, voice: state.voiceEnabled });
+        
+        // Update task card
+        const taskCard = document.getElementById('agent-task-pending');
+        if (taskCard) {
+          taskCard.id = `task-${data.id}`;
+          const status = data.status === 'completed' ? '✅ Terminé' : 
+                        data.status === 'failed' ? '❌ Échoué' : '⏳ ' + data.status;
+          const color = data.status === 'completed' ? 'var(--color-success, #00d2a0)' :
+                       data.status === 'failed' ? 'var(--color-error, #e74c3c)' : 'var(--color-primary)';
+          
+          taskCard.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <strong>${data.goal}</strong>
+              <span style="color:${color};">${status} (${data.elapsed_ms}ms)</span>
+            </div>
+            <div class="progress-bar" style="margin-top:8px;">
+              <div class="progress-fill gold" style="width:${data.progress}%;"></div>
+            </div>
+            <div style="font-size:0.7rem;color:var(--color-text-muted);margin-top:4px;">
+              ${data.steps.map(s => `${s.status==='done'?'✅':'⬜'} ${s.desc}`).join(' → ')}
+            </div>
+          `;
+        }
+        
+        // Auto-play voice if available
+        if (state.voiceEnabled && data.voice_response) {
+          KA.playLastAudio();
+        }
+        
+        // Refresh dashboard
+        KA.agentLoadDashboard();
+        
+      } catch (err) {
+        const taskCard = document.getElementById('agent-task-pending');
+        if (taskCard) {
+          taskCard.innerHTML = `<div style="color:var(--color-error);">❌ Erreur: ${err.message}</div>`;
+        }
+      }
+    },
+    
+    async agentDispatch(goal) {
+      try {
+        const data = await api.post('/api/agent/dispatch', { goal });
+        alert(`Tâche background lancée: ${data.task_id}`);
+      } catch (e) { console.error(e); }
+    },
+    
+    async agentQuick(text) {
+      const input = document.getElementById('agent-input');
+      if (input) { input.value = text; }
+      KA.agentRun(text);
+    },
+    
+    async agentLoadDashboard() {
+      try {
+        const data = await api.get('/api/agent/phone/dashboard');
+        const dash = document.getElementById('agent-dashboard');
+        const stats = document.getElementById('dash-stats');
+        if (dash) dash.style.display = 'block';
+        if (stats && data) {
+          stats.innerHTML = `
+            <div style="text-align:center;padding:8px;background:var(--color-bg-alt);border-radius:8px;">
+              <div style="font-size:1.5rem;font-weight:700;">${data.contacts_count||0}</div>
+              <div style="font-size:0.65rem;color:var(--color-text-muted);">👤 Contacts</div>
+            </div>
+            <div style="text-align:center;padding:8px;background:var(--color-bg-alt);border-radius:8px;">
+              <div style="font-size:1.5rem;font-weight:700;">${data.messages_count||0}</div>
+              <div style="font-size:0.65rem;color:var(--color-text-muted);">💬 Messages</div>
+            </div>
+            <div style="text-align:center;padding:8px;background:var(--color-bg-alt);border-radius:8px;">
+              <div style="font-size:1.5rem;font-weight:700;">${data.reminders_active||0}</div>
+              <div style="font-size:0.65rem;color:var(--color-text-muted);">⏰ Rappels</div>
+            </div>
+            <div style="text-align:center;padding:8px;background:var(--color-bg-alt);border-radius:8px;">
+              <div style="font-size:1.5rem;font-weight:700;">${data.calls_today||0}</div>
+              <div style="font-size:0.65rem;color:var(--color-text-muted);">📞 Appels</div>
+            </div>
+          `;
+        }
+      } catch (e) {}
+    },
+
+    async agentPlan(goal) {
+      try {
+        const data = await api.post('/api/agent/plan', { goal });
+        alert(`Plan: ${data.steps.map(s=>s.desc).join(' → ')}`);
+      } catch (e) { console.error(e); }
+    },
   });
 
   // ═══ UTILS ═══

@@ -1,0 +1,55 @@
+<!-- ═══════════════════════════════════════════════ -->
+<!-- KA Screen: agent — Tâches Agentiques           -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="ka-screen" id="screen-agent" data-screen="agent">
+  <header class="ka-screen__header">
+    <h2 class="ka-screen__title">🤖 KA Agent</h2>
+  </header>
+  <main class="ka-screen__body">
+
+    <!-- Quick Actions -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+      <button class="chip chip--active" onclick="KA.agentQuick('Vérifie mes messages urgents')">📧 Messages</button>
+      <button class="chip" onclick="KA.agentQuick('Quels sont mes rappels aujourd\'hui ?')">⏰ Aujourd'hui</button>
+      <button class="chip" onclick="KA.agentQuick('Appelle Maman')">📞 Appeler</button>
+      <button class="chip" onclick="KA.agentQuick('Recherche les actualités IA')">🔍 Recherche</button>
+    </div>
+
+    <!-- Command Input -->
+    <div class="chat__input-bar" style="margin-bottom:16px;">
+      <input type="text" class="chat__input" id="agent-input" 
+             placeholder="Que voulez-vous que KA fasse ? (ex: Vérifie mes emails)"
+             onkeydown="if(event.key==='Enter')KA.agentRun(document.getElementById('agent-input').value)">
+      <button class="chat__input-btn chat__input-btn--send" 
+              onclick="KA.agentRun(document.getElementById('agent-input').value)">▶️</button>
+    </div>
+
+    <!-- Task List -->
+    <div id="agent-tasks" style="display:flex;flex-direction:column;gap:12px;">
+      <div style="color:var(--color-text-muted);text-align:center;padding:20px;">
+        🤖 Prêt à exécuter vos tâches. Tapez un objectif ci-dessus.
+      </div>
+    </div>
+
+    <!-- Phone Dashboard -->
+    <div id="agent-dashboard" style="margin-top:16px;display:none;">
+      <h3 style="margin-bottom:8px;">📊 Téléphone Harmonique</h3>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;" id="dash-stats"></div>
+    </div>
+
+  </main>
+</div>
+
+<style>
+#screen-agent .chip--active { border-color: var(--color-primary); }
+</style>
+
+<script>
+(() => {
+  const screen = document.getElementById('screen-agent');
+  if (!screen) return;
+
+  // Load dashboard on enter
+  KA.agentLoadDashboard();
+})();
+</script>

@@ -3640,8 +3640,231 @@ def chat_with_voice():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# DÉMARRAGE
+# 🤖 KA AGENT — Noyau Agentique du Téléphone Harmonique
 # ═══════════════════════════════════════════════════════════════════════════════
+
+_KA_AGENT_AVAILABLE = False
+_ka_agent = None
+
+try:
+    from ka_agent_core import KAAgentCore
+    _ka_agent = KAAgentCore(
+        brain=brain if 'brain' in dir() else None,
+        voice_engine=_ka_voice_engine if _KA_VOICE_AVAILABLE else None,
+    )
+    _KA_AGENT_AVAILABLE = True
+    log.info("🤖 KA Agent Core: actif (6 outils, planificateur, background tasks)")
+except Exception as e:
+    log.warning(f"🤖 KA Agent Core: non disponible ({e})")
+
+
+# ── API Agent Endpoints ────────────────────────────────────────────────────────
+
+@app.route('/api/agent/run', methods=['POST'])
+def agent_run():
+    """
+    Exécute une tâche agentique de façon synchrone.
+    Body: { "goal": "...", "voice": false, "emotion": "warm" }
+    Returns: { task_id, status, steps, result }
+    """
+    if not _KA_AGENT_AVAILABLE:
+        return jsonify({'error': 'KA Agent non disponible'}), 503
+    
+    data = request.get_json(force=True, silent=True) or {}
+    goal = data.get('goal', '').strip()
+    voice = data.get('voice', False)
+    emotion = data.get('emotion', 'warm')
+    
+    if not goal:
+        return jsonify({'error': 'Objectif requis (goal)'}), 400
+    
+    try:
+        task = _ka_agent.run(goal, voice=voice, emotion=emotion)
+        return jsonify(task.to_dict())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/agent/dispatch', methods=['POST'])
+def agent_dispatch():
+    """
+    Lance une tâche en arrière-plan.
+    Body: { "goal": "..." }
+    Returns: { task_id, status: "dispatched" }
+    """
+    if not _KA_AGENT_AVAILABLE:
+        return jsonify({'error': 'KA Agent non disponible'}), 503
+    
+    data = request.get_json(force=True, silent=True) or {}
+    goal = data.get('goal', '').strip()
+    
+    if not goal:
+        return jsonify({'error': 'Objectif requis (goal)'}), 400
+    
+    try:
+        task_id = _ka_agent.dispatch(goal)
+        return jsonify({'task_id': task_id, 'status': 'dispatched'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/agent/status/<task_id>', methods=['GET'])
+def agent_status(task_id):
+    """Vérifie le statut d'une tâche agentique."""
+    if not _KA_AGENT_AVAILABLE:
+        return jsonify({'error': 'KA Agent non disponible'}), 503
+    
+    status = _ka_agent.status(task_id)
+    if status is None:
+        return jsonify({'error': 'Tâche non trouvée', 'task_id': task_id}), 404
+    
+    return jsonify(status)
+
+
+@app.route('/api/agent/cancel/<task_id>', methods=['POST'])
+def agent_cancel(task_id):
+    """Annule une tâche en cours."""
+    if not _KA_AGENT_AVAILABLE:
+        return jsonify({'error': 'KA Agent non disponible'}), 503
+    
+    ok = _ka_agent.cancel(task_id)
+    return jsonify({'task_id': task_id, 'cancelled': ok})
+
+
+@app.route('/api/agent/plan', methods=['POST'])
+def agent_plan():
+    """
+    Planifie une tâche (sans l'exécuter).
+    Body: { "goal": "..." }
+    Returns: le plan d'étapes
+    """
+    if not _KA_AGENT_AVAILABLE:
+        return jsonify({'error': 'KA Agent non disponible'}), 503
+    
+    data = request.get_json(force=True, silent=True) or {}
+    goal = data.get('goal', '').strip()
+    
+    if not goal:
+        return jsonify({'error': 'Objectif requis (goal)'}), 400
+    
+    try:
+        task = _ka_agent.planner.plan(goal)
+        return jsonify(task.to_dict())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/agent/voice', methods=['POST'])
+def agent_voice():
+    """
+    Commande vocale → action agentique.
+    Body: { "text": "appelle maman" }  (en production: audio upload)
+    Returns: résultat de la commande
+    """
+    if not _KA_AGENT_AVAILABLE:
+        return jsonify({'error': 'KA Agent non disponible'}), 503
+    
+    data = request.get_json(force=True, silent=True) or {}
+    text = data.get('text', '').strip()
+    
+    if not text:
+        return jsonify({'error': 'Texte de la commande requis'}), 400
+    
+    try:
+        result = _ka_agent.voice_command(text)
+        return jsonify({'command': text, 'result': str(result)[:500]})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/agent/tools', methods=['GET'])
+def agent_tools():
+    """Liste les outils disponibles."""
+    if not _KA_AGENT_AVAILABLE:
+        return jsonify({'tools': []})
+    
+    return jsonify({
+        'tools': [{'name': t.name, 'description': t.description,
+                   'category': t.category, 'keywords': t.keywords[:5]}
+                  for t in _ka_agent.tools.all_tools],
+    })
+
+
+@app.route('/api/agent/phone/dashboard', methods=['GET'])
+def agent_phone_dashboard():
+    """Tableau de bord du téléphone harmonique."""
+    if not _KA_AGENT_AVAILABLE:
+        return jsonify({'error': 'KA Agent non disponible'}), 503
+    
+    try:
+        dash = _ka_agent.phone.dashboard()
+        return jsonify(dash)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/agent/phone/contacts', methods=['GET', 'POST'])
+def agent_phone_contacts():
+    """Gestion des contacts du téléphone harmonique."""
+    if not _KA_AGENT_AVAILABLE:
+        return jsonify({'error': 'KA Agent non disponible'}), 503
+    
+    if request.method == 'GET':
+        return jsonify({'contacts': _ka_agent.phone.list_contacts()})
+    
+    data = request.get_json(force=True, silent=True) or {}
+    name = data.get('name', '').strip()
+    phone = data.get('phone', '')
+    email = data.get('email', '')
+    
+    if not name:
+        return jsonify({'error': 'Nom requis'}), 400
+    
+    cid = _ka_agent.phone.add_contact(name, phone=phone, email=email)
+    return jsonify({'contact_id': cid, 'name': name})
+
+
+@app.route('/api/agent/phone/call', methods=['POST'])
+def agent_phone_call():
+    """Initie un appel vocal KA."""
+    if not _KA_AGENT_AVAILABLE:
+        return jsonify({'error': 'KA Agent non disponible'}), 503
+    
+    data = request.get_json(force=True, silent=True) or {}
+    contact = data.get('contact', '').strip()
+    message = data.get('message', '')
+    
+    if not contact:
+        return jsonify({'error': 'Contact requis'}), 400
+    
+    call = _ka_agent.phone.initiate_call(contact, message)
+    return jsonify(call)
+
+
+@app.route('/api/agent/phone/reminder', methods=['POST'])
+def agent_phone_reminder():
+    """Programme un rappel."""
+    if not _KA_AGENT_AVAILABLE:
+        return jsonify({'error': 'KA Agent non disponible'}), 503
+    
+    data = request.get_json(force=True, silent=True) or {}
+    text = data.get('text', '').strip()
+    when = data.get('when', '')
+    
+    if not text:
+        return jsonify({'error': 'Texte du rappel requis'}), 400
+    
+    reminder = _ka_agent.phone.set_reminder(text, when)
+    return jsonify(reminder)
+
+
+@app.route('/api/agent/info', methods=['GET'])
+def agent_info():
+    """Informations sur le noyau agentique."""
+    if not _KA_AGENT_AVAILABLE:
+        return jsonify({'available': False})
+    
+    return jsonify({'available': True, **_ka_agent.info})
 
 if __name__ == '__main__':
     log.info(f"\n✨ KA Server v3 OPTIMISÉ sur http://localhost:{port}")
@@ -3658,6 +3881,15 @@ if __name__ == '__main__':
     log.info(f"   /api/voice/clone — clonage vocal 3s")
     log.info(f"   /api/voice/voices — voix disponibles")
     log.info(f"   /api/voice/emotion — changer l'émotion")
+    log.info(f"   /api/agent/run   — exécuter tâche agentique 🤖")
+    log.info(f"   /api/agent/dispatch — lancer tâche background")
+    log.info(f"   /api/agent/status/<id> — statut tâche")
+    log.info(f"   /api/agent/plan  — planifier sans exécuter")
+    log.info(f"   /api/agent/voice — commande vocale → action")
+    log.info(f"   /api/agent/phone/dashboard — 📊 tableau de bord")
+    log.info(f"   /api/agent/phone/contacts — 👤 gestion contacts")
+    log.info(f"   /api/agent/phone/call     — 📞 initier appel")
+    log.info(f"   /api/agent/phone/reminder — ⏰ programmer rappel")
     log.info(f"   /api/reason    — raisonnement")
     log.info(f"   /api/create    — créativité")
     log.info(f"   /api/haiku     — haïku")
