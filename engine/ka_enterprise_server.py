@@ -95,6 +95,22 @@ app = Flask(__name__)
 if HAS_FLASK:
     CORS(app, resources={r"/api/*": {"origins": "*"}})
 
+# ── Fichiers statiques (animations, documents) ────────────────────────────────
+
+_ENGINE_DIR = Path(__file__).resolve().parent
+
+@app.route('/animation_equation_maitresse.html')
+def serve_animation_genese():
+    return send_file(_ENGINE_DIR / 'animation_equation_maitresse.html')
+
+@app.route('/animation_convergence_alpha.html')
+def serve_animation_convergence():
+    return send_file(_ENGINE_DIR / 'animation_convergence_alpha.html')
+
+@app.route('/DOCUMENT_ALPHA_GRAND_PUBLIC.md')
+def serve_document_alpha():
+    return send_file(_ENGINE_DIR / 'DOCUMENT_ALPHA_GRAND_PUBLIC.md', mimetype='text/markdown')
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # MIDDLEWARE — Sécurité
 # ═══════════════════════════════════════════════════════════════════════════════
