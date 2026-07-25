@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌊 L'Apparition de la Gravité — Émergence Ondulatoire</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#050508;color:#fafafa;font-family:'Inter',system-ui,sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column;align-items:center}
+canvas{display:block}
+#ui{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;align-items:center;z-index:10;flex-wrap:wrap;justify-content:center}
+button{padding:10px 24px;border-radius:8px;border:1px solid #3d3528;background:#1f1b18;color:#fafafa;font-size:14px;cursor:pointer;transition:all .2s}
+button:hover{border-color:#f59e0b;background:#2a2520}
+button.active{background:#f59e0b;border-color:#f59e0b;color:#050508}
+#info{position:absolute;top:20px;left:50%;transform:translateX(-50%);text-align:center;z-index:10}
+#title{font-size:24px;font-weight:700;letter-spacing:-.01em;margin-bottom:4px}
+#subtitle{font-size:14px;color:#a1a1aa}
+#overlay{position:absolute;top:80px;right:30px;font-size:11px;color:#a1a1aa;text-align:right;line-height:2;z-index:10;background:rgba(5,5,8,.7);padding:12px 16px;border-radius:8px;border:1px solid #27272b}
+#overlay span{color:#f59e0b;font-weight:600}
+</style>
+</head>
+<body>
+
+<div id="info">
+  <div id="title">🌊 L'Apparition de la Gravité</div>
+  <div id="subtitle">Émergence ondulatoire — la courbure est une interférence</div>
+</div>
+
+<div id="overlay">
+  Masse : <span id="mass-val">0 M⊙</span><br>
+  Courbure max : <span id="curvature-val">0.000</span><br>
+  Δφ espace : <span id="phase-val">0°</span><br>
+  Corps en chute : <span id="falling-state">—</span>
+</div>
+
+<canvas id="c"></canvas>
+
+<div id="ui">
+  <button id="btn-play" class="active">▶ Émergence</button>
+  <button id="btn-pause">⏸ Pause</button>
+  <button id="btn-reset">↺ Reset</button>
+  <button id="btn-add-mass">➕ Ajouter masse</button>
+  <span style="color:#a1a1aa;font-size:12px">| Masse : </span>
+  <input type="range" id="mass-slider" min="0" max="100" value="0" style="width:120px">
+  <span id="mass-pct" style="color:#f59e0b;font-size:13px;min-width:35px">0%</span>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let W, H;
+let time = 0;
+let playing = true;
+let manualMass = 0;
+let useManual = false;
+let fallingBodies = [];
+let fallingTime = 0;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ── Espace-temps ondulatoire ──────────────────────────────────
+
+function spacetimeWave(x, y, t, mass) {
+  // Masse au centre
+  const mx = W * 0.35;
+  const my = H * 0.45;
+  const r = Math.sqrt((x - mx) ** 2 + (y - my) ** 2);
+
+  // Sans masse : espace plat (ondes uniformes)
+  if (mass < 0.01) {
+    return 0.15 * Math.cos(x * 0.008 + y * 0.006 + t * 0.01);
+  }
+
+  // Avec masse : la courbure émerge de l'interférence
+  // La masse émet une onde sphérique qui interfère avec l'espace plat
+
+  // Onde de courbure (Schwarzschild-like decay ~ 1/r)
+  const schwarzschild = Math.min(1, mass * 3 / Math.max(r, 20));
+  const curvature = schwarzschild * Math.exp(-r / (mass * 10 + 50));
+
+  // Interférence : onde plate + onde sphérique
+  const flatWave = 0.12 * Math.cos(x * 0.008 + y * 0.006 + t * 0.01);
+  const massWave = curvature * Math.cos(r * 0.06 - t * 0.03);
+  const interference = flatWave + massWave;
+
+  return interference;
+}
+
+// ── Rendu ──────────────────────────────────────────────────────
+
+function draw() {
+  ctx.fillStyle = '#050508';
+  ctx.fillRect(0, 0, W, H);
+
+  const mass = useManual ? manualMass / 100 : Math.min(1, time / 10);
+  const mx = W * 0.35;
+  const my = H * 0.45;
+
+  // Grille subtile
+  ctx.strokeStyle = 'rgba(39,39,43,0.2)';
+  ctx.lineWidth = 0.5;
+  const gs = 60;
+  for (let x = gs; x < W; x += gs) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = gs; y < H; y += gs) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // ── Grille déformée (espace-temps courbé) ──
+  if (mass > 0.01) {
+    ctx.strokeStyle = 'rgba(245,158,11,0.3)';
+    ctx.lineWidth = 1;
+
+    // Lignes radiales
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 16) {
+      ctx.beginPath();
+      let first = true;
+      for (let r = 0; r < Math.max(W, H); r += 8) {
+        const deflection = mass * 40 * Math.exp(-r / (mass * 30 + 80)) *
+                          Math.sin(r * 0.04 - time * 0.02);
+        const dr = r + deflection;
+        const sx = mx + dr * Math.cos(a);
+        const sy = my + dr * Math.sin(a);
+        if (first) { ctx.moveTo(sx, sy); first = false; }
+        else { ctx.lineTo(sx, sy); }
+      }
+      ctx.stroke();
+    }
+
+    // Cercles concentriques (potentiel gravitationnel)
+    for (let r = 40; r < 500; r += 40) {
+      const deflection = mass * 50 * Math.exp(-r / (mass * 30 + 80)) *
+                        Math.cos(r * 0.04 - time * 0.02);
+      const dr = r + deflection;
+      ctx.beginPath();
+      ctx.arc(mx, my, dr, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  // ── Champ d'interférence (fond coloré) ──
+  const step = 4;
+  for (let x = 0; x < W; x += step) {
+    for (let y = 0; y < H; y += step) {
+      const sw = spacetimeWave(x, y, time, mass);
+      const intensity = Math.abs(sw);
+
+      if (intensity < 0.03) continue;
+
+      const alpha = Math.min(0.7, intensity * 2.5);
+
+      if (sw > 0) {
+        // Interférence constructive → courbure positive (ambre/orange)
+        const r = Math.floor(245 + intensity * 10);
+        const g = Math.floor(158 - intensity * 80);
+        const b = Math.floor(11 - intensity * 11);
+        ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+      } else {
+        // Interférence destructive → courbure négative (bleu profond)
+        const r = Math.floor(20 - intensity * 10);
+        const g = Math.floor(30 + intensity * 30);
+        const b = Math.floor(180 - intensity * 80);
+        ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+      }
+      ctx.fillRect(x, y, step, step);
+    }
+  }
+
+  // ── Masse centrale ──
+  if (mass > 0.01) {
+    // Halo de courbure
+    const haloSize = 30 + mass * 70;
+    const grad = ctx.createRadialGradient(mx, my, 5, mx, my, haloSize);
+    grad.addColorStop(0, 'rgba(255,255,255,0.9)');
+    grad.addColorStop(0.1, 'rgba(245,200,50,0.7)');
+    grad.addColorStop(0.4, 'rgba(245,158,11,0.3)');
+    grad.addColorStop(1, 'rgba(5,5,8,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(mx, my, haloSize, 0, Math.PI * 2); ctx.fill();
+
+    // Noyau
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(mx, my, 4 + mass * 5, 0, Math.PI * 2); ctx.fill();
+
+    // Label
+    ctx.fillStyle = 'rgba(245,158,11,0.7)';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('masse', mx + mass * 35 + 10, my - 5);
+  }
+
+  // ── Corps en chute libre ──
+  if (mass > 0.05 && time > 12) {
+    // Ajouter un corps tombant toutes les 5 secondes
+    if (time > 12 && fallingBodies.length === 0) {
+      fallingBodies.push({ x: mx + 350, y: my - 200, vx: 0, vy: 0, t0: time });
+    }
+    if (time > 18 && fallingBodies.length === 1) {
+      fallingBodies.push({ x: mx + 400, y: my - 100, vx: 0, vy: 0, t0: time });
+    }
+    if (time > 24 && fallingBodies.length === 2) {
+      fallingBodies.push({ x: mx + 300, y: my - 250, vx: 0, vy: 0, t0: time });
+    }
+
+    for (const body of fallingBodies) {
+      const dx = mx - body.x;
+      const dy = my - body.y;
+      const r = Math.sqrt(dx * dx + dy * dy);
+      const force = mass * 800 / (r * r + 100);
+      body.vx += (dx / r) * force * 0.003;
+      body.vy += (dy / r) * force * 0.003;
+      body.x += body.vx;
+      body.y += body.vy;
+
+      // Effet de traînée gravitationnelle
+      const rNow = Math.sqrt((mx - body.x) ** 2 + (my - body.y) ** 2);
+      const gravDistortion = mass * 15 / Math.max(rNow, 15);
+      for (let i = 0; i < 5; i++) {
+        const ta = time * 3 + i * 0.5;
+        const tx = body.x + gravDistortion * Math.cos(ta) * (5 - i) / 5;
+        const ty = body.y + gravDistortion * Math.sin(ta) * (5 - i) / 5;
+        ctx.fillStyle = `rgba(34,211,238,${0.5 - i * 0.1})`;
+        ctx.beginPath(); ctx.arc(tx, ty, 2, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // Corps
+      const bodyGlow = ctx.createRadialGradient(body.x, body.y, 1, body.x, body.y, 10);
+      bodyGlow.addColorStop(0, 'rgba(34,211,238,0.9)');
+      bodyGlow.addColorStop(1, 'rgba(34,211,238,0)');
+      ctx.fillStyle = bodyGlow;
+      ctx.beginPath(); ctx.arc(body.x, body.y, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(body.x, body.y, 3, 0, Math.PI * 2); ctx.fill();
+
+      document.getElementById('falling-state').textContent =
+        `r=${Math.round(rNow)}px v=${Math.round(Math.sqrt(body.vx**2+body.vy**2))}px/s`;
+    }
+  }
+
+  // ── Lignes de champ gravitationnel ──
+  if (mass > 0.1) {
+    ctx.strokeStyle = 'rgba(245,158,11,0.15)';
+    ctx.lineWidth = 1;
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) {
+      const arrowLen = 15;
+      const r = mass * 300 + 80;
+      const ax = mx + r * Math.cos(a);
+      const ay = my + r * Math.sin(a);
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(ax - arrowLen * Math.cos(a), ay - arrowLen * Math.sin(a));
+      ctx.stroke();
+
+      // Pointe
+      const tipAngle = a + Math.PI;
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(ax + 6 * Math.cos(tipAngle + 0.5), ay + 6 * Math.sin(tipAngle + 0.5));
+      ctx.lineTo(ax + 6 * Math.cos(tipAngle - 0.5), ay + 6 * Math.sin(tipAngle - 0.5));
+      ctx.fillStyle = 'rgba(245,158,11,0.3)';
+      ctx.fill();
+    }
+  }
+
+  // ── Overlay valeurs ──
+  document.getElementById('mass-val').textContent = (mass * 10).toFixed(1) + ' M⊙';
+  const maxCurv = mass > 0.01 ? (mass * 3).toFixed(3) : '0.000';
+  document.getElementById('curvature-val').textContent = maxCurv;
+  document.getElementById('phase-val').textContent =
+    Math.round(mass * 180) + '°';
+
+  // ── Sous-titre ──
+  if (mass < 0.05) {
+    document.getElementById('subtitle').textContent = '① Espace-temps plat — ondes uniformes, pas de courbure';
+  } else if (mass < 0.4) {
+    document.getElementById('subtitle').textContent = '② Une masse apparaît — l\'onde sphérique interfère avec l\'espace';
+  } else if (mass < 0.8) {
+    document.getElementById('subtitle').textContent = '③ La courbure émerge — cos(Δφ) < 0 autour de la masse';
+  } else {
+    document.getElementById('subtitle').textContent = '④ Gravité = interférence destructive de l\'espace-temps';
+  }
+}
+
+// ── Boucle ─────────────────────────────────────────────────────
+
+function loop() {
+  if (playing && !useManual) {
+    time += 0.06;
+  }
+  draw();
+
+  const mpct = useManual ? manualMass : Math.round(Math.min(1, time / 10) * 100);
+  document.getElementById('mass-pct').textContent = mpct + '%';
+  document.getElementById('mass-slider').value = useManual ? manualMass : mpct;
+
+  requestAnimationFrame(loop);
+}
+
+// ── Contrôles ──────────────────────────────────────────────────
+
+document.getElementById('btn-play').addEventListener('click', () => {
+  playing = true; useManual = false;
+  document.getElementById('btn-play').classList.add('active');
+  document.getElementById('btn-pause').classList.remove('active');
+});
+document.getElementById('btn-pause').addEventListener('click', () => {
+  playing = false; useManual = true; manualMass = Math.round(Math.min(1, time / 10) * 100);
+  document.getElementById('btn-pause').classList.add('active');
+  document.getElementById('btn-play').classList.remove('active');
+});
+document.getElementById('btn-reset').addEventListener('click', () => {
+  time = 0; manualMass = 0; useManual = false; playing = true;
+  fallingBodies = [];
+  document.getElementById('mass-slider').value = 0;
+  document.getElementById('btn-play').classList.add('active');
+  document.getElementById('btn-pause').classList.remove('active');
+});
+document.getElementById('btn-add-mass').addEventListener('click', () => {
+  if (playing) { playing = false; useManual = true; manualMass = Math.round(Math.min(1, time / 10) * 100); }
+  manualMass = Math.min(100, manualMass + 15);
+  document.getElementById('mass-slider').value = manualMass;
+  document.getElementById('btn-pause').classList.add('active');
+  document.getElementById('btn-play').classList.remove('active');
+});
+document.getElementById('mass-slider').addEventListener('input', (e) => {
+  manualMass = parseInt(e.target.value); useManual = true; playing = false;
+  document.getElementById('btn-pause').classList.add('active');
+  document.getElementById('btn-play').classList.remove('active');
+});
+
+loop();
+</script>
+</body>
+</html>
