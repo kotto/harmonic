@@ -171,7 +171,7 @@ KA_MOBILE = KAProductConfig(
     product='mobile',
     name='KA Mobile',
     name_short='KA',
-    tagline='Votre compagnon dans la poche',
+    tagline='Libérez votre téléphone. Gardez vos souvenirs.',
     icon='📱',
     
     port=8765,
@@ -182,41 +182,45 @@ KA_MOBILE = KAProductConfig(
     font_scale=1.1,           # lisible sur petit écran
     
     screens=[
-        'home',               # Accueil avec résumé
-        'chat',               # Conversation principale
+        'home',               # Accueil avec stats stockage
+        'media',              # ★ Compression photos/vidéos (fonction phare)
+        'chat',               # Conversation
         'agent',              # Tâches agentiques
         'contacts',           # Répertoire
         'calls',              # Journal d'appels
         'profile',            # Réglages
     ],
-    default_screen='chat',
+    default_screen='home',
     
     features={
         'chat': True,
-        'voice_tts': True,           # Synthèse vocale (essentiel)
-        'voice_stt': False,          # Dictée (futur)
+        'voice_tts': True,           # Synthèse vocale
+        'voice_stt': False,
         'agent': True,               # Agent conversationnel
-        'code_gen': False,           # Pas de code sur mobile
-        'deep_research': False,      # Pas de recherche lourde
-        'file_management': False,    # Pas de fichiers
-        'creative_media': False,     # Pas de génération média
-        'health': False,             # Santé (optionnel)
+        'code_gen': False,
+        'deep_research': False,
+        'file_management': False,
+        'creative_media': False,
+        'health': False,
         'enterprise': False,
         'multi_tenant': False,
-        'knowledge_store': True,     # Base de connaissances
-        'hologram_store': False,    # Store allégé
-        'page_forge': False,        # Pas nécessaire sur mobile
-        'jlens': False,             # Pas nécessaire sur mobile
-        'contacts': True,            # ★ Répertoire
-        'calls': True,               # ★ Appels
-        'messages': True,            # ★ SMS/Chat
-        'calendar': True,            # ★ Agenda
-        'reminders': True,           # ★ Rappels
-        'notifications': True,       # ★ Notifications push
+        'knowledge_store': True,
+        'hologram_store': False,
+        'page_forge': False,
+        'jlens': False,
+        'contacts': True,
+        'calls': True,
+        'messages': True,
+        'calendar': True,
+        'reminders': True,
+        'notifications': True,
         'admin_dashboard': False,
         'team_management': False,
         'api_keys': False,
         'usage_tracking': False,
+        'media_compress': True,       # ★ Compression HCV (phare)
+        'media_upscale': True,        # ★ Upscaling φ
+        'media_restore': True,        # ★ Restauration photo
     },
     
     agent_tools=['contacts', 'voice', 'message', 'reminder', 'search'],
