@@ -83,6 +83,18 @@ CORS(app, resources={
     }
 })
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONFIGURATION PRODUIT (Mobile / PC / Enterprise)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_KA_CONFIG = None
+try:
+    from ka_config import get_active_config, PRODUCTS, get_config
+    _KA_CONFIG = get_active_config()
+    log.info(f"  {_KA_CONFIG.icon} Produit actif: {_KA_CONFIG.name} (port {_KA_CONFIG.port})")
+except Exception as e:
+    log.warning(f"  ⚠ ka_config.py non trouvé — mode mobile par défaut ({e})")
+
 log.info("=" * 55)
 log.info("  KA SERVER — Harmonic AI + HCV Compression")
 log.info("=" * 55)
@@ -1586,6 +1598,13 @@ def memory_recent():
         return jsonify({'memories': memories[:10]})
     except Exception as e:
         return jsonify({'memories': [], 'error': str(e)})
+
+@app.route('/api/config', methods=['GET'])
+def get_app_config():
+    """Retourne la configuration du produit actif (pour le frontend)."""
+    if _KA_CONFIG:
+        return jsonify(_KA_CONFIG.to_dict())
+    return jsonify({'product': 'mobile', 'name': 'KA Mobile', 'port': port})
 
 @app.route('/api/health', methods=['GET'])
 def health():

@@ -10,6 +10,8 @@
   // ═══ STATE ═══
   const state = {
     currentScreen: 'home',
+    product: 'mobile',                // détecté au chargement
+    productConfig: null,              // chargé depuis /api/config
     screens: [
       { id: 'home',     icon: '🏠', label: 'Accueil' },
       { id: 'chat',     icon: '💬', label: 'Chat' },
@@ -543,6 +545,56 @@
     return new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   }
 
+  function getScreenIcon(id) {
+    const icons = {
+      home:'🏠', chat:'💬', agent:'🤖', memory:'🧠', code:'💻', store:'📦',
+      contacts:'👤', calls:'📞', research:'🔬', creative:'🎨', files:'📁',
+      admin:'⚙️', dashboard:'📊', team:'👥', knowledge:'📚', upload:'📤',
+      security:'🔒', profile:'⚙️', health:'❤️', enterprise:'🏢',
+      jlens:'🔍', storage:'🗜️', creative_gen:'🎨',
+    };
+    return icons[id] || '📄';
+  }
+
+  function getScreenLabel(id) {
+    const labels = {
+      home:'Accueil', chat:'Chat', agent:'Agent', memory:'Mémoire',
+      code:'Code', store:'Store', contacts:'Contacts', calls:'Appels',
+      research:'Recherche', creative:'Créatif', files:'Fichiers',
+      admin:'Admin', dashboard:'Dashboard', team:'Équipe',
+      knowledge:'Connaissance', upload:'Upload', security:'Sécurité',
+      profile:'Profil', health:'Santé', enterprise:'Enterprise',
+      jlens:'J-Lens', storage:'Stockage',
+    };
+    return labels[id] || id;
+  }
+
+  function rebuildNavBar() {
+    const nav = document.querySelector('.ka-nav');
+    if (!nav) return;
+    nav.innerHTML = '';
+    
+    const visibleScreens = state.screens.slice(0, 5); // Top 5 dans la barre
+    visibleScreens.forEach(s => {
+      const btn = document.createElement('button');
+      btn.className = 'ka-nav__btn';
+      btn.dataset.screen = s.id;
+      btn.innerHTML = `${s.icon}<span>${s.label}</span>`;
+      btn.onclick = () => navigate(s.id);
+      nav.appendChild(btn);
+    });
+    
+    // Bouton "Plus" si > 5 écrans
+    if (state.screens.length > 5) {
+      const moreBtn = document.createElement('button');
+      moreBtn.className = 'ka-nav__btn';
+      moreBtn.dataset.screen = 'more';
+      moreBtn.innerHTML = '⋯<span>Plus</span>';
+      moreBtn.onclick = () => toggleMorePanel();
+      nav.appendChild(moreBtn);
+    }
+  }
+
   function formatBytes(bytes) {
     if (!bytes) return '0 B';
     const k = 1024;
@@ -557,9 +609,39 @@
   }
 
   // ═══ INIT ═══
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     // Apply saved theme
     document.body.dataset.theme = state.theme;
+    
+    // Load product config from server
+    try {
+      const config = await api.get('/api/config');
+      if (config && config.product) {
+        state.product = config.product;
+        state.productConfig = config;
+        
+        // Adapt screens based on product
+        if (config.screens && config.screens.length > 0) {
+          state.screens = config.screens.map(id => ({
+            id, icon: getScreenIcon(id), label: getScreenLabel(id)
+          }));
+          
+          // Rebuild navbar
+          rebuildNavBar();
+        }
+        
+        // Set document title
+        document.title = config.name || 'KA';
+        
+        // Apply product-specific body class
+        document.body.classList.add('ka-product-' + config.product);
+        document.body.classList.add('ka-layout-' + (config.ui_layout || 'mobile'));
+        
+        console.log('KA Product:', config.name, config.version, config.screens);
+      }
+    } catch (e) {
+      console.log('KA Product config: using defaults (mobile)');
+    }
     
     // Start on onboarding or home
     const startScreen = state.isOnboarded ? 'home' : 'onboarding';
