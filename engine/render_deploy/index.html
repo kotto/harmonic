@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Équation Maîtresse — Progression des 7 Constantes</title>
+<style>
+  :root {
+    --bg: #050510;
+    --text: #d4c8a0;
+    --gold: #c9a84c;
+    --accent: #6c5ce7;
+    --surface: rgba(20,20,40,0.9);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  #canvas3d {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 1;
+  }
+
+  .overlay {
+    position: fixed;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .title {
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+  }
+
+  .title h1 {
+    font-size: 1.6rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    background: linear-gradient(180deg, #e6d088, #8b6914);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .title .eq {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 1.1rem;
+    color: #8b7340;
+    margin-top: 4px;
+  }
+
+  /* Timeline */
+  .timeline {
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    background: var(--surface);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 30px;
+    padding: 8px 16px;
+    backdrop-filter: blur(10px);
+    pointer-events: auto;
+  }
+
+  .step {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.15);
+    background: rgba(10,10,30,0.8);
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.4s;
+    position: relative;
+  }
+
+  .step.active {
+    border-color: var(--gold);
+    color: var(--gold);
+    box-shadow: 0 0 20px rgba(201,168,76,0.4);
+    background: rgba(201,168,76,0.15);
+    transform: scale(1.1);
+  }
+
+  .step:hover {
+    border-color: rgba(255,255,255,0.4);
+    color: #aaa;
+  }
+
+  .step .label {
+    position: absolute;
+    bottom: -22px;
+    font-size: 0.55rem;
+    white-space: nowrap;
+    color: #666;
+    transition: color 0.4s;
+  }
+
+  .step.active .label { color: var(--gold); }
+
+  /* Info panel */
+  .info-panel {
+    top: 120px;
+    right: 20px;
+    width: 280px;
+    background: var(--surface);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 12px;
+    padding: 16px;
+    backdrop-filter: blur(10px);
+    pointer-events: auto;
+    transition: all 0.5s;
+  }
+
+  .info-panel h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+
+  .info-panel .constant {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+    font-family: 'Georgia', serif;
+  }
+
+  .info-panel .meaning {
+    font-size: 0.75rem;
+    color: #988;
+    margin: 4px 0 10px;
+  }
+
+  .info-panel .detail {
+    font-size: 0.7rem;
+    color: #aaa;
+    line-height: 1.4;
+  }
+
+  /* Controls */
+  .controls {
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    pointer-events: auto;
+  }
+
+  .btn {
+    padding: 8px 20px;
+    border-radius: 20px;
+    border: 1px solid rgba(201,168,76,0.3);
+    background: var(--surface);
+    color: var(--gold);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.75rem;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s;
+  }
+
+  .btn:hover { background: rgba(201,168,76,0.15); }
+  .btn.playing { border-color: #e74c3c; color: #e74c3c; }
+
+  /* Legend */
+  .legend {
+    top: 20px;
+    left: 20px;
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 0.65rem;
+    color: #888;
+    backdrop-filter: blur(10px);
+    pointer-events: auto;
+  }
+
+  .legend span { display: block; margin: 2px 0; }
+  .legend .psi { color: #ffd700; }
+  .legend .phi { color: #00d2a0; }
+  .legend .pi  { color: #6c5ce7; }
+  .legend .e   { color: #e74c3c; }
+  .legend .sqrt2 { color: #3498db; }
+  .legend .sqrt3 { color: #e67e22; }
+  .legend .sqrt5 { color: #2ecc71; }
+  .legend .epi  { color: #f39c12; }
+</style>
+</head>
+<body>
+
+<canvas id="canvas3d"></canvas>
+
+<div class="overlay title">
+  <h1>Équation Maîtresse — Théorie Harmonique de l'Univers</h1>
+  <div class="eq">Ψ = Σ H<sub>n</sub> · (Ψ₁)ⁿ &nbsp;|&nbsp; H<sub>n</sub> ∈ {φ, π, e, √2, √3, √5, e/π}</div>
+</div>
+
+<div class="overlay legend" id="legend">
+  <span class="psi">● Ψ₁ — Onde primordiale (Photon)</span>
+  <span class="phi">● φ — Anti-résonance, 0D</span>
+  <span class="pi">● π — Cercle, 2D, Gravité</span>
+  <span class="e">● e — Croissance, Flèche du temps</span>
+  <span class="sqrt2">● √2 — Diagonale carrée, Symétrie plane</span>
+  <span class="sqrt3">● √3 — Diagonale cube, 3D</span>
+  <span class="sqrt5">● √5 — Pentagone, Vie</span>
+  <span class="epi">● e/π — Spirale de synthèse</span>
+</div>
+
+<div class="overlay info-panel" id="info">
+  <h3 id="info-title">Ψ₁ — Onde Primordiale</h3>
+  <div class="constant" id="info-const">n = 1</div>
+  <div class="meaning" id="info-meaning">La lumière — le photon primordial</div>
+  <div class="detail" id="info-detail">
+    Ψ₁ = A₁ · e<sup>i(ω₀t + φ₁)</sup><br>
+    L'onde fondamentale dont tout émerge.<br>
+    Amplitude A₁, fréquence ω₀, phase φ₁.
+  </div>
+</div>
+
+<div class="overlay timeline" id="timeline">
+  <div class="step active" data-n="0" title="Onde primordiale">
+    Ψ₁<div class="label">Primordiale</div>
+  </div>
+  <div class="step" data-n="1" title="φ — Nombre d'or">
+    φ<div class="label">Or</div>
+  </div>
+  <div class="step" data-n="2" title="π — Pi">
+    π<div class="label">Gravité</div>
+  </div>
+  <div class="step" data-n="3" title="e — Euler">
+    e<div class="label">Temps</div>
+  </div>
+  <div class="step" data-n="4" title="√2">
+    √2<div class="label">Plan</div>
+  </div>
+  <div class="step" data-n="5" title="√3">
+    √3<div class="label">Volume</div>
+  </div>
+  <div class="step" data-n="6" title="√5 — Vie">
+    √5<div class="label">Vie</div>
+  </div>
+  <div class="step" data-n="7" title="e/π — Synthèse">
+    e/π<div class="label">Synthèse</div>
+  </div>
+</div>
+
+<div class="overlay controls">
+  <button class="btn" id="btn-prev">◀ Précédent</button>
+  <button class="btn" id="btn-auto">▶ Auto</button>
+  <button class="btn" id="btn-next">Suivant ▶</button>
+  <button class="btn" id="btn-reset">↺ Reset</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONSTANTES DE L'ÉQUATION MAÎTRESSE
+// ═══════════════════════════════════════════════════════════════════════════════
+const PHI = 1.618033988749895;
+const PI = Math.PI;
+const E = Math.E;
+const SQRT2 = Math.SQRT2;
+const SQRT3 = Math.sqrt(3);
+const SQRT5 = Math.sqrt(5);
+const E_OVER_PI = E / PI;
+const TAU = 2 * PI;
+
+const CONSTANTS = [
+  { n: 0, symbol: 'Ψ₁',  name: 'Onde Primordiale', value: 1.0,
+    meaning: 'La lumière — le photon', color: 0xffd700,
+    detail: "Ψ₁ = A₁·eⁱ⁽ω⁰ᵗ⁺φ¹⁾ — L'onde fondamentale dont tout émerge. Fiat lux." },
+  { n: 1, symbol: 'φ',   name: 'Nombre d\'Or', value: PHI,
+    meaning: 'Anti-résonance, 0D', color: 0x00d2a0,
+    detail: "H₁ = φ ≈ 1.618. Le nombre le plus irrationnel.\nCrée l'espacement parfait — pas d'interférence destructive.\nLa géométrie émerge." },
+  { n: 2, symbol: 'π',   name: 'Pi', value: PI,
+    meaning: 'Cercle, 2D — Gravité', color: 0x6c5ce7,
+    detail: "H₂ = π ≈ 3.1416. Le cercle, l'interférence 2D.\nLa courbure de l'espace-temps apparaît.\nLa gravité naît de la courbure." },
+  { n: 3, symbol: 'e',   name: 'Euler', value: E,
+    meaning: 'Croissance — Flèche du temps', color: 0xe74c3c,
+    detail: "H₃ = e ≈ 2.7183. La croissance, le temps.\nL'univers passe du statique au dynamique.\nLa flèche du temps émerge." },
+  { n: 4, symbol: '√2',  name: '√2', value: SQRT2,
+    meaning: 'Diagonale carrée — Symétrie plane', color: 0x3498db,
+    detail: "H₄ = √2 ≈ 1.414. La diagonale du carré.\nLa symétrie planaire se déploie.\nLes structures 2D cristallisent." },
+  { n: 5, symbol: '√3',  name: '√3', value: SQRT3,
+    meaning: 'Diagonale cube — Volume, 3D', color: 0xe67e22,
+    detail: "H₅ = √3 ≈ 1.732. La diagonale du cube.\nL'espace tridimensionnel se déploie.\nLe volume émerge — l'univers devient habitable." },
+  { n: 6, symbol: '√5',  name: '√5', value: SQRT5,
+    meaning: 'Pentagone — La Vie', color: 0x2ecc71,
+    detail: "H₆ = √5 ≈ 2.236 = 2φ−1. Le pentagone.\nLa structure de la vie : ADN, phyllotaxie,\nfleurs, coquillages — le vivant émerge." },
+  { n: 7, symbol: 'e/π', name: 'e/π', value: E_OVER_PI,
+    meaning: 'Spirale de Synthèse', color: 0xf39c12,
+    detail: "H₇ = e/π ≈ 0.865. La spirale de synthèse.\nToutes les forces s'unifient.\nL'univers harmonique complet.\n\nα = π⁴·e⁻⁴·φ⁻⁵·(√2)⁻¹·(√3)⁻⁵ ≈ 1/137" },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// THREE.JS SCENE
+// ═══════════════════════════════════════════════════════════════════════════════
+const canvas = document.getElementById('canvas3d');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 100);
+camera.position.set(0, 2, 8);
+camera.lookAt(0, 0, 0);
+
+// Lighting
+scene.add(new THREE.AmbientLight(0x222244, 0.5));
+const light1 = new THREE.PointLight(0xffd700, 1.5, 20); light1.position.set(5, 5, 5); scene.add(light1);
+const light2 = new THREE.PointLight(0x6c5ce7, 1.0, 20); light2.position.set(-5, -3, 3); scene.add(light2);
+
+// Grid
+const grid = new THREE.GridHelper(12, 30, 0x333355, 0x111122);
+scene.add(grid);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PARTICLES & WAVE SYSTEMS
+// ═══════════════════════════════════════════════════════════════════════════════
+let waveParticles, spiralLine, geometryNodes, centralSphere;
+let currentN = 0;
+let time = 0;
+
+function createCentralSphere() {
+  const geo = new THREE.SphereGeometry(0.15, 32, 32);
+  const mat = new THREE.MeshPhongMaterial({ color: 0xffd700, emissive: 0xffd700, emissiveIntensity: 2 });
+  centralSphere = new THREE.Mesh(geo, mat);
+  scene.add(centralSphere);
+}
+
+function createWaveParticles(count = 2000) {
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+  
+  for (let i = 0; i < count; i++) {
+    positions[i*3] = (Math.random() - 0.5) * 8;
+    positions[i*3+1] = (Math.random() - 0.5) * 6;
+    positions[i*3+2] = (Math.random() - 0.5) * 8;
+    colors[i*3] = 1.0; colors[i*3+1] = 0.84; colors[i*3+2] = 0.0;
+  }
+  
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  
+  const mat = new THREE.PointsMaterial({ 
+    size: 0.04, vertexColors: true, blending: THREE.AdditiveBlending,
+    depthWrite: false, transparent: true, opacity: 0.8
+  });
+  
+  waveParticles = new THREE.Points(geo, mat);
+  scene.add(waveParticles);
+}
+
+function createSpiral() {
+  const points = [];
+  const n = 500;
+  for (let i = 0; i < n; i++) {
+    const t = i / n * TAU * 3;
+    const r = t * 0.5;
+    points.push(new THREE.Vector3(Math.cos(t) * r, Math.sin(t) * r, (i/n - 0.5) * 4));
+  }
+  const geo = new THREE.BufferGeometry().setFromPoints(points);
+  const mat = new THREE.LineBasicMaterial({ color: 0x00d2a0, linewidth: 1, transparent: true, opacity: 0.6 });
+  spiralLine = new THREE.Line(geo, mat);
+  scene.add(spiralLine);
+}
+
+function createGeometryNodes() {
+  geometryNodes = new THREE.Group();
+  // Cube frame
+  const cubeGeo = new THREE.BoxGeometry(3, 3, 3);
+  const cubeEdge = new THREE.EdgesGeometry(cubeGeo);
+  const cubeLine = new THREE.LineSegments(cubeEdge, new THREE.LineBasicMaterial({ color: 0x333366, transparent: true, opacity: 0.3 }));
+  geometryNodes.add(cubeLine);
+  
+  // Icosahedron wireframe (for phi)
+  const icoGeo = new THREE.IcosahedronGeometry(1.5, 0);
+  const icoEdge = new THREE.EdgesGeometry(icoGeo);
+  const icoLine = new THREE.LineSegments(icoEdge, new THREE.LineBasicMaterial({ color: 0x00d2a0, transparent: true, opacity: 0.0 }));
+  icoLine.name = 'ico';
+  geometryNodes.add(icoLine);
+  
+  // Octahedron (for sqrt3)
+  const octGeo = new THREE.OctahedronGeometry(1.8, 0);
+  const octEdge = new THREE.EdgesGeometry(octGeo);
+  const octLine = new THREE.LineSegments(octEdge, new THREE.LineBasicMaterial({ color: 0xe67e22, transparent: true, opacity: 0.0 }));
+  octLine.name = 'oct';
+  geometryNodes.add(octLine);
+  
+  // Dodecahedron (for sqrt5 = 2φ-1)
+  const dodGeo = new THREE.DodecahedronGeometry(2.0, 0);
+  const dodEdge = new THREE.EdgesGeometry(dodGeo);
+  const dodLine = new THREE.LineSegments(dodEdge, new THREE.LineBasicMaterial({ color: 0x2ecc71, transparent: true, opacity: 0.0 }));
+  dodLine.name = 'dod';
+  geometryNodes.add(dodLine);
+  
+  scene.add(geometryNodes);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UPDATE WAVE PARTICLES BASED ON CURRENT N
+// ═══════════════════════════════════════════════════════════════════════════════
+function updateWaveParticles(dt) {
+  if (!waveParticles) return;
+  
+  const pos = waveParticles.geometry.attributes.position.array;
+  const col = waveParticles.geometry.attributes.color.array;
+  const count = pos.length / 3;
+  
+  const H = CONSTANTS[currentN];
+  
+  for (let i = 0; i < count; i++) {
+    const x0 = (i / count - 0.5) * 8;
+    const y0 = Math.sin(i * 0.1) * 3;
+    const z0 = Math.cos(i * 0.13) * 3;
+    
+    // Wave equation: Psi_n = H_n * (Psi_1)^n
+    const n = currentN;
+    let amplitude, freq, phase;
+    
+    if (n === 0) {
+      // Psi_1: primordial wave - simple sine
+      amplitude = 1.0;
+      freq = 1.0;
+      phase = 0;
+    } else {
+      // Psi_n = H_n * (Psi_1)^n
+      // Each constant modulates the wave differently
+      const H_val = H.value;
+      amplitude = H_val * 0.5;
+      freq = H_val * 1.5;
+      phase = (H_val * i * 0.01) % TAU;
+    }
+    
+    // Spiral modulation by phi
+    const phiMod = Math.sin(i * PHI * 0.05 + time * 0.5) * 0.5 + 0.5;
+    
+    // Position with wave + spiral + geometric modulation
+    let x, y, z;
+    const t = time * 0.8;
+    
+    switch(n) {
+      case 0: // Pure sphere
+        const r0 = 2.5 + Math.sin(i*0.3 + t) * 0.3;
+        x = Math.cos(i*0.7) * r0;
+        y = Math.sin(i*0.5) * r0 * 0.6;
+        z = Math.sin(i*0.7) * r0;
+        break;
+      case 1: // Phi: golden spiral
+        const r1 = 0.5 + i/count * 4;
+        x = Math.cos(i*PHI*0.3 + t) * r1;
+        y = Math.sin(i*PHI*0.3 + t) * r1 * 0.7;
+        z = (i/count - 0.5) * 5;
+        break;
+      case 2: // Pi: circular/orbital (gravity)
+        const r2 = 2.5 + Math.sin(i*0.2) * 1.5;
+        x = Math.cos(i*0.4 + t * PI) * r2;
+        y = Math.sin(i*0.3 + t) * r2 * 0.5;
+        z = Math.cos(i*0.35 + t * 0.7) * r2;
+        break;
+      case 3: // e: exponential growth
+        const r3 = 0.3 * Math.exp(i/count * 2);
+        x = Math.cos(i*0.6 + t) * r3;
+        y = Math.sin(i*0.6 + t) * r3 * 0.6;
+        z = (i/count - 0.5) * 6;
+        break;
+      case 4: // sqrt2: planar symmetry
+        const r4 = 2.5;
+        const theta4 = i * SQRT2 * 0.3 + t;
+        x = Math.cos(theta4) * r4;
+        y = Math.sin(i*0.2) * 2.5;
+        z = Math.sin(theta4) * r4;
+        break;
+      case 5: // sqrt3: cubic/volumetric
+        const r5 = 2.8;
+        const theta5 = i * SQRT3 * 0.25 + t;
+        const phi5 = i * SQRT3 * 0.15 + t * 0.7;
+        x = Math.cos(theta5) * Math.cos(phi5) * r5;
+        y = Math.sin(phi5) * r5;
+        z = Math.sin(theta5) * Math.cos(phi5) * r5;
+        break;
+      case 6: // sqrt5: dodecahedral/life
+        const r6 = 3.0;
+        const theta6 = i * SQRT5 * 0.2 + t * 0.5;
+        x = Math.cos(theta6) * r6 * (0.8 + 0.2 * Math.sin(i*PHI*0.05));
+        y = Math.sin(theta6 * PHI) * r6 * 0.7;
+        z = Math.cos(theta6 * PHI_INV) * r6;
+        break;
+      case 7: // e/pi: synthesis spiral
+        const r7 = 0.3 + i/count * 4.5;
+        const theta7 = i * E_OVER_PI * 1.5 + t;
+        const height7 = (i/count - 0.5) * 5;
+        x = Math.cos(theta7) * r7;
+        y = height7;
+        z = Math.sin(theta7) * r7;
+        break;
+    }
+    
+    pos[i*3] = x;
+    pos[i*3+1] = y;
+    pos[i*3+2] = z;
+    
+    // Color by position + constant
+    const hue = (H.color >> 16 & 0xff) / 255;
+    const hueG = (H.color >> 8 & 0xff) / 255;
+    const hueB = (H.color & 0xff) / 255;
+    col[i*3] = hue * (0.5 + 0.5 * Math.sin(i*0.05 + time));
+    col[i*3+1] = hueG * (0.5 + 0.5 * Math.cos(i*0.07 + time));
+    col[i*3+2] = hueB * (0.5 + 0.5 * Math.sin(i*0.06 + time * 1.3));
+  }
+  
+  waveParticles.geometry.attributes.position.needsUpdate = true;
+  waveParticles.geometry.attributes.color.needsUpdate = true;
+}
+
+function updateGeometryNodes() {
+  if (!geometryNodes) return;
+  
+  // Update wireframes visibility based on n
+  const ico = geometryNodes.children.find(c => c.name === 'ico');
+  const oct = geometryNodes.children.find(c => c.name === 'oct');
+  const dod = geometryNodes.children.find(c => c.name === 'dod');
+  
+  if (ico) ico.material.opacity = currentN >= 1 ? 0.5 : 0.0;
+  if (oct) oct.material.opacity = currentN >= 5 ? 0.5 : 0.0;
+  if (dod) dod.material.opacity = currentN >= 6 ? 0.6 : 0.0;
+  
+  // Rotate
+  geometryNodes.rotation.x += 0.002;
+  geometryNodes.rotation.y += 0.003;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SET ACTIVE STEP
+// ═══════════════════════════════════════════════════════════════════════════════
+function setStep(n) {
+  currentN = Math.max(0, Math.min(7, n));
+  
+  // Update timeline
+  document.querySelectorAll('.step').forEach((el, i) => {
+    el.classList.toggle('active', i === currentN);
+  });
+  
+  // Update info panel
+  const H = CONSTANTS[currentN];
+  document.getElementById('info-title').textContent = `${H.symbol} — ${H.name}`;
+  document.getElementById('info-const').textContent = `H${currentN} = ${H.value.toFixed(currentN === 0 ? 0 : 4)}`;
+  document.getElementById('info-meaning').textContent = H.meaning;
+  document.getElementById('info-detail').innerHTML = H.detail.replace(/\n/g, '<br>');
+  
+  // Update central sphere color
+  if (centralSphere) {
+    centralSphere.material.color.setHex(H.color);
+    centralSphere.material.emissive.setHex(H.color);
+    centralSphere.material.emissiveIntensity = 1.5 + currentN * 0.3;
+    const scale = 0.8 + currentN * 0.15;
+    centralSphere.scale.setScalar(scale);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN LOOP
+// ═══════════════════════════════════════════════════════════════════════════════
+let autoPlay = false;
+let autoTimer = null;
+
+function animate() {
+  requestAnimationFrame(animate);
+  
+  const dt = 0.016;
+  time += dt;
+  
+  updateWaveParticles(dt);
+  updateGeometryNodes();
+  
+  // Gentle camera orbit
+  const camAngle = time * 0.15;
+  const camRadius = 7 + Math.sin(time * 0.3) * 1.5;
+  camera.position.x = Math.cos(camAngle) * camRadius;
+  camera.position.z = Math.sin(camAngle) * camRadius;
+  camera.position.y = 1.5 + Math.sin(time * 0.4) * 2;
+  camera.lookAt(0, 0, 0);
+  
+  // Update spiral
+  if (spiralLine) {
+    spiralLine.rotation.y += 0.005;
+    spiralLine.rotation.x = Math.sin(time * 0.2) * 0.2;
+  }
+  
+  renderer.render(scene, camera);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONTROLS
+// ═══════════════════════════════════════════════════════════════════════════════
+document.getElementById('btn-next').addEventListener('click', () => setStep(currentN + 1));
+document.getElementById('btn-prev').addEventListener('click', () => setStep(currentN - 1));
+document.getElementById('btn-reset').addEventListener('click', () => setStep(0));
+
+document.getElementById('btn-auto').addEventListener('click', function() {
+  autoPlay = !autoPlay;
+  this.classList.toggle('playing', autoPlay);
+  this.textContent = autoPlay ? '⏸ Pause' : '▶ Auto';
+  
+  if (autoPlay) {
+    autoTimer = setInterval(() => {
+      setStep((currentN + 1) % 8);
+    }, 4000);
+  } else {
+    clearInterval(autoTimer);
+  }
+});
+
+// Timeline clicks
+document.querySelectorAll('.step').forEach(el => {
+  el.addEventListener('click', () => setStep(parseInt(el.dataset.n)));
+});
+
+// Keyboard
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight') setStep(currentN + 1);
+  if (e.key === 'ArrowLeft') setStep(currentN - 1);
+  if (e.key === ' ') { e.preventDefault(); document.getElementById('btn-auto').click(); }
+});
+
+// Resize
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════════
+createCentralSphere();
+createWaveParticles(2000);
+createSpiral();
+createGeometryNodes();
+setStep(0);
+animate();
+
+// Start auto-play after a moment
+setTimeout(() => {
+  document.getElementById('btn-auto').click();
+}, 2000);
+</script>
+</body>
+</html>
