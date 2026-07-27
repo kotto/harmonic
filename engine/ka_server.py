@@ -2739,6 +2739,14 @@ def serve_benchmark():
     """Page de benchmark public."""
     return send_from_directory(str(_ENGINE_DIR), 'benchmark.html')
 
+@app.route('/test_vocal_ka.html')
+def serve_test_vocal():
+    return send_from_directory(str(_ENGINE_DIR), 'test_vocal_ka.html')
+
+@app.route('/ka_sphere.html')
+def serve_ka_sphere():
+    return send_from_directory(str(_ENGINE_DIR), 'ka_sphere.html')
+
 @app.route('/')
 def serve_index():
     """Page d'accueil — KA Phone PWA (redesign)."""
