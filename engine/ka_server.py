@@ -2743,9 +2743,9 @@ def serve_benchmark():
 def serve_test_vocal():
     return send_from_directory(str(_ENGINE_DIR), 'test_vocal_ka.html')
 
-@app.route('/test_son_simple.html')
-def serve_test_son():
-    return send_from_directory(str(_ENGINE_DIR), 'test_son_simple.html')
+@app.route('/test_voix_directe.html')
+def serve_test_voix():
+    return send_from_directory(str(_ENGINE_DIR), 'test_voix_directe.html')
 
 @app.route('/')
 def serve_index():
