@@ -1006,52 +1006,115 @@ class KAConversationalEngine:
     
     def speak(self, text: str, emotion: Optional[str] = None) -> np.ndarray:
         """
-        Synthèse vocale directe — génère un signal audible.
+        Synthèse vocale — génère une voix synthétique audible.
         
-        Utilise la synthèse harmonique directe (oscillateurs + formants)
-        pour produire un son audible sans passer par le codec complexe.
+        Simule la parole en mappant chaque caractère à un type de son :
+        - Voyelles : oscillations harmoniques avec formants
+        - Consonnes : bruit filtré ou silence court
+        - Prosodie : variation de pitch + enveloppe par mot
         """
         if emotion is None:
             emotion = self.state.emotion
         
         params = self.prosody._emotion_params.get(emotion, self.prosody._emotion_params['warm'])
         
-        # Génération audio directe
-        duration = max(0.5, len(text.split()) * 0.25)  # ~250ms par mot
-        n_samples = int(SAMPLE_RATE * duration)
-        t = np.linspace(0, duration, n_samples, endpoint=False)
+        # Définition des phonèmes simplifiés
+        vowels = set('aeiouyéèêëàâîïôûùœ')
+        consonants_voiced = set('bdgjlmnrvz')
+        consonants_unvoiced = set('cfhkpqstx')
+        nasals = set('mn')
         
+        text_lower = text.lower().strip()
+        chars = [c for c in text_lower if c.isalpha() or c in vowels or c == ' ']
+        
+        # Durée par caractère (~80ms) → assez pour être perçu comme de la parole
+        char_duration = 0.08
+        total_duration = len(chars) * char_duration + 0.2  # +200ms padding
+        n_samples = int(SAMPLE_RATE * total_duration)
         audio = np.zeros(n_samples, dtype=np.float64)
         rng = np.random.RandomState(hash(text) % 2**31)
         
-        # Fréquence fondamentale avec modulation d'émotion
-        f0_base = 150 + params['pitch_shift'] * 60  # 120-210 Hz
+        # Formants vocaliques
+        vowel_formants = {
+            'a': [(700, 80), (1200, 120), (2500, 200)],
+            'e': [(400, 80), (2000, 100), (2800, 200)],
+            'i': [(250, 60), (2200, 100), (3000, 150)],
+            'o': [(450, 70), (900, 100), (2500, 200)],
+            'u': [(300, 60), (800, 80), (2300, 150)],
+            'y': [(250, 60), (1800, 100), (2500, 150)],
+        }
+        default_formants = [(500, 100), (1500, 150), (2500, 200)]
         
-        # Enveloppe d'amplitude (attaque + sustain + release)
-        env = np.ones(n_samples)
-        attack = int(0.02 * SAMPLE_RATE)  # 20ms attack
-        release = int(0.1 * SAMPLE_RATE)  # 100ms release
-        env[:attack] = np.linspace(0, 1, attack)
-        env[-release:] = np.linspace(1, 0, release)
-        
-        # Synthèse harmonique avec formants
-        for h in range(1, 15):
-            amp = 1.0 / (h ** 1.3)  # décroissance naturelle
-            freq = f0_base * h
+        for idx, char in enumerate(chars):
+            start = int(idx * char_duration * SAMPLE_RATE)
+            end = int((idx + 1) * char_duration * SAMPLE_RATE + 0.05 * SAMPLE_RATE)
+            end = min(end, n_samples)
+            length = end - start
+            if length <= 0:
+                continue
             
-            # Formants (fréquences de résonance du conduit vocal)
-            formant_gain = 1.0
-            for (fc, bw, gain) in [(600, 80, 2.5), (1800, 200, 1.8), (2800, 300, 1.2)]:
-                formant_gain *= 1.0 + gain * np.exp(-((freq - fc) / bw) ** 2)
+            t = np.linspace(0, length / SAMPLE_RATE, length, endpoint=False)
             
-            # Oscillation avec phase aléatoire
-            phase = rng.random() * TAU
-            audio += amp * formant_gain * np.sin(TAU * freq * t + phase)
+            if char == ' ':
+                # Silence entre les mots
+                continue
+            
+            # Pitch avec prosodie (monte en début de mot, descend en fin)
+            f0 = 150 + params['pitch_shift'] * 60
+            pos_in_word = idx / max(len(chars), 1)
+            f0_mod = f0 * (1.0 + 0.1 * np.sin(pos_in_word * TAU * 0.5))
+            
+            if char in vowels:
+                # VOYELLE : oscillation harmonique avec formants
+                forms = vowel_formants.get(char, default_formants)
+                chunk = np.zeros(length, dtype=np.float64)
+                
+                for h in range(1, 8):
+                    amp = 1.0 / (h ** 1.2)
+                    freq = f0_mod * h
+                    
+                    # Appliquer les formants
+                    formant_gain = 1.0
+                    for (fc, bw) in forms:
+                        formant_gain *= 1.0 + 1.5 * np.exp(-((freq - fc) / bw) ** 2)
+                    
+                    phase = rng.random() * TAU
+                    chunk += amp * formant_gain * np.sin(TAU * freq * t + phase)
+                
+                # Enveloppe : attaque rapide, léger decay
+                env = np.ones(length)
+                att = min(int(0.01 * SAMPLE_RATE), length)
+                env[:att] = np.linspace(0, 1, att)
+                chunk = chunk * env
+                
+            elif char in consonants_unvoiced:
+                # CONSONNE SOURDE : burst de bruit filtré
+                noise = rng.randn(length) * 0.3
+                # Filtre passe-haut simple (différence)
+                filtered = np.zeros(length)
+                filtered[1:] = noise[1:] - noise[:-1]
+                chunk = filtered * 0.5
+                
+            elif char in consonants_voiced:
+                # CONSONNE VOISÉE : oscillation faible + bruit
+                voice = 0.3 * np.sin(TAU * f0_mod * t)
+                noise = rng.randn(length) * 0.15
+                chunk = voice + noise
+                
+            else:
+                # Autre : son neutre
+                chunk = 0.2 * np.sin(TAU * f0_mod * t) + rng.randn(length) * 0.05
+            
+            # Ajouter au signal avec une enveloppe de fondu
+            fade_len = min(int(0.005 * SAMPLE_RATE), length // 4)
+            fade = np.ones(length)
+            if fade_len > 0:
+                fade[:fade_len] = np.linspace(0, 1, fade_len)
+                fade[-fade_len:] = np.linspace(1, 0, fade_len)
+            
+            audio[start:end] += chunk * fade * params['energy_boost']
         
-        # Appliquer l'enveloppe
-        audio = audio * env * params['energy_boost']
-        
-        # Ajouter du breath (bruit filtré)
+        # Breath global
         breath = rng.randn(n_samples) * params['breathiness'] * 0.01
         audio += breath
         
