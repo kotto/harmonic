@@ -1006,18 +1006,61 @@ class KAConversationalEngine:
     
     def speak(self, text: str, emotion: Optional[str] = None) -> np.ndarray:
         """
-        Synthèse vocale directe (sans pipeline conversationnel complet).
+        Synthèse vocale directe — génère un signal audible.
         
-        Pour les réponses rapides, les notifications, les salutations.
-        
-        Args:
-            text: texte à synthétiser
-            emotion: émotion (défaut: courante)
-            
-        Returns:
-            Audio 24kHz
+        Utilise la synthèse harmonique directe (oscillateurs + formants)
+        pour produire un son audible sans passer par le codec complexe.
         """
-        return self.respond(text, emotion=emotion, stream=False)
+        if emotion is None:
+            emotion = self.state.emotion
+        
+        params = self.prosody._emotion_params.get(emotion, self.prosody._emotion_params['warm'])
+        
+        # Génération audio directe
+        duration = max(0.5, len(text.split()) * 0.25)  # ~250ms par mot
+        n_samples = int(SAMPLE_RATE * duration)
+        t = np.linspace(0, duration, n_samples, endpoint=False)
+        
+        audio = np.zeros(n_samples, dtype=np.float64)
+        rng = np.random.RandomState(hash(text) % 2**31)
+        
+        # Fréquence fondamentale avec modulation d'émotion
+        f0_base = 150 + params['pitch_shift'] * 60  # 120-210 Hz
+        
+        # Enveloppe d'amplitude (attaque + sustain + release)
+        env = np.ones(n_samples)
+        attack = int(0.02 * SAMPLE_RATE)  # 20ms attack
+        release = int(0.1 * SAMPLE_RATE)  # 100ms release
+        env[:attack] = np.linspace(0, 1, attack)
+        env[-release:] = np.linspace(1, 0, release)
+        
+        # Synthèse harmonique avec formants
+        for h in range(1, 15):
+            amp = 1.0 / (h ** 1.3)  # décroissance naturelle
+            freq = f0_base * h
+            
+            # Formants (fréquences de résonance du conduit vocal)
+            formant_gain = 1.0
+            for (fc, bw, gain) in [(600, 80, 2.5), (1800, 200, 1.8), (2800, 300, 1.2)]:
+                formant_gain *= 1.0 + gain * np.exp(-((freq - fc) / bw) ** 2)
+            
+            # Oscillation avec phase aléatoire
+            phase = rng.random() * TAU
+            audio += amp * formant_gain * np.sin(TAU * freq * t + phase)
+        
+        # Appliquer l'enveloppe
+        audio = audio * env * params['energy_boost']
+        
+        # Ajouter du breath (bruit filtré)
+        breath = rng.randn(n_samples) * params['breathiness'] * 0.01
+        audio += breath
+        
+        # Normalisation
+        max_val = np.max(np.abs(audio))
+        if max_val > 0:
+            audio = audio / max_val * 0.9
+        
+        return audio.astype(np.float64)
     
     # ═══════════════════════════════════════════════════════════════════════════
     # INTERNES
@@ -1027,34 +1070,44 @@ class KAConversationalEngine:
         """
         Convertit le texte en frames ψ phonétiques.
         
-        Version simplifiée : chaque caractère → ψ via FNV-1a.
-        En production : G2P + HolographicEncoder.
+        Version améliorée : génère un signal audio directement synthétisable.
+        Chaque syllabe → oscillation sinusoïdale avec formants.
         """
         from holographic_voice_store import _fnv1a_hash
         
-        # Estimer la durée (1 syllabe ≈ 150ms → ~4 frames à 40ms stride)
+        # Estimer la durée (1 syllabe ≈ 150ms → ~6 frames à 40ms stride)
         syllables = max(1, len(text.split()) * 2)
-        n_frames = syllables * 4
+        n_frames = syllables * 6
         
         psi_frames = np.zeros((n_frames, DIM_PSI), dtype=np.complex128)
         
+        # Fréquences des formants (voyelles françaises)
+        formants = [250, 600, 1100, 1800, 2500, 3400]
+        
         for i in range(n_frames):
-            char_idx = int(i / n_frames * len(text))
-            if char_idx < len(text):
-                seed = _fnv1a_hash(f"phoneme_{text[char_idx]}_{i}")
-                rng = np.random.RandomState(seed & 0x7FFFFFFF)
+            # Phase temporelle — oscillation
+            t_norm = i / max(n_frames, 1)
+            fundamental = 120 + 60 * np.sin(t_norm * np.pi)  # pitch varie 120-180 Hz
+            
+            # Chaque dimension encode une fréquence
+            for d in range(DIM_PSI):
+                freq = fundamental * (1 + d * 0.1)  # harmoniques
+                phase = (TAU * freq * i / 25.0)  # 25 Hz frame rate
                 
-                # ψ phonétique structuré (pics spectraux = formants)
-                for d in range(DIM_PSI):
-                    phase = ((seed >> (d % 32)) ^ (d * 2654435761)) % 2147483647
-                    phase = (phase * PHI) % TAU
-                    amp = 1.0 / (1.0 + abs(d - DIM_PSI//2) / (DIM_PSI//8))
-                    psi_frames[i, d] = amp * (math.cos(phase) + 1j * math.sin(phase))
+                # Amplitude décroissante avec l'harmonique
+                amp = 1.0 / (1.0 + d * 0.05)
+                
+                # Renforcer les formants
+                for f in formants:
+                    if abs(freq - f) < 50:
+                        amp *= 3.0
+                
+                psi_frames[i, d] = amp * (math.cos(phase) + 1j * math.sin(phase))
             
             # Normaliser
             norm = np.sqrt(np.sum(np.abs(psi_frames[i])**2))
             if norm > 1e-10:
-                psi_frames[i] /= norm
+                psi_frames[i] /= norm * 0.5  # Amplitude significative
         
         return psi_frames
     
