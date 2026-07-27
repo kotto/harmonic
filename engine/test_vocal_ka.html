@@ -193,9 +193,12 @@ function stopAudio() {
 async function playAudio(arrayBuffer) {
   stopAudio();
   const ctx = getAudioCtx();
-  const audioData = new Int16Array(arrayBuffer);
-  const floatData = new Float32Array(audioData.length);
-  for (let i=0;i<audioData.length;i++) floatData[i]=audioData[i]/32768;
+  // Le serveur renvoie un WAV complet (header RIFF 44 octets + data PCM 16-bit)
+  const full = new Uint8Array(arrayBuffer);
+  // Sauter le header WAV (44 octets) pour atteindre les données PCM
+  const pcmData = new Int16Array(arrayBuffer.slice(44));
+  const floatData = new Float32Array(pcmData.length);
+  for (let i=0;i<pcmData.length;i++) floatData[i]=pcmData[i]/32768;
   const buffer = ctx.createBuffer(1, floatData.length, 24000);
   buffer.getChannelData(0).set(floatData);
   currentSource = ctx.createBufferSource();
