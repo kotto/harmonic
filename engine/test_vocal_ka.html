@@ -181,7 +181,7 @@ function log(msg, cls='ok') {
 
 // ═══ AUDIO CTX ═══
 function getAudioCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)({sampleRate:24000});
   if (audioCtx.state === 'suspended') audioCtx.resume();
   return audioCtx;
 }
@@ -193,22 +193,41 @@ function stopAudio() {
 async function playAudio(arrayBuffer) {
   stopAudio();
   const ctx = getAudioCtx();
-  // Le serveur renvoie un WAV complet (header RIFF 44 octets + data PCM 16-bit)
-  const full = new Uint8Array(arrayBuffer);
-  // Sauter le header WAV (44 octets) pour atteindre les données PCM
-  const pcmData = new Int16Array(arrayBuffer.slice(44));
-  const floatData = new Float32Array(pcmData.length);
-  for (let i=0;i<pcmData.length;i++) floatData[i]=pcmData[i]/32768;
+  
+  // Trouver le chunk "data" dans le WAV (offset variable)
+  const bytes = new Uint8Array(arrayBuffer);
+  let dataOffset = 44; // offset standard
+  for (let i=0; i<bytes.length-4; i++) {
+    if (bytes[i]===0x64 && bytes[i+1]===0x61 && bytes[i+2]===0x74 && bytes[i+3]===0x61) {
+      dataOffset = i+8; // après "data" + taille (4 octets)
+      break;
+    }
+  }
+  
+  // Extraire les données PCM 16-bit
+  const pcmLen = Math.floor((bytes.length - dataOffset) / 2);
+  const pcm = new Int16Array(pcmLen);
+  for (let i=0; i<pcmLen; i++) {
+    const lo = bytes[dataOffset + i*2];
+    const hi = bytes[dataOffset + i*2 + 1];
+    pcm[i] = lo | (hi << 8);
+  }
+  
+  const floatData = new Float32Array(pcmLen);
+  for (let i=0; i<pcmLen; i++) floatData[i] = pcm[i] / 32768;
+  
   const buffer = ctx.createBuffer(1, floatData.length, 24000);
   buffer.getChannelData(0).set(floatData);
   currentSource = ctx.createBufferSource();
   currentSource.buffer = buffer;
   currentSource.connect(ctx.destination);
   currentSource.start();
+  
   lastAudioBuffer = arrayBuffer;
   document.getElementById('btn-play').disabled = false;
   document.getElementById('audio-info').textContent = 
     `${(floatData.length/24000).toFixed(1)}s · 24 kHz · mono`;
+  log(`🔊 Lecture: ${(floatData.length/24000).toFixed(1)}s`);
 }
 
 function playLast() {
@@ -248,11 +267,35 @@ async function testTTS() {
     document.getElementById('m-rtf').textContent = `${rtf.toFixed(2)}x`;
     document.getElementById('m-rtf').className = rtf<1?'good':'warn';
     
-    await playAudio(buffer);
-    log(`✓ ${elapsed.toFixed(0)}ms, RTF ${rtf.toFixed(2)}x`);
+    // Méthode 1 : Web Audio API (PCM manuel)
+    try {
+      await playAudio(buffer);
+      log(`✓ PCM: ${elapsed.toFixed(0)}ms, RTF ${rtf.toFixed(2)}x`);
+    } catch(e1) {
+      log(`⚠️ PCM failed: ${e1.message}, trying blob...`, 'warn');
+      // Méthode 2 : Blob URL (toujours fonctionnel)
+      const blob = new Blob([buffer], {type:'audio/wav'});
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.play();
+      lastAudioBuffer = buffer;
+      document.getElementById('btn-play').disabled = false;
+      document.getElementById('audio-info').textContent = `${duration.toFixed(1)}s · blob mode`;
+      log(`✓ Blob: ${elapsed.toFixed(0)}ms`);
+    }
   } catch(e) {
     log(`✗ ${e.message}`, 'ko');
   }
+}
+
+async function playLast() {
+  if (!lastAudioBuffer) return;
+  // Fallback blob — toujours fiable
+  const blob = new Blob([lastAudioBuffer], {type:'audio/wav'});
+  const url = URL.createObjectURL(blob);
+  const audio = new Audio(url);
+  audio.play();
+  log('🔊 Replay via blob');
 }
 
 // ═══ STT (Web Speech API) ═══
