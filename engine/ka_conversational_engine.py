@@ -1006,122 +1006,100 @@ class KAConversationalEngine:
     
     def speak(self, text: str, emotion: Optional[str] = None) -> np.ndarray:
         """
-        Synthèse vocale — génère une voix synthétique audible.
+        Synthèse vocale — génère une voix synthétique AUDIBLE.
         
-        Simule la parole en mappant chaque caractère à un type de son :
-        - Voyelles : oscillations harmoniques avec formants
-        - Consonnes : bruit filtré ou silence court
-        - Prosodie : variation de pitch + enveloppe par mot
+        Approche robuste : synthèse harmonique continue avec formants
+        appliqués par FFT + modulation d'amplitude par syllabe.
         """
         if emotion is None:
             emotion = self.state.emotion
-        
         params = self.prosody._emotion_params.get(emotion, self.prosody._emotion_params['warm'])
         
-        # Définition des phonèmes simplifiés
-        vowels = set('aeiouyéèêëàâîïôûùœ')
-        consonants_voiced = set('bdgjlmnrvz')
-        consonants_unvoiced = set('cfhkpqstx')
-        nasals = set('mn')
+        words = text.strip().split()
+        n_words = len(words)
         
-        text_lower = text.lower().strip()
-        chars = [c for c in text_lower if c.isalpha() or c in vowels or c == ' ']
+        # Durée : 300ms par mot + pauses
+        word_dur = 0.300
+        pause_dur = 0.150
+        total_dur = n_words * word_dur + (n_words - 1) * pause_dur + 0.3
+        n_samples = int(SAMPLE_RATE * total_dur)
         
-        # Durée par caractère (~80ms) → assez pour être perçu comme de la parole
-        char_duration = 0.08
-        total_duration = len(chars) * char_duration + 0.2  # +200ms padding
-        n_samples = int(SAMPLE_RATE * total_duration)
+        t = np.linspace(0, total_dur, n_samples, endpoint=False)
         audio = np.zeros(n_samples, dtype=np.float64)
-        rng = np.random.RandomState(hash(text) % 2**31)
         
-        # Formants vocaliques
-        vowel_formants = {
-            'a': [(700, 80), (1200, 120), (2500, 200)],
-            'e': [(400, 80), (2000, 100), (2800, 200)],
-            'i': [(250, 60), (2200, 100), (3000, 150)],
-            'o': [(450, 70), (900, 100), (2500, 200)],
-            'u': [(300, 60), (800, 80), (2300, 150)],
-            'y': [(250, 60), (1800, 100), (2500, 150)],
-        }
-        default_formants = [(500, 100), (1500, 150), (2500, 200)]
+        # Fréquence fondamentale (modulée par l'émotion)
+        f0 = 160 + params['pitch_shift'] * 50
         
-        for idx, char in enumerate(chars):
-            start = int(idx * char_duration * SAMPLE_RATE)
-            end = int((idx + 1) * char_duration * SAMPLE_RATE + 0.05 * SAMPLE_RATE)
-            end = min(end, n_samples)
-            length = end - start
-            if length <= 0:
+        # Générer les voyelles une par une (par mot)
+        for wi, word in enumerate(words):
+            # Position temporelle de ce mot
+            word_start = wi * (word_dur + pause_dur)
+            word_end = word_start + word_dur
+            mask = (t >= word_start) & (t < word_end)
+            n_word = np.sum(mask)
+            if n_word == 0:
                 continue
+            t_word = np.linspace(0, word_dur, n_word, endpoint=False)
             
-            t = np.linspace(0, length / SAMPLE_RATE, length, endpoint=False)
+            # Pitch avec prosodie : monte puis descend
+            f0_word = f0 * (1.0 + 0.08 * np.sin(t_word / word_dur * np.pi * 2))
             
-            if char == ' ':
-                # Silence entre les mots
-                continue
-            
-            # Pitch avec prosodie (monte en début de mot, descend en fin)
-            f0 = 150 + params['pitch_shift'] * 60
-            pos_in_word = idx / max(len(chars), 1)
-            f0_mod = f0 * (1.0 + 0.1 * np.sin(pos_in_word * TAU * 0.5))
-            
-            if char in vowels:
-                # VOYELLE : oscillation harmonique avec formants
-                forms = vowel_formants.get(char, default_formants)
-                chunk = np.zeros(length, dtype=np.float64)
-                
-                for h in range(1, 8):
-                    amp = 1.0 / (h ** 1.2)
-                    freq = f0_mod * h
-                    
-                    # Appliquer les formants
-                    formant_gain = 1.0
-                    for (fc, bw) in forms:
-                        formant_gain *= 1.0 + 1.5 * np.exp(-((freq - fc) / bw) ** 2)
-                    
-                    phase = rng.random() * TAU
-                    chunk += amp * formant_gain * np.sin(TAU * freq * t + phase)
-                
-                # Enveloppe : attaque rapide, léger decay
-                env = np.ones(length)
-                att = min(int(0.01 * SAMPLE_RATE), length)
-                env[:att] = np.linspace(0, 1, att)
-                chunk = chunk * env
-                
-            elif char in consonants_unvoiced:
-                # CONSONNE SOURDE : burst de bruit filtré
-                noise = rng.randn(length) * 0.3
-                # Filtre passe-haut simple (différence)
-                filtered = np.zeros(length)
-                filtered[1:] = noise[1:] - noise[:-1]
-                chunk = filtered * 0.5
-                
-            elif char in consonants_voiced:
-                # CONSONNE VOISÉE : oscillation faible + bruit
-                voice = 0.3 * np.sin(TAU * f0_mod * t)
-                noise = rng.randn(length) * 0.15
-                chunk = voice + noise
-                
+            # Choisir une voyelle selon le mot
+            first_char = word[0].lower() if word else 'a'
+            if first_char in 'aeéèêë':
+                vowel_freqs = [(700, 100), (1200, 150), (2500, 250)]  # type a
+            elif first_char in 'iîïy':
+                vowel_freqs = [(280, 60), (2250, 120), (2900, 180)]   # type i
+            elif first_char in 'oôö':
+                vowel_freqs = [(450, 80), (900, 120), (2500, 250)]     # type o
+            elif first_char in 'uûù':
+                vowel_freqs = [(320, 60), (800, 80), (2300, 150)]      # type u
             else:
-                # Autre : son neutre
-                chunk = 0.2 * np.sin(TAU * f0_mod * t) + rng.randn(length) * 0.05
+                vowel_freqs = [(500, 100), (1500, 150), (2500, 200)]   # neutre
             
-            # Ajouter au signal avec une enveloppe de fondu
-            fade_len = min(int(0.005 * SAMPLE_RATE), length // 4)
-            fade = np.ones(length)
-            if fade_len > 0:
-                fade[:fade_len] = np.linspace(0, 1, fade_len)
-                fade[-fade_len:] = np.linspace(1, 0, fade_len)
+            # Synthèse harmonique
+            word_audio = np.zeros(n_word, dtype=np.float64)
+            for h in range(1, 16):
+                amp = 1.0 / h
+                freq = f0_word * h
+                
+                # Gain des formants
+                fgain = 1.0
+                for fc, bw in vowel_freqs:
+                    dist = np.abs(freq - fc)
+                    fgain += 1.5 * np.exp(-0.5 * (dist / bw) ** 2)
+                
+                phase = hash(word + str(h)) % 1000 / 1000.0 * TAU
+                word_audio += amp * fgain * np.sin(TAU * freq * t_word + phase)
             
-            audio[start:end] += chunk * fade * params['energy_boost']
+            # Enveloppe d'amplitude : attaque rapide, léger decay
+            env = np.ones(n_word)
+            att = min(int(0.015 * SAMPLE_RATE), n_word)
+            env[:att] = np.linspace(0, 1, att)
+            rel = min(int(0.04 * SAMPLE_RATE), n_word)
+            if rel > 0:
+                env[-rel:] = np.linspace(1, 0.3, rel)
+            
+            word_audio = word_audio * env
+            
+            # Appliquer au signal global
+            audio[mask] = word_audio
         
-        # Breath global
-        breath = rng.randn(n_samples) * params['breathiness'] * 0.01
-        audio += breath
+        # Breath (bruit de fond très léger)
+        audio += np.random.randn(n_samples) * 0.003
         
         # Normalisation
-        max_val = np.max(np.abs(audio))
-        if max_val > 0:
-            audio = audio / max_val * 0.9
+        peak = np.max(np.abs(audio))
+        if peak > 1e-10:
+            audio = audio / peak * 0.9
+        
+        # Boost d'énergie selon l'émotion
+        audio = audio * params['energy_boost']
+        
+        # Re-normaliser après boost
+        peak = np.max(np.abs(audio))
+        if peak > 0.9:
+            audio = audio / peak * 0.9
         
         return audio.astype(np.float64)
     
