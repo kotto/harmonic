@@ -27,13 +27,57 @@
 <div class="screen" id="screen-resonance">
 <header><img src="logo2.jpg" style="width:48px;height:48px;border-radius:50%;object-fit:cover;margin-bottom:8px" alt="KA"><h1>KA CARE</h1><p>Diagnostic par resonance harmonique</p><div class="header-badges"><span>📱 Installable</span><span>20 pathologies</span><span>Hors-ligne</span></div></header>
 <div class="card" onclick="this.classList.toggle('expanded')"><div style="display:flex;align-items:center;gap:8px"><span class="material-symbols-outlined">psychology</span><h3 style="margin:0">Comment fonctionne le diagnostic harmonique ?</h3></div><div class="exp-content"><p><strong>① Symptome = onde.</strong> Signature unique dans l'espace ondulatoire.</p><p><strong>② Maladie = superposition.</strong> Somme des ondes de ses symptomes.</p><p><strong>③ Diagnostic = resonance.</strong> Mesure de coherence ondulatoire.</p><p><strong>④ Zero hallucination.</strong> Mathematiques deterministes, pas d'IA generative.</p></div></div>
-<div class="patient-bar"><select id="patientSelect" onchange="onPatientSelect(this.value)"><option value="">👤 Patient anonyme</option></select><button onclick="showScreen('patients')"><span class="material-symbols-outlined">person_add</span></button><input id="patientAge" type="number" placeholder="Âge" min="0" max="120" style="width:55px"><select id="patientGender" style="width:60px"><option value="">⚥</option><option value="homme">H</option><option value="femme">F</option></select></div>
+<div class="patient-bar"><select id="patientSelect" onchange="onPatientSelect(this.value)"><option value="">👤 Patient anonyme</option></select><button onclick="showScreen('patients')" title="Gerer les patients"><span class="material-symbols-outlined">person_add</span></button><button onclick="showScreen('dossier')" title="Dossier medical"><span class="material-symbols-outlined">folder_open</span></button><input id="patientAge" type="number" placeholder="Âge" min="0" max="120" style="width:55px"><select id="patientGender" style="width:60px"><option value="">⚥</option><option value="homme">H</option><option value="femme">F</option></select></div>
 <div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span class="material-symbols-outlined">stethoscope</span><h3 style="margin:0">Symptomes</h3></div><textarea id="symptomsInput" placeholder="Decrivez les symptomes du patient..."></textarea><div class="chips" id="quickChips"></div><div id="demoBtns" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div><button class="btn btn-primary" id="diagnoseBtn" onclick="diagnose()">LANCER LE DIAGNOSTIC</button></div>
 <div id="resultsArea"></div>
 <footer>KA CARE — Aide au diagnostic. Urgence vitale : <strong>15</strong> (SAMU)</footer></div>
 <div class="screen" id="screen-history"><header><h2>HISTORIQUE DES DIAGNOSTICS</h2></header><div id="historyList"><div class="card"><p style="text-align:center;color:var(--muted)">Aucun diagnostic.</p></div></div><button class="btn btn-secondary" onclick="if(confirm('Effacer?')){diagnosticHistory=[];localStorage.removeItem('ka_care_history');renderHistory()}">EFFACER L'HISTORIQUE</button></div>
 <div class="screen" id="screen-vitals"><header><h2>CONSTANTES VITALES</h2></header><div id="vitalsContent"></div></div>
 <div class="screen" id="screen-patients"><header><h2>DOSSIERS PATIENTS</h2></header><div id="patientsList"></div><button class="btn btn-primary" style="margin-top:12px" onclick="showScreen('resonance')">RETOUR AU DIAGNOSTIC</button><button class="btn btn-secondary" style="margin-top:8px" onclick="setupPIN()">🔒 Configurer PIN</button><button class="btn btn-secondary" style="margin-top:8px" onclick="KA_SECURE.exportAll('ka_care')">💾 Sauvegarder</button><button class="btn btn-secondary" style="margin-top:8px" onclick="KA_SECURE.triggerImport('ka_care',function(){location.reload()})">📂 Restaurer</button><button class="btn btn-secondary" style="margin-top:8px" onclick="importPatientData()">📥 Importer donnees patient</button><button class="btn btn-primary" style="margin-top:8px;display:none" id="exportDiagBtn" onclick="exportDiagnosis()">📤 Envoyer diagnostic au patient</button></div>
+<div class="screen" id="screen-dossier">
+<header><h2 style="color:#d4a853">DOSSIER MEDICAL</h2></header>
+<div class="card" style="text-align:center"><div style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,#d4a853,#7b5804);display:flex;align-items:center;justify-content:center;font-size:1.6em;font-weight:700;margin:0 auto 8px" id="dossierAvatar">?</div><h3 id="dossierName">Patient anonyme</h3><p style="color:#9b8f7e;font-size:.8em" id="dossierId"></p></div>
+<div class="vital-grid" style="margin-top:12px">
+<div class="stat-card"><div class="val" id="dosBPM">--</div><div class="lbl">BPM</div></div>
+<div class="stat-card"><div class="val" id="dosBP">--</div><div class="lbl">cmHg</div></div>
+<div class="stat-card"><div class="val" id="dosSpO2">--</div><div class="lbl">SpO2</div></div>
+<div class="stat-card"><div class="val" id="dosTemp">--</div><div class="lbl">Temp</div></div>
+</div>
+<div class="action-grid" style="margin-top:12px">
+<div class="action-card" onclick="showScreen('resonance')"><div class="icon">🔍</div><div class="title">Nouveau Diagnostic</div><div class="sub">Lancer une analyse</div></div>
+<div class="action-card" onclick="showScreen('cardiac')"><div class="icon">🫀</div><div class="title">Analyse Cardiaque</div><div class="sub">ECG detaille</div></div>
+<div class="action-card" onclick="showScreen('history')"><div class="icon">📋</div><div class="title">Historique</div><div class="sub">Diagnostics passes</div></div>
+<div class="action-card" onclick="showScreen('scanner')"><div class="icon">📷</div><div class="title">Scanner QR</div><div class="sub">Ouvrir un dossier</div></div>
+</div>
+</div>
+<div class="screen" id="screen-cardiac">
+<header style="text-align:center;padding:24px 0 16px"><h2 style="color:#d4a853">ANALYSE CARDIAQUE</h2></header>
+<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">ECG — Derivation II</h3><span class="harmonic-badge"><span class="dot"></span> Link Actif 94%</span></div>
+<div class="ecg-grid"><div class="grid-overlay"></div>
+<svg viewBox="0 0 600 200"><path d="M0,100 L50,100 L55,100 L60,30 L65,170 L70,100 L120,100 L125,100 L130,20 L135,180 L140,100 L200,100 L250,100 L300,100 L350,100 L400,100 L450,100 L500,100 L505,100 L510,40 L515,160 L520,100 L570,100 L600,100" stroke="#d4a853" stroke-width="2" fill="none" opacity="0.8"/></svg></div>
+<div class="vital-grid" style="margin-top:12px">
+<div class="stat-card"><div class="val">72</div><div class="lbl">BPM MOYEN</div></div>
+<div class="stat-card"><div class="val">45 ms</div><div class="lbl">VARIABILITE</div></div>
+<div class="stat-card"><div class="val">0</div><div class="lbl">ANOMALIES 24h</div></div>
+<div class="stat-card"><div class="val">98%</div><div class="lbl">FIABILITE</div></div>
+</div>
+<div class="card" style="margin-top:12px"><h3>Evenements recents</h3>
+<div class="event-row"><span class="dot"></span><span class="evt-time">14:30</span><span class="evt-text">Pic d'activite — 94 BPM</span></div>
+<div class="event-row"><span class="dot" style="background:#666"></span><span class="evt-time">12:15</span><span class="evt-text">Phase de repos — 58 BPM</span></div>
+<div class="event-row"><span class="dot" style="background:#666"></span><span class="evt-time">08:45</span><span class="evt-text">Variabilite matinale — 52 ms</span></div>
+</div>
+</div>
+</div>
+<div class="screen" id="screen-scanner">
+<header style="text-align:center;padding:24px 0 16px"><h2 style="color:#d4a853">SCANNER QR CODE</h2></header>
+<div class="card" style="text-align:center">
+<div class="scanner-view"><div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div><div class="scan-line"></div></div>
+<p style="color:#9b8f7e;margin:16px 0">Recherche de signal...</p>
+<button class="btn btn-secondary" style="width:auto;padding:10px 24px;margin:0 auto;display:block" onclick="importPatientData()">📷 Scanner code patient</button>
+<p style="font-size:.7em;color:#8b7355;margin-top:8px">Ou saisir le code manuellement</p>
+<input placeholder="Code patient..." style="width:200px;padding:8px 12px;background:#141414;color:#d4c8a0;border:1px solid #2a2a2a;border-radius:8px;font-size:14px;font-family:inherit;text-align:center;margin-top:8px">
+</div>
+</div>
 </div>
 <nav class="bottom-nav" id="bottomNav" style="display:none">
 <div class="nav-item active" data-screen="resonance" onclick="showScreen('resonance')"><span class="material-symbols-outlined">waves</span><span class="nav-label">Resonance</span></div>

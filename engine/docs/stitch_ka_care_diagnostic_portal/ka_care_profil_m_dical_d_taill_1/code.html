@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Patient Profile | KA CARE</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #16130d;
+            color: #eae1d7;
+            overflow-x: hidden;
+        }
+        .resonance-card {
+            border: 1px solid rgba(212, 168, 83, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .resonance-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #d4a853, transparent);
+            opacity: 0.5;
+        }
+        .slide-up {
+            animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            opacity: 0;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        .stagger-4 { animation-delay: 0.4s; }
+        .stagger-5 { animation-delay: 0.5s; }
+
+        .glass-glow {
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(212, 168, 83, 0.03);
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "inverse-primary": "#7b5804",
+                "on-tertiary-fixed": "#001b3d",
+                "on-secondary-fixed-variant": "#474746",
+                "surface-dim": "#16130d",
+                "surface-bright": "#3d3831",
+                "on-secondary-container": "#b7b5b4",
+                "background": "#16130d",
+                "surface-container-lowest": "#110e08",
+                "on-secondary-fixed": "#1c1b1b",
+                "primary-container": "#d4a853",
+                "on-secondary": "#313030",
+                "on-tertiary-container": "#1d4274",
+                "on-surface": "#eae1d7",
+                "secondary": "#c8c6c5",
+                "on-background": "#eae1d7",
+                "on-primary-container": "#573d00",
+                "on-surface-variant": "#d2c5b2",
+                "surface-container-low": "#1f1b15",
+                "on-primary": "#412d00",
+                "error-container": "#93000a",
+                "tertiary-fixed-dim": "#a8c8ff",
+                "surface-variant": "#39342d",
+                "on-primary-fixed-variant": "#5d4200",
+                "tertiary-container": "#8fb0e9",
+                "secondary-fixed-dim": "#c8c6c5",
+                "secondary-container": "#474746",
+                "primary": "#f2c36b",
+                "tertiary-fixed": "#d6e3ff",
+                "tertiary": "#afcbff",
+                "surface-tint": "#eec068",
+                "on-primary-fixed": "#271900",
+                "primary-fixed-dim": "#eec068",
+                "on-tertiary": "#023061",
+                "on-error-container": "#ffdad6",
+                "surface": "#16130d",
+                "outline": "#9b8f7e",
+                "inverse-surface": "#eae1d7",
+                "error": "#ffb4ab",
+                "surface-container": "#231f19",
+                "primary-fixed": "#ffdea6",
+                "surface-container-highest": "#39342d",
+                "surface-container-high": "#2e2923",
+                "inverse-on-surface": "#343029",
+                "outline-variant": "#4e4637",
+                "on-error": "#690005",
+                "secondary-fixed": "#e5e2e1",
+                "on-tertiary-fixed-variant": "#234779"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "3xl": "1.5rem",
+                "full": "0.75rem"
+            },
+            "spacing": {
+                "container-padding": "24px",
+                "gutter": "16px",
+                "unit": "8px",
+                "stack-sm": "12px",
+                "stack-lg": "48px",
+                "stack-md": "24px"
+            },
+            "fontFamily": {
+                "headline-md": ["Inter"],
+                "label-sm": ["Inter"],
+                "display-lg-mobile": ["Inter"],
+                "display-lg": ["Inter"],
+                "body-md": ["Inter"],
+                "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                "display-lg-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "body-md": ["16px", {"lineHeight": "24px", "letterSpacing": "0", "fontWeight": "400"}],
+                "body-lg": ["18px", {"lineHeight": "28px", "letterSpacing": "0", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background min-h-screen pb-32">
+<!-- Top App Bar -->
+<header class="w-full sticky top-0 z-50 border-b border-outline-variant/20 bg-background/80 backdrop-blur-md shadow-[0_4px_20px_rgba(212,168,83,0.05)] flex items-center justify-between px-gutter py-unit">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" data-icon="graphic_eq">graphic_eq</span>
+<h1 class="font-display-lg-mobile text-display-lg-mobile tracking-tighter text-primary uppercase">KA CARE</h1>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors" data-icon="notifications">notifications</span>
+<div class="w-10 h-10 rounded-full border border-primary/30 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional medical profile portrait of a middle-aged male doctor with silvering hair, wearing a clean white lab coat and a subtle gold stethoscope around his neck. The background is a soft-focus medical laboratory with deep amber and black tones, maintaining a high-end corporate clinical aesthetic. The lighting is dramatic yet soft, highlighting expertise and calm authority." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDNATMS9b5NGBKI4PXpOMiJHOREJyvRv1Re49wOXgCSy46GXFTMAkQsfzPap5DPKcHHgAvTqn7qodBcjin2Wo-QPvB8W-CxZcc0bHkS8i9-CufIvllDFEPhVWyeVGeIhhTY3XVfDPmVj0Kke6pkte4N-mD50oziVEufMojR8cFEIF1yXfNyLu-nOMJDpFuqy6bdWRyrwYmWbDzX2EA9wx_GWKTqXXH82h6DE_kJU_xr4oyyjIWrJ4dUiw"/>
+</div>
+</div>
+</header>
+<main class="max-w-5xl mx-auto px-gutter pt-stack-md space-y-stack-md">
+<!-- Patient Header Section -->
+<section class="slide-up stagger-1 flex flex-col md:flex-row items-center md:items-end gap-6 bg-surface-container-low p-8 rounded-3xl resonance-card glass-glow">
+<div class="relative">
+<div class="w-32 h-32 md:w-40 md:h-40 rounded-full border-2 border-primary/50 p-1">
+<img class="w-full h-full object-cover rounded-full" data-alt="A dignified close-up portrait of Jean-Marc Valenti, a 48-year-old man with distinguished features and short dark hair. He is wearing a dark, high-quality charcoal sweater. The portrait is set against a moody, dark medical-themed background with subtle golden light-bleed effects that suggest advanced technology and prestige healthcare. The lighting is cinematic and high-contrast." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-kRjQjbox55jWKvc7e_ioMC-M79yJUCOiubnp-Z156PneThA3jHz1UpMlZHK-cWRNe_uTFUZvO0Ab_HfG4wTQxz0czsrCcoNxYBBF3YPCqvDiFYuHex_BcQJf17DRXl7H6ciU0nVnYECeDmb0yHNJbgvex7BTxpz3-y0vNfZuoBZ0SJoedCQhWLNWQWEnqlGY-u73CPwPsosbvZDgkA8IK7676LEudEkIryJEXUuR_3ngRSK3ncBiNQ"/>
+</div>
+<div class="absolute -bottom-2 -right-2 bg-primary text-on-primary px-3 py-1 rounded-full text-label-sm font-label-sm shadow-lg">
+                    A+ POS
+                </div>
+</div>
+<div class="text-center md:text-left flex-1">
+<h2 class="font-display-lg text-display-lg-mobile md:text-headline-md text-on-surface">Jean-Marc Valenti</h2>
+<div class="flex flex-wrap justify-center md:justify-start gap-4 mt-2">
+<span class="flex items-center gap-1 text-on-surface-variant font-body-md text-body-md">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="cake">cake</span>
+                        48 ans
+                    </span>
+<span class="flex items-center gap-1 text-on-surface-variant font-body-md text-body-md">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="fingerprint">fingerprint</span>
+                        ID: #KM-9023
+                    </span>
+<span class="flex items-center gap-1 text-on-surface-variant font-body-md text-body-md">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="location_on">location_on</span>
+                        Lyon, France
+                    </span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="bg-primary text-on-primary px-6 py-2.5 rounded-full font-label-sm text-label-sm hover:brightness-110 active:scale-95 transition-all">
+                    NOUVEL EXAMEN
+                </button>
+</div>
+</section>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Left Column: Vitals & Alerts -->
+<div class="md:col-span-2 space-y-6">
+<!-- Vitals Module -->
+<section class="slide-up stagger-2 resonance-card bg-surface-container rounded-3xl p-6">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-primary font-headline-md text-headline-md uppercase tracking-widest text-sm opacity-80">Constantes Vitales</h3>
+<span class="text-on-surface-variant text-label-sm font-label-sm opacity-60 italic">Mis à jour: il y a 5 min</span>
+</div>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="bg-surface-container-high p-4 rounded-2xl flex flex-col items-center justify-center border border-outline-variant/10">
+<span class="material-symbols-outlined text-primary mb-2" data-icon="favorite">favorite</span>
+<span class="text-on-surface-variant text-label-sm font-label-sm uppercase">Fréq. Cardiaque</span>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="text-on-surface font-headline-md text-headline-md">72</span>
+<span class="text-on-surface-variant text-xs font-label-sm">BPM</span>
+</div>
+</div>
+<div class="bg-surface-container-high p-4 rounded-2xl flex flex-col items-center justify-center border border-outline-variant/10">
+<span class="material-symbols-outlined text-primary mb-2" data-icon="speed">speed</span>
+<span class="text-on-surface-variant text-label-sm font-label-sm uppercase">Pression Art.</span>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="text-on-surface font-headline-md text-headline-md">12/8</span>
+<span class="text-on-surface-variant text-xs font-label-sm">cmHg</span>
+</div>
+</div>
+<div class="bg-surface-container-high p-4 rounded-2xl flex flex-col items-center justify-center border border-outline-variant/10">
+<span class="material-symbols-outlined text-primary mb-2" data-icon="air">air</span>
+<span class="text-on-surface-variant text-label-sm font-label-sm uppercase">SpO2</span>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="text-on-surface font-headline-md text-headline-md">98</span>
+<span class="text-on-surface-variant text-xs font-label-sm">%</span>
+</div>
+</div>
+<div class="bg-surface-container-high p-4 rounded-2xl flex flex-col items-center justify-center border border-outline-variant/10">
+<span class="material-symbols-outlined text-primary mb-2" data-icon="thermostat">thermostat</span>
+<span class="text-on-surface-variant text-label-sm font-label-sm uppercase">Température</span>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="text-on-surface font-headline-md text-headline-md">36.7</span>
+<span class="text-on-surface-variant text-xs font-label-sm">°C</span>
+</div>
+</div>
+</div>
+<!-- Waveform Visualizer Placeholder -->
+<div class="mt-6 h-24 w-full bg-surface-container-highest/30 rounded-xl relative overflow-hidden flex items-center px-4 border border-outline-variant/10">
+<div class="absolute inset-0 flex items-center opacity-40">
+<svg class="w-full h-full" viewbox="0 0 400 100">
+<path class="animate-[dash_4s_linear_infinite]" d="M0,50 L20,50 L30,20 L40,80 L50,50 L80,50 L90,10 L100,90 L110,50 L150,50 L160,30 L170,70 L180,50 L220,50 L230,10 L240,90 L250,50 L290,50 L300,40 L310,60 L320,50 L400,50" fill="none" stroke="#f2c36b" stroke-width="2" style="stroke-dasharray: 400; stroke-dashoffset: 400;"></path>
+</svg>
+<style>
+                                @keyframes dash {
+                                    to { stroke-dashoffset: 0; }
+                                }
+                             </style>
+</div>
+<span class="relative z-10 text-label-sm font-label-sm text-primary/70 uppercase tracking-widest">ECG Temps Réel</span>
+</div>
+</section>
+<!-- Medical History (Antécédents) -->
+<section class="slide-up stagger-3 resonance-card bg-surface-container rounded-3xl p-6">
+<h3 class="text-primary font-headline-md text-headline-md uppercase tracking-widest text-sm opacity-80 mb-6">Antécédents</h3>
+<div class="space-y-3">
+<div class="flex justify-between items-center p-4 bg-surface-container-high rounded-2xl border border-outline-variant/10 hover:border-primary/20 transition-colors cursor-default">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="monitor_heart">monitor_heart</span>
+</div>
+<div>
+<h4 class="text-on-surface font-body-lg text-body-lg">Hypertension modérée</h4>
+<p class="text-on-surface-variant text-label-sm font-label-sm">Diagnostiqué en 2018</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/40" data-icon="chevron_right">chevron_right</span>
+</div>
+<div class="flex justify-between items-center p-4 bg-surface-container-high rounded-2xl border border-outline-variant/10 hover:border-primary/20 transition-colors cursor-default">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="medical_services">medical_services</span>
+</div>
+<div>
+<h4 class="text-on-surface font-body-lg text-body-lg">Chirurgie ménisque</h4>
+<p class="text-on-surface-variant text-label-sm font-label-sm">Opéré en Juin 2021</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/40" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Treatments & Alerts -->
+<div class="space-y-6">
+<!-- Alerts Section -->
+<section class="slide-up stagger-4 resonance-card bg-surface-container rounded-3xl p-6">
+<h3 class="text-primary font-headline-md text-headline-md uppercase tracking-widest text-sm opacity-80 mb-6">Alertes</h3>
+<div class="space-y-4">
+<div class="p-4 rounded-2xl bg-error-container/20 border border-error/30 flex items-start gap-4">
+<span class="material-symbols-outlined text-error" data-icon="warning" data-weight="fill" style="font-variation-settings: 'FILL' 1;">warning</span>
+<div>
+<h4 class="text-error font-body-lg text-body-lg font-bold">Pénicilline (CRITIQUE)</h4>
+<p class="text-on-surface-variant text-label-sm font-label-sm mt-1">Réaction anaphylactique sévère signalée lors de l'enfance.</p>
+</div>
+</div>
+<div class="p-4 rounded-2xl bg-primary/10 border border-primary/30 flex items-start gap-4">
+<span class="material-symbols-outlined text-primary" data-icon="info" data-weight="fill" style="font-variation-settings: 'FILL' 1;">info</span>
+<div>
+<h4 class="text-primary font-body-lg text-body-lg font-bold">Arachides (MODÉRÉ)</h4>
+<p class="text-on-surface-variant text-label-sm font-label-sm mt-1">Eruption cutanée et œdème localisé.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Current Treatment -->
+<section class="slide-up stagger-5 resonance-card bg-surface-container rounded-3xl p-6">
+<h3 class="text-primary font-headline-md text-headline-md uppercase tracking-widest text-sm opacity-80 mb-6">Traitement en cours</h3>
+<div class="space-y-4">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest border border-outline-variant/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="pill">pill</span>
+</div>
+<div>
+<h4 class="text-on-surface font-body-lg text-body-lg">Amlodipine 5mg</h4>
+<p class="text-on-surface-variant text-label-sm font-label-sm">1 comprimé le matin</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest border border-outline-variant/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="medication">medication</span>
+</div>
+<div>
+<h4 class="text-on-surface font-body-lg text-body-lg">Paracétamol</h4>
+<p class="text-on-surface-variant text-label-sm font-label-sm">500mg (si besoin)</p>
+</div>
+</div>
+<hr class="border-outline-variant/20"/>
+<button class="w-full py-3 rounded-2xl border border-primary/30 text-primary font-label-sm text-label-sm hover:bg-primary/5 transition-colors">
+                            VOIR TOUT LE DOSSIER
+                        </button>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-3 pb-safe bg-surface-container/95 backdrop-blur-xl border-t border-outline-variant/30 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] z-50 rounded-t-full">
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 hover:text-primary transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="waves">waves</span>
+<span class="font-label-sm text-label-sm mt-1">Resonance</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 hover:text-primary transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-label-sm text-label-sm mt-1">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 hover:text-primary transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="ecg_heart">ecg_heart</span>
+<span class="font-label-sm text-label-sm mt-1">Vitals</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary bg-primary-container/10 rounded-xl px-4 py-1.5 active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="person" data-weight="fill" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label-sm text-label-sm mt-1 font-bold">Profile</span>
+</a>
+</nav>
+<!-- Visual Polish: Background Shader Placeholder -->
+<div class="fixed inset-0 -z-10 pointer-events-none opacity-20">
+
+</div>
+</body></html>

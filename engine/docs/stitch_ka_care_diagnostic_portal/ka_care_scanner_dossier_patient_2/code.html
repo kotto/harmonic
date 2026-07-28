@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>KA Care - Ouverture du Dossier Médical</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .resonance-glow {
+            box-shadow: 0 0 15px rgba(212, 168, 83, 0.1);
+        }
+        .resonance-border {
+            border: 1px solid rgba(212, 168, 83, 0.1);
+            backdrop-filter: blur(8px);
+        }
+        .resonance-card-hover:hover {
+            border-color: rgba(212, 168, 83, 0.4);
+            box-shadow: 0 0 20px rgba(212, 168, 83, 0.15);
+            transition: all 0.3s ease;
+        }
+        body {
+            background-color: #0d0d0d;
+            color: #eae1d7;
+            font-family: 'Inter', sans-serif;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #16130d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #39342d;
+            border-radius: 10px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#f2c36b",
+                        "inverse-primary": "#7b5804",
+                        "on-surface-variant": "#d2c5b2",
+                        "surface-container-low": "#1f1b15",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "tertiary-container": "#8fb0e9",
+                        "error-container": "#93000a",
+                        "surface-tint": "#eec068",
+                        "on-tertiary": "#023061",
+                        "on-tertiary-fixed": "#001b3d",
+                        "on-tertiary-container": "#1d4274",
+                        "on-secondary-fixed-variant": "#474746",
+                        "on-error": "#690005",
+                        "surface-variant": "#39342d",
+                        "primary-fixed": "#ffdea6",
+                        "primary-container": "#d4a853",
+                        "surface-container-high": "#2e2923",
+                        "secondary": "#c8c6c5",
+                        "tertiary-fixed-dim": "#a8c8ff",
+                        "on-primary-fixed-variant": "#5d4200",
+                        "error": "#ffb4ab",
+                        "background": "#16130d",
+                        "on-secondary-container": "#b7b5b4",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "surface-container": "#231f19",
+                        "secondary-container": "#474746",
+                        "surface-bright": "#3d3831",
+                        "on-surface": "#eae1d7",
+                        "on-background": "#eae1d7",
+                        "on-primary-container": "#573d00",
+                        "tertiary": "#afcbff",
+                        "on-primary-fixed": "#271900",
+                        "surface-container-highest": "#39342d",
+                        "surface": "#16130d",
+                        "outline": "#9b8f7e",
+                        "inverse-surface": "#eae1d7",
+                        "inverse-on-surface": "#343029",
+                        "tertiary-fixed": "#d6e3ff",
+                        "primary-fixed-dim": "#eec068",
+                        "on-tertiary-fixed-variant": "#234779",
+                        "on-primary": "#412d00",
+                        "outline-variant": "#4e4637",
+                        "on-secondary": "#313030",
+                        "surface-dim": "#16130d",
+                        "surface-container-lowest": "#110e08",
+                        "secondary-fixed": "#e5e2e1"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-lg": "48px",
+                        "unit": "8px",
+                        "stack-sm": "12px",
+                        "gutter": "16px",
+                        "container-padding": "24px",
+                        "stack-md": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "display-lg-mobile": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "display-lg-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "letterSpacing": "0", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "letterSpacing": "0", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-gutter h-16 bg-surface-container-low border-b border-primary/10 shadow-[0_0_15px_rgba(212,168,83,0.1)]">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary" data-icon="clinical_notes">clinical_notes</span>
+<h1 class="font-headline-md text-headline-md font-bold text-primary tracking-tight">Dossier Patient</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="hover:bg-surface-variant/50 transition-colors p-2 rounded-full active:scale-95 duration-200">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<main class="pt-24 px-gutter max-w-4xl mx-auto space-y-stack-md">
+<!-- Search Section -->
+<section class="space-y-stack-sm">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary" data-icon="search">search</span>
+<input class="w-full bg-surface-container-highest border-none border-b-2 border-transparent focus:border-primary focus:ring-0 rounded-xl py-4 pl-12 pr-4 text-body-md placeholder:text-on-surface-variant/50 transition-all resonance-glow" placeholder="Rechercher par Nom ou ID (#KM-XXXX)" type="text"/>
+</div>
+</section>
+<!-- Primary Action Cards -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-stack-sm">
+<button class="flex items-center gap-4 p-6 bg-surface-container rounded-xl resonance-border resonance-card-hover group active:scale-95 duration-200">
+<div class="w-12 h-12 rounded-full bg-primary-container/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-on-primary transition-all">
+<span class="material-symbols-outlined" data-icon="qr_code_scanner">qr_code_scanner</span>
+</div>
+<div class="text-left">
+<h3 class="font-body-md text-on-surface font-semibold">Scanner le QR Code</h3>
+<p class="text-label-sm text-on-surface-variant">Accès direct au scanner biométrique</p>
+</div>
+</button>
+<button class="flex items-center gap-4 p-6 bg-surface-container rounded-xl resonance-border resonance-card-hover group active:scale-95 duration-200">
+<div class="w-12 h-12 rounded-full bg-primary-container/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-on-primary transition-all">
+<span class="material-symbols-outlined" data-icon="person_add">person_add</span>
+</div>
+<div class="text-left">
+<h3 class="font-body-md text-on-surface font-semibold">Nouveau Patient</h3>
+<p class="text-label-sm text-on-surface-variant">Créer un nouveau profil harmonique</p>
+</div>
+</button>
+</section>
+<!-- Recent Patients List -->
+<section class="space-y-stack-sm">
+<div class="flex justify-between items-center px-2">
+<h2 class="text-on-surface-variant font-label-sm uppercase tracking-widest">Patients Récents</h2>
+<button class="text-primary text-label-sm hover:underline">Voir tout</button>
+</div>
+<div class="space-y-unit">
+<!-- Patient 1 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-low rounded-xl resonance-border hover:bg-surface-container transition-all group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden border border-primary/20 bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="A professional studio portrait of an older man with kind eyes and grey hair, wearing a clean white shirt, against a dark medical diagnostic background with subtle gold light leaks. The mood is clinical yet warm and high-end, matching a premium healthcare app aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuApneX3qDCAztcc4EhRu8aYn2ZXQ08wRbi5yKUcawNo2AM7DLNBfH96jq-O3qUm_tM3HwTRF8_Lbn_bFSdDzfQNRY12mdJNuOb-h4apkzo7T8VwGRgqgLJ-2-VO698ft958EDPfDZsaXGGUfYFUapi7efFqzL59fsRjYhcG72OWgSASThWKk6d3b6j8S2UC3uPg-l9IRIIDiZCiOLIAGlE0WAussPyrrcUxUPEEssGGMtfmgIsBOuKv0Q"/>
+</div>
+<div>
+<h4 class="font-body-md text-on-surface font-semibold">Jean-Marc Valenti</h4>
+<div class="flex items-center gap-2 text-label-sm text-on-surface-variant">
+<span>#KM-9023</span>
+<span class="w-1 h-1 bg-primary/30 rounded-full"></span>
+<span>Vu il y a 5 min</span>
+</div>
+</div>
+</div>
+<button class="bg-primary/10 text-primary px-4 py-2 rounded-full font-label-sm hover:bg-primary hover:text-on-primary transition-all active:scale-90 duration-150">
+                        Ouvrir
+                    </button>
+</div>
+<!-- Patient 2 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-low rounded-xl resonance-border hover:bg-surface-container transition-all group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden border border-primary/20 bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="A professional studio portrait of a middle-aged woman with short dark hair, wearing a navy blue medical scrub, looking confident and serene. The lighting is soft and cinematic with golden highlights, consistent with a luxury medical environment. Dark background with gold resonance wave patterns." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5892uDHDqCDI_98Xy7573Dy_p9WCg0JyUAMBpC-_XMFXtrWhfqiBD63pECBlWkyJC4S1VQWHMAX6881IBwP8XmJTOJ2VWsv6XaX7tdzw2ShVMyZkr1IFmt9jO-lMdr4c8C417v6uxxmyNA_HmicAvEMuTG4H-bGomgNr1SOhJp_t2KW_A30DziZ3D5HHy5LRB17XnK-n5g7HHzBVbByfpLyxO5yR78IbUnVoLo33XU1twPJvohANswg"/>
+</div>
+<div>
+<h4 class="font-body-md text-on-surface font-semibold">Marie-Claire Perrin</h4>
+<div class="flex items-center gap-2 text-label-sm text-on-surface-variant">
+<span>#KM-8812</span>
+<span class="w-1 h-1 bg-primary/30 rounded-full"></span>
+<span>Vu il y a 2 heures</span>
+</div>
+</div>
+</div>
+<button class="bg-primary/10 text-primary px-4 py-2 rounded-full font-label-sm hover:bg-primary hover:text-on-primary transition-all active:scale-90 duration-150">
+                        Ouvrir
+                    </button>
+</div>
+<!-- Patient 3 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-low rounded-xl resonance-border hover:bg-surface-container transition-all group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden border border-primary/20 bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="A portrait of a young man with glasses, looking professional and attentive. He is positioned in a modern, dark-themed medical office with golden ambient lighting. The visual style is premium and high-fidelity, featuring deep blacks and metallic gold accents characteristic of the KA Care brand." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKeGXUVDi2ACTHMuVaGwUxADKIDc38Mhke-0weWmcshcN6Z3L3j1RnwDyt95Jqc5quZLsrFj9KSCP3QVc-3Q5lGUol5aWcoeVX5vBa_GVBPGoyAGvugFpX8paREMAYd4dQTE4b-uKNpi5CxooCczZDvBceS0BLUfx-bUDXnRWthWlerKgbbL_GBpm3IqCbDOwBe51PpCZW1PKOpDPoV557HVi_-jHOkyxU7kS1iJ8J8PVAGydRoArIWA"/>
+</div>
+<div>
+<h4 class="font-body-md text-on-surface font-semibold">Thomas Durand</h4>
+<div class="flex items-center gap-2 text-label-sm text-on-surface-variant">
+<span>#KM-4456</span>
+<span class="w-1 h-1 bg-primary/30 rounded-full"></span>
+<span>Vu hier</span>
+</div>
+</div>
+</div>
+<button class="bg-primary/10 text-primary px-4 py-2 rounded-full font-label-sm hover:bg-primary hover:text-on-primary transition-all active:scale-90 duration-150">
+                        Ouvrir
+                    </button>
+</div>
+</div>
+</section>
+<!-- Waveform Decoration -->
+<div class="pt-8 opacity-40">
+<div class="h-24 w-full relative overflow-hidden rounded-xl bg-surface-container-lowest">
+<svg class="absolute inset-0 w-full h-full preserve-3d" viewbox="0 0 400 100">
+<path d="M0,50 Q50,20 100,50 T200,50 T300,50 T400,50" fill="none" stroke="#d4a853" stroke-width="1">
+<animate attributename="d" dur="5s" repeatcount="indefinite" values="M0,50 Q50,20 100,50 T200,50 T300,50 T400,50; M0,50 Q50,80 100,50 T200,50 T300,50 T400,50; M0,50 Q50,20 100,50 T200,50 T300,50 T400,50"></animate>
+</path>
+</svg>
+<div class="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-2 pb-safe bg-surface-container-lowest border-t border-primary/10 shadow-[0_-4px_12px_rgba(0,0,0,0.5)] rounded-t-xl">
+<button class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:text-primary transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined" data-icon="graphic_eq">graphic_eq</span>
+<span class="font-label-sm text-label-sm">Engine</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:text-primary transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined" data-icon="vital_signs">vital_signs</span>
+<span class="font-label-sm text-label-sm">Vitals</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:text-primary transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined" data-icon="history_edu">history_edu</span>
+<span class="font-label-sm text-label-sm">History</span>
+</button>
+<button class="flex flex-col items-center justify-center text-primary dark:text-primary bg-primary-container/20 rounded-full px-4 py-1 active:scale-90 duration-150">
+<span class="material-symbols-outlined" data-icon="folder_shared" data-weight="fill" style="font-variation-settings: 'FILL' 1;">folder_shared</span>
+<span class="font-label-sm text-label-sm">Patients</span>
+</button>
+</nav>
+<script>
+        // Micro-interactions and effects
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                const ripple = document.createElement('div');
+                ripple.className = 'absolute rounded-full bg-primary/20 pointer-events-none transform -translate-x-1/2 -translate-y-1/2';
+                ripple.style.left = e.clientX - this.getBoundingClientRect().left + 'px';
+                ripple.style.top = e.clientY - this.getBoundingClientRect().top + 'px';
+                ripple.style.width = '0px';
+                ripple.style.height = '0px';
+                this.appendChild(ripple);
+                
+                const anim = ripple.animate([
+                    { width: '0px', height: '0px', opacity: 0.5 },
+                    { width: '200px', height: '200px', opacity: 0 }
+                ], { duration: 500, easing: 'ease-out' });
+                
+                anim.onfinish = () => ripple.remove();
+            });
+        });
+
+        // Search highlight effect
+        const searchInput = document.querySelector('input[type="text"]');
+        searchInput.addEventListener('focus', () => {
+            searchInput.parentElement.classList.add('resonance-glow');
+        });
+        searchInput.addEventListener('blur', () => {
+            searchInput.parentElement.classList.remove('resonance-glow');
+        });
+    </script>
+</body></html>

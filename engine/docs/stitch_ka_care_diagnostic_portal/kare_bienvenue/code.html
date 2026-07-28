@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>KARE - Diagnostic Médical</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#2e2923",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "tertiary-fixed": "#d6e3ff",
+                        "primary": "#f2c36b",
+                        "on-tertiary-fixed-variant": "#234779",
+                        "on-tertiary-container": "#1d4274",
+                        "on-secondary": "#313030",
+                        "on-primary-fixed": "#271900",
+                        "secondary-fixed": "#e5e2e1",
+                        "primary-container": "#d4a853",
+                        "surface-container-lowest": "#110e08",
+                        "on-error": "#690005",
+                        "inverse-primary": "#7b5804",
+                        "on-surface": "#eae1d7",
+                        "inverse-on-surface": "#343029",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "tertiary-container": "#8fb0e9",
+                        "surface": "#16130d",
+                        "surface-container": "#231f19",
+                        "surface-bright": "#3d3831",
+                        "secondary": "#c8c6c5",
+                        "primary-fixed": "#ffdea6",
+                        "error-container": "#93000a",
+                        "on-primary-fixed-variant": "#5d4200",
+                        "error": "#ffb4ab",
+                        "inverse-surface": "#eae1d7",
+                        "tertiary": "#afcbff",
+                        "on-tertiary": "#023061",
+                        "on-tertiary-fixed": "#001b3d",
+                        "on-surface-variant": "#d2c5b2",
+                        "on-primary": "#412d00",
+                        "on-primary-container": "#573d00",
+                        "primary-fixed-dim": "#eec068",
+                        "background": "#16130d",
+                        "outline-variant": "#4e4637",
+                        "on-secondary-fixed-variant": "#474746",
+                        "secondary-container": "#474746",
+                        "surface-container-highest": "#39342d",
+                        "outline": "#9b8f7e",
+                        "surface-variant": "#39342d",
+                        "surface-tint": "#eec068",
+                        "on-background": "#eae1d7",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-container": "#b7b5b4",
+                        "tertiary-fixed-dim": "#a8c8ff",
+                        "surface-dim": "#16130d",
+                        "surface-container-low": "#1f1b15"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "unit": "8px",
+                        "stack-lg": "48px",
+                        "container-padding": "24px",
+                        "stack-sm": "12px",
+                        "stack-md": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "display-lg-mobile": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "display-lg-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "letterSpacing": "0", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "letterSpacing": "0", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0d0d0d;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .resonance-glow {
+            background: radial-gradient(circle at center, rgba(212, 168, 83, 0.15) 0%, transparent 70%);
+        }
+
+        .wave-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .pulse-wave {
+            position: absolute;
+            border: 1px solid rgba(212, 168, 83, 0.3);
+            border-radius: 50%;
+            animation: pulse 4s infinite linear;
+        }
+
+        @keyframes pulse {
+            0% { width: 100px; height: 100px; opacity: 0; border-width: 2px; }
+            50% { opacity: 0.5; }
+            100% { width: 800px; height: 800px; opacity: 0; border-width: 1px; }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .gold-border-glow {
+            box-shadow: 0 0 20px rgba(212, 168, 83, 0.2);
+            border: 1px solid rgba(212, 168, 83, 0.4);
+        }
+
+        .glass-panel {
+            background: rgba(26, 26, 26, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="dark text-on-surface">
+<!-- Subtle Atmospheric Background -->
+<div class="fixed inset-0 z-0">
+<div class="absolute inset-0 resonance-glow"></div>
+<div class="wave-container">
+<div class="pulse-wave" style="animation-delay: 0s"></div>
+<div class="pulse-wave" style="animation-delay: 1.3s"></div>
+<div class="pulse-wave" style="animation-delay: 2.6s"></div>
+</div>
+<!-- Texture Overlay -->
+<div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image: url('https://www.transparenttextures.com/patterns/carbon-fibre.png')"></div>
+</div>
+<!-- Main Content Canvas -->
+<main class="relative z-10 flex flex-col items-center justify-between min-h-screen w-full px-gutter py-stack-lg overflow-hidden">
+<!-- Top Spacer for centering -->
+<div></div>
+<!-- Branding & Logo Section -->
+<div class="flex flex-col items-center text-center fade-in-up" style="animation-delay: 0.2s">
+<!-- Sophisticated Logo representing Resonance -->
+<div class="relative w-32 h-32 md:w-48 md:h-48 mb-stack-md flex items-center justify-center">
+<div class="absolute inset-0 rounded-full gold-border-glow animate-pulse"></div>
+<div class="absolute inset-2 rounded-full border border-primary/20"></div>
+<span class="material-symbols-outlined text-[64px] md:text-[96px] text-primary" style="font-variation-settings: 'FILL' 0, 'wght' 200;">
+                    graphic_eq
+                </span>
+<!-- Harmonic Orbitals -->
+<div class="absolute w-full h-full border border-primary/10 rounded-full animate-[spin_10s_linear_infinite]"></div>
+<div class="absolute w-[80%] h-[80%] border border-primary/5 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
+</div>
+<!-- App Name: KARE -->
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-primary tracking-tight mb-unit">
+                KARE
+            </h1>
+<!-- Tagline -->
+<p class="font-body-lg text-body-lg text-on-surface-variant tracking-widest uppercase opacity-80">
+                La santé par la résonance
+            </p>
+</div>
+<!-- Action & Footer Section -->
+<div class="w-full max-w-sm flex flex-col items-center fade-in-up" style="animation-delay: 0.6s">
+<!-- Primary CTA -->
+<button class="w-full bg-primary-container text-on-primary py-4 rounded-xl font-headline-md text-headline-md flex items-center justify-center gap-3 transition-all duration-300 hover:scale-[1.02] active:scale-95 hover:shadow-[0_0_30px_rgba(212,168,83,0.3)] cursor-pointer group">
+                COMMENCER LE DIAGNOSTIC
+                <span class="material-symbols-outlined transition-transform group-hover:translate-x-1">chevron_right</span>
+</button>
+<!-- Secondary Micro-action -->
+<button class="mt-stack-sm text-on-surface-variant font-label-sm text-label-sm uppercase tracking-widest hover:text-primary transition-colors cursor-pointer py-2">
+                Consulter les archives
+            </button>
+<!-- Version Tag -->
+<div class="mt-stack-lg">
+<span class="font-label-sm text-label-sm text-outline/50 border border-outline/20 px-3 py-1 rounded-full bg-surface-container-low/50 backdrop-blur-md">
+                    v1.0
+                </span>
+</div>
+</div>
+</main>
+<!-- Background Image Enhancement -->
+<div class="fixed bottom-[-10%] right-[-10%] w-[60%] h-[60%] opacity-20 blur-3xl pointer-events-none">
+<div class="w-full h-full rounded-full" data-alt="A highly detailed and professional macroscopic medical laboratory equipment closeup featuring sleek brushed gold surfaces and glowing amber indicator lights. The style is modern corporate healthcare with a dark, premium aesthetic. Soft cinematic lighting highlights the precision craftsmanship of a diagnostic resonance scanner in a prestigious medical facility." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBzxjJNOdrlE2iMg_7xgzGASLL80_n1nXa7jf2dNjQknYYARliJE1lTsvMXEyhb5gKkzpP5CYdgZ4JGDfWAGlpBKrBWVrIZ4efxqidKXFn6G1xe9aYuItXgMf6g6NhXi7rP4zKOOwirRQTbNuRvDTteX4bB1TL2nU8vD2PK8dkIb8XA2auEPKySV3yyMU4iNlueFFLAT6uPK0QpHRoJEVj4B7xWq1OMK3yLN4HjGRm3eoUt6DvIjL8VJA')"></div>
+</div>
+<!-- Micro-interaction Script -->
+<script>
+        document.addEventListener('mousemove', (e) => {
+            const glow = document.querySelector('.resonance-glow');
+            const x = (e.clientX / window.innerWidth) * 100;
+            const y = (e.clientY / window.innerHeight) * 100;
+            glow.style.background = `radial-gradient(circle at ${x}% ${y}%, rgba(212, 168, 83, 0.12) 0%, transparent 60%)`;
+        });
+
+        // Entrance effect for waves
+        const waves = document.querySelectorAll('.pulse-wave');
+        waves.forEach((wave, i) => {
+            wave.style.opacity = '0';
+            setTimeout(() => {
+                wave.style.transition = 'opacity 2s ease';
+                wave.style.opacity = '0.5';
+            }, 1000 + (i * 500));
+        });
+    </script>
+</body></html>
