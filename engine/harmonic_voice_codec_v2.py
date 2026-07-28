@@ -326,17 +326,14 @@ class HarmonicVoiceCodecV2:
     def decode(self, psi_frames: np.ndarray,
                original_length: int = None) -> np.ndarray:
         """
-        Décode des trames ψ en signal audio.
+        Décode des trames ψ en signal audio — optimisé pour trames NON contiguës.
         
-        Reconstruction rapide car la phase minimale est déduite
-        de la magnitude — pas besoin de Griffin-Lim itératif.
-        
-        Args:
-            psi_frames: [n_frames, dim] np.complex128
-            original_length: longueur originale (optionnel, pour tronquer)
-            
-        Returns:
-            [n_samples] np.float64 — signal audio reconstruit
+        Améliorations vs version précédente :
+          1. Oscillateur glottique UNIQUE (phase0 partagée par toutes les harmoniques)
+          2. Lissage gaussien des amplitudes (σ=3ms) pour transitions douces
+          3. Bruit CONTINU (pas de reset par trame)
+          4. ENVELOPPE SPECTRALE appliquée à la partie voisée (filtrage formantique)
+          5. Mixage non-linéaire voisé/bruit (voicing²)
         """
         if len(psi_frames) == 0:
             return np.array([], dtype=np.float64)
@@ -344,54 +341,170 @@ class HarmonicVoiceCodecV2:
         t_start = time.perf_counter()
         
         n_frames = len(psi_frames)
-        expected_len = (n_frames - 1) * self.stride + self.frame_size
+        sr = self.sample_rate
+        hop = self.stride
+        frame_len = self.frame_size
+        total_len = original_length if original_length is not None \
+            else hop * (n_frames - 1) + frame_len
         
-        # Buffer pour overlap-add
-        time_signal = np.zeros(expected_len, dtype=np.float64)
-        window_sum = np.zeros(expected_len, dtype=np.float64)
+        N_HARM = 40
+        N_ENV = 128
+        
+        # ── Extraction ψ ──────────────────────────────────────────
+        amps = np.real(psi_frames[:, 0:N_HARM])
+        envelope = np.real(psi_frames[:, N_HARM:N_HARM + N_ENV])
+        f0_hz = np.abs(np.real(psi_frames[:, 168])) * 500.0
+        voicing = np.clip(np.abs(np.real(psi_frames[:, 169])), 0.0, 1.0)
+        
+        # Centres de trame
+        frame_centers = np.clip(
+            np.arange(n_frames) * hop + frame_len / 2, 0, total_len - 1
+        ).astype(float)
+        t_samples = np.arange(total_len, dtype=float)
+        
+        def interp(values):
+            return np.interp(t_samples, frame_centers, values)
+        
+        # ── LISSAGE des trajectoires (FIX #2) ──────────────────────
+        try:
+            from scipy.ndimage import gaussian_filter1d
+            sigma_ms = 3.0  # 3ms de lissage
+            sigma_samp = sr * sigma_ms / 1000.0
+            
+            f0_raw = interp(f0_hz)
+            # Filtrer le bruit F0: exclure les valeurs saturées à 500Hz
+            f0_raw = np.where(f0_raw > 480, 120.0, f0_raw)  # remplacer 500Hz par défaut
+            f0_traj = gaussian_filter1d(f0_raw, sigma=sigma_samp)
+            f0_traj = np.clip(f0_traj, 30.0, sr / 2 / N_HARM - 1)
+            
+            voicing_raw = interp(voicing)
+            voicing_traj = gaussian_filter1d(voicing_raw, sigma=sigma_samp)
+            voicing_traj = np.clip(voicing_traj, 0.0, 1.0)
+            
+            # Amplitudes lissées
+            amps_smooth = np.zeros((total_len, N_HARM), dtype=np.float64)
+            for h in range(N_HARM):
+                raw = interp(amps[:, h])
+                amps_smooth[:, h] = gaussian_filter1d(raw, sigma=sigma_samp)
+        except ImportError:
+            # Fallback sans scipy.ndimage
+            f0_traj = np.clip(interp(f0_hz), 30.0, sr / 2 / N_HARM - 1)
+            voicing_traj = np.clip(interp(voicing), 0.0, 1.0)
+            amps_smooth = np.zeros((total_len, N_HARM), dtype=np.float64)
+            for h in range(N_HARM):
+                amps_smooth[:, h] = interp(amps[:, h])
+        
+        # ── 1) SYNTHÈSE HARMONIQUE À OSCILLATEUR GLOTTIQUE UNIQUE ──
+        # FIX #1 : phase0 partagée, phase_h = h * phase0
+        voiced = np.zeros(total_len, dtype=np.float64)
+        phase0 = 0.0
+        
+        for n in range(total_len):
+            phase0 += 2.0 * np.pi * f0_traj[n] / sr
+            if phase0 > 2.0 * np.pi * 1000:  # éviter overflow
+                phase0 -= 2.0 * np.pi * 1000
+            
+            sample = 0.0
+            for h in range(1, N_HARM + 1):
+                inst_f = h * f0_traj[n]
+                if inst_f >= sr / 2:
+                    continue
+                # Amplitudes × scaling
+                amp = amps_smooth[n, h-1] * 0.015  # boost ×1.5
+                sample += amp * math.sin(h * phase0)
+            
+            voiced[n] = sample
+        
+        # ── FIX #4 : ENVELOPPE SPECTRALE sur la partie voisée ──────
+        # On applique l'enveloppe par filtrage spectral frame par frame
+        window = np.hanning(frame_len)
+        voiced_filtered = np.zeros(total_len, dtype=np.float64)
+        ola_norm = np.zeros(total_len, dtype=np.float64)
         
         for i in range(n_frames):
-            # ψ → spectre complexe (magnitude harmonique + phase minimale)
-            spectrum, _ = self._psi_to_spectrum(psi_frames[i])
+            start = i * hop
+            end = min(start + frame_len, total_len)
+            seg_len = end - start
+            if seg_len <= 0:
+                continue
             
-            # IFFT → domaine temporel
-            full_spectrum = np.zeros(self.fft_size, dtype=np.complex128)
-            full_spectrum[:self.freq_bins] = spectrum
-            # Symétrie hermitienne pour les fréquences négatives
-            if self.fft_size > 2 * self.freq_bins - 2:
-                pass  # déjà nul
-            else:
-                full_spectrum[self.freq_bins:] = np.conj(spectrum[1:self.fft_size - self.freq_bins + 1][::-1])
+            # Extraire la frame de signal voisé
+            frame_v = np.zeros(frame_len, dtype=np.float64)
+            frame_v[:seg_len] = voiced[start:end]
+            frame_v *= window
             
-            frame_time = np.fft.ifft(full_spectrum).real[:self.frame_size]
+            # FFT → appliquer enveloppe → IFFT
+            spec = np.fft.rfft(frame_v, n=self.fft_size)
+            mag = np.abs(spec)
+            phase_spec = np.angle(spec)
             
-            # Overlap-add avec fenêtre de Hann
-            pos = i * self.stride
-            end = min(pos + self.frame_size, expected_len)
-            chunk_len = end - pos
+            # Interpoler l'enveloppe (128 bins → freq_bins)
+            env_frame = envelope[i]
+            n_freq = len(mag)
+            env_interp = np.interp(
+                np.linspace(0, N_ENV - 1, n_freq),
+                np.arange(N_ENV), env_frame
+            )
+            # Normaliser l'enveloppe
+            env_interp = env_interp / (np.max(env_interp) + 1e-10)
+            # Appliquer (blend 85% enveloppe, 15% original)
+            new_mag = mag * 0.15 + mag * env_interp * 0.85
             
-            time_signal[pos:end] += frame_time[:chunk_len] * self._window[:chunk_len]
-            window_sum[pos:end] += self._window[:chunk_len] ** 2
+            new_spec = new_mag * (np.cos(phase_spec) + 1j * np.sin(phase_spec))
+            frame_out = np.fft.irfft(new_spec, n=self.fft_size).real[:frame_len]
+            
+            voiced_filtered[start:end] += frame_out[:seg_len] * window[:seg_len]
+            ola_norm[start:end] += window[:seg_len] ** 2
         
-        # Normalisation par la somme des fenêtres
-        mask = window_sum > 1e-10
-        time_signal[mask] /= window_sum[mask]
+        ola_norm[ola_norm < 1e-6] = 1.0
+        voiced_filtered /= ola_norm
         
-        # Post-filtre φ
-        audio = self._phi_postfilter(time_signal)
+        # ── 2) BRUIT CONTINU (FIX #3) ─────────────────────────────
+        rng = np.random.RandomState(0)
+        continuous_noise = rng.standard_normal(total_len).astype(np.float64)
         
-        # Tronquer à la longueur originale
-        if original_length is not None and original_length < len(audio):
-            audio = audio[:original_length]
+        noise_signal = np.zeros(total_len, dtype=np.float64)
+        ola_n = np.zeros(total_len, dtype=np.float64)
+        
+        for i in range(n_frames):
+            start = i * hop
+            end = min(start + frame_len, total_len)
+            seg_len = end - start
+            if seg_len <= 0:
+                continue
+            
+            env = envelope[i]
+            env_interp = np.interp(
+                np.linspace(0, N_ENV - 1, seg_len),
+                np.arange(N_ENV), env
+            )
+            env_interp = env_interp / (np.max(env_interp) + 1e-10)
+            
+            # Utiliser le bruit CONTINU, pas régénéré
+            noise_seg = continuous_noise[start:end] * env_interp * 0.2
+            noise_signal[start:end] += noise_seg * window[:seg_len]
+            ola_n[start:end] += window[:seg_len] ** 2
+        
+        ola_n[ola_n < 1e-6] = 1.0
+        noise_signal /= ola_n
+        
+        # ── 3) MIXAGE NON-LINÉAIRE (FIX #5) ───────────────────────
+        v2 = voicing_traj ** 2  # transition plus douce que linéaire
+        out = voiced_filtered * v2 + noise_signal * (1.0 - v2)
+        
+        # Post-filtre φ (désactivé pour test de qualité)
+        # out = self._phi_postfilter(out)
+        
+        if original_length is not None and original_length < len(out):
+            out = out[:original_length]
         
         # Normalisation
-        max_val = np.max(np.abs(audio))
-        if max_val > 0:
-            audio = audio / max_val * 0.95
+        peak = np.max(np.abs(out)) + 1e-9
+        out = (out / peak * 0.95).astype(np.float64)
         
         self.stats.decode_time_ms = (time.perf_counter() - t_start) * 1000
         
-        return audio.astype(np.float64)
+        return out
     
     def encode_frame(self, audio_chunk: np.ndarray) -> np.ndarray:
         """
