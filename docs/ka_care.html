@@ -220,7 +220,58 @@ footer a { color: var(--accent); text-decoration: none; }
 .action-card .title{font-weight:600;font-size:.9em;color:#d4a853}
 .action-card .sub{font-size:.7em;color:#9b8f7e;margin-top:2px}
 </style>
-<script src="ka_care_ble.js"></script>
+<script src="ka_care_ble.js">
+function importPatientData(){
+KA_BRIDGE.readTransferCode(function(pkg){
+var id=KA_BRIDGE.importToKACare(pkg);
+if(id){alert('Patient importé !');renderPatients();refreshPatientSelect();}
+else{alert('Format invalide.');}
+});
+}
+function exportDiagnosis(){
+if(!currentPatient){alert('Sélectionnez un patient d'abord.');return}
+var diag={diagnostic_principal:{maladie:'',score:0,symptomes_attendus:[],conduite:'',urgence:false,delai:''},diagnostics_différentiels:[]};
+var results=document.getElementById('resultsArea');
+if(results){
+var first=results.querySelector('.result-item');
+if(first){diag.diagnostic_principal.maladie=first.querySelector('strong')?.textContent?.replace('🚨','').trim()||''}
+}
+if(!diag.diagnostic_principal.maladie){alert('Lancez un diagnostic d'abord.');return}
+var pkg=KA_BRIDGE.doctorToPatient(diag,{name:currentPatient.name,id:currentPatient.id});
+var code=KA_BRIDGE.generateQRCode(pkg,'qrTransfer');
+var modal=document.createElement('div');
+modal.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.9);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
+modal.innerHTML='<div style="background:#1a1a1a;border:1px solid #d4a853;border-radius:16px;padding:24px;max-width:400px;text-align:center"><h3 style="color:#d4a853;margin-bottom:12px">📤 Transfert au patient</h3><div id="qrTransfer" style="margin:12px 0"></div><p style="font-size:.7em;color:#9b8f7e">Le patient scanne ce code avec KA Patient</p><button onclick="this.parentElement.parentElement.remove()" style="background:#d4a853;color:#0d0d0d;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;margin-top:12px;font-weight:700;font-family:inherit">Fermer</button></div>';
+document.body.appendChild(modal);
+modal.onclick=function(e){if(e.target===modal)modal.remove()};
+}
+</script>
+<script src="ka_bridge.js">
+function importPatientData(){
+KA_BRIDGE.readTransferCode(function(pkg){
+var id=KA_BRIDGE.importToKACare(pkg);
+if(id){alert('Patient importé !');renderPatients();refreshPatientSelect();}
+else{alert('Format invalide.');}
+});
+}
+function exportDiagnosis(){
+if(!currentPatient){alert('Sélectionnez un patient d'abord.');return}
+var diag={diagnostic_principal:{maladie:'',score:0,symptomes_attendus:[],conduite:'',urgence:false,delai:''},diagnostics_différentiels:[]};
+var results=document.getElementById('resultsArea');
+if(results){
+var first=results.querySelector('.result-item');
+if(first){diag.diagnostic_principal.maladie=first.querySelector('strong')?.textContent?.replace('🚨','').trim()||''}
+}
+if(!diag.diagnostic_principal.maladie){alert('Lancez un diagnostic d'abord.');return}
+var pkg=KA_BRIDGE.doctorToPatient(diag,{name:currentPatient.name,id:currentPatient.id});
+var code=KA_BRIDGE.generateQRCode(pkg,'qrTransfer');
+var modal=document.createElement('div');
+modal.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.9);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
+modal.innerHTML='<div style="background:#1a1a1a;border:1px solid #d4a853;border-radius:16px;padding:24px;max-width:400px;text-align:center"><h3 style="color:#d4a853;margin-bottom:12px">📤 Transfert au patient</h3><div id="qrTransfer" style="margin:12px 0"></div><p style="font-size:.7em;color:#9b8f7e">Le patient scanne ce code avec KA Patient</p><button onclick="this.parentElement.parentElement.remove()" style="background:#d4a853;color:#0d0d0d;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;margin-top:12px;font-weight:700;font-family:inherit">Fermer</button></div>';
+document.body.appendChild(modal);
+modal.onclick=function(e){if(e.target===modal)modal.remove()};
+}
+</script>
 </head>
 <body><div class="screen active" id="screen-splash">
 <div style="text-align:center;padding:80px 20px 40px">
@@ -671,6 +722,31 @@ function addPatient(){var n=(document.getElementById('newPatientInput')?.value||
 function updateDossier(){if(!currentPatient){document.getElementById('dossierAvatar').textContent='?';document.getElementById('dossierName').textContent='Patient anonyme';document.getElementById('dossierId').textContent='';return}document.getElementById('dossierAvatar').textContent=(currentPatient.name||'?')[0].toUpperCase();document.getElementById('dossierName').textContent=currentPatient.name;document.getElementById('dossierId').textContent='ID: '+currentPatient.id;}
 var origOnPatientSelect = onPatientSelect;
 onPatientSelect = function(id){origOnPatientSelect(id);updateDossier();}
+
+function importPatientData(){
+KA_BRIDGE.readTransferCode(function(pkg){
+var id=KA_BRIDGE.importToKACare(pkg);
+if(id){alert('Patient importé !');renderPatients();refreshPatientSelect();}
+else{alert('Format invalide.');}
+});
+}
+function exportDiagnosis(){
+if(!currentPatient){alert('Sélectionnez un patient d'abord.');return}
+var diag={diagnostic_principal:{maladie:'',score:0,symptomes_attendus:[],conduite:'',urgence:false,delai:''},diagnostics_différentiels:[]};
+var results=document.getElementById('resultsArea');
+if(results){
+var first=results.querySelector('.result-item');
+if(first){diag.diagnostic_principal.maladie=first.querySelector('strong')?.textContent?.replace('🚨','').trim()||''}
+}
+if(!diag.diagnostic_principal.maladie){alert('Lancez un diagnostic d'abord.');return}
+var pkg=KA_BRIDGE.doctorToPatient(diag,{name:currentPatient.name,id:currentPatient.id});
+var code=KA_BRIDGE.generateQRCode(pkg,'qrTransfer');
+var modal=document.createElement('div');
+modal.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.9);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
+modal.innerHTML='<div style="background:#1a1a1a;border:1px solid #d4a853;border-radius:16px;padding:24px;max-width:400px;text-align:center"><h3 style="color:#d4a853;margin-bottom:12px">📤 Transfert au patient</h3><div id="qrTransfer" style="margin:12px 0"></div><p style="font-size:.7em;color:#9b8f7e">Le patient scanne ce code avec KA Patient</p><button onclick="this.parentElement.parentElement.remove()" style="background:#d4a853;color:#0d0d0d;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;margin-top:12px;font-weight:700;font-family:inherit">Fermer</button></div>';
+document.body.appendChild(modal);
+modal.onclick=function(e){if(e.target===modal)modal.remove()};
+}
 </script>
 <nav class="bottom-nav" id="bottomNav" style="display:none">
 <div class="nav-item active" data-screen="resonance" onclick="showScreen('resonance')"><span class="nav-icon">〰️</span><span class="nav-label">Resonance</span></div>

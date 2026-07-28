@@ -40,7 +40,8 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .vital-row .vital-value{font-weight:600;color:var(--accent)}
 .reminder-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:.72em;font-weight:600;background:rgba(212,168,83,.1);color:var(--accent)}
 .qr-code{width:150px;height:150px;background:#fff;margin:16px auto;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#000;font-size:.7em}
-</style></head>
+</style><script src="ka_bridge.js"></script>
+</head>
 <body>
 <div class="container">
 
@@ -121,10 +122,13 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 <div class="screen" id="screen-share">
 <header><h2 style="color:var(--accent)">📤 Partager mon dossier</h2></header>
 <div class="card" style="text-align:center">
-<p style="color:var(--muted);margin-bottom:12px">Partagez votre dossier médical avec votre médecin avant la consultation.</p>
+<p style="color:var(--muted);margin-bottom:12px">Partagez votre dossier médical avec votre médecin avant la consultation.<br>
+<span style="font-size:.7em;color:var(--accent)">Transfert bilatéral Médecin ↔ Patient</span> avant la consultation.</p>
 <div class="qr-code" id="qrCode">QR Code</div>
 <p style="font-size:.7em;color:var(--muted)">Le médecin scanne ce code pour accéder à votre dossier</p>
 <button class="btn btn-primary" style="margin-top:12px" onclick="exportPDF()">📄 Exporter en PDF</button>
+<button class="btn btn-primary" onclick="exportToDoctor()" style="margin-top:8px">📤 Envoyer au médecin</button>
+<button class="btn btn-secondary" onclick="importFromDoctor()">📥 Recevoir du médecin</button>
 <button class="btn btn-secondary" onclick="shareData()">📋 Copier les données</button>
 </div>
 </div>
@@ -225,6 +229,19 @@ let al2='';data.appointments.sort((a,b)=>new Date(a.date)-new Date(b.date)).forE
 document.getElementById('apptList').innerHTML=al2||'<div class=\"card\"><p style=\"text-align:center;color:var(--muted)\">Aucun rendez-vous.</p></div>';
 }
 
+function exportToDoctor(){
+var pkg=KA_BRIDGE.patientToDoctor(data);
+var code=KA_BRIDGE.generateQRCode(pkg,'qrCode');
+}
+function importFromDoctor(){
+KA_BRIDGE.readTransferCode(function(pkg){
+if(KA_BRIDGE.importToKAPatient(pkg)){alert('Données du médecin importées !
+
+Diagnostics ajoutés aux RDV.
+Prescriptions ajoutées aux médicaments.');renderAll();}
+else{alert('Format invalide.');}
+});
+}
 function exportPDF(){alert('Export PDF — Fonctionnalité à venir.\n\nLe dossier sera généré au format PDF avec:\n- Identité\n- Allergies\n- Vaccins\n- Médicaments\n- Constantes\n- Rendez-vous');}
 function shareData(){const d=JSON.stringify(data,null,2);navigator.clipboard?.writeText(d);alert('Données copiées dans le presse-papier. Envoyez-les à votre médecin.');}
 
