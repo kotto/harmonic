@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="KA Care">
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="manifest.json">
 <link rel="icon" href="logo2.jpg">
 <title>KA Care — Diagnostic Harmonique</title>
 <style>
@@ -168,16 +168,6 @@ textarea:focus::placeholder { color: #444; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── PATIENT ── */
-.patient-bar { display:flex;align-items:center;gap:10px;padding:10px 14px;background:#111;border-radius:10px;margin-bottom:14px;border:1px solid #2a2a2a;flex-wrap:wrap; }
-.patient-bar select { background:#1a1a1a;color:#d4c8a0;border:1px solid #2a2a2a;padding:7px 10px;border-radius:6px;font-size:0.85em;font-family:inherit;min-width:130px; }
-.patient-bar input { background:#141414;color:#d4c8a0;border:1px solid #2a2a2a;padding:7px 10px;border-radius:6px;font-size:0.82em;font-family:inherit;width:90px; }
-.patient-bar button { background:#1a1a1a;color:var(--accent);border:1px solid #3a3a3a;padding:7px 12px;border-radius:6px;cursor:pointer;font-size:0.82em;font-family:inherit; }
-.patient-bar button:hover { border-color:var(--accent); }
-.patient-bar .badge-history { background:rgba(212,168,83,0.1);color:var(--accent);padding:3px 8px;border-radius:4px;font-size:0.75em;border:1px solid rgba(212,168,83,0.2); }
-.history-tag { display:inline-block;background:#1a1a1a;color:#888;padding:2px 7px;border-radius:3px;font-size:0.7em;margin:2px;border:1px solid #2a2a2a; }
-.history-tag.active { color:var(--accent);border-color:rgba(212,168,83,0.4); }
-
 /* ── FOOTER ── */
 footer { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 0.82em; }
 footer a { color: var(--accent); text-decoration: none; }
@@ -189,16 +179,60 @@ footer a { color: var(--accent); text-decoration: none; }
   .card { padding: 16px; border-radius: 12px; }
   .result-meta { flex-direction: column; gap: 4px; }
 }
-
-.bottom-nav{position:fixed;bottom:0;left:0;width:100%;display:flex;justify-content:space-around;align-items:center;padding:10px 16px 14px;background:rgba(26,26,26,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(78,70,55,.3);box-shadow:0 -8px 30px rgba(0,0,0,.5);z-index:50;border-radius:24px 24px 0 0}
+.screen{display:none}.screen.active{display:block}
+.bottom-nav{position:fixed;bottom:0;left:0;width:100%;display:flex;justify-content:space-around;align-items:center;padding:10px 16px 14px;background:rgba(26,26,26,.95);backdrop-filter:blur(20px);border-top:1px solid rgba(78,70,55,.3);box-shadow:0 -8px 30px rgba(0,0,0,.5);z-index:50;border-radius:24px 24px 0 0}
 .nav-item{display:flex;flex-direction:column;align-items:center;cursor:pointer;color:rgba(210,197,178,.4);transition:all .2s;padding:4px 12px}
 .nav-item.active{color:#f2c36b;background:rgba(212,168,83,.08);border-radius:12px;padding:6px 12px}
 .nav-item .nav-icon{font-size:22px;margin-bottom:2px}
 .nav-item .nav-label{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
-.screen{display:none}.screen.active{display:block}
+.vital-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.vital-card{background:#111;border-radius:12px;padding:16px;border:1px solid #2a2a2a;text-align:center}.vital-card .value{font-size:1.6em;font-weight:700;color:#d4a853}.vital-card .label{font-size:.75em;color:#9b8f7e;margin-top:4px}
+.history-item{padding:14px;border-radius:12px;margin-bottom:8px;border-left:4px solid #d4a853;background:#111}.history-item.urgent{border-left-color:#e74c3c}.history-item .date{font-size:.7em;color:#9b8f7e}
+
+/* Cardiac */
+.ecg-grid{position:relative;width:100%;height:200px;background:#111;border-radius:12px;overflow:hidden;border:1px solid #2a2a2a}
+.ecg-grid svg{position:absolute;top:0;left:0;width:100%;height:100%}
+.ecg-grid .grid-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,transparent,transparent 49px,rgba(212,168,83,0.05) 50px),repeating-linear-gradient(90deg,transparent,transparent 49px,rgba(212,168,83,0.05) 50px)}
+.stat-card{background:#111;border-radius:10px;padding:14px;border:1px solid #2a2a2a;text-align:center}
+.stat-card .val{font-size:1.3em;font-weight:700;color:#d4a853}
+.stat-card .lbl{font-size:.7em;color:#9b8f7e;margin-top:2px}
+/* Scanner */
+.scanner-view{position:relative;width:260px;height:260px;margin:30px auto;border:2px solid rgba(212,168,83,0.3);border-radius:16px}
+.scanner-view .corner{position:absolute;width:30px;height:30px;border-color:#d4a853;border-style:solid}
+.scanner-view .corner.tl{top:-2px;left:-2px;border-width:3px 0 0 3px;border-radius:8px 0 0 0}
+.scanner-view .corner.tr{top:-2px;right:-2px;border-width:3px 3px 0 0;border-radius:0 8px 0 0}
+.scanner-view .corner.bl{bottom:-2px;left:-2px;border-width:0 0 3px 3px;border-radius:0 0 0 8px}
+.scanner-view .corner.br{bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 8px 0}
+.scanner-view .scan-line{position:absolute;left:10%;right:10%;height:2px;background:linear-gradient(90deg,transparent,#d4a853,transparent);animation:scanAnim 2s ease-in-out infinite}
+@keyframes scanAnim{0%,100%{top:10%}50%{top:85%}}
+/* Events timeline */
+.event-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-left:2px solid #2a2a2a;margin-left:8px;padding-left:16px}
+.event-row .dot{width:8px;height:8px;border-radius:50%;background:#d4a853;margin-top:6px;margin-left:-21px;flex-shrink:0}
+.event-row .evt-time{font-size:.7em;color:#9b8f7e;min-width:50px}
+.event-row .evt-text{font-size:.85em;color:#eae1d7}
+/* Harmonic link badge */
+.harmonic-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:rgba(39,174,96,0.1);border:1px solid rgba(39,174,96,0.3);color:#27ae60;font-size:.75em;font-weight:600}
+.harmonic-badge .dot{width:7px;height:7px;border-radius:50%;background:#27ae60;animation:pulse 2s infinite}
+/* Quick actions grid */
+.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.action-card{background:#111;border-radius:12px;padding:18px;border:1px solid #2a2a2a;text-align:center;cursor:pointer;transition:all .15s}
+.action-card:hover{border-color:rgba(212,168,83,0.4);background:#1a1810}
+.action-card .icon{font-size:2em;margin-bottom:6px}
+.action-card .title{font-weight:600;font-size:.9em;color:#d4a853}
+.action-card .sub{font-size:.7em;color:#9b8f7e;margin-top:2px}
 </style>
+<script src="ka_care_ble.js"></script>
 </head>
-<body>
+<body><div class="screen active" id="screen-splash">
+<div style="text-align:center;padding:80px 20px 40px">
+<img src="logo2.jpg" style="width:80px;height:80px;border-radius:50%;object-fit:cover;box-shadow:0 8px 32px rgba(212,168,83,0.3);margin-bottom:20px">
+<h1 style="font-size:2em;color:#d4a853;font-weight:800;margin-bottom:4px">KA CARE</h1>
+<p style="color:#9b8f7e;font-size:1.05em;margin-bottom:24px">LA SANTE PAR LA RESONANCE</p>
+<button class="btn btn-primary" onclick="showScreen('resonance')" style="margin-bottom:12px">COMMENCER LE DIAGNOSTIC</button>
+<button class="btn btn-secondary" onclick="showScreen('history')" style="width:100%;margin-top:8px">CONSULTER LES ARCHIVES</button>
+<p style="margin-top:24px;font-size:.7em;color:#8b7355;letter-spacing:.05em">v2.0 · 20 pathologies · Zero hallucination · Hors-ligne</p>
+</div></div>
+<div class="screen" id="screen-resonance">
+
 <div class="container">
   <header>
     <img src="logo2.jpg" alt="KA Care" class="logo" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">
@@ -234,16 +268,47 @@ footer a { color: var(--accent); text-decoration: none; }
   <style>
   .card.expanded .info-content { display: block !important; }
   .card.expanded h2 span { transform: rotate(180deg); display: inline-block; }
-  </style>
+  .screen{display:none}.screen.active{display:block}
+.bottom-nav{position:fixed;bottom:0;left:0;width:100%;display:flex;justify-content:space-around;align-items:center;padding:10px 16px 14px;background:rgba(26,26,26,.95);backdrop-filter:blur(20px);border-top:1px solid rgba(78,70,55,.3);box-shadow:0 -8px 30px rgba(0,0,0,.5);z-index:50;border-radius:24px 24px 0 0}
+.nav-item{display:flex;flex-direction:column;align-items:center;cursor:pointer;color:rgba(210,197,178,.4);transition:all .2s;padding:4px 12px}
+.nav-item.active{color:#f2c36b;background:rgba(212,168,83,.08);border-radius:12px;padding:6px 12px}
+.nav-item .nav-icon{font-size:22px;margin-bottom:2px}
+.nav-item .nav-label{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.vital-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.vital-card{background:#111;border-radius:12px;padding:16px;border:1px solid #2a2a2a;text-align:center}.vital-card .value{font-size:1.6em;font-weight:700;color:#d4a853}.vital-card .label{font-size:.75em;color:#9b8f7e;margin-top:4px}
+.history-item{padding:14px;border-radius:12px;margin-bottom:8px;border-left:4px solid #d4a853;background:#111}.history-item.urgent{border-left-color:#e74c3c}.history-item .date{font-size:.7em;color:#9b8f7e}
 
-  
-  <!-- PATIENT BAR -->
-  <div class=patient-bar id=patientBar>
-    <select id="patientSelect" onchange="selectPatient()"><option value="">👤 Patient anonyme</option></select>
-    <input id="newPatientName" placeholder="Nouveau patient..." style="display:none">
-    <button onclick="toggleNewPatient()" id="btnNewPatient">➕ Nouveau</button>
-    <span id="patientHistory" style="font-size:0.78em;color:var(--muted)"></span>
-  </div>
+/* Cardiac */
+.ecg-grid{position:relative;width:100%;height:200px;background:#111;border-radius:12px;overflow:hidden;border:1px solid #2a2a2a}
+.ecg-grid svg{position:absolute;top:0;left:0;width:100%;height:100%}
+.ecg-grid .grid-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,transparent,transparent 49px,rgba(212,168,83,0.05) 50px),repeating-linear-gradient(90deg,transparent,transparent 49px,rgba(212,168,83,0.05) 50px)}
+.stat-card{background:#111;border-radius:10px;padding:14px;border:1px solid #2a2a2a;text-align:center}
+.stat-card .val{font-size:1.3em;font-weight:700;color:#d4a853}
+.stat-card .lbl{font-size:.7em;color:#9b8f7e;margin-top:2px}
+/* Scanner */
+.scanner-view{position:relative;width:260px;height:260px;margin:30px auto;border:2px solid rgba(212,168,83,0.3);border-radius:16px}
+.scanner-view .corner{position:absolute;width:30px;height:30px;border-color:#d4a853;border-style:solid}
+.scanner-view .corner.tl{top:-2px;left:-2px;border-width:3px 0 0 3px;border-radius:8px 0 0 0}
+.scanner-view .corner.tr{top:-2px;right:-2px;border-width:3px 3px 0 0;border-radius:0 8px 0 0}
+.scanner-view .corner.bl{bottom:-2px;left:-2px;border-width:0 0 3px 3px;border-radius:0 0 0 8px}
+.scanner-view .corner.br{bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 8px 0}
+.scanner-view .scan-line{position:absolute;left:10%;right:10%;height:2px;background:linear-gradient(90deg,transparent,#d4a853,transparent);animation:scanAnim 2s ease-in-out infinite}
+@keyframes scanAnim{0%,100%{top:10%}50%{top:85%}}
+/* Events timeline */
+.event-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-left:2px solid #2a2a2a;margin-left:8px;padding-left:16px}
+.event-row .dot{width:8px;height:8px;border-radius:50%;background:#d4a853;margin-top:6px;margin-left:-21px;flex-shrink:0}
+.event-row .evt-time{font-size:.7em;color:#9b8f7e;min-width:50px}
+.event-row .evt-text{font-size:.85em;color:#eae1d7}
+/* Harmonic link badge */
+.harmonic-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:rgba(39,174,96,0.1);border:1px solid rgba(39,174,96,0.3);color:#27ae60;font-size:.75em;font-weight:600}
+.harmonic-badge .dot{width:7px;height:7px;border-radius:50%;background:#27ae60;animation:pulse 2s infinite}
+/* Quick actions grid */
+.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.action-card{background:#111;border-radius:12px;padding:18px;border:1px solid #2a2a2a;text-align:center;cursor:pointer;transition:all .15s}
+.action-card:hover{border-color:rgba(212,168,83,0.4);background:#1a1810}
+.action-card .icon{font-size:2em;margin-bottom:6px}
+.action-card .title{font-weight:600;font-size:.9em;color:#d4a853}
+.action-card .sub{font-size:.7em;color:#9b8f7e;margin-top:2px}
+</style>
 
   <!-- INPUT CARD -->
   <div class="card">
@@ -266,7 +331,8 @@ footer a { color: var(--accent); text-decoration: none; }
     <div class="modal" id="modalContent"></div>
   </div>
   
-  <footer>
+  </div>
+<footer>
     <p><strong>KA Care v1.0</strong> — Aide au diagnostic, ne remplace pas un médecin.</p>
     <p>En cas d'urgence vitale, appelez le <strong>15</strong> (SAMU) ou le <strong>112</strong>.</p>
   </footer>
@@ -275,7 +341,7 @@ footer a { color: var(--accent); text-decoration: none; }
 <script>
 // ═══ SERVICE WORKER (offline support) ═══
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js');
+  navigator.serviceWorker.register('sw.js');
 }
 
 // ═══════════════════════════════════════════════
@@ -386,77 +452,6 @@ function cosineSim(a, b) {
 // ═══════════════════════════════════════════════
 // DIAGNOSTIC
 // ═══════════════════════════════════════════════
-// ═══════════════════════════════════════════════
-// PATIENT MANAGEMENT (localStorage)
-// ═══════════════════════════════════════════════
-const PATIENTS_KEY = 'ka_care_patients';
-let currentPatient = null;
-
-function loadPatients() {
-  try { return JSON.parse(localStorage.getItem(PATIENTS_KEY) || '{}'); }
-  catch(e) { return {}; }
-}
-function savePatients(pts) { localStorage.setItem(PATIENTS_KEY, JSON.stringify(pts)); }
-
-function refreshPatientList() {
-  const pts = loadPatients();
-  const sel = document.getElementById('patientSelect');
-  sel.innerHTML = '<option value="">👤 Patient anonyme</option>';
-  for (const [id, p] of Object.entries(pts)) {
-    sel.innerHTML += '<option value="' + id + '">' + p.name + ' (' + (p.age||'?') + ' ans, ' + (p.gender||'?') + ')</option>';
-  }
-}
-function selectPatient() {
-  const id = document.getElementById('patientSelect').value;
-  const pts = loadPatients();
-  currentPatient = id ? {id, ...pts[id]} : null;
-  updatePatientDisplay();
-}
-function toggleNewPatient() {
-  const input = document.getElementById('newPatientName');
-  const btn = document.getElementById('btnNewPatient');
-  if (input.style.display === 'none') {
-    input.style.display = 'inline'; btn.textContent = '💾 Sauver';
-  } else {
-    const name = input.value.trim();
-    if (name) {
-      const pts = loadPatients();
-      const id = 'p' + Date.now();
-      pts[id] = {name, age: '', gender: '', history: [], createdAt: new Date().toISOString()};
-      savePatients(pts);
-      refreshPatientList();
-      document.getElementById('patientSelect').value = id;
-      currentPatient = {id, ...pts[id]};
-      updatePatientDisplay();
-    }
-    input.style.display = 'none'; input.value = '';
-    btn.textContent = '➕ Nouveau';
-  }
-}
-function updatePatientDisplay() {
-  const histDiv = document.getElementById('patientHistory');
-  if (!currentPatient || !currentPatient.history || currentPatient.history.length === 0) {
-    histDiv.innerHTML = '';
-    return;
-  }
-  const recent = currentPatient.history.slice(-5);
-  histDiv.innerHTML = '<span style="color:var(--muted)">📋 Antécédents :</span> ' + recent.map(h => '<span class="history-tag">' + h + '</span>').join('');
-}
-
-// Modify symptom encoding to include patient history
-function encodeWithHistory(text, patient) {
-  let vec = encodeSymptoms(text);
-  if (!patient || !patient.history) return vec;
-  // Boost features related to past conditions
-  for (const past of patient.history) {
-    const pastVec = encodeSymptoms(past);
-    for (const f of F) {
-      if ((pastVec[f] || 0) > 0) vec[f] = (vec[f] || 0) + 0.15; // +15% per past condition
-    }
-  }
-  return vec;
-}
-
 function diagnose() {
   const text = document.getElementById('symptoms').value.trim();
   if (!text) return;
@@ -470,7 +465,7 @@ function diagnose() {
   resultsDiv.style.display = 'block';
   
   setTimeout(() => {
-    const patientVec = encodeWithHistory(text, currentPatient);
+    const patientVec = encodeSymptoms(text);
     const scores = [];
     
     for (const [name, data] of Object.entries(DB)) {
@@ -518,19 +513,7 @@ function diagnose() {
     html += '<p style="color:var(--muted);font-size:0.78em;margin-top:12px;text-align:center">Ce dispositif est une <strong>aide au diagnostic</strong>. Il ne remplace pas un médecin.<br>En cas d\'urgence, appelez le <strong>15</strong> (SAMU).</p>';
     html += '</div>';
     
-    // Save to patient history
-  if (currentPatient && top && top.score > 0.4) {
-    const pts = loadPatients();
-    if (pts[currentPatient.id]) {
-      if (!pts[currentPatient.id].history) pts[currentPatient.id].history = [];
-      pts[currentPatient.id].history.push(top.name + ' (' + (top.score*100).toFixed(0) + '%)');
-      if (pts[currentPatient.id].history.length > 20) pts[currentPatient.id].history = pts[currentPatient.id].history.slice(-20);
-      savePatients(pts);
-      currentPatient = {id: currentPatient.id, ...pts[currentPatient.id]};
-      updatePatientDisplay();
-    }
-  }
-  resultsDiv.innerHTML = html;
+    resultsDiv.innerHTML = html;
     resultsDiv.style.display = 'block';
     btn.disabled = false;
     btn.textContent = '🔍 Nouveau diagnostic';
@@ -589,7 +572,6 @@ Object.entries(demoTexts).forEach(([name, text]) => {
   b.onclick = () => { document.getElementById('symptoms').value = text; diagnose(); };
   demoDiv.appendChild(b);
 });
-refreshPatientList();
 document.querySelector('.input-group').after(demoDiv);
 
 // ═══════════════════════════════════════════════
@@ -651,22 +633,100 @@ function explainDiagnosis(name, score, diseaseSympts) {
 
 function showScreen(name){
 document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
-var el=document.getElementById('screen-'+name);if(el)el.classList.add('active');
-document.getElementById('bottomNav').style.display=name==='splash'?'none':'flex';
+var el=document.getElementById('screen-'+name);
+if(el)el.classList.add('active');
+document.getElementById('bottomNav').style.display=(name==='splash')?'none':'flex';
 document.querySelectorAll('.nav-item').forEach(function(n){n.classList.toggle('active',n.dataset.screen===name)});
-if(name==='history')renderHistory();if(name==='vitals')renderVitals();if(name==='patients')renderPatients();if(name==='resonance')refreshPatientSelect();
+if(name==='history')renderHistory();if(name==='vitals')renderVitals();if(name==='patients')renderPatients();
 }
-function renderHistory(){var el=document.getElementById('historyList');if(!el)return;if(!diagnosticHistory.length){el.innerHTML='<div class="card"><p style="text-align:center;color:var(--muted)">Aucun diagnostic.</p></div>';return}var h='';for(var i=0;i<Math.min(diagnosticHistory.length,20);i++){var d=diagnosticHistory[i];var dt=new Date(d.date);h+='<div class="history-item'+(d.urgent?' urgent':'')+'"><div class="date">'+dt.toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</div><strong>'+d.diagnosis+'</strong> <span style="color:var(--accent);font-weight:700">'+d.score+'%</span><div style="font-size:.8em;color:var(--muted);margin-top:4px">'+d.symptoms.substring(0,80)+'</div></div>'}el.innerHTML=h}
-function renderVitals(){var el=document.getElementById('vitalsContent');if(!el)return;var hr=68+Math.floor(Math.random()*10),spo2=96+Math.floor(Math.random()*4),temp=(36.3+Math.random()*1.2).toFixed(1),bp=(110+Math.floor(Math.random()*20))+'/'+(70+Math.floor(Math.random()*15));el.innerHTML='<div class="card"><h3>💓 Constantes Vitales</h3><div class="vital-grid"><div class="vital-card"><div class="value">'+hr+'</div><div class="label">BPM</div></div><div class="vital-card"><div class="value">'+bp+'</div><div class="label">mmHg</div></div><div class="vital-card"><div class="value">'+spo2+'%</div><div class="label">SpO2</div></div><div class="vital-card"><div class="value">'+temp+'°C</div><div class="label">Temperature</div></div></div><p style="font-size:.7em;color:var(--muted);text-align:center;margin-top:12px">Simulation</p></div>'}
-function renderPatients(){var el=document.getElementById('patientsList');if(!el)return;var pts=loadPatients();var keys=Object.keys(pts);var h='<div style="margin-bottom:12px"><input id="newPatientInput" placeholder="Nom..." style="background:#141414;color:#d4c8a0;border:1px solid var(--border);padding:10px;border-radius:10px;font-size:.9em;font-family:inherit;width:calc(100% - 110px)"><button class="btn btn-sm btn-primary" style="width:100px;margin-left:6px" onclick="addPatient()">Ajouter</button></div>';if(!keys.length)h+='<div class="card"><p style="text-align:center;color:var(--muted)">Aucun patient.</p></div>';for(var i=keys.length-1;i>=Math.max(0,keys.length-10);i--){var id=keys[i];var p=pts[id];h+='<div class="patient-row" onclick="currentPatient={id:''+id+''',...loadPatients()[''+id+'']};showScreen('resonance');refreshPatientSelect()"><div class="avatar">'+(p.name||'?')[0].toUpperCase()+'</div><div class="info"><div class="name">'+p.name+'</div><div class="meta">'+(p.history?p.history.length:0)+' diagnostics</div></div><span style="color:var(--accent);font-size:1.2em">›</span></div>'}el.innerHTML=h}
+function renderHistory(){
+var el=document.getElementById('historyList');if(!el)return;
+if(typeof diagnosticHistory==='undefined'||!diagnosticHistory.length){el.innerHTML='<div class="card"><p style="text-align:center;color:var(--muted);margin:20px">Aucun diagnostic pour le moment.</p></div>';return}
+var h='';for(var i=0;i<Math.min(diagnosticHistory.length,20);i++){var d=diagnosticHistory[i];var dt=new Date(d.date);
+h+='<div class="history-item'+(d.urgent?' urgent':'')+'"><div class="date">'+dt.toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</div><strong>'+d.diagnosis+'</strong> <span style="color:var(--accent);font-weight:700">'+d.score+'%</span><div style="font-size:.8em;color:var(--muted);margin-top:4px">'+d.symptoms.substring(0,80)+'</div></div>'}
+el.innerHTML=h;
+}
+function renderVitals(){
+var el=document.getElementById('vitalsContent');if(!el)return;
+var hr=68+Math.floor(Math.random()*10),spo2=96+Math.floor(Math.random()*4),temp=(36.3+Math.random()*1.2).toFixed(1),bp=(110+Math.floor(Math.random()*20))+'/'+(70+Math.floor(Math.random()*15));
+el.innerHTML='<div class="card"><h3>Constantes Vitales</h3><div class="vital-grid"><div class="vital-card"><div class="value">'+hr+'</div><div class="label">BPM Cardiaque</div></div><div class="vital-card"><div class="value">'+bp+'</div><div class="label">mmHg Tension</div></div><div class="vital-card"><div class="value">'+spo2+'%</div><div class="label">SpO2 Oxygene</div></div><div class="vital-card"><div class="value">'+temp+'°C</div><div class="label">Temperature</div></div></div><p style="font-size:.7em;color:var(--muted);text-align:center;margin-top:12px">Simulation</p></div>';
+}
+function renderPatients(){
+var el=document.getElementById('patientsList');if(!el)return;
+var pts=loadPatients();var keys=Object.keys(pts);
+var h='<div style="margin-bottom:12px;display:flex;gap:8px"><input id="newPatientInput" placeholder="Nom du patient..." style="flex:1;background:#141414;color:#d4c8a0;border:1px solid #2a2a2a;padding:10px 14px;border-radius:10px;font-size:14px;font-family:inherit"><button class="btn btn-sm btn-primary" style="width:auto;padding:8px 16px" onclick="addPatient()">Ajouter</button></div>';
+if(!keys.length)h+='<div class="card"><p style="text-align:center;color:var(--muted)">Aucun patient.</p></div>';
+for(var i=keys.length-1;i>=Math.max(0,keys.length-10);i--){var id=keys[i];var p=pts[id];
+h+='<div class="patient-row" onclick="currentPatient={id:&quot;'+id+'&quot;,...loadPatients()[&quot;'+id+'&quot;]};showScreen(&quot;resonance&quot;);refreshPatientSelect()"><div class="avatar">'+(p.name||'?')[0].toUpperCase()+'</div><div class="info"><div class="name">'+p.name+'</div><div class="meta">'+(p.history?p.history.length:0)+' diagnostics</div></div><span style="color:var(--accent);font-size:1.2em">›</span></div>'}
+el.innerHTML=h;
+}
 function addPatient(){var n=(document.getElementById('newPatientInput')?.value||'').trim();if(!n)return;var pts=loadPatients();var id='p'+Date.now();pts[id]={name:n,history:[],createdAt:new Date().toISOString()};savePatients(pts);document.getElementById('newPatientInput').value='';renderPatients();refreshPatientSelect()}
-</script>
 
+function updateDossier(){if(!currentPatient){document.getElementById('dossierAvatar').textContent='?';document.getElementById('dossierName').textContent='Patient anonyme';document.getElementById('dossierId').textContent='';return}document.getElementById('dossierAvatar').textContent=(currentPatient.name||'?')[0].toUpperCase();document.getElementById('dossierName').textContent=currentPatient.name;document.getElementById('dossierId').textContent='ID: '+currentPatient.id;}
+var origOnPatientSelect = onPatientSelect;
+onPatientSelect = function(id){origOnPatientSelect(id);updateDossier();}
+</script>
 <nav class="bottom-nav" id="bottomNav" style="display:none">
 <div class="nav-item active" data-screen="resonance" onclick="showScreen('resonance')"><span class="nav-icon">〰️</span><span class="nav-label">Resonance</span></div>
 <div class="nav-item" data-screen="history" onclick="showScreen('history')"><span class="nav-icon">📋</span><span class="nav-label">History</span></div>
 <div class="nav-item" data-screen="vitals" onclick="showScreen('vitals')"><span class="nav-icon">💓</span><span class="nav-label">Vitals</span></div>
 <div class="nav-item" data-screen="patients" onclick="showScreen('patients')"><span class="nav-icon">👥</span><span class="nav-label">Profile</span></div>
 </nav>
+<div class="screen" id="screen-history"><div id="historyList" style="padding:16px"></div></div>
+<div class="screen" id="screen-vitals"><div id="vitalsContent" style="padding:16px"></div></div>
+<div class="screen" id="screen-patients"><div id="patientsList" style="padding:16px"></div></div>
+
+<div class="screen" id="screen-cardiac">
+<div style="padding:16px">
+<header style="text-align:center;padding:24px 0 16px"><h2 style="color:#d4a853">ANALYSE CARDIAQUE</h2></header>
+<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">ECG — Derivation II</h3><span class="harmonic-badge" id="harmonicStatus"><span class="dot"></span> Link Actif 94%</span></div>
+<div class="ecg-grid"><div class="grid-overlay"></div>
+<svg viewBox="0 0 600 200"><path d="M0,100 L50,100 L55,100 L60,30 L65,170 L70,100 L120,100 L125,100 L130,20 L135,180 L140,100 L200,100 L250,100 L300,100 L350,100 L400,100 L450,100 L500,100 L505,100 L510,40 L515,160 L520,100 L570,100 L600,100" stroke="#d4a853" stroke-width="2" fill="none" opacity="0.8"/></svg></div>
+<div style="margin-top:12px"><input type="range" min="0" max="100" value="50" style="width:100%;accent-color:#d4a853"></div></div>
+<div class="vital-grid" style="margin-top:12px">
+<div class="stat-card"><div class="val">72</div><div class="lbl">BPM MOYEN</div></div>
+<div class="stat-card"><div class="val">45 ms</div><div class="lbl">VARIABILITE</div></div>
+<div class="stat-card"><div class="val">0</div><div class="lbl">ANOMALIES 24h</div></div>
+<div class="stat-card"><div class="val">98%</div><div class="lbl">FIABILITE</div></div>
+</div>
+<div class="card" style="margin-top:12px"><h3>Evenements recents</h3>
+<div class="event-row"><span class="dot"></span><span class="evt-time">14:30</span><span class="evt-text">Pic d'activite — 94 BPM</span></div>
+<div class="event-row"><span class="dot" style="background:#666"></span><span class="evt-time">12:15</span><span class="evt-text">Phase de repos — 58 BPM</span></div>
+<div class="event-row"><span class="dot" style="background:#666"></span><span class="evt-time">08:45</span><span class="evt-text">Variabilite matinale — 52 ms</span></div>
+</div>
+</div>
+</div>
+
+<div class="screen" id="screen-scanner">
+<div style="padding:16px">
+<header style="text-align:center;padding:24px 0 16px"><h2 style="color:#d4a853">SCANNER QR CODE</h2></header>
+<div class="card" style="text-align:center">
+<div class="scanner-view"><div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div><div class="scan-line"></div></div>
+<p style="color:#9b8f7e;margin:16px 0">Recherche de signal...</p>
+<button class="btn btn-secondary" style="width:auto;padding:10px 24px;margin:0 auto">📷 Activer la camera</button>
+<p style="font-size:.7em;color:#8b7355;margin-top:8px">Ou saisir le code manuellement</p>
+<input placeholder="Code patient..." style="width:200px;padding:8px 12px;background:#141414;color:#d4c8a0;border:1px solid #2a2a2a;border-radius:8px;font-size:14px;font-family:inherit;text-align:center;margin-top:8px">
+</div>
+</div>
+</div>
+
+<div class="screen" id="screen-dossier">
+<div style="padding:16px">
+<header style="text-align:center;padding:24px 0 16px"><h2 style="color:#d4a853">DOSSIER MEDICAL</h2></header>
+<div class="card" style="text-align:center"><div style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,#d4a853,#7b5804);display:flex;align-items:center;justify-content:center;font-size:1.6em;font-weight:700;margin:0 auto 8px" id="dossierAvatar">?</div><h3 id="dossierName">Patient anonyme</h3><p style="color:#9b8f7e;font-size:.8em" id="dossierId"></p></div>
+<div class="vital-grid" style="margin-top:12px">
+<div class="stat-card"><div class="val">72</div><div class="lbl">BPM</div></div>
+<div class="stat-card"><div class="val">12/8</div><div class="lbl">cmHg</div></div>
+<div class="stat-card"><div class="val">98%</div><div class="lbl">SpO2</div></div>
+<div class="stat-card"><div class="val">36.7°</div><div class="lbl">Temp</div></div>
+</div>
+<div class="action-grid" style="margin-top:12px">
+<div class="action-card" onclick="showScreen('resonance')"><div class="icon">🔍</div><div class="title">Nouveau Diagnostic</div><div class="sub">Lancer une analyse</div></div>
+<div class="action-card" onclick="showScreen('cardiac')"><div class="icon">🫀</div><div class="title">Analyse Cardiaque</div><div class="sub">ECG detaille</div></div>
+<div class="action-card" onclick="showScreen('history')"><div class="icon">📋</div><div class="title">Historique</div><div class="sub">Diagnostics passes</div></div>
+<div class="action-card" onclick="showScreen('scanner')"><div class="icon">📷</div><div class="title">Scanner QR</div><div class="sub">Ouvrir un dossier</div></div>
+</div>
+</div>
+</div>
 </body>
 </html>
