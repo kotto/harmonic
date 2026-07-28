@@ -40,7 +40,24 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .vital-row .vital-value{font-weight:600;color:var(--accent)}
 .reminder-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:.72em;font-weight:600;background:rgba(212,168,83,.1);color:var(--accent)}
 .qr-code{width:150px;height:150px;background:#fff;margin:16px auto;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#000;font-size:.7em}
-</style><script src="ka_bridge.js"></script>
+</style><script src="ka_bridge.js">
+function setupPIN(){
+var pin=prompt('Créez un code PIN à 4 chiffres :');
+if(!pin||pin.length!==4||!/^\d{4}$/.test(pin)){alert('PIN invalide (4 chiffres requis).');return}
+if(KA_SECURE.setPIN(pin)){alert('✅ PIN configuré !
+L'application sera verrouillée au prochain lancement.');}
+else{alert('Erreur.');}
+}
+</script>
+<script src="ka_secure.js">
+function setupPIN(){
+var pin=prompt('Créez un code PIN à 4 chiffres :');
+if(!pin||pin.length!==4||!/^\d{4}$/.test(pin)){alert('PIN invalide (4 chiffres requis).');return}
+if(KA_SECURE.setPIN(pin)){alert('✅ PIN configuré !
+L'application sera verrouillée au prochain lancement.');}
+else{alert('Erreur.');}
+}
+</script>
 </head>
 <body>
 <div class="container">
@@ -130,6 +147,9 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 <button class="btn btn-primary" onclick="exportToDoctor()" style="margin-top:8px">📤 Envoyer au médecin</button>
 <button class="btn btn-secondary" onclick="importFromDoctor()">📥 Recevoir du médecin</button>
 <button class="btn btn-secondary" onclick="shareData()">📋 Copier les données</button>
+<button class="btn btn-secondary" onclick="KA_SECURE.exportAll('ka_patient')">💾 Sauvegarder (fichier JSON)</button>
+<button class="btn btn-secondary" onclick="KA_SECURE.triggerImport('ka_patient',function(){location.reload()})">📂 Restaurer une sauvegarde</button>
+<button class="btn btn-secondary" onclick="setupPIN()">🔒 Configurer le verrouillage PIN</button>
 </div>
 </div>
 
@@ -159,7 +179,7 @@ function showScreen(name){
 document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
 document.getElementById('screen-'+name).classList.add('active');
 document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.screen===name));
-renderAll();
+KA_SECURE.showLockScreen(function(){renderAll();});
 }
 
 function saveProfile(){
@@ -174,11 +194,11 @@ save(data);
 
 function addAllergy(){
 const v=document.getElementById('allergyInput').value.trim();if(!v)return;
-data.allergies.push(v);save(data);document.getElementById('allergyInput').value='';renderAll();
+data.allergies.push(v);save(data);document.getElementById('allergyInput').value='';KA_SECURE.showLockScreen(function(){renderAll();});
 }
 function addVaccine(){
 const v=prompt('Nom du vaccin et date (ex: COVID-19 — 01/2024):');if(!v)return;
-data.vaccines.push(v);save(data);renderAll();
+data.vaccines.push(v);save(data);KA_SECURE.showLockScreen(function(){renderAll();});
 }
 function addMedication(){
 const n=document.getElementById('medName').value.trim();if(!n)return;
@@ -187,23 +207,23 @@ freq:document.getElementById('medFreq').value,time:document.getElementById('medT
 meal:document.getElementById('medMeal').value,added:new Date().toISOString()});
 save(data);
 ['medName','medDose','medFreq'].forEach(id=>document.getElementById(id).value='');
-renderAll();
+KA_SECURE.showLockScreen(function(){renderAll();});
 }
 function addVital(){
 const t=document.getElementById('vitalType').value.trim();const v=document.getElementById('vitalValue').value.trim();
 if(!t||!v)return;
 data.vitals.push({type:t,value:v,unit:document.getElementById('vitalUnit').value,date:new Date().toISOString()});
 save(data);['vitalType','vitalValue','vitalUnit'].forEach(id=>document.getElementById(id).value='');
-renderAll();
+KA_SECURE.showLockScreen(function(){renderAll();});
 }
 function addAppointment(){
 const t=document.getElementById('apptTitle').value.trim();if(!t)return;
 data.appointments.push({title:t,date:document.getElementById('apptDate').value,
 time:document.getElementById('apptTime2').value,loc:document.getElementById('apptLoc').value});
 save(data);['apptTitle','apptLoc'].forEach(id=>document.getElementById(id).value='');
-renderAll();
+KA_SECURE.showLockScreen(function(){renderAll();});
 }
-function deleteItem(key,idx){data[key].splice(idx,1);save(data);renderAll();}
+function deleteItem(key,idx){data[key].splice(idx,1);save(data);KA_SECURE.showLockScreen(function(){renderAll();});}
 
 function renderAll(){
 document.getElementById('pName').value=data.profile.name||'';
@@ -238,20 +258,28 @@ KA_BRIDGE.readTransferCode(function(pkg){
 if(KA_BRIDGE.importToKAPatient(pkg)){alert('Données du médecin importées !
 
 Diagnostics ajoutés aux RDV.
-Prescriptions ajoutées aux médicaments.');renderAll();}
+Prescriptions ajoutées aux médicaments.');KA_SECURE.showLockScreen(function(){renderAll();});}
 else{alert('Format invalide.');}
 });
 }
 function exportPDF(){alert('Export PDF — Fonctionnalité à venir.\n\nLe dossier sera généré au format PDF avec:\n- Identité\n- Allergies\n- Vaccins\n- Médicaments\n- Constantes\n- Rendez-vous');}
 function shareData(){const d=JSON.stringify(data,null,2);navigator.clipboard?.writeText(d);alert('Données copiées dans le presse-papier. Envoyez-les à votre médecin.');}
 
-renderAll();
+KA_SECURE.showLockScreen(function(){renderAll();});
 
 // Medication reminders
 if('Notification' in window && data.medications.length>0){
 setInterval(()=>{const now=new Date();const time=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
 data.medications.forEach(m=>{if(m.time===time && Notification.permission==='granted'){new Notification('💊 Rappel médicament',{body:m.name+' — '+m.dose+' — '+m.meal,icon:'logo2.jpg'});}})},60000);
 if(Notification.permission==='default')Notification.requestPermission();
+}
+
+function setupPIN(){
+var pin=prompt('Créez un code PIN à 4 chiffres :');
+if(!pin||pin.length!==4||!/^\d{4}$/.test(pin)){alert('PIN invalide (4 chiffres requis).');return}
+if(KA_SECURE.setPIN(pin)){alert('✅ PIN configuré !
+L'application sera verrouillée au prochain lancement.');}
+else{alert('Erreur.');}
 }
 </script>
 </body>

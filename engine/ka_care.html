@@ -224,7 +224,7 @@ footer a { color: var(--accent); text-decoration: none; }
 function importPatientData(){
 KA_BRIDGE.readTransferCode(function(pkg){
 var id=KA_BRIDGE.importToKACare(pkg);
-if(id){alert('Patient importé !');renderPatients();refreshPatientSelect();}
+if(id){alert('Patient importé !');renderPatients();KA_SECURE.showLockScreen(function(){refreshPatientSelect();});}
 else{alert('Format invalide.');}
 });
 }
@@ -244,13 +244,20 @@ modal.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;backgrou
 modal.innerHTML='<div style="background:#1a1a1a;border:1px solid #d4a853;border-radius:16px;padding:24px;max-width:400px;text-align:center"><h3 style="color:#d4a853;margin-bottom:12px">📤 Transfert au patient</h3><div id="qrTransfer" style="margin:12px 0"></div><p style="font-size:.7em;color:#9b8f7e">Le patient scanne ce code avec KA Patient</p><button onclick="this.parentElement.parentElement.remove()" style="background:#d4a853;color:#0d0d0d;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;margin-top:12px;font-weight:700;font-family:inherit">Fermer</button></div>';
 document.body.appendChild(modal);
 modal.onclick=function(e){if(e.target===modal)modal.remove()};
+}
+
+function setupPIN(){
+var pin=prompt('Créez un code PIN à 4 chiffres pour protéger l'accès aux dossiers patients :');
+if(!pin||pin.length!==4||!/^\d{4}$/.test(pin)){alert('PIN invalide (4 chiffres requis).');return}
+if(KA_SECURE.setPIN(pin)){alert('✅ PIN configuré !');}
+else{alert('Erreur.');}
 }
 </script>
 <script src="ka_bridge.js">
 function importPatientData(){
 KA_BRIDGE.readTransferCode(function(pkg){
 var id=KA_BRIDGE.importToKACare(pkg);
-if(id){alert('Patient importé !');renderPatients();refreshPatientSelect();}
+if(id){alert('Patient importé !');renderPatients();KA_SECURE.showLockScreen(function(){refreshPatientSelect();});}
 else{alert('Format invalide.');}
 });
 }
@@ -270,6 +277,21 @@ modal.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;backgrou
 modal.innerHTML='<div style="background:#1a1a1a;border:1px solid #d4a853;border-radius:16px;padding:24px;max-width:400px;text-align:center"><h3 style="color:#d4a853;margin-bottom:12px">📤 Transfert au patient</h3><div id="qrTransfer" style="margin:12px 0"></div><p style="font-size:.7em;color:#9b8f7e">Le patient scanne ce code avec KA Patient</p><button onclick="this.parentElement.parentElement.remove()" style="background:#d4a853;color:#0d0d0d;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;margin-top:12px;font-weight:700;font-family:inherit">Fermer</button></div>';
 document.body.appendChild(modal);
 modal.onclick=function(e){if(e.target===modal)modal.remove()};
+}
+
+function setupPIN(){
+var pin=prompt('Créez un code PIN à 4 chiffres pour protéger l'accès aux dossiers patients :');
+if(!pin||pin.length!==4||!/^\d{4}$/.test(pin)){alert('PIN invalide (4 chiffres requis).');return}
+if(KA_SECURE.setPIN(pin)){alert('✅ PIN configuré !');}
+else{alert('Erreur.');}
+}
+</script>
+<script src="ka_secure.js">
+function setupPIN(){
+var pin=prompt('Créez un code PIN à 4 chiffres pour protéger l'accès aux dossiers patients :');
+if(!pin||pin.length!==4||!/^\d{4}$/.test(pin)){alert('PIN invalide (4 chiffres requis).');return}
+if(KA_SECURE.setPIN(pin)){alert('✅ PIN configuré !');}
+else{alert('Erreur.');}
 }
 </script>
 </head>
@@ -726,7 +748,7 @@ onPatientSelect = function(id){origOnPatientSelect(id);updateDossier();}
 function importPatientData(){
 KA_BRIDGE.readTransferCode(function(pkg){
 var id=KA_BRIDGE.importToKACare(pkg);
-if(id){alert('Patient importé !');renderPatients();refreshPatientSelect();}
+if(id){alert('Patient importé !');renderPatients();KA_SECURE.showLockScreen(function(){refreshPatientSelect();});}
 else{alert('Format invalide.');}
 });
 }
@@ -746,6 +768,13 @@ modal.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;backgrou
 modal.innerHTML='<div style="background:#1a1a1a;border:1px solid #d4a853;border-radius:16px;padding:24px;max-width:400px;text-align:center"><h3 style="color:#d4a853;margin-bottom:12px">📤 Transfert au patient</h3><div id="qrTransfer" style="margin:12px 0"></div><p style="font-size:.7em;color:#9b8f7e">Le patient scanne ce code avec KA Patient</p><button onclick="this.parentElement.parentElement.remove()" style="background:#d4a853;color:#0d0d0d;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;margin-top:12px;font-weight:700;font-family:inherit">Fermer</button></div>';
 document.body.appendChild(modal);
 modal.onclick=function(e){if(e.target===modal)modal.remove()};
+}
+
+function setupPIN(){
+var pin=prompt('Créez un code PIN à 4 chiffres pour protéger l'accès aux dossiers patients :');
+if(!pin||pin.length!==4||!/^\d{4}$/.test(pin)){alert('PIN invalide (4 chiffres requis).');return}
+if(KA_SECURE.setPIN(pin)){alert('✅ PIN configuré !');}
+else{alert('Erreur.');}
 }
 </script>
 <nav class="bottom-nav" id="bottomNav" style="display:none">

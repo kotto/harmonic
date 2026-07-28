@@ -149,11 +149,15 @@ const KA_BRIDGE = {
     if (!el) return;
     
     // Afficher comme texte compact (QR code visuel si bibliothèque dispo)
-    el.innerHTML = '<div style="background:#fff;color:#000;padding:20px;border-radius:12px;text-align:center;font-size:11px;word-break:break-all;max-height:200px;overflow-y:auto">' + 
+    // Utiliser le QR code visuel de KA_SECURE si disponible
+if (typeof KA_SECURE !== 'undefined' && KA_SECURE.generateQR) {
+KA_SECURE.generateQR(elementId, data);
+} else {
+el.innerHTML = '<div style="background:#fff;color:#000;padding:20px;border-radius:12px;text-align:center;font-size:11px;word-break:break-all;max-height:200px;overflow-y:auto">' + 
       encoded.substring(0, 500) + 
       '</div>' +
       '<button onclick="navigator.clipboard.writeText(\'' + encoded + '\')" style="margin-top:8px;background:#1a1a1a;color:#d4a853;border:1px solid #2a2a2a;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit">📋 Copier le code</button>' +
-      '<p style="font-size:10px;color:#8b7355;margin-top:6px">Code de transfert KA Bridge — valable 24h</p>';
+      '}<p style="font-size:10px;color:#8b7355;margin-top:6px">Code de transfert KA Bridge — valable 24h</p>';
     
     return encoded;
   },
