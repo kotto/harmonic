@@ -393,7 +393,7 @@ const DB = {
 // ═══════════════════════════════════════════════
 // ENCODEUR
 // ═══════════════════════════════════════════════
-const F = ["douleur","fievre","respiratoire","digestif","neurologique","cardiaque","cutane","musculaire","articulaire","ORL","urinaire","psychologique","general","tete","thorax","abdomen","renale","hematologique","urgence_hemorragique","urgence_hydrique"];
+const F = ["douleur", "fievre", "respiratoire", "digestif", "neurologique", "cardiaque", "cutane", "musculaire", "articulaire", "ORL", "urinaire", "psychologique", "general", "tete", "thorax", "abdomen", "renale", "hematologique", "urgence_hemorragique", "urgence_hydrique", "age_0_12", "age_13_17", "age_18_40", "age_41_65", "age_66_plus", "gender_male", "gender_female", "severity_mild", "severity_moderate", "severity_severe", "severity_critical", "system_respiratory", "system_cardiovascular", "system_digestive", "system_neurological", "system_musculoskeletal", "system_dermatological", "system_urinary", "system_ENT", "system_psychological", "vital_fever", "vital_tachycardia", "vital_tachypnea", "vital_normal", "risk_elderly"];
 
 const symptomMap = {
   "fièvre":"fievre,general","fièvre_élevée":"fievre,general","fièvre_modérée":"fievre,general","fièvre_brutale":"fievre,general","fièvre_cyclique":"fievre,general","fièvre_progressive":"fievre,general","fièvre_irrégulière":"fievre,general","fièvre_prolongée":"fievre,general",
@@ -420,29 +420,35 @@ const symptomMap = {
   "amygdales_rouges":"ORL","absence_de_toux":"ORL","malaise":"general,cardiaque","déshydratation_sévère":"general,digestif,urgence_hydrique","aura_visuelle":"neurologique,tete"
 };
 
-function encodeSymptoms(text) {
-  const words = text.toLowerCase().replace(/[,;.!?]/g,' ').split(/\s+/).filter(w => w.length > 1);
-  const vec = {};
-  for (const w of words) {
-    const feats = symptomMap[w];
-    if (feats) {
-      for (const f of feats.split(',')) {
-        if (F.includes(f)) vec[f] = (vec[f] || 0) + 1;
-      }
-    }
+function encodeSympt(text){
+  var words=text.toLowerCase().replace(/[,;.!?]/g,' ').split(/\s+/).filter(function(w){return w.length>1});
+  var vec={};
+  for(var i=0;i<words.length;i++){
+    var w=words[i];
+    var feats=symptomMap[w];
+    if(feats){var fl=feats.split(',');for(var j=0;j<fl.length;j++){var f=fl[j];if(F.indexOf(f)>=0)vec[f]=(vec[f]||0)+1}}
   }
-  // Bigrammes
-  for (let i = 0; i < words.length - 1; i++) {
-    const bigram = symptomMap[words[i] + '_' + words[i+1]];
-    if (bigram) {
-      for (const f of bigram.split(',')) {
-        if (F.includes(f)) vec[f] = (vec[f] || 0) + 0.5;
-      }
-    }
-  }
+  var age=parseInt(document.getElementById('patientAge')?.value)||0;
+  var gender=document.getElementById('patientGender')?.value||'';
+  if(age>0){if(age<=12)vec['age_0_12']=1;else if(age<=17)vec['age_13_17']=1;else if(age<=40)vec['age_18_40']=1;else if(age<=65)vec['age_41_65']=1;else vec['age_66_plus']=1;if(age>50)vec['risk_elderly']=1;}
+  if(gender==='homme')vec['gender_male']=1;else if(gender==='femme')vec['gender_female']=1;
+  var count=0;for(var k in vec)if(vec[k]>0)count++;if(count<=4)vec['severity_mild']=1;else if(count<=8)vec['severity_moderate']=1;else vec['severity_severe']=1;
+  var txt=text.toLowerCase();
+  if(/toux|essoufflement|respir|sifflement/.test(txt))vec['system_respiratory']=1;
+  if(/douleur_thoracique|palpitations|cardiaque|tachycardie/.test(txt))vec['system_cardiovascular']=1;
+  if(/diarrhee|vomissements|nausees|abdominal|digestif/.test(txt))vec['system_digestive']=1;
+  if(/confusion|convulsions|paralysie|tete|neurologique/.test(txt))vec['system_neurological']=1;
+  if(/muscul|articul|courbature|lombaire/.test(txt))vec['system_musculoskeletal']=1;
+  if(/eruption|cutanee|demangeaison|urticaire|peau/.test(txt))vec['system_dermatological']=1;
+  if(/urine|urinaires|miction/.test(txt))vec['system_urinary']=1;
+  if(/gorge|nez|eternuement|ORL|bouche/.test(txt))vec['system_ENT']=1;
+  if(/tristesse|angoisse|peur|idees_noires|isolement/.test(txt))vec['system_psychological']=1;
+  if(/fievre/.test(txt))vec['vital_fever']=1;
+  if(/tachycardie|palpitations/.test(txt))vec['vital_tachycardia']=1;
+  if(/essoufflement|respiration_rapide/.test(txt))vec['vital_tachypnea']=1;
+  if(!/fievre|tachycardie|essoufflement/.test(txt))vec['vital_normal']=1;
   return vec;
 }
-
 function cosineSim(a, b) {
   let dot = 0, na = 0, nb = 0;
   for (const k of F) { const va = a[k] || 0, vb = b[k] || 0; dot += va * vb; na += va * va; nb += vb * vb; }
