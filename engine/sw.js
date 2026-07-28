@@ -1,8 +1,8 @@
 const CACHE = 'ka-care-v1';
 const ASSETS = [
-  '/ka_care.html',
-  '/manifest.json',
-  '/logo2.jpg'
+  'ka_care.html',
+  'manifest.json',
+  'logo2.jpg'
 ];
 
 self.addEventListener('install', e => {
