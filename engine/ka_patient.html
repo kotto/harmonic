@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#0d0d0d">
+<title>KA Patient — Dossier Médical</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0d0d;--card:#1a1a1a;--text:#eae1d7;--muted:#9b8f7e;--accent:#d4a853;--urgent:#e74c3c;--success:#27ae60;--border:#2a2a2a;--radius:14px;--gold-grad:linear-gradient(135deg,#d4a853,#7b5804)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+.container{max-width:720px;margin:0 auto;padding:0 16px 90px}
+header{text-align:center;padding:24px 0 16px}
+header img{width:56px;height:56px;border-radius:50%;object-fit:cover;box-shadow:0 4px 20px rgba(212,168,83,0.2)}
+.card{background:var(--card);border-radius:var(--radius);padding:18px;margin-bottom:14px;border:1px solid rgba(212,168,83,0.08);position:relative}
+.card::before{content:'';position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent)}
+.card h3{font-size:.95em;font-weight:700;color:var(--accent);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit;text-align:center;transition:all .2s}
+.btn-primary{background:var(--gold-grad);color:#0d0d0d;box-shadow:0 4px 20px rgba(212,168,83,0.15)}
+.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--accent);margin-top:8px}
+input,select{background:#141414;color:#d4c8a0;border:1px solid var(--border);padding:10px 14px;border-radius:10px;font-size:14px;font-family:inherit;width:100%}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
+.bottom-nav{position:fixed;bottom:0;left:0;width:100%;display:flex;justify-content:space-around;align-items:center;padding:10px 16px 14px;background:rgba(26,26,26,.95);backdrop-filter:blur(20px);border-top:1px solid rgba(78,70,55,.3);box-shadow:0 -8px 30px rgba(0,0,0,.5);z-index:50;border-radius:24px 24px 0 0}
+.nav-item{display:flex;flex-direction:column;align-items:center;cursor:pointer;color:rgba(210,197,178,.4);transition:all .2s;padding:4px 12px}
+.nav-item.active{color:var(--accent);background:rgba(212,168,83,.08);border-radius:12px;padding:6px 12px}
+.nav-item .nav-icon{font-size:22px;margin-bottom:2px}
+.nav-item .nav-label{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.screen{display:none}.screen.active{display:block}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+.tag{display:inline-block;padding:4px 10px;border-radius:6px;font-size:.72em;font-weight:600;margin:2px}
+.tag-red{background:rgba(231,76,60,.1);color:var(--urgent);border:1px solid rgba(231,76,60,.2)}
+.tag-gold{background:rgba(212,168,83,.1);color:var(--accent);border:1px solid rgba(212,168,83,.2)}
+.tag-green{background:rgba(39,174,96,.1);color:var(--success);border:1px solid rgba(39,174,96,.2)}
+.med-row{display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:10px;background:#111;margin-bottom:8px;border:1px solid var(--border)}
+.med-row .med-name{font-weight:600;font-size:.9em}
+.med-row .med-dose{font-size:.78em;color:var(--muted)}
+.med-row .med-time{font-size:.7em;color:var(--accent);font-weight:600}
+.vital-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.vital-row .vital-label{color:var(--muted);font-size:.82em}
+.vital-row .vital-value{font-weight:600;color:var(--accent)}
+.reminder-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:.72em;font-weight:600;background:rgba(212,168,83,.1);color:var(--accent)}
+.qr-code{width:150px;height:150px;background:#fff;margin:16px auto;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#000;font-size:.7em}
+</style></head>
+<body>
+<div class="container">
+
+<!-- PROFILE SCREEN -->
+<div class="screen active" id="screen-profile">
+<header><img src="logo2.jpg" alt="KA Patient"><h1 style="color:var(--accent);font-size:1.4em;margin-top:8px">Mon Dossier Médical</h1></header>
+
+<div class="card">
+<h3>👤 Identité</h3>
+<div class="row"><input id="pName" placeholder="Nom complet" onchange="saveProfile()"></div>
+<div class="row" style="margin-top:8px"><input id="pAge" type="number" placeholder="Âge" onchange="saveProfile()"><select id="pGender" onchange="saveProfile()"><option value="">Sexe</option><option value="H">Homme</option><option value="F">Femme</option></select></div>
+<div class="row" style="margin-top:8px"><input id="pBlood" placeholder="Groupe sanguin (ex: A+)"><input id="pWeight" type="number" placeholder="Poids (kg)" onchange="saveProfile()"></div>
+</div>
+
+<div class="card">
+<h3>⚠️ Allergies</h3>
+<div class="row"><input id="allergyInput" placeholder="Ajouter une allergie..."><button class="btn" style="width:auto;padding:10px 16px;font-size:13px" onclick="addAllergy()">+</button></div>
+<div id="allergyList" style="margin-top:8px"></div>
+</div>
+
+<div class="card">
+<h3>💉 Vaccins</h3>
+<div id="vaccineList"></div>
+<button class="btn btn-secondary" onclick="addVaccine()">+ Ajouter un vaccin</button>
+</div>
+
+<div class="card">
+<h3>📋 Antécédents</h3>
+<textarea id="historyInput" placeholder="Antécédents médicaux, opérations..." style="min-height:80px" onchange="saveProfile()"></textarea>
+</div>
+</div>
+
+<!-- MEDICATIONS SCREEN -->
+<div class="screen" id="screen-meds">
+<header><h2 style="color:var(--accent)">💊 Médicaments</h2></header>
+
+<div class="card">
+<h3>➕ Ajouter un médicament</h3>
+<input id="medName" placeholder="Nom du médicament...">
+<div class="row" style="margin-top:8px"><input id="medDose" placeholder="Dosage (ex: 5mg)"><input id="medFreq" placeholder="Fréquence (ex: 1/jour)"></div>
+<div class="row" style="margin-top:8px"><input id="medTime" type="time" value="08:00"><select id="medMeal"><option value="">Sans</option><option>Avant repas</option><option>Pendant repas</option><option>Après repas</option></select></div>
+<button class="btn btn-primary" style="margin-top:10px" onclick="addMedication()">💊 Ajouter</button>
+</div>
+
+<div id="medList"><div class="card"><p style="text-align:center;color:var(--muted)">Aucun médicament enregistré.</p></div></div>
+</div>
+
+<!-- VITALS SCREEN -->
+<div class="screen" id="screen-vitals">
+<header><h2 style="color:var(--accent)">📊 Mes Constantes</h2></header>
+
+<div class="card">
+<h3>➕ Ajouter une mesure</h3>
+<div class="row"><input id="vitalType" placeholder="Type (poids, tension, glycémie...)"><input id="vitalValue" placeholder="Valeur"></div>
+<input id="vitalUnit" placeholder="Unité (kg, mmHg, g/L...)" style="margin-top:8px">
+<button class="btn btn-primary" style="margin-top:10px" onclick="addVital()">📊 Enregistrer</button>
+</div>
+
+<div id="vitalList"><div class="card"><p style="text-align:center;color:var(--muted)">Aucune mesure enregistrée.</p></div></div>
+</div>
+
+<!-- APPOINTMENTS SCREEN -->
+<div class="screen" id="screen-appts">
+<header><h2 style="color:var(--accent)">📅 Rendez-vous</h2></header>
+
+<div class="card">
+<h3>➕ Nouveau rendez-vous</h3>
+<input id="apptTitle" placeholder="Motif (ex: Consultation Dr Martin)...">
+<div class="row" style="margin-top:8px"><input id="apptDate" type="date"><input id="apptTime2" type="time" value="09:00"></div>
+<input id="apptLoc" placeholder="Lieu (ex: Hôpital St-Louis)" style="margin-top:8px">
+<button class="btn btn-primary" style="margin-top:10px" onclick="addAppointment()">📅 Ajouter</button>
+</div>
+
+<div id="apptList"><div class="card"><p style="text-align:center;color:var(--muted)">Aucun rendez-vous.</p></div></div>
+</div>
+
+<!-- SHARE SCREEN -->
+<div class="screen" id="screen-share">
+<header><h2 style="color:var(--accent)">📤 Partager mon dossier</h2></header>
+<div class="card" style="text-align:center">
+<p style="color:var(--muted);margin-bottom:12px">Partagez votre dossier médical avec votre médecin avant la consultation.</p>
+<div class="qr-code" id="qrCode">QR Code</div>
+<p style="font-size:.7em;color:var(--muted)">Le médecin scanne ce code pour accéder à votre dossier</p>
+<button class="btn btn-primary" style="margin-top:12px" onclick="exportPDF()">📄 Exporter en PDF</button>
+<button class="btn btn-secondary" onclick="shareData()">📋 Copier les données</button>
+</div>
+</div>
+
+</div>
+
+<nav class="bottom-nav">
+<div class="nav-item active" data-screen="profile" onclick="showScreen('profile')"><span class="nav-icon">👤</span><span class="nav-label">Profil</span></div>
+<div class="nav-item" data-screen="meds" onclick="showScreen('meds')"><span class="nav-icon">💊</span><span class="nav-label">Medics</span></div>
+<div class="nav-item" data-screen="vitals" onclick="showScreen('vitals')"><span class="nav-icon">📊</span><span class="nav-label">Constantes</span></div>
+<div class="nav-item" data-screen="appts" onclick="showScreen('appts')"><span class="nav-icon">📅</span><span class="nav-label">RDV</span></div>
+<div class="nav-item" data-screen="share" onclick="showScreen('share')"><span class="nav-icon">📤</span><span class="nav-label">Partager</span></div>
+</nav>
+
+<script>
+const STORE='ka_patient_data';
+function load(){try{return JSON.parse(localStorage.getItem(STORE)||'{}')}catch(e){return{}}}
+function save(d){localStorage.setItem(STORE,JSON.stringify(d))}
+let data=load();
+if(!data.profile)data.profile={};
+if(!data.medications)data.medications=[];
+if(!data.vitals)data.vitals=[];
+if(!data.appointments)data.appointments=[];
+if(!data.allergies)data.allergies=[];
+if(!data.vaccines)data.vaccines=[];
+
+function showScreen(name){
+document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+document.getElementById('screen-'+name).classList.add('active');
+document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.screen===name));
+renderAll();
+}
+
+function saveProfile(){
+data.profile.name=document.getElementById('pName').value;
+data.profile.age=document.getElementById('pAge').value;
+data.profile.gender=document.getElementById('pGender').value;
+data.profile.blood=document.getElementById('pBlood').value;
+data.profile.weight=document.getElementById('pWeight').value;
+data.profile.history=document.getElementById('historyInput').value;
+save(data);
+}
+
+function addAllergy(){
+const v=document.getElementById('allergyInput').value.trim();if(!v)return;
+data.allergies.push(v);save(data);document.getElementById('allergyInput').value='';renderAll();
+}
+function addVaccine(){
+const v=prompt('Nom du vaccin et date (ex: COVID-19 — 01/2024):');if(!v)return;
+data.vaccines.push(v);save(data);renderAll();
+}
+function addMedication(){
+const n=document.getElementById('medName').value.trim();if(!n)return;
+data.medications.push({name:n,dose:document.getElementById('medDose').value,
+freq:document.getElementById('medFreq').value,time:document.getElementById('medTime').value,
+meal:document.getElementById('medMeal').value,added:new Date().toISOString()});
+save(data);
+['medName','medDose','medFreq'].forEach(id=>document.getElementById(id).value='');
+renderAll();
+}
+function addVital(){
+const t=document.getElementById('vitalType').value.trim();const v=document.getElementById('vitalValue').value.trim();
+if(!t||!v)return;
+data.vitals.push({type:t,value:v,unit:document.getElementById('vitalUnit').value,date:new Date().toISOString()});
+save(data);['vitalType','vitalValue','vitalUnit'].forEach(id=>document.getElementById(id).value='');
+renderAll();
+}
+function addAppointment(){
+const t=document.getElementById('apptTitle').value.trim();if(!t)return;
+data.appointments.push({title:t,date:document.getElementById('apptDate').value,
+time:document.getElementById('apptTime2').value,loc:document.getElementById('apptLoc').value});
+save(data);['apptTitle','apptLoc'].forEach(id=>document.getElementById(id).value='');
+renderAll();
+}
+function deleteItem(key,idx){data[key].splice(idx,1);save(data);renderAll();}
+
+function renderAll(){
+document.getElementById('pName').value=data.profile.name||'';
+document.getElementById('pAge').value=data.profile.age||'';
+document.getElementById('pGender').value=data.profile.gender||'';
+document.getElementById('pBlood').value=data.profile.blood||'';
+document.getElementById('pWeight').value=data.profile.weight||'';
+document.getElementById('historyInput').value=data.profile.history||'';
+
+let al='';data.allergies.forEach((a,i)=>al+='<span class=\"tag tag-red\">'+a+' <span onclick=\"deleteItem(\\'allergies\\','+i+')\" style=\"cursor:pointer\">×</span></span>');
+document.getElementById('allergyList').innerHTML=al||'<span style=\"color:var(--muted);font-size:.8em\">Aucune allergie</span>';
+
+let vl='';data.vaccines.forEach((v,i)=>vl+='<div class=\"vital-row\"><span>💉 '+v+'</span><span onclick=\"deleteItem(\\'vaccines\\','+i+')\" style=\"cursor:pointer;color:var(--urgent)\">×</span></div>');
+document.getElementById('vaccineList').innerHTML=vl||'<span style=\"color:var(--muted);font-size:.8em\">Aucun vaccin</span>';
+
+let ml='';data.medications.forEach((m,i)=>ml+='<div class=\"med-row\"><div><div class=\"med-name\">'+m.name+'</div><div class=\"med-dose\">'+m.dose+' — '+m.freq+' — '+m.meal+'</div></div><div class=\"med-time\">'+m.time+'</div><span onclick=\"deleteItem(\\'medications\\','+i+')\" style=\"cursor:pointer;color:var(--urgent);margin-left:8px\">×</span></div>');
+document.getElementById('medList').innerHTML=ml||'<div class=\"card\"><p style=\"text-align:center;color:var(--muted)\">Aucun médicament.</p></div>';
+
+let vil='';data.vitals.slice(-20).reverse().forEach((v,i)=>vil+='<div class=\"vital-row\"><span class=\"vital-label\">'+v.type+'</span><span class=\"vital-value\">'+v.value+' '+v.unit+'</span><span style=\"font-size:.65em;color:var(--muted)\">'+new Date(v.date).toLocaleDateString('fr-FR')+'</span></div>');
+document.getElementById('vitalList').innerHTML=vil||'<div class=\"card\"><p style=\"text-align:center;color:var(--muted)\">Aucune mesure.</p></div>';
+
+let al2='';data.appointments.sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach((a,i)=>al2+='<div class=\"med-row\"><div><div class=\"med-name\">'+a.title+'</div><div class=\"med-dose\">'+a.loc+'</div></div><div class=\"med-time\">'+new Date(a.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' — '+a.time+'</div><span onclick=\"deleteItem(\\'appointments\\','+i+')\" style=\"cursor:pointer;color:var(--urgent);margin-left:8px\">×</span></div>');
+document.getElementById('apptList').innerHTML=al2||'<div class=\"card\"><p style=\"text-align:center;color:var(--muted)\">Aucun rendez-vous.</p></div>';
+}
+
+function exportPDF(){alert('Export PDF — Fonctionnalité à venir.\n\nLe dossier sera généré au format PDF avec:\n- Identité\n- Allergies\n- Vaccins\n- Médicaments\n- Constantes\n- Rendez-vous');}
+function shareData(){const d=JSON.stringify(data,null,2);navigator.clipboard?.writeText(d);alert('Données copiées dans le presse-papier. Envoyez-les à votre médecin.');}
+
+renderAll();
+
+// Medication reminders
+if('Notification' in window && data.medications.length>0){
+setInterval(()=>{const now=new Date();const time=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+data.medications.forEach(m=>{if(m.time===time && Notification.permission==='granted'){new Notification('💊 Rappel médicament',{body:m.name+' — '+m.dose+' — '+m.meal,icon:'logo2.jpg'});}})},60000);
+if(Notification.permission==='default')Notification.requestPermission();
+}
+</script>
+</body>
+</html>
