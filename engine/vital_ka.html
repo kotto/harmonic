@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="utf-8"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<meta content="width=device-width,initial-scale=1.0,viewport-fit=cover" name="viewport"/>
+<meta name="theme-color" content="#0d0d0d"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="icon" href="logo2.jpg"/>
+<title>Vital Ka — Diagnostic Harmonique</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="vital_ka.css"/>
+<link rel="stylesheet" href="ka_telemedecine.css"/>
+<link rel="stylesheet" href="vital_ka_ai.css"/>
+<script src="vital_ka_config.js"></script>
+<script src="vital_ka_native.js"></script>
+<script src="ka_core.js"></script>
+<script src="ka_secure.js"></script>
+<script src="ka_bridge.js"></script>
+<script src="ka_hcv.js"></script>
+<script src="ka_network.js"></script>
+<script src="vital_ka_hologram.js"></script>
+<script src="vital_ka_knowledge.js"></script>
+	<script src="vital_ka_voice.js"></script>
+<script src="vital_ka_stt.js" defer></script>
+<script src="vital_ka_dialogue.js" defer></script>
+<script src="vital_ka_conversation.js" defer></script>
+<script src="vital_ka_ble.js" defer></script>
+<script src="ka_telemedecine.js" defer></script>
+<script src="vital_ka_ai.js" defer></script>
+<script src="vital_ka_app.js" defer></script>
+</head>
+<body>
+<div id="backArrow" class="back-arrow" onclick="goBack()" title="Retour">←</div>
+<div class="container">
+<div class="screen active" id="screen-splash">
+<div class="splash-header"><img src="logo2.jpg" class="splash-logo" alt="Vital Ka"><h1>Vital Ka</h1><p>LA SANTE PAR LA RESONANCE</p></div>
+
+<!-- ═══ Dashboard contextuel "Ma journée" ═══ -->
+<div class="card" style="margin:0 12px 10px" id="dashboardCard">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<span class="material-symbols-outlined" style="color:var(--accent)">today</span>
+<h3 style="margin:0">📅 Aujourd'hui — <span id="dashboardDate"></span></h3>
+</div>
+<div class="dash-stats" id="dashStats">
+<div class="dash-stat"><span class="dash-num" id="dashPatientCount">0</span><span class="dash-lbl">patients en suivi</span></div>
+<div class="dash-stat"><span class="dash-num" id="dashDiagToday">0</span><span class="dash-lbl">diag aujourd'hui</span></div>
+<div class="dash-stat"><span class="dash-num" id="dashUrgentCount">0</span><span class="dash-lbl">urgences récentes</span></div>
+</div>
+<div id="dashLastDiag" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
+</div>
+
+<button class="btn btn-primary" onclick="showScreen('resonance')">🔍 COMMENCER LE DIAGNOSTIC</button>
+<button class="btn btn-secondary" onclick="showScreen('history')">📋 CONSULTER LES ARCHIVES</button>
+<button class="btn btn-secondary" onclick="showScreen('patients')">👥 GÉRER LES PATIENTS</button>
+<button class="btn btn-secondary" onclick="showScreen('guide')">📖 MODE D'EMPLOI</button>
+<button class="btn btn-secondary" onclick="window.open('ka_medecins.html','_blank')">🩺 PORTAIL MÉDECINS</button>
+<button class="btn btn-secondary" onclick="window.open('ka_patient.html','_blank')">👤 VUE PATIENT</button>
+<span class="label-sm">v2.1 · 41 pathologies · Zero hallucination · Hors-ligne</span></div></div>
+<div class="screen" id="screen-resonance">
+<header><img src="logo2.jpg" style="width:96px;height:96px;border-radius:50%;object-fit:cover;margin-bottom:8px" alt="Vital Ka"><h1>Vital Ka</h1><p>Diagnostic par resonance harmonique</p><div class="header-badges"><span>📱 Installable</span><span>41 pathologies</span><span>Hors-ligne</span></div></header>
+<div class="card" onclick="this.classList.toggle('expanded')"><div style="display:flex;align-items:center;gap:8px"><span class="material-symbols-outlined">psychology</span><h3 style="margin:0">Comment fonctionne le diagnostic harmonique ?</h3></div><div class="exp-content"><p><strong>① Symptome = onde.</strong> Signature unique dans l'espace ondulatoire.</p><p><strong>② Maladie = superposition.</strong> Somme des ondes de ses symptomes.</p><p><strong>③ Diagnostic = resonance.</strong> Mesure de coherence ondulatoire.</p><p><strong>④ Zero hallucination.</strong> Mathematiques deterministes, pas d'IA generative.</p></div></div>
+<div class="patient-bar"><select id="patientSelect" onchange="onPatientSelect(this.value)"><option value="">👤 Patient anonyme</option></select><button onclick="showScreen('patients')" title="Gerer les patients"><span class="material-symbols-outlined">person_add</span></button><button onclick="showScreen('dossier')" title="Dossier medical"><span class="material-symbols-outlined">folder_open</span></button><input id="patientAge" type="number" placeholder="Âge" min="0" max="120" style="width:55px"><select id="patientGender" style="width:60px"><option value="">⚥</option><option value="homme">H</option><option value="femme">F</option></select></div>
+<div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span class="material-symbols-outlined">stethoscope</span><h3 style="margin:0">Symptomes</h3></div><textarea id="symptomsInput" placeholder="Decrivez les symptomes du patient..."></textarea><!-- Signes vitaux (collapsible) — alimentent le moteur de regles de seuils --><details style="margin-top:8px;font-size:12px"><summary style="cursor:pointer;color:var(--accent);font-weight:600">🩺 Signes vitaux (optionnels — pour regles de seuils)</summary><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;padding:8px;background:var(--surface-container-lowest);border-radius:8px"><label>MUAC (mm) <input id="vitalMuac" type="number" placeholder="ex: 110" min="80" max="250" style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px"></label><label>FR (/min) <input id="vitalFR" type="number" placeholder="ex: 45" min="0" max="80" style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px"></label><label>Temp (°C) <input id="vitalTemp" type="number" placeholder="ex: 38.5" min="30" max="45" step="0.1" style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px"></label><label>TA Syst (mmHg) <input id="vitalTASyst" type="number" placeholder="ex: 145" min="60" max="250" style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px"></label><label>TA Diast (mmHg) <input id="vitalTADiast" type="number" placeholder="ex: 95" min="30" max="150" style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px"></label><label>Poids (g, 0-5 kg) <input id="vitalPoids" type="number" placeholder="ex: 2100" min="500" max="5000" style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px"></label><label>Surface brulure (%) <input id="vitalSurface" type="number" placeholder="ex: 12" min="0" max="100" style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px"></label></div></details><div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-sm btn-secondary" style="width:auto;padding:10px 18px;font-size:13px" onclick="openSymptomsModal()"><span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px">add_circle</span> Symptomes rapides</button><button class="btn btn-primary" id="diagnoseBtn" onclick="handleDiagnoseBtn()" style="flex:1">LANCER LE DIAGNOSTIC</button></div></div>
+<div id="resultsArea"></div>
+
+<!-- Modal symptomes rapides -->
+<div id="symptomsModalOverlay" class="symptoms-modal-overlay" onclick="if(event.target===this)closeSymptomsModal()">
+<div class="symptoms-modal">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+<h3 style="margin:0;color:var(--accent)">Symptomes rapides</h3>
+<button onclick="closeSymptomsModal()" style="background:none;border:none;color:var(--muted);font-size:1.4em;cursor:pointer">&times;</button>
+</div>
+<div style="margin-bottom:12px">
+<div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Symptomes individuels</div>
+<div class="chips" id="quickChips"></div>
+</div>
+<div style="margin-top:4px">
+<div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Cas types</div>
+<div id="demoBtns" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+</div>
+</div>
+</div>
+<footer>Vital Ka — Aide au diagnostic. Urgence vitale : <strong>15</strong> (SAMU)</footer></div>
+<div class="screen" id="screen-history"><header><h2>HISTORIQUE DES DIAGNOSTICS</h2></header><div id="historyList"><div class="card"><p style="text-align:center;color:var(--muted)">Aucun diagnostic.</p></div></div><button class="btn btn-secondary" onclick="if(confirm('Effacer?')){diagnosticHistory=[];localStorage.removeItem('vital_ka_history');renderHistory()}">EFFACER L'HISTORIQUE</button></div>
+<div class="screen" id="screen-vitals"><header><h2>CONSTANTES VITALES</h2></header><div id="vitalsContent"></div></div>
+<div class="screen" id="screen-patients"><header><h2>DOSSIERS PATIENTS</h2></header><div id="patientsList"></div><button class="btn btn-primary" style="margin-top:12px" onclick="showScreen('resonance')">RETOUR AU DIAGNOSTIC</button><button class="btn btn-secondary" style="margin-top:8px" onclick="setupPIN()">🔒 Configurer PIN</button><button class="btn btn-secondary" style="margin-top:8px" onclick="KA_SECURE.exportAll('vital_ka')">💾 Sauvegarder</button><button class="btn btn-secondary" style="margin-top:8px" onclick="KA_SECURE.triggerImport('vital_ka',function(){location.reload()})">📂 Restaurer</button><button class="btn btn-secondary" style="margin-top:8px" onclick="importPatientData()">📥 Importer donnees patient</button><button class="btn btn-secondary" style="margin-top:8px" onclick="showScreen('guide')">📖 Mode d'emploi</button><button class="btn btn-primary" style="margin-top:8px;display:none" id="exportDiagBtn" onclick="exportDiagnosis()">📤 Envoyer diagnostic au patient</button></div>
+<div class="screen" id="screen-dossier">
+<header><h2 style="color:#d4a853">DOSSIER MEDICAL</h2></header>
+<div class="card" style="text-align:center"><div style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,#d4a853,#7b5804);display:flex;align-items:center;justify-content:center;font-size:1.6em;font-weight:700;margin:0 auto 8px" id="dossierAvatar">?</div><h3 id="dossierName">Patient anonyme</h3><p style="color:#9b8f7e;font-size:.8em" id="dossierId"></p></div>
+<div class="vital-grid" style="margin-top:12px">
+<div class="stat-card"><div class="val" id="dosBPM">--</div><div class="lbl">BPM</div></div>
+<div class="stat-card"><div class="val" id="dosBP">--</div><div class="lbl">cmHg</div></div>
+<div class="stat-card"><div class="val" id="dosSpO2">--</div><div class="lbl">SpO2</div></div>
+<div class="stat-card"><div class="val" id="dosTemp">--</div><div class="lbl">Temp</div></div>
+</div>
+<div class="action-grid" style="margin-top:12px">
+<div class="action-card" onclick="showScreen('resonance')"><div class="icon">🔍</div><div class="title">Nouveau Diagnostic</div><div class="sub">Lancer une analyse</div></div>
+<div class="action-card" onclick="showScreen('cardiac')"><div class="icon">🫀</div><div class="title">Analyse Cardiaque</div><div class="sub">ECG detaille</div></div>
+<div class="action-card" onclick="showScreen('history')"><div class="icon">📋</div><div class="title">Historique</div><div class="sub">Diagnostics passes</div></div>
+<div class="action-card" onclick="showScreen('scanner')"><div class="icon">🔑</div><div class="title">Identifier patient</div><div class="sub">Code court</div></div>
+</div>
+</div>
+<div class="screen" id="screen-cardiac">
+<header style="text-align:center;padding:24px 0 16px"><h2 style="color:#d4a853">ANALYSE CARDIAQUE</h2></header>
+<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">ECG — Derivation II</h3><span class="harmonic-badge"><span class="dot"></span> Link Actif 94%</span></div>
+<div class="ecg-grid"><div class="grid-overlay"></div>
+<svg viewBox="0 0 600 200"><path d="M0,100 L50,100 L55,100 L60,30 L65,170 L70,100 L120,100 L125,100 L130,20 L135,180 L140,100 L200,100 L250,100 L300,100 L350,100 L400,100 L450,100 L500,100 L505,100 L510,40 L515,160 L520,100 L570,100 L600,100" stroke="#d4a853" stroke-width="2" fill="none" opacity="0.8"/></svg></div>
+<div class="vital-grid" style="margin-top:12px">
+<div class="stat-card"><div class="val">72</div><div class="lbl">BPM MOYEN</div></div>
+<div class="stat-card"><div class="val">45 ms</div><div class="lbl">VARIABILITE</div></div>
+<div class="stat-card"><div class="val">0</div><div class="lbl">ANOMALIES 24h</div></div>
+<div class="stat-card"><div class="val">98%</div><div class="lbl">FIABILITE</div></div>
+</div>
+<div class="card" style="margin-top:12px"><h3>Evenements recents</h3>
+<div class="event-row"><span class="dot"></span><span class="evt-time">14:30</span><span class="evt-text">Pic d'activite — 94 BPM</span></div>
+<div class="event-row"><span class="dot" style="background:#666"></span><span class="evt-time">12:15</span><span class="evt-text">Phase de repos — 58 BPM</span></div>
+<div class="event-row"><span class="dot" style="background:#666"></span><span class="evt-time">08:45</span><span class="evt-text">Variabilite matinale — 52 ms</span></div>
+</div>
+</div>
+</div>
+<div class="screen" id="screen-scanner">
+<header style="text-align:center;padding:24px 0 16px"><h2 style="color:#d4a853">IDENTIFIER UN PATIENT</h2></header>
+<div class="card" style="text-align:center">
+<div style="font-size:48px;margin-bottom:8px">🔑</div>
+<p style="color:#c9bfa8;margin:8px 0 16px">Saisissez le <strong style="color:var(--accent)">code patient</strong> à 6 caractères<br>(affiché sur le téléphone du patient, ex: K7M2-XQ)</p>
+<input id="patientCodeInput" placeholder="K7M2-XQ" style="width:220px;padding:12px 16px;background:#141414;color:#d4c8a0;border:1px solid #2a2a2a;border-radius:8px;font-size:18px;font-family:'Courier New',monospace;text-align:center;letter-spacing:2px;margin:0 auto;display:block" onkeydown="if(event.key==='Enter')lookupPatientByCode()">
+<button class="btn btn-primary" style="margin-top:12px;padding:12px 28px" onclick="lookupPatientByCode()">🔍 Rechercher le dossier</button>
+<div id="lookupResult" style="margin-top:12px;font-size:13px"></div>
+<hr style="border:none;border-top:1px solid var(--border);margin:20px 0">
+<p style="font-size:.8em;color:#8b7355;margin-bottom:8px">Ou importer un dossier complet (code de transfert long) :</p>
+<button class="btn btn-secondary" style="width:auto;padding:10px 20px" onclick="importPatientData()">📥 Importer données patient</button>
+</div>
+</div>
+<div class="screen" id="screen-teleconsultation">
+<header><h2 style="color:#d4a853">TELECONSULTATION</h2><p style="color:#9b8f7e;font-size:13px">Compression HCV — Consultation securisee</p></header>
+<div class="network-bar" id="networkBar">
+<span class="net-indicator" id="netIndicator"></span>
+<span id="netLabel">Detection reseau...</span>
+<span class="net-ip" id="netIP" style="display:none"></span>
+</div>
+<div class="teleconsult-screen">
+<div class="video-duo">
+<div class="video-box">
+<video id="teleLocalVideo" autoplay muted playsinline></video>
+<div class="video-label">Moi</div>
+<div id="teleLocalStatus" class="video-status"></div>
+</div>
+<div class="video-box">
+<canvas id="teleRemoteCanvas"></canvas>
+<div class="video-label">Distant</div>
+<div id="teleRemoteStatus" class="video-status"></div>
+</div>
+</div>
+<div class="call-status">
+<div class="call-status-text" id="teleStatusText">Pret pour la consultation</div>
+<div class="call-status-sub" id="teleStatusSub">Les donnees sont compressees en temps reel via HCV Delta-H</div>
+</div>
+<div class="call-controls">
+<button class="call-btn call-btn-start" onclick="startTeleconsultation()" title="Appeler" id="btnCallStart"><span class="material-symbols-outlined">call</span></button>
+<button class="call-btn call-btn-mute" onclick="toggleTeleMute()" title="Micro" id="btnCallMute"><span class="material-symbols-outlined">mic</span></button>
+<button class="call-btn call-btn-video" onclick="toggleTeleVideo()" title="Camera" id="btnCallVideo"><span class="material-symbols-outlined">videocam</span></button>
+<button class="call-btn call-btn-end" onclick="endTeleconsultation()" title="Raccrocher" id="btnCallEnd"><span class="material-symbols-outlined">call_end</span></button>
+</div>
+<div class="quality-slider">
+<span>Qualite HCV</span>
+<input type="range" min="10" max="100" value="75" oninput="KATelemedecine.setQuality(this.value)">
+<span id="hcvQualityLabel">75%</span>
+</div>
+<div class="hcv-stats">
+<span>Envoyees: <span class="val" id="hcvSent">0</span></span>
+<span>Recues: <span class="val" id="hcvRecv">0</span></span>
+<span>Ratio: <span class="val" id="hcvRatio">-</span></span>
+</div>
+</div>
+
+<!-- QR Signaling overlay -->
+<div id="signalQRContainer" style="display:none">
+<div class="signal-overlay">
+<div class="signal-card">
+<h3>📋 Connexion securisee</h3>
+<p id="signalLabel">Partagez ce QR code pour etablir la connexion</p>
+<div class="qr-box" id="qrSignal"></div>
+<p style="font-size:10px;color:#8b7355">HCV Delta-H — Compression harmonique</p>
+<button class="signal-close" onclick="document.getElementById('signalQRContainer').style.display='none'">Fermer</button>
+</div>
+</div>
+</div>
+
+<!-- Manual SDP input -->
+<div id="signalPromptContainer" style="display:none">
+<div class="signal-overlay">
+<div class="signal-card">
+<h3>🔗 Code de connexion</h3>
+<p>Collez le code SDP du medecin :</p>
+<textarea id="sdpInput" placeholder="Collez le code SDP ici..."></textarea>
+<button class="btn btn-primary" style="margin-top:12px" onclick="acceptTeleCall()">🔓 Se connecter</button>
+<button class="signal-close" onclick="document.getElementById('signalPromptContainer').style.display='none'">Annuler</button>
+</div>
+</div>
+</div>
+</div>
+<div class="screen" id="screen-ia">
+<header><h2 style="color:#d4a853">HARMONIC AI</h2><p style="color:#9b8f7e;font-size:13px">Assistant medical — Zero hallucination</p></header>
+<div class="card" style="margin:0 16px 8px;padding:8px 14px;display:flex;align-items:center;gap:8px">
+<span id="aiModeBadge" class="ai-mode-badge local">LOCAL</span>
+<span style="font-size:11px;color:#8b7355" id="aiModeLabel">Mode hors-ligne — Templates deterministes</span>
+<span style="flex:1"></span>
+<span id="voiceServerBadge" class="voice-server-badge checking" title="Statut du serveur vocal Piper">🎙️ …</span>
+</div>
+<div class="card" style="margin:0 16px 8px;padding:8px 14px;display:flex;align-items:center;gap:8px">
+<span style="font-size:11px;color:#8b7355;text-transform:uppercase;letter-spacing:1px;white-space:nowrap">Specialite</span>
+<select id="specialtySelect" class="specialty-select" onchange="onSpecialtyChange(this.value)"></select>
+</div>
+<div class="card" style="margin:0 16px 8px;padding:8px 14px;display:flex;align-items:center;gap:8px">
+<span style="font-size:11px;color:#8b7355;text-transform:uppercase;letter-spacing:1px;white-space:nowrap">Voix</span>
+<select id="voiceSelect" class="specialty-select" onchange="onVoiceChange(this.value)"></select>
+</div>
+<div class="holo-viz" id="holoViz" style="display:none">
+<h4>🧬 Hologramme de sante</h4>
+<div id="holoBars"></div>
+<div class="holo-legend" id="holoLegend"></div>
+</div>
+<div class="ai-conversation" id="aiConversation">
+<div class="ai-message system">🧠 Harmonic AI prete. Decrivez les symptomes ou cliquez sur une action rapide.</div>
+</div>
+<div class="ai-quick-actions">
+<button class="ai-quick-btn" onclick="aiQuickExplain()">🔬 Expliquer le diagnostic</button>
+<button class="ai-quick-btn" onclick="aiQuickDifferential()">🔄 Diagnostics differentiels</button>
+<button class="ai-quick-btn" onclick="aiQuickHolo()">🧬 Voir l'hologramme</button>
+<button class="ai-quick-btn" onclick="aiQuickTeach()">📚 Mode formation</button>
+<button class="ai-quick-btn" onclick="aiQuickClarify()">❓ Affiner</button>
+<button class="ai-quick-btn" onclick="aiQuickSearch()">🔍 Rechercher</button>
+<button class="ai-quick-btn" onclick="aiQuickDrug()">💊 Médicaments</button>
+<button class="ai-quick-btn" onclick="aiQuickMereEnfant()">🤰 Mère-Enfant</button>
+<button class="ai-quick-btn ka-voice-btn" onclick="aiSpeakLast()">🔊 Écouter</button>
+<button class="ai-quick-btn ka-voice-btn" onclick="voiceStop()">⏹️ Stop</button>
+	</div>
+		<!-- ═══ Barre de dialogue vocal ═══ -->
+		<div class="voice-dialogue-bar">
+		  <!-- Toggle conversation naturelle (always listening) -->
+		  <button id="conversationToggle" class="conv-toggle idle" onclick="KA_CONVERSATION.toggle()" title="Activer/désactiver l'écoute continue">
+		    🎤 Conversation arrêtée
+		  </button>
+		  <!-- Mode Conseiller/Compagnon -->
+		  <button id="voiceModeBtn2" class="mode-btn conseiller" onclick="KA_CONVERSATION.toggleMode()" title="Changer mode Conseiller/Compagnon">🩺 Conseiller</button>
+		  <!-- Texte intermédiaire (affiché pendant l'écoute) -->
+		  <div id="interimText" class="interim-text" style="display:none"></div>
+		  <!-- Statut -->
+		  <span id="conversationStatus" class="voice-status">Cliquez pour démarrer la conversation</span>
+		</div>
+		<!-- ═══ Barre push-to-talk (fallback manuel) ═══ -->
+		<div class="voice-dialogue-bar" style="margin-top:4px; opacity:0.7">
+		  <span style="font-size:10px;color:var(--muted)">Ou mode manuel :</span>
+		  <button id="micBtn" class="mic-btn idle"
+		          onmousedown="KA_DIALOGUE.start()" onmouseup="KA_DIALOGUE.stop()" onmouseleave="KA_DIALOGUE.stop()"
+		          ontouchstart="KA_DIALOGUE.start()" ontouchend="KA_DIALOGUE.stop()" ontouchcancel="KA_DIALOGUE.stop()"
+		          title="Maintenir pour parler, relâcher pour entendre la réponse">🎤 Maintenir pour parler</button>
+		</div>
+	<div class="ai-input-bar">
+<input id="aiInput" placeholder="Posez une question medicale..." onkeydown="if(event.key==='Enter')aiSend()">
+<button onclick="aiSend()">Envoyer</button>
+</div>
+</div>
+<div class="screen" id="screen-guide">
+<header><h2 style="color:#d4a853">MODE D'EMPLOI</h2><p style="color:#9b8f7e;font-size:13px">Guide illustre — prise en main en 8 etapes</p></header>
+
+<div class="guide-step">
+<div class="guide-num">1</div>
+<div class="guide-body">
+<h3>Demarrer un diagnostic</h3>
+<p>Touchez <b>COMMENCER LE DIAGNOSTIC</b> puis decrivez les symptomes en langage naturel : « fievre, toux, maux de tete depuis 3 jours ».</p>
+<p>Le bouton <b>Symptomes rapides</b> permet aussi de cocher les symptomes courants et les cas types.</p>
+</div>
+<div class="guide-illus"><svg viewBox="0 0 120 80" fill="none" stroke="#d4a853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="38" y="6" width="44" height="68" rx="8"/><line x1="54" y1="12" x2="66" y2="12"/><path d="M46 44 q4-14 8 0 t8 0 t8 0 t8 0"/><circle cx="60" cy="67" r="2.5"/></svg></div>
+</div>
+
+<div class="guide-step">
+<div class="guide-num">2</div>
+<div class="guide-body">
+<h3>Ajouter les signes vitaux</h3>
+<p>Depliez <b>Signes vitaux</b> : temperature, tension, frequence respiratoire, MUAC. Ils activent les <b>regles de seuils</b> qui detectent automatiquement les urgences (detresse respiratoire, hypertension, denutrition).</p>
+<p>L'<b>age</b> et le <b>sexe</b> du patient affinent le classement des diagnostics.</p>
+</div>
+<div class="guide-illus"><svg viewBox="0 0 120 80" fill="none" stroke="#d4a853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M60 68 C48 58 32 46 32 34 C32 26 38 22 44 22 C50 22 56 26 60 32 C64 26 70 22 76 22 C82 22 88 26 88 34 C88 46 72 58 60 68 Z"/><polyline points="36,44 44,44 48,34 54,54 58,44 70,44" stroke="#27ae60"/></svg></div>
+</div>
+
+<div class="guide-step">
+<div class="guide-num">3</div>
+<div class="guide-body">
+<h3>Lire les resultats</h3>
+<p>Les pathologies sont classees par <b>resonance harmonique</b> : la plus probable apparait en premier, avec sa <b>barre de confiance</b>.</p>
+<p>Le badge <b>URGENT</b> signale un danger vital. Sous chaque diagnostic : la <b>conduite a tenir</b> detaillee.</p>
+</div>
+<div class="guide-illus"><svg viewBox="0 0 120 80" fill="none" stroke="#d4a853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16" y1="68" x2="100" y2="68"/><rect x="26" y="44" width="14" height="24" rx="2"/><rect x="48" y="32" width="14" height="36" rx="2"/><rect x="70" y="20" width="14" height="48" rx="2"/><path d="M92 24 l5 5 10-12" stroke="#27ae60"/></svg></div>
+</div>
+
+<div class="guide-step">
+<div class="guide-num">4</div>
+<div class="guide-body">
+<h3>Phytotherapie locale</h3>
+<p>Chaque diagnostic propose les <b>plantes medicinales locales</b> validees (grade A/B) : partie utilisee, preparation et precautions.</p>
+<p>Les plantes en <b>vigilance</b> (toxiques) sont signalees en rouge. La phytotherapie <b>ne remplace pas</b> le traitement medical.</p>
+</div>
+<div class="guide-illus"><svg viewBox="0 0 120 80" fill="none" stroke="#d4a853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M62 64 C40 58 32 40 36 16 C58 20 68 42 62 64 Z"/><path d="M62 62 C56 46 48 32 38 20"/><path d="M52 46 q5 1 8 6 M46 34 q5 1 8 6"/><path d="M62 64 q-1 6-5 9"/><circle cx="90" cy="56" r="10" stroke="#27ae60"/><path d="M86 56 h8 M90 52 v8" stroke="#27ae60"/></svg></div>
+</div>
+
+<div class="guide-step">
+<div class="guide-num">5</div>
+<div class="guide-body">
+<h3>Dialoguer avec Harmonic AI</h3>
+<p>Onglet <b>Harmonic</b> : posez vos questions medicales a l'ecrit, ou touchez <b>Conversation</b> et parlez. Apres 2 secondes de silence, Harmonic AI repond a voix haute.</p>
+<p>Vous pouvez <b>l'interrompre en parlant</b>. Mode <b>Conseiller</b> pour le soignant, <b>Compagnon</b> pour expliquer au patient.</p>
+</div>
+<div class="guide-illus"><svg viewBox="0 0 120 80" fill="none" stroke="#d4a853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="52" y="8" width="16" height="30" rx="8"/><path d="M44 32 a16 16 0 0 0 32 0"/><line x1="60" y1="48" x2="60" y2="58"/><line x1="50" y1="60" x2="70" y2="60"/><path d="M32 26 q5 8 0 16 M26 22 q7 12 0 24"/><path d="M88 26 q-5 8 0 16 M94 22 q-7 12 0 24"/></svg></div>
+</div>
+
+<div class="guide-step">
+<div class="guide-num">6</div>
+<div class="guide-body">
+<h3>Gerer les patients</h3>
+<p>Ecran <b>Profile</b> : creez un dossier par patient (nom, age, sexe, antecedents). Protegez l'acces par un <b>code PIN</b>.</p>
+<p><b>Sauvegardez</b> et restaurez vos donnees en JSON. Le <b>QR code</b> transfere un dossier entre le medecin et le patient.</p>
+</div>
+<div class="guide-illus"><svg viewBox="0 0 120 80" fill="none" stroke="#d4a853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 30 v32 a4 4 0 0 0 4 4h40a4 4 0 0 0 4-4V38a4 4 0 0 0-4-4H52l-6-8H22a4 4 0 0 0-4 4z"/><rect x="80" y="42" width="24" height="24" rx="2"/><path d="M84 46h4v4h-4z M94 46h4v4h-4z M84 56h4v4h-4z M94 56h4v4h-4z" fill="#d4a853" stroke="none"/></svg></div>
+</div>
+
+<div class="guide-step">
+<div class="guide-num">7</div>
+<div class="guide-body">
+<h3>Teleconsultation</h3>
+<p>Onglet <b>Consult</b> : appelez un confrere en video, meme sur reseau faible — la compression harmonique <b>HCV</b> reduit les donnees jusqu'a 90%.</p>
+<p>Partagez le <b>QR code de connexion</b> pour etablir la liaison securisee.</p>
+</div>
+<div class="guide-illus"><svg viewBox="0 0 120 80" fill="none" stroke="#d4a853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="20" width="42" height="32" rx="4"/><circle cx="33" cy="31" r="5"/><path d="M25 46 q8-9 16 0"/><rect x="66" y="20" width="42" height="32" rx="4"/><circle cx="87" cy="31" r="5"/><path d="M79 46 q8-9 16 0"/><path d="M56 36 h8 M60 32 l6 4-6 4"/><path d="M24 62 q18 8 36 0 t36 0" stroke-dasharray="2 4"/></svg></div>
+</div>
+
+<div class="guide-step">
+<div class="guide-num">8</div>
+<div class="guide-body">
+<h3>Urgences et limites</h3>
+<p>Vital Ka est une <b>aide au diagnostic</b> : il ne remplace ni l'examen clinique ni le jugement medical.</p>
+<p>Devant une <b>urgence vitale</b>, appelez le <b>15 (SAMU)</b> avant toute autre action. Confirmez toujours par l'examen clinique.</p>
+</div>
+<div class="guide-illus"><svg viewBox="0 0 120 80" fill="none" stroke="#d4a853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M42 12 L74 64 H10 Z"/><line x1="42" y1="28" x2="42" y2="46"/><circle cx="42" cy="54" r="1.5" fill="#d4a853"/><rect x="82" y="20" width="24" height="42" rx="5"/><line x1="88" y1="30" x2="100" y2="30"/><line x1="88" y1="38" x2="100" y2="38"/><line x1="88" y1="46" x2="96" y2="46"/></svg></div>
+</div>
+
+<div class="guide-tip"><b>A retenir :</b> ① Decrivez les symptomes → ② Lancez le diagnostic → ③ Lisez la conduite a tenir → ④ Interrogez Harmonic AI a la voix. Vital Ka fonctionne <b>100% hors-ligne</b> : aucune donnee patient ne quitte l'appareil.</div>
+<button class="btn btn-primary" onclick="showScreen('resonance')">COMMENCER LE DIAGNOSTIC</button>
+<button class="btn btn-secondary" onclick="showScreen('splash')">RETOUR A L'ACCUEIL</button>
+</div>
+</div>
+<nav class="bottom-nav" id="bottomNav" style="display:none">
+<div class="nav-item active" data-screen="resonance" onclick="showScreen('resonance')"><span class="material-symbols-outlined">waves</span><span class="nav-label">Resonance</span></div>
+<div class="nav-item" data-screen="history" onclick="showScreen('history')"><span class="material-symbols-outlined">history</span><span class="nav-label">History</span></div>
+<div class="nav-item" data-screen="vitals" onclick="showScreen('vitals')"><span class="material-symbols-outlined">ecg_heart</span><span class="nav-label">Vitals</span></div>
+<div class="nav-item" data-screen="teleconsultation" onclick="showScreen('teleconsultation')"><span class="material-symbols-outlined">videocam</span><span class="nav-label">Consult</span></div>
+<div class="nav-item" data-screen="ia" onclick="showScreen('ia')"><span class="material-symbols-outlined">psychology</span><span class="nav-label">Harmonic</span></div>
+<div class="nav-item" data-screen="patients" onclick="showScreen('patients')"><span class="material-symbols-outlined">person</span><span class="nav-label">Profile</span></div>
+</nav>
+</body></html>

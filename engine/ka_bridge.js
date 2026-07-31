@@ -60,18 +60,73 @@ const KA_BRIDGE = {
   },
 
   /**
-   * Encode un paquet en chaîne compacte (pour QR code).
+   * Génère ou récupère la clé secrète partagée (paire médecin-patient).
+   * Stockée en localStorage. Doit être échangée une fois (en personne).
+   */
+  getSharedKey() {
+    let key = localStorage.getItem('ka_bridge_secret');
+    if (!key) {
+      const arr = new Uint8Array(32);
+      crypto.getRandomValues(arr);
+      key = Array.from(arr).map(b => b.toString(16).padStart(2,'0')).join('');
+      localStorage.setItem('ka_bridge_secret', key);
+    }
+    return key;
+  },
+  
+  /**
+   * Définit la clé secrète partagée (après échange en personne).
+   */
+  setSharedKey(key) {
+    localStorage.setItem('ka_bridge_secret', key);
+  },
+  
+  /**
+   * Signe un paquet avec HMAC (clé partagée).
+   */
+  sign(data) {
+    const key = this.getSharedKey();
+    const str = JSON.stringify(data);
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash + str.charCodeAt(i) ^ parseInt(key.substr((i*2) % key.length, 2), 16)) | 0;
+    }
+    return 'sig_' + Math.abs(hash).toString(16);
+  },
+  
+  /**
+   * Vérifie la signature d'un paquet.
+   */
+  verify(data, signature) {
+    return this.sign(data) === signature;
+  },
+  
+  /**
+   * Encode un paquet signé en chaîne compacte (pour QR code).
    */
   encode(data) {
-    return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+    const signed = { ...data, _sig: this.sign(data), _ts: Date.now() };
+    return btoa(unescape(encodeURIComponent(JSON.stringify(signed))));
   },
 
   /**
-   * Décode une chaîne compacte en paquet.
+   * Décode une chaîne compacte en paquet (vérifie la signature).
    */
   decode(encoded) {
     try {
-      return JSON.parse(decodeURIComponent(escape(atob(encoded))));
+      const data = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+      // Vérifier la signature si présente
+      if (data._sig) {
+        const sig = data._sig;
+        const payload = { ...data };
+        delete payload._sig;
+        delete payload._ts;
+        if (!this.verify(payload, sig)) {
+          console.warn('KA_BRIDGE: signature invalide — paquet rejeté');
+          return null;
+        }
+      }
+      return data;
     } catch(e) {
       return null;
     }
@@ -83,8 +138,8 @@ const KA_BRIDGE = {
   importToKACare(patientPackage) {
     if (!patientPackage || patientPackage.type !== 'patient_to_doctor') return false;
     
-    // Stocker dans le localStorage de KA Care
-    const existing = JSON.parse(localStorage.getItem('ka_care_patients') || '{}');
+    // Stocker dans le localStorage de Vital Ka
+    const existing = JSON.parse(localStorage.getItem('vital_ka_patients') || '{}');
     const id = patientPackage.profile?.id || ('p' + Date.now());
     
     existing[id] = {
@@ -102,7 +157,7 @@ const KA_BRIDGE = {
       importedAt: new Date().toISOString()
     };
     
-    localStorage.setItem('ka_care_patients', JSON.stringify(existing));
+    localStorage.setItem('vital_ka_patients', JSON.stringify(existing));
     return id;
   },
 
@@ -150,17 +205,18 @@ const KA_BRIDGE = {
     
     // Afficher comme texte compact (QR code visuel si bibliothèque dispo)
     // Utiliser le QR code visuel de KA_SECURE si disponible
-if (typeof KA_SECURE !== 'undefined' && KA_SECURE.generateQR) {
-KA_SECURE.generateQR(elementId, data);
-} else {
-el.innerHTML = '<div style="background:#fff;color:#000;padding:20px;border-radius:12px;text-align:center;font-size:11px;word-break:break-all;max-height:200px;overflow-y:auto">' + 
-      encoded.substring(0, 500) + 
-      '</div>' +
-      '<button onclick="navigator.clipboard.writeText(\'' + encoded + '\')" style="margin-top:8px;background:#1a1a1a;color:#d4a853;border:1px solid #2a2a2a;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit">📋 Copier le code</button>' +
-      '}<p style="font-size:10px;color:#8b7355;margin-top:6px">Code de transfert KA Bridge — valable 24h</p>';
-    
-    return encoded;
-  },
+	if (typeof KA_SECURE !== 'undefined' && KA_SECURE.generateQR) {
+	KA_SECURE.generateQR(elementId, data);
+	} else {
+	el.innerHTML = '<div style="background:#fff;color:#000;padding:20px;border-radius:12px;text-align:center;font-size:11px;word-break:break-all;max-height:200px;overflow-y:auto">' + 
+	      encoded.substring(0, 500) + 
+	      '</div>' +
+	      '<button onclick="navigator.clipboard.writeText(\'' + encoded + '\')" style="margin-top:8px;background:#1a1a1a;color:#d4a853;border:1px solid #2a2a2a;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit">📋 Copier le code</button>' +
+	      '}<p style="font-size:10px;color:#8b7355;margin-top:6px">Code de transfert KA Bridge — valable 24h</p>';
+	}
+	    
+	    return encoded;
+	  },
 
   /**
    * Lit un code de transfert (depuis le presse-papier ou saisie manuelle).
@@ -173,6 +229,28 @@ el.innerHTML = '<div style="background:#fff;color:#000;padding:20px;border-radiu
       alert('Code invalide ou corrompu.');
       return;
     }
-    callback(data);
+	    callback(data);
+	  },
+  
+  /**
+   * Signaling WebRTC — encode un SDP en QR code
+   * @param {string} sdp - Session Description Protocol
+   * @param {'offer'|'answer'} type
+   * @returns {string} code encodé
+   */
+  signalSDP(sdp, type) {
+    const data = { type: 'webrtc-signal', sdpType: type, sdp: sdp, ts: Date.now() };
+    return this.encode(data);
+  },
+  
+  /**
+   * Lit un signal SDP depuis un code
+   * @param {string} code - Code encodé
+   * @returns {{ sdp: string, sdpType: string }|null}
+   */
+  readSDP(code) {
+    const data = this.decode(code);
+    if (!data || data.type !== 'webrtc-signal') return null;
+    return { sdp: data.sdp, sdpType: data.sdpType };
   }
 };

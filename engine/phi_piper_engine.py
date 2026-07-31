@@ -55,7 +55,10 @@ PIPER_VOICES = {
         "available": [
             "fr_FR-siwis-medium",
             "fr_FR-siwis-low",
+            "fr_FR-tom-medium",
             "fr_FR-mls-medium",
+            "fr_FR-upmc-medium",
+            "fr_FR-gilles-low",
         ],
         "language": "fr",
     },
@@ -204,10 +207,11 @@ class PhiPiperEngine:
         }
 
         # Longueur d'échelle : inversement proportionnelle à la vitesse
-        # voice[2] = 0 → rapide (length_scale bas)
-        # voice[2] = 1 → lent (length_scale élevé)
-        length_scale = 1.5 - voice_11d[idx['H_speed']] * 1.0  # 0.5 à 1.5
-        length_scale = np.clip(length_scale, 0.4, 2.0)
+        # voice[2] = 0 → rapide (length_scale ~0.50, seuil intelligibilité)
+        # voice[2] = 0.48 → neutre (length_scale = 1.0, défaut Piper)
+        # voice[2] = 1 → lent (length_scale ~1.55)
+        length_scale = 0.50 + voice_11d[idx['H_speed']] * 1.05  # 0.50 à 1.55
+        length_scale = np.clip(length_scale, 0.48, 1.80)
 
         # Pitch : centré sur 1.0
         pitch_factor = 0.75 + voice_11d[idx['H_pitch_mean']] * 0.5  # 0.75 à 1.25
@@ -269,11 +273,17 @@ class PhiPiperEngine:
             import piper
             # Télécharger le modèle si absent
             model_path = self._get_model_path(voice_name)
-            if not model_path.exists():
+            config_path = self._get_config_path(voice_name)
+            if not model_path.exists() or not config_path.exists():
                 self._download_voice(voice_name)
 
-            # Charger
-            self._piper_voice = piper.PiperVoice.load(str(model_path))
+            # Charger — Piper attend le chemin du .onnx ; le .json doit être
+            # nommé <voice>.json dans le même dossier (cf. _get_config_path).
+            config_arg = str(config_path) if config_path.exists() else None
+            if config_arg:
+                self._piper_voice = piper.PiperVoice.load(str(model_path), config_path=config_arg)
+            else:
+                self._piper_voice = piper.PiperVoice.load(str(model_path))
             self._current_voice_name = voice_name
 
         except Exception as e:
@@ -281,49 +291,67 @@ class PhiPiperEngine:
             self._piper_voice = None
 
     def _piper_synthesize(self, text: str, params: Dict[str, float]) -> Optional[bytes]:
-        """Synthétise le texte avec les paramètres Piper."""
+        """Synthétise le texte avec les paramètres Piper.
+
+        API Piper moderne (piper-tts >= 1.2) :
+            voice.synthesize(text, SynthesisConfig(...)) -> Iterable[AudioChunk]
+            chaque chunk expose .audio_int16_bytes / .audio_int16_array
+        (l'ancienne API voice.synthesize(text, file_obj, length_scale=...) est obsolète)
+        """
         if self._piper_voice is None:
             return None
 
         try:
-            # Configurer les paramètres de synthèse
-            synthesize_args = {
-                'length_scale': params.get('length_scale', 1.0),
-                'noise_scale': params.get('noise_scale', 0.667),
-                'noise_w': params.get('noise_w', 0.8),
-                'sentence_silence': params.get('sentence_silence', 0.2),
-            }
+            # Configurer les paramètres de synthèse via SynthesisConfig
+            try:
+                from piper.config import SynthesisConfig
+                syn_config = SynthesisConfig(
+                    length_scale=params.get('length_scale', 1.0),
+                    noise_scale=params.get('noise_scale', 0.667),
+                    noise_w_scale=params.get('noise_w', 0.8),
+                )
+            except ImportError:
+                syn_config = None  # très vieille API — repli kwargs
 
-            # Synthétiser
-            audio_stream = io.BytesIO()
-            self._piper_voice.synthesize(text, audio_stream, **synthesize_args)
+            # Collecter tous les chunks audio (flux → int16 bytes)
+            raw = bytearray()
+            if syn_config is not None:
+                for chunk in self._piper_voice.synthesize(text, syn_config):
+                    raw.extend(chunk.audio_int16_bytes)
+            else:
+                # Repli ancienne API (stream WAV vers BytesIO)
+                audio_stream = io.BytesIO()
+                self._piper_voice.synthesize(text, audio_stream,
+                    length_scale=params.get('length_scale', 1.0),
+                    noise_scale=params.get('noise_scale', 0.667),
+                    noise_w=params.get('noise_w', 0.8),
+                    sentence_silence=params.get('sentence_silence', 0.2))
+                with wave.open(io.BytesIO(audio_stream.getvalue()), 'rb') as wf:
+                    raw = wf.readframes(wf.getnframes())
 
-            # Appliquer le pitch shift (post-traitement)
-            audio_bytes = audio_stream.getvalue()
+            raw = bytes(raw)
+            if len(raw) < 200:
+                return None
 
-            # Extraire l'audio WAV
-            with wave.open(io.BytesIO(audio_bytes), 'rb') as wf:
-                params_info = wf.getparams()
-                raw = wf.readframes(wf.getnframes())
+            # Fréquence d'échantillonnage réelle du modèle
+            sr = getattr(getattr(self._piper_voice, 'config', None), 'sample_rate', self.sample_rate)
 
-            # Appliquer pitch factor via resampling simple
+            # Appliquer pitch factor via resampling simple (post-traitement)
             pitch_factor = params.get('pitch_factor', 1.0)
             if abs(pitch_factor - 1.0) > 0.01:
                 audio = np.frombuffer(raw, dtype=np.int16).astype(np.float32)
-                # Resampling linéaire pour changer le pitch
                 n = len(audio)
                 new_n = int(n / pitch_factor)
                 indices = np.linspace(0, n - 1, new_n)
                 audio_shifted = np.interp(indices, np.arange(n), audio)
-                audio_shifted = audio_shifted.astype(np.int16)
-                raw = audio_shifted.tobytes()
+                raw = audio_shifted.astype(np.int16).tobytes()
 
-            # Réencoder en WAV
+            # Réencoder en WAV mono 16-bit
             output_stream = io.BytesIO()
             with wave.open(output_stream, 'wb') as wf:
                 wf.setnchannels(1)
                 wf.setsampwidth(2)
-                wf.setframerate(self.sample_rate)
+                wf.setframerate(sr)
                 wf.writeframes(raw)
 
             return output_stream.getvalue()
@@ -338,37 +366,64 @@ class PhiPiperEngine:
         model_dir.mkdir(parents=True, exist_ok=True)
         return model_dir / f"{voice_name}.onnx"
 
+    def _get_config_path(self, voice_name: str) -> Path:
+        """Chemin du JSON de config. Piper nomme ce fichier <voice>.json
+        (SANS '.onnx' au milieu), contrairement à ce que produit
+        model_path.with_suffix('.json')."""
+        model_dir = MODEL_CACHE_DIR / voice_name
+        model_dir.mkdir(parents=True, exist_ok=True)
+        return model_dir / f"{voice_name}.json"
+
     def _download_voice(self, voice_name: str):
-        """Télécharge le modèle ONNX pour une voix Piper."""
+        """Télécharge le modèle ONNX pour une voix Piper.
+
+        Schéma HuggingFace actuel (2024+) :
+            rhasspy/piper-voices/resolve/main/<lang>/<lang>_<country>/<speaker>/<quality>/<file>
+        Ex : fr/fr_FR/siwis/medium/fr_FR-siwis-medium.onnx
+        (l'ancien schéma plat .../<voice>/<file> renvoie 404)
+        """
         import urllib.request
 
         model_path = self._get_model_path(voice_name)
-        config_path = model_path.with_suffix(".json")
+        config_path = self._get_config_path(voice_name)
 
         base_url = "https://huggingface.co/rhasspy/piper-voices/resolve/main"
 
-        # Télécharger le modèle
-        model_url = f"{base_url}/{voice_name}/{voice_name}.onnx"
-        config_url = f"{base_url}/{voice_name}/{voice_name}.onnx.json"
+        # Découper voice_name → fr_FR-siwis-medium → (fr, fr_FR, siwis, medium)
+        try:
+            lang_country, speaker, quality = voice_name.rsplit('-', 2)  # fr_FR, siwis, medium
+            lang = lang_country.split('_')[0].lower()                    # fr
+            rel = f"{lang}/{lang_country}/{speaker}/{quality}"
+        except ValueError:
+            rel = voice_name  # repli (ancien schéma) si nom inattendu
 
-        print(f"[PhiPiperEngine] Telechargement {voice_name}...")
+        model_url = f"{base_url}/{rel}/{voice_name}.onnx"
+        config_url = f"{base_url}/{rel}/{voice_name}.onnx.json"
+
+        print(f"[PhiPiperEngine] Telechargement {voice_name} (rel: {rel})...")
 
         for url, path in [(model_url, model_path), (config_url, config_path)]:
-            if path.exists():
+            if path.exists() and path.stat().st_size > 1000:
                 continue
             try:
                 req = urllib.request.Request(url, headers={
                     'User-Agent': 'Mozilla/5.0 (HarmonicAI)'
                 })
-                with urllib.request.urlopen(req, timeout=120) as resp:
+                with urllib.request.urlopen(req, timeout=180) as resp:
                     data = resp.read()
-                    path.write_bytes(data)
+                if len(data) < 1000:
+                    raise RuntimeError(f"fichier trop petit ({len(data)} octets), téléchargement corrompu")
+                path.write_bytes(data)
                 size_mb = len(data) / 1e6
                 print(f"  {path.name}: {size_mb:.1f} Mo OK")
             except Exception as e:
                 print(f"  [ERROR] {path.name}: {e}")
 
-        print(f"[PhiPiperEngine] Voix {voice_name} prete")
+        # Vérifier que le modèle est réellement utilisable
+        if model_path.exists() and model_path.stat().st_size > 1000:
+            print(f"[PhiPiperEngine] Voix {voice_name} prete")
+        else:
+            print(f"[PhiPiperEngine] Echec telechargement voix {voice_name}")
 
     # -----------------------------------------------------------------
     # CONVERSION BYTES ↔ NUMPY

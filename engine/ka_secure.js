@@ -91,7 +91,7 @@ const KA_SECURE = {
   },
 
   // ═══════════════════════════════════════════════════
-  // 2. VERROUILLAGE PIN
+  // 2. VERROUILLAGE PIN (SHA-256 + sel aléatoire)
   // ═══════════════════════════════════════════════════
   
   PIN_KEY: 'ka_secure_pin',
@@ -100,11 +100,25 @@ const KA_SECURE = {
   LOCKOUT_MINUTES: 15,
   
   /**
-   * Configure le PIN (premier lancement).
+   * Hash le PIN avec SHA-256 + sel (Web Crypto API)
    */
-  setPIN(pin) {
+  async _hashPin(pin, saltBytes) {
+    const enc = new TextEncoder();
+    const saltStr = Array.from(saltBytes).map(b => b.toString(16).padStart(2,'0')).join('');
+    const data = enc.encode(pin + ':' + saltStr);
+    const buf = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  },
+  
+  /**
+   * Configure le PIN (hashé SHA-256 + sel aléatoire).
+   */
+  async setPIN(pin) {
     if (pin.length !== 4 || !/^\d{4}$/.test(pin)) return false;
-    localStorage.setItem(this.PIN_KEY, btoa(pin)); // encodage simple
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const hash = await this._hashPin(pin, salt);
+    const saltStr = Array.from(salt).map(b => b.toString(16).padStart(2,'0')).join('');
+    localStorage.setItem(this.PIN_KEY, JSON.stringify({ salt: saltStr, hash: hash }));
     localStorage.setItem(this.PIN_ATTEMPTS_KEY, '0');
     return true;
   },
@@ -117,11 +131,11 @@ const KA_SECURE = {
   },
   
   /**
-   * Vérifie le PIN saisi.
+   * Vérifie le PIN saisi (async — SHA-256).
    */
-  verifyPIN(pin) {
+  async verifyPIN(pin) {
     const stored = localStorage.getItem(this.PIN_KEY);
-    if (!stored) return true; // Pas de PIN configuré
+    if (!stored) return { valid: true }; // Pas de PIN configuré
     
     const attempts = parseInt(localStorage.getItem(this.PIN_ATTEMPTS_KEY) || '0');
     
@@ -138,7 +152,29 @@ const KA_SECURE = {
       return { blocked: true, remaining: this.LOCKOUT_MINUTES };
     }
     
-    const valid = atob(stored) === pin;
+    // Vérifier le hash
+    let storedData;
+    try { storedData = JSON.parse(stored); } catch(e) { return { valid: false }; }
+    
+    // Rétrocompatibilité : ancien PIN base64
+    if (storedData.salt === undefined) {
+      const valid = atob(stored) === pin;
+      if (valid) {
+        // Migrer vers SHA-256
+        await this.setPIN(pin);
+      }
+      if (!valid) {
+        localStorage.setItem(this.PIN_ATTEMPTS_KEY, (attempts + 1).toString());
+        return { valid: false, remaining: this.MAX_ATTEMPTS - attempts - 1 };
+      }
+      localStorage.setItem(this.PIN_ATTEMPTS_KEY, '0');
+      return { valid: true };
+    }
+    
+    const saltBytes = new Uint8Array(storedData.salt.match(/.{2}/g).map(h => parseInt(h, 16)));
+    const hash = await this._hashPin(pin, saltBytes);
+    const valid = hash === storedData.hash;
+    
     if (!valid) {
       localStorage.setItem(this.PIN_ATTEMPTS_KEY, (attempts + 1).toString());
       return { valid: false, remaining: this.MAX_ATTEMPTS - attempts - 1 };
@@ -153,21 +189,34 @@ const KA_SECURE = {
   /**
    * Change le PIN.
    */
-  changePIN(oldPin, newPin) {
-    const result = this.verifyPIN(oldPin);
+  async changePIN(oldPin, newPin) {
+    const result = await this.verifyPIN(oldPin);
     if (!result.valid) return false;
-    return this.setPIN(newPin);
+    return await this.setPIN(newPin);
   },
   
   /**
    * Supprime le PIN.
    */
-  removePIN(pin) {
-    const result = this.verifyPIN(pin);
+  async removePIN(pin) {
+    const result = await this.verifyPIN(pin);
     if (!result.valid) return false;
     localStorage.removeItem(this.PIN_KEY);
     localStorage.removeItem(this.PIN_ATTEMPTS_KEY);
     return true;
+  },
+  
+  /**
+   * Échappe le HTML pour prévenir les XSS (stockés et réfléchis).
+   */
+  escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   },
   
   /**
@@ -226,25 +275,129 @@ const KA_SECURE = {
     
     // Vérifier si 4 chiffres
     if (this._pinBuffer.length === 4) {
-      const result = this.verifyPIN(this._pinBuffer);
       const errEl = document.getElementById('pinError');
       
-      if (result.blocked) {
-        errEl.textContent = `Trop de tentatives. Réessayez dans ${result.remaining} min.`;
-        this._pinBuffer = '';
-      } else if (result.valid) {
-        document.getElementById('kaLockScreen').remove();
-        if (this._pinCallback) this._pinCallback();
-      } else {
-        errEl.textContent = `PIN incorrect. ${result.remaining} tentative(s) restante(s).`;
-        this._pinBuffer = '';
-        // Reset dots
-        document.querySelectorAll('.pin-dot').forEach(d => {
-          d.style.background = 'transparent';
-          d.style.borderColor = '#4e4637';
-        });
-      }
+      this.verifyPIN(this._pinBuffer).then(result => {
+        if (result.blocked) {
+          errEl.textContent = `Trop de tentatives. Réessayez dans ${result.remaining} min.`;
+          this._pinBuffer = '';
+        } else if (result.valid) {
+          // Dériver la clé AES-GCM depuis le PIN pour déchiffrer les données
+          this._deriveKey(this._pinBuffer).then(() => {
+            const lockEl = document.getElementById('kaLockScreen');
+            if (lockEl) lockEl.remove();
+            if (this._pinCallback) this._pinCallback();
+          });
+          this._pinBuffer = '';
+        } else {
+          errEl.textContent = `PIN incorrect. ${result.remaining} tentative(s) restante(s).`;
+          this._pinBuffer = '';
+          document.querySelectorAll('.pin-dot').forEach(d => {
+            d.style.background = 'transparent';
+            d.style.borderColor = '#4e4637';
+          });
+        }
+      });
     }
+  },
+
+  // ═══════════════════════════════════════════════════
+  // 2b. CHIFFREMENT DES DONNÉES (AES-GCM)
+  // ═══════════════════════════════════════════════════
+  
+  _cryptoKey: null, // Clé AES dérivée du PIN (en mémoire après déverrouillage)
+  _encSaltKey: 'ka_secure_enc_salt',
+  
+  /**
+   * Dérive une clé AES-GCM 256 depuis le PIN (PBKDF2).
+   * Appelée après vérification du PIN dans showLockScreen.
+   */
+  async _deriveKey(pin) {
+    // Récupérer ou créer le sel de chiffrement
+    let saltStr = localStorage.getItem(this._encSaltKey);
+    if (!saltStr) {
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      saltStr = Array.from(salt).map(b => b.toString(16).padStart(2,'0')).join('');
+      localStorage.setItem(this._encSaltKey, saltStr);
+    }
+    const salt = new Uint8Array(saltStr.match(/.{2}/g).map(h => parseInt(h, 16)));
+    
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw', enc.encode(pin), { name: 'PBKDF2' }, false, ['deriveKey']
+    );
+    this._cryptoKey = await crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt: salt, iterations: 50000, hash: 'SHA-256' },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt', 'decrypt']
+    );
+    return this._cryptoKey;
+  },
+  
+  /**
+   * Chiffre une chaîne → retourne base64(iv + ciphertext).
+   */
+  async encryptData(plaintext) {
+    if (!this._cryptoKey) return plaintext; // Fallback: pas de chiffrement si pas de PIN
+    try {
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const enc = new TextEncoder();
+      const ct = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: iv },
+        this._cryptoKey,
+        enc.encode(plaintext)
+      );
+      const combined = new Uint8Array(iv.length + ct.byteLength);
+      combined.set(iv);
+      combined.set(new Uint8Array(ct), iv.length);
+      return 'ENC:' + btoa(String.fromCharCode(...combined));
+    } catch(e) { return plaintext; }
+  },
+  
+  /**
+   * Déchiffre une chaîne base64(iv + ciphertext) → plaintext.
+   */
+  async decryptData(ciphertext) {
+    if (!this._cryptoKey || !ciphertext || !ciphertext.startsWith('ENC:')) return ciphertext;
+    try {
+      const combined = Uint8Array.from(atob(ciphertext.slice(4)), c => c.charCodeAt(0));
+      const iv = combined.slice(0, 12);
+      const ct = combined.slice(12);
+      const pt = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: iv },
+        this._cryptoKey,
+        ct
+      );
+      return new TextDecoder().decode(pt);
+    } catch(e) { return null; }
+  },
+  
+  /**
+   * Chiffre et stocke une valeur dans localStorage.
+   */
+  async setSecure(key, value) {
+    const enc = await this.encryptData(typeof value === 'string' ? value : JSON.stringify(value));
+    localStorage.setItem(key, enc);
+  },
+  
+  /**
+   * Lit et déchiffre une valeur depuis localStorage.
+   */
+  async getSecure(key) {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const dec = await this.decryptData(raw);
+    if (dec === null) return null;
+    try { return JSON.parse(dec); } catch { return dec; }
+  },
+  
+  /**
+   * Verrouille l'application (efface la clé AES de la mémoire).
+   */
+  lock() {
+    this._cryptoKey = null;
   },
 
   // ═══════════════════════════════════════════════════
@@ -252,12 +405,14 @@ const KA_SECURE = {
   // ═══════════════════════════════════════════════════
   
   /**
-   * Exporte toutes les données de l'application en fichier JSON.
-   * @param {string} appName - 'ka_care' ou 'ka_patient'
+   * Exporte toutes les donnees de l'application en fichier JSON.
+   * @param {string} appName - 'vital_ka' (ou anciennement 'ka_care') ou 'ka_patient'
    */
   exportAll(appName) {
-    const keys = appName === 'ka_care' 
-      ? ['ka_care_patients', 'ka_care_history']
+    // 'ka_care' reste accepté pour rétro-compatibilité (anciens boutons exportAll('ka_care'))
+    const isCare = appName === 'vital_ka' || appName === 'ka_care';
+    const keys = isCare
+      ? ['vital_ka_patients', 'vital_ka_history']
       : ['ka_patient_data'];
     
     const backup = {
@@ -290,7 +445,7 @@ const KA_SECURE = {
   /**
    * Importe des données depuis un fichier JSON.
    * @param {File} file - Le fichier JSON sélectionné
-   * @param {string} appName - 'ka_care' ou 'ka_patient'
+   * @param {string} appName - 'vital_ka' (ou 'ka_patient')
    * @param {function} onSuccess - Callback après import réussi
    */
   importAll(file, appName, onSuccess) {
@@ -298,8 +453,12 @@ const KA_SECURE = {
     reader.onload = function(e) {
       try {
         const backup = JSON.parse(e.target.result);
-        
-        if (backup.app !== appName) {
+
+        // Rétro-compatibilité : une ancienne sauvegarde 'ka_care' reste
+        // importable dans Vital Ka (mêmes données, ancien nom de produit).
+        const aliases = { 'vital_ka': ['vital_ka', 'ka_care'] };
+        const accepted = aliases[appName] || [appName];
+        if (!accepted.includes(backup.app)) {
           alert(`Ce fichier appartient à ${backup.app}, pas à ${appName}.`);
           return;
         }
