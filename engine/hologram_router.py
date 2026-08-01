@@ -102,6 +102,71 @@ class MiniHWAT(torch.nn.Module):
 
 
 # ════════════════════════════════════════════════════════════════
+# PHRASÉ NATUREL — Templates par relation médicale
+# ════════════════════════════════════════════════════════════════
+
+RELATION_TEMPLATES = {
+    'présente_symptôme': "Le patient présente le symptôme « {o} » dans le cadre de {s}.",
+    'presente_symptome': "Le patient présente le symptôme « {o} » dans le cadre de {s}.",
+    'symptome': "Symptôme associé à {s} : {o}.",
+    'traitement': "Traitement de {s} : {o}.",
+    'dose_adulte': "Dose adulte de {s} : {o}.",
+    'dose_enfant': "Dose pédiatrique de {s} : {o}.",
+    'dose_pediatrique': "Dose pédiatrique de {s} : {o}.",
+    'dose': "Dose de {s} : {o}.",
+    'indication': "{s} est indiqué pour : {o}.",
+    'contre_indications': "Contre-indication de {s} : {o}.",
+    'effets_secondaires': "Effets secondaires possibles de {s} : {o}.",
+    'gravité': "Niveau de gravité de {s} : {o}.",
+    'gravite': "Niveau de gravité de {s} : {o}.",
+    'conduite_à_tenir': "Conduite à tenir face à {s} : {o}.",
+    'conduite_a_tenir': "Conduite à tenir face à {s} : {o}.",
+    'délai_consultation': "Consulter dans les délais suivants pour {s} : {o}.",
+    'delai_consultation': "Consulter dans les délais suivants pour {s} : {o}.",
+    'interaction': "Interaction médicamenteuse : {s} → {o}.",
+    'classe': "{s} appartient à la classe : {o}.",
+    'voie': "Voie d'administration de {s} : {o}.",
+    'grossesse': "Grossesse — {s} : {o}.",
+    'âge_fréquent': "{s} survient fréquemment à l'âge de : {o}.",
+    'age_frequent': "{s} survient fréquemment à l'âge de : {o}.",
+    'sexe_fréquent': "{s} survient plus fréquemment chez : {o}.",
+    'sexe_frequent': "{s} survient plus fréquemment chez : {o}.",
+    'prévention': "Prévention de {s} : {o}.",
+    'prevention': "Prévention de {s} : {o}.",
+    'urgence': "SITUATION D'URGENCE — {s} : {o}.",
+    'urgences': "SITUATION D'URGENCE — {s} : {o}.",
+    'definition': "Définition : {s} correspond à {o}.",
+    'signes_cliniques': "Signes cliniques de {s} : {o}.",
+    'signes_indicateurs': "Signes indicateurs de {s} : {o}.",
+    'facteurs_risque': "Facteurs de risque de {s} : {o}.",
+    'complications': "Complications possibles de {s} : {o}.",
+    'vaccination': "Vaccination {s} : {o}.",
+    'calendrier': "Calendrier {s} : {o}.",
+    'age_recommande': "Âge recommandé pour {s} : {o}.",
+    'maladies_previent': "{s} prévient : {o}.",
+    'mode_preparation': "Préparation de {s} : {o}.",
+    'partie_utilisee': "Partie utilisée de {s} : {o}.",
+}
+
+DEFAULT_PHRASE = "Information sur {s} : {o}."
+
+
+def format_fact_phrase(s: str, r: str, o: str) -> str:
+    """Convertit un fait (s, r, o) en phrase naturelle lisible."""
+    r_clean = str(r).strip().lower().replace(' ', '_')
+    # Dédupliquer les préfixes (ex: traitement_mastite → traitement)
+    base_r = r_clean.split('_')[0] if '_' in r_clean else r_clean
+
+    template = RELATION_TEMPLATES.get(r_clean) or RELATION_TEMPLATES.get(base_r)
+    if template is None:
+        template = DEFAULT_PHRASE
+    try:
+        return template.format(s=s, o=o)
+    except Exception:
+        return DEFAULT_PHRASE.format(s=s, o=o)
+
+
+# ════════════════════════════════════════════════════════════════
 # ROUTEUR
 # ════════════════════════════════════════════════════════════════
 
@@ -161,6 +226,7 @@ class HologramRouter:
 
         Stratégie : matching par mots-clés sur les faits stockés
         dans le fichier {domain}_facts.json.
+        Scores normalisés en probabilité [0, 1].
         """
         facts_path = self.dir / f"{domain}_facts.json"
         if not facts_path.exists():
@@ -174,8 +240,12 @@ class HologramRouter:
         if not all_facts:
             return []
 
-        # Tokenisation simple de la question
-        q_words = set(question.lower().split())
+        # Tokenisation simple de la question (mots significatifs)
+        STOP = {'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'et', 'ou',
+                'au', 'aux', 'en', 'pour', 'avec', 'sur', 'est', 'sont', 'ce',
+                'cette', 'quel', 'quelle', 'comment', 'quoi', 'dans', 'à', 'a',
+                'mon', 'ma', 'mes', 'son', 'sa', 'ses', 'qui', 'que', 'si'}
+        q_words = {w for w in question.lower().split() if w not in STOP}
 
         # Score chaque fait par chevauchement de mots
         scored = []
@@ -186,23 +256,42 @@ class HologramRouter:
             fact_text = f"{s} {r} {o}"
             fact_words = set(fact_text.split())
 
-            if not fact_words:
+            if not fact_words or not q_words:
                 continue
-            intersection = len(q_words & fact_words)
-            # Bonus : mot de la question dans le sujet
+
+            # Intersection pondérée : sujet > objet > relation
+            inter_s = len(q_words & set(s.split()))
+            inter_o = len(q_words & set(o.split()))
+            inter_r = len(q_words & set(r.split()))
+            weight_s, weight_o, weight_r = 3.0, 2.0, 1.0
+            score = (inter_s * weight_s + inter_o * weight_o + inter_r * weight_r) \
+                    / max(len(q_words) * 3.0, 1.0)
+            # Sous-chaîne : mot de la question présent dans sujet (dérivés : fièvre/élevée)
             for qw in q_words:
-                if len(qw) > 2 and qw in s:
-                    intersection += 1.5
-            score = intersection / max(len(q_words), 1)
+                if len(qw) > 3 and (qw in s or qw in o):
+                    score += 0.25
 
             if score > 0:
                 scored.append((score, fact))
 
-        # Trier par score décroissant
+        if not scored:
+            return []
+
+        # Trier ; score déjà normalisé théorique [0,1] :
+        #   score = (inter_s×3 + inter_o×2 + inter_r×1) / (len(q_words)×3)
+        #   → 1.0 si tous les mots matchent le sujet, 0 si aucun match.
         scored.sort(key=lambda x: -x[0])
-        return [{'sujet': f['s'], 'relation': f['r'],
-                 'objet': f['o'], 'score': round(s, 3)}
-                for s, f in scored[:top_k]]
+
+        out = []
+        for raw, f in scored[:top_k]:
+            out.append({
+                'sujet': f['s'],
+                'relation': f['r'],
+                'objet': f['o'],
+                'score': round(min(1.0, raw), 3),
+                'phrase': format_fact_phrase(f['s'], f['r'], f['o']),
+            })
+        return out
 
     def route(self, question: str, top_k: int = 3) -> List[Tuple[str, float]]:
         """Route une question vers les meilleurs domaines.
@@ -252,6 +341,48 @@ class HologramRouter:
                          'intellectuelle', 'brevet', 'clause', 'avocat'],
             'IT': ['serveur', 'réseau', 'sécurité', 'vpn', 'firewall', 'cloud',
                   'sauvegarde', 'incident', 'maintenance', 'déploiement'],
+            # ── Mots-clés MÉDICAUX (hologrammes vitaux) ──
+            'MALADIES': ['maladie', 'symptôme', 'symptome', 'fièvre', 'fievre', 'toux',
+                        'diagnostic', 'infection', 'virus', 'bactérie', 'bacterie',
+                        'covid', 'grippe', 'pneumonie', 'bronchite', 'avc', 'infarctus'],
+            'PALUDISME': ['paludisme', 'malaria', 'plasmodium', 'moustique', 'goutte épaisse',
+                         'goutte epaisse', 'tdr', 'artéméther', 'artemether', 'antipaludique',
+                         'quine', 'chloroquine', 'accès palustre'],
+            'PEDIATRIE': ['enfant', 'bébé', 'bebe', 'nourrisson', 'pédiatrie', 'pediatrie',
+                         'pcime', 'vaccin enfant', 'poids', 'taille', 'croissance'],
+            'VIH_TB': ['vih', 'sida', 'tuberculose', 'tb', 'antirétroviral', 'antiretroviral',
+                      'trod', 'cd4', 'charge virale', 'ptme', 'candidose', 'bacille de koch'],
+            'URGENCES': ['urgence', 'réanimation', 'reanimation', 'abcde', 'trauma', 'traumatisme',
+                        'hémorragie', 'hemorragie', 'choc', 'coma', 'gcs', 'détresse respiratoire',
+                        'detresse respiratoire'],
+            'SANTE_MENTALE': ['dépression', 'depression', 'anxiété', 'anxiete', 'stress',
+                             'santé mentale', 'sante mentale', 'psychiatrie', 'psychose',
+                             'trouble bipolaire', 'suicide', 'insomnie'],
+            'MNT': ['maladie tropicale', 'maladie tropicale négligée', 'filariose', 'onchocercose',
+                   'bilharziose', 'trypanosomiase', 'lépre', 'lepre', 'dengue', 'chikungunya',
+                   'schistosomiase', 'trachome', 'ver guinée', 'ver guinee'],
+            'MERE_ENFANT': ['grossesse', 'enceinte', 'maternité', 'maternite', 'accouchement',
+                           'post-partum', 'allaitement', 'prénatal', 'prenatal', 'planning familial',
+                           'contraception', 'sage-femme', 'nouveau-né', 'nouveau-ne'],
+            'CHRONIQUES': ['diabète', 'diabete', 'hypertension', 'hta', 'asthme', 'épilepsie',
+                          'epilepsie', 'insuffisance rénale', 'insuffisance renale',
+                          'drépanocytose', 'drepano', 'maladie chronique', 'rhumatisme'],
+            'NUTRITION': ['malnutrition', 'dénutrition', 'denutrition', 'sous-alimentation',
+                         'kwashiorkor', 'marasme', 'vitamine', 'carence', 'alimentation',
+                         'allaitement maternel', 'anthropométrie', 'anthropometrie'],
+            'PHARMACIE': ['médicament', 'medicament', 'dose', 'posologie', 'paracétamol',
+                         'paracetamol', 'amoxicilline', 'ibuprofène', 'ibuprofene',
+                         'interaction', 'contre-indication', 'effet secondaire', 'sirop'],
+            'PHYTOTHERAPIE': ['plante', 'phytothérapie', 'phytotherapie', 'tisane', 'décoction',
+                             'decoction', 'feuille', 'racine', 'écorce', 'ecorce', 'traditionnel',
+                             'remède', 'reme', 'médicinale', 'medicinale'],
+            'VACCINATION': ['vaccin', 'vaccination', 'vacciner', 'pev', 'immunisation',
+                           'bcg', 'dct', 'vpo', 'vpi', 'rougeole', 'fièvre jaune', 'fievre jaune',
+                           'méningite', 'meningite', 'calendrier vaccinal'],
+            'CLINIQUE': ['cas clinique', 'dossier', 'examen', 'clinique', 'consultation',
+                        'signe', 'tableau', 'présentation', 'presentation'],
+            'GENERAL': ['santé', 'sante', 'corps', 'sang', 'cœur', 'coeur', 'cerveau',
+                       'médecin', 'medecin', 'hôpital', 'hopital', 'patient'],
         }
 
         for domain in self.list_domains():
