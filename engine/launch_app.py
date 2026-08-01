@@ -18,7 +18,10 @@ import time
 from pathlib import Path
 
 ENGINE = Path(__file__).resolve().parent
-DOCS = ENGINE / "docs"
+# Serve le dossier engine/ qui contient TOUTES les apps de l'écosystème
+# (ka_patient, ka_medecins, ka_pharmacien, ka_solidarite, ka_laboratoire,
+# ka_diaspora_shop, vital_ka...) — pas seulement l'ancienne version docs/.
+DOCS = ENGINE
 PORT = 8080
 
 
