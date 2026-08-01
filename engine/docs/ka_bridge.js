@@ -176,3 +176,58 @@ el.innerHTML = '<div style="background:#fff;color:#000;padding:20px;border-radiu
     callback(data);
   }
 };
+
+/**
+ * KA AI — Pont vers l'API hologrammes HWAT
+ * =========================================
+ * Interroge le serveur d'inférence local (hologrammes médicaux).
+ * Fallback silencieux : si l'API est absente, l'app continue
+ * en mode 100% local (diagnostic cosinus sur DB).
+ */
+const KA_AI = {
+  API_URL: 'http://localhost:8010/hologram/query',
+  TIMEOUT_MS: 3000,
+
+  /**
+   * Interroge les hologrammes médicaux.
+   * @returns {Promise<Array>} faits pertinents (ou [] si API absente)
+   */
+  async query(text, topK = 4) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), this.TIMEOUT_MS);
+      const resp = await fetch(this.API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: 'auto', query: text, top_k: topK }),
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      if (!resp.ok) return [];
+      const data = await resp.json();
+      return (data.results || []).filter(r => r.score > 0.15);
+    } catch (e) {
+      return []; // API non joignable → mode local
+    }
+  },
+
+  /**
+   * HTML des faits holographiques (affiché sous le diagnostic local).
+   */
+  renderFacts(facts) {
+    if (!facts.length) return '';
+    const rows = facts.slice(0, 4).map(f =>
+      '<div style="padding:8px 12px;border-left:3px solid #4caf50;background:rgba(76,175,80,.06);border-radius:6px;margin:6px 0;font-size:13px">' +
+      '<span style="color:#4caf50;font-size:11px;text-transform:uppercase;letter-spacing:1px">Hologramme ' + f.secteur + ' · ' + (f.score * 100).toFixed(0) + '%</span><br>' +
+      escapeHtml(f.content) +
+      '</div>'
+    ).join('');
+    return '<div class="card"><h3 style="margin-top:0">🌿 Base de connaissances (hologrammes)</h3>' + rows + '</div>';
+  }
+};
+
+/** Échappe le HTML pour les contenus externes. */
+function escapeHtml(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}

@@ -122,6 +122,17 @@ function diagnose() {
 
     const eb = document.getElementById('exportDiagBtn');
     if (eb && currentPatient) eb.style.display = 'block';
+
+    // ── Complément holographique (base de connaissances HWAT) ──
+    // L'API est interrogée en parallèle ; si elle est absente,
+    // KA_AI.query renvoie [] et rien n'est affiché (mode local pur).
+    if (typeof KA_AI !== 'undefined') {
+      KA_AI.query(text, 4).then(facts => {
+        if (!facts.length) return;
+        const area = document.getElementById('resultsArea');
+        if (area) area.innerHTML += KA_AI.renderFacts(facts);
+      });
+    }
   }, 150);
 }
 
