@@ -181,6 +181,38 @@ class HologramRouter:
         self.models: Dict[str, MiniHWAT] = {}
         self.tokenizers: Dict[str, dict] = {}
         self._loaded = set()
+        # Index lexical des faits par domaine : {domaine: set(mots significatifs)}
+        # Construit au chargement → routage robuste même hors mots-clés statiques
+        self._fact_vocab: Dict[str, set] = {}
+        self._build_fact_index()
+
+    def _build_fact_index(self):
+        """Indexe les mots des sujets/objets de chaque domaine (poids sujet 2×)."""
+        STOP = {'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'et', 'ou',
+                'au', 'aux', 'en', 'pour', 'avec', 'sur', 'est', 'sont', 'ce',
+                'cette', 'dans', 'à', 'a', 'mon', 'ma', 'mes', 'son', 'sa',
+                'ses', 'qui', 'que', 'si', 'au', 'en', 'par', 'pas', 'plus'}
+        for domain in self.list_domains():
+            facts_path = self.dir / f"{domain}_facts.json"
+            if not facts_path.exists():
+                continue
+            try:
+                with open(facts_path, 'r', encoding='utf-8') as f:
+                    facts = json.load(f)
+            except Exception:
+                continue
+            vocab = set()
+            for fact in facts:
+                s = str(fact.get('s', '')).lower()
+                o = str(fact.get('o', '')).lower()
+                for w in re.findall(r"[a-zà-ÿ0-9]+", s):
+                    if w not in STOP and len(w) > 2:
+                        vocab.add(w)
+                for w in re.findall(r"[a-zà-ÿ0-9]+", o):
+                    if w not in STOP and len(w) > 3:
+                        vocab.add(w)
+            if vocab:
+                self._fact_vocab[domain] = vocab
 
     def _load_router(self) -> dict:
         path = self.dir / "router.json"
@@ -385,11 +417,22 @@ class HologramRouter:
                        'médecin', 'medecin', 'hôpital', 'hopital', 'patient'],
         }
 
+        # ── Scoring 1 : mots-clés statiques ──
         for domain in self.list_domains():
             keywords = domain_keywords.get(domain, [domain.lower()])
             score = sum(1 for kw in keywords if kw in q)
             if score > 0:
                 scores[domain] = score
+
+        # ── Scoring 2 : index lexical des faits (robuste aux noms propres :
+        #    moringa, artemisia, bcg, praziquantel... absents des mots-clés) ──
+        q_words = {w for w in re.findall(r"[a-zà-ÿ0-9]+", q) if len(w) > 2}
+        if q_words:
+            for domain, vocab in self._fact_vocab.items():
+                hit = q_words & vocab
+                if hit:
+                    # Poids sujet (vocab inclut sujets 2× et objets 1×)
+                    scores[domain] = scores.get(domain, 0) + len(hit) * 0.75
 
         if not scores:
             # Aucun mot-clé → retourner tous les domaines avec score faible
