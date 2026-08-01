@@ -322,6 +322,22 @@ else{alert('Erreur.');}
 </div>
 </div>
 <div class="card">
+<h3>📤 Envoyer des UM</h3>
+<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Transférez des unités à un proche (famille, solidaire) — frais 0%.</p>
+<div style="display:flex;gap:8px;margin-bottom:10px">
+<input id="sendWalletId" placeholder="ID destinataire (ex: PAT-XXXXXX)" style="flex:1;background:var(--surface);border:1px solid var(--glass-border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px"/>
+</div>
+<div style="display:flex;gap:8px">
+<input id="sendAmount" type="number" min="1" placeholder="Montant (UM)" style="flex:1;background:var(--surface);border:1px solid var(--glass-border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px"/>
+<button class="btn btn-primary" onclick="sendWalletUM()" style="white-space:nowrap">Envoyer</button>
+</div>
+</div>
+<div class="card">
+<h3>🏪 Payer des soins</h3>
+<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Scannez ou collez le QR de paiement du prestataire (pharmacie, médecin, laboratoire).</p>
+<button class="btn btn-secondary" style="width:100%" onclick="payWithQR()">📷 Scanner le QR du prestataire</button>
+</div>
+<div class="card">
 <h3>📋 Transactions</h3>
 <div id="walletTransactions"><span style="color:var(--muted);font-size:.8em">Aucune transaction.</span></div>
 </div>
@@ -580,6 +596,73 @@ function renderWallet() {
       html += '</div>';
     });
     txEl.innerHTML = html;
+  }
+}
+
+// ═══ WALLET — ENVOYER DES UM (patient → proche, frais 0%) ═══
+function sendWalletUM() {
+  const toId = (document.getElementById('sendWalletId').value || '').trim().toUpperCase();
+  const amount = parseInt(document.getElementById('sendAmount').value || '0', 10);
+  if (!toId || amount <= 0) { alert('Renseignez l\'ID du destinataire et un montant valide.'); return; }
+
+  const wallet = KA_WALLET.getWallet('patient');
+  if (wallet.balance < amount) { alert('Solde insuffisant (' + wallet.balance + ' UM).'); return; }
+
+  // Limite AML solidarité : max 5000 UM/mois entre proches
+  const month = new Date().toISOString().slice(0, 7);
+  const sent = (KA_WALLET.getLedger() || []).filter(t =>
+    t.metadata?.type === 'patient_transfer' && t.timestamp?.startsWith(month))
+    .reduce((s, t) => s + Math.abs(t.amount), 0);
+  if (sent + amount > 5000) { alert('Limite AML : 5000 UM/mois maximum entre proches.'); return; }
+
+  if (confirm('Envoyer ' + amount + ' UM à ' + toId + ' ? (frais 0%)')) {
+    // debit(role, amount, recipientRole, description, metadata)
+    const res = KA_WALLET.debit('patient', amount, 'solidarite', 'Envoi à ' + toId,
+      { recipientId: toId, type: 'patient_transfer' });
+    if (res.ok) {
+      alert('✅ ' + amount + ' UM envoyés à ' + toId);
+      document.getElementById('sendWalletId').value = '';
+      document.getElementById('sendAmount').value = '';
+      renderWallet();
+    } else {
+      alert(res.error || 'Échec de l\'envoi.');
+    }
+  }
+}
+
+// ═══ WALLET — PAYER DES SOINS (patient → prestataire via QR) ═══
+function payWithQR() {
+  const qr = prompt('Collez le QR de paiement du prestataire (ou son ID, ex: PHARM-XXXXXX) :');
+  if (!qr) return;
+  let providerId = qr.toUpperCase().trim();
+  let providerName = providerId;
+
+  // Si le QR est un paquet KA_BRIDGE encodé, le décoder
+  if (qr.startsWith('ey') && typeof KA_BRIDGE !== 'undefined' && KA_BRIDGE.decode) {
+    try {
+      const pkg = KA_BRIDGE.decode(qr);
+      if (pkg && pkg.type === 'payment_request') {
+        providerId = (pkg.provider?.id || providerId).toUpperCase();
+        providerName = pkg.provider?.name || providerName;
+      }
+    } catch (e) { /* pas un paquet encodé — ID direct */ }
+  }
+
+  const amount = parseInt(prompt('Montant à payer à ' + providerName + ' (UM) :'), 10);
+  if (!amount || amount <= 0) return;
+
+  const wallet = KA_WALLET.getWallet('patient');
+  if (wallet.balance < amount) { alert('Solde insuffisant (' + wallet.balance + ' UM).'); return; }
+
+  if (confirm('Payer ' + amount + ' UM à ' + providerName + ' pour vos soins ?')) {
+    const res = KA_WALLET.debit('patient', amount, 'pharmacien', 'Paiement soins — ' + providerName,
+      { recipientId: providerId, type: 'care_payment', provider: providerName });
+    if (res.ok) {
+      alert('✅ Paiement de ' + amount + ' UM effectué — ' + providerName);
+      renderWallet();
+    } else {
+      alert(res.error || 'Échec du paiement.');
+    }
   }
 }
 

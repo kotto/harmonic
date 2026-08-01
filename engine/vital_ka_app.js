@@ -410,6 +410,22 @@ async function diagnose() {
   h += '<p class="footer-note">AIDE AU DIAGNOSTIC — NE REMPLACE PAS UN MÉDECIN</p>';
   h += '<button class="btn btn-secondary ka-voice-btn" style="margin-top:8px" onclick="speakDiagnosisResult(this)">🔊 Écouter le diagnostic</button>';
   h += '<button class="btn btn-primary" style="margin-top:8px" onclick="prescribeMedications()" id="prescribeBtn">📋 Prescrire une ordonnance</button>';
+
+  // ═══ Complément holographique OFFLINE (routeur spectral embarqué) ═══
+  // Les 15 hologrammes médicaux (62K faits) sont embarqués dans l'APK —
+  // aucun serveur requis. Si le bundle est absent, rien n'est affiché.
+  try {
+    if (typeof KA_HOLOGRAM !== 'undefined') {
+      const ok = await KA_HOLOGRAM.load();
+      if (ok) {
+        const hol = KA_HOLOGRAM.query(text, 4);
+        if (hol && hol.bestScore > 0.15 && hol.results.length) {
+          h += KA_HOLOGRAM.renderHTML(hol.results);
+        }
+      }
+    }
+  } catch (e) { /* silencieux — hologrammes optionnels */ }
+
   document.getElementById('resultsArea').innerHTML = h;
   btn.disabled = false;
   // Le bouton bascule en mode "Nouveau diagnostic" → reset au prochain clic

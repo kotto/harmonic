@@ -26,7 +26,7 @@ const JS = [
   'vital_ka_voice.js', 'vital_ka_stt.js', 'vital_ka_dialogue.js',
   'vital_ka_conversation.js', 'vital_ka_ble.js', 'ka_telemedecine.js',
   'vital_ka_ai.js', 'vital_ka_app.js', 'ka_care_voice.js', 'seed_doctors_demo.js',
-  'ka_wallet.js', 'ka_platform.js',
+  'ka_wallet.js', 'ka_platform.js', 'ka_hologram_router.js',
 ];
 
 const CSS = ['vital_ka.css', 'vital_ka_ai.css', 'ka_telemedecine.css'];
@@ -79,6 +79,8 @@ JS.forEach(f => copy(f));
 CSS.forEach(f => copy(f));
 ASSETS.forEach(f => copy(f));
 DATA.forEach(f => copy(join('data', f)));
+// Bundle hologrammes offline (généré par build_hologram_bundle.py)
+copy(join('data', 'hologram_bundle.json'), join('data', 'hologram_bundle.json'));
 
 // Fonts locales (téléchargées une fois dans assets_src/fonts)
 const FONT_SRC = join(ROOT, 'assets_src', 'fonts');
