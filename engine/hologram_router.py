@@ -252,6 +252,28 @@ class HologramRouter:
     def list_domains(self) -> List[str]:
         return list(self.router_config['domains'].keys())
 
+    def coverage(self, question: str) -> float:
+        """Fraction des mots de la question présents dans le vocabulaire
+        médical embarqué (union des vocabulaires de tous les domaines).
+        < 0.5 → très probablement un hors-sujet (football, cuisine...)
+        qui matcherait des faits par coïncidence ("transfert hospitalier").
+        Parité avec KA_HOLOGRAM.coverage() côté JS.
+        """
+        STOP = {'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'et', 'ou',
+                'au', 'aux', 'en', 'pour', 'avec', 'sur', 'est', 'sont', 'ce',
+                'cette', 'dans', 'à', 'a', 'mon', 'ma', 'mes', 'son', 'sa',
+                'ses', 'qui', 'que', 'si', 'par', 'pas', 'plus', 'parmi',
+                'chez', 'sans', 'sous', 'vers', 'depuis', 'pendant', 'entre'}
+        words = [w for w in re.findall(r"[a-zà-ÿ0-9]+", question.lower())
+                 if w not in STOP and len(w) > 2]
+        if not words:
+            return 0.0
+        global_vocab = set()
+        for vocab in self._fact_vocab.values():
+            global_vocab |= vocab
+        known = sum(1 for w in words if w in global_vocab)
+        return known / len(words)
+
     def retrieve_facts(self, domain: str, question: str,
                        top_k: int = 10) -> List[dict]:
         """Retrouve les faits les plus pertinents dans un hologramme.

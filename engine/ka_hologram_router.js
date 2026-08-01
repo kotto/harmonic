@@ -215,6 +215,48 @@ const KA_HOLOGRAM = {
   _escapeHtml(s) {
     return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  },
+
+  /**
+   * Vérifie les interactions entre médicaments (100% offline).
+   * Parité avec l'endpoint /interactions de l'API Python :
+   * pour chaque médicament, on cherche les faits d'interaction du domaine
+   * PHARMACIE dont le sujet (ex: "diazepam + alcool + opiacés") contient
+   * ce médicament — matching par sous-chaîne, robuste aux accents.
+   * @returns {Array} [{s, r, o, phrase, severity}]
+   */
+  checkInteractions(medications, topK = 8) {
+    if (!this.loaded || !this.bundle.domains['PHARMACIE']) return [];
+    const normalize = (t) => String(t || '').toLowerCase()
+      .replace(/é/g, 'e').replace(/è/g, 'e').replace(/ê/g, 'e')
+      .replace(/à/g, 'a').replace(/â/g, 'a').replace(/ô/g, 'o')
+      .replace(/î/g, 'i').replace(/û/g, 'u').replace(/ç/g, 'c');
+    const meds = medications.map(m => normalize(m)).filter(m => m.trim());
+
+    const results = [];
+    const seen = new Set();
+    for (const [s, r, o] of this.bundle.domains['PHARMACIE'].facts) {
+      if (!String(r).includes('interaction')) continue;
+      const sNorm = normalize(s);
+      if (!meds.some(m => sNorm.includes(m))) continue;
+      const key = s + '|' + o;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const txt = (s + ' ' + o).toLowerCase();
+      let severity = 'minor';
+      if (/contre-indiqu|risque mortel|jamais/.test(txt)) severity = 'contraindicated';
+      else if (/majeur|grave|danger|hémorrag/.test(txt)) severity = 'major';
+      else if (/modéré|surveiller/.test(txt)) severity = 'moderate';
+      results.push({
+        s, r, o,
+        phrase: this._formatPhrase(s, r, o),
+        severity,
+        score: 0.9,
+      });
+    }
+    const order = { contraindicated: 5, major: 4, moderate: 3, minor: 2 };
+    results.sort((a, b) => (order[b.severity] || 1) - (order[a.severity] || 1));
+    return results.slice(0, topK);
   }
 };
 

@@ -106,6 +106,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 <script src="vital_ka_config.js"></script>
 <script src="vital_ka_native.js"></script>
 <script src="ka_bridge.js"></script>
+<script src="ka_wallet.js"></script>
 <script src="ka_secure.js"></script>
 <script src="ka_hcv.js"></script>
 <script src="ka_care_voice.js"></script>
@@ -223,6 +224,42 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 <button class="btn btn-secondary" onclick="showScreen('splash')">← Retour</button>
 </div>
 
+<!-- ═══ HONORAIRES (WALLET MÉDECIN) ═══ -->
+<div class="screen" id="screen-honoraires">
+<header><h2 style="color:var(--accent)">💳 Mes Honoraires</h2></header>
+<div class="card" style="text-align:center">
+<div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Solde disponible</div>
+<div style="font-size:2.8em;font-weight:800;color:var(--accent);line-height:1.2" id="docBalance">0</div>
+<div style="font-size:14px;color:var(--muted)">Unités Médicales</div>
+<div style="margin-top:8px;font-size:11px;color:var(--muted)" id="docWalletId"></div>
+</div>
+<div class="card">
+<h3>💳 Encaisser des honoraires</h3>
+<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Le patient vous paie en UM après la consultation. Entrez le montant et le code wallet du patient (ou son ID).</p>
+<div style="display:flex;gap:8px;margin-bottom:8px">
+<input id="docFeeAmount" type="number" min="1" placeholder="Montant (UM)" style="flex:1;background:var(--surface);border:1px solid var(--glass-border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px"/>
+</div>
+<textarea id="docFeeCode" placeholder="Code wallet du patient ou ID (ex: PAT-XXXXXX)..." style="min-height:50px;margin-bottom:8px;background:var(--surface);border:1px solid var(--glass-border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px;width:100%;box-sizing:border-box"></textarea>
+<button class="btn btn-primary" style="width:100%" onclick="collectDoctorFee()">💳 Encaisser</button>
+<div id="docFeeResult" style="margin-top:12px"></div>
+</div>
+<div class="card">
+<h3>🏦 Conversion en monnaie locale</h3>
+<p style="color:var(--muted);font-size:13px;margin-bottom:8px">Convertissez vos UM en CFA ou EUR (taux fixe : 1 UM = 655 CFA = 1 EUR).</p>
+<div style="display:flex;gap:8px;margin-bottom:8px">
+<input id="docConvAmount" type="number" placeholder="Montant UM" style="flex:1;background:var(--surface);border:1px solid var(--glass-border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px">
+<select id="docConvCurrency" style="width:auto;background:var(--surface);border:1px solid var(--glass-border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit"><option value="CFA">CFA</option><option value="EUR">EUR</option></select>
+</div>
+<input id="docConvBank" placeholder="N° mobile money ou IBAN" style="margin-bottom:8px;background:var(--surface);border:1px solid var(--glass-border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px;width:100%;box-sizing:border-box">
+<button class="btn btn-primary" style="width:100%" onclick="requestDocConversion()">🏦 Demander la conversion</button>
+<div id="docConvResult" style="margin-top:12px"></div>
+</div>
+<div class="card">
+<h3>📋 Dernières transactions</h3>
+<div id="docTransactions"><span style="color:var(--muted);font-size:.8em">Aucune transaction.</span></div>
+</div>
+</div>
+
 <!-- ═══ VIDEO CALL OVERLAY ═══ -->
 <div class="call-overlay" id="callOverlay" style="display:none">
 <video id="waRemoteVideo" class="call-remote-video" autoplay playsinline></video>
@@ -241,6 +278,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 <div class="nav-item active" data-screen="splash" onclick="showScreen('splash')"><span class="nav-icon">🏠</span><span class="nav-label">Accueil</span></div>
 <div class="nav-item" data-screen="contacts" onclick="showScreen('contacts')"><span class="nav-icon">💬</span><span class="nav-label">Consult</span></div>
 <div class="nav-item" data-screen="directory" onclick="showScreen('directory')"><span class="nav-icon">🩺</span><span class="nav-label">Confrères</span></div>
+<div class="nav-item" data-screen="honoraires" onclick="showScreen('honoraires')"><span class="nav-icon">💳</span><span class="nav-label">Honoraires</span></div>
 <div class="nav-item" data-screen="profile" onclick="showScreen('profile')"><span class="nav-icon">👤</span><span class="nav-label">Profil</span></div>
 </nav>
 
@@ -275,6 +313,74 @@ function showScreen(name) {
   if (name === 'contacts') refreshContacts();
   if (name === 'directory') refreshDirectory();
   if (name === 'profile') loadProfileForm();
+  if (name === 'honoraires') renderDoctorWallet();
+}
+
+// ═══ HONORAIRES — WALLET MÉDECIN (Unités Médicales) ═══
+function renderDoctorWallet() {
+  if (typeof KA_WALLET === 'undefined') return;
+  const wallet = KA_WALLET.getWallet('medecin');
+  const bal = document.getElementById('docBalance');
+  const id = document.getElementById('docWalletId');
+  if (bal) bal.textContent = wallet.balance;
+  if (id) id.textContent = 'ID: ' + wallet.walletId;
+  // Transactions
+  const txEl = document.getElementById('docTransactions');
+  if (txEl && wallet.transactions.length) {
+    let html = '';
+    wallet.transactions.slice(-8).reverse().forEach(tx => {
+      const d = new Date(tx.timestamp);
+      const sign = tx.direction === 'in' ? '+' : '-';
+      const color = tx.direction === 'in' ? 'var(--success)' : 'var(--error)';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--glass-border)">';
+      html += '<div><div style="font-size:13px;font-weight:600">' + (tx.metadata?.description || tx.type) + '</div><div style="font-size:11px;color:var(--muted)">' + d.toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) + '</div></div>';
+      html += '<div style="font-weight:700;color:' + color + '">' + sign + tx.amount + ' UM</div>';
+      html += '</div>';
+    });
+    txEl.innerHTML = html;
+  }
+}
+
+// Encaisser des honoraires depuis le wallet du patient (ou ID direct)
+function collectDoctorFee() {
+  if (typeof KA_WALLET === 'undefined') { alert('Wallet indisponible.'); return; }
+  const amount = parseInt(document.getElementById('docFeeAmount').value || '0', 10);
+  const code = (document.getElementById('docFeeCode').value || '').trim();
+  if (!amount || amount <= 0 || !code) {
+    document.getElementById('docFeeResult').innerHTML = '<span style="color:var(--error)">Montant et code wallet requis.</span>';
+    return;
+  }
+  // Le patient paie (debit patient) → crédite le médecin
+  const res = KA_WALLET.debit('patient', amount, 'medecin', 'Honoraires consultation',
+    { doctorId: 'DOC-' + Date.now().toString(36).toUpperCase(), type: 'consultation_fee', patientCode: code });
+  if (res.ok) {
+    document.getElementById('docFeeResult').innerHTML = '<span style="color:var(--success)">✅ ' + amount + ' UM encaissés. Nouveau solde : ' + res.wallet.balance + ' UM</span>';
+    document.getElementById('docFeeAmount').value = '';
+    document.getElementById('docFeeCode').value = '';
+    renderDoctorWallet();
+  } else {
+    document.getElementById('docFeeResult').innerHTML = '<span style="color:var(--error)">' + (res.error || 'Échec de l\'encaissement.') + '</span>';
+  }
+}
+
+// Demander la conversion UM → monnaie locale (prestataire convertible)
+function requestDocConversion() {
+  if (typeof KA_WALLET === 'undefined') { alert('Wallet indisponible.'); return; }
+  const amount = parseInt(document.getElementById('docConvAmount').value || '0', 10);
+  const currency = document.getElementById('docConvCurrency').value;
+  const bank = (document.getElementById('docConvBank').value || '').trim();
+  if (!amount || amount <= 0 || !bank) {
+    document.getElementById('docConvResult').innerHTML = '<span style="color:var(--error)">Montant et coordonnées bancaires requis.</span>';
+    return;
+  }
+  const res = KA_WALLET.requestConversion('medecin', amount, currency, { bank, provider: 'KA Médecin' });
+  if (res.ok) {
+    document.getElementById('docConvResult').innerHTML = '<span style="color:var(--success)">✅ Demande de conversion de ' + amount + ' UM en ' + currency + ' enregistrée.</span>';
+    document.getElementById('docConvAmount').value = '';
+    document.getElementById('docConvBank').value = '';
+  } else {
+    document.getElementById('docConvResult').innerHTML = '<span style="color:var(--error)">' + (res.error || 'Échec de la demande.') + '</span>';
+  }
 }
 
 // ═══ PROFILE ═══

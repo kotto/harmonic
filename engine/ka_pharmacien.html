@@ -44,6 +44,7 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--a
 <script src="ka_bridge.js"></script>
 <script src="ka_secure.js"></script>
 <script src="ka_wallet.js"></script>
+<script src="ka_hologram_router.js"></script>
 </head>
 <body>
 <div class="container">
@@ -111,11 +112,24 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--a
 <button class="btn btn-secondary" onclick="showScreen('splash')">← Retour</button>
 </div>
 
+<!-- ═══ INTERACTIONS MÉDICAMENTEUSES (KA_HOLOGRAM) ═══ -->
+<div class="screen" id="screen-interactions">
+<header><h2 style="color:var(--accent)">⚡ Vérifier des interactions</h2></header>
+<div class="card">
+<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Saisissez les médicaments de l'ordonnance — la base de connaissances Vital Ka (hologrammes) vérifie les interactions connues, 100% hors-ligne.</p>
+<textarea id="interactMeds" placeholder="Ex : amoxicilline, paracétamol, ibuprofène" style="min-height:60px;margin-bottom:8px;background:var(--surface);border:1px solid var(--glass-border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px;width:100%;box-sizing:border-box"></textarea>
+<button class="btn btn-primary" style="width:100%" onclick="checkInteractions()">⚡ Vérifier les interactions</button>
+<div id="interactResult" style="margin-top:12px"><span style="color:var(--muted);font-size:.8em">En attente de vérification...</span></div>
+</div>
+<button class="btn btn-secondary" onclick="showScreen('splash')">← Retour</button>
+</div>
+
 </div>
 
 <nav class="bottom-nav">
 <div class="nav-item active" data-screen="splash" onclick="showScreen('splash')"><span class="nav-icon">🏪</span><span class="nav-label">Accueil</span></div>
 <div class="nav-item" data-screen="scan" onclick="showScreen('scan')"><span class="nav-icon">📷</span><span class="nav-label">Scanner</span></div>
+<div class="nav-item" data-screen="interactions" onclick="showScreen('interactions')"><span class="nav-icon">⚡</span><span class="nav-label">Interactions</span></div>
 <div class="nav-item" data-screen="wallet" onclick="showScreen('wallet')"><span class="nav-icon">💰</span><span class="nav-label">Caisse</span></div>
 <div class="nav-item" data-screen="history" onclick="showScreen('history')"><span class="nav-icon">📋</span><span class="nav-label">Historique</span></div>
 </nav>
@@ -130,6 +144,44 @@ function showScreen(name) {
   document.querySelector('.bottom-nav').style.display = (name === 'splash') ? 'none' : 'flex';
   if (name === 'history') renderHistory();
   if (name === 'wallet') renderPharmWallet();
+}
+
+// ═══ INTERACTIONS MÉDICAMENTEUSES — KA_HOLOGRAM (offline) ═══
+async function checkInteractions() {
+  const el = document.getElementById('interactResult');
+  const input = (document.getElementById('interactMeds').value || '').trim();
+  if (!input) { el.innerHTML = '<span style="color:var(--error)">Saisissez au moins un médicament.</span>'; return; }
+
+  el.innerHTML = '<span style="color:var(--muted)">Analyse de la base de connaissances...</span>';
+
+  try {
+    if (typeof KA_HOLOGRAM === 'undefined') {
+      el.innerHTML = '<span style="color:var(--error)">Base de connaissances non disponible.</span>';
+      return;
+    }
+    await KA_HOLOGRAM.load();
+
+    // Rechercher les interactions via checkInteractions (matching par sous-chaîne)
+    const meds = input.split(/[,;\n]+/).map(m => m.trim()).filter(Boolean);
+    const results = KA_HOLOGRAM.checkInteractions(meds, 8);
+
+    if (!results.length) {
+      el.innerHTML = '<div style="padding:10px;border-left:3px solid var(--success);background:rgba(76,175,80,.08);border-radius:8px;font-size:13px">✅ <b>Aucune interaction connue</b> détectée pour : ' +
+        meds.join(', ') + ' dans la base Vital Ka.</div>';
+      return;
+    }
+
+    let html = '<div style="padding:10px;border-left:3px solid var(--error);background:rgba(244,67,54,.08);border-radius:8px;font-size:13px">⚠️ <b>' + results.length + ' interaction(s) détectée(s)</b> :</div>';
+    for (const r of results.slice(0, 8)) {
+      const sev = r.severity === 'contraindicated' ? 'var(--error)' :
+                  r.severity === 'major' || r.severity === 'moderate' ? 'var(--warning)' : 'var(--success)';
+      html += '<div style="padding:8px 12px;border-left:3px solid ' + sev + ';background:var(--surface-container-lowest);border-radius:6px;margin:6px 0;font-size:13px">' +
+        '<b>' + r.s + '</b> — <span style="text-transform:uppercase;font-size:10px;color:' + sev + '">' + r.severity + '</span><br>' + r.phrase + '</div>';
+    }
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = '<span style="color:var(--error)">Erreur : ' + e.message + '</span>';
+  }
 }
 
 function decodeRx() {

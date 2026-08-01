@@ -404,49 +404,120 @@ async def model_info():
 
 @app.post("/diagnose", response_model=DiagnoseResponse)
 async def diagnose(request: DiagnoseRequest):
-    """Differential diagnosis from symptoms."""
-    if model is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
-    
-    prompt = build_diagnose_prompt(request)
-    response_text = generate_text(prompt, max_new_tokens=256, temperature=0.3)
-    
-    # Parse response (simplified - in production use structured output)
+    """Differential diagnosis from symptoms (hologrammes médicaux)."""
+    # Les hologrammes permettent un diagnostic sans le modèle 125M.
+    # Le 125M (si chargé) ajoutera la génération fluide par la suite.
+    if hologram_router is None:
+        raise HTTPException(status_code=503, detail="Hologrammes non chargés")
+
+    # Construire la requête avec les informations patient
+    parts = list(request.symptoms)
+    if request.patient_age:
+        parts.append(f"âge {request.patient_age} ans")
+    if request.patient_sex:
+        parts.append(f"sexe {request.patient_sex}")
+    if request.history:
+        parts.extend(request.history)
+    query_text = " ".join(parts)
+
+    # Couverture lexicale : hors-sujet → refus propre
+    if hologram_router.coverage(query_text) < 0.5:
+        return DiagnoseResponse(
+            diagnoses=[{"text": "Aucune correspondance fiable — symptômes non reconnus.", "icd10": ""}],
+            confidence=0.0,
+            disclaimer="Avertissement: Ceci est une assistance IA, pas un avis médical."
+        )
+
+    # Routage + retrieval des faits symptômes
+    routes = hologram_router.route(query_text, top_k=3)
     diagnoses = []
-    for line in response_text.strip().split('\n'):
-        if line.strip() and ('%' in line or 'probabilité' in line.lower() or 'diagnostic' in line.lower()):
-            diagnoses.append({"text": line.strip()})
-    
-    if not diagnoses:
-        diagnoses = [{"text": response_text[:500]}]
-    
+    seen = set()
+    for domain, conf in routes:
+        facts = hologram_router.retrieve_facts(domain, query_text, top_k=request.max_diagnoses)
+        for f in facts:
+            # Ne garder que les faits de symptômes ou de conduite (discriminants)
+            rel = f.get('relation', '')
+            if 'symptôme' not in rel and 'symptome' not in rel and 'conduite' not in rel and 'signes' not in rel:
+                continue
+            sujet = f.get('sujet', '')
+            if sujet in seen:
+                continue
+            seen.add(sujet)
+            score = f.get('score', 0.0)
+            if score < 0.2:
+                continue
+            diagnoses.append({
+                "text": f.get('phrase') or f"{sujet} {rel} {f.get('objet', '')}",
+                "icd10": "",
+                "score": round(score, 2),
+                "secteur": domain,
+            })
+
+    diagnoses = diagnoses[:request.max_diagnoses]
+    top_score = max((d.get('score', 0) for d in diagnoses), default=0.0)
     return DiagnoseResponse(
-        diagnoses=diagnoses[:request.max_diagnoses],
-        confidence=0.75,  # Placeholder
+        diagnoses=diagnoses or [
+            {"text": "Aucune hypothèse fiable — consultez un professionnel de santé.", "icd10": ""}
+        ],
+        confidence=round(top_score, 2),
         disclaimer="Avertissement: Ceci est une assistance IA, pas un avis médical. Consultez un professionnel de santé."
     )
 
 
 @app.post("/prescribe", response_model=PrescribeResponse)
 async def prescribe(request: PrescribeRequest):
-    """Prescription suggestion with dosing."""
-    if model is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
-    
-    prompt = build_prescribe_prompt(request)
-    response_text = generate_text(prompt, max_new_tokens=300, temperature=0.2)
-    
-    # Parse medications (simplified)
+    """Prescription suggestion with dosing (hologrammes médicaux)."""
+    if hologram_router is None:
+        raise HTTPException(status_code=503, detail="Hologrammes non chargés")
+
+    # Query sur la pathologie + le profil patient
+    query_text = f"{request.diagnosis} âge {request.patient_age} ans"
+    if request.patient_weight:
+        query_text += f" poids {request.patient_weight} kg"
+    if request.allergies:
+        query_text += " allergies " + " ".join(request.allergies)
+
+    if hologram_router.coverage(query_text) < 0.3:
+        return PrescribeResponse(
+            medications=[{"drug": request.diagnosis, "dose": "", "route": "",
+                          "frequency": "", "duration": "",
+                          "notes": "Aucune posologie fiable trouvée — consultation requise"}],
+            warnings=["Vérifier allergies", "Vérifier interactions"],
+            monitoring=["Évolution clinique"]
+        )
+
+    # Routage + retrieval des faits traitement/dose
+    routes = hologram_router.route(query_text, top_k=2)
     medications = []
-    for line in response_text.strip().split('\n'):
-        if line.strip() and any(kw in line.lower() for kw in ['mg', 'ml', 'fois', 'jour', 'semaine', 'comprim', 'gélul']):
-            medications.append({"text": line.strip()})
-    
-    if not medications:
-        medications = [{"text": response_text[:500]}]
-    
+    seen = set()
+    for domain, _ in routes:
+        facts = hologram_router.retrieve_facts(domain, query_text, top_k=6)
+        for f in facts:
+            rel = f.get('relation', '')
+            if not any(k in rel for k in ('traitement', 'dose', 'posologie', 'voie', 'classe')):
+                continue
+            drug = f.get('sujet', '')
+            if drug in seen:
+                continue
+            seen.add(drug)
+            score = f.get('score', 0)
+            if score < 0.2:
+                continue
+            medications.append({
+                "drug": drug,
+                "dose": f.get('objet', ''),
+                "route": "",
+                "frequency": "",
+                "duration": "",
+                "notes": f.get('phrase', ''),
+            })
+
     return PrescribeResponse(
-        medications=medications,
+        medications=medications[:6] or [
+            {"drug": request.diagnosis, "dose": "", "route": "",
+             "frequency": "", "duration": "",
+             "notes": "Aucune posologie fiable trouvée — consultation requise"}
+        ],
         warnings=["Vérifier allergies", "Ajuster selon fonction rénale/hépatique"],
         monitoring=["Évolution clinique", "Effets indésirables"]
     )
@@ -454,48 +525,118 @@ async def prescribe(request: PrescribeRequest):
 
 @app.post("/interactions", response_model=InteractionsResponse)
 async def interactions(request: InteractionsRequest):
-    """Drug interaction checking."""
-    if model is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
-    
-    prompt = build_interactions_prompt(request)
-    response_text = generate_text(prompt, max_new_tokens=300, temperature=0.2)
-    
-    # Determine severity from response
-    severity = "none"
-    text_lower = response_text.lower()
-    if "contre-indiqué" in text_lower or "contre-indique" in text_lower:
-        severity = "contraindicated"
-    elif "majeur" in text_lower or "grave" in text_lower:
-        severity = "major"
-    elif "modéré" in text_lower or "modere" in text_lower:
-        severity = "moderate"
-    elif "mineur" in text_lower or "léger" in text_lower:
-        severity = "minor"
-    
+    """Drug interaction checking (hologrammes médicaux)."""
+    if hologram_router is None:
+        raise HTTPException(status_code=503, detail="Hologrammes non chargés")
+
+    meds_text = " ".join(request.medications)
+    query_text = f"{meds_text} interaction"
+
+    # Retrieval des faits d'interaction : pour chaque médicament demandé,
+    # on cherche les faits dont le sujet (ex: "diazepam + alcool + opiacés")
+    # contient ce médicament — matching par sous-chaîne, robuste aux paires
+    # et aux accents (diazépam ↔ diazepam).
     interactions_list = []
-    for line in response_text.strip().split('\n'):
-        if line.strip():
-            interactions_list.append({"description": line.strip()})
-    
+    seen = set()
+
+    def normalize(text: str) -> str:
+        return (text.lower().replace('é', 'e').replace('è', 'e').replace('ê', 'e')
+                .replace('à', 'a').replace('â', 'a').replace('ô', 'o')
+                .replace('î', 'i').replace('û', 'u').replace('ç', 'c'))
+
+    meds_norm = [normalize(m) for m in request.medications if m.strip()]
+
+    # Charger tous les faits d'interaction (domaine PHARMACIE principalement)
+    interaction_facts = []
+    for domain in ['PHARMACIE', 'MALADIES', 'GENERAL']:
+        facts = hologram_router.retrieve_facts(domain, "interaction", top_k=50)
+        interaction_facts.extend((domain, f) for f in facts)
+
+    for domain, f in interaction_facts:
+        rel = f.get('relation', '')
+        sujet = str(f.get('sujet', ''))
+        objet = str(f.get('objet', ''))
+        if 'interaction' not in rel:
+            continue
+        # Un médicament demandé doit apparaître dans le sujet de l'interaction
+        s_norm = normalize(sujet)
+        if not any(m in s_norm for m in meds_norm):
+            continue
+        key = f"{sujet}|{objet}"
+        if key in seen:
+            continue
+        seen.add(key)
+        # Détection simple de sévérité dans le texte
+        txt = f"{sujet} {objet}".lower()
+        if 'contre-indiqu' in txt or 'risque mortel' in txt or 'jamais' in txt:
+            sev = 'contraindicated'
+        elif 'majeur' in txt or 'grave' in txt or 'danger' in txt or 'hémorrag' in txt:
+            sev = 'major'
+        elif 'modéré' in txt or 'modere' in txt or 'surveiller' in txt:
+            sev = 'moderate'
+        else:
+            sev = 'minor'
+        interactions_list.append({
+            "pair": [sujet, objet],
+            "severity": sev,
+            "mechanism": f.get('phrase', ''),
+            "action": "Éviter l'association si possible ou surveiller étroitement",
+        })
+
+    severity_order = {'contraindicated': 5, 'major': 4, 'moderate': 3, 'minor': 2, 'none': 1}
+    # Trier : la plus dangereuse en premier
+    interactions_list.sort(key=lambda i: -severity_order.get(i['severity'], 1))
+    overall = max((severity_order.get(i['severity'], 1) for i in interactions_list), default=1)
+    overall_sev = next((k for k, v in sorted(severity_order.items(), key=lambda x: -x[1])
+                        if v == overall), 'none')
+
     return InteractionsResponse(
-        interactions=interactions_list or [{"description": response_text[:500]}],
-        severity=severity,
-        recommendations=["Surveiller le patient", "Considérer alternative si possible"]
+        interactions=interactions_list,
+        severity=overall_sev,
+        recommendations=[
+            "Surveiller le patient",
+            "Considérer une alternative si possible",
+            "Consulter un pharmacien ou médecin en cas de doute"
+        ]
     )
 
 
 @app.post("/explain", response_model=ExplainResponse)
 async def explain(request: ExplainRequest):
-    """Medical explanation / patient education."""
-    if model is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
-    
-    prompt = build_explain_prompt(request)
-    response_text = generate_text(prompt, max_new_tokens=request.max_length, temperature=0.5)
-    
+    """Medical explanation / patient education (hologrammes médicaux)."""
+    if hologram_router is None:
+        raise HTTPException(status_code=503, detail="Hologrammes non chargés")
+
+    query_text = f"{request.topic} {request.audience}"
+    if hologram_router.coverage(query_text) < 0.3:
+        return ExplainResponse(
+            explanation="Aucune information fiable trouvée pour ce sujet dans la base "
+                        "de connaissances Vital Ka. Consultez un professionnel de santé.",
+            sources=["Vital Ka Medical Knowledge Base"],
+            reading_level="Patient" if request.audience == "patient" else "Professional"
+        )
+
+    # Routage + retrieval des faits généraux du domaine
+    routes = hologram_router.route(query_text, top_k=2)
+    sentences = []
+    seen = set()
+    for domain, _ in routes:
+        facts = hologram_router.retrieve_facts(domain, query_text, top_k=5)
+        for f in facts:
+            phrase = f.get('phrase', '')
+            if not phrase or phrase in seen:
+                continue
+            seen.add(phrase)
+            score = f.get('score', 0)
+            if score < 0.25:
+                continue
+            sentences.append(phrase)
+
+    explanation = " ".join(sentences[:4]) if sentences else \
+        f"Aucune information détaillée sur « {request.topic} » dans la base Vital Ka."
+
     return ExplainResponse(
-        explanation=response_text.strip(),
+        explanation=explanation,
         sources=["Vital Ka Medical Knowledge Base", "WHO Guidelines"],
         reading_level="Patient" if request.audience == "patient" else "Professional"
     )
@@ -512,6 +653,24 @@ async def hologram_query(request: HologramQueryRequest):
     query_text = request.query
     if request.domain and request.domain != "auto":
         query_text = f"{request.domain} {request.query}"
+
+    # ⚠️ COUVERTURE LEXICALE : si moins de 50% des mots de la question
+    # existent dans le vocabulaire médical, c'est un hors-sujet (football,
+    # cuisine...) qui matcherait des faits par coïncidence ("transfert
+    # hospitalier"). Parité avec KA_HOLOGRAM côté Android.
+    if hologram_router.coverage(query_text) < 0.5:
+        return HologramQueryResponse(
+            results=[{
+                "content": "Aucune correspondance fiable. Cette question ne relève pas "
+                           "des connaissances médicales Vital Ka. Consultez un professionnel de santé.",
+                "sujet": "",
+                "relation": "",
+                "objet": "hors domaine",
+                "secteur": "INCONNU",
+                "score": 0.0,
+            }],
+            domain="INCONNU"
+        )
 
     # Routage vers les meilleurs domaines (sélection du domaine)
     routes = hologram_router.route(query_text, top_k=3)
