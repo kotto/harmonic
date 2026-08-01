@@ -163,7 +163,7 @@ const KA_VOICE = (() => {
         const resp = await fetch(this.url + '/api/voice/offline', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, voice: voice || 'fr_FR-siwis-medium', speed: speed || 1.0, enhanced: false }),
+          body: JSON.stringify({ text, voice: voice || 'fr_FR-siwis-medium', speed: speed || 1.0, enhanced: true, hd: true }),
           signal: controller.signal,
         });
         clearTimeout(timeout);
@@ -392,6 +392,11 @@ const KA_VOICE = (() => {
         return false;
       }
     }
+    return _emitWebSpeech(text, profile);
+  }
+
+  /** Émission Web Speech SYNCCHRONE (partagée par _webSpeak et speakSync). */
+  function _emitWebSpeech(text, profile) {
     const p = PROFILES[profile] || PROFILES.conseiller;
     const u = new SpeechSynthesisUtterance(String(text).trim());
     u.lang = 'fr-FR';
@@ -475,8 +480,17 @@ const KA_VOICE = (() => {
       speak(text, profile);
       return true;
     }
-    // Fallback immédiat Web Speech (préserve le geste utilisateur)
-    const spoke = _webSpeak(text, profile);
+    // Fallback immédiat Web Speech (préserve le geste utilisateur).
+    // ⚠️ _webSpeak est async : sans await elle retournerait une Promise —
+    // speakSync doit rendre un booléen → émission synchrone directe.
+    stop();
+    if (!_voicesReady()) {
+      // Voix pas encore chargées (WebView au démarrage) : émission différée,
+      // retour optimiste (le contrat de speakSync reste booléen).
+      _webSpeak(text, profile);
+      return true;
+    }
+    const spoke = _emitWebSpeech(text, profile);
     if (server.available === null && !server._checking) {
       server.detect().catch(() => {});
     }

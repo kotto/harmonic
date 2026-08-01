@@ -48,6 +48,7 @@ VOICE_PROFILES = {
     "kemet_sage": {
         "name": "Le Sage de Kemet",
         "description": "Voix grave, lente, sage — parfait pour les réponses sur Kemet et l'Afrique",
+        "edge_voice": "fr-FR-HenriNeural",   # voix réelle (Edge-TTS) associée au profil
         "speed": 0.85,       # Plus lent que la normale
         "pitch_shift": -0.15, # Plus grave
         "energy": 0.7,        # Moins d'énergie (calme)
@@ -58,6 +59,7 @@ VOICE_PROFILES = {
     "kemet_moderne": {
         "name": "La Voix Moderne de Kemet",
         "description": "Voix claire, dynamique, jeune — pour les conversations quotidiennes",
+        "edge_voice": "fr-FR-DeniseNeural",
         "speed": 1.0,
         "pitch_shift": 0.0,
         "energy": 0.9,
@@ -68,6 +70,7 @@ VOICE_PROFILES = {
     "griot": {
         "name": "Le Griot",
         "description": "Voix de conteur africain — pour les histoires et légendes",
+        "edge_voice": "fr-FR-JeromeNeural",
         "speed": 0.9,
         "pitch_shift": -0.05,
         "energy": 0.85,
@@ -78,6 +81,7 @@ VOICE_PROFILES = {
     "enfant": {
         "name": "L'Enfant de Kemet",
         "description": "Voix plus aiguë, curieuse — pour les réponses éducatives",
+        "edge_voice": "fr-FR-EloiseNeural",
         "speed": 1.05,
         "pitch_shift": 0.2,
         "energy": 0.8,
@@ -88,6 +92,7 @@ VOICE_PROFILES = {
     "poete": {
         "name": "Le Poète",
         "description": "Voix lyrique, rythmée — pour les poèmes et créations",
+        "edge_voice": "fr-FR-VivienneNeural",
         "speed": 0.95,
         "pitch_shift": 0.05,
         "energy": 0.75,
@@ -141,42 +146,59 @@ class HarmonicSpeechOrchestrator:
     Le TTS n'est qu'un instrument. L'Orchestrator est le musicien.
     """
 
-    def __init__(self, voice_profile: str = "kemet_moderne"):
+    def __init__(self, voice_profile: str = "kemet_moderne", enrich_text: bool = True):
         """
         Args:
             voice_profile: "kemet_sage", "kemet_moderne", "griot", "enfant", "poete"
+            enrich_text: si False, désactive les préfixes/suffixes aléatoires
+                         (mode déterministe — recommandé pour le médical)
         """
         self.voice_profile = voice_profile
         self.voice_config = VOICE_PROFILES.get(voice_profile, VOICE_PROFILES["kemet_moderne"])
+        self.enrich_text_enabled = enrich_text
         self.tts_engine = self._init_tts()
+        self._streaming_tts = None  # singleton paresseux (le cache disque est coûteux à recharger)
         self.stats = {"total_speech_generated": 0, "total_duration_ms": 0}
 
     def _init_tts(self):
         """
-        Initialise le moteur TTS.
-        Priorité : 1. XTTS-v2 (si installé), 2. Piper (fallback), 3. Synthèse de base
+        Détecte le moteur TTS de base SANS rien charger de lourd.
+        Priorité : 1. SpeechService (Edge-TTS/Piper, rapide), 2. XTTS-v2 (chargé
+        paresseusement à la 1ʳᵉ utilisation — 1,8 Go, jamais au démarrage),
+        3. Synthèse harmonique de secours.
         """
-        engine = {"type": "none", "available": False}
-        
-        # Essayer Piper (déjà intégré à speech_service.py)
+        engine = {"type": "none", "available": False, "xtts_lazy": False}
+
+        # SpeechService : Edge-TTS (cloud, voix neuronales) + Piper (local)
         try:
             from speech_service import SpeechService
             svc = SpeechService()
-            if svc.piper_available:
-                engine = {"type": "piper", "instance": svc, "available": True}
-        except:
+            if svc.is_tts_available():
+                engine = {"type": "speech_service", "instance": svc, "available": True,
+                          "xtts_lazy": False}
+        except Exception:
             pass
-        
-        # Essayer XTTS (qualité supérieure si installé)
+
+        # XTTS-v2 : détection SANS import — `import TTS` charge torch (~90 s !).
+        # find_spec ne fait que localiser le package ; le modèle (1,8 Go) sera
+        # chargé à la demande via xtts_engine.get_xtts().
         try:
-            from TTS.api import TTS
-            tts = TTS(model_name="tts_models/multilingual/multi-dataset/xtts_v2", progress_bar=False)
-            engine = {"type": "xtts", "instance": tts, "available": True}
-        except:
+            import importlib.util
+            engine["xtts_lazy"] = importlib.util.find_spec("TTS") is not None
+        except Exception:
             pass
-        
-        print(f"[SpeechOrchestrator] TTS engine: {engine['type']} (available: {engine['available']})")
+
+        print(f"[SpeechOrchestrator] TTS engine: {engine['type']} "
+              f"(available: {engine['available']}, xtts_lazy: {engine['xtts_lazy']})")
         return engine
+
+    def _get_streaming_tts(self):
+        """Retourne L'instance unique de TTSStreamingService (créée à la 1ʳᵉ utilisation)."""
+        if self._streaming_tts is None:
+            from tts_streaming import TTSStreamingService
+            svc = self.tts_engine.get("instance") if self.tts_engine.get("type") == "speech_service" else None
+            self._streaming_tts = TTSStreamingService(speech_service=svc)
+        return self._streaming_tts
 
     # ═══ INTERFACE PRINCIPALE ═══
 
@@ -210,24 +232,27 @@ class HarmonicSpeechOrchestrator:
         
         # Step 5: Synthèse vocale (avec streaming TTS + cache si disponible)
         duration_s = 0.0
+        # La voix réelle du profil (Edge-TTS) — avant, "denise" était hardcodée
+        # et les 5 profils ne changeaient que vitesse/hauteur.
+        edge_voice = voice.get("edge_voice", "fr-FR-DeniseNeural")
+        text_hash = hashlib.md5(enriched_text.encode()).hexdigest()[:8]
         try:
-            from tts_streaming import TTSStreamingService
-            streaming_tts = TTSStreamingService()
-            if not output_path:
-                text_hash = hashlib.md5(enriched_text.encode()).hexdigest()[:8]
-                output_path = os.path.join(DATA_DIR, f"speech_{text_hash}.wav")
-            
-            # Utiliser le streaming TTS avec cache
-            audio_bytes = streaming_tts.speak_cached(enriched_text, voice="denise", speed=speech_params.get("speed", 1.0))
-            if audio_bytes:
+            streaming_tts = self._get_streaming_tts()
+            res = streaming_tts.speak_cached_ex(enriched_text, voice=edge_voice,
+                                                speed=speech_params.get("speed", 1.0))
+            if res:
+                audio_bytes, fmt = res
+                if not output_path:
+                    output_path = os.path.join(DATA_DIR, f"speech_{text_hash}.{fmt}")
                 with open(output_path, "wb") as f:
                     f.write(audio_bytes)
                 duration_s = self._get_audio_duration(output_path)
             else:
+                if not output_path:
+                    output_path = os.path.join(DATA_DIR, f"speech_{text_hash}.wav")
                 duration_s = self._synthesize(enriched_text, speech_params, output_path)
         except ImportError:
             if not output_path:
-                text_hash = hashlib.md5(enriched_text.encode()).hexdigest()[:8]
                 output_path = os.path.join(DATA_DIR, f"speech_{text_hash}.wav")
             duration_s = self._synthesize(enriched_text, speech_params, output_path)
         
@@ -325,17 +350,21 @@ class HarmonicSpeechOrchestrator:
     def _enrich_text(self, text: str, prosody: Dict) -> str:
         """Ajoute des préfixes/suffixes prosodiques pour guider le TTS."""
         enriched = text.strip()
-        
+
+        # Mode déterministe (médical, accessibilité) : aucun enrichissement aléatoire
+        if not self.enrich_text_enabled:
+            return enriched
+
         # Ajouter un préfixe (30% du temps pour éviter la monotonie)
         if random.random() < 0.3 and prosody.get("prefix_phrases"):
             prefix = random.choice(prosody["prefix_phrases"])
             enriched = prefix + enriched
-        
+
         # Ajouter un suffixe (20% du temps)
         if random.random() < 0.2 and prosody.get("suffix_phrases"):
             suffix = random.choice(prosody["suffix_phrases"])
             enriched = enriched + " " + suffix
-        
+
         return enriched
 
     def _compute_speech_params(self, voice: Dict, prosody: Dict) -> Dict:
@@ -356,44 +385,45 @@ class HarmonicSpeechOrchestrator:
     def _synthesize(self, text: str, params: Dict, output_path: str) -> float:
         """
         Synthétise le texte en audio via le meilleur backend disponible.
-        
+
         Returns:
             Durée audio en secondes
         """
         engine = self.tts_engine
-        
-        if engine["type"] == "xtts" and engine["available"]:
-            return self._synth_xtts(text, params, output_path, engine["instance"])
-        
-        elif engine["type"] == "piper" and engine["available"]:
+
+        # 1. SpeechService (Piper local — sortie WAV garantie sur output_path)
+        if engine["type"] in ("speech_service", "piper") and engine["available"]:
             return self._synth_piper(text, params, output_path, engine["instance"])
-        
-        else:
-            # Fallback ultime : synthèse sinusoïdale de base
-            return self._synth_fallback(text, params, output_path)
+
+        # 2. XTTS-v2 paresseux (lourd, CPU — seulement si rien d'autre)
+        if engine.get("xtts_lazy"):
+            return self._synth_xtts(text, params, output_path)
+
+        # 3. Fallback ultime : synthèse sinusoïdale de base
+        return self._synth_fallback(text, params, output_path)
 
     def _synth_piper(self, text: str, params: Dict, output_path: str, svc) -> float:
-        """Synthèse via Piper TTS (open-source, local)."""
+        """Synthèse via Piper TTS (open-source, local) — sortie WAV garantie."""
         try:
-            svc.synthesize(text, output_path)
-            return self._get_audio_duration(output_path)
-        except:
-            return self._synth_fallback(text, params, output_path)
+            if svc.synthesize(text, output_path, speed=params.get("speed", 1.0)):
+                return self._get_audio_duration(output_path)
+        except Exception:
+            pass
+        return self._synth_fallback(text, params, output_path)
 
-    def _synth_xtts(self, text: str, params: Dict, output_path: str, tts) -> float:
-        """Synthèse via XTTS-v2 (qualité supérieure)."""
-        # XTTS supporte le contrôle de vitesse/langue
-        language = "fr"
+    def _synth_xtts(self, text: str, params: Dict, output_path: str) -> float:
+        """Synthèse via XTTS-v2 (qualité supérieure, chargement paresseux)."""
         try:
-            tts.tts_to_file(
-                text=text,
-                language=language,
-                file_path=output_path,
-                speed=params.get("speed", 1.0),
-            )
-            return self._get_audio_duration(output_path)
-        except:
-            return self._synth_piper_or_fallback(text, params, output_path)
+            from xtts_engine import get_xtts
+            engine = get_xtts()  # singleton : lazy-load + déchargement après inactivité
+            audio = engine.speak(text) if engine else None
+            if audio:
+                with open(output_path, "wb") as f:
+                    f.write(audio)
+                return self._get_audio_duration(output_path)
+        except Exception:
+            pass
+        return self._synth_piper_or_fallback(text, params, output_path)
 
     def _synth_fallback(self, text: str, params: Dict, output_path: str) -> float:
         """
@@ -430,25 +460,33 @@ class HarmonicSpeechOrchestrator:
         return duration
 
     def _synth_piper_or_fallback(self, text, params, output_path):
-        """Essaie Piper, puis fallback."""
+        """Essaie Piper (via l'instance SpeechService déjà détectée), puis fallback."""
         try:
-            from speech_service import SpeechService
-            svc = SpeechService()
-            if svc.piper_available:
-                svc.synthesize(text, output_path)
+            svc = self.tts_engine.get("instance")
+            if svc is None:
+                from speech_service import SpeechService
+                svc = SpeechService()
+            if svc.synthesize(text, output_path, speed=params.get("speed", 1.0)):
                 return self._get_audio_duration(output_path)
-        except:
+        except Exception:
             pass
         return self._synth_fallback(text, params, output_path)
 
     def _get_audio_duration(self, path: str) -> float:
-        """Retourne la durée d'un fichier WAV en secondes."""
+        """Retourne la durée d'un fichier audio en secondes (WAV précis, MP3 estimé)."""
         try:
             with wave.open(path, 'r') as wf:
                 frames = wf.getnframes()
                 rate = wf.getframerate()
                 return frames / rate
-        except:
+        except Exception:
+            # MP3 (Edge-TTS : 24 kHz, 48 kbit/s mono) — estimation par le bitrate
+            try:
+                size = os.path.getsize(path)
+                if size > 1000:
+                    return round(size * 8 / 48000.0, 2)
+            except Exception:
+                pass
             return 1.0
 
     def list_voices(self) -> List[Dict]:

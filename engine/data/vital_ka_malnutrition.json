@@ -1,0 +1,233 @@
+{
+  "description": "Protocoles malnutrition — OMS 2024 PCIME malnutrition aiguë",
+  "version": "1.0",
+  "source": "WHO Guidelines for Management of Severe Acute Malnutrition 2024",
+  "conditions": {
+    "sam": {
+      "nom": "Malnutrition Aiguë Sévère (MAS / SAM)",
+      "signes": [
+        "MUAC <115mm (6-59 mois)",
+        "poids/taille < -3 Z-score",
+        "œdème bilatéral des pieds (kwashiorkor)",
+        "fonte musculaire sévère (marasme)",
+        "enfant trop faible pour téter",
+        "apathie",
+        "dermatose (peau qui pèle)"
+      ],
+      "classification": {
+        "marasme": "Fonte musculaire et graisseuse sévère. Visage de vieillard. Pas d'œdème. Poids/T < -3 Z-score.",
+        "kwashiorkor": "Œdème bilatéral prenant le godet. Lésions cutanées (dermatose). Cheveux roux/cassants. Apathie. Anorexie.",
+        "marasme_kwashiorkor": "Œdème + fonte musculaire sévère."
+      },
+      "conduite": "HOSPITALISATION si complications (anorexie, infection, hypothermie, œdème sévère). Sinon: PEC ambulatoire (PECMAS).",
+      "traitement": {
+        "phase_stabilisation": "F-75 (lait thérapeutique) 130ml/kg/j en 8-12 repas. Surveiller glycémie (si <54mg/dl → glucose 10% PO/SNG). Réchauffer (couvertures, bonnet, peau-à-peau). Pas de fer pendant la 1ère semaine.",
+        "phase_rehabilitation": "F-100 ou Plumpy'Nut (ATPE). 150-200 kcal/kg/j. Fer 3mg/kg/j à partir de la 2ème semaine. Surveillance poids 2x/semaine.",
+        "plumpynut": "ATPE (Aliment Thérapeutique Prêt à l'Emploi): 1 sachet (92g = 500 kcal) / 4h. Objectif: prise de poids >10g/kg/j."
+      },
+      "examens_complementaires": [
+        "Test appétit (donner 30g Plumpy'Nut — si mange bien = ambulatoire)",
+        "Glycémie",
+        "Hb",
+        "Test VIH (conseil dépistage)",
+        "Test paludisme si fièvre",
+        "BU si infection urinaire"
+      ],
+      "prevention": "Vitamine A 200000 UI à l'admission + J14 si signes oculaires. Vaccination: rougeole à l'admission si >6 mois non vacciné. Albendazole 400mg (>1 an) ou 200mg (<1 an).",
+      "urgence": true,
+      "attention": "⚠️ Ne PAS donner de fer dans la 1ère semaine (risque d'aggraver l'infection). Ne PAS réhydrater avec SRO standard → utiliser ReSoMal (SRO spécial malnutrition) ou à défaut SRO dilué dans 1.5L au lieu d'1L. L'hypothermie (<35.5°C) tue autant que l'hypoglycémie.",
+      "seuils": {
+        "logic": "any",
+        "rules": [
+          {
+            "field": "muac",
+            "op": "lt",
+            "value": 115,
+            "age_range": [
+              6,
+              59
+            ],
+            "symptoms": [
+              "œdèmes_bilatéraux",
+              "fonte_musculaire"
+            ],
+            "score": 0.95
+          },
+          {
+            "field": "muac",
+            "op": "lt",
+            "value": 115,
+            "age_range": [
+              6,
+              59
+            ],
+            "score": 0.9
+          },
+          {
+            "symptoms": [
+              "œdèmes_bilatéraux",
+              "apathie"
+            ],
+            "score": 0.85
+          }
+        ]
+      }
+    },
+    "mam": {
+      "nom": "Malnutrition Aiguë Modérée (MAM)",
+      "signes": [
+        "MUAC 115-124mm",
+        "poids/taille -3 à -2 Z-score",
+        "pas d'œdème",
+        "appétit conservé"
+      ],
+      "conduite": "PEC ambulatoire. Compléments alimentaires. Suivi mensuel.",
+      "traitement": {
+        "nutrition": "ATPE à demi-dose (1 sachet / 8h). Ou farines enrichies (CSB++). Conseil nutritionnel: diversification, fréquence des repas, densité énergétique.",
+        "suivi": "Visite toutes les 2 semaines. Surveillance MUAC, poids. Durée 2-3 mois. Guérison: MUAC >125mm et gain pondéral >5g/kg/j pendant 2 semaines."
+      },
+      "urgence": false,
+      "seuils": {
+        "logic": "all",
+        "rules": [
+          {
+            "field": "muac",
+            "op": "between",
+            "value": [
+              115,
+              124
+            ],
+            "age_range": [
+              6,
+              59
+            ],
+            "score": 0.8
+          }
+        ]
+      }
+    },
+    "kwashiorkor": {
+      "nom": "Kwashiorkor (Malnutrition œdémateuse)",
+      "signes": [
+        "œdème bilatéral des pieds/jambes/visage",
+        "dermatose desquamante (peau qui pèle par plaques)",
+        "cheveux décolorés, cassants, clairsemés",
+        "apathie, tristesse, irritabilité",
+        "anorexie",
+        "hépatomégalie",
+        "hypoalbuminémie"
+      ],
+      "tokens": [
+        "œdèmes_bilatéraux",
+        "dermatose_desquamante",
+        "cheveux_décolorés",
+        "cheveux_cassants",
+        "apathie",
+        "anorexie",
+        "hépatomégalie"
+      ],
+      "conduite": "HOSPITALISATION systématique (risque élevé de complications). Phase 1: stabilisation 5-7 jours avec F-75. Surveiller la fonte des œdèmes (diurèse, poids). Pas de diurétiques.",
+      "traitement": {
+        "phase1": "F-75 130ml/kg/j. Surveillance quotidienne: poids, œdèmes, signes infectieux, état cutané. Soins de la peau (vaseline, éviter savon). Antibiotiques systématiques: Amoxicilline 50mg/kg/j x 7j.",
+        "phase2": "F-100 ou ATPE après reprise de l'appétit. Surveillance hebdomadaire. Guérison complète: 4-8 semaines."
+      },
+      "urgence": true,
+      "attention": "⚠️ La fonte des œdèmes en phase 1 n'est PAS une perte de poids — ne pas augmenter les apports. La peau lésée est une porte d'entrée infectieuse majeure."
+    },
+    "carence_micronutriments": {
+      "nom": "Carences en micronutriments",
+      "signes": {
+        "vitamine_a": [
+          "héméralopie (cécité nocturne)",
+          "taches de Bitot",
+          "xérophtalmie (œil sec)",
+          "kératomalacie (cornée ramollie → perforation → cécité définitive)"
+        ],
+        "fer": [
+          "pâleur conjonctivale et palmaire",
+          "koïlonychie (ongles en cuillère)",
+          "fatigue",
+          "dyspnée",
+          "pica (manger de la terre — géophagie)"
+        ],
+        "iode": [
+          "goitre",
+          "crétinisme (enfant mère carencée)"
+        ],
+        "zinc": [
+          "retard de croissance",
+          "diarrhée persistante",
+          "lésions cutanées péri-orificielles",
+          "retard de cicatrisation"
+        ]
+      },
+      "tokens": [
+        "héméralopie",
+        "taches_bitot",
+        "xérophtalmie",
+        "pâleur",
+        "fatigue",
+        "asthénie",
+        "goitre",
+        "crétinisme",
+        "diarrhée",
+        "lésion_cutanée",
+        "cicatrisation_lente"
+      ],
+      "conduite": "Supplémentation spécifique selon le déficit identifié.",
+      "traitement": {
+        "vitamine_a": "Enfant: 100000 UI (<6 mois), 200000 UI (>6 mois) J1, J2, J14. Adulte: 200000 UI.",
+        "fer": "Fer 3-6mg/kg/j PO pendant 3 mois. Contrôle Hb à 1 mois. Déparasitage: Albendazole 400mg dose unique.",
+        "iode": "Sel iodé. Capsule d'huile iodée (Lipiodol) 1-2ml IM tous les 2-3 ans."
+      },
+      "urgence": false
+    },
+    "depistage_muac": {
+      "nom": "Dépistage nutritionnel (MUAC)",
+      "methode": "Bandelette MUAC (Mid-Upper Arm Circumference). Mesurer le bras gauche, à mi-distance acromion-olécrâne. Bandelette OMS avec zones colorées.",
+      "seuils": {
+        "logic": "any",
+        "rules": [
+          {
+            "field": "muac",
+            "op": "lt",
+            "value": 115,
+            "age_range": [
+              6,
+              59
+            ],
+            "score": 0.95
+          },
+          {
+            "field": "muac",
+            "op": "between",
+            "value": [
+              115,
+              124
+            ],
+            "age_range": [
+              6,
+              59
+            ],
+            "score": 0.75
+          },
+          {
+            "field": "muac",
+            "op": "between",
+            "value": [
+              125,
+              134
+            ],
+            "age_range": [
+              6,
+              59
+            ],
+            "score": 0.5
+          }
+        ]
+      },
+      "urgence": false,
+      "attention": "Le MUAC est le MEILLEUR prédicteur de mortalité infantile liée à la malnutrition. Plus fiable que le poids/taille en situation de terrain. Dépister TOUS les enfants de 6-59 mois à chaque contact."
+    }
+  }
+}

@@ -98,12 +98,17 @@ class HarmonicAudioPostProcessor:
             audio = self._spectral_noise_reduction(audio, sample_rate)
 
         # ÉTAPE 5 : Normalisation + clipping doux
-        final_rms = np.sqrt(np.mean(audio**2)) if len(audio) > 0 else 0
+        # Protection anti-overflow : clip après chaque étape pour éviter
+        # que les données FFT/IRFFT produisent des valeurs hors float32.
+        audio = np.clip(audio, -100.0, 100.0)  # garde-fou pré-RMS
+        final_rms = float(np.sqrt(np.mean(audio.astype(np.float64)**2))) if len(audio) > 0 else 0.0
         if final_rms > 0:
-            target_rms = max(original_rms * 0.9, 0.05)
-            audio = audio * (target_rms / final_rms)
-        audio = np.tanh(audio * 1.5) / 1.5
+            target_rms = max(float(original_rms) * 0.9, 0.05)
+            audio = audio.astype(np.float64) * (target_rms / final_rms)
+            audio = audio.astype(np.float32)
+        audio = np.tanh(audio.astype(np.float64) * 1.5) / 1.5
         audio = np.clip(audio, -0.99, 0.99)
+        audio = audio.astype(np.float32)
 
         self.stats["total_processed"] += 1
         return audio

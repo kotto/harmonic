@@ -74,7 +74,7 @@ class XTTSEngine:
             avail_gb = psutil.virtual_memory().available / (1024**3)
             if avail_gb < self.MIN_FREE_RAM_GB:
                 log.info(f"XTTS: RAM insuffisante ({avail_gb:.1f} GB libre < {self.MIN_FREE_RAM_GB} requis)")
-                self._available = False
+                # Ne PAS mettre en cache : la RAM peut se libérer → réessai au prochain appel
                 return False
         except ImportError:
             pass  # psutil non installé → on tente quand même
@@ -156,38 +156,39 @@ class XTTSEngine:
         
         try:
             self._load_model()
-            
+
             with self._lock:
                 self._last_used = time.time()
-            
-            # Synthèse
-            import io
-            buf = io.BytesIO()
-            
-            # Choisir le speaker
-            speaker = None
-            if speaker_wav:
-                speaker = speaker_wav
-            elif self._model.speakers:
-                # Premier speaker disponible
-                speaker = self._model.speakers[0]
-            
-            self._model.tts_to_file(
-                text=text,
-                file_path=buf,
-                speaker=speaker,
-                language=language,
-                speed=speed,
-            )
-            
-            buf.seek(0)
-            audio = buf.read()
-            
+
+            # Synthèse — fichier temporaire réel (BytesIO n'est pas accepté par
+            # tous les backends Coqui : soundfile exige un chemin)
+            import os, tempfile
+            fd, tmp_path = tempfile.mkstemp(prefix="xtts_", suffix=".wav")
+            os.close(fd)
+            try:
+                # Choisir le speaker : XTTS-v2 est un modèle de CLONAGE —
+                # il n'a pas de liste `speakers` et exige speaker_wav.
+                kwargs = dict(text=text, file_path=tmp_path,
+                              language=language, speed=speed)
+                speakers = getattr(self._model, "speakers", None)
+                if speaker_wav:
+                    kwargs["speaker_wav"] = speaker_wav
+                elif speakers:
+                    kwargs["speaker"] = speakers[0]  # modèles multi-locuteurs
+
+                self._model.tts_to_file(**kwargs)
+
+                with open(tmp_path, "rb") as f:
+                    audio = f.read()
+            finally:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+
             # Planifier le nettoyage
             self._schedule_cleanup()
-            
+
             return audio
-            
+
         except Exception as e:
             log.warning(f"XTTS: Erreur de synthèse ({e})")
             return None

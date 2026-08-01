@@ -94,7 +94,7 @@ try:
     harmonic_engine.build()
     
     corpus_info = f"+ corpus {len(corpus_math)} phrases" if corpus_math else "sans corpus"
-    print(f"  Moteur Harmonique : Actif — 47/47, 100% — émergence Ψ_a·Ψ_b=Ψ_{a+b} ({corpus_info})")
+    print(f"  Moteur Harmonique : Actif — 47/47, 100% — émergence Ψ_a·Ψ_b=Ψ_{{a+b}} ({corpus_info})")
 except ImportError:
     print(f"  Moteur Harmonique : Non disponible (moteur_raisonnement_universel.py manquant)")
 
@@ -138,12 +138,13 @@ try:
 except Exception as e:
     print(f"  Engine Bridge : Indisponible ({e})")
 
-# ═══ HARMONIC VOICE ENGINE — TTS unifié 3 niveaux ═══
+# ═══ HARMONIC VOICE ENGINE — TTS unifié 3 niveaux, OFFLINE-FIRST ═══
 voice_engine = None
 try:
     from harmonic_voice_engine import HarmonicVoiceEngine
-    voice_engine = HarmonicVoiceEngine()
-    print(f"  Voice Engine : Actif ({voice_engine.stats['engines']})")
+    voice_engine = HarmonicVoiceEngine(offline_only=True)  # 100% local : Piper + XTTS
+    print(f"  Voice Engine : Offline-first ({voice_engine.stats['engines']})")
+    print(f"  Offline ready  : {'✅ OUI' if voice_engine.is_offline_ready else '⚠️  NON — fallback sinusoidal'}")
 except Exception as e:
     print(f"  Voice Engine : Indisponible ({e})")
 
@@ -830,11 +831,12 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
             voice = data.get('voice', 'denise')
             speed = data.get('speed', 1.0)
             if text:
-                # Edge-TTS prioritaire (voix neuronale quasi-humaine)
-                audio = speech_svc.synthesize_best(text, voice=voice, speed=speed)
-                if audio:
+                # Edge-TTS prioritaire (voix neuronale quasi-humaine), Piper en repli
+                res = speech_svc.synthesize_best_ex(text, voice=voice, speed=speed)
+                if res:
+                    audio, fmt = res
                     self.send_response(200)
-                    self.send_header('Content-Type', 'audio/mp3')  # Edge-TTS = MP3
+                    self.send_header('Content-Type', 'audio/mp3' if fmt == 'mp3' else 'audio/wav')
                     self.send_header('Access-Control-Allow-Origin', '*')
                     self.send_header('Content-Length', str(len(audio)))
                     self.end_headers()
@@ -1169,6 +1171,44 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
         elif self.path == '/api/voice/stats' and voice_engine:
             self._send_json(voice_engine.stats)
         
+        # ═══ OFFLINE VOICE — mode 100% local (Piper, pas de cloud) ═══
+        elif self.path == '/api/voice/offline/caps' and voice_engine:
+            caps = voice_engine.stats
+            caps['offline_ready'] = voice_engine.is_offline_ready
+            caps['voices'] = list(voice_engine.VOICES_OFFLINE.keys()) if voice_engine.offline_only else list(voice_engine.VOICES_FR.keys())
+            caps['mode'] = 'offline' if voice_engine.offline_only else 'hybrid'
+            self._send_json(caps)
+        
+        elif self.path == '/api/voice/offline' and voice_engine:
+            data = self._read_json()
+            text = data.get('text', '')
+            voice = data.get('voice', 'siwis')
+            speed = float(data.get('speed', 1.0))
+            profile = data.get('profile', None)
+            lang = data.get('lang', None)
+            # Forcer le mode offline pour cet appel
+            was_offline = voice_engine.offline_only
+            voice_engine.offline_only = True
+            try:
+                if lang:
+                    voice_engine.set_language(lang)
+                elif text:
+                    lang = voice_engine.auto_detect_language(text)
+                    voice_engine.set_language(lang)
+                audio = voice_engine.speak(text, voice=voice, speed=speed, profile=profile)
+            finally:
+                voice_engine.offline_only = was_offline
+            if audio:
+                self.send_response(200)
+                self.send_header('Content-Type', 'audio/wav')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Length', str(len(audio)))
+                self.send_header('X-KA-Engine', 'piper-offline')
+                self.end_headers()
+                self.wfile.write(audio)
+            else:
+                self._send_json({'error': 'tts_failed', 'message': 'Aucun moteur offline disponible'}, 500)
+        
         # ═══ COMBINED: /api/ask → texte + TTS en un appel ═══
         elif self.path == '/api/ask-with-voice':
             length = int(self.headers.get('Content-Length', 0))
@@ -1251,10 +1291,16 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
         from urllib.parse import urlparse, parse_qs
         qs = urlparse(self.path).query
         return {k: v[0] for k, v in parse_qs(qs).items()}
+    
+    def _read_json(self):
+        """Lit et parse le body JSON d'une requête POST."""
+        length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(length).decode('utf-8')
+        return json.loads(body) if body else {}
 
 
 if __name__ == '__main__':
-    port = 8420
+    port = 8421
     print(f'KA Phone Unified Server on http://localhost:{port}')
     print(f'  IntentRouter:      {router is not None}')
     print(f'  PhoneActions:      {actions is not None}')

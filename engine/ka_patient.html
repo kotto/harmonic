@@ -110,6 +110,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 <script src="ka_hcv.js"></script>
 <script src="ka_care_voice.js"></script>
 <script src="ka_telemedecine.js"></script>
+<script src="ka_wallet.js"></script>
+<script src="seed_doctors_demo.js"></script>
 <script>
 function setupPIN(){
 var pin=prompt('Créez un code PIN à 4 chiffres :');
@@ -179,6 +181,11 @@ else{alert('Erreur.');}
 <div class="card">
 <h3>📋 Antécédents</h3>
 <textarea id="historyInput" placeholder="Antécédents médicaux, opérations..." style="min-height:80px" onchange="saveProfile()"></textarea>
+</div>
+
+<div class="card">
+<h3>📋 Ordonnances</h3>
+<div id="ordonnancesList"><span style="color:var(--muted);font-size:.8em">Aucune ordonnance. Votre médecin vous en enverra après un diagnostic.</span></div>
 </div>
 </div>
 
@@ -298,6 +305,28 @@ else{alert('Erreur.');}
 
 </div>
 
+<!-- ═══ WALLET SCREEN ═══ -->
+<div class="screen" id="screen-wallet">
+<header><h2 style="color:var(--accent)">💳 Mon Portefeuille Médical</h2></header>
+<div class="card" style="text-align:center">
+<div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Solde disponible</div>
+<div style="font-size:2.8em;font-weight:800;color:var(--accent);line-height:1.2" id="walletBalance">0</div>
+<div style="font-size:14px;color:var(--muted)">Unités Médicales</div>
+<div style="margin-top:8px;font-size:11px;color:var(--muted)" id="walletId" style="font-family:monospace"></div>
+</div>
+<div class="card">
+<h3>📥 Recevoir des UM</h3>
+<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Montrez ce QR code à un proche (diaspora) pour qu'il vous envoie des unités médicales.</p>
+<div style="text-align:center;padding:12px;background:#fff;border-radius:12px;display:inline-block;width:100%">
+<div id="walletQR" style="width:180px;height:180px;margin:0 auto;display:flex;align-items:center;justify-content:center;color:#000;font-size:.8em">Génération...</div>
+</div>
+</div>
+<div class="card">
+<h3>📋 Transactions</h3>
+<div id="walletTransactions"><span style="color:var(--muted);font-size:.8em">Aucune transaction.</span></div>
+</div>
+</div>
+
 <nav class="bottom-nav">
 <div class="nav-item active" data-screen="profile" onclick="showScreen('profile')"><span class="nav-icon">👤</span><span class="nav-label">Profil</span></div>
 <div class="nav-item" data-screen="meds" onclick="showScreen('meds')"><span class="nav-icon">💊</span><span class="nav-label">Medics</span></div>
@@ -305,6 +334,7 @@ else{alert('Erreur.');}
 <div class="nav-item" data-screen="appts" onclick="showScreen('appts')"><span class="nav-icon">📅</span><span class="nav-label">RDV</span></div>
 <div class="nav-item" data-screen="teleconsult" onclick="showScreen('teleconsult')"><span class="nav-icon">🎥</span><span class="nav-label">Consult</span></div>
 <div class="nav-item" data-screen="share" onclick="showScreen('share')"><span class="nav-icon">📤</span><span class="nav-label">Partager</span></div>
+<div class="nav-item" data-screen="wallet" onclick="showScreen('wallet')"><span class="nav-icon">💳</span><span class="nav-label">Wallet</span></div>
 </nav>
 
 <script>
@@ -340,6 +370,7 @@ document.getElementById('screen-'+name).classList.add('active');
 document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.screen===name));
 // Masquer la nav du bas sur l'écran splash
 document.querySelector('.bottom-nav').style.display = (name === 'splash') ? 'none' : 'flex';
+if (name === 'wallet') renderWallet();
 KA_SECURE.showLockScreen(function(){renderAll();});
 }
 
@@ -433,6 +464,20 @@ if (splashCodeEl && splashCodeContainer) {
     splashCodeContainer.style.display = 'none';
   }
 }
+// Ordonnances
+let rxHtml = '';
+const rx = data.profile.ordonnances || [];
+if (rx.length) {
+  rx.slice(-5).reverse().forEach(o => {
+    const d = new Date(o.date);
+    rxHtml += '<div style="background:rgba(15,15,25,.8);border:1px solid var(--glass-border);border-radius:10px;padding:12px;margin-bottom:8px">';
+    rxHtml += '<div style="font-weight:600;font-size:13px">Dr ' + (o.medecin?.name || 'Inconnu') + ' · ' + d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'}) + '</div>';
+    rxHtml += '<div style="font-size:12px;color:var(--muted)">' + (o.diagnostic?.nom || '') + ' (' + (o.diagnostic?.score || '') + '%)</div>';
+    if (o.medicaments) o.medicaments.forEach(m => { rxHtml += '<span style="display:inline-block;padding:3px 8px;background:var(--accent-glow);border-radius:6px;font-size:11px;margin:3px 3px 0 0">💊 ' + m.name + ' ' + (m.dosage||'') + (m.duree?' · '+m.duree:'') + '</span>'; });
+    rxHtml += '</div>';
+  });
+}
+document.getElementById('ordonnancesList').innerHTML = rxHtml || '<span style="color:var(--muted);font-size:.8em">Aucune ordonnance. Votre médecin vous en enverra après un diagnostic.</span>';
 
 let al='';data.allergies.forEach((a,i)=>al+='<span class="tag tag-red">'+a+' <span onclick="deleteItem(\'allergies\','+i+')" style="cursor:pointer">×</span></span>');
 document.getElementById('allergyList').innerHTML=al||'<span style=\"color:var(--muted);font-size:.8em\">Aucune allergie</span>';
@@ -505,7 +550,40 @@ if(KA_SECURE.setPIN(pin)){alert('PIN configure. L application sera verrouillee a
 else{alert('Erreur.');}
 }
 
-	// ═══ TELECONSULTATION ENRICHIE ═══
+// ═══ WALLET ═══
+function renderWallet() {
+  const wallet = KA_WALLET.getWallet('patient');
+  document.getElementById('walletBalance').textContent = wallet.balance;
+  document.getElementById('walletId').textContent = 'ID: ' + wallet.walletId;
+  // QR code de réception
+  const qrCode = KA_WALLET.generateReceiveQR('patient');
+  const qrDiv = document.getElementById('walletQR');
+  if (qrDiv) {
+    qrDiv.innerHTML = '';
+    if (typeof KA_BRIDGE !== 'undefined' && KA_BRIDGE.generateQRCode) {
+      KA_BRIDGE.generateQRCode(qrCode, 'walletQR');
+    } else {
+      qrDiv.textContent = qrCode;
+    }
+  }
+  // Transactions
+  const txEl = document.getElementById('walletTransactions');
+  if (txEl && wallet.transactions.length) {
+    let html = '';
+    wallet.transactions.slice(-10).reverse().forEach(tx => {
+      const d = new Date(tx.timestamp);
+      const sign = tx.direction === 'in' ? '+' : '-';
+      const color = tx.direction === 'in' ? 'var(--success)' : 'var(--error)';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--glass-border)">';
+      html += '<div><div style="font-size:13px;font-weight:600">' + (tx.metadata?.description || tx.type) + '</div><div style="font-size:11px;color:var(--muted)">' + d.toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) + '</div></div>';
+      html += '<div style="font-weight:700;color:' + color + '">' + sign + tx.amount + ' UM</div>';
+      html += '</div>';
+    });
+    txEl.innerHTML = html;
+  }
+}
+
+// ═══ TELECONSULTATION ENRICHIE ═══
 	let teleMethod = 'video';
 	let selectedDoctor = null;
 	let teleSmsHistory = [];
@@ -549,7 +627,7 @@ else{alert('Erreur.');}
 	    const canAudio = d.audioEnabled !== false;
 	    const canChat = d.chatEnabled !== false;
 	    h += '<div class="doctor-row' + (selectedDoctor && selectedDoctor.id === d.id ? ' selected' : '') + '" onclick="selectDoctor(\'' + d.id + '\')">';
-	    h += '<div class="doctor-avatar">' + (d.name || 'M')[0].toUpperCase() + '</div>';
+	    h += '<div class="doctor-avatar"' + (d.avatar ? ' style="background:transparent"' : '') + '>' + (d.avatar ? '<img src="' + d.avatar + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover" alt="">' : (d.name || 'M')[0].toUpperCase()) + '</div>';
 	    h += '<div class="doctor-info"><div class="doctor-name">Dr ' + (d.name || 'Médecin ' + (i+1)) + '</div><div class="doctor-specialty">' + (d.specialty || 'Médecine générale') + ' · ' + statusLabel + (d.hoursStart ? ' · ' + d.hoursStart + '-' + d.hoursEnd : '') + '</div>';
 	    // Badges capacités
 	    h += '<div style="margin-top:3px;display:flex;gap:4px">';

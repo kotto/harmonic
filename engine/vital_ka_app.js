@@ -409,6 +409,7 @@ async function diagnose() {
 
   h += '<p class="footer-note">AIDE AU DIAGNOSTIC — NE REMPLACE PAS UN MÉDECIN</p>';
   h += '<button class="btn btn-secondary ka-voice-btn" style="margin-top:8px" onclick="speakDiagnosisResult(this)">🔊 Écouter le diagnostic</button>';
+  h += '<button class="btn btn-primary" style="margin-top:8px" onclick="prescribeMedications()" id="prescribeBtn">📋 Prescrire une ordonnance</button>';
   document.getElementById('resultsArea').innerHTML = h;
   btn.disabled = false;
   // Le bouton bascule en mode "Nouveau diagnostic" → reset au prochain clic
@@ -644,6 +645,75 @@ function exportDiagnosis() {
   document.body.appendChild(modal);
   modal.onclick = function (e) { if (e.target === modal) modal.remove(); };
   KA_BRIDGE.generateQRCode ? KA_BRIDGE.generateQRCode(pkg, 'qrTransfer') : null;
+}
+
+// ═══ ORDONNANCE — Prescription → QR code → Pharmacien ═══
+function prescribeMedications() {
+  if (!currentPatient) { alert('Sélectionnez un patient d\'abord.'); return; }
+  const last = getLastDiagnosis();
+  if (!last || !last.top) { alert('Lancez un diagnostic d\'abord.'); return; }
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:200;overflow-y:auto;padding:20px';
+  const doctorName = localStorage.getItem('vital_ka_doctor_name') || 'Dr Soignant';
+  modal.innerHTML = '<div style="background:#1a1a1a;border:1px solid #d4a853;border-radius:20px;padding:24px;max-width:500px;margin:20px auto;color:#eae1d7;font-family:Inter,sans-serif">'
+    + '<h2 style="color:#d4a853;text-align:center;margin-bottom:4px">📋 Ordonnance Médicale</h2>'
+    + '<p style="text-align:center;color:#9b8f7e;font-size:12px;margin-bottom:16px">' + KA_SECURE.escapeHtml(doctorName) + ' · ' + new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) + '</p>'
+    + '<div style="background:rgba(212,168,83,.08);border-radius:12px;padding:12px;margin-bottom:12px">'
+    + '<div style="font-size:11px;color:#9b8f7e;text-transform:uppercase">Patient</div>'
+    + '<div style="font-weight:700">' + KA_SECURE.escapeHtml(currentPatient.name) + ' · ' + (currentPatient.age||'?') + ' ans · ' + (currentPatient.gender||'?') + '</div>'
+    + '<div style="font-size:11px;color:#9b8f7e;margin-top:4px">Diagnostic : ' + KA_SECURE.escapeHtml(last.top.name) + ' (' + Math.round(last.top.score*100) + '%)</div>'
+    + '</div>'
+    + '<div id="rxMeds" style="margin-bottom:12px">'
+    + '<div class="rx-row" style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><input class="rx-name" placeholder="Médicament" style="flex:2"><input class="rx-dose" placeholder="Dosage" style="flex:1"><input class="rx-dur" placeholder="Durée" style="flex:1"><button class="rx-remove btn btn-secondary" style="width:auto;padding:8px 12px;font-size:12px" onclick="this.parentElement.remove()">×</button></div>'
+    + '</div>'
+    + '<button class="btn btn-secondary" style="width:auto;padding:8px 16px;font-size:12px;margin-bottom:16px" onclick="var r=document.createElement(\'div\');r.className=\'rx-row\';r.style.cssText=\'display:flex;gap:8px;align-items:center;margin-bottom:6px\';r.innerHTML=\'<input class=rx-name placeholder=Médicament style=flex:2><input class=rx-dose placeholder=Dosage style=flex:1><input class=rx-dur placeholder=Durée style=flex:1><button class=\"rx-remove btn btn-secondary\" style=\"width:auto;padding:8px 12px;font-size:12px\" onclick=this.parentElement.remove()>×</button>\';document.getElementById(\'rxMeds\').appendChild(r)">➕ Ajouter un médicament</button>'
+    + '<div style="margin-bottom:12px"><textarea id="rxNotes" placeholder="Notes complémentaires..." style="width:100%;min-height:50px;background:rgba(15,15,25,.8);color:#eae1d7;border:1px solid #2a2a2a;border-radius:10px;padding:10px;font-family:inherit;font-size:13px"></textarea></div>'
+    + '<button class="btn btn-primary" onclick="finalizePrescription(this)" style="margin-bottom:8px">📤 Générer l\'ordonnance + QR code</button>'
+    + '<div id="rxQR" style="text-align:center;margin-top:12px"></div>'
+    + '<button class="btn btn-secondary" style="margin-top:8px" onclick="this.closest(\'div\').parentElement.parentElement.remove()">Fermer</button>'
+    + '</div>';
+  document.body.appendChild(modal);
+  modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+}
+
+function finalizePrescription(btn) {
+  const last = getLastDiagnosis();
+  if (!last || !currentPatient) return;
+  const doctorName = localStorage.getItem('vital_ka_doctor_name') || 'Dr Soignant';
+  const meds = [];
+  document.querySelectorAll('.rx-row').forEach(row => {
+    const name = row.querySelector('.rx-name')?.value?.trim();
+    const dose = row.querySelector('.rx-dose')?.value?.trim();
+    const dur = row.querySelector('.rx-dur')?.value?.trim();
+    if (name) meds.push({ name, dosage: dose, duree: dur });
+  });
+  const notes = document.getElementById('rxNotes')?.value?.trim() || '';
+  const ordonnance = {
+    type: 'prescription', version: '1.0',
+    id: 'rx_' + Date.now(), date: new Date().toISOString(),
+    patient: { id: currentPatient.id, name: currentPatient.name, age: currentPatient.age, gender: currentPatient.gender },
+    medecin: { name: doctorName },
+    diagnostic: { nom: last.top.name, score: Math.round(last.top.score * 100), conduite: last.top.c || '' },
+    medicaments: meds, notes: notes,
+  };
+  // Sauver dans le dossier patient
+  const pts = loadPatients();
+  if (pts[currentPatient.id]) {
+    if (!pts[currentPatient.id].ordonnances) pts[currentPatient.id].ordonnances = [];
+    pts[currentPatient.id].ordonnances.push(ordonnance);
+    savePatients(pts);
+    currentPatient = { id: currentPatient.id, ...pts[currentPatient.id] };
+  }
+  // QR code
+  const qrDiv = document.getElementById('rxQR');
+  if (qrDiv && typeof KA_BRIDGE !== 'undefined' && KA_BRIDGE.generateQRCode) {
+    const encoded = KA_BRIDGE.generateTransferCode(ordonnance);
+    qrDiv.innerHTML = '<p style="font-size:11px;color:#d4a853;margin-bottom:4px">📱 À scanner par le pharmacien</p><div id="rxQrImg"></div>';
+    KA_BRIDGE.generateQRCode(encoded, 'rxQrImg');
+  }
+  btn.textContent = '✅ Ordonnance générée'; btn.disabled = true;
+  updateDossier();
 }
 
 // ═══ SECURITY ═══

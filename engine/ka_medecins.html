@@ -110,6 +110,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 <script src="ka_hcv.js"></script>
 <script src="ka_care_voice.js"></script>
 <script src="ka_telemedecine.js"></script>
+<script src="seed_doctors_demo.js"></script>
 </head>
 <body>
 <div class="container">
@@ -524,7 +525,7 @@ function renderDirectory(dir) {
     var statusCls = d.status === 'online' ? 'online' : d.status === 'busy' ? 'busy' : 'offline';
     var statusLabel = d.status === 'online' ? 'Disponible' : d.status === 'busy' ? 'Occupé' : 'Indisponible';
     html += '<div class="contact-row" onclick="startChatWithDoctor(\'' + d.id + '\')">';
-    html += '<div class="contact-avatar" style="background:linear-gradient(135deg,#27ae60,#1e8449)">' + (d.name || 'M')[0].toUpperCase() + '</div>';
+    html += '<div class="contact-avatar"' + (d.avatar ? ' style="background:transparent"' : ' style="background:linear-gradient(135deg,#27ae60,#1e8449)"') + '>' + (d.avatar ? '<img src="' + d.avatar + '" style="width:48px;height:48px;border-radius:50%;object-fit:cover" alt="">' : (d.name || 'M')[0].toUpperCase()) + '</div>';
     html += '<div class="contact-info"><div class="contact-name">Dr ' + (d.name || '?') + '</div><div class="contact-last">' + (d.specialty || 'Médecine générale') + ' · ' + (d.address || '') + '</div></div>';
     html += '<span class="status-dot ' + statusCls + '" title="' + statusLabel + '"></span>';
     html += '<div class="contact-actions"><button class="contact-call-btn chat" onclick="event.stopPropagation();startChatWithDoctor(\'' + d.id + '\')" title="Message">💬</button></div>';

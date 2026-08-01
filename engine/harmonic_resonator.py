@@ -101,7 +101,7 @@ class HarmonicExtractor:
     
     LOGICAL_PATTERNS = [
         r'\b(?:donc|parce que|car|puisque|ainsi|par conséquent|en effet)\b',
-        r'\b(?:si\.{3}alors|si.*alors|d'une part.*d'autre part)\b',
+        r"\b(?:si\.{3}alors|si.*alors|d'une part.*d'autre part)\b",
         r'\b(?:cependant|toutefois|néanmoins|en revanche|or)\b',
     ]
     

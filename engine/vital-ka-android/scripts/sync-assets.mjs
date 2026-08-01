@@ -17,7 +17,7 @@ const SRC  = join(ROOT, '..');                                       // engine/
 const WWW  = join(ROOT, 'www');
 
 // ── Fichiers à embarquer (source de vérité = sw.js / exploration) ──
-const HTML = ['vital_ka.html', 'ka_patient.html', 'ka_medecins.html'];
+const HTML = ['vital_ka.html', 'ka_patient.html', 'ka_medecins.html', 'ka_pharmacien.html', 'ka_solidarite.html', 'ka_launcher.html', 'ka_admin.html'];
 
 const JS = [
   'vital_ka_config.js', 'vital_ka_native.js',
@@ -25,7 +25,8 @@ const JS = [
   'vital_ka_hologram.js', 'vital_ka_knowledge.js',
   'vital_ka_voice.js', 'vital_ka_stt.js', 'vital_ka_dialogue.js',
   'vital_ka_conversation.js', 'vital_ka_ble.js', 'ka_telemedecine.js',
-  'vital_ka_ai.js', 'vital_ka_app.js', 'ka_care_voice.js',
+  'vital_ka_ai.js', 'vital_ka_app.js', 'ka_care_voice.js', 'seed_doctors_demo.js',
+  'ka_wallet.js', 'ka_platform.js',
 ];
 
 const CSS = ['vital_ka.css', 'vital_ka_ai.css', 'ka_telemedecine.css'];
