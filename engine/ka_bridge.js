@@ -252,5 +252,115 @@ const KA_BRIDGE = {
     const data = this.decode(code);
     if (!data || data.type !== 'webrtc-signal') return null;
     return { sdp: data.sdp, sdpType: data.sdpType };
+  },
+
+  // ════════════════════════════════════════════════════════════════
+  // 🧪 LABORATOIRE — Ordonnances d'analyse & résultats
+  // ════════════════════════════════════════════════════════════════
+
+  /**
+   * Crée un paquet d'ordonnance d'analyse (Médecin → Laboratoire).
+   */
+  doctorToLab(patientInfo, analyses, diagnosis) {
+    return {
+      version: this.VERSION,
+      type: 'doctor_to_lab',
+      timestamp: new Date().toISOString(),
+      id: 'lab_' + Date.now().toString(36),
+      patient: {
+        id: patientInfo?.id || '',
+        name: patientInfo?.name || 'Patient',
+        age: patientInfo?.age || '',
+        gender: patientInfo?.gender || ''
+      },
+      medecin: { name: patientInfo?.doctor || 'KA Médecin' },
+      diagnostic: diagnosis || '',
+      analyses: analyses || [],
+      notes: '',
+      status: 'demande' // demande → en_cours → resultat
+    };
+  },
+
+  /**
+   * Crée un paquet de résultat d'analyse (Laboratoire → Patient + Médecin).
+   * @param {object} ordonnance - le paquet doctor_to_lab d'origine
+   * @param {Array} resultats - [{analyse, resultat, unite, norme, anormal}]
+   * @param {string} laboratoire - nom du laboratoire
+   */
+  labToPatient(ordonnance, resultats, laboratoire) {
+    return {
+      version: this.VERSION,
+      type: 'lab_to_patient',
+      timestamp: new Date().toISOString(),
+      id: ordonnance?.id || 'lab_' + Date.now().toString(36),
+      patient: ordonnance?.patient || {},
+      medecin: ordonnance?.medecin || {},
+      diagnostic: ordonnance?.diagnostic || '',
+      laboratoire: laboratoire || 'Laboratoire',
+      analyses: (ordonnance?.analyses || []).map(a => ({
+        analyse: a, resultat: '', unite: '', norme: '', anormal: false
+      })),
+      resultats: resultats || [],
+      status: 'resultat'
+    };
+  },
+
+  /**
+   * Enregistre un résultat de laboratoire et pousse la mise à jour
+   * AUTOMATIQUE du dossier patient (localStorage + BroadcastChannel).
+   */
+  saveLabResult(paquet) {
+    if (!paquet || paquet.type !== 'lab_to_patient') return false;
+
+    // 1. Registre des résultats (partagé cross-app)
+    const registry = JSON.parse(localStorage.getItem('ka_lab_results') || '[]');
+    const existing = registry.findIndex(r => r.id === paquet.id);
+    if (existing >= 0) {
+      registry[existing] = { ...registry[existing], ...paquet };
+    } else {
+      registry.push(paquet);
+    }
+    if (registry.length > 200) registry.splice(0, registry.length - 200);
+    localStorage.setItem('ka_lab_results', JSON.stringify(registry));
+
+    // 2. Mise à jour AUTOMATIQUE du dossier patient
+    const pid = paquet.patient?.id || 'default';
+    const pkey = 'ka_patient_' + pid;
+    let pdata = {};
+    try { pdata = JSON.parse(localStorage.getItem(pkey) || '{}'); } catch(e) {}
+    if (!pdata.analyses) pdata.analyses = [];
+    if (!pdata.analyses.some(a => a.id === paquet.id)) {
+      pdata.analyses.push({
+        id: paquet.id,
+        date: paquet.timestamp,
+        laboratoire: paquet.laboratoire,
+        diagnostic: paquet.diagnostic,
+        analyses: paquet.analyses,
+        resultats: paquet.resultats,
+        statut: 'reçu'
+      });
+      localStorage.setItem(pkey, JSON.stringify(pdata));
+    }
+
+    // 3. Événement cross-app (BroadcastChannel → patient ouvert en temps réel)
+    if (typeof KA_PLATFORM !== 'undefined' && KA_PLATFORM.emit) {
+      KA_PLATFORM.emit('lab_result', {
+        id: paquet.id,
+        patientId: paquet.patient?.id,
+        laboratoire: paquet.laboratoire,
+        date: paquet.timestamp,
+        nResultats: (paquet.resultats || []).length
+      });
+    }
+    return true;
+  },
+
+  /**
+   * Récupère les résultats de laboratoire d'un patient (registre partagé).
+   */
+  getLabResults(patientId) {
+    const registry = JSON.parse(localStorage.getItem('ka_lab_results') || '[]');
+    if (!patientId) return registry.slice(-10).reverse();
+    return registry.filter(r => r.patient?.id === patientId).reverse();
   }
 };

@@ -235,6 +235,15 @@ else{alert('Erreur.');}
 <div id="apptList"><div class="card"><p style="text-align:center;color:var(--muted)">Aucun rendez-vous.</p></div></div>
 </div>
 
+<!-- ═══ ANALYSES (résultats de laboratoire — mise à jour automatique) ═══ -->
+<div class="screen" id="screen-analyses">
+<header><h2 style="color:var(--accent)">🔬 Mes analyses</h2></header>
+<div class="card">
+<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Vos résultats de laboratoire apparaissent ici automatiquement dès que le laboratoire les enregistre — même en temps réel si l'app est ouverte.</p>
+<div id="labResultsList"><div class="card"><p style="text-align:center;color:var(--muted)">Aucun résultat d'analyse pour le moment.</p></div></div>
+</div>
+</div>
+
 <!-- SHARE SCREEN -->
 <div class="screen" id="screen-share">
 <header><h2 style="color:var(--accent)">📤 Partager mon dossier</h2></header>
@@ -348,6 +357,7 @@ else{alert('Erreur.');}
 <div class="nav-item" data-screen="meds" onclick="showScreen('meds')"><span class="nav-icon">💊</span><span class="nav-label">Medics</span></div>
 <div class="nav-item" data-screen="vitals" onclick="showScreen('vitals')"><span class="nav-icon">📊</span><span class="nav-label">Constantes</span></div>
 <div class="nav-item" data-screen="appts" onclick="showScreen('appts')"><span class="nav-icon">📅</span><span class="nav-label">RDV</span></div>
+<div class="nav-item" data-screen="analyses" onclick="showScreen('analyses')"><span class="nav-icon">🔬</span><span class="nav-label">Analyses</span></div>
 <div class="nav-item" data-screen="teleconsult" onclick="showScreen('teleconsult')"><span class="nav-icon">🎥</span><span class="nav-label">Consult</span></div>
 <div class="nav-item" data-screen="share" onclick="showScreen('share')"><span class="nav-icon">📤</span><span class="nav-label">Partager</span></div>
 <div class="nav-item" data-screen="wallet" onclick="showScreen('wallet')"><span class="nav-icon">💳</span><span class="nav-label">Wallet</span></div>
@@ -387,6 +397,7 @@ document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.
 // Masquer la nav du bas sur l'écran splash
 document.querySelector('.bottom-nav').style.display = (name === 'splash') ? 'none' : 'flex';
 if (name === 'wallet') renderWallet();
+if (name === 'analyses') renderLabResults();
 KA_SECURE.showLockScreen(function(){renderAll();});
 }
 
@@ -567,6 +578,80 @@ else{alert('Erreur.');}
 }
 
 // ═══ WALLET ═══
+// ═══ ANALYSES DE LABORATOIRE — dossier médical auto-mis à jour ═══
+function renderLabResults() {
+  const el = document.getElementById('labResultsList');
+  if (!el) return;
+  // Registre partagé (le laboratoire y écrit via KA_BRIDGE.saveLabResult)
+  const results = (typeof KA_BRIDGE !== 'undefined') ? KA_BRIDGE.getLabResults() : [];
+  // Filtrer pour CE patient si possible (par nom)
+  const myName = (data.profile?.name || '').toLowerCase();
+  const mine = myName ? results.filter(r => (r.patient?.name || '').toLowerCase() === myName) : results;
+
+  if (!mine.length) {
+    el.innerHTML = '<div class="card"><p style="text-align:center;color:var(--muted)">Aucun résultat d\'analyse pour le moment.</p></div>';
+    return;
+  }
+
+  let html = '';
+  mine.slice(0, 10).forEach(r => {
+    const res = r.resultats || [];
+    const nAnom = res.filter(x => x.anormal).length;
+    html += '<div class="card" style="border-left:3px solid ' + (nAnom ? 'var(--error)' : 'var(--success)') + '">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center">';
+    html += '<div style="font-weight:700">🧪 ' + KA_SECURE.escapeHtml(r.laboratoire || 'Laboratoire') + '</div>';
+    html += '<span class="lab-badge" style="' + (nAnom ? 'background:var(--error-dim);color:var(--error)' : 'background:rgba(39,174,96,.15);color:var(--success)') + ';padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600">' +
+      (nAnom ? '⚠ ' + nAnom + ' anormal' : '✓ Normal') + '</span>';
+    html += '</div>';
+    html += '<div style="font-size:11px;color:var(--muted);margin:4px 0 10px">' +
+      new Date(r.timestamp).toLocaleDateString('fr-FR', {day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}) +
+      (r.diagnostic ? ' · <span style="color:var(--accent)">' + KA_SECURE.escapeHtml(r.diagnostic) + '</span>' : '') + '</div>';
+    // Tableau des résultats
+    if (res.length) {
+      html += '<div style="overflow-x:auto">';
+      html += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+      html += '<tr style="color:var(--muted)"><td style="padding:4px 6px;border-bottom:1px solid var(--border);font-weight:600">Analyse</td>' +
+              '<td style="padding:4px 6px;border-bottom:1px solid var(--border);font-weight:600">Résultat</td>' +
+              '<td style="padding:4px 6px;border-bottom:1px solid var(--border);font-weight:600">Unité</td>' +
+              '<td style="padding:4px 6px;border-bottom:1px solid var(--border);font-weight:600">Norme</td></tr>';
+      res.forEach(x => {
+        html += '<tr style="' + (x.anormal ? 'background:var(--error-dim)' : '') + '">' +
+          '<td style="padding:4px 6px;border-bottom:1px solid var(--border)">' + KA_SECURE.escapeHtml(x.analyse) + '</td>' +
+          '<td style="padding:4px 6px;border-bottom:1px solid var(--border);font-weight:700;color:' + (x.anormal ? 'var(--error)' : 'var(--text)') + '">' + KA_SECURE.escapeHtml(x.resultat) + '</td>' +
+          '<td style="padding:4px 6px;border-bottom:1px solid var(--border);color:var(--muted)">' + KA_SECURE.escapeHtml(x.unite) + '</td>' +
+          '<td style="padding:4px 6px;border-bottom:1px solid var(--border);color:var(--muted)">' + KA_SECURE.escapeHtml(x.norme) + '</td></tr>';
+      });
+      html += '</table></div>';
+    }
+    html += '<p style="font-size:10px;color:var(--muted);margin-top:8px">Mis à jour automatiquement depuis le laboratoire · Réf ' + KA_SECURE.escapeHtml(r.id || '') + '</p>';
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+// ═══ RÉCEPTION TEMPS RÉEL — BroadcastChannel 'ka_platform' ═══
+// Quand le laboratoire enregistre un résultat (KA_PLATFORM.emit('lab_result')),
+// l'app patient ouverte est notifiée et actualise l'écran Analyses immédiatement.
+(function listenLabResults() {
+  try {
+    const bc = new BroadcastChannel('ka_platform');
+    bc.onmessage = (msg) => {
+      const evt = msg.data;
+      if (evt && evt.event === 'lab_result') {
+        // Actualiser si l'écran Analyses est visible
+        if (document.getElementById('screen-analyses')?.classList.contains('active')) {
+          renderLabResults();
+        }
+        // Afficher une notification légère
+        try {
+          const nm = document.getElementById('labNotif');
+          if (nm) nm.style.display = 'block';
+        } catch(e) {}
+      }
+    };
+  } catch(e) { /* BroadcastChannel non supporté — rafraîchissement manuel */ }
+})();
+
 function renderWallet() {
   const wallet = KA_WALLET.getWallet('patient');
   document.getElementById('walletBalance').textContent = wallet.balance;

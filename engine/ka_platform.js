@@ -26,6 +26,7 @@ const KA_PLATFORM = (() => {
     MEDECIN: 'medecin',
     PHARMACIEN: 'pharmacien',
     SOLIDARITE: 'solidarite',
+    LABORATOIRE: 'laboratoire',
     ADMIN: 'admin',
   };
 
@@ -165,6 +166,7 @@ const KA_PLATFORM = (() => {
       [ROLES.PATIENT]: 'ka_patient.html',
       [ROLES.PHARMACIEN]: 'ka_pharmacien.html',
       [ROLES.SOLIDARITE]: 'ka_solidarite.html',
+      [ROLES.LABORATOIRE]: 'ka_laboratoire.html',
       [ROLES.ADMIN]: 'ka_admin.html',
     };
     const url = routeMap[role] || 'ka_launcher.html';

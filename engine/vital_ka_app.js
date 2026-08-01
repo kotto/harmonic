@@ -686,11 +686,73 @@ function prescribeMedications() {
     + '<button class="btn btn-secondary" style="width:auto;padding:8px 16px;font-size:12px;margin-bottom:16px" onclick="var r=document.createElement(\'div\');r.className=\'rx-row\';r.style.cssText=\'display:flex;gap:8px;align-items:center;margin-bottom:6px\';r.innerHTML=\'<input class=rx-name placeholder=Médicament style=flex:2><input class=rx-dose placeholder=Dosage style=flex:1><input class=rx-dur placeholder=Durée style=flex:1><button class=\"rx-remove btn btn-secondary\" style=\"width:auto;padding:8px 12px;font-size:12px\" onclick=this.parentElement.remove()>×</button>\';document.getElementById(\'rxMeds\').appendChild(r)">➕ Ajouter un médicament</button>'
     + '<div style="margin-bottom:12px"><textarea id="rxNotes" placeholder="Notes complémentaires..." style="width:100%;min-height:50px;background:rgba(15,15,25,.8);color:#eae1d7;border:1px solid #2a2a2a;border-radius:10px;padding:10px;font-family:inherit;font-size:13px"></textarea></div>'
     + '<button class="btn btn-primary" onclick="finalizePrescription(this)" style="margin-bottom:8px">📤 Générer l\'ordonnance + QR code</button>'
+    + '<button class="btn btn-secondary" style="margin-top:8px" onclick="prescribeLabAnalysis()">🧪 Prescrire une analyse (laboratoire)</button>'
     + '<div id="rxQR" style="text-align:center;margin-top:12px"></div>'
     + '<button class="btn btn-secondary" style="margin-top:8px" onclick="this.closest(\'div\').parentElement.parentElement.remove()">Fermer</button>'
     + '</div>';
   document.body.appendChild(modal);
   modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+}
+
+// ═══ PRESCRIRE UNE ANALYSE (Médecin → Laboratoire) ═══
+function prescribeLabAnalysis() {
+  if (!currentPatient) { alert('Sélectionnez un patient d\'abord.'); return; }
+  const last = getLastDiagnosis();
+  const doctorName = localStorage.getItem('vital_ka_doctor_name') || 'Dr Soignant';
+
+  // Modale de sélection des analyses
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:210;overflow-y:auto;padding:20px';
+  const ANALYSES_COMMUNES = ['NFS (Numération formule sanguine)', 'Glycémie à jeun', 'TDR Paludisme', 'Goutte épaisse',
+    'Test de Grossesse', 'CRP', 'Bilan hépatique', 'Bilan rénal', 'Test VIH', 'Test TB (GeneXpert)',
+    'ECBU (Examen cytobactériologique des urines)', 'Selles (parasitologie)', 'Groupe sanguin + Rhésus', 'Ferritine', 'Hémoglobine'];
+  modal.innerHTML = '<div style="background:#1a1a1a;border:1px solid #d4a853;border-radius:20px;padding:24px;max-width:500px;margin:20px auto;color:#eae1d7;font-family:Inter,sans-serif">'
+    + '<h2 style="color:#d4a853;text-align:center;margin-bottom:4px">🧪 Ordonnance d\'analyse</h2>'
+    + '<p style="text-align:center;color:#9b8f7e;font-size:12px;margin-bottom:16px">' + KA_SECURE.escapeHtml(doctorName) + ' · ' + KA_SECURE.escapeHtml(currentPatient.name) + ' · ' + (currentPatient.age || '?') + ' ans</p>'
+    + '<div style="margin-bottom:12px" id="labChecks">'
+    + ANALYSES_COMMUNES.map((a, i) => '<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;cursor:pointer"><input type="checkbox" class="lab-check" value="' + KA_SECURE.escapeHtml(a) + '" ' + (i < 3 ? 'checked' : '') + ' style="width:auto">' + KA_SECURE.escapeHtml(a) + '</label>').join('')
+    + '</div>'
+    + '<div style="margin-bottom:12px"><input id="labCustom" placeholder="Autre analyse (optionnel)..." style="width:100%;background:rgba(15,15,25,.8);color:#eae1d7;border:1px solid #2a2a2a;border-radius:10px;padding:10px;font-family:inherit;font-size:13px"></div>'
+    + '<button class="btn btn-primary" onclick="finalizeLabOrder(this)" style="margin-bottom:8px">📤 Générer le QR analyse</button>'
+    + '<div id="labQR" style="text-align:center;margin-top:12px"></div>'
+    + '<button class="btn btn-secondary" style="margin-top:8px" onclick="this.closest(\'div\').parentElement.parentElement.remove()">Fermer</button>'
+    + '</div>';
+  document.body.appendChild(modal);
+  modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+}
+
+function finalizeLabOrder(btn) {
+  if (typeof KA_BRIDGE === 'undefined') { alert('KA_BRIDGE indisponible.'); return; }
+  const doctorName = localStorage.getItem('vital_ka_doctor_name') || 'Dr Soignant';
+  const checked = [];
+  document.querySelectorAll('.lab-check:checked').forEach(c => checked.push(c.value));
+  const custom = (document.getElementById('labCustom')?.value || '').trim();
+  if (custom) checked.push(custom);
+  if (!checked.length) { alert('Sélectionnez au moins une analyse.'); return; }
+
+  const last = getLastDiagnosis();
+  const ordonnance = KA_BRIDGE.doctorToLab({
+    id: currentPatient.id, name: currentPatient.name, age: currentPatient.age,
+    gender: currentPatient.gender, doctor: doctorName
+  }, checked, last?.top?.name || '');
+
+  // Stocker localement (récupérable par code court dans le labo)
+  const pending = JSON.parse(localStorage.getItem('ka_lab_orders') || '[]');
+  pending.push(ordonnance);
+  localStorage.setItem('ka_lab_orders', JSON.stringify(pending));
+
+  // Générer le QR
+  const code = KA_BRIDGE.encode(ordonnance);
+  const qrDiv = document.getElementById('labQR');
+  if (qrDiv) {
+    qrDiv.innerHTML = '<div style="background:#fff;color:#000;padding:16px;border-radius:12px;word-break:break-all;font-size:11px;max-height:120px;overflow-y:auto;text-align:center">' + code + '</div>' +
+      '<p style="font-size:12px;color:#9b8f7e;margin-top:8px">Code court : <b style="color:#d4a853">' + ordonnance.id + '</b></p>' +
+      '<button class="btn btn-secondary" style="margin-top:8px" onclick="navigator.clipboard.writeText(\'' + code + '\')">📋 Copier le code</button>' +
+      '<p style="font-size:11px;color:#9b8f7e;margin-top:8px">Le laboratoire charge ce code dans « KA Laboratoire » — les résultats seront envoyés automatiquement au dossier du patient.</p>';
+  }
+  if (typeof KA_PLATFORM !== 'undefined' && KA_PLATFORM.emit) {
+    KA_PLATFORM.emit('lab_order', { id: ordonnance.id, patientName: currentPatient.name, nAnalyses: checked.length });
+  }
 }
 
 function finalizePrescription(btn) {
