@@ -146,12 +146,45 @@ def mode_transfer(problems, mem, verbose=True, top_k=3):
     return rows
 
 
+def mode_semantic(problems, mem, top_k=20, verbose=True):
+    """M4 — classement sémantique des candidats (top-k résonance).
+
+    pass1_sem : top-1 par score sémantique pur
+    pass1_con : top-1 par consensus pondéré (self-consistency) + sémantique
+    pass_k    : oracle — le bon candidat est-il dans le top-k ?
+    """
+    pass1_sem = pass1_con = pass_k = total = 0
+    for i, p in enumerate(problems):
+        expected = _extract_final(p['answer'])
+        if expected is None:
+            continue
+        total += 1
+        cands = mem.semantic_scores(i, top_k=top_k)
+        if not cands:
+            continue
+        val, _j, _sem, _rs, _sk = cands[0]
+        if val is not None and abs(val - expected) < 1e-6:
+            pass1_sem += 1
+        vc, _jc, _sc, _kc = mem.solve_transfer_consensus(i, top_k=top_k)
+        if vc is not None and abs(vc - expected) < 1e-6:
+            pass1_con += 1
+        for val, j, _s, _rs, _sk in cands:
+            if j is not None and val is not None \
+                    and abs(val - expected) < 1e-6:
+                pass_k += 1
+                break
+    return {'pass1_sem': pass1_sem, 'pass1_con': pass1_con,
+            'pass_k': pass_k, 'total': total}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--sample', type=int, default=None)
     ap.add_argument('--mode', default='all',
-                    choices=['M0', 'M1', 'M2', 'M3', 'all'])
+                    choices=['M0', 'M1', 'M2', 'M3', 'M4', 'all'])
     ap.add_argument('--quiet', action='store_true')
+    ap.add_argument('--topk', type=int, default=20)
+    ap.add_argument('--lam', type=float, default=0.5)
     args = ap.parse_args()
 
     problems = load_gsm8k()
@@ -197,6 +230,17 @@ def main():
                   f" | pass@3 {fmt_pct(r['pass3'], r['total'])}"
                   f" (squelette exact retrouvé : "
                   f"{fmt_pct(r['skel_match'], r['total'])})")
+
+    if args.mode in ('M4', 'all'):
+        r = mode_semantic(problems, mem, top_k=args.topk,
+                          verbose=not args.quiet)
+        print(f"\n  M4 SÉMANTIQUE (top-{args.topk}) :")
+        print(f"     pass@1 sémantique pur : "
+              f"{fmt_pct(r['pass1_sem'], r['total'])}")
+        print(f"     pass@1 consensus pondéré : "
+              f"{fmt_pct(r['pass1_con'], r['total'])}")
+        print(f"     oracle top-{args.topk} (le bon candidat y est) : "
+              f"{fmt_pct(r['pass_k'], r['total'])}")
 
     elapsed = time.perf_counter() - t0
     print(f"\n  ⏱ {elapsed:.1f}s")

@@ -51,7 +51,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from wave_lang import encode
+from wave_lang import encode, coherence
 from wave_ir import Program, Assign, Return, MathOp, Literal, Var
 from wave_compiler import WaveCompiler
 from wave_word_problems import _normalize_numbers
@@ -921,6 +921,205 @@ class GSM8KChainMemory:
             if val is not None:
                 return val, j, score, skel
         return None, None, 0.0, ""
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # CLASSEMENT SÉMANTIQUE DES CANDIDATS (M4)
+    # ═══════════════════════════════════════════════════════════════════════
+    #
+    # La résonance retrouve les squelettes voisins ; le classement sémantique
+    # les RANGE sans oracle. Cinq signaux :
+    #
+    #   1. RÔLE des nombres liés (Q) : le contexte autour du nombre (sans les
+    #      nombres) doit se ressembler entre la question source et la cible —
+    #      similarité lexicale (Jaccard) des fenêtres masquées.
+    #   2. COUVERTURE : fraction des nombres de la question cible liés par la
+    #      chaîne (une chaîne correcte consomme les nombres de l'énoncé).
+    #   3. PLAUSIBILITÉ des intermédiaires : entiers ou décimales courtes,
+    #      bornés, finis.
+    #   4. ORDRE DE GRANDEUR : les valeurs instanciées restent dans l'ordre
+    #      de grandeur des valeurs du pattern source.
+    #   5. FORME de la réponse : même nature que la source (entier, signe).
+    #
+    # Le CONSENSUS pondéré (self-consistency) domine : si plusieurs squelettes
+    # indépendants convergent vers la même valeur, c'est probablement la bonne.
+
+    _STOP = frozenset(
+        'the a an of to in for and with is are was were she he it its her his '
+        'they their this that on at by from has have had each every day per '
+        'more than as so then how much many'.split())
+
+    @classmethod
+    def _jac(cls, a: str, b: str) -> float:
+        """Similarité lexicale de deux fenêtres (nombres masqués)."""
+        def toks(s: str) -> set:
+            s = re.sub(r'\d+(?:\.\d+)?', '#', s.lower())
+            return set(w for w in re.findall(r'[a-z#]+', s)
+                       if w not in cls._STOP)
+        A, B = toks(a), toks(b)
+        if not A or not B:
+            return 0.0
+        return len(A & B) / len(A | B)
+
+    @staticmethod
+    def _ctx_window(question: str, idx: int, radius: int = 14) -> str:
+        """Fenêtre de contexte autour du idx-ème nombre de l'énoncé."""
+        qn = _normalize_numbers(question.lower())
+        qn = re.sub(r'(\d),(\d{3})(?:\.\d+)?', r'\1\2', qn)
+        pos = [(m.start(), m.end())
+               for m in re.finditer(r'\d+(?:\.\d+)?', qn)]
+        if idx >= len(pos):
+            return ''
+        s, e = pos[idx]
+        return qn[max(0, s - radius):e + radius]
+
+    @staticmethod
+    def _step_values(steps: List[Step],
+                     qnums: Optional[List[Tuple[float, bool]]]) -> Optional[List[float]]:
+        """Valeurs de chaque étape (None si l'exécution déraille)."""
+        vals: List[float] = []
+        for i in range(len(steps)):
+            v = eval_steps(steps[:i + 1], qnums)
+            if v is None or not math.isfinite(v):
+                return None
+            vals.append(v)
+        return vals
+
+    def _role_score(self, j: int, question_cible: str,
+                    qnums_cible: List[Tuple[float, bool]]) -> float:
+        """Signal 1 — cohérence des rôles des nombres liés (Q)."""
+        pat = self.patterns[j]
+        scores: List[float] = []
+        for st in pat['chain'].steps:
+            for o in (st.a, st.b):
+                if o is None or o[0] != 'Q':
+                    continue
+                idx = o[1]
+                if idx >= len(pat['qnums']) or idx >= len(qnums_cible):
+                    continue
+                cs = self._ctx_window(pat['question'], idx)
+                ct = self._ctx_window(question_cible, idx)
+                if not cs or not ct:
+                    continue
+                scores.append(self._jac(cs, ct))
+        return float(np.mean(scores)) if scores else 0.5
+
+    @staticmethod
+    def _plaus_score(vals: Optional[List[float]]) -> float:
+        """Signal 3 — plausibilité des valeurs intermédiaires."""
+        if not vals:
+            return 0.0
+        ok = 0
+        for v in vals:
+            if abs(v) > 1e8:
+                continue
+            r = round(v, 4)
+            if abs(r - round(r)) < 1e-6:
+                ok += 1
+            elif len(f"{abs(r):.4f}".rstrip('0').split('.')[-1]) <= 2:
+                ok += 1
+        return ok / len(vals)
+
+    @staticmethod
+    def _magnitude_score(vs: Optional[List[float]],
+                         vt: Optional[List[float]]) -> float:
+        """Signal 4 — ordre de grandeur source vs instancié."""
+        if not vs or not vt:
+            return 0.0
+        s, n = 0.0, 0
+        for a, b in zip(vs, vt):
+            if abs(a) < 1e-9 and abs(b) < 1e-9:
+                s += 1.0
+                n += 1
+                continue
+            if abs(a) < 1e-9 or abs(b) < 1e-9:
+                continue
+            d = abs(math.log10(abs(a)) - math.log10(abs(b)))
+            s += max(0.0, 1.0 - d / 3.0)
+            n += 1
+        return s / n if n else 0.5
+
+    @staticmethod
+    def _form_score(vs: Optional[List[float]],
+                    vt: Optional[List[float]]) -> float:
+        """Signal 5 — forme de la réponse (signe, intégrité)."""
+        if not vs or not vt:
+            return 0.5
+        a, b = vs[-1], vt[-1]
+        s = 0.0
+        if (a >= 0) == (b >= 0):
+            s += 0.5
+        if (abs(a - round(a)) < 1e-6) == (abs(b - round(b)) < 1e-6):
+            s += 0.5
+        return s
+
+    def semantic_scores(self, idx: int, top_k: int = 20, by: str = 'combined',
+                        w: Tuple = (0.0, 0.1, 0.3, 0.15, 0.45)) -> List[Tuple]:
+        """
+        Top-k candidats avec leur score sémantique (sans oracle).
+
+        score = w[0]·rôle + w[1]·couverture + w[2]·plausibilité
+                + w[3]·ordre + w[4]·forme.
+
+        Returns:
+            [(valeur, pattern_idx, score_sémantique, résonance, squelette)]
+        """
+        pat = self.patterns[idx]
+        qc = pat['qnums']
+        out: List[Tuple] = []
+        for j, rs in self.retrieve(pat['question'], exclude=idx,
+                                   top_k=top_k, by=by):
+            chain_j = self.patterns[j]['chain']
+            steps = chain_j.steps
+            qs = self.patterns[j]['qnums']
+            vs = self._step_values(steps, qs)      # valeurs du pattern source
+            vt = self._step_values(steps, qc)      # valeurs instanciées
+            n_q = sum(1 for st in steps
+                      for o in (st.a, st.b) if o is not None and o[0] == 'Q')
+            sem = (w[0] * self._role_score(j, pat['question'], qc)
+                   + w[1] * min(1.0, n_q / max(1, len(qc)))
+                   + w[2] * self._plaus_score(vt)
+                   + w[3] * self._magnitude_score(vs, vt)
+                   + w[4] * self._form_score(vs, vt))
+            val = execute_chain(chain_j, qc, self.compiler)
+            out.append((val, j, sem, rs, chain_j.skeleton))
+        out.sort(key=lambda x: -x[2])
+        return out
+
+    @staticmethod
+    def _consensus_weight(vals: List[Tuple[float, float]], v: float,
+                          tol: float = 1e-3) -> float:
+        """Poids de consensus : somme des résonances des candidats dont la
+        valeur converge vers v (tolérance relative)."""
+        return sum(rs for v2, rs in vals
+                   if abs(v2 - v) <= tol * max(1.0, abs(v)))
+
+    def solve_transfer_consensus(self, idx: int, top_k: int = 20,
+                                 by: str = 'combined',
+                                 w: Tuple = (0.0, 0.1, 0.3, 0.15, 0.45),
+                                 tol: float = 1e-3) -> Tuple[Optional[float], Optional[int], float, str]:
+        """
+        M4 — généralisation par consensus pondéré (self-consistency).
+
+        Résonance (top-k) → instanciation → score sémantique. Le classement
+        combine le POIDS DE CONSENSUS (les squelettes indépendants qui
+        convergent vers la même valeur se renforcent) puis le score
+        sémantique en départage.
+        """
+        cands = self.semantic_scores(idx, top_k, by, w)
+        if not cands:
+            return None, None, 0.0, ""
+        vals = [(round(c[0], 4), c[3]) for c in cands if c[0] is not None]
+        if not vals:
+            return None, None, 0.0, ""
+
+        def key(c):
+            v = round(c[0], 4) if c[0] is not None else None
+            cons = self._consensus_weight(vals, v, tol) if v is not None else -1.0
+            return (cons, c[2])
+
+        cands.sort(key=key, reverse=True)
+        val, j, sem, _rs, skel = cands[0]
+        return val, j, sem, skel
 
     @property
     def stats(self) -> dict:
