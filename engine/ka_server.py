@@ -1280,7 +1280,8 @@ def reason():
     
     t0 = time.time()
     result = ai.ask(topic) if ai else brain.process(topic)
-    chain = result.response
+    # ai.ask() retourne une str ; brain.process() peut retourner un objet
+    chain = result.response if hasattr(result, 'response') else str(result)
     latency_ms = (time.time() - t0) * 1000
     
     # Décomposer la chaîne en étapes (séparées par ". ")
@@ -2749,7 +2750,10 @@ def serve_test_voix():
 
 @app.route('/')
 def serve_index():
-    """Page d'accueil — KA Phone PWA (redesign)."""
+    """Page d'accueil — KA Phone PWA (compagnon virtuel, compression, hologrammes)."""
+    # Produit mobile → vraie KA Phone (ka_index.html) ; autre produit → redesign
+    if _KA_CONFIG and _KA_CONFIG.product in ('mobile', 'phone', 'tel'):
+        return send_from_directory(str(_ENGINE_DIR), 'ka_index.html')
     return send_from_directory(str(_ENGINE_DIR / 'ka_redesign'), 'index.html')
 
 @app.route('/manifest.json')
