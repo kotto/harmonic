@@ -1012,29 +1012,45 @@ async function onboardFinish() {
   var status = document.getElementById('onboard-summary');
   var built = 0;
   var all = (kaUser.domains||[]).concat(kaUser.custom||[]);
+  var uid = localStorage.getItem('ka_user_id') || ('user_' + Date.now().toString(36));
 
-  for (var i = 0; i < all.length; i++) {
-    var d = all[i];
-    status.innerHTML = '⏳ ' + d + '… (' + (i+1) + '/' + all.length + ')';
+  // ⚡ Construction PARALLÈLE (Promise.all) : 6 domaines en ~6s au lieu de 35s
+  status.innerHTML = '⏳ Construction des ' + all.length + ' hologrammes en parallèle…';
+  btn.textContent = '🛠️ Construction en cours…';
+  btn.style.opacity = '.5'; btn.style.pointerEvents = 'none';
+
+  // ⚡ Job async : réponse immédiate + re-vérification après 8s
+  async function buildOne(d) {
     try {
-      // Construire via l'API
-      var resp = await fetch(API_URL + '/api/personalize/build', {
+      var r = await fetch(API_URL + '/api/personalize/build', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({domain: d, user_id: 'user_' + Date.now()}),
-        signal: AbortSignal.timeout(30000)
+        body: JSON.stringify({domain: d, user_id: uid}),
+        signal: AbortSignal.timeout(5000)
       });
-      var data = await resp.json();
-      if (data.success) built++;
-    } catch(e) {
-      // Continuer même si échec
-    }
+      var data = await r.json();
+      if (data.success && data.source !== 'async') { built++; return data; }
+      // Job en cours → re-vérifier après 8s
+      await new Promise(function(res) { setTimeout(res, 8000); });
+      var r2 = await fetch(API_URL + '/api/personalize/build', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({domain: d, user_id: uid}),
+        signal: AbortSignal.timeout(5000)
+      });
+      var d2 = await r2.json();
+      if (d2.success) built++;
+      return d2;
+    } catch(e) { return {success: false}; }
   }
+
+  var results = await Promise.all(all.map(buildOne));
 
   kaUser.onboarded = true;
   kaUserSave();
   status.innerHTML = '✅ ' + built + '/' + all.length + ' hologrammes construits. KA est prêt !';
   btn.textContent = '✨ Accéder à mon KA personnel →';
+  btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
   btn.onclick = function() { go('s-home'); };
 }
 

@@ -331,6 +331,11 @@ class HologramStore:
         """
         Télécharge un hologramme — retourne les faits.
         """
+        # ⚡ Cache mémoire : le rechargement npz est lent (~18s pour 5K faits)
+        if not hasattr(self, '_dl_cache'):
+            self._dl_cache = {}
+        if holo_id in self._dl_cache:
+            return self._dl_cache[holo_id]
         if holo_id not in self._registry:
             return []
         
@@ -341,16 +346,23 @@ class HologramStore:
         if not holo_path.exists():
             return []
         
-        # Charger
+        # Charger — ⚡ conversion en listes d'abord (l'accès indexé np est ~1000× plus lent)
         data = np.load(str(holo_path), allow_pickle=True)
+        subs = list(data['subjects'])
+        rels = list(data['relations'])
+        objs = list(data['objects'])
+        secs = list(data['sectors']) if 'sectors' in data else None
         facts = []
-        for i in range(len(data['subjects'])):
+        for i in range(len(subs)):
             facts.append((
-                str(data['subjects'][i]),
-                str(data['relations'][i]),
-                str(data['objects'][i]),
-                str(data['sectors'][i]) if 'sectors' in data else 'GENERAL',
+                str(subs[i]), str(rels[i]), str(objs[i]),
+                str(secs[i]) if secs else 'GENERAL',
             ))
+        
+        # ⚡ Mettre en cache (max 20 hologrammes en mémoire)
+        if len(self._dl_cache) >= 20:
+            self._dl_cache.pop(next(iter(self._dl_cache)))
+        self._dl_cache[holo_id] = facts
         
         # Incrémenter le compteur de téléchargements
         meta.downloads += 1

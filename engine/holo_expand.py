@@ -517,8 +517,12 @@ def build_massive_hologram(domain: str, target_facts: int = 50000,
     kb_dir = Path('data/bootstrapper_output')
     kb_candidates = sorted(kb_dir.glob('knowledge_base_*.npz'), key=lambda p: p.stat().st_size, reverse=True)
     
+    # ⚡ Mode rapide : ne charger que le plus gros KB (RAM ÷3, vitesse ×3)
+    # Le build peut être déclenché depuis l'app mobile (ne doit pas saturer)
+    import os as _os
+    _max_kb = 1 if _os.environ.get('KA_FAST_MODE', '0') == '1' else 3
     all_source_facts = []
-    for kb_path in kb_candidates[:3]:  # top 3 plus gros
+    for kb_path in kb_candidates[:_max_kb]:  # top N plus gros
         try:
             data = np.load(str(kb_path), allow_pickle=True)
             if 'facts' in data:

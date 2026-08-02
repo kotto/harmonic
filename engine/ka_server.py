@@ -1038,6 +1038,33 @@ def community_contributions():
     })
 
 
+# ⚡ Jobs de construction asynchrones (le build massif bloque Flask sinon)
+import threading as _threading
+_BUILD_JOBS = {}  # domain → {'status', 'result', 'ts'}
+_BUILD_LOCK = _threading.Lock()
+_BUILD_SEM = _threading.Semaphore(1)  # UN SEUL build massif à la fois (RAM)
+
+def _run_build_job(domain: str):
+    """Exécute le build massif dans un thread séparé (un seul à la fois)."""
+    if not _BUILD_SEM.acquire(blocking=False):
+        # Un build est déjà en cours → marquer en attente
+        with _BUILD_LOCK:
+            _BUILD_JOBS[domain] = {'status': 'queued', 'ts': time.time()}
+        return
+    try:
+        from holo_expand import build_massive_hologram
+        result = build_massive_hologram(domain=domain, target_facts=5000, skip_benchmark=True)
+        with _BUILD_LOCK:
+            _BUILD_JOBS[domain] = {
+                'status': 'completed' if result.get('status') == 'completed' else 'error',
+                'result': result, 'ts': time.time(),
+            }
+    except Exception as e:
+        with _BUILD_LOCK:
+            _BUILD_JOBS[domain] = {'status': 'error', 'error': str(e), 'ts': time.time()}
+    finally:
+        _BUILD_SEM.release()
+
 @app.route('/api/personalize/build', methods=['POST'])
 def personalize_build():
     """
@@ -1084,24 +1111,33 @@ def personalize_build():
                     'source': 'existing',
                 })
 
-        # Construire un nouvel hologramme
-        result = build_massive_hologram(domain=domain, target_facts=10000, skip_benchmark=True)
-        
-        if result.get('status') == 'completed':
+        # ⚡ Job asynchrone : le build massif ne doit JAMAIS bloquer le serveur
+        with _BUILD_LOCK:
+            job = _BUILD_JOBS.get(domain)
+        if job and job.get('status') == 'completed' and (time.time() - job.get('ts', 0)) < 600:
+            result = job['result']
             return jsonify({
                 'success': True,
                 'domain': domain,
                 'holo_id': result.get('hologram_id', ''),
                 'facts': result.get('published_facts', 0),
                 'quality_score': result.get('quality_score', 0),
-                'source': 'built',
+                'source': 'cached_built',
             })
-        else:
-            return jsonify({
-                'success': False,
-                'error': result.get('status', 'unknown'),
-                'domain': domain,
-            })
+
+        # Lancer le build en thread (le serveur reste réactif)
+        with _BUILD_LOCK:
+            _BUILD_JOBS[domain] = {'status': 'building', 'ts': time.time()}
+        _threading.Thread(target=_run_build_job, args=(domain,), daemon=True).start()
+
+        return jsonify({
+            'success': True,
+            'domain': domain,
+            'status': 'building',
+            'facts': 0,
+            'source': 'async',
+            'message': 'Construction en cours — sera disponible dans quelques secondes',
+        })
 
     except Exception as e:
         log.exception(f"Erreur personalize/build: {e}")
@@ -4064,4 +4100,4 @@ if __name__ == '__main__':
     log.info(f"   /api/holograms/reputation/:id — Réputation contributeur")
     log.info(f"   /api/holograms/quality/:id    — Score qualité hologramme")
     log.info("")
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
