@@ -828,7 +828,9 @@ const SD={'':['Sophie','Appeler','Réunion','Oui','Super','Merci','Demain'],'so'
 		// Auto-détection : même serveur que la page (local/Render), sauf si override
 		const h = location.hostname;
 		const isLocal = h==='localhost'||h==='127.0.0.1'||h.startsWith('192.168.')||h.startsWith('10.')||h.startsWith('172.16.');
-		var API_URL = isLocal ? `http://${h}:8765` : 'https://ka-api.onrender.com';
+		// ⚡ Utiliser 127.0.0.1 : la résolution DNS de 'localhost' prend ~2s sur Windows
+		const apiHost = (h==='localhost') ? '127.0.0.1' : h;
+		var API_URL = isLocal ? `http://${apiHost}:8765` : 'https://ka-api.onrender.com';
 	let API_ONLINE = false;
 	
 		// Vérifier la connexion au démarrage
@@ -852,13 +854,21 @@ const SD={'':['Sophie','Appeler','Réunion','Oui','Super','Merci','Demain'],'so'
 		    let uid = localStorage.getItem('ka_user_id');
 		    if (!uid) { uid = 'user_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); localStorage.setItem('ka_user_id', uid); }
 		    
+		    // 📜 Historique conversationnel (multi-tours) — localStorage
+		    let hist = [];
+		    try { hist = JSON.parse(localStorage.getItem('ka_chat_hist') || '[]'); } catch(e) {}
+		    hist = hist.slice(-6); // garder les 6 derniers échanges
 		    const res = await fetch(API_URL + '/api/chat', {
 		      method: 'POST',
 		      headers: {'Content-Type': 'application/json'},
-		      body: JSON.stringify({message: message, user_id: uid})
+		      body: JSON.stringify({message: message, user_id: uid, history: hist})
 		    });
 		    if (!res.ok) throw new Error('API error');
 		    const data = await res.json();
+		    // Sauvegarder l'échange
+		    hist.push({role:'user', content:message});
+		    hist.push({role:'assistant', content:(data.response||'').slice(0,500)});
+		    try { localStorage.setItem('ka_chat_hist', JSON.stringify(hist.slice(-6))); } catch(e) {}
 		    
 		    // Afficher les infos de spécialisation si présentes
 		    if (data.specialization) {
@@ -1709,15 +1719,16 @@ async function loadDecision() {
   try {
     var r = await fetch(API_URL + '/api/reason', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({message: 'analyse les pour et contre de changer de voiture', user_id: localStorage.getItem('ka_user_id')||'web'}),
+      body: JSON.stringify({topic: 'analyse les pour et contre de changer de voiture', user_id: localStorage.getItem('ka_user_id')||'web'}),
       signal: AbortSignal.timeout(8000)
     });
     var d = await r.json();
-    if (d.response) {
+    var chain = d.chain || d.response || d.reasoning || '';
+    if (chain) {
       var card = document.createElement('div');
       card.className = 'insight insight--soul';
       card.style.marginTop = '12px';
-      card.innerHTML = '<div class="sec-lbl">🧠 ANALYSE KA</div><div style="font-size:13px;color:var(--t2);line-height:1.5">'+d.response.slice(0,300)+'</div>';
+      card.innerHTML = '<div class="sec-lbl">🧠 ANALYSE KA</div><div style="font-size:13px;color:var(--t2);line-height:1.5">'+chain.slice(0,300)+'</div>';
       container.appendChild(card);
     }
   } catch(e) {}

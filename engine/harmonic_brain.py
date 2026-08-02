@@ -3052,6 +3052,9 @@ class HarmonicBrain:
 
     # 🌐 WEB SEARCH FALLBACK ─────────────────────────────────────────────────
     def _try_web_search(self, question: str, lang: str = 'fr') -> Optional[BrainResult]:
+        # ⚡ Mode rapide (mobile) : pas de recherche web — latence ÷20
+        if os.environ.get('KA_FAST_MODE', '0') == '1':
+            return None
         """
         Tente une recherche Internet si la KB interne n'a rien trouvé.
 

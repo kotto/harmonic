@@ -92,6 +92,10 @@ try:
     from ka_config import get_active_config, PRODUCTS, get_config
     _KA_CONFIG = get_active_config()
     log.info(f"  {_KA_CONFIG.icon} Produit actif: {_KA_CONFIG.name} (port {_KA_CONFIG.port})")
+    # Mode rapide mobile : désactiver la recherche web (latence ÷20)
+    if _KA_CONFIG.product in ('mobile', 'phone', 'tel'):
+        os.environ['KA_FAST_MODE'] = '1'
+        log.info("  ⚡ KA_FAST_MODE activé (mobile) — recherche web désactivée")
 except Exception as e:
     log.warning(f"  ⚠ ka_config.py non trouvé — mode mobile par défaut ({e})")
 
@@ -472,8 +476,16 @@ _deepseek_styler = None
 def _polish_with_deepseek(response_text: str, user_message: str = "") -> str:
     """Polissage final par DeepSeek — reformule sans ajouter d'information."""
     global _deepseek_styler
+    # ⚡ Mode rapide mobile : sauter le polish LLM (latence ÷10)
+    if _KA_CONFIG and _KA_CONFIG.product in ('mobile', 'phone', 'tel'):
+        return response_text
     if _deepseek_styler is None:
         try:
+            # Init léger : vérifier d'abord si DeepSeek est disponible (pas de blocage réseau)
+            import os as _os
+            if not (_os.environ.get('DEEPSEEK_API_KEY') or _os.environ.get('OPENAI_API_KEY')):
+                _deepseek_styler = False  # pas de clé → désactivé immédiatement
+                return response_text
             from llm.deepseek_styler import DeepSeekStyleFormatter
             _deepseek_styler = DeepSeekStyleFormatter()
             if not _deepseek_styler.enabled:
@@ -581,6 +593,7 @@ def chat():
     message = data.get('message', '').strip()
     context = data.get('context', '').strip()
     user_id = data.get('user_id', 'anonymous')
+    history = data.get('history') or []  # 📜 multi-tours : contexte conversationnel
     
     # Nouveaux paramètres de contrôle du style
     style = data.get('style', 'auto')          # "concise"|"elegant"|"pedagogique"|"chaleureux"|"auto"
@@ -597,6 +610,20 @@ def chat():
     
     if not message:
         return jsonify({'error': 'Message requis', 'response': "Je n'ai pas compris votre message."}), 400
+
+    # 📜 Multi-tours : préfixer le contexte avec l'historique récent
+    if history:
+        try:
+            conv = []
+            for turn in history[-4:]:
+                role = turn.get('role', 'user')
+                content = (turn.get('content') or '')[:300]
+                if content:
+                    conv.append(("Utilisateur" if role == 'user' else "KA") + " : " + content)
+            if conv:
+                context = (context + "\n\nConversation récente :\n" + "\n".join(conv)).strip()
+        except Exception:
+            pass  # historique malformé → ignorer
 
     # 🌐 Détection automatique de la langue
     detected_lang = 'fr'
@@ -3103,12 +3130,18 @@ def get_jlens_history():
 # 📦 HOLOGRAM STORE — Knowledge Store téléchargeable
 # ═══════════════════════════════════════════════════════════════════════════════
 
+_STORE_LIST_CACHE = {'data': None, 'ts': 0.0}
+
 @app.route('/api/store/list', methods=['GET'])
 def store_list():
     """Liste tous les hologrammes disponibles (format UI)."""
     if not _hologram_store:
         return jsonify({'error': 'Store non disponible'}), 503
     holo_type = request.args.get('type', None)
+    # Cache 60s : les métadonnées changent rarement
+    import time as _t
+    if _STORE_LIST_CACHE['data'] and (_t.time() - _STORE_LIST_CACHE['ts']) < 60 and not holo_type:
+        return jsonify(_STORE_LIST_CACHE['data'])
     holos = _hologram_store.list_holograms(holo_type)
     # Enrichir avec les métadonnées complètes pour l'UI
     enriched = []
@@ -3125,10 +3158,14 @@ def store_list():
             'description': meta.get('description', ''),
             'sectors': meta.get('sectors', []),
         })
-    return jsonify({
+    result = {
         'holograms': enriched,
         'stats': _hologram_store.stats(),
-    })
+    }
+    if not holo_type:
+        _STORE_LIST_CACHE['data'] = result
+        _STORE_LIST_CACHE['ts'] = _t.time()
+    return jsonify(result)
 
 @app.route('/api/store/download/<holo_id>', methods=['GET', 'POST'])
 def store_download(holo_id):

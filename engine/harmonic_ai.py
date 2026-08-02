@@ -50,6 +50,7 @@ _KA_DEBUG = bool(_os.environ.get('KA_DEBUG_REFUSAL'))
 
 # 🌐 Web Retriever (optionnel)
 _WEB_RETRIEVER = None
+_KA_FAST = os.environ.get('KA_FAST_MODE', '0') == '1'  # Mode mobile rapide : pas de web
 try:
     from web_retriever import WebRetriever
     _WEB_RETRIEVER = WebRetriever()
@@ -1048,7 +1049,7 @@ class HarmonicAI:
 
             # 4b. 🌐 FALLBACK WEB — recherche Internet gratuite
             conf = self._confidence_score(response, enriched) if response else 0.0
-            if conf < 0.35 and _WEB_RETRIEVER is not None:
+            if conf < 0.35 and _WEB_RETRIEVER is not None and not _KA_FAST:
                 try:
                     web_summary = _WEB_RETRIEVER.search_quick(enriched)
                     if web_summary and len(web_summary) > 40:
@@ -1083,7 +1084,7 @@ class HarmonicAI:
         # 🆕 WEB FALLBACK hors-bloc — se déclenche même si le cerveau a répondu
         # (le cerveau peut produire des réponses faibles avec confiance > 0.35,
         # ce qui court-circuitait le fallback web interne. On le teste ici.)
-        if response and not trusted_external:
+        if response and not trusted_external and not _KA_FAST:
             conf = self._confidence_score(response, enriched)
             if conf < 0.35 and _WEB_RETRIEVER is not None:
                 try:
