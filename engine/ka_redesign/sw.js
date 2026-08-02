@@ -1,44 +1,33 @@
 /**
  * KA Phone — Service Worker
  * ==========================
- * Stratégie: Network-first pour l'API, Cache-first pour les assets statiques
+ * Stratégie:
+ *   • Pages HTML  → network-first (toujours voir la dernière version)
+ *   • API         → network-first (jamais de cache)
+ *   • Assets stat → cache-first (performance)
  */
 
-const CACHE_NAME = 'ka-phone-v2';
-const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/css/theme.css',
-  '/js/api.js',
-  '/js/app.js',
+const CACHE_NAME = 'ka-phone-v3';
+
+const STATIC_ASSETS = [
   '/manifest.json',
-  '/screens/home.html',
-  '/screens/chat.html',
-  '/screens/code.html',
-  '/screens/memory.html',
-  '/screens/jlens.html',
-  '/screens/health.html',
-  '/screens/store.html',
-  '/screens/profile.html',
-  '/screens/enterprise.html',
-  '/screens/storage.html',
-  '/screens/creative.html',
-  '/screens/onboarding.html',
+  '/icons/ka-192.svg',
+  '/icons/ka-512.svg',
 ];
 
-// Installation: pré-cache des assets
+// Installation : pré-cache des assets statiques
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE).catch((err) => {
-        console.warn('SW: Some assets failed to pre-cache:', err);
+      return cache.addAll(STATIC_ASSETS).catch((err) => {
+        console.warn('SW: pre-cache partiel:', err);
       });
     })
   );
   self.skipWaiting();
 });
 
-// Activation: nettoyage des anciens caches
+// Activation : purge des anciens caches (v1, v2...)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -50,11 +39,11 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: stratégie hybride
+// Fetch
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // API calls: Network-first (pas de cache)
+  // API : network-first, jamais de cache
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/v1/')) {
     event.respondWith(
       fetch(event.request).catch(() => {
@@ -67,19 +56,32 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets: Cache-first, puis network fallback
+  // Pages HTML (navigation) : NETWORK-FIRST → toujours la dernière version
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Mettre à jour le cache avec la nouvelle page
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(event.request)) // offline → cache
+    );
+    return;
+  }
+
+  // Assets statiques : cache-first, mise à jour en arrière-plan
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
+      const fetchPromise = fetch(event.request).then((response) => {
         if (response.ok) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clone);
-          });
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
       });
+      return cached || fetchPromise;
     })
   );
 });
