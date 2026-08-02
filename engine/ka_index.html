@@ -2183,13 +2183,20 @@ function storageOptimize() {
 
     fetch(API_URL + '/api/storage/optimize', { method: 'POST', body: fd, signal: AbortSignal.timeout(60000) })
       .then(function(r) {
+        return r.blob().then(function(blob) { return {r: r, blob: blob}; });
+      })
+      .then(function(resp) {
+        var r = resp.r;
+        var blob = resp.blob;
         var ratio = parseFloat(r.headers.get('X-Ratio') || '1');
         var saved = parseInt(r.headers.get('X-Saved') || '0');
         var orig = parseInt(r.headers.get('X-Original-Size') || '0');
         var warning = r.headers.get('X-Warning') || '';
+        var codec = r.headers.get('X-Codec') || '';
+        var psnr = r.headers.get('X-PSNR') || '';
         totalSaved += saved; totalOrig += orig; done++;
 
-        // Mettre à jour la liste pour ce fichier
+        // Mettre à jour la liste pour ce fichier avec détails
         var cards = results.querySelectorAll('.card');
         if (cards[idx]) {
           var badge = cards[idx].querySelector('span:last-child');
@@ -2197,11 +2204,43 @@ function storageOptimize() {
             badge.textContent = warning ? '⚠️' : '✅';
             badge.style.color = warning ? 'var(--coral)' : 'var(--life)';
           }
+          // ⬇️ Bouton télécharger le fichier .hcv compressé
+          var dlBtn = document.createElement('a');
+          dlBtn.textContent = '⬇️';
+          dlBtn.title = 'Télécharger le fichier compressé';
+          dlBtn.style.cssText = 'font-size:14px;text-decoration:none;cursor:pointer;padding:4px;margin-left:4px';
+          dlBtn.href = URL.createObjectURL(blob);
+          dlBtn.download = (stoFiles[idx] ? stoFiles[idx].name : 'fichier') + '.hcv';
+          cards[idx].querySelector('span:last-child').parentElement.appendChild(dlBtn);
+          // Ajouter le codec sous la ligne taille
+          var sub = cards[idx].querySelector('div > div:nth-child(2)');
+          if (sub) {
+            var extra = document.createElement('div');
+            extra.style.cssText = 'font-size:9px;color:var(--t4);margin-top:2px';
+            extra.textContent = codec + (psnr && psnr !== '0' ? ' · PSNR ' + psnr + ' dB' : '');
+            if (warning) extra.textContent += ' · ' + warning.slice(0, 40);
+            sub.appendChild(extra);
+          }
         }
 
         if (done === stoFiles.length) {
           btn.textContent = '✅ Terminé';
           document.getElementById('sto-saved-total').textContent = fmtSize(totalSaved);
+          // 📣 Résumé final clair
+          var summary = document.createElement('div');
+          summary.style.cssText = 'text-align:center;padding:12px;margin-top:10px;border-radius:12px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2)';
+          var pct = totalOrig > 0 ? Math.round(totalSaved / totalOrig * 100) : 0;
+          summary.innerHTML = '🎉 <b>' + done + ' fichier' + (done > 1 ? 's' : '') + ' compressé' + (done > 1 ? 's' : '') + '</b> — ' +
+            '<span style="color:var(--life);font-weight:700">' + fmtSize(totalSaved) + '</span> économisés (' + pct + '%)';
+          results.appendChild(summary);
+          // 🔔 Toast de notification
+          try {
+            var t = document.createElement('div');
+            t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--life);color:#04210f;padding:10px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:999;box-shadow:0 8px 30px rgba(0,0,0,.4);animation:pulse 1s';
+            t.textContent = '✅ ' + fmtSize(totalSaved) + ' économisés (' + pct + '%)';
+            document.body.appendChild(t);
+            setTimeout(function() { t.remove(); }, 3500);
+          } catch(e) {}
         }
       })
       .catch(function() {

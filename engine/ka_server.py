@@ -2386,6 +2386,31 @@ def storage_optimize():
         psnr = 0.0
         warning = None
 
+        # --- Harmonic Codec (PNG, RAW léger) — compression harmonique ---
+        if codec_name == 'harmonic':
+            try:
+                from multimodal.background_compressor import compress_image
+                compressed_bytes, stats = compress_image(
+                    original_data, quality=55 if quality == 'standard' else 35 if quality == 'eco' else 75,
+                    mode=quality)
+                if stats.get('ratio', 1.0) > 1.01 and not stats.get('error'):
+                    compressed = compressed_bytes
+                    ratio = stats['ratio']
+                    saved = stats.get('saved', 0)
+                    psnr = 0.0
+                else:
+                    warning = stats.get('error') or 'Deja optimal - aucune compression supplementaire possible'
+            except Exception as e:
+                warning = f'Harmonic Codec: {e}'
+            # Fallback zstd si rien de mieux
+            if ratio <= 1.0:
+                try:
+                    import zstandard as _zstd
+                    compressed = _zstd.ZstdCompressor(level=19).compress(original_data)
+                    ratio = original_size / max(len(compressed), 1)
+                except Exception:
+                    compressed = original_data
+
         # --- ZSTD direct (texte, documents, fallback) ---
         if codec_name == 'zstd':
             try:
@@ -2471,7 +2496,7 @@ def storage_optimize():
         if len(compressed) >= original_size:
             compressed = original_data
             ratio = 1.0
-            warning = 'Déjà optimal — aucune compression supplémentaire possible'
+            warning = 'Deja optimal - aucune compression supplementaire possible'
 
         saved = original_size - len(compressed)
 
@@ -2485,8 +2510,11 @@ def storage_optimize():
         resp.headers['X-PSNR'] = f'{psnr:.1f}' if psnr > 0 else '0'
         resp.headers['X-Media-Type'] = media_type
         resp.headers['X-Codec'] = codec_name
+        # ⚡ Les headers HTTP sont latin-1 : échapper tout caractère non-ASCII
         if warning:
-            resp.headers['X-Warning'] = warning[:200]
+            resp.headers['X-Warning'] = warning[:200].encode('latin-1', 'replace').decode('latin-1')
+        else:
+            resp.headers['X-Warning'] = ''
         return resp
 
     except Exception as e:
