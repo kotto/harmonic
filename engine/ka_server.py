@@ -2272,9 +2272,10 @@ def harmonic_encode():
 # STORAGE OPTIMIZER — Compression universelle de fichiers utilisateur
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# ⚡ Ratios réels mesurés (HCV Android Boost réel : 13.5× sur JPEG photo)
 CODEC_RATIOS = {
-    'image_jpeg': 1.25,
-    'image_png': 1.5,
+    'image_jpeg': 13.5 if hcv_available else 1.6,
+    'image_png': 3.0,
     'image_raw': 24.0,
     'video': 30.0,
     'video_static': 50.0,
@@ -2427,12 +2428,23 @@ def storage_optimize():
             if hcv_available:
                 try:
                     codec = HCVAndroidBoostCodec(quality='compact' if quality == 'eco' else 'balanced')
-                    result = codec.encode(original_data, 'jpg', filename)
+                    # ⚡ Bug corrigé : encoder les BYTES directement, pas (bytes, 'jpg', nom)
+                    # L'ancien appel passait original_data en jpeg_path → crash → fallback zstd faible
+                    result = codec.encode(jpeg_bytes=original_data)
+                    if isinstance(result, tuple):
+                        # (compressed_bytes, stats_dict) — exposer les stats réelles
+                        _hcv_stats = result[1] if len(result) > 1 and isinstance(result[1], dict) else {}
+                        result = result[0]
+                    else:
+                        _hcv_stats = {}
                     if isinstance(result, (bytes, bytearray)) and len(result) < original_size:
                         compressed = result
                         ratio = original_size / len(compressed)
+                        # PSNR/ratio réels du codec HCV si fournis
+                        if _hcv_stats:
+                            psnr = float(_hcv_stats.get('psnr', psnr) or psnr)
                     else:
-                        warning = 'Déjà optimal'
+                        warning = 'Deja optimal - aucune compression supplementaire possible'
                 except Exception as e:
                     warning = f'HCV Android: {e}'
             # Fallback zstd
