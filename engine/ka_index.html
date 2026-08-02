@@ -1238,6 +1238,8 @@ document.addEventListener('DOMContentLoaded',function(){
     const t = document.getElementById('ka-thinking');
     if (t) t.remove();
     const r=document.createElement('div');r.className='msg msg--t';r.textContent=reply;c.appendChild(r);c.scrollTop=c.scrollHeight;
+    // 🎵 KA parle si la voix est activée
+    if (K.voice) { kaCallSpeak(reply); }
   });
 }
 function toggleVoice(){
@@ -1296,12 +1298,37 @@ function startCall(){
 }
 function stopCall(){clearInterval(callIv);if(callTTS){callTTS.cancel();callTTS=null;}if(window._callRec){try{window._callRec.stop();}catch(e){}}}
 // 🆕 Synthèse vocale Web (TTS)
+// 🎵 KA Voice Engine (serveur harmonique) avec fallback Web Speech
+var _kaAudioCtx=null;
 function kaCallSpeak(text){
+  if(!text)return;
+  // ⚡ Essayer le KA Voice Engine serveur d'abord
+  fetch(API_URL + '/api/voice/stream', {
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({text:text,emotion:'warm'}),
+    signal:AbortSignal.timeout(15000)
+  }).then(function(r){
+    if(!r.ok)throw new Error('voice fail');
+    return r.arrayBuffer();
+  }).then(function(buf){
+    // Lire le WAV (RIFF) avec AudioContext
+    try{
+      if(!_kaAudioCtx)_kaAudioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      _kaAudioCtx.decodeAudioData(buf,function(audioBuf){
+        var src=_kaAudioCtx.createBufferSource();
+        src.buffer=audioBuf;
+        src.connect(_kaAudioCtx.destination);
+        src.start(0);
+      },function(){kaCallSpeakFallback(text);});
+    }catch(e){kaCallSpeakFallback(text);}
+  }).catch(function(){kaCallSpeakFallback(text);});
+}
+// Fallback : Web Speech API si le serveur est indisponible
+function kaCallSpeakFallback(text){
   if(!('speechSynthesis' in window))return;
   if(callTTS)callTTS.cancel();
   callTTS=new SpeechSynthesisUtterance(text);
   callTTS.lang='fr-FR';callTTS.rate=1.0;callTTS.pitch=1.05;
-  // Choisir une voix française si disponible
   var voices=speechSynthesis.getVoices();
   for(var i=0;i<voices.length;i++){
     if(voices[i].lang.indexOf('fr')>=0){callTTS.voice=voices[i];break;}

@@ -3716,17 +3716,32 @@ def voice_stream():
     try:
         _ka_voice_engine.set_emotion(emotion)
         
+        # ⚡ Header WAV complet (RIFF) — sinon le navigateur ne peut pas lire le flux
+        SAMPLE_RATE = 16000
+        import struct as _struct
+        
+        def _wav_header(n_bytes: int) -> bytes:
+            return b'RIFF' + _struct.pack('<I', 36 + n_bytes) + b'WAVE' +                 b'fmt ' + _struct.pack('<IHHIIHH', 16, 1, 1, SAMPLE_RATE,
+                                        SAMPLE_RATE * 2, 2, 16) +                 b'data' + _struct.pack('<I', n_bytes)
+        
         def generate():
             # Découper en phrases
             import re
             sentences = re.split(r'(?<=[.!?])\s+', text)
             
+            chunks = []
             for sentence in sentences:
                 if not sentence.strip():
                     continue
                 audio = _ka_voice_engine.speak(sentence, emotion=emotion)
                 audio_int16 = (audio * 32767).astype(np.int16)
-                yield audio_int16.tobytes()
+                chunks.append(audio_int16.tobytes())
+            
+            total = sum(len(c) for c in chunks)
+            # Envoyer le header WAV puis les chunks
+            yield _wav_header(total)
+            for c in chunks:
+                yield c
         
         from flask import Response
         return Response(generate(), mimetype='audio/wav')
