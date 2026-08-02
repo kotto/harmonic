@@ -751,6 +751,41 @@ def chat():
             'latency_ms': 1.0,
             'model': 'harmonic-brain-v3',
         })
+
+    # 🎓 Question sur les spécialisations → lister les domaines réels
+    if any(kw in msg_lower for kw in ['specialise', 'spécialisé', 'specialisé', 'domaines', 'compétences', 'competences', 'sais tu faire', 'sais-tu faire']):
+        try:
+            from hologram_store import HologramStore
+            _store_h = HologramStore()
+            holos = _store_h.list_holograms()
+            domains = []
+            seen_d = set()
+            for h in holos:
+                dom = h.get('domain', '')
+                if dom and dom not in seen_d:
+                    seen_d.add(dom)
+                    domains.append(dom)
+            if domains:
+                d_list = ', '.join(domains[:14])
+                facts = _store_h.stats().get('total_facts', 0)
+                return jsonify({
+                    'response': f"Je suis spécialisé dans {len(domains)} domaines : {d_list}. "
+                                f"Je peux aussi télécharger des hologrammes spécialisés depuis le Store ({facts:,} faits disponibles) pour devenir expert dans de nouveaux domaines.",
+                    'confidence': 1.0,
+                    'source': 'identity_domains',
+                    'latency_ms': 1.0,
+                    'model': 'harmonic-brain-v3',
+                })
+        except Exception:
+            pass
+        return jsonify({
+            'response': "Je suis spécialisé dans plusieurs domaines : sciences, histoire, géographie, culture, technologie, santé, droit, économie, éducation et bien d'autres. "
+                        "Ouvrez l'écran Hologrammes pour télécharger de nouveaux savoirs spécialisés.",
+            'confidence': 1.0,
+            'source': 'identity_domains',
+            'latency_ms': 1.0,
+            'model': 'harmonic-brain-v3',
+        })
     
     # Validation: taille max
     if len(message) > 2000:
