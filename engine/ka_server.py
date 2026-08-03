@@ -501,8 +501,14 @@ def _polish_with_deepseek(response_text: str, user_message: str = "") -> str:
     except Exception:
         return response_text
 
-def _style_response(response_text: str, user_message: str = "") -> str:
-    """Applique le style harmonique (empathie + vocabulaire + diversité)."""
+def _style_response(response_text: str, user_message: str = "",
+                    personality: str = 'ka', narrative: bool = True) -> str:
+    """Applique le style harmonique (empathie + vocabulaire + diversité).
+
+    narrative=False : la prose est déjà structurée (voie M4, voix du
+    hologramme) — on évite la double ponctuation de l'arc narratif, sauf si
+    une personnalité explicite est demandée.
+    """
     global _harmonic_styler
     if _harmonic_styler is None:
         try:
@@ -518,12 +524,13 @@ def _style_response(response_text: str, user_message: str = "") -> str:
         styled = response_text
     # 🌊 WaveStyleEngine : enrichissement ondulatoire (émotion + arc + personnalité)
     # Équivalences TRADUCTION_ONDULATOIRE_LLM.md : 7.1 émotion, 7.2 personnalité, 7.3 arc
-    try:
-        from wave_style_engine import WaveStyleEngine
-        _wse = WaveStyleEngine()
-        styled = _wse.style(styled, question=user_message)
-    except Exception:
-        pass
+    if narrative:
+        try:
+            from wave_style_engine import WaveStyleEngine
+            _wse = WaveStyleEngine()
+            styled = _wse.style(styled, question=user_message, personality=personality)
+        except Exception:
+            pass
     return styled
 
 def _get_wave_debugger():
@@ -721,7 +728,8 @@ def _holographic_consensus_recall(message: str, top_domains: int = 3,
     consensus.sort(key=lambda x: -x[4])
     log.info(f"🌊 Consensus: {len(consensus)} faits "
              f"({sum(1 for v in fact_votes.values() if len(v) > 1)} convergents)")
-    return consensus[:top_k]
+    best_holo_id = selected[0][0] if selected else None
+    return consensus[:top_k], best_holo_id
 
 
 @app.route('/api/chat', methods=['POST'])
@@ -1010,7 +1018,8 @@ def chat():
             pass
         if not _skip_hologram:
             try:
-                consensus = _holographic_consensus_recall(message, top_domains=3, top_k=5)
+                consensus, best_holo_id = _holographic_consensus_recall(
+                    message, top_domains=3, top_k=5)
                 if consensus:
                     # 🎯 Filtre « forme » (M4) : ne montrer que les faits à
                     # résonance franche (≥ 0.45) — le bruit (sims aléatoires
@@ -1019,11 +1028,27 @@ def chat():
                     top_score = consensus[0][4]
                     shown = [f for f in consensus if f[4] >= 0.45][:5]
                     if shown:
-                        lines = [f"🌊 {message}", ""]
-                        for s, r, o, sec, score in shown:
-                            lines.append(f"• [{score:.3f}] {s[:60]} {r[:25]} {o[:60]}")
-                        response = '\n'.join(lines)
-                        source = 'hologram-wave'
+                        # 🎨 VOIX ONDULATOIRE : la prose est rendue par le
+                        # style_profile de l'hologramme élu (style = motif de
+                        # phase, TRADUCTION §7.2) — opérateur déterministe,
+                        # aucun mot hors des faits vérifiés par le gate.
+                        try:
+                            from style_profiles import get_profile, render_facts
+                            meta = _hologram_store._registry.get(best_holo_id)
+                            profile = get_profile(meta) if meta else None
+                            prose = render_facts(shown, message, profile, depth)
+                        except Exception:
+                            prose = ''
+                        if prose:
+                            response = prose
+                            source = 'hologram-wave'
+                        else:
+                            # Fallback : liste factuelle (traçabilité scores)
+                            lines = [f"🌊 {message}", ""]
+                            for s, r, o, sec, score in shown:
+                                lines.append(f"• [{score:.3f}] {s[:60]} {r[:25]} {o[:60]}")
+                            response = '\n'.join(lines)
+                            source = 'hologram-wave'
             except Exception as e:
                 log.error(f"  ⚠ Holographic recall error: {e}")
                 import traceback
@@ -1057,8 +1082,11 @@ def chat():
         pass
 
     # 🎨 Style harmonique : rendre la réponse plus agréable
+    # (voie M4 : pas de double ponctuation — la voix de l'hologramme suffit,
+    # sauf personnalité explicite demandée)
     if not is_page and response and len(response) > 30:
-        response = _style_response(response, message)
+        response = _style_response(response, message, personality,
+                                   narrative=(personality != 'ka' or source != 'hologram-wave'))
 
     # 🎨 DeepSeek Style Fallback : reformulation élégante (sans ajout d'info)
     if not is_page and response and len(response) > 30:

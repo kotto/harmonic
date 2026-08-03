@@ -224,6 +224,7 @@ class HologramMeta:
     benchmark_questions: int = 0  # nombre de questions benchmark testées
     version: int = HOLOGRAM_FORMAT_VERSION  # version format
     kb_hash: str = ""          # hash du KB source pour détection de changement
+    style: str = "auto"        # voix ondulatoire (style_profiles) — 'auto' = résolution par domaine
     _size_kb: float = 0.0      # taille fichier (non sérialisé)
     
     def to_dict(self) -> dict:

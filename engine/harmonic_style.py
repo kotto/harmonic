@@ -58,11 +58,17 @@ class EmpathyEngine:
     def detect_tone(self, message: str) -> str:
         """Détecte la tonalité émotionnelle d'un message."""
         msg_lower = message.lower()
+        # Mots entiers uniquement : "vite" ne doit PAS matcher dans "gravite".
+        # Les mots-clés multi-mots ("j'en ai marre") restent en sous-chaîne.
+        msg_words = set(msg_lower.replace("'", " ").replace('-', ' ').split())
         scores = defaultdict(int)
         
         for tone, keywords in self.EMOTION_KEYWORDS.items():
             for kw in keywords:
-                if kw in msg_lower:
+                if ' ' in kw:
+                    if kw in msg_lower:
+                        scores[tone] += 1
+                elif kw in msg_words:
                     scores[tone] += 1
         
         if scores:
@@ -132,13 +138,15 @@ class DiversityEngine:
                     rest = response[first_period+2:]  # Skip ". "
                     if len(rest) > 20:
                         rest = rest[0].upper() + rest[1:]
-                        # Éviter double ponctuation : si le choice commence par ". ",
-                        # et que response a déjà un point, enlever le point du choice
-                        clean_choice = choice
-                        if response[first_period-1] in '.!?':
-                            clean_choice = choice.lstrip('. ').strip()
-                            if clean_choice and clean_choice[0].isalpha():
-                                clean_choice = ' — ' + clean_choice[0].upper() + clean_choice[1:]
+                        # Le point trouvé EST la fin de la première phrase (suivi
+                        # d'un espace) : le connecteur inséré ne doit JAMAIS
+                        # reporter son propre point, sinon « sang. » + « . Cela
+                        # signifie que » → « sang.. Cela signifie que ».
+                        clean_choice = choice.lstrip('. ').strip()
+                        if clean_choice and clean_choice[0].isalpha():
+                            clean_choice = ' — ' + clean_choice[0].upper() + clean_choice[1:]
+                        if clean_choice and not clean_choice.endswith(' '):
+                            clean_choice += ' '
                         response = response[:first_period+1] + clean_choice + rest
                 break
         

@@ -370,6 +370,7 @@ class HologramSpecializer:
             benchmark_questions=metadata.get('benchmark_count', 0),
             version=HOLOGRAM_FORMAT_VERSION,
             kb_hash='specialized_seed',
+            style=metadata.get('style', 'auto'),
         )
         self.store._registry[holo_id] = meta
         self.store._save_registry()
@@ -447,12 +448,20 @@ class HologramSpecializer:
         if holo_id in self.store._registry:
             holo_id = f"{holo_id}_{int(time.time()) % 10000}"
         domain = interests[0].replace('_', ' ')
+        # 🎨 Voix ondulatoire de l'hologramme (style_profiles) — résolue par
+        # intérêt (« diabete » → précision clinique, « musique » → art...)
+        try:
+            from style_profiles import INTEREST_TO_PROFILE, DEFAULT_PROFILE
+            voice = INTEREST_TO_PROFILE.get(interests[0], DEFAULT_PROFILE)
+        except Exception:
+            voice = DEFAULT_PROFILE
         build_info = self._build_v2(holo_id, chosen, {
             'name': f"🎯 {domain}",
             'domain': domain,
             'description': f"Hologramme dédié aux centres d'intérêt : {', '.join(interests)}",
             'top_concepts': [c for c in all_anchors][:10],
             'benchmark_count': len(interests),
+            'style': voice,
         })
 
         # Benchmark interne → quality_score
@@ -644,6 +653,7 @@ class HologramSpecializer:
             'top_concepts': meta_dict.top_concepts,
             'benchmark_count': meta_dict.benchmark_questions,
             'quality_score': meta_dict.quality_score,
+            'style': meta_dict.style,
         })
         interests_clean = [_clean_word(i) for i in interests]
         anchors_by = {i: [_clean_word(a) for a in ANCHOR_MAP.get(i, [i])]
@@ -738,6 +748,7 @@ class HologramSpecializer:
             'top_concepts': meta_dict.top_concepts,
             'benchmark_count': meta_dict.benchmark_questions,
             'quality_score': meta_dict.quality_score,
+            'style': meta_dict.style,
         })
         # Re-mesurer le benchmark
         interests_clean = [_clean_word(i) for i in interests]
