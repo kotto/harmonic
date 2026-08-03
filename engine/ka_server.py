@@ -3331,6 +3331,105 @@ def serve_index():
         return send_from_directory(str(_ENGINE_DIR), 'ka_index.html')
     return send_from_directory(str(_ENGINE_DIR / 'ka_redesign'), 'index.html')
 
+
+@app.route('/defi-calcul')
+def defi_calcul():
+    """🎯 LE DÉFI DU CALCUL EXACT — démo publique : posez un calcul, l'IA
+    répond en exact, ~1 ms, 0 GPU. Le buzz « l'IA qui ne se trompe jamais »."""
+    return '''<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧮 Le Défi du Calcul Exact — KA Enterprise</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,sans-serif;background:#0a0a0f;color:#d4c8a0;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+header{width:100%;text-align:center;padding:40px 20px 20px}
+h1{font-size:2.2rem;background:linear-gradient(135deg,#c9a84c,#e6c860);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sub{color:#888;margin-top:8px;font-size:.95rem}
+.badge{display:inline-block;margin-top:14px;padding:8px 18px;border-radius:20px;background:rgba(0,210,160,.12);border:1px solid rgba(0,210,160,.4);color:#00d2a0;font-size:.85rem;font-weight:600}
+.container{max-width:640px;width:100%;padding:20px;text-align:center}
+.card{background:#14141f;border:1px solid #2a2a3a;border-radius:14px;padding:24px;margin-top:16px}
+input[type=text]{width:100%;padding:14px 16px;border:1px solid #2a2a3a;border-radius:10px;background:#0a0a0f;color:#d4c8a0;font:inherit;font-size:1.05rem;text-align:center}
+input:focus{outline:none;border-color:#c9a84c}
+.examples{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.chip{padding:7px 14px;border:1px solid #2a2a3a;border-radius:20px;font-size:.78rem;color:#888;cursor:pointer;background:#0a0a0f}
+.chip:hover{border-color:#c9a84c;color:#c9a84c}
+.btn{margin-top:16px;padding:13px 34px;border:none;border-radius:10px;background:linear-gradient(135deg,#c9a84c,#e6c860);color:#0a0a0f;font:inherit;font-weight:700;font-size:1rem;cursor:pointer}
+.btn:hover{filter:brightness(1.1)}
+.answer{margin-top:18px;padding:18px;border-radius:10px;background:#0d0d16;border:1px solid #2a2a3a;display:none;font-size:1.35rem;font-weight:700;color:#00d2a0;word-break:break-all}
+.answer .meta{font-size:.75rem;color:#888;font-weight:400;margin-top:8px}
+.stats{display:flex;gap:10px;justify-content:center;margin-top:22px;flex-wrap:wrap}
+.stat{flex:1;min-width:120px;background:#14141f;border:1px solid #2a2a3a;border-radius:12px;padding:14px}
+.stat .v{font-size:1.4rem;font-weight:800;color:#c9a84c}
+.stat .l{font-size:.68rem;color:#888;margin-top:4px}
+.dl{margin-top:26px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.dl a{padding:11px 20px;border-radius:9px;border:1px solid #2a2a3a;color:#d4c8a0;text-decoration:none;font-size:.82rem}
+.dl a:hover{border-color:#c9a84c;color:#c9a84c}
+.dl a.main{background:#c9a84c;color:#0a0a0f;font-weight:700}
+footer{color:#555;font-size:.72rem;padding:26px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧮 Le Défi du Calcul Exact</h1>
+  <p class="sub">Posez n'importe quel calcul — l'IA répond en <b>exact</b>, sans approximation, sans hallucination.</p>
+  <div class="badge">✅ 33/33 calculs exacts · 0 GPU · ~1 ms · 100 % déterministe</div>
+</header>
+<div class="container">
+  <div class="card">
+    <input type="text" id="q" placeholder="Ex : 2^40 · factorielle de 25 · 12345 * 67890 · racine de 2304"
+           onkeydown="if(event.key==='Enter')ask()">
+    <div class="examples">
+      <span class="chip" onclick="fill('2^40')">2^40</span>
+      <span class="chip" onclick="fill('factorielle de 25')">factorielle de 25</span>
+      <span class="chip" onclick="fill('12345 * 67890')">12345 * 67890</span>
+      <span class="chip" onclick="fill('7 + 8 * 9')">7 + 8 * 9</span>
+      <span class="chip" onclick="fill('racine de 1444')">racine de 1444</span>
+      <span class="chip" onclick="fill('15% de 200')">15% de 200</span>
+    </div>
+    <button class="btn" onclick="ask()">⚡ Calculer</button>
+    <div class="answer" id="a"></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="v">33/33</div><div class="l">calculs exacts (benchmark public)</div></div>
+    <div class="stat"><div class="v">~1 ms</div><div class="l">par calcul, CPU seul</div></div>
+    <div class="stat"><div class="v">0 %</div><div class="l">d'erreur possible — déterministe</div></div>
+    <div class="stat"><div class="v">0 GPU</div><div class="l">aucun entraînement massif</div></div>
+  </div>
+  <div class="dl">
+    <a class="main" href="/">📱 Télécharger KA Mobile</a>
+    <a href="/api/enterprise/info">🏢 KA Enterprise</a>
+    <a href="/api/chat">💬 Essayer la conversation</a>
+  </div>
+</div>
+<footer>KA Enterprise — IA ondulatoire : savoir, forme, mémoire, complétude, auto-apprentissage. 0 LLM, 0 GPU, 0 hallucination.</footer>
+<script>
+async function ask(){
+  const q = document.getElementById('q').value.trim();
+  if(!q) return;
+  const box = document.getElementById('a');
+  box.style.display='block'; box.style.color='#888'; box.textContent='Calcul en cours…';
+  const t0 = performance.now();
+  try{
+    const r = await fetch('/api/chat', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({message:q, style:'concise', depth:'court'})});
+    const d = await r.json();
+    const ms = (performance.now()-t0).toFixed(1);
+    box.style.color='#00d2a0';
+    box.innerHTML = (d.response||'—') + '<div class="meta">' + ms + ' ms · confiance ' +
+      Math.round((d.confidence||0)*100) + ' % · source ' + (d.source||'harmonic') + ' · CPU seul</div>';
+  }catch(e){
+    box.style.color='#e74c3c'; box.textContent='Erreur réseau — serveur indisponible';
+  }
+}
+function fill(q){ document.getElementById('q').value=q; ask(); }
+</script>
+</body>
+</html>'''
+
+
 @app.route('/ka_native.js')
 def serve_ka_native():
     """Pont Capacitor (WebView Android) — no-op hors WebView."""

@@ -9,6 +9,68 @@ _LM_ARENA_DIR = os.path.join(os.path.dirname(__file__), '..', 'lm_arena')
 if _LM_ARENA_DIR not in sys.path:
     sys.path.insert(0, _LM_ARENA_DIR)
 
+
+def _safe_eval_arith(expr: str):
+    """
+    Évalue une expression arithmétique PURE (chiffres + opérateurs) avec la
+    priorité correcte et les entiers EXACTS — « 25 * 4 + 10 » → 110,
+    « 2^40 » → 1099511627776. Basé sur ast (jamais eval) : seuls les
+    nombres et les opérateurs binaires sont acceptés.
+    Retourne la chaîne résultat, ou None si ce n'est pas une expression pure.
+    """
+    import ast
+    import operator
+    expr = expr.rstrip('?！!.').strip()
+    expr = expr.replace('^', '**').replace('×', '*').replace(':', '/')
+    # Les mots « plus / moins / fois / divise » → opérateurs
+    expr = re.sub(r'\bplus\b', '+', expr)
+    expr = re.sub(r'\bmoins\b', '-', expr)
+    expr = re.sub(r'\b(?:fois|multipli[ée] par)\b', '*', expr)
+    expr = re.sub(r'\bdivis[ée] par\b', '/', expr)
+    expr = re.sub(r'\bpuissance\b', '**', expr)
+    expr = expr.replace('x', '*')
+    if not re.fullmatch(r'[\d\s+\-*/().]+', expr):
+        return None  # contient des lettres ou d'autres symboles
+    ops = {ast.Add: operator.add, ast.Sub: operator.sub,
+           ast.Mult: operator.mul, ast.Div: operator.truediv,
+           ast.Pow: operator.pow, ast.USub: operator.neg,
+           ast.UAdd: operator.pos}
+
+    def _eval(node):
+        if isinstance(node, ast.Expression):
+            return _eval(node.body)
+        if isinstance(node, ast.BinOp) and type(node.op) in ops:
+            l, r = _eval(node.left), _eval(node.right)
+            if l is None or r is None:
+                return None
+            if isinstance(node.op, ast.Div):
+                if r == 0:
+                    return None
+                res = l / r
+                return int(res) if float(res).is_integer() else res
+            if isinstance(node.op, ast.Pow):
+                if isinstance(l, int) and isinstance(r, int):
+                    return l ** r
+                return l ** r
+            return ops[type(node.op)](l, r)
+        if isinstance(node, ast.UnaryOp) and type(node.op) in ops:
+            v = _eval(node.operand)
+            return ops[type(node.op)](v) if v is not None else None
+        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+            return node.value
+        return None
+
+    try:
+        tree = ast.parse(expr, mode='eval')
+    except SyntaxError:
+        return None
+    result = _eval(tree.body)
+    if result is None:
+        return None
+    if isinstance(result, float) and float(result).is_integer():
+        result = int(result)
+    return str(result).replace('.0', '') if isinstance(result, float) else str(result)
+
 # Cache du moteur mathématique (import paresseux)
 _MATH_ENGINE = None
 
@@ -133,6 +195,14 @@ def _try_simple_calc(q: str, lang: str) -> str:
         return None  # Laisser le CAS gérer
     arithmetic_q = re.sub(r'^(combien\s+font\s+|calcule\s+|que\s+vaut\s+|calculer?\s+|compute\s+|what\s+is\s+)', '', q)
 
+    # ÉVALUATEUR ARITHMÉTIQUE EXACT (priorité correcte, entiers purs) :
+    # « 25 * 4 + 10 » → 110 (et non 4 + 10), « 2^40 » → 1099511627776
+    # (au-delà de la limite d'exposant des patterns). n'accepte QUE des
+    # expressions pures (chiffres + opérateurs) — jamais de code.
+    exact = _safe_eval_arith(arithmetic_q)
+    if exact is not None:
+        return exact
+
     # Addition : X + Y, X plus Y
     m = re.search(r'(\d+)\s*(\+|plus)\s*(\d+)(?!\s*(%|pourcent|fois|×|\*|x|divise|/))', arithmetic_q)
     if m:
@@ -205,6 +275,9 @@ def _try_simple_calc(q: str, lang: str) -> str:
         m = re.search(pat, arithmetic_q)
         if m:
             a, b = float(m.group(1)), float(m.group(2))
+            # Entiers purs → puissance EXACTE sans limite (2^40, 7^15…)
+            if float(a).is_integer() and float(b).is_integer():
+                return str(int(a) ** int(b))
             if b <= 20:
                 result = a ** b
                 return f"{int(result)}" if result == int(result) else f"{result:.1f}"
