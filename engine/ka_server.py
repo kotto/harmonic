@@ -4508,6 +4508,31 @@ def agent_info():
     
     return jsonify({'available': True, **_ka_agent.info})
 
+
+@app.route('/api/feedback', methods=['POST'])
+def api_feedback():
+    """
+    🔁 RLHF ondulatoire de la FORME : feedback humain → renforcement des
+    structures de surface (syntagmes, connecteurs, registres) utilisées
+    dans la dernière réponse. Boucle phase-amplitude (feedback_loop.py)
+    appliquée à la surface : r > 0.7 → α += η ; r < 0.3 → α −= η.
+    Les structures qui plaisent deviennent la voix de l'utilisateur.
+
+    Body: { "rating": 0.8, "message": "optionnel" }
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    try:
+        rating = float(data.get('rating', 0.5))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'rating requis (0-1)'}), 400
+    try:
+        from surface_grammar import memory
+        result = memory().apply_feedback(rating)
+        return jsonify({**result, 'stats': memory().stats()})
+    except Exception as e:
+        return jsonify({'error': f'Feedback indisponible: {e}'}), 500
+
+
 if __name__ == '__main__':
     log.info(f"\n✨ KA Server v3 OPTIMISÉ sur http://localhost:{port}")
     log.info(f"   📡 API: http://localhost:{port}/api/chat")

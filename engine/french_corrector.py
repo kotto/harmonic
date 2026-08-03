@@ -434,9 +434,9 @@ def _fix_articles(text: str) -> str:
 
     # a) Début de phrase / après « . ! ? : » : « Paludisme est » → « Le
     #    paludisme est »
-    text = re.sub(rf'^({noun_alt})\b', _start, text)
-    text = re.sub(rf'(?<=[.!?]\s)({noun_alt})\b', _start, text)
-    text = re.sub(rf'(?<=:\s)({noun_alt})\b', _start, text)
+    text = re.sub(rf'^({noun_alt})\b', _start, text, flags=re.IGNORECASE)
+    text = re.sub(rf'(?<=[.!?]\s)({noun_alt})\b', _start, text, flags=re.IGNORECASE)
+    text = re.sub(rf'(?<=:\s)({noun_alt})\b', _start, text, flags=re.IGNORECASE)
 
     # b) Après virgule ou « que » en position sujet : « , diabete de type 1
     #    est » → « , le diabète de type 1 est » ; « que diabete est » →

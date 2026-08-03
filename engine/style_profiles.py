@@ -455,6 +455,17 @@ def render_facts(facts, question: str = '', profile: dict = None,
 
     def _render_single(fact) -> str:
         s, r, o = fact
+        # 🌊 Grammaire de surface compositionnelle (surface_grammar) :
+        # syntagmes composés par cohérence de phase, pondérés par
+        # l'amplitude apprise (la FORME se renforce par le feedback).
+        # Fallback : templates du profil.
+        try:
+            from surface_grammar import surface
+            phrase, _keys = surface((s, r, o))
+            if phrase:
+                return phrase
+        except Exception:
+            pass
         tpl = _pick(profile['single'], f"{s} {o}", 'single', used)
         return tpl.format(S=_capitalize(s), s=s, r=r, o=o.rstrip('.'))
 
