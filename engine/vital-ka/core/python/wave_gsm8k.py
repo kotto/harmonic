@@ -797,7 +797,7 @@ class GSM8KChainMemory:
 
         if data_path is None:
             _d = os.path.dirname
-            root = _d(_d(_d(_d(os.path.abspath(__file__)))))
+            root = _d(os.path.abspath(__file__))  # engine/ → data/benchmarks/
             data_path = os.path.join(root, 'data', 'benchmarks',
                                      'gsm8k_test.jsonl')
         self.data_path = data_path
