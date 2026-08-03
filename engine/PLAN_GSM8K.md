@@ -123,3 +123,49 @@ La solution complète = la RÉSONANCE ENTRE CES ONDES INDÉPENDANTES —
 exactement le mécanisme qui a résolu chaque « impossible » précédent :
 le langage est déjà complet (M1), la résonance déjà parfaite (M2) ;
 l'instanciation alignée + le consensus en feront la construction.
+
+## 🧪 RAPPORT D'EXPLORATION — PHASE 1 (5 août 2026)
+
+**Exp 1.1 — Plafond de l'instanciation par position** : 239/1319 (18,1 %)
+résolus par au moins un j de même squelette instancié par position. 399
+(30,3 %) sans squelette partagé ; 681 (51,6 %) partagés mais aucun hit par
+position → l'ORDRE des nombres diffère.
+
+**Exp 1.2 — Plafond avec permutations** : 353/1319 (26,8 %) (+114) —
+l'alignement par rôle (toutes les permutations, n ≤ 5) porte le plafond
+au-dessus du jalon P1 (≥ 15 %). La matière de l'instanciation EXISTE.
+
+**Exp 1.3 — Classement du bon j par résonance de question** : parmi les
+353 problèmes au plafond, le bon j est top-1 pour 44 (12,5 %), top-3 pour
+74 (21 %), top-5 pour 99 (28 %). → LE CLASSEMENT DES j EST LE GOULOT
+(l'instanciation ne vaut que ce que vaut la sélection du squelette source).
+
+**Exp 1.4 — Prototype complet (résonance + permutations + gate entier)**
+: pass@1 1,5 %, précision servie 1,5 % — le bruit des permutations domine.
+
+**Exp 1.5 — Gate strict (vote ≥ 2, peers de même squelette)** : pass@1
+8,3 % (110/1319), servies 51 %, précision servie 16,3 % — les permutations
+FAUSSES COLLISIONNENT (les petits nombres donnent les mêmes résultats par
+des chemins différents) : le vote seul ne discrimine pas.
+
+**Conclusions de P1** :
+1. Le plafond (26,8 %) prouve que la solution existe — mais l'oracle j est
+   indisponible en inference : le classement réel ne met le bon j en tête
+   que 12,5 % du temps.
+2. Le gate arithmétique seul (entier positif, vote) est inopérant face aux
+   collisions de permutations — il faut des permutations GUIDÉES par le
+   RÔLE SÉMANTIQUE des nombres (prix, quantité, taux) pour réduire le
+   bruit d'un ordre de grandeur.
+3. L'ordre des phases du plan est confirmé : P2 (le classement) est le
+   PRÉALABLE de P1 (l'instanciation) — la résonance de question ne suffit
+   pas ; il faut des features orthogonales (profil de nombres, rôle
+   sémantique via le solveur d'état).
+
+**Prochaines expériences (P2 — le classement)** :
+- 2a : classement des j par SIMILARITÉ DE PROFIL DE NOMBRES (nombre de
+  qnums, magnitudes relatives) — feature orthogonale à la question
+- 2b : ré-optimisation des poids du score sémantique M4 (grid-search)
+- 2c : l'alignement par rôle : identifier le rôle de chaque nombre de la
+  question (prix après « each », quantité d'objets, taux per jour) via le
+  solveur d'état, et ne permuter que les rôles compatibles → réduire les
+  collisions d'un ordre de grandeur
