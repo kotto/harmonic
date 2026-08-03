@@ -44,6 +44,10 @@ _QUESTION_PREFIXES_FR = [
     'parle moi de', 'parle moi', 'dis moi', 'quelle est', 'que signifie',
     'que veut dire', 'que sait on de', 'que sais tu sur', 'que sais tu de',
     'c est quoi', 'c est quoi un', 'c est quoi une',
+    'et le', 'et la', 'et les', 'et l', 'et un', 'et une', 'et ses',
+    'et son', 'et sa', 'et leur', 'et qu', 'et quel', 'et quelle',
+    'et comment', 'et pourquoi', 'et si', 'mais', 'sinon', 'justement',
+    'qu en est il', 'qu en est-il',
 ]
 
 
@@ -55,7 +59,10 @@ def _clean_subject_phrase(question: str) -> str:
         if low.startswith(pfx):
             q = q[len(pfx):].strip()
             break
-    q = q.strip(' ?.!:;,')
+    # Ponctuation interne (« et le type 2 ? le diabete » → « type 2 le
+    # diabete ») — les préfixes de suivi laissent un « ? » au milieu
+    q = re.sub(r'[?!]', ' ', q)
+    q = re.sub(r'\s+', ' ', q).strip(' ?.!:;,')
     return q[:60] or 'ce sujet'
 
 # ═══════════════════════════════════════════════════════════════════════════════

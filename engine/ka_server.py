@@ -1021,9 +1021,27 @@ def chat():
         except Exception:
             pass
         if not _skip_hologram:
+            # 🌊 Attention contextuelle (D) — ψ_ctx de l'historique : les
+            # questions de suivi (« Et le type 2 ? ») n'ont pas de mots
+            # significatifs — le sujet vient du contexte (dernier tour
+            # utilisateur), compose la requête du rappel M4, et la réponse
+            # devient courte (sauf profondeur explicitement demandée).
+            _message_m4 = message
+            if history:
+                try:
+                    from context_wave import (is_followup, resolve_subject,
+                                              encode_history)
+                    if is_followup(message, history):
+                        ctx_subject = resolve_subject(message, history)
+                        if ctx_subject:
+                            _message_m4 = f"{ctx_subject} {message}"
+                        if 'depth' not in data:
+                            depth = 'court'
+                except Exception:
+                    pass
             try:
                 consensus, best_holo_id = _holographic_consensus_recall(
-                    message, top_domains=3, top_k=5)
+                    _message_m4, top_domains=3, top_k=5)
                 if consensus:
                     # 🎯 Filtre « forme » (M4) : ne montrer que les faits à
                     # résonance franche (≥ 0.45) — le bruit (sims aléatoires
@@ -1040,7 +1058,7 @@ def chat():
                             from style_profiles import get_profile, render_facts
                             meta = _hologram_store._registry.get(best_holo_id)
                             profile = get_profile(meta) if meta else None
-                            prose = render_facts(shown, message, profile, depth)
+                            prose = render_facts(shown, _message_m4, profile, depth)
                         except Exception:
                             prose = ''
                         if prose:
