@@ -67,6 +67,12 @@ def try_math_solve(question: str, lang: str = 'fr') -> str:
 def _try_simple_calc(q: str, lang: str) -> str:
     """Micro-calculateur local — opérations simples."""
     q = q.lower().strip()
+    # Déaccentuation : les patterns sont écrits sans accents (« carree? »)
+    # et la question peut arriver sous forme « racine carrée de 169 ».
+    for _a, _b in [('é', 'e'), ('è', 'e'), ('ê', 'e'), ('ë', 'e'),
+                   ('à', 'a'), ('â', 'a'), ('î', 'i'), ('ï', 'i'),
+                   ('ô', 'o'), ('ù', 'u'), ('û', 'u'), ('ç', 'c')]:
+        q = q.replace(_a, _b)
     
     # === CONSTANTES CONNUES (mot entier, pas substring!) ===
     q_words = set(q.split())

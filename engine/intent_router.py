@@ -205,8 +205,14 @@ def route(question: str) -> Optional[str]:
         La réponse, ou None si la question doit aller au cerveau harmonique.
     """
     # 🌊 Normaliser les questions courtes → langage naturel
+    # (mais PAS celles qui contiennent déjà un mot-clé math/code : leur
+    # forme brute est mieux gérée — le normaliseur ajoute « quelle est… ? »
+    # et un « ? » final qui cassent les patterns $ du CAS symbolique)
     original = question
-    if len(question.split()) <= 5:
+    _raw = question.lower()
+    _has_kw = any(kw in _raw for kw in
+                  (*MATH_KEYWORDS, *CODE_FRONTEND_KEYWORDS, *CODE_ALGO_KEYWORDS))
+    if len(question.split()) <= 5 and not _has_kw:
         try:
             from query_normalizer import normalize
             question = normalize(question)

@@ -78,6 +78,15 @@ class HarmonicCAS:
             return None
 
         q = question.lower().strip()
+        # Ponctuation finale (« ? », « ! ») et accents : les patterns
+        # utilisent des classes [ée]/[àa] mais la question peut arriver
+        # normalisée (« quelle est la dérivée de x^2 ? ») — le « ? » final
+        # casse les patterns terminés par « $ ».
+        q = q.rstrip('?！!.').strip()
+        for _a, _b in [('é', 'e'), ('è', 'e'), ('ê', 'e'), ('ë', 'e'),
+                       ('à', 'a'), ('â', 'a'), ('î', 'i'), ('ï', 'i'),
+                       ('ô', 'o'), ('ù', 'u'), ('û', 'u'), ('ç', 'c')]:
+            q = q.replace(_a, _b)
 
         # 1. Dérivées
         result = self._try_derivative(q)
