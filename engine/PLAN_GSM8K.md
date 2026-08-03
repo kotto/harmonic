@@ -209,3 +209,34 @@ VERROU suivant est le GATE — la précision servie (13,3 %) est trop basse
 rôle sémantique) pour réduire le bruit, puis un gate par confirmation
 (le résultat de l'instanciation doit être cohérent avec la sémantique de
 la question — « each » → prix unitaire plausible, « total » → somme…).
+
+## 🧪 RAPPORT D'EXPLORATION — EXP 2c (5 août 2026) : GATE PAR RÔLE SÉMANTIQUE
+
+**2c-1 — Contraintes de rôle (rôles lexicaux money/time/rate/pct)** :
+la bonne (j, perm) respecte les contraintes dans TOUS les cas au plafond
+(353/353) — mais le prototype AVEC contraintes est STRICTEMENT IDENTIQUE
+au prototype sans contraintes (pass@1 9,9 %, précision 15,2 %, 854
+servies identiques). Les rôles lexicaux sont trop grossiers : « money »
+couvre la majorité des fenêtres, « other » est compatible partout →
+AUCUNE permutation filtrée. Les contraintes de rôle naïves sont sans
+effet.
+
+**2c-2 — Gate par intention** (l'opération finale du squelette doit
+matcher l'intention de la question : total → ADD, each/per → DIV, left →
+SUB, times → MUL) : pass@1 8,6 % → 6,1 %, servies 854 → 546, précision
+13,3 % → 14,7 %. Le gate rejette massivement mais n'améliore la précision
+que de 1,4 point — la plupart des résultats FAUX de l'instanciation sont
+« plausibles » (entiers positifs, opération finale cohérente avec
+l'intention). Insuffisant pour un gate produit (exige 100 % de précision
+servie).
+
+**Bilan 2c** : les gates sémantiques simples ne filtrent pas le bruit de
+l'instanciation par permutations. Le meilleur état mesuré à ce jour :
+**pass@1 8,6-9,9 % (instanciation + profil de nombres), précision ~15 %**
+— inutilisable en production sans gate fort. Les voies restantes :
+ - l'alignement par rôle FIN (les rôles du solveur d'état : prix,
+   quantité, taux — couverture actuelle 2 %, à étendre) ;
+ - la convergence multi-ondes quand les stratégies se recouvriront
+   (actuellement 4 convergences seulement) ;
+ - l'acceptation : GSM8K est un chantier de recherche de LONGUE haleine ;
+   le produit vend déjà la certitude (refus calibré) sans GSM8K.
