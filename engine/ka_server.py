@@ -348,6 +348,7 @@ except Exception as e:
 
 # 📦 Hologram Store (knowledge store téléchargeable)
 _hologram_store = None
+_gate_encoder = None   # encodeur paresseux pour la résonance spécifique du gate
 try:
     from hologram_store import HologramStore
     _hologram_store = HologramStore()
@@ -637,6 +638,28 @@ def _holographic_consensus_recall(message: str, top_domains: int = 3,
         query_content = query_words - set(_STOPWORDS)
     except Exception:
         query_content = query_words
+    # 🚫 Mots TRANSVERSAUX : « symptomes », « traitement », « causes »...
+    # apparaissent dans des faits de TOUS les sujets — un fait sur la
+    # juridiction ne doit pas répondre à « symptomes de la leptospirose »
+    # (le mot spécifique « leptospirose » est l'ancre qui compte).
+    # L'ancrage lexical (hit) porte sur les mots SPÉCIFIQUES uniquement.
+    _TRANSVERSAL = {
+        'symptomes', 'symptome', 'signes', 'signe', 'causes', 'cause',
+        'provoque', 'traitement', 'traite', 'traiter', 'transmis', 'transmet',
+        'transmission', 'prevention', 'prevenir', 'diagnostic',
+        'diagnostique', 'histoire', 'types', 'type', 'role', 'mecanisme',
+        'fonctionne', 'frequence', 'repandu', 'repandue', 'eviter', 'evite',
+        'protege', 'proteger', 'effets', 'effet', 'douleurs', 'douleur',
+        'fievre', 'maladie', 'maladies', 'comment', 'pourquoi', 'quand',
+        'quel', 'quelle', 'quels', 'quelles', 'combien', 'definition',
+        'definir', 'explique', 'expliquer', 'signifie', 'difference',
+        'differences', 'exemple', 'exemples', 'consequence', 'consequences',
+        'complication', 'complications',
+    }
+    query_specific = query_content - _TRANSVERSAL
+    # Le HIT exige un mot spécifique quand il y en a ; sinon (sujet
+    # transversal pur), tous les mots comptent
+    query_hit_words = query_specific if query_specific else query_content
     n_facts_by_holo = {}
 
     domain_results = []   # (holo_id, semantic_score, recalled)
@@ -664,7 +687,7 @@ def _holographic_consensus_recall(message: str, top_domains: int = 3,
         # les faits (stopwords exclus — « est »/« que » sont des relations)
         fact_text = ' '.join(f"{r[0]} {r[1]} {r[2]}" for r in recalled).lower()
         fact_words = set(re.findall(r"[a-zàâäéèêëîïôöùûüç]{3,}", fact_text))
-        sector_hit = (len(query_content & fact_words) / max(1, len(query_content)))
+        sector_hit = (len(query_hit_words & fact_words) / max(1, len(query_hit_words)))
 
         # mass : log-normalisé (un hologramme de 5k faits ≠ ×1000 un de 5)
         mass = math.log1p(h.get('facts_count', 1)) / math.log1p(50000)
@@ -697,9 +720,36 @@ def _holographic_consensus_recall(message: str, top_domains: int = 3,
     best_top = max(r[4] for r in best_recall)
     fact_text = ' '.join(f"{r[0]} {r[1]} {r[2]}" for r in best_recall).lower()
     fact_words = set(re.findall(r"[a-zàâäéèêëîïôöùûüç]{3,}", fact_text))
-    best_hit = len(query_content & fact_words) / max(1, len(query_content))
+    best_hit = len(query_hit_words & fact_words) / max(1, len(query_hit_words))
+    # 🔬 TOP « SPÉCIFIQUE » : quand la requête a des mots spécifiques
+    # (« leptospirose »), la résonance top est recalculée SUR CES MOTS
+    # uniquement — les mots transversaux (« symptomes », « traitement »)
+    # donnent des sims ~1.0 avec des faits HORS-sujet et fausseraient le
+    # gate (un fait juridique répondrait à « symptomes de X »).
+    if query_specific:
+        try:
+            global _gate_encoder
+            if _gate_encoder is None:
+                from holographic_encoder import HolographicEncoder
+                _gate_encoder = HolographicEncoder()
+            top_fact = best_recall[0]
+            ft = f"{top_fact[0]} {top_fact[1]} {top_fact[2]}"
+            ftok = [w for w in re.findall(
+                r"[a-zàâäéèêëîïôöùûüç]{3,}", ft.lower())
+                if w not in _STOPWORDS]
+            _best_spec = 0.0
+            for sp in query_specific:
+                v_sp = _gate_encoder.encode_word(sp)
+                for t in ftok:
+                    s_ = float(np.real(np.dot(
+                        v_sp, np.conj(_gate_encoder.encode_word(t)))))
+                    if s_ > _best_spec:
+                        _best_spec = s_
+            best_top = _best_spec
+        except Exception:
+            pass
     n_best = n_facts_by_holo.get(selected[0][0], 1)
-    w_q = max(1, len(query_content))
+    w_q = max(1, len(query_hit_words))
     noise_floor = math.sqrt(2.0 * math.log(3.0 * n_best * w_q) / 512.0) + 0.10
     gate_threshold = max(0.25, noise_floor)
     if best_hit == 0.0 and best_top < gate_threshold:
@@ -734,6 +784,58 @@ def _holographic_consensus_recall(message: str, top_domains: int = 3,
              f"({sum(1 for v in fact_votes.values() if len(v) > 1)} convergents)")
     best_holo_id = selected[0][0] if selected else None
     return consensus[:top_k], best_holo_id
+
+
+def _is_refusal(text: str) -> bool:
+    """Vrai si la réponse est un refus calibré (anti-hallucination)."""
+    t = (text or '').lower()
+    return any(m in t for m in [
+        'je ne sais pas', "je n'ai pas assez", "je n'ai pas encore",
+        'je ne connais pas', "je n'ai pas la réponse",
+        "je n'ai pas d'éléments", "je n'ai pas d'information",
+        'je ne trouve pas cette information', 'je ne peux pas répondre',
+        'je n ai pas encore assez de connaissances',
+        'je ne sais pas encore', 'pas encore de connaissance',
+    ])
+
+
+# Verbes d'action / marqueurs non-factuels : « raconte une blague » n'est
+# pas un sujet de complétion
+_NON_SUBJECT_HINTS = ['raconte', 'chante', 'dessine', 'ecris', 'ecrit',
+                      'fais', 'fait', 'blague', 'poeme', 'poesie', 'chanson',
+                      'histoire drôle', 'jeu', 'devinette', 'salutation',
+                      'merci', 'bonjour', 'au revoir', 'tu vas bien',
+                      'comment ca va', 'qui es tu', 'que sais tu faire']
+
+
+def _is_garbage_answer(question: str, response: str) -> bool:
+    """
+    Réponse du cerveau SANS lien avec la question (hallucination) : le
+    corps de la réponse (après l'opener qui répète le sujet) ne contient
+    AUCUN mot significatif de la question. Le cerveau répond « e est la
+    base du logarithme naturel » avec confidence 0.7 à une question sur
+    la trypanosomiase — c'est une non-réponse.
+    """
+    q_words = set(re.findall(r'[a-zàâäéèêëîïôöùûüç]{4,}', question.lower()))
+    try:
+        from context_wave import _NON_SUBJECT
+        q_words -= _NON_SUBJECT
+    except Exception:
+        pass
+    if not q_words:
+        return False
+    resp = response.lower()
+    first = resp.find('.')
+    # Réponse multi-phrases → le corps (l'opener répète souvent le sujet)
+    body = resp[first:] if 0 < first < len(resp) - 20 else resp
+    return not any(w in body for w in q_words)
+
+
+def _is_non_subject(sujet: str) -> bool:
+    s = sujet.lower()
+    if len(s) < 3:
+        return True
+    return any(h in s for h in _NON_SUBJECT_HINTS)
 
 
 @app.route('/api/chat', methods=['POST'])
@@ -1117,6 +1219,28 @@ def chat():
     # 🎨 DeepSeek Style Fallback : reformulation élégante (sans ajout d'info)
     if not is_page and response and len(response) > 30:
         response = _polish_with_deepseek(response, message)
+
+    # 🌱 COMPLÉTION PILOTÉE PAR L'USAGE (chaînon D) : une question de
+    # connaissance restée SANS RÉPONSE (refus du cerveau ou confiance
+    # faible) marque le sujet + la facette à enrichir. Dès que la file
+    # atteint le seuil, la complétion se déclenche en arrière-plan —
+    # l'usage pilote la connaissance.
+    try:
+        if source == 'harmonic' and (confidence < 0.5 or _is_refusal(response)
+                                     or _is_garbage_answer(message, response)):
+            from context_wave import resolve_subject
+            from completion_queue import register_miss, complete_in_background
+            from specialize_holograms import HologramSpecializer
+            sujet = resolve_subject(message, history)
+            if sujet and not _is_non_subject(sujet):
+                info = register_miss(message, sujet)
+                if info.get('triggered'):
+                    spec_comp = HologramSpecializer(_hologram_store)
+                    complete_in_background(_hologram_store, sujet,
+                                           [info['facette']], 'fr',
+                                           spec=spec_comp)
+    except Exception:
+        pass
 
     return jsonify({
         'response': response,

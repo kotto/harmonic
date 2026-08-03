@@ -87,6 +87,9 @@ _STOPWORDS_FR = {
     'se', 'ce', 'on', 'y', 'si', 'me', 'te', 'ma', 'ta', 'mon', 'ton',
     'mes', 'tes', 'nos', 'vos', 'ces', 'moi', 'toi', 'soi', 'eux', 'lui',
     'dont', 'quoi', 'vers', 'chez', 'sans', 'sous', 'dans',
+    # Verbes être/avoir : jamais des mots de sujet — « sont nommes par »
+    # ne doit pas faire passer un fait juridique pour « symptomes de X »
+    'sont', 'etait', 'etaient', 'sera', 'seront', 'ont', 'avaient', 'avait',
 }
 
 _STOPWORDS_EN = {

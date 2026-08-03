@@ -231,6 +231,46 @@ def coverage_score(store, holo_id: str, sujet: str,
     }
 
 
+# Mots-clés de QUESTION → facette (pour la file de complétion : une
+# question sans réponse « quels sont les symptomes de X ? » marque la
+# facette « symptomes » à enrichir)
+_QUESTION_FACET_KEYWORDS = {
+    'symptomes': ['symptome', 'symptomes', 'signes', 'se manifeste',
+                  'douleur', 'fievre', 'comment se manifeste'],
+    'traitement': ['traitement', 'traite', 'traite-t-on', 'soigne',
+                   'soigner', 'therapie', 'medicament', 'guerir'],
+    'causes': ['cause', 'causes', 'provoque', 'pourquoi', 'origine',
+               'facteurs', 'a l origine'],
+    'diagnostic': ['diagnostique', 'diagnostic', 'detecte', 'detecter',
+                   'test', 'depistage', 'examen', 'comment savoir si'],
+    'prevention': ['prevenir', 'prevention', 'eviter', 'evite', 'protege',
+                   'vaccin', 'protection'],
+    'histoire': ['histoire', 'decouvert', 'invente', 'inventeur',
+                 'origine du nom', 'provenance', 'epoque'],
+    'types': ['types', 'type de', 'formes', 'variantes', 'categories',
+              'quelle difference entre'],
+    'mecanisme': ['mecanisme', 'comment fonctionne', 'processus',
+                  'comment ca marche'],
+    'epidemiologie': ['frequence', 'combien de personnes', 'nombre de cas',
+                      'prevalence', 'repandu', 'statistiques'],
+}
+
+
+def detect_facet(question: str) -> str:
+    """Facette la plus probable d'une question (défaut : definition).
+    Tie-break : le mot-clé le plus long est le plus discriminant
+    (« decouvert » bat « vaccin » pour « Qui a decouvert le vaccin ? »)."""
+    q = question.lower()
+    best, best_count, best_len = 'definition', 0, 0
+    for facet, kws in _QUESTION_FACET_KEYWORDS.items():
+        matched = [k for k in kws if k in q]
+        n = len(matched)
+        max_len = max((len(k) for k in matched), default=0)
+        if n > best_count or (n == best_count and max_len > best_len):
+            best, best_count, best_len = facet, n, max_len
+    return best
+
+
 def coverage_queries(sujet: str, manquantes: List[str],
                      skeleton: Optional[List[Tuple]] = None) -> List[str]:
     """

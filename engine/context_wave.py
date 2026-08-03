@@ -55,6 +55,15 @@ _QUESTION_PREFIXES_FR = [
     'et une', 'et ses', 'et son', 'et sa', 'et leur', 'et qu',
     'et quel', 'et quelle', 'et comment', 'et pourquoi', 'et si',
     'mais', 'sinon', 'justement', 'qu en est il', 'qu en est-il',
+    'comment se transmet', 'comment se manifeste',
+    'quels sont les symptomes de', 'quels sont les signes de',
+    'quelles sont les causes de', 'quelles sont les consequences de',
+    'quels sont les types de', 'quels sont les effets de',
+    'quel est le traitement de', 'quelle est la cause de',
+    'comment traite-t-on', 'comment diagnostique-t-on',
+    'comment prevenir', 'quel est le mecanisme de',
+    'quelle est la frequence de', 'comment fonctionne',
+    'comment ca marche',
 ]
 
 # Mots sans valeur pour le sujet (« est », « que »...)
@@ -104,6 +113,11 @@ def _clean_subject(question: str) -> str:
             q = q[len(pfx):].strip()
             break
     q = q.strip(' ?.!:;,')
+    # Retirer le déterminant d'attaque : « la leptospirose » → « leptospirose »
+    for det in ('le ', 'la ', 'les ', 'un ', 'une ', 'des ', 'du '):
+        if q.lower().startswith(det):
+            q = q[len(det):]
+            break
     return q[:60]
 
 

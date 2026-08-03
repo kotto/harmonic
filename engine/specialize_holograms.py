@@ -404,9 +404,82 @@ class HologramSpecializer:
 
     # ── 5. Pipeline complet ───────────────────────────────────────────────
 
+    # ── 5b. Seed WEB direct (sujet absent du corpus) ──────────────────────
+
+    def _web_seed(self, interest: str, language: str,
+                  anchors: set, max_facts: int = 200) -> List[Tuple]:
+        """
+        Construit un seed depuis le web quand le store ne contient AUCUN
+        fait sur le sujet : Wikipedia (article complet) + DuckDuckGo →
+        TripleExtractor + décomposition → mêmes filtres (repair_fact +
+        ancres). L'ingestion massive complètera ensuite.
+        """
+        try:
+            from web_retriever import WebRetriever
+            from triple_extractor import TripleExtractor
+        except Exception:
+            return []
+        retriever = WebRetriever()
+        extractor = TripleExtractor()
+
+        texts = []
+        try:
+            doc = retriever.search_wikipedia(interest, lang=language)
+            if doc:
+                full = retriever.get_wikipedia_full(str(doc.get('title', interest)),
+                                                     lang=language)
+                texts.append(full if full else (doc.get('summary') or ''))
+        except Exception:
+            pass
+        try:
+            for p in retriever.search_wikipedia_multiple(interest, lang=language,
+                                                         limit=3)[:2]:
+                full = retriever.get_wikipedia_full(str(p.get('title', '')),
+                                                     lang=language)
+                if full and len(full) >= 150:
+                    texts.append(full)
+        except Exception:
+            pass
+        try:
+            for r in retriever.search_duckduckgo_web(f'{interest} definition',
+                                                     max_results=5):
+                sn = str(r.get('snippet', ''))[:400]
+                if len(sn) >= 80:
+                    texts.append(sn)
+        except Exception:
+            pass
+
+        facts = []
+        for text in texts:
+            if not text or len(text) < 80:
+                continue
+            try:
+                for s, r, o, sec in extractor.extract(text, max_triples=150):
+                    sn = _normalize_subject(s)
+                    rep = repair_fact(sn, r, o) if sn else None
+                    if rep and any(_kw_in_text(a, f'{rep[0]} {rep[1]} {rep[2]}')
+                                   for a in anchors):
+                        facts.append((rep[0], rep[1], rep[2], 'WEB'))
+                for f in _decompose_sentences(text, anchors):
+                    rep = repair_fact(f[0], f[1], f[2])
+                    if rep:
+                        facts.append((rep[0], rep[1], rep[2], 'WEB'))
+            except Exception:
+                continue
+
+        seen, uniq = set(), []
+        for f in facts:
+            k = (f[0][:60], f[1][:60], f[2][:80])
+            if k not in seen and len(uniq) < max_facts:
+                seen.add(k)
+                uniq.append(f)
+        log.info(f"🌐 Seed web direct: {len(uniq)} faits pour {interest}")
+        return uniq
+
     def build(self, interests: List[str], language: str = 'fr',
               max_facts: int = SEED_MAX_FACTS,
-              benchmark: bool = True, massive: bool = False) -> Dict:
+              benchmark: bool = True, massive: bool = False,
+              allow_thin: bool = False) -> Dict:
         t0 = time.time()
         interests = [_clean_word(i) for i in interests if _clean_word(i)]
         interests = list(dict.fromkeys(interests))[:4]   # dédup, max 4
@@ -425,8 +498,19 @@ class HologramSpecializer:
         # Pool lexical
         pool = self._candidate_pool(list(all_anchors))
         if not pool:
-            return {'error': f'Aucun fait contenant {interests} dans le store',
-                    'interests': interests}
+            # allow_thin (complétion pilotée par l'usage) : un sujet ABSENT
+            # du corpus (leptospirose) n'a aucun fait dans le store — le
+            # seed est construit directement depuis le web, puis l'ingestion
+            # massive le complétera.
+            if allow_thin:
+                pool = self._web_seed(interests[0], language,
+                                      set(all_anchors))
+                if not pool:
+                    return {'error': f'Aucun fait contenant {interests} dans le store',
+                            'interests': interests}
+            else:
+                return {'error': f'Aucun fait contenant {interests} dans le store',
+                        'interests': interests}
 
         # Résonance token → rang
         scores = self._token_scores(pool, list(all_anchors))
@@ -447,9 +531,15 @@ class HologramSpecializer:
             if repaired is not None:
                 chosen.append((repaired[0], repaired[1], repaired[2], f[3]))
         if len(chosen) < SEED_MIN_FACTS:
-            return {'error': f'Seed trop pauvre ({len(chosen)} faits < {SEED_MIN_FACTS}) '
-                             f'pour {interests}', 'interests': interests,
-                    'candidates_scored': int(len(pool))}
+            # allow_thin : complétion pilotée par l'usage — un sujet ABSENT
+            # du corpus (leptospirose) doit quand même créer son hologramme ;
+            # l'ingestion massive web le remplira juste après.
+            if not allow_thin or not chosen:
+                return {'error': f'Seed trop pauvre ({len(chosen)} faits < {SEED_MIN_FACTS}) '
+                                 f'pour {interests}', 'interests': interests,
+                        'candidates_scored': int(len(pool))}
+            log.info(f"🗣️ Seed thin accepté ({len(chosen)} faits) — "
+                     f"complétion web à suivre")
 
         # Construire
         holo_id = 'personal_' + _slugify(interests[0])
