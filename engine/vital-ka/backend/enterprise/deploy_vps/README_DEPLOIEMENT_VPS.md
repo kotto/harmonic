@@ -111,6 +111,19 @@ en livrables** (onglet « 📊 Données & Docs » du dashboard) :
 Tout est généré à partir de **vos seules données** (jamais d'hallucination,
 gate de résonance), en français corrigé, **0 LLM / 0 GPU**.
 
+## 7ter · Agents spécialisés MCP (assistants, IDE, automatisations)
+
+KA Enterprise expose ses hologrammes au **Model Context Protocol** :
+vos assistants (Claude Desktop, Cursor, n8n…) peuvent appeler les
+compétences de votre IA — Q&A privée, tableaux Excel, textes rédigés,
+conformité, onboarding — via 5 agents spécialisés (Data, Rédaction,
+Conformité, Onboarding, Support) qui **concourent** sur chaque question.
+
+- Point d'entrée HTTP : `POST http://VOTRE_VPS:8767/mcp` (clé API du tenant)
+- Transport local : `python mcp/mcp_server_stdio.py` (KA_API_KEY en env)
+- Documentation complète : `mcp/README_MCP.md`
+- Démo : `python mcp/mcp_client_demo.py --mode http --base http://VOTRE_VPS:8767 --api-key <clé>`
+
 ## 8 · Sécurité
 
 - **SSO + API Keys** : chaque tenant possède une clé unique ;

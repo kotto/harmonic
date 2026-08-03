@@ -608,6 +608,65 @@ def summarize_doc(department_id):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# MCP — agents spécialisés (Model Context Protocol, streamable HTTP)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_mcp_session = None
+
+
+def _mcp_session_get():
+    global _mcp_session
+    if _mcp_session is None:
+        from mcp.mcp_protocol import McpSession
+        from mcp.mcp_tools import tools_provider, tool_executor
+        _mcp_session = McpSession(tools_provider, tool_executor)
+    return _mcp_session
+
+
+@app.route('/mcp', methods=['POST'])
+@require_auth
+@rate_limit
+@audit_log
+def mcp_endpoint():
+    """
+    Point d'entrée MCP (streamable HTTP) : initialize, tools/list, tools/call.
+    Authentifié par la clé API du tenant (X-API-Key / Bearer SSO).
+    """
+    body = request.get_json(force=True, silent=True)
+    if not body:
+        return jsonify({'jsonrpc': '2.0', 'id': None,
+                        'error': {'code': -32700,
+                                  'message': 'Corps JSON-RPC requis'}}), 400
+    ctx = {'engine': engine, 'tenant': g.tenant, 'user': g.user,
+           'data_dir': DATA_DIR}
+    try:
+        response = _mcp_session_get().handle(body, ctx)
+    except Exception as e:
+        return jsonify({'jsonrpc': '2.0', 'id': body.get('id'),
+                        'error': {'code': -32603, 'message': f'Erreur interne: {e}'}}), 500
+    if response is None:
+        return '', 202  # notification acceptée
+    if 'text/event-stream' in request.headers.get('Accept', ''):
+        from mcp.mcp_protocol import sse_response
+        return Response(sse_response(response), mimetype='text/event-stream')
+    return jsonify(response)
+
+
+@app.route('/mcp/agents', methods=['GET'])
+@require_auth
+@rate_limit
+def mcp_agents_list():
+    """Catalogue des agents spécialisés + démonstration du routage (concours)."""
+    from mcp.mcp_agents import agents_list, route_agent
+    result = agents_list()
+    question = request.args.get('question', '').strip()
+    if question:
+        result['routage'] = {'question': question,
+                             'agent_gagnant': route_agent(question)}
+    return jsonify(result)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # API — Audit & Dashboard & Metrics
 # ═══════════════════════════════════════════════════════════════════════════════
 
