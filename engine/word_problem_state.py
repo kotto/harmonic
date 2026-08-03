@@ -207,8 +207,16 @@ def detect_action(sentence: str, last_person: Optional[str] = None,
             return {'op': 'set_minus', 'person': person, 'obj': obj,
                     'val': _num(m.group(1))}
 
+    # ── "N X at $Y each" → quantité d'items + prix unitaire ──
+    m = re.search(rf'({_NUM_RE})\s+([a-z]+)\s+at\s+\$\s*([\d,]+)\s+each', q)
+    if m:
+        obj = _clean_obj(m.group(2))
+        if obj:
+            return {'op': 'items_at', 'person': person, 'obj': obj,
+                    'val': _num(m.group(1)), 'prix': _num(m.group(3))}
+
     # ── Taux : "N dollars each" / "N per hour/day" ──
-    m = re.search(rf'({_NUM_RE})\s+dollars?\s+each', q)
+    m = re.search(rf'\$?\s*({_NUM_RE})\s+dollars?\s+each', q)
     if m:
         return {'op': 'rate_each', 'person': person, 'obj': None,
                 'val': _num(m.group(1))}
@@ -404,16 +412,18 @@ class WordProblemStateSolver:
 
         return None
 
-    def solve(self, question: str) -> Optional[Tuple[float, List[str]]]:
+    def solve(self, question: str,
+              use_compounds: bool = True) -> Optional[Tuple[float, List[str]]]:
         q = normalize(question)
         sentences = _split_sentences(q)
         if len(sentences) < 2:
             return None
 
         # ── Motifs composés GSM8K (structures multi-étapes fréquentes) ──
-        compound = self._solve_compound(q)
-        if compound is not None:
-            return compound
+        if use_compounds:
+            compound = self._solve_compound(q)
+            if compound is not None:
+                return compound
 
         state: Dict[Tuple, float] = {}   # (personne|None, objet) → quantité
         rates: List[Tuple[float, str]] = []  # (valeur, unité) pour "per"
@@ -478,6 +488,10 @@ class WordProblemStateSolver:
                 rates.append((val, action.get('unit', '')))
             elif op == 'rate_each':
                 rates.append((val, 'each'))
+            elif op == 'items_at':
+                state[key] = val
+                rates.append((action.get('prix', 0.0), 'each'))
+                steps.append(f"{key} ← {val} à {action.get('prix')} chacun")
 
         # Passer 2 : "for N days/hours" → produit avec le taux
         for sent in sentences:
@@ -542,6 +556,90 @@ class WordProblemStateSolver:
                 return total, steps
 
         return None
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONSENSUS MULTI-PLANS — l'équivalent ondulatoire du majority voting LLM
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _solve_direct(q: str) -> Optional[Tuple[float, List[str]]]:
+    """
+    Stratégie « directe » : formule arithmétique guidée par l'intention de
+    la question, sur les nombres dans l'ordre d'apparition. Prudente :
+    uniquement 2-3 nombres (les énoncés trop riches ont des distracteurs).
+    C'est une stratégie CONFIRMATRICE — elle ne décide jamais seule.
+    """
+    nums = [float(m.group(0).replace(',', '')) for m in
+            re.finditer(rf'{_NUM_RE}', q)]
+    if len(nums) < 2 or len(nums) > 3:
+        return None
+    a, b = nums[0], nums[1]
+
+    # "left / remain / change" → soustraction
+    if re.search(r'\b(left|remain|change|remaining|after spending)\b', q):
+        if len(nums) == 2 and a >= b:
+            return a - b, [f"direct : {a} − {b} = {a - b}"]
+
+    # "N items at $X each / paid $X for N" → produit ou division
+    if re.search(r'\b(each|per)\b', q) and \
+       re.search(r'\b(cost|pay|paid|spend|price|worth)\b', q):
+        if re.search(r'for\s+(\d+)', q):
+            return a / b, [f"direct : {a} / {b} = {a / b}"]
+        return a * b, [f"direct : {a} × {b} = {a * b}"]
+
+    # "total / altogether / sum / in all" → addition
+    if re.search(r'\b(total|altogether|sum|in all)\b', q) and len(nums) == 2:
+        return a + b, [f"direct : {a} + {b} = {a + b}"]
+
+    # "times / twice / double" → produit
+    if re.search(r'\b(times|twice|double|product)\b', q) and len(nums) == 2:
+        return a * b, [f"direct : {a} × {b} = {a * b}"]
+
+    return None
+
+
+def solve_consensus(question: str) -> Optional[Tuple[float, List[str]]]:
+    """
+    LE CONSENSUS MULTI-PLANS : trois stratégies INDÉPENDANTES résolvent le
+    problème (état séquentiel, motifs composés, formule directe). Si deux
+    stratégies (ou plus) convergent vers le MÊME résultat, il est adopté —
+    c'est l'équivalent ondulatoire du majority voting des LLM. Sinon, la
+    stratégie prioritaire tranche (état > composés > directe).
+    """
+    q = normalize(question)
+    solver = WordProblemStateSolver()
+    strategies: Dict[str, Tuple[float, List[str]]] = {}
+
+    etat = solver.solve(question, use_compounds=False)
+    if etat is not None:
+        strategies['etat'] = etat
+    composes = solver._solve_compound(q)
+    if composes is not None:
+        strategies['composes'] = composes
+    directe = _solve_direct(q)
+    if directe is not None:
+        strategies['directe'] = directe
+
+    if not strategies:
+        return None
+
+    # Vote : résultat partagé par le plus de stratégies
+    votes: Dict[float, List[str]] = {}
+    for name, (result, _steps) in strategies.items():
+        votes.setdefault(round(result, 6), []).append(name)
+    best_result, backers = max(votes.items(), key=lambda kv: len(kv[1]))
+
+    if len(backers) >= 2:
+        # 🔁 Convergence : plusieurs chemins indépendants → même onde
+        return best_result, [f"consensus {len(backers)} stratégies "
+                             f"({', '.join(backers)}) → {best_result}"]
+    # Divergence : la stratégie la plus PRÉCISE tranche (les motifs composés
+    # sont plus spécifiques que l'état générique ; la directe est seulement
+    # confirmatrice)
+    for name in ('composes', 'etat', 'directe'):
+        if name in strategies:
+            return strategies[name]
+    return None
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

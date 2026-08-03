@@ -186,11 +186,12 @@ class WaveWordProblemEngine:
                 method=method,
             )
 
-        # Fallback : solveur d'état séquentiel (GSM8K anglais — phrases
-        # narratives → actions sur un état de variables)
+        # Fallback : CONSENSUS MULTI-PLANS (l'équivalent ondulatoire du
+        # majority voting LLM) — état séquentiel + motifs composés + formule
+        # directe ; convergence de 2 stratégies → résultat adopté
         try:
-            from word_problem_state import WordProblemStateSolver
-            res = WordProblemStateSolver().solve(question)
+            from word_problem_state import solve_consensus
+            res = solve_consensus(question)
             if res is not None:
                 result, steps = res
                 return WordProblemResult(
@@ -198,7 +199,7 @@ class WaveWordProblemEngine:
                     steps=steps,
                     expression='',
                     question=question,
-                    method='état',
+                    method='consensus',
                 )
         except Exception:
             pass
