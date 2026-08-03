@@ -271,6 +271,36 @@ def detect_facet(question: str) -> str:
     return best
 
 
+def coverage_texts(texts: List[str], sujet: str,
+                   skeleton: Optional[List[Tuple]] = None) -> Dict:
+    """
+    Score de complétude pour des TEXTES PLATS (départements Enterprise :
+    StoredFact.text) — chaque facette pose sa question et la facette est
+    couverte si un texte contient le sujet ET un mot-clé de la facette.
+    """
+    skeleton = skeleton or skeleton_for(None, sujet)
+    s_words = _subject_words(sujet)
+    facets, covered = [], 0
+    for name, questions, kw in skeleton:
+        hit = False
+        for t in texts:
+            low = t.lower()
+            has_subject = (not s_words) or any(w in low for w in s_words)
+            has_kw = (not kw) or any(k in low for k in kw)
+            if has_subject and has_kw:
+                hit = True
+                break
+        if hit:
+            covered += 1
+        facets.append({'facette': name, 'couverte': hit})
+    ratio = covered / max(1, len(facets))
+    return {'couverture': round(ratio, 3),
+            'seuil': COVERAGE_THRESHOLD,
+            'complete': ratio >= COVERAGE_THRESHOLD,
+            'facettes': facets,
+            'manquantes': [f['facette'] for f in facets if not f['couverte']]}
+
+
 def coverage_queries(sujet: str, manquantes: List[str],
                      skeleton: Optional[List[Tuple]] = None) -> List[str]:
     """
