@@ -48,6 +48,7 @@ sys.path.insert(0, str(_ENGINE_DIR))
 
 from hologram_store import HologramStore, HologramMeta, STORE_DIR, HOLOGRAM_FORMAT_VERSION
 from holographic_encoder import HolographicEncoder, _circular_convolve, _STOPWORDS
+from french_corrector import repair_fact
 
 log = logging.getLogger(__name__)
 
@@ -437,7 +438,14 @@ class HologramSpecializer:
         ranked = sorted(((float(scores[i]), bool(lex[i]), pool[i])
                          for i in np.where(keep)[0]),
                         key=lambda x: (-x[1], -x[0]))
-        chosen = [f for _, _, f in ranked[:max_facts]]
+        # 🗣️ Filtre de grammaticalité sur le pool AUSSI : le store contient
+        # des faits malformés (« inconnu du temps est lie a de la présence
+        # romaine... ») — un hologramme dédié ne doit pas les recopier.
+        chosen = []
+        for f in [x[2] for x in ranked[:max_facts]]:
+            repaired = repair_fact(f[0], f[1], f[2])
+            if repaired is not None:
+                chosen.append((repaired[0], repaired[1], repaired[2], f[3]))
         if len(chosen) < SEED_MIN_FACTS:
             return {'error': f'Seed trop pauvre ({len(chosen)} faits < {SEED_MIN_FACTS}) '
                              f'pour {interests}', 'interests': interests,
@@ -598,6 +606,7 @@ class HologramSpecializer:
 
         # ── Extraction massive ─────────────────────────────────────────────
         candidates = []
+        rejected = 0
         for label, text in texts:
             # a) TripleExtractor (qualité) — rendement faible mais précis
             try:
@@ -607,13 +616,27 @@ class HologramSpecializer:
             for s, r, o, sec in triples:
                 s_norm = _normalize_subject(s)
                 if s_norm is None:
+                    rejected += 1
                     continue
-                candidates.append((s_norm, str(r), str(o), str(sec)))
+                # 🗣️ Filtre de grammaticalité (french_corrector.repair_fact) :
+                # rejeter les triplets malformés, réparer l'accord/« par »
+                repaired = repair_fact(s_norm, r, o)
+                if repaired is None:
+                    rejected += 1
+                    continue
+                candidates.append((repaired[0], repaired[1], repaired[2], str(sec)))
             # b) Décomposition de phrases (volume) — même filtre d'ancres
             try:
-                candidates.extend(_decompose_sentences(text, anchors))
+                for fact in _decompose_sentences(text, anchors):
+                    repaired = repair_fact(fact[0], fact[1], fact[2])
+                    if repaired is None:
+                        rejected += 1
+                        continue
+                    candidates.append((repaired[0], repaired[1], repaired[2], 'WEB'))
             except Exception:
                 continue
+
+        log.info(f"🗣️ Ingestion massive : {rejected} triplets malformés rejetés/réparés")
 
         if not candidates:
             return {'holo_id': holo_id, 'added': 0, 'sources': len(texts),
@@ -721,9 +744,14 @@ class HologramSpecializer:
                 s_norm = _normalize_subject(s)
                 if s_norm is None:
                     continue
-                t = f"{s_norm} {r} {o}".lower()
+                # 🗣️ Filtre de grammaticalité (même pipeline que l'ingestion
+                # massive) : rejet des malformés, réparation de l'accord
+                repaired = repair_fact(s_norm, r, o)
+                if repaired is None:
+                    continue
+                t = f"{repaired[0]} {repaired[1]} {repaired[2]}".lower()
                 if any(_kw_in_text(a, t) for a in anchors):
-                    new_facts.append((s_norm, str(r), str(o), str(sec)))
+                    new_facts.append((repaired[0], repaired[1], repaired[2], str(sec)))
 
         # Dédoublonnage avec le seed
         seen = {(f[0].lower()[:60], f[1].lower()[:60], f[2].lower()[:80]) for f in facts}

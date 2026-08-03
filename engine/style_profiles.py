@@ -341,6 +341,19 @@ def resolve_profile(holo_meta) -> str:
     for interest, profile in INTEREST_TO_PROFILE.items():
         if interest in holo_id.lower():
             return profile
+    # Domaine de l'hologramme (official_medecine → voix médicale même si les
+    # secteurs votent à égalité BIOLOGIE/CORPS_ORGANES)
+    domain = str(getattr(holo_meta, 'domain', '') or '').lower()
+    if any(k in domain for k in ('medecine', 'sante', 'santé')):
+        return 'medecine'
+    if 'histoire' in domain:
+        return 'histoire'
+    if 'philosoph' in domain:
+        return 'philosophie'
+    if 'art' in domain or 'culture' in domain:
+        return 'art'
+    if 'sport' in domain:
+        return 'sport'
     # Secteurs dominants du registre
     sectors = getattr(holo_meta, 'sectors', None) or []
     votes = {}

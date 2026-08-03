@@ -647,10 +647,18 @@ class HologramStore:
         - psi_subjects, psi_relations, psi_objects: vecteurs par fait
         - amplitudes: force de chaque fait
         """
-        # Cache mémoire
+        # Cache mémoire (invalidé par mtime : un rebuild du npz — ingestion
+        # massive, enrichissement — doit être vu par les appels suivants)
         if holo_id in self._dl_cache:
             cached = self._dl_cache[holo_id]
-            return cached['facts'], cached['psi_data']
+            try:
+                _p = self.store_dir / f'{holo_id}.npz'
+                if _p.exists() and cached.get('mtime') == _p.stat().st_mtime:
+                    return cached['facts'], cached['psi_data']
+            except Exception:
+                pass
+            # npz modifié → cache périmé, recharger
+            self._dl_cache.pop(holo_id, None)
         
         if holo_id not in self._registry:
             return [], {}
@@ -694,10 +702,15 @@ class HologramStore:
         if 'kb_hash' in data:
             psi_data['kb_hash'] = str(data['kb_hash'])
         
-        # Cache LRU (max 20)
+        # Cache LRU (max 20) — mtime pour l'invalidation sur rebuild
         if len(self._dl_cache) >= 20:
             self._dl_cache.pop(next(iter(self._dl_cache)))
-        self._dl_cache[holo_id] = {'facts': facts, 'psi_data': psi_data}
+        try:
+            _mtime = holo_path.stat().st_mtime
+        except Exception:
+            _mtime = 0.0
+        self._dl_cache[holo_id] = {'facts': facts, 'psi_data': psi_data,
+                                   'mtime': _mtime}
         
         # Incrémenter téléchargements
         meta.downloads += 1

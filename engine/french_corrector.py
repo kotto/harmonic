@@ -68,6 +68,7 @@ GENDER = {
     'corps': 'm', 'membre': 'm', 'organe': 'm', 'tissu': 'm', 'gene': 'm',
     'chromosome': 'm', 'noyau': 'm', 'niveau': 'm', 'developpement': 'm',
     'vieillissement': 'm', 'metabolisme': 'm', 'glucose': 'm',
+    'neutron': 'm', 'neutrons': 'm', 'proton': 'm', 'electrons': 'm',
 }
 
 # Noms terminant par s/x MAIS singuliers (pour l'accord nombre)
@@ -430,9 +431,9 @@ def _fix_articles(text: str) -> str:
 
     # b) Après virgule ou « que » en position sujet : « , diabete de type 1
     #    est » → « , le diabète de type 1 est » ; « que diabete est » →
-    #    « que le diabète est » (1-3 mots entre le nom et le verbe)
+    #    « que le diabète est » (0-3 mots entre le nom et le verbe)
     text = re.sub(
-        rf'((?:,\s+|\bque\s+))({noun_alt})\b(?=(?:\s+\w+){{1,3}}?\s+(?:est'
+        rf'((?:,\s+|\bque\s+))({noun_alt})\b(?=(?:\s+\w+){{0,3}}?\s+(?:est'
         rf'|sont|etait|etaient|permet|permettent|cause|causent|provoque|'
         rf'provoquent|produit|produisent|regule|regulent|contient|contiennent|'
         rf'entraine|entrainent|protege|protegent|transporte|transportent|'
@@ -482,6 +483,258 @@ def _fix_typography(text: str) -> str:
 # ═══════════════════════════════════════════════════════════════════════════════
 # PIPELINE PRINCIPAL
 # ═══════════════════════════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VALIDATION / RÉPARATION DE FAITS À L'INGESTION MASSIVE
+# « Rejeter en amont ce que le correcteur ne peut réparer en aval » — un
+# triplet malformé (« traitement des complications permettent ») ne peut
+# être que réparé, jamais rendu parfait par le pipeline de prose.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_AUX_VERBS = {
+    'est', 'sont', 'etait', 'etaient', 'sera', 'seront', 'a', 'ont', 'avait',
+    'avaient', 'peut', 'peuvent', 'doit', 'doivent', 'fait', 'font', 'va',
+    'vont', 'vient', 'viennent', 'semble', 'semblent', 'reste', 'restent',
+    'devient', 'deviennent', 'constitue', 'constituent', 'existe', 'existent',
+    'apparait', 'apparaissent', 'disparait', 'disparaissent', 'provient',
+    'proviennent', 'indique', 'indiquent', 'montre', 'montrent', 'explique',
+    'expliquent', 'decrit', 'decrivent', 'affirme', 'affirment', 'suggere',
+    'suggerent', 'confirme', 'confirment', 'demontre', 'demontrent',
+    'observe', 'observent', 'etudie', 'etudient', 'definit', 'definissent',
+    'aggrave', 'aggravent', 'ameliore', 'ameliorent', 'reduit', 'reduisent',
+    'fut', 'furent', 'serait', 'seraient', 'etait', 'etaient', 'avait',
+    'avaient', 'aura', 'auront', 'soit', 'soient',
+}
+
+# Verbes conjugués supplémentaires (3e personne) — pour détecter les
+# sujets-clauses : « decouvertes determinent... », « la commission finance... »
+_EXTRA_VERBS = {
+    'determine', 'determinent', 'prouve', 'prouvent', 'prouva', 'prouverent',
+    'finance', 'financent', 'recense', 'recensent', 'connait', 'connaissent',
+    'implique', 'impliquent', 'reunit', 'reunissent', 'presente', 'presentent',
+    'concerne', 'concernent', 'vise', 'visent', 'regarde', 'regardent',
+    'decoule', 'decoulent', 'contribue', 'contribuent', 'participe',
+    'participent', 'aide', 'aident', 'parait', 'paraissent', 'demarre',
+    'demarrent', 'debute', 'debutent', 'commence', 'commencent', 'cesse',
+    'cessent', 'continue', 'continuent', 'poursuit', 'poursuivent',
+    'aboutit', 'aboutissent', 'conduit', 'conduisent', 'mene', 'menent',
+    'occasionne', 'occasionnent', 'genere', 'generent', 'suscite',
+    'suscitent', 'souligne', 'soulignent', 'precise', 'precisent', 'ajoute',
+    'ajoutent', 'rappelle', 'rappellent', 'signale', 'signalent', 'note',
+    'notent', 'mentionne', 'mentionnent', 'cite', 'citent', 'evoque',
+    'evoquent', 'resume', 'resument', 'rassemble', 'rassemblent', 'regroupe',
+    'regroupent', 'classe', 'classent', 'appelle', 'appellent', 'etablit',
+    'etablissent', 'fixe', 'fixent', 'limite', 'limitent', 'restreint',
+    'restreignent', 'interdit', 'interdisent', 'autorise', 'autorisent',
+    'oblige', 'obligent', 'incite', 'incitent', 'pousse', 'poussent',
+    'conseille', 'conseillent', 'exige', 'exigent', 'demande', 'demandent',
+    'expose', 'exposent', 'souligne', 'soulignent', 'decrit', 'decrivent',
+    'orbite', 'orbitent', 'gravite', 'gravitent', 'tourne', 'tournent',
+    'separe', 'separent', 'relie', 'relient', 'unit', 'unissent',
+}
+
+_VERB_TOKENS = (set(VERB_PAIRS) | set(VERB_PAIRS.values())
+                | set(PARTICIPES) | set(PARTICIPES.values()) | _AUX_VERBS
+                | _EXTRA_VERBS)
+
+# Sujets commençant par une préposition : « avec 229 millions est lie a... »
+# ou « en 1955, pasteur... » — ce sont des clauses, pas des triplets.
+_SUBJ_PREP_STARTS = {
+    'avec', 'en', 'dans', 'par', 'pour', 'sur', 'sous', 'chez', 'vers',
+    'entre', 'pendant', 'apres', 'avant', 'depuis', 'sans', 'selon', 'outre',
+    'contre', 'malgre', 'durant', 'grace', 'suite', 'au', 'aux', 'de', 'des',
+    'du', 'a', 'd', 'l',
+}
+
+# Débuts de sujet = coupe en milieu de phrase (« trois autres qui... »,
+# « certains chercheurs affirment... »)
+_SUBJ_FRAGMENT_STARTS = {
+    'qui', 'que', 'dont', 'ou', 'ceux', 'celles', 'certain', 'certains',
+    'certaines', 'trois', 'deux', 'quatre', 'plus', 'tous', 'toutes', 'tout',
+    'toute', 'il', 'elle', 'ils', 'elles', 'on', 'nombreux', 'plusieurs',
+    'beaucoup', 'la plupart', 'enfin', 'ainsi', 'mais', 'car', 'donc', 'or',
+    'et', 'puis', 'ensuite', 'cela', 'ceci', 'ca', 'ça',
+}
+
+# Adverbes de liaison en tête de sujet : « cependant, on ne trouve... » —
+# le sujet réel commence après la virgule
+_LIAISON_ADVERBS = {
+    'cependant', 'finalement', 'ensuite', 'notamment', 'ainsi', 'donc',
+    'enfin', 'd ailleurs', 'par ailleurs', 'en effet', 'en revanche',
+    'aujourd hui', 'autrefois', 'historiquement', 'pourtant', 'toutefois',
+    'néanmoins', 'neanmoins', 'precisement', 'precisement', 'surtout',
+    'd abord', 'premierement', 'deuxiemement', 'en outre', 'de plus',
+    'apres cela', 'des lors', 'desormais', 'alors', 'ensuite', 'voici',
+    'voila', 'effectivement', 'exactement', 'environ', 'en general',
+    'en particulier', 'en moyenne', 'en realite', 'en pratique', 'de meme',
+}
+
+# Fin d'objet = phrase coupée en plein vol (« ...concerne majoritairement
+# le » / « ...provient de » / « ...transmis pa »)
+_DANGLING_ENDS = {
+    'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'd', 'l', 'et', 'ou',
+    'que', 'qui', 'dont', 'en', 'dans', 'par', 'pour', 'avec', 'sur', 'chez',
+    'vers', 'au', 'aux', 'ce', 'cette', 'ces', 'se', 'son', 'sa', 'ses',
+    'leur', 'leurs', 'mais', 'donc', 'car', 'ni', 'y', 'a', 'ne', 'pas',
+}
+
+# Mots courts (≤ 2 lettres) légitimes en français — un token de 2 lettres
+# hors liste est une typo (« pa » pour « par », « d » isolé...)
+_SHORT_WORD_WHITELIST = {
+    'le', 'la', 'de', 'du', 'un', 'une', 'en', 'et', 'ou', 'au', 'aux', 'se',
+    'ce', 'ne', 'me', 'te', 'ma', 'ta', 'mon', 'ton', 'mes', 'tes', 'nos',
+    'vos', 'les', 'des', 'ces', 'si', 'y', 'il', 'on', 'a', 'à', 'os', 'adn',
+    'arn', 'd', 'l', 'je', 'tu', 'moi', 'toi', 'sa', 'son', 'ça', 'ca',
+}
+
+# Verbes conjonctifs : « et/mais/donc + VERBE » = début d'une 2e clause dans
+# l'objet (« ...la plus importante ET CONCERNE majoritairement... »)
+_CONJ_VERBS = _VERB_TOKENS | {'concerne', 'concernent', 'touche', 'touchent',
+                              'vise', 'visent', 'regarde', 'regardent'}
+
+# Désaccentuation pour les comparaisons de lexique (les clés sont sans
+# accents, le texte extrait du web peut être accentué : « réunit » → reunit)
+_UNACCENT = str.maketrans({
+    'à': 'a', 'â': 'a', 'ä': 'a', 'á': 'a', 'ã': 'a',
+    'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
+    'í': 'i', 'î': 'i', 'ï': 'i',
+    'ó': 'o', 'ô': 'o', 'ö': 'o', 'õ': 'o',
+    'ú': 'u', 'ù': 'u', 'û': 'u', 'ü': 'u',
+    'ç': 'c',
+    'À': 'a', 'Â': 'a', 'Ä': 'a', 'Á': 'a', 'Ã': 'a',
+    'É': 'e', 'È': 'e', 'Ê': 'e', 'Ë': 'e',
+    'Í': 'i', 'Î': 'i', 'Ï': 'i',
+    'Ó': 'o', 'Ô': 'o', 'Ö': 'o', 'Õ': 'o',
+    'Ú': 'u', 'Ù': 'u', 'Û': 'u', 'Ü': 'u',
+    'Ç': 'c',
+})
+
+
+def _u(w: str) -> str:
+    """Token désaccentué + ponctuation retirée (comparaison lexique)."""
+    return w.lower().translate(_UNACCENT).strip('.,;:!?»«"\'').strip()
+
+
+def repair_fact(s, r, o):
+    """
+    Valide et répare un triplet (s, r, o) extrait — None = rejeter.
+
+    REJETS (malformations irréparables) :
+      - sujet = clause entière (contient un verbe conjugué), commence par
+        une préposition, contient un chiffre, > 8 mots
+      - objet tronqué (se termine par déterminant/préposition) ou < 8 chars
+      - token de 2 lettres inconnu (typo « pa »)
+
+    RÉPARATIONS (mots fonctionnels uniquement) :
+      - accord sujet-verbe : « traitement ... permettent » → « permet »
+      - « par » manquant : « est transmis les moustiques » → « est transmis
+        par les moustiques »
+      - objet multi-clause : coupure à « et/mais/donc + verbe » (le noyau
+        grammatical reste vrai — la clause tronquée perd de l'info, n'altère
+        pas la vérité)
+    """
+    s = str(s).strip()
+    r = str(r).strip()
+    o = str(o).strip()
+    if not s or not r or not o:
+        return None
+    s_words = s.split()
+    o_words = o.split()
+    if len(s_words) > 8 or len(o) < 8:
+        return None
+
+    # ── Rejets (tokens normalisés par _u : désaccentués, ponctuation ôtée) ─
+    if _u(s_words[0]) in _SUBJ_PREP_STARTS:
+        return None
+    if _u(s_words[0]) in _SUBJ_FRAGMENT_STARTS:
+        return None
+    # Adverbes de liaison en tête (« cependant, on ne... ») et headers
+    # markdown (« ==== augmentation du »)
+    if _u(s_words[0]) in _LIAISON_ADVERBS or '=' in s[:4]:
+        return None
+    # Sujet tronqué : se termine par un déterminant/préposition
+    # (« transmission du », « communes du pays pour »)
+    if _u(s_words[-1]) in _DANGLING_ENDS:
+        return None
+    # Sujet = clause : virgule interne, conjonctions, pronoms relatifs
+    if (',' in s or ' qui ' in f' {s} ' or ' dont ' in f' {s} '
+            or ' ou ' in f' {s} ' or ' que ' in f' {s} '):
+        return None
+    # Chiffres en TÊTE du sujet (bullet « 40. **... », « avec 229 millions »)
+    # — « diabete de type 1 » (chiffre au 4e mot) reste légitime
+    if re.search(r'\d', ' '.join(s_words[:2])):
+        return None
+    for i, w in enumerate(s_words):
+        # Vérifier aussi les parties élidées (« c'etait » → « etait »)
+        parts = _u(w).split("'")
+        if any(p in _VERB_TOKENS for p in parts if p):
+            # « a » préposition devant un nom connu : « etoile a neutrons »
+            if _u(w) == 'a' and i + 1 < len(s_words) \
+                    and _u(s_words[i + 1]).rstrip('sx') in GENDER:
+                continue
+            return None
+    last_o = _u(o_words[-1])
+    if last_o in _DANGLING_ENDS:
+        return None
+    # Objet multi-clause → couper D'ABORD au verbe conjonctif (« parasitose
+    # la plus importante ET CONCERNE majoritairement... » → « parasitose la
+    # plus importante »), PUIS vérifier le résidu
+    conj = re.compile(
+        r'\s+(?:et|mais|donc|puis|ce qui|qui|dont)\s+('
+        + '|'.join(sorted(_CONJ_VERBS, key=len, reverse=True)) + r')\b')
+    m = conj.search(' ' + o)
+    if m:
+        o = o[:m.start()].strip()
+        o_words = o.split()
+        if len(o) < 8:
+            return None
+    # Objet = clause : verbe conjugué après les 2 premiers mots
+    for w in o_words[2:]:
+        parts = _u(w).split("'")
+        if any(p in _VERB_TOKENS for p in parts if p):
+            return None
+    for w in s_words + o_words:
+        wl = _u(w)
+        if len(wl) <= 2 and wl and not wl.isdigit() \
+                and wl not in _SHORT_WORD_WHITELIST and wl not in GENDER:
+            return None
+
+    # ── Réparation 1 : accord sujet-verbe (relation = 3e personne) ────────
+    rl = _u(r)
+    head = None
+    for w in s_words:
+        wc = _u(w)
+        if wc and wc not in _FUNCTION_WORDS:
+            head = wc
+            break
+    if head:
+        plural = head.endswith(('s', 'x')) and head not in _SINGULAR_S
+        if rl in VERB_PAIRS and plural:
+            r = VERB_PAIRS[rl]
+        else:
+            inv = {v: k for k, v in VERB_PAIRS.items()}
+            if rl in inv and not plural:
+                r = inv[rl]
+
+    # ── Réparation 2 : « par » manquant après participe ───────────────────
+    r_words = r.split()
+    if r_words and r_words[-1].lower().rstrip('.,') in set(PARTICIPES.values()) \
+            and o_words[0].lower().strip('.,') in \
+            {'le', 'la', 'les', 'un', 'une', 'des', 'aux'}:
+        r = r + ' par'
+
+    # ── Réparation 3 : objet multi-clause → couper au verbe conjonctif ────
+    conj = re.compile(
+        r'\s+(?:et|mais|donc|puis|ce qui|qui|dont)\s+('
+        + '|'.join(sorted(_CONJ_VERBS, key=len, reverse=True)) + r')\b')
+    m = conj.search(' ' + o)
+    if m:
+        o = o[:m.start()].strip()
+        if len(o) < 8:
+            return None
+
+    return (s, r, o)
+
 
 def polish_prose(text: str) -> str:
     """
