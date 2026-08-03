@@ -709,6 +709,58 @@ def completions_run():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# 🎬 KIT DE VENTE — démo commerciale (dataset réaliste, 1 clic)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/enterprise/demo/load', methods=['POST'])
+@require_auth
+@rate_limit
+@audit_log
+def demo_load():
+    """
+    Charge le dataset de démonstration réaliste (cabinet comptable : clients,
+    factures, paie, bilan, procédures) dans le tenant authentifié — pour le
+    script de vente et les essais. ?reset=1 rejoue la démo depuis zéro.
+    """
+    tenant = g.tenant
+    if not tenant and g.user:
+        tenant = engine.get_tenant(g.user.tenant_id)
+    if not tenant:
+        return jsonify({'error': 'Authentification requise'}), 401
+    reset = request.args.get('reset', '') in ('1', 'true', 'oui')
+    try:
+        from demo_kit.make_demo_dataset import build_demo_dataset, DEMO_LAYOUT, DEMO_QUESTIONS
+        dataset = build_demo_dataset()
+
+        if reset:
+            for did in [d.id for d in engine.departments.values()
+                        if d.tenant_id == tenant.id and d.name.startswith('demo_')]:
+                del engine.departments[did]
+                engine.facts.pop(did, None)
+            engine._save_state()
+
+        departments = []
+        for dept_name, files in DEMO_LAYOUT.items():
+            dept = next((d for d in engine.departments.values()
+                         if d.tenant_id == tenant.id and d.name == dept_name), None)
+            created = dept is None
+            if dept is None:
+                dept = engine.create_department(tenant.id, dept_name)
+            added = 0
+            if dept.fact_count == 0:  # pas de ré-ingestion à chaque clic
+                for fname in files:
+                    added += engine.ingest_text(dept.id, dataset[fname],
+                                                source=fname)
+            departments.append({'name': dept_name, 'id': dept.id,
+                                'created': created, 'facts_ajoutes': added,
+                                'facts_total': dept.fact_count})
+        return jsonify({'tenant': tenant.name, 'departments': departments,
+                        'questions_demo': DEMO_QUESTIONS})
+    except Exception as e:
+        return jsonify({'error': f'Démo: {e}'}), 500
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # API — Audit & Dashboard & Metrics
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1454,6 +1506,16 @@ pre{background:var(--bg);padding:12px;border-radius:6px;font-size:.7rem;color:va
       </div>
       <pre id="comp-status" style="margin-top:10px;white-space:pre-wrap;max-height:200px"></pre>
     </div>
+
+    <div class="card" style="border-color:rgba(0,210,160,.4)">
+      <h3>🎬 Démo commerciale (cabinet comptable)</h3>
+      <p class="sub" style="font-size:.7rem">Charge un dataset réaliste — 12 clients, 12 factures, paie, bilan, procédures — dans ce tenant, puis déroulez le script de vente : les questions ci-dessous sont cliquables.</p>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-g" onclick="demoLoad()">🎬 Charger la démo (reset)</button>
+      </div>
+      <div id="demo-result" style="margin-top:10px;font-size:.75rem"></div>
+      <div id="demo-questions" style="margin-top:10px"></div>
+    </div>
   </div>
 
   <!-- Audit -->
@@ -1658,6 +1720,46 @@ async function completionsRun() {
   const r = await api('/completions/run', {method:'POST'});
   alert('Complétions lancées : ' + (r.lances || 0) + (r.error ? ' (' + r.error + ')' : ''));
   setTimeout(completionsStatus, 2000);
+}
+
+async function demoLoad() {
+  const r = await api('/demo/load?reset=1', {method:'POST'});
+  const box = document.getElementById('demo-result');
+  if (r.error) { box.innerHTML = `<span style="color:var(--red)">${r.error}</span>`; return; }
+  box.innerHTML = `✅ Démo chargée — ${r.departments.map(d=>`<b>${d.name}</b> (${d.facts_total} faits)`).join(' · ')}`;
+  document.getElementById('demo-questions').innerHTML =
+    '<div style="font-size:.7rem;color:var(--muted);margin-bottom:6px">Script de vente (cliquez pour exécuter) :</div>' +
+    (r.questions_demo||[]).map((q,i)=>`<span class="chip" onclick="demoAsk(${i})">${q}</span>`).join('');
+  window._demoQs = r.questions_demo||[];
+}
+
+async function demoAsk(i) {
+  const q = (window._demoQs||[])[i];
+  if (!q) return;
+  const pick = (selId, prefix) => {
+    const sel = document.getElementById(selId);
+    const opt = [...sel.options].find(o => o.text.startsWith(prefix));
+    if (opt) sel.value = opt.value;
+  };
+  if (/email|rapport/.test(q)) {
+    // ✍️ Composition de document → onglet Données & Docs
+    document.getElementById('comp-dept').value = '';
+    pick('comp-dept', 'demo_comptabilite');
+    document.getElementById('comp-brief').value = q;
+    document.getElementById('comp-format').value = /email/.test(q) ? 'email' : 'rapport';
+    composeDoc();
+  } else if (/procédure|échéances/.test(q)) {
+    // 💬 Q&A connaissance → onglet Requêtes (département procédures)
+    pick('query-dept', 'demo_procedures');
+    document.getElementById('query-text').value = q;
+    switchTab('query');
+    askDepartment();
+  } else {
+    // 📊 Données → onglet Données & Docs (département comptabilité)
+    pick('data-dept', 'demo_comptabilite');
+    document.getElementById('data-question').value = q;
+    dataPreview();
+  }
 }
 
 async function createTenant() {

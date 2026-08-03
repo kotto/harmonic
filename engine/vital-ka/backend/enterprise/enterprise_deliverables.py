@@ -347,9 +347,31 @@ def query_data(engine, department_id: str, question: str,
     facts = _recall_all(engine, department_id, question, max_facts=max_rows)
     intent = detect_intent(question)
     if intent:
-        # L'agrégat porte sur la TABLE (lignes |) quand elle est majoritaire :
-        # les faits texte libre (seed, définitions…) ne sont pas des
-        # enregistrements comptables (« combien de clients ? » ≠ tout le dept).
+        # 1. Ciblage par le mot le plus DISCRIMINANT de la question (celui qui
+        # matche le moins de lignes, avec au moins un match) : « combien de
+        # clients actifs ? » → lignes « actif » ; « factures en retard » →
+        # lignes « retard ». Sans filtre, l'agrégat porterait sur toute la
+        # table (clients + factures + paie mélangées dans un département).
+        q_words = _question_words(question)
+        if q_words:
+            # Compte des matchs par mot : (lignes tabulaires, total) — un mot
+            # qui ne matche que du texte libre (bilan, notes) ne discrimine
+            # pas une table.
+            counts = {}
+            for w in q_words:
+                tot = sum(1 for f in facts if w in _wordset(f.text))
+                tab = sum(1 for f in facts
+                          if w in _wordset(f.text) and _is_tabular(f))
+                counts[w] = (tab, tot)
+            discriminants = [w for w, (tab, tot) in counts.items()
+                             if tab > 0 and tot < len(facts)]
+            if discriminants:
+                best = min(discriminants,
+                           key=lambda w: (counts[w][0], counts[w][1]))
+                facts = [f for f in facts if best in _wordset(f.text)]
+        # 2. L'agrégat porte sur la TABLE (lignes |) quand elle est
+        # majoritaire : les faits texte libre (seed, définitions…) ne sont
+        # pas des enregistrements comptables.
         tabular = [f for f in facts if _is_tabular(f)]
         if tabular and len(tabular) >= len(facts) / 2:
             facts = tabular
