@@ -2087,7 +2087,9 @@ async function holoSpecialize() {
     var extra = data.massive_added ? ' (' + data.massive_added + ' via ingestion massive)' : (data.enriched ? ' (+' + data.enriched + ' web)' : '');
     status.style.background = 'rgba(120,255,180,.1)';
     status.style.color = 'var(--life)';
-    status.innerHTML = '✅ <b>' + (data.holo_id||'').replace('personal_','') + '</b> — ' + data.facts_count + ' faits' + extra + ' · qualité ' + q + '% · ' + secs + 's<br><span style="font-size:10px;opacity:.8">Posez-moi une question sur ce sujet !</span>';
+    var cov = data.coverage ? Math.round(data.coverage*100) + '%' : '—';
+    var miss = (data.coverage_missing||[]).length ? ' · à enrichir : ' + data.coverage_missing.slice(0,4).join(', ') : '';
+    status.innerHTML = '✅ <b>' + (data.holo_id||'').replace('personal_','') + '</b> — ' + data.facts_count + ' faits' + extra + ' · qualité ' + q + '% · couverture ' + cov + miss + ' · ' + secs + 's<br><span style="font-size:10px;opacity:.8">Posez-moi une question sur ce sujet !</span>';
 
     setTimeout(function() { holoRender(); }, 800);
     setTimeout(function() { status.style.display = 'none'; }, 8000);

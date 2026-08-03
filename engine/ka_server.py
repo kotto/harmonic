@@ -3720,10 +3720,19 @@ def store_specialize():
         return jsonify(result), 422
     
     # 🚀 INGESTION MASSIVE du sujet demandé (synchrone, 20-60 s)
+    # 🎯 BOUCLE DE COMPLÉTION : après chaque passe, la couverture par
+    # facettes est recalculée (facet_coverage) ; les facettes manquantes
+    # pilotent les variantes de la passe suivante — jusqu'au seuil ou
+    # 2 itérations max.
     if massive and 'holo_id' in result:
         try:
-            mass = spec.massive_ingest(result['holo_id'], interests, language)
-            if 'error' not in mass:
+            variant_queries = None
+            for _it in range(2):
+                mass = spec.massive_ingest(result['holo_id'], interests, language,
+                                           variant_queries=variant_queries)
+                if 'error' in mass:
+                    result['massive'] = mass['error']
+                    break
                 result['massive'] = 'done'
                 result['massive_added'] = mass.get('added', 0)
                 result['massive_sources'] = mass.get('sources', 0)
@@ -3731,8 +3740,28 @@ def store_specialize():
                 result['facts_count'] = mass.get('facts_count', result['facts_count'])
                 result['quality_score'] = mass.get('quality_score', result['quality_score'])
                 result['precision_at_1'] = mass.get('precision_at_1', result['precision_at_1'])
-            else:
-                result['massive'] = mass['error']
+                # Couverture après cette passe
+                try:
+                    from facet_coverage import coverage_score, coverage_queries
+                    cov = coverage_score(_hologram_store, result['holo_id'], interests[0])
+                    result['coverage'] = cov.get('couverture', 0.0)
+                    result['coverage_missing'] = cov.get('manquantes', [])
+                    # Écrire au registre (le massive a rebuildé le npz)
+                    _m = _hologram_store._registry.get(result['holo_id'])
+                    if _m is not None:
+                        _m.coverage = cov.get('couverture', 0.0)
+                        _m.coverage_facets = cov.get('manquantes', [])
+                        _hologram_store._save_registry()
+                    if cov.get('complete') or _it == 1:
+                        break
+                    # Facettes manquantes → variantes ciblées
+                    variant_queries = coverage_queries(interests[0],
+                                                       cov.get('manquantes', []))
+                    log.info(f"🎯 Complétion {_it + 1}: {len(variant_queries)} "
+                             f"requêtes ciblées sur {cov.get('manquantes', [])}")
+                except Exception as e:
+                    log.error(f"  ⚠ Coverage error: {e}")
+                    break
         except Exception as e:
             log.error(f"  ⚠ Ingestion massive échouée: {e}")
             result['massive'] = f'échouée: {e}'

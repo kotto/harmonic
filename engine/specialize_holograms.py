@@ -482,6 +482,21 @@ class HologramSpecializer:
             meta.quality_score = quality_score
             self.store._save_registry()
 
+        # 🎯 Complétude par facettes (facet_coverage) : le sujet n'est pas
+        # couvert par la seule précision — chaque facette canonique
+        # (symptomes, traitement, diagnostic...) pose sa question au rappel
+        # M4. Le score est écrit au registre et guide la complétion.
+        coverage = {}
+        try:
+            from facet_coverage import coverage_score, coverage_queries
+            coverage = coverage_score(self.store, holo_id, interests[0])
+            meta = self.store._registry[holo_id]
+            meta.coverage = coverage.get('couverture', 0.0)
+            meta.coverage_facets = coverage.get('manquantes', [])
+            self.store._save_registry()
+        except Exception:
+            pass
+
         # 🌐 Seed mince (< THIN_SEED) → enrichissement Wikipedia automatique :
         # les sujets étroits n'ont pas assez de faits dans le corpus ; on les
         # complète depuis l'extrait Wikipedia filtré par les mêmes ancres.
@@ -506,6 +521,8 @@ class HologramSpecializer:
             'purity': round(build_info['purity'], 3),
             'precision_at_1': round(precision, 3),
             'quality_score': quality_score,
+            'coverage': coverage.get('couverture', 0.0),
+            'coverage_missing': coverage.get('manquantes', []),
             'enriched': enriched,
             'build_ms': int((time.time() - t0) * 1000),
             'source': 'hologram-specialize',
@@ -516,7 +533,8 @@ class HologramSpecializer:
     def massive_ingest(self, holo_id: str, interests: List[str],
                        language: str = 'fr', max_new: int = 1200,
                        wiki_pages: int = 3, web_results: int = 5,
-                       variants: bool = True) -> Dict:
+                       variants: bool = True,
+                       variant_queries: Optional[List[str]] = None) -> Dict:
         """
         Ingestion massive du sujet demandé : Wikipedia (page principale +
         pages multiples + variantes de requête) et DuckDuckGo web →
@@ -585,9 +603,13 @@ class HologramSpecializer:
                     texts.append((f'wiki:{title}', full))
 
             # 3. Variantes de requête → DuckDuckGo web (snippets)
+            #    🎯 Boucle de complétion : variant_queries = les questions
+            #    des FACETTES MANQUANTES (« Comment traite-t-on X ? » →
+            #    recherche ciblée) — sinon les 4 variantes par défaut.
             if variants:
-                for v in [f'{interest} definition', f'{interest} causes',
-                          f'{interest} traitement', f'{interest} symptomes']:
+                default_variants = [f'{interest} definition', f'{interest} causes',
+                                    f'{interest} traitement', f'{interest} symptomes']
+                for v in (variant_queries or default_variants):
                     try:
                         results = retriever.search_duckduckgo_web(v, max_results=web_results)
                     except Exception:

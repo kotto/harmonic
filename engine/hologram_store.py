@@ -225,6 +225,8 @@ class HologramMeta:
     version: int = HOLOGRAM_FORMAT_VERSION  # version format
     kb_hash: str = ""          # hash du KB source pour détection de changement
     style: str = "auto"        # voix ondulatoire (style_profiles) — 'auto' = résolution par domaine
+    coverage: float = 0.0      # complétude par facettes (0-1) — facet_coverage
+    coverage_facets: List[str] = field(default_factory=list)  # facettes manquantes
     _size_kb: float = 0.0      # taille fichier (non sérialisé)
     
     def to_dict(self) -> dict:
