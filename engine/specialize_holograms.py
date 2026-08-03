@@ -136,6 +136,98 @@ def _kw_in_text(kw: str, text: str) -> bool:
     return re.search(rf'\b{re.escape(kw)}\w*', text) is not None
 
 
+# Déterminants de tête à retirer d'un sujet extrait (« Le diabète sucré »)
+_LEADING_DETS = {'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'l', 'd',
+                 'the', 'a', 'an', 'this', 'these', 'those', 'ce', 'ces', 'cette'}
+# Débuts de sujet qui signalent une coupe au milieu d'une phrase
+_SUBJECT_FRAGMENT_STARTS = {'qui', 'que', 'dont', 'ou', 'ceux', 'celles',
+                            'certain', 'certains', 'certaines', 'trois', 'deux',
+                            'quatre', 'plus', 'tous', 'toutes', 'tout', 'toute',
+                            'il', 'elle', 'ils', 'elles', 'on', 'nombreux',
+                            'plusieurs', 'beaucoup', 'la plupart', 'selon',
+                            'apres', 'avant', 'pendant', 'enfin', 'ainsi',
+                            'mais', 'car', 'donc', 'or', 'et'}
+
+
+def _normalize_subject(s: str) -> Optional[str]:
+    """
+    Nettoie un sujet extrait : retire les déterminants de tête (« Le diabète
+    sucré est... » → « diabète sucré ») et rejette les fragments (sujet vide,
+    coupe en milieu de phrase). Retourne le sujet propre ou None.
+    """
+    sc = _clean_word(s)
+    if not sc:
+        return None
+    toks = sc.split()
+    if toks[0] in _LEADING_DETS:
+        toks = toks[1:]
+    if not toks or toks[0] in _SUBJECT_FRAGMENT_STARTS:
+        return None
+    # Trop long → probablement une phrase entière, pas un sujet
+    if len(toks) > 8:
+        return None
+    return ' '.join(toks)
+
+
+# Verbes principaux pour la décomposition de phrases (ingestion massive)
+_VERB_RE = re.compile(r'\b(' + '|'.join([
+    'est', 'sont', 'etait', 'etaient', 'cause', 'causent', 'provoque', 'provoquent',
+    'produit', 'produisent', 'regule', 'regulent', 'controle', 'controlent',
+    'permet', 'permettent', 'contient', 'contiennent', 'augmente', 'augmentent',
+    'diminue', 'diminuent', 'entraine', 'entrainent', 'lie', 'liee', 'lies',
+    'liees', 'associe', 'associee', 'caracterise', 'caracterisee', 'traite',
+    'traitent', 'secrete', 'secretent', 'synthetise', 'transporte', 'transportent',
+    'protege', 'protegent', 'neutralise', 'neutralisent', 'favorise', 'favorisent',
+    'previent', 'prevenent', 'reduit', 'reduisent', 'libere', 'liberent',
+    'stimule', 'stimulent', 'bloque', 'bloquent', 'agit', 'agissent',
+    'intervient', 'interviennent', 'depend', 'dependent', 'resulte', 'resultent',
+    'devient', 'deviennent', 'survient', 'surviennent', 'touche', 'touchent',
+    'atteint', 'atteignent', 'affecte', 'affectent', 'evite', 'evitent',
+    'recommande', 'recommandent', 'utilise', 'utilisent', 'administre',
+    'administrent', 'prescrit', 'prescrivent', 'mesure', 'mesurent', 'detecte',
+    'detectent', 'diagnostique', 'diagnostiquent', 'classifie', 'classifient',
+]) + r')\b', re.IGNORECASE)
+
+
+def _decompose_sentences(text: str, anchors: set) -> List[Tuple]:
+    """
+    Fallback haute cadence pour l'ingestion massive : découpe les phrases
+    contenant une ancre au premier verbe principal.
+    (« L'insuline est une hormone sécrétée par le pancréas » → insuline | est |
+    une hormone sécrétée par le pancréas).
+    Complète le TripleExtractor dont le rendement est faible (~17 triples
+    pour un article de 20k chars).
+    """
+    facts = []
+    for sent in re.split(r'(?<=[.!?])\s+', text):
+        s = ' '.join(sent.split())
+        if not (40 <= len(s) <= 320):
+            continue
+        low = s.lower()
+        if not any(_kw_in_text(a, low) for a in anchors):
+            continue
+        m = _VERB_RE.search(low)
+        if m:
+            subj = s[:m.start()].strip(' ,:;-')
+            rel = s[m.start():m.end()].strip()
+            obj = s[m.end():].strip(' ,:;')
+        else:
+            words = s.split()
+            if len(words) < 4:
+                continue
+            subj = ' '.join(words[:3])
+            rel = 'est lie a'
+            obj = ' '.join(words[3:])
+        subj = _normalize_subject(subj)
+        if subj is None:
+            continue
+        obj = ' '.join(obj.split())[:130]
+        if len(obj) < 8:
+            continue
+        facts.append((subj, rel, obj, 'WEB'))
+    return facts
+
+
 class HologramSpecializer:
     """Construit un hologramme dédié à partir des centres d'intérêt."""
 
@@ -312,7 +404,7 @@ class HologramSpecializer:
 
     def build(self, interests: List[str], language: str = 'fr',
               max_facts: int = SEED_MAX_FACTS,
-              benchmark: bool = True) -> Dict:
+              benchmark: bool = True, massive: bool = False) -> Dict:
         t0 = time.time()
         interests = [_clean_word(i) for i in interests if _clean_word(i)]
         interests = list(dict.fromkeys(interests))[:4]   # dédup, max 4
@@ -377,8 +469,10 @@ class HologramSpecializer:
         # les sujets étroits n'ont pas assez de faits dans le corpus ; on les
         # complète depuis l'extrait Wikipedia filtré par les mêmes ancres.
         # Si le réseau échoue, le seed reste utilisable tel quel.
+        # (En mode massive, l'ingestion complète suit juste après — inutile
+        # de faire le mini-enrichissement deux fois.)
         enriched = 0
-        if len(chosen) < THIN_SEED:
+        if len(chosen) < THIN_SEED and not massive:
             try:
                 enrich_result = self.enrich_from_wiki(holo_id, interests,
                                                       language, max_new=120)
@@ -399,6 +493,171 @@ class HologramSpecializer:
             'build_ms': int((time.time() - t0) * 1000),
             'source': 'hologram-specialize',
         }
+
+    # ── 7. INGESTION MASSIVE (multi-sources web) ──────────────────────────
+
+    def massive_ingest(self, holo_id: str, interests: List[str],
+                       language: str = 'fr', max_new: int = 1200,
+                       wiki_pages: int = 3, web_results: int = 5,
+                       variants: bool = True) -> Dict:
+        """
+        Ingestion massive du sujet demandé : Wikipedia (page principale +
+        pages multiples + variantes de requête) et DuckDuckGo web →
+        TripleExtractor massif → filtres M4 (mêmes ancres + résonance +
+        rejet des fragments) → rebuild v2 + re-benchmark.
+
+        La règle d'or tient : un fait extrait qui ne résonne pas aux ancres
+        du sujet n'entre pas dans l'hologramme.
+        """
+        t0 = time.time()
+        try:
+            from web_retriever import WebRetriever
+            from triple_extractor import TripleExtractor
+        except Exception as e:
+            return {'error': f'Dépendances: {e}'}
+
+        existing, _ = self.store.download(holo_id)
+        anchors = set()
+        for interest in interests:
+            anchors.update(ANCHOR_MAP.get(interest, [interest]))
+        anchors = {_clean_word(a) for a in anchors if len(_clean_word(a)) >= 3}
+
+        # Pré-entraîner l'extracteur sur le seed (relations + patterns)
+        extractor = TripleExtractor()
+        try:
+            extractor.pre_train(existing, max_patterns=40)
+        except Exception:
+            pass
+        retriever = WebRetriever()
+
+        # ── Collecte multi-sources (articles COMPLETS) ────────────────────
+        texts = []          # (label, texte)
+        seen_docs = set()   # dédup par titre de document
+        for interest in interests:
+            # 1. Page Wikipedia principale — article complet (toutes sections)
+            try:
+                doc = retriever.search_wikipedia(interest, lang=language)
+            except Exception:
+                doc = None
+            if doc:
+                title = str(doc.get('title', interest))
+                if title not in seen_docs:
+                    full = retriever.get_wikipedia_full(title, lang=language)
+                    if full:
+                        seen_docs.add(title)
+                        texts.append((f'wiki:{title}', full))
+                    else:
+                        summary = doc.get('summary') or doc.get('snippet') or ''
+                        if len(summary) >= 150:
+                            seen_docs.add(title)
+                            texts.append((f'wiki:{title}', summary))
+
+            # 2. Pages Wikipedia multiples (top-N résultats, articles complets)
+            try:
+                pages = retriever.search_wikipedia_multiple(interest, lang=language,
+                                                            limit=wiki_pages + 1)
+            except Exception:
+                pages = []
+            for p in pages[:wiki_pages]:
+                title = str(p.get('title', ''))
+                if not title or title in seen_docs:
+                    continue
+                full = retriever.get_wikipedia_full(title, lang=language)
+                if full and len(full) >= 150:
+                    seen_docs.add(title)
+                    texts.append((f'wiki:{title}', full))
+
+            # 3. Variantes de requête → DuckDuckGo web (snippets)
+            if variants:
+                for v in [f'{interest} definition', f'{interest} causes',
+                          f'{interest} traitement', f'{interest} symptomes']:
+                    try:
+                        results = retriever.search_duckduckgo_web(v, max_results=web_results)
+                    except Exception:
+                        continue
+                    for r in results:
+                        snippet = str(r.get('snippet', ''))[:400]
+                        title = str(r.get('title', ''))
+                        key = title or snippet[:40]
+                        if len(snippet) >= 80 and key not in seen_docs:
+                            seen_docs.add(key)
+                            texts.append((f'ddg:{v}', snippet))
+
+        if not texts:
+            return {'holo_id': holo_id, 'added': 0, 'sources': 0,
+                    'msg': 'Aucun contenu web récupéré', 'ms': int((time.time() - t0) * 1000)}
+
+        # ── Extraction massive ─────────────────────────────────────────────
+        candidates = []
+        for label, text in texts:
+            # a) TripleExtractor (qualité) — rendement faible mais précis
+            try:
+                triples = extractor.extract(text, max_triples=200)
+            except Exception:
+                triples = []
+            for s, r, o, sec in triples:
+                s_norm = _normalize_subject(s)
+                if s_norm is None:
+                    continue
+                candidates.append((s_norm, str(r), str(o), str(sec)))
+            # b) Décomposition de phrases (volume) — même filtre d'ancres
+            try:
+                candidates.extend(_decompose_sentences(text, anchors))
+            except Exception:
+                continue
+
+        if not candidates:
+            return {'holo_id': holo_id, 'added': 0, 'sources': len(texts),
+                    'candidates': 0, 'ms': int((time.time() - t0) * 1000)}
+
+        # ── Filtre M4 : ancre lexicale OU résonance token ≥ 0.45 ──────────
+        scores = self._token_scores(candidates, sorted(anchors))
+        lex = np.array([any(_kw_in_text(a, f"{s} {r} {o}")
+                            for a in anchors) for s, r, o, _ in candidates])
+        keep = lex | (scores >= 0.45)
+        ranked = sorted(((float(scores[i]), bool(lex[i]), candidates[i])
+                         for i in np.where(keep)[0]),
+                        key=lambda x: (-x[1], -x[0]))
+
+        # ── Dédup vs seed + interne ────────────────────────────────────────
+        seen = {(f[0].lower()[:60], f[1].lower()[:60], f[2].lower()[:80])
+                for f in existing}
+        added = []
+        for _, _, fact in ranked:
+            key = (fact[0].lower()[:60], fact[1].lower()[:60], fact[2].lower()[:80])
+            if key not in seen and len(added) < max_new:
+                seen.add(key)
+                added.append(fact)
+
+        if not added:
+            return {'holo_id': holo_id, 'added': 0, 'sources': len(texts),
+                    'candidates': len(candidates),
+                    'msg': 'Tout était déjà connu', 'ms': int((time.time() - t0) * 1000)}
+
+        # ── Rebuild + re-benchmark ─────────────────────────────────────────
+        merged = list(existing) + added
+        meta_dict = self.store._registry[holo_id]
+        self._build_v2(holo_id, merged, {
+            'name': meta_dict.name,
+            'domain': meta_dict.domain,
+            'description': meta_dict.description,
+            'top_concepts': meta_dict.top_concepts,
+            'benchmark_count': meta_dict.benchmark_questions,
+            'quality_score': meta_dict.quality_score,
+        })
+        interests_clean = [_clean_word(i) for i in interests]
+        anchors_by = {i: [_clean_word(a) for a in ANCHOR_MAP.get(i, [i])]
+                      for i in interests_clean}
+        precision, _ = self._benchmark(holo_id, interests_clean, anchors_by)
+        meta = self.store._registry[holo_id]
+        meta.quality_score = round(0.6 * precision + 0.4 * meta.quality_score, 3)
+        self.store._save_registry()
+
+        return {'holo_id': holo_id, 'added': len(added),
+                'facts_count': len(merged), 'sources': len(texts),
+                'candidates': len(candidates), 'precision_at_1': round(precision, 3),
+                'quality_score': meta.quality_score,
+                'ms': int((time.time() - t0) * 1000)}
 
     # ── 6. Enrichissement Wikipedia (hook background) ─────────────────────
 
@@ -430,15 +689,6 @@ class HologramSpecializer:
 
         retriever = WebRetriever()
         new_facts = []
-        # Sujets-fragments à rejeter : « trois autres qui provoquent... »,
-        # « certains chercheurs affirment... » — le triple extractor coupe
-        # parfois au milieu d'une phrase.
-        _FRAGMENT_STARTS = {'un', 'une', 'le', 'la', 'les', 'des', 'du', 'de',
-                            'ce', 'ces', 'cette', 'qui', 'que', 'dont', 'ou',
-                            'ceux', 'celles', 'certain', 'certains', 'certaines',
-                            'trois', 'deux', 'quatre', 'plus', 'tous', 'toutes',
-                            'tout', 'toute', 'l', 'd', 'en', 'au', 'aux', 'par',
-                            'avec', 'pour', 'il', 'elle', 'ils', 'elles', 'on'}
         for interest in interests:
             try:
                 doc = retriever.search_wikipedia(interest, lang=language)
@@ -446,20 +696,24 @@ class HologramSpecializer:
                 continue
             if not doc:
                 continue
-            text = doc.get('extract') or doc.get('summary') or ''
+            title = str(doc.get('title', interest))
+            # Article complet si possible, sinon intro
+            text = retriever.get_wikipedia_full(title, lang=language)
+            if not text:
+                text = doc.get('summary') or doc.get('extract') or ''
             if not text:
                 continue
             try:
-                triples = extractor.extract(text, max_triples=80)
+                triples = extractor.extract(text, max_triples=100)
             except Exception:
                 continue
             for s, r, o, sec in triples:
-                s_clean = _clean_word(s)
-                if not s_clean or s_clean.split()[0] in _FRAGMENT_STARTS:
+                s_norm = _normalize_subject(s)
+                if s_norm is None:
                     continue
-                t = f"{s} {r} {o}".lower()
+                t = f"{s_norm} {r} {o}".lower()
                 if any(_kw_in_text(a, t) for a in anchors):
-                    new_facts.append((str(s), str(r), str(o), str(sec)))
+                    new_facts.append((s_norm, str(r), str(o), str(sec)))
 
         # Dédoublonnage avec le seed
         seen = {(f[0].lower()[:60], f[1].lower()[:60], f[2].lower()[:80]) for f in facts}

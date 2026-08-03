@@ -81,6 +81,12 @@ _STOPWORDS_FR = {
     'par', 'au', 'aux', 'en', 'plus', 'moins', 'tout', 'tous', 'son', 'sa',
     'ses', 'il', 'elle', 'ils', 'elles', 'nous', 'vous', 'leur', 'leurs',
     'mais', 'ou', 'donc', 'or', 'ni', 'car', 'aussi', 'très', 'bien',
+    # Pronoms réfléchis/toniques, possessifs, démonstratifs, prépositions
+    # courtes : « se » est un piège de résonance — cos(ψ_se, ψ_se) = 1.0
+    # fait passer n'importe quel fait contenant « se » au-dessus du gate.
+    'se', 'ce', 'on', 'y', 'si', 'me', 'te', 'ma', 'ta', 'mon', 'ton',
+    'mes', 'tes', 'nos', 'vos', 'ces', 'moi', 'toi', 'soi', 'eux', 'lui',
+    'dont', 'quoi', 'vers', 'chez', 'sans', 'sous', 'dans',
 }
 
 _STOPWORDS_EN = {
@@ -91,6 +97,13 @@ _STOPWORDS_EN = {
     'if', 'so', 'as', 'than', 'that', 'this', 'these', 'those', 'which',
     'who', 'whom', 'what', 'when', 'where', 'how', 'all', 'both', 'each',
     'every', 'some', 'any', 'no', 'nor', 'just', 'very', 'too', 'also',
+    # Pronoms et possessifs courts (même piège de résonance qu'en français)
+    'me', 'my', 'we', 'us', 'him', 'her', 'his', 'their', 'our', 'you',
+    'your', 'them', 'they', 'she', 'he', 'i', 'am', 'up', 'down', 'out',
+    'off', 'over', 'under', 'then', 'now', 'here', 'there', 'into', 'onto',
+    'upon', 'about', 'between', 'through', 'during', 'before', 'after',
+    'above', 'below', 'again', 'once', 'also', 'even', 'only', 'other',
+    'such', 'own', 'same', 'too',
 }
 
 _STOPWORDS_ES = {
@@ -98,6 +111,9 @@ _STOPWORDS_ES = {
     'está', 'son', 'en', 'con', 'para', 'por', 'que', 'se', 'su', 'sus',
     'al', 'lo', 'como', 'más', 'pero', 'o', 'ha', 'han', 'fue', 'ser',
     'tiene', 'todo', 'todos', 'muy', 'hay', 'qué', 'cuando', 'donde',
+    'me', 'te', 'nos', 'os', 'le', 'les', 'mi', 'mis', 'tu', 'tus',
+    'este', 'esta', 'estos', 'estas', 'ese', 'esa', 'esos', 'esas',
+    'sin', 'sobre', 'entre', 'unos', 'unas', 'ya', 'cual',
 }
 
 _STOPWORDS_DE = {
@@ -105,7 +121,9 @@ _STOPWORDS_DE = {
     'und', 'ist', 'sind', 'war', 'waren', 'in', 'an', 'auf', 'mit',
     'von', 'zu', 'für', 'bei', 'aus', 'nach', 'vor', 'auch', 'nicht',
     'sich', 'sie', 'er', 'es', 'wir', 'ihr', 'wie', 'was', 'wer',
-    'wo', 'wann', 'warum', 'dass', 'wird', 'hat', 'haben', 'kann',
+    'wo', 'wann', 'warum', 'dass', 'hat', 'haben', 'kann',
+    'ich', 'du', 'man', 'mein', 'dein', 'sein', 'ihre', 'ihren',
+    'nur', 'noch', 'schon', 'über', 'unter', 'ohne', 'gegen',
 }
 
 # Stopwords universels (utilisés par défaut)

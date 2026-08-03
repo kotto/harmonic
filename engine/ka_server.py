@@ -3064,6 +3064,18 @@ def serve_index():
         return send_from_directory(str(_ENGINE_DIR), 'ka_index.html')
     return send_from_directory(str(_ENGINE_DIR / 'ka_redesign'), 'index.html')
 
+@app.route('/ka_native.js')
+def serve_ka_native():
+    """Pont Capacitor (WebView Android) — no-op hors WebView."""
+    return send_from_directory(str(_ENGINE_DIR), 'ka_native.js',
+                               mimetype='application/javascript')
+
+@app.route('/ka_server_switch.js')
+def serve_ka_server_switch():
+    """Bouton de reconfiguration du serveur (WebView Android uniquement)."""
+    return send_from_directory(str(_ENGINE_DIR), 'ka_server_switch.js',
+                               mimetype='application/javascript')
+
 @app.route('/manifest.json')
 def serve_manifest():
     """Manifest PWA pour installation sur l'écran d'accueil."""
@@ -3600,7 +3612,7 @@ def store_specialize():
     🎯 Spécialisation à la demande : centres d'intérêt → hologramme dédié.
     
     Body: { "interests": ["diabete", "nutrition"], "language": "fr",
-            "enrich": false, "user_id": "..." }
+            "enrich": false, "massive": false, "user_id": "..." }
     
     Pipeline (M4, sans oracle) :
       1. ancres = mots des intérêts + équivalents bilingues FR/EN
@@ -3609,6 +3621,10 @@ def store_specialize():
       3. benchmark interne : precision@1 des questions « Qu est-ce que X ? »
          → quality_score écrit dans le registre
       4. enrich=True : extraction Wikipedia en arrière-plan (TripleExtractor)
+      5. massive=True : INGESTION MASSIVE synchrone — Wikipedia (page
+         principale + top-N pages + variantes définition/causes/traitement/
+         symptomes) + DuckDuckGo web → extraction massive → mêmes filtres M4
+         → rebuild + re-benchmark (20-60 s)
     
     L'hologramme créé (type personal, wave v2) entre automatiquement dans
     le pipeline M4 de chat (consensus + gate).
@@ -3620,6 +3636,7 @@ def store_specialize():
     interests = [str(i).strip() for i in (data.get('interests') or []) if str(i).strip()]
     language = str(data.get('language', 'fr'))[:5]
     enrich = bool(data.get('enrich', False))
+    massive = bool(data.get('massive', False))
     user_id = str(data.get('user_id', 'anonymous'))
     
     if not interests:
@@ -3638,7 +3655,7 @@ def store_specialize():
         except Exception:
             pass
         spec = HologramSpecializer(_hologram_store, kb=kb)
-        result = spec.build(interests, language=language)
+        result = spec.build(interests, language=language, massive=massive)
     except Exception as e:
         log.error(f"  ⚠ Specialize error: {e}")
         import traceback
@@ -3647,6 +3664,24 @@ def store_specialize():
     
     if 'error' in result:
         return jsonify(result), 422
+    
+    # 🚀 INGESTION MASSIVE du sujet demandé (synchrone, 20-60 s)
+    if massive and 'holo_id' in result:
+        try:
+            mass = spec.massive_ingest(result['holo_id'], interests, language)
+            if 'error' not in mass:
+                result['massive'] = 'done'
+                result['massive_added'] = mass.get('added', 0)
+                result['massive_sources'] = mass.get('sources', 0)
+                result['massive_ms'] = mass.get('ms', 0)
+                result['facts_count'] = mass.get('facts_count', result['facts_count'])
+                result['quality_score'] = mass.get('quality_score', result['quality_score'])
+                result['precision_at_1'] = mass.get('precision_at_1', result['precision_at_1'])
+            else:
+                result['massive'] = mass['error']
+        except Exception as e:
+            log.error(f"  ⚠ Ingestion massive échouée: {e}")
+            result['massive'] = f'échouée: {e}'
     
     # 📓 Enrichissement Wikipedia en arrière-plan (facultatif)
     if enrich and 'holo_id' in result:

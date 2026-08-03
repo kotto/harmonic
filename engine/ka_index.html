@@ -235,6 +235,7 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
 </style>
 </head>
 <body>
+<script src="ka_native.js"></script>
 <div class="dv">
   <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
 
@@ -666,6 +667,19 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
       <!-- Barre de statut -->
       <div id="holo-status" style="display:none;text-align:center;padding:10px;margin-bottom:10px;background:rgba(120,200,255,.08);border-radius:10px;font-size:12px;color:var(--sky)"></div>
       
+      <!-- 🎯 Spécialisation personnalisée : centres d'intérêt → hologramme dédié -->
+      <div style="margin-bottom:12px;padding:12px 14px;border-radius:14px;background:rgba(200,170,255,.07);border:.5px solid var(--b2)">
+        <div style="font-size:12px;font-weight:700;color:var(--wisdom);margin-bottom:8px">🎯 VOS CENTRES D'INTÉRÊT</div>
+        <div style="display:flex;gap:6px">
+          <input id="spec-input" placeholder="ex : diabète, nutrition, astronomie" style="flex:1;padding:10px 12px;border-radius:12px;background:var(--g1);border:.5px solid var(--b2);color:var(--t1);font-size:13px;outline:none" onkeydown="if(event.key==='Enter')holoSpecialize()">
+          <div class="btn" style="width:auto;padding:10px 14px;background:var(--wisdom);color:#fff" onclick="holoSpecialize()">Créer</div>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11px;color:var(--t4);cursor:pointer">
+          <input type="checkbox" id="spec-massive" style="accent-color:var(--wisdom)">
+          <span>🚀 Ingestion massive (Wikipedia + web — plus complet, 20-60 s)</span>
+        </label>
+      </div>
+      
       <!-- Filtre -->
       <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;justify-content:center">
         <span class="pill pill--life" style="cursor:pointer" onclick="holoFilter('all')" id="holo-f-all">🌟 Tous</span>
@@ -850,7 +864,7 @@ const SD={'':['Sophie','Appeler','Réunion','Oui','Super','Merci','Demain'],'so'
 		const isLocal = h==='localhost'||h==='127.0.0.1'||h.startsWith('192.168.')||h.startsWith('10.')||h.startsWith('172.16.');
 		// ⚡ Utiliser 127.0.0.1 : la résolution DNS de 'localhost' prend ~2s sur Windows
 		const apiHost = (h==='localhost') ? '127.0.0.1' : h;
-		var API_URL = isLocal ? `http://${apiHost}:8765` : 'https://ka-api.onrender.com';
+		var API_URL = (function(){try{var u=localStorage.getItem('ka_api_url');if(u)return u;}catch(e){}return isLocal?`http://${apiHost}:8765`:'https://ka-api.onrender.com';})(); // [ka-android] override localStorage
 	let API_ONLINE = false;
 	
 		// Vérifier la connexion au démarrage
@@ -2040,6 +2054,53 @@ async function holoDownload(holoId, domain, facts) {
   }
 }
 
+// 🎯 Spécialisation : centres d'intérêt → hologramme dédié (ingestion massive optionnelle)
+async function holoSpecialize() {
+  var input = document.getElementById('spec-input');
+  var interests = (input.value || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  if (!interests.length) { input.focus(); return; }
+  var massive = document.getElementById('spec-massive').checked;
+  var status = document.getElementById('holo-status');
+  var list = document.getElementById('holo-list');
+  var t0 = Date.now();
+
+  status.style.display = 'block';
+  status.style.background = 'rgba(120,200,255,.08)';
+  status.style.color = 'var(--sky)';
+  status.innerHTML = '<span style="animation:pulse 1.2s ease-in-out infinite">●</span> Spécialisation « ' + interests.join(', ') + ' » en cours…<br><span style="font-size:10px;opacity:.8">ancres bilingues → résonance → benchmark' + (massive ? ' → ingestion massive web' : '') + '</span>';
+  list.style.opacity = '0.6'; list.style.pointerEvents = 'none';
+
+  try {
+    var resp = await fetch(API_URL + '/api/store/specialize', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({interests: interests, language: 'fr', massive: massive, user_id: (localStorage.getItem('ka_user_id')||'mobile')}),
+      signal: AbortSignal.timeout(massive ? 240000 : 120000)
+    });
+    var data = await resp.json();
+    if (data.error) throw new Error(data.error);
+
+    holoInstalled[data.holo_id] = true;
+    if (holoCache) holoCache.push({id: data.holo_id, domain: (data.interests||[])[0]||'', facts_count: data.facts_count, quality_score: data.quality_score||0, author: 'KA-Specializer'});
+    var secs = Math.round((Date.now()-t0)/1000);
+    var q = Math.round((data.quality_score||0)*100);
+    var extra = data.massive_added ? ' (' + data.massive_added + ' via ingestion massive)' : (data.enriched ? ' (+' + data.enriched + ' web)' : '');
+    status.style.background = 'rgba(120,255,180,.1)';
+    status.style.color = 'var(--life)';
+    status.innerHTML = '✅ <b>' + (data.holo_id||'').replace('personal_','') + '</b> — ' + data.facts_count + ' faits' + extra + ' · qualité ' + q + '% · ' + secs + 's<br><span style="font-size:10px;opacity:.8">Posez-moi une question sur ce sujet !</span>';
+
+    setTimeout(function() { holoRender(); }, 800);
+    setTimeout(function() { status.style.display = 'none'; }, 8000);
+  } catch(e) {
+    status.style.background = 'rgba(255,150,150,.1)';
+    status.style.color = 'var(--coral)';
+    status.innerHTML = '⚠️ ' + (e.message || 'spécialisation échouée');
+    setTimeout(function() { status.style.display = 'none'; }, 6000);
+  } finally {
+    list.style.opacity = '1'; list.style.pointerEvents = 'auto';
+  }
+}
+
 // Initialise l'écran hologrammes à l'ouverture
 function holoInit() {
   holoRender('all');
@@ -2403,7 +2464,7 @@ async function loadSante() {
 			</script>
 		<script>
 	// Service Worker — Mode hors-ligne PWA
-	if ('serviceWorker' in navigator) {
+	if ('serviceWorker' in navigator && !window.Capacitor) { // [ka-android] SW off en WebView
 	  navigator.serviceWorker.register('/sw.js').then(() => {
 	    console.log('KA Phone · Service Worker activé — Mode hors-ligne prêt');
 	  }).catch(() => {
@@ -2411,5 +2472,6 @@ async function loadSante() {
 	  });
 	}
 	</script>
-	</body>
+	<script src="ka_server_switch.js"></script>
+</body>
 	</html>

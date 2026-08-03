@@ -229,6 +229,34 @@ class WebRetriever:
         _cache_set(cache_key, [result])
         return result
 
+    def get_wikipedia_full(self, title: str, lang: str = "fr",
+                           max_chars: int = 20000, retries: int = 3) -> Optional[str]:
+        """
+        Extrait COMPLET d'un article Wikipedia (toutes les sections, texte
+        brut via explaintext). search_wikipedia ne renvoie que l'intro
+        (exintro, ~2000 chars) — l'ingestion massive a besoin de l'article
+        entier. Retries avec backoff pour les pannes réseau transitoires.
+        """
+        import time as _time
+        for attempt in range(retries):
+            try:
+                url = (f"https://{lang[:2]}.wikipedia.org/w/api.php"
+                       f"?action=query&prop=extracts&explaintext=1"
+                       f"&titles={quote_plus(title)}&format=json&redirects=1")
+                data = self._get_json(url)
+                if data and "query" in data:
+                    pages = data["query"].get("pages", {})
+                    for page_id, page in pages.items():
+                        if page_id != "-1":
+                            text = page.get("extract", "")
+                            if text:
+                                return text[:max_chars]
+            except Exception:
+                pass
+            if attempt < retries - 1:
+                _time.sleep(0.4 * (attempt + 1))
+        return None
+
     def search_wikipedia_multiple(self, query: str, lang: str = "auto", limit: int = 3) -> List[Dict]:
         """Retourne plusieurs résultats Wikipedia."""
         if lang == "auto":
