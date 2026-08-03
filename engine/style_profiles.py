@@ -26,110 +26,13 @@ import hashlib
 import re
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# RESTAURATION DES ACCENTS (frontière de mot)
-# Le corpus est stocké sans accents (« diabete », « caracterisee ») — le rendu
-# doit restituer un français correct. Map médicale/générale, appliquée par
-# \b…\b (jamais de sous-chaîne : « des » article ne doit pas devenir « dès »).
+# CORRECTION GRAMMATICALE — déléguée à french_corrector.py (accents, élisions,
+# contractions, participe, accord sujet-verbe, articles, capitalisation,
+# typographie). Une seule source de vérité — jamais de correctif au coup par
+# coup dans le rendu.
 # ═══════════════════════════════════════════════════════════════════════════════
 
-_ACCENT_MAP = {
-    # Médecine — diabète & métabolisme
-    'diabete': 'diabète', 'diabetes': 'diabète', 'glycemie': 'glycémie',
-    'hyperglycemie': 'hyperglycémie', 'hypoglycemie': 'hypoglycémie',
-    'exces': 'excès', 'deficience': 'déficience', 'deficiences': 'déficiences',
-    'resistance': 'résistance', 'resistances': 'résistances',
-    'chronique': 'chronique', 'caracterisee': 'caractérisée',
-    'caracterise': 'caractérise', 'caracterisees': 'caractérisées',
-    'caracterises': 'caractérisés', 'utilisee': 'utilisée', 'utilisees': 'utilisées',
-    'utilise': 'utilisé', 'utilises': 'utilisés', 'elevee': 'élevée',
-    'eleve': 'élevé', 'eleves': 'élevés', 'arterielle': 'artérielle',
-    'arteriel': 'artériel', 'arteriels': 'artériels', 'arterielles': 'artérielles',
-    'pression': 'pression', 'sante': 'santé', 'anemie': 'anémie',
-    'anemies': 'anémies', 'medecine': 'médecine', 'medicale': 'médicale',
-    'medicaux': 'médicaux', 'medicament': 'médicament', 'medicaments': 'médicaments',
-    'hopital': 'hôpital', 'hopitaux': 'hôpitaux', 'symptome': 'symptôme',
-    'symptomes': 'symptômes', 'therapie': 'thérapie', 'therapies': 'thérapies',
-    'chimiotherapie': 'chimiothérapie', 'radiotherapie': 'radiothérapie',
-    'immunotherapie': 'immunothérapie', 'prothese': 'prothèse',
-    'protheses': 'prothèses', 'greffe': 'greffe', 'epidemie': 'épidémie',
-    'epidemies': 'épidémies', 'pandemie': 'pandémie', 'mortalite': 'mortalité',
-    'morbidite': 'morbidité', 'deces': 'décès', 'hepatite': 'hépatite',
-    'tuberculose': 'tuberculose', 'depistage': 'dépistage',
-    'prevention': 'prévention', 'prevenir': 'prévenir', 'eviter': 'éviter',
-    'consequence': 'conséquence', 'consequences': 'conséquences',
-    'sequelle': 'séquelle', 'sequelles': 'séquelles',
-    # Biologie
-    'proliferation': 'prolifération', 'regeneration': 'régénération',
-    'longevite': 'longévité', 'duree': 'durée', 'precoce': 'précoce',
-    'detoxifie': 'détoxifie', 'detoxifient': 'détoxifient',
-    'synthetise': 'synthétise', 'synthetisent': 'synthétisent',
-    'synthese': 'synthèse', 'photosynthese': 'photosynthèse',
-    'energie': 'énergie', 'energetique': 'énergétique', 'oxygene': 'oxygène',
-    'secrete': 'sécrète', 'secretent': 'sécrètent', 'secretes': 'sécrétées',
-    'secretion': 'sécrétion', 'adrenaline': 'adrénaline',
-    'thyroide': 'thyroïde', 'immunite': 'immunité', 'genetique': 'génétique',
-    'genetiques': 'génétiques', 'proteine': 'protéine', 'proteines': 'protéines',
-    'artere': 'artère', 'arteres': 'artères', 'alveole': 'alvéole',
-    'alveoles': 'alvéoles', 'oesophage': 'œsophage', 'neurone': 'neurone',
-    'cellulaire': 'cellulaire', 'degenerative': 'dégénérative',
-    'degenerescence': 'dégénérescence', 'anopheles': 'anophèles',
-    'transmission': 'transmission',
-    # Général
-    'etre': 'être', 'etat': 'état', 'etats': 'états', 'etape': 'étape',
-    'etapes': 'étapes', 'probleme': 'problème', 'problemes': 'problèmes',
-    'reponse': 'réponse', 'reponses': 'réponses', 'meme': 'même',
-    'memes': 'mêmes', 'apres': 'après', 'pres': 'près', 'tres': 'très',
-    'deja': 'déjà', 'premiere': 'première', 'premieres': 'premières',
-    'derniere': 'dernière', 'generale': 'générale', 'element': 'élément',
-    'elements': 'éléments', 'mecanisme': 'mécanisme', 'mecanismes': 'mécanismes',
-    'modele': 'modèle', 'modeles': 'modèles', 'resultats': 'résultats',
-    'resultat': 'résultat', 'etude': 'étude', 'etudes': 'études',
-    'experience': 'expérience', 'experiences': 'expériences',
-    'hypothese': 'hypothèse', 'hypotheses': 'hypothèses', 'these': 'thèse',
-    'theses': 'thèses', 'critere': 'critère', 'criteres': 'critères',
-    'numero': 'numéro', 'regule': 'régule', 'regulent': 'régulent',
-    'regulee': 'régulée', 'regulation': 'régulation', 'protege': 'protège',
-    'protegent': 'protègent', 'protegee': 'protégée', 'liberee': 'libérée',
-    'conserve': 'conservé', 'conservee': 'conservée',
-    # Sciences
-    'etoile': 'étoile', 'etoiles': 'étoiles', 'planete': 'planète',
-    'planetes': 'planètes', 'exoplanete': 'exoplanète', 'lumiere': 'lumière', 'residu': 'résidu',
-    'residus': 'résidus', 'matiere': 'matière', 'gravite': 'gravité',
-    'gravitation': 'gravitation', 'mecanique': 'mécanique', 'mecaniques': 'mécaniques',
-    'electron': 'électron', 'electrons': 'électrons', 'nucleaire': 'nucléaire',
-    'nucleaires': 'nucléaires', 'celeste': 'céleste', 'celestes': 'célestes',
-    'temperature': 'température', 'temperatures': 'températures',
-    'espece': 'espèce', 'especes': 'espèces', 'chimique': 'chimique',
-    'organique': 'organique', 'minerale': 'minérale', 'atmosphere': 'atmosphère',
-}
-
-_ACCENT_KEYS = sorted(_ACCENT_MAP, key=len, reverse=True)
-_ACCENT_RE = re.compile(
-    r'\b(' + '|'.join(re.escape(k) for k in _ACCENT_KEYS) + r')\b')
-
-# Apostrophes cassées (le corpus écrit « d un », « l insuline »)
-_APOSTROPHE_FIXES = [
-    ('qu est ce', "qu'est-ce"), ('qu est-ce', "qu'est-ce"),
-    ('qu il', "qu'il"), ('qu elle', "qu'elle"), ('qu on', "qu'on"),
-    ('qu est', "qu'est"), ('c est', "c'est"), ('n est', "n'est"),
-    ('s est', "s'est"), ('j ai', "j'ai"), ('j en', "j'en"),
-    ('d une', "d'une"), ('d un', "d'un"), ('l a', "l'a"),
-    ('l est', "l'est"), ('l on', "l'on"),
-    ('a la', 'à la'), ('a un', 'à un'), ('a une', 'à une'),
-]
-
-
-def _restore_accents(text: str) -> str:
-    """Restaure les accents (frontière de mot) + apostrophes françaises."""
-    text = _ACCENT_RE.sub(lambda m: _ACCENT_MAP[m.group(1)], text)
-    for k, v in _APOSTROPHE_FIXES:
-        text = re.sub(rf'\b{re.escape(k)}\b', v, text)
-    # « a l insuline » → « à l'insuline » (l'apostrophe consomme l'espace)
-    text = re.sub(r"\ba l\s+(?=[a-zàâäéèêëîïôöùûüç])", "à l'", text)
-    # « que + voyelle » → « qu' + voyelle » (qu insuline → qu'insuline)
-    text = re.sub(r"\bque ([aeiouyhàâäéèêëîïôöùûü])", r"qu'\1", text)
-    return text
-
+from french_corrector import polish_prose as _polish_prose
 
 # Préfixes de question (FR) — retirés de la prose (« Qu est-ce que le
 # diabete ? » → « le diabete »)
@@ -503,18 +406,9 @@ def _pick(options: list, seed_text: str, salt: str, used: set) -> str:
 
 
 def _finish(text: str) -> str:
-    """Polissage final : accents, contractions, typographie française."""
-    text = _restore_accents(text)
-    text = re.sub(r'\.{2,}', '.', text)
-    text = re.sub(r'\s+', ' ', text)
-    # Typographie française : espace AVANT : ; ! ? — jamais avant . et ,
-    text = re.sub(r'\s+([,;:!?])', r' \1', text)
-    text = re.sub(r'\s+([.,])', r'\1', text)
-    # Contractions avec l'article du sujet (« de le diabete » → « du diabète »)
-    text = re.sub(r'\bde le\b', 'du', text)
-    text = re.sub(r'\bde les\b', 'des', text)
-    text = re.sub(r'\ba le\b', 'au', text)
-    return text.strip()
+    """Polissage final : pipeline complet de french_corrector (grammaire,
+    syntaxe, accents, typographie) — déterministe, 0 LLM."""
+    return _polish_prose(text)
 
 
 def render_facts(facts, question: str = '', profile: dict = None,
