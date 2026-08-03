@@ -482,6 +482,132 @@ def ask_cross_department(tenant_id):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# API — Données privées → LIVRABLES (Excel, textes, synthèse)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _check_dept_access(department_id) -> Optional[Response]:
+    """Vérifie l'existence et l'accès au département (None si OK)."""
+    if department_id not in engine.departments:
+        return jsonify({'error': 'Département non trouvé'}), 404
+    if g.user and g.user.department_ids and department_id not in g.user.department_ids:
+        return jsonify({'error': 'Accès non autorisé à ce département'}), 403
+    return None
+
+
+@app.route('/api/enterprise/departments/<department_id>/data', methods=['POST'])
+@require_auth
+@require_permission('hologram:query')
+@rate_limit
+@audit_log
+def data_query(department_id):
+    """
+    Question de DONNÉES : répond sur les données privées du département avec
+    un tableau (colonnes/lignes) + agrégats (compte, somme, moyenne, min, max).
+    Body: { "question": "liste des clients / chiffre d'affaires total / …" }
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    question = data.get('question', '').strip()
+    if not question:
+        return jsonify({'error': 'question requise'}), 400
+    err = _check_dept_access(department_id)
+    if err:
+        return err
+    try:
+        from enterprise_deliverables import query_data
+        return jsonify(query_data(engine, department_id, question))
+    except Exception as e:
+        return jsonify({'error': f'Données: {e}'}), 500
+
+
+@app.route('/api/enterprise/departments/<department_id>/export', methods=['GET'])
+@require_auth
+@require_permission('hologram:query')
+@rate_limit
+@audit_log
+def export_deliverable(department_id):
+    """
+    Télécharge le livrable Excel (.xlsx — feuilles Données + Résumé) ou CSV
+    de la question posée. Query params: question=…&format=xlsx|csv
+    """
+    question = request.args.get('question', '').strip()
+    fmt = request.args.get('format', 'xlsx').lower()
+    if not question:
+        return jsonify({'error': 'question requise (?question=…)'}), 400
+    err = _check_dept_access(department_id)
+    if err:
+        return err
+    try:
+        from enterprise_deliverables import build_excel, export_csv, query_data, _slug
+        if fmt == 'csv':
+            data = query_data(engine, department_id, question)
+            bio = io.BytesIO(export_csv(data).encode('utf-8-sig'))
+            filename = f"{_slug(question)}_{fmt}.csv"
+            return send_file(bio, mimetype='text/csv', as_attachment=True,
+                             download_name=filename)
+        bio, filename = build_excel(engine, department_id, question)
+        return send_file(bio, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                         as_attachment=True, download_name=filename)
+    except Exception as e:
+        return jsonify({'error': f'Export: {e}'}), 500
+
+
+@app.route('/api/enterprise/departments/<department_id>/compose', methods=['POST'])
+@require_auth
+@require_permission('hologram:query')
+@rate_limit
+@audit_log
+def compose_doc(department_id):
+    """
+    Prépare un TEXTE structuré depuis les données privées :
+    email, rapport, compte_rendu, lettre, note.
+    Body: { "brief": "…", "format": "rapport", "objet": "…",
+            "destinataire": "…", "download": "docx"|"txt"|null }
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    brief = data.get('brief', '').strip()
+    if not brief:
+        return jsonify({'error': 'brief requis'}), 400
+    err = _check_dept_access(department_id)
+    if err:
+        return err
+    try:
+        from enterprise_deliverables import compose_document, document_to_docx, _slug
+        doc = compose_document(engine, department_id, brief,
+                               doc_format=data.get('format', 'rapport'),
+                               destinataire=data.get('destinataire') or None,
+                               objet=data.get('objet') or None)
+        download = data.get('download')
+        if download in ('docx', 'txt'):
+            bio, name = document_to_docx(doc['texte'], f"{doc['format']}_{_slug(brief)}")
+            if download == 'txt' or name.endswith('.txt'):
+                bio = io.BytesIO(doc['texte'].encode('utf-8'))
+                name = f"{doc['format']}_{_slug(brief)}.txt"
+            mime = ('application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                    if name.endswith('.docx') else 'text/plain')
+            return send_file(bio, mimetype=mime, as_attachment=True, download_name=name)
+        return jsonify(doc)
+    except Exception as e:
+        return jsonify({'error': f'Composition: {e}'}), 500
+
+
+@app.route('/api/enterprise/departments/<department_id>/summarize', methods=['POST'])
+@require_auth
+@require_permission('hologram:query')
+@rate_limit
+@audit_log
+def summarize_doc(department_id):
+    """Synthèse du savoir d'un département (données + sources)."""
+    err = _check_dept_access(department_id)
+    if err:
+        return err
+    try:
+        from enterprise_deliverables import summarize_department
+        return jsonify(summarize_department(engine, department_id))
+    except Exception as e:
+        return jsonify({'error': f'Synthèse: {e}'}), 500
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # API — Audit & Dashboard & Metrics
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -999,7 +1125,11 @@ function renderCreated(r){
       <tbody>${rows}</tbody>
     </table>
     ${seeded===0 ? '<p class="ok" style="margin-top:10px">⚠ Les faits s\'enrichissent en arrière-plan — ingérez vos documents (onglet Ingestion du dashboard) pour compléter.</p>' : ''}
-    <p style="font-size:.7rem;color:var(--muted);margin-top:10px">La couverture mesure la complétude des facettes (symptômes, causes, protocoles…) de chaque hologramme — <span style="color:var(--gold)">plus vous ingérez, plus elle monte</span>.</p>`;
+    <p style="font-size:.7rem;color:var(--muted);margin-top:10px">La couverture mesure la complétude des facettes (symptômes, causes, protocoles…) de chaque hologramme — <span style="color:var(--gold)">plus vous ingérez, plus elle monte</span>.</p>
+    <div style="margin-top:12px">
+      <div style="font-size:.7rem;color:var(--muted);margin-bottom:6px">📊 <b style="color:var(--text)">Formatage des données</b> — générez immédiatement un Excel de ce département (liste + agrégats, feuille Résumé) :</div>
+      ${depts.map(d=>`<button class="btn" style="font-size:.7rem;padding:6px 12px;margin:3px" onclick="demoExcel('${d.id}','${d.sujet}')">📊 Excel : ${d.sujet}</button>`).join('')}
+    </div>`;
   const sel = $('t-dept');
   sel.innerHTML = depts.map(d=>`<option value="${d.id}">${d.sujet}</option>`).join('');
 }
@@ -1027,6 +1157,16 @@ function copyCmd(id){
   const txt = $(id).textContent;
   navigator.clipboard.writeText(txt).catch(()=>{});
   const b = event.target; b.textContent = '✅ Copié'; setTimeout(()=>b.textContent='📋 Copier', 1500);
+}
+async function demoExcel(id, sujet){
+  const url = `/api/enterprise/departments/${id}/export?question=${encodeURIComponent('liste des informations sur ' + sujet)}&format=xlsx`;
+  const r = await fetch(url, {headers: apiKey ? {'X-API-Key': apiKey} : {}});
+  if (!r.ok) return alert('Erreur — le département doit contenir des données ingérées.');
+  const blob = await r.blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'apercu_' + sujet.replace(/\W+/g,'_') + '.xlsx';
+  a.click();
 }
 </script>
 </body>
@@ -1082,6 +1222,7 @@ pre{background:var(--bg);padding:12px;border-radius:6px;font-size:.7rem;color:va
     <div class="tab" onclick="switchTab('departments')">🧠 Départements</div>
     <div class="tab" onclick="switchTab('ingest')">📤 Ingestion</div>
     <div class="tab" onclick="switchTab('query')">🔍 Requêtes</div>
+    <div class="tab" onclick="switchTab('docs')">📊 Données & Docs</div>
     <div class="tab" onclick="switchTab('audit')">📋 Audit</div>
     <div class="tab" onclick="switchTab('users')">👥 Utilisateurs</div>
   </div>
@@ -1153,6 +1294,57 @@ pre{background:var(--bg);padding:12px;border-radius:6px;font-size:.7rem;color:va
     </div>
   </div>
 
+  <!-- Données & Documents -->
+  <div class="panel" id="docs">
+    <div class="card" style="margin-bottom:16px">
+      <h3>📊 Données privées → Excel</h3>
+      <div class="form-row">
+        <select id="data-dept"><option value="">Département</option></select>
+        <input id="data-question" placeholder="Ex : liste des clients / chiffre d'affaires total / moyenne des montants…">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-p" onclick="dataPreview()">🔍 Aperçu</button>
+        <button class="btn" onclick="dataExport('xlsx')">⬇️ Excel (.xlsx)</button>
+        <button class="btn" onclick="dataExport('csv')">⬇️ CSV (.csv)</button>
+      </div>
+      <div id="data-preview" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h3>✍️ Préparer un texte</h3>
+      <div class="form-row">
+        <select id="comp-dept"><option value="">Département</option></select>
+        <select id="comp-format">
+          <option value="rapport">Rapport</option>
+          <option value="email">Email</option>
+          <option value="compte_rendu">Compte-rendu</option>
+          <option value="lettre">Lettre</option>
+          <option value="note">Note interne</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <input id="comp-objet" placeholder="Objet (facultatif)">
+        <input id="comp-dest" placeholder="Destinataire (facultatif)">
+      </div>
+      <textarea id="comp-brief" rows="3" placeholder="De quoi doit parler le document ? Ex : situation des clients du mois"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-p" onclick="composeDoc()">✍️ Préparer</button>
+        <button class="btn" onclick="composeDownload('docx')">⬇️ .docx</button>
+        <button class="btn" onclick="composeDownload('txt')">⬇️ .txt</button>
+      </div>
+      <pre id="comp-preview" style="margin-top:10px;white-space:pre-wrap;max-height:280px"></pre>
+    </div>
+
+    <div class="card">
+      <h3>🧠 Synthèse du département</h3>
+      <div class="form-row">
+        <select id="sum-dept"><option value="">Département</option></select>
+        <button class="btn btn-p" onclick="summarizeDoc()">🧠 Synthétiser</button>
+      </div>
+      <pre id="sum-preview" style="margin-top:10px;white-space:pre-wrap;max-height:220px"></pre>
+    </div>
+  </div>
+
   <!-- Audit -->
   <div class="panel" id="audit">
     <div class="card"><h3>Journal d'Audit</h3><table id="audit-table"><thead><tr><th>Heure</th><th>Utilisateur</th><th>Question</th><th>Confiance</th><th>Response ID</th></tr></thead><tbody></tbody></table></div>
@@ -1196,6 +1388,7 @@ function switchTab(id) {
   if (id==='departments') loadDepartments();
   if (id==='ingest') loadDeptSelect('ingest-dept');
   if (id==='query') loadDeptSelect('query-dept');
+  if (id==='docs') { loadDeptSelect('data-dept'); loadDeptSelect('comp-dept'); loadDeptSelect('sum-dept'); }
   if (id==='audit') loadAudit();
   if (id==='users') loadUsers();
 }
@@ -1268,6 +1461,81 @@ async function loadDeptSelect(selId) {
     } catch(e){}
   }
   sel.innerHTML = html;
+}
+
+function fmtNum(v){ return (typeof v==='number') ? v.toLocaleString('fr-FR') : (v??''); }
+
+async function dataPreview() {
+  const dept = document.getElementById('data-dept').value;
+  const q = document.getElementById('data-question').value.trim();
+  if(!dept||!q) return alert('Département et question requis');
+  const r = await api(`/departments/${dept}/data`, {method:'POST', body:JSON.stringify({question:q})});
+  const box = document.getElementById('data-preview');
+  if (r.error) { box.innerHTML = `<span style="color:var(--red)">${r.error}</span>`; return; }
+  const head = r.columns.map(c=>`<th>${c}</th>`).join('');
+  const rows = r.rows.slice(0,50).map(row=>`<tr>${r.columns.map(c=>`<td>${fmtNum(row[c])}</td>`).join('')}</tr>`).join('');
+  const aggs = (r.aggregates||[]).map(a=>`<span class="badge badge-admin" style="margin-right:6px">${a.libelle} : ${fmtNum(a.valeur)}</span>`).join('');
+  box.innerHTML = `
+    <div style="font-size:.7rem;color:var(--muted);margin-bottom:6px">${r.count} lignes · mode « ${r.mode} » · ${r.facts_utilises} faits utilisés</div>
+    ${aggs}
+    <table style="margin-top:8px"><thead><tr>${head}</tr></thead>
+    <tbody>${rows || '<tr><td style="color:var(--muted)">Aucune donnée</td></tr>'}</tbody></table>
+    ${r.count>50 ? `<div style="font-size:.65rem;color:var(--muted);margin-top:4px">… ${r.count-50} lignes supplémentaires dans le fichier Excel</div>` : ''}`;
+}
+
+async function dataExport(fmt) {
+  const dept = document.getElementById('data-dept').value;
+  const q = document.getElementById('data-question').value.trim();
+  if(!dept||!q) return alert('Département et question requis');
+  const h = {}; if (token) h['Authorization'] = 'Bearer ' + token;
+  const r = await fetch(`/api/enterprise/departments/${dept}/export?question=${encodeURIComponent(q)}&format=${fmt}`, {headers:h});
+  if (!r.ok) return alert('Erreur export: ' + (await r.text()).slice(0,120));
+  const blob = await r.blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fmt==='xlsx' ? 'donnees.xlsx' : 'donnees.csv';
+  a.click();
+}
+
+async function composeDoc() {
+  const dept = document.getElementById('comp-dept').value;
+  const brief = document.getElementById('comp-brief').value.trim();
+  if(!dept||!brief) return alert('Département et sujet requis');
+  const r = await api(`/departments/${dept}/compose`, {method:'POST', body:JSON.stringify({
+    brief,
+    format: document.getElementById('comp-format').value,
+    objet: document.getElementById('comp-objet').value.trim(),
+    destinataire: document.getElementById('comp-dest').value.trim()})});
+  document.getElementById('comp-preview').textContent = r.error ? r.error : r.texte;
+}
+
+async function composeDownload(fmt) {
+  const dept = document.getElementById('comp-dept').value;
+  const brief = document.getElementById('comp-brief').value.trim();
+  if(!dept||!brief) return alert('Département et sujet requis');
+  const h = {'Content-Type':'application/json'};
+  if (token) h['Authorization'] = 'Bearer ' + token;
+  const r = await fetch(`/api/enterprise/departments/${dept}/compose`, {method:'POST', headers:h, body:JSON.stringify({
+    brief,
+    format: document.getElementById('comp-format').value,
+    objet: document.getElementById('comp-objet').value.trim(),
+    destinataire: document.getElementById('comp-dest').value.trim(),
+    download: fmt})});
+  if (!r.ok) return alert('Erreur: ' + (await r.text()).slice(0,120));
+  const blob = await r.blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'document.' + fmt;
+  a.click();
+}
+
+async function summarizeDoc() {
+  const dept = document.getElementById('sum-dept').value;
+  if(!dept) return alert('Département requis');
+  const r = await api(`/departments/${dept}/summarize`, {method:'POST'});
+  document.getElementById('sum-preview').textContent = r.error
+    ? r.error
+    : r.resume + '\n\nSources : ' + Object.keys(r.sources||{}).join(', ');
 }
 
 async function createTenant() {

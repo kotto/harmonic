@@ -94,6 +94,23 @@ Dans le dashboard admin, onglet **Ingestion** : collez un texte ou déposez
 un fichier (PDF, DOCX, XLSX, CSV) dans le département cible. Chaque
 ingestion est versionnée, auditée et chiffrée (AES-256 au repos).
 
+## 7bis · Vos données privées → Excel & documents (livrables)
+
+L'IA répond à **toute question sur vos données privées** et les **formate
+en livrables** (onglet « 📊 Données & Docs » du dashboard) :
+
+| Vous demandez… | Elle produit |
+|---|---|
+| « liste des clients » | Tableau Excel (.xlsx) : en-têtes, filtre automatique, colonnes |
+| « chiffre d'affaires total » | Feuille **Résumé** avec indicateurs (total, moyenne, min, max, comptage) |
+| « combien de factures en attente ? » | Comptage + lignes filtrées |
+| « prépare un email sur la situation des clients » | **Email** rédigé (objet, corps, politesse) — .docx ou .txt |
+| « rédige un rapport sur les ventes » | **Rapport** structuré (intro, éléments, conclusion) |
+| « fais le compte-rendu de la réunion » | **Compte-rendu** (points, décisions, prochaines étapes) |
+
+Tout est généré à partir de **vos seules données** (jamais d'hallucination,
+gate de résonance), en français corrigé, **0 LLM / 0 GPU**.
+
 ## 8 · Sécurité
 
 - **SSO + API Keys** : chaque tenant possède une clé unique ;
