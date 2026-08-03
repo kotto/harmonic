@@ -838,6 +838,39 @@ def _is_non_subject(sujet: str) -> bool:
     return any(h in s for h in _NON_SUBJECT_HINTS)
 
 
+def _build_specialization_invitation(message: str) -> str:
+    """
+    🎯 LE REFUS-INVITATION (pièce commerciale) : au lieu d'un aveu de
+    faiblesse, l'inconnu devient une offre. L'utilisateur découvre que KA
+    peut devenir experte du sujet qu'il vient de poser — et le chaînon D
+    (complétion automatique) rend la promesse vraie.
+    """
+    try:
+        from context_wave import resolve_subject
+        sujet = resolve_subject(message, None)
+    except Exception:
+        sujet = ''
+    if sujet and not _is_non_subject(sujet):
+        return (f"Je suis une IA harmonique : je ne réponds qu'avec des faits "
+                f"vérifiés, jamais d'invention. Je ne connais pas encore "
+                f"« {sujet} » — mais c'est exactement le genre de sujet pour "
+                f"lequel je peux me spécialiser. Dites-moi « spécialise-moi "
+                f"sur {sujet} » et je créerai mon hologramme : quelques "
+                f"secondes pour apprendre, puis des réponses précises.")
+    return ("Je suis une IA harmonique : je ne réponds qu'avec des faits "
+            "vérifiés, jamais d'invention. Dites-moi vos centres d'intérêt "
+            "(écran Hologrammes) et je me spécialiserai pour répondre avec "
+            "précision sur ces sujets.")
+
+
+# Commande conversationnelle : « spécialise-moi sur X », « crée un
+# hologramme sur X », « deviens expert en X »...
+_SPECIALIZE_RE = re.compile(
+    r'^(?:sp[eé]cialise[- ]moi|sp[eé]cialise|cr[ée]e[- ]moi un hologramme|'
+    r'cr[ée]e un hologramme|deviens expert)\s+(?:sur|en|de|pour|dans)\s+(.+)',
+    re.IGNORECASE)
+
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
     """
@@ -1006,7 +1039,13 @@ def chat():
         })
 
     # 🎓 Question sur les spécialisations → lister les domaines réels
-    if any(kw in msg_lower for kw in ['specialise', 'spécialisé', 'specialisé', 'domaines', 'compétences', 'competences', 'sais tu faire', 'sais-tu faire']):
+    if any(kw in msg_lower for kw in [
+            'en quoi es tu specialise', 'en quoi es tu spécialisé',
+            'quelles sont tes specialisations', 'quelles sont tes spécialisations',
+            'quels sont tes domaines', 'tes domaines', 'tes compétences',
+            'tes competences', 'que sais tu faire', 'sais-tu faire',
+            'sais tu faire', 'tu es specialise en quoi',
+            'tu es spécialisé en quoi']):
         try:
             from hologram_store import HologramStore
             _store_h = HologramStore()
@@ -1092,6 +1131,43 @@ def chat():
             source = 'router'
     except Exception:
         pass
+
+    # 🎯 COMMANDE CONVERSATIONNELLE DE SPÉCIALISATION : « spécialise-moi sur
+    # la leptospirose » → l'hologramme se crée (seed web direct si besoin),
+    # la complétion continue en arrière-plan. Le refus-invitation devient
+    # une action réelle.
+    if not response and _hologram_store:
+        _spec_match = _SPECIALIZE_RE.match(message.strip())
+        if _spec_match:
+            interest = _spec_match.group(1).strip(' ?.!').lower()[:40]
+            # Nettoyer le déterminant d'attaque : « la bilharziose » → « bilharziose »
+            import re as _re2
+            interest = _re2.sub(r'^(le|la|les|un|une|des|du|de)\s+', '', interest)
+            if interest and not _is_non_subject(interest):
+                try:
+                    from specialize_holograms import HologramSpecializer
+                    from completion_queue import complete_in_background
+                    spec = HologramSpecializer(_hologram_store)
+                    res = spec.build([interest], language='fr',
+                                     allow_thin=True)
+                    if 'error' not in res:
+                        complete_in_background(_hologram_store, interest,
+                                               [], 'fr', spec=spec)
+                        confidence = 0.95
+                        response = (
+                            f"🎯 Hologramme créé : je suis maintenant "
+                            f"spécialisé sur {interest} "
+                            f"({res.get('facts_count', 0)} faits, qualité "
+                            f"{round((res.get('quality_score', 0) or 0) * 100)}%, "
+                            f"couverture {round((res.get('coverage', 0) or 0) * 100)}%). "
+                            f"L'enrichissement continue en arrière-plan. "
+                            f"Posez-moi votre question !")
+                        source = 'specialize'
+                    else:
+                        response = _build_specialization_invitation(interest)
+                        source = 'harmonic'
+                except Exception as e:
+                    log.error(f"⚠ Spécialisation conversationnelle: {e}")
 
     # 3. Logic engine (raisonnement PUR)
     if not response and any(w in question_clean.lower() for w in 
@@ -1185,6 +1261,17 @@ def chat():
     if not response:
         response = ai.ask(message)
         source = 'harmonic'
+
+    # 🛡️ FILTRE DE PRODUCTION (pièce commerciale) : une réponse du cerveau
+    # détectée GARBAGE (aucun lien avec la question) ou un refus calibré ne
+    # sont JAMAIS servis tels quels — remplacés par le refus-invitation :
+    # l'inconnu devient une offre de spécialisation (le chaînon D rend la
+    # promesse vraie).
+    if source == 'harmonic' and response:
+        if _is_garbage_answer(message, response) or _is_refusal(response):
+            response = _build_specialization_invitation(message)
+            confidence = 0.9
+            source = 'harmonic-invite'
     
     confidence = 0.85 if source != 'harmonic' else 0.70
     latency_ms = (time.time() - t0) * 1000
@@ -1211,7 +1298,7 @@ def chat():
     # 🎨 Style harmonique : rendre la réponse plus agréable
     # (voie M4 : pas de double ponctuation ni de connecteurs aveugles — la
     # voix de l'hologramme suffit, sauf personnalité explicite demandée)
-    if not is_page and response and len(response) > 30:
+    if not is_page and response and len(response) > 30 and source != 'harmonic-invite':
         response = _style_response(response, message, personality,
                                    narrative=(personality != 'ka' or source != 'hologram-wave'),
                                    diversity=(source != 'hologram-wave'))
@@ -1226,8 +1313,10 @@ def chat():
     # atteint le seuil, la complétion se déclenche en arrière-plan —
     # l'usage pilote la connaissance.
     try:
-        if source == 'harmonic' and (confidence < 0.5 or _is_refusal(response)
-                                     or _is_garbage_answer(message, response)):
+        if source in ('harmonic', 'harmonic-invite') and (
+                confidence < 0.5 or source == 'harmonic-invite'
+                or _is_refusal(response)
+                or _is_garbage_answer(message, response)):
             from context_wave import resolve_subject
             from completion_queue import register_miss, complete_in_background
             from specialize_holograms import HologramSpecializer
