@@ -22,7 +22,138 @@ Chaque profil :
   - section_intro / section_dev / section_conclusion  (multi-paragraphes)
 """
 
+import hashlib
 import re
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# RESTAURATION DES ACCENTS (frontière de mot)
+# Le corpus est stocké sans accents (« diabete », « caracterisee ») — le rendu
+# doit restituer un français correct. Map médicale/générale, appliquée par
+# \b…\b (jamais de sous-chaîne : « des » article ne doit pas devenir « dès »).
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_ACCENT_MAP = {
+    # Médecine — diabète & métabolisme
+    'diabete': 'diabète', 'diabetes': 'diabète', 'glycemie': 'glycémie',
+    'hyperglycemie': 'hyperglycémie', 'hypoglycemie': 'hypoglycémie',
+    'exces': 'excès', 'deficience': 'déficience', 'deficiences': 'déficiences',
+    'resistance': 'résistance', 'resistances': 'résistances',
+    'chronique': 'chronique', 'caracterisee': 'caractérisée',
+    'caracterise': 'caractérise', 'caracterisees': 'caractérisées',
+    'caracterises': 'caractérisés', 'utilisee': 'utilisée', 'utilisees': 'utilisées',
+    'utilise': 'utilisé', 'utilises': 'utilisés', 'elevee': 'élevée',
+    'eleve': 'élevé', 'eleves': 'élevés', 'arterielle': 'artérielle',
+    'arteriel': 'artériel', 'arteriels': 'artériels', 'arterielles': 'artérielles',
+    'pression': 'pression', 'sante': 'santé', 'anemie': 'anémie',
+    'anemies': 'anémies', 'medecine': 'médecine', 'medicale': 'médicale',
+    'medicaux': 'médicaux', 'medicament': 'médicament', 'medicaments': 'médicaments',
+    'hopital': 'hôpital', 'hopitaux': 'hôpitaux', 'symptome': 'symptôme',
+    'symptomes': 'symptômes', 'therapie': 'thérapie', 'therapies': 'thérapies',
+    'chimiotherapie': 'chimiothérapie', 'radiotherapie': 'radiothérapie',
+    'immunotherapie': 'immunothérapie', 'prothese': 'prothèse',
+    'protheses': 'prothèses', 'greffe': 'greffe', 'epidemie': 'épidémie',
+    'epidemies': 'épidémies', 'pandemie': 'pandémie', 'mortalite': 'mortalité',
+    'morbidite': 'morbidité', 'deces': 'décès', 'hepatite': 'hépatite',
+    'tuberculose': 'tuberculose', 'depistage': 'dépistage',
+    'prevention': 'prévention', 'prevenir': 'prévenir', 'eviter': 'éviter',
+    'consequence': 'conséquence', 'consequences': 'conséquences',
+    'sequelle': 'séquelle', 'sequelles': 'séquelles',
+    # Biologie
+    'proliferation': 'prolifération', 'regeneration': 'régénération',
+    'longevite': 'longévité', 'duree': 'durée', 'precoce': 'précoce',
+    'detoxifie': 'détoxifie', 'detoxifient': 'détoxifient',
+    'synthetise': 'synthétise', 'synthetisent': 'synthétisent',
+    'synthese': 'synthèse', 'photosynthese': 'photosynthèse',
+    'energie': 'énergie', 'energetique': 'énergétique', 'oxygene': 'oxygène',
+    'secrete': 'sécrète', 'secretent': 'sécrètent', 'secretes': 'sécrétées',
+    'secretion': 'sécrétion', 'adrenaline': 'adrénaline',
+    'thyroide': 'thyroïde', 'immunite': 'immunité', 'genetique': 'génétique',
+    'genetiques': 'génétiques', 'proteine': 'protéine', 'proteines': 'protéines',
+    'artere': 'artère', 'arteres': 'artères', 'alveole': 'alvéole',
+    'alveoles': 'alvéoles', 'oesophage': 'œsophage', 'neurone': 'neurone',
+    'cellulaire': 'cellulaire', 'degenerative': 'dégénérative',
+    'degenerescence': 'dégénérescence', 'anopheles': 'anophèles',
+    'transmission': 'transmission',
+    # Général
+    'etre': 'être', 'etat': 'état', 'etats': 'états', 'etape': 'étape',
+    'etapes': 'étapes', 'probleme': 'problème', 'problemes': 'problèmes',
+    'reponse': 'réponse', 'reponses': 'réponses', 'meme': 'même',
+    'memes': 'mêmes', 'apres': 'après', 'pres': 'près', 'tres': 'très',
+    'deja': 'déjà', 'premiere': 'première', 'premieres': 'premières',
+    'derniere': 'dernière', 'generale': 'générale', 'element': 'élément',
+    'elements': 'éléments', 'mecanisme': 'mécanisme', 'mecanismes': 'mécanismes',
+    'modele': 'modèle', 'modeles': 'modèles', 'resultats': 'résultats',
+    'resultat': 'résultat', 'etude': 'étude', 'etudes': 'études',
+    'experience': 'expérience', 'experiences': 'expériences',
+    'hypothese': 'hypothèse', 'hypotheses': 'hypothèses', 'these': 'thèse',
+    'theses': 'thèses', 'critere': 'critère', 'criteres': 'critères',
+    'numero': 'numéro', 'regule': 'régule', 'regulent': 'régulent',
+    'regulee': 'régulée', 'regulation': 'régulation', 'protege': 'protège',
+    'protegent': 'protègent', 'protegee': 'protégée', 'liberee': 'libérée',
+    'conserve': 'conservé', 'conservee': 'conservée',
+    # Sciences
+    'etoile': 'étoile', 'etoiles': 'étoiles', 'planete': 'planète',
+    'planetes': 'planètes', 'exoplanete': 'exoplanète', 'lumiere': 'lumière', 'residu': 'résidu',
+    'residus': 'résidus', 'matiere': 'matière', 'gravite': 'gravité',
+    'gravitation': 'gravitation', 'mecanique': 'mécanique', 'mecaniques': 'mécaniques',
+    'electron': 'électron', 'electrons': 'électrons', 'nucleaire': 'nucléaire',
+    'nucleaires': 'nucléaires', 'celeste': 'céleste', 'celestes': 'célestes',
+    'temperature': 'température', 'temperatures': 'températures',
+    'espece': 'espèce', 'especes': 'espèces', 'chimique': 'chimique',
+    'organique': 'organique', 'minerale': 'minérale', 'atmosphere': 'atmosphère',
+}
+
+_ACCENT_KEYS = sorted(_ACCENT_MAP, key=len, reverse=True)
+_ACCENT_RE = re.compile(
+    r'\b(' + '|'.join(re.escape(k) for k in _ACCENT_KEYS) + r')\b')
+
+# Apostrophes cassées (le corpus écrit « d un », « l insuline »)
+_APOSTROPHE_FIXES = [
+    ('qu est ce', "qu'est-ce"), ('qu est-ce', "qu'est-ce"),
+    ('qu il', "qu'il"), ('qu elle', "qu'elle"), ('qu on', "qu'on"),
+    ('qu est', "qu'est"), ('c est', "c'est"), ('n est', "n'est"),
+    ('s est', "s'est"), ('j ai', "j'ai"), ('j en', "j'en"),
+    ('d une', "d'une"), ('d un', "d'un"), ('l a', "l'a"),
+    ('l est', "l'est"), ('l on', "l'on"),
+    ('a la', 'à la'), ('a un', 'à un'), ('a une', 'à une'),
+]
+
+
+def _restore_accents(text: str) -> str:
+    """Restaure les accents (frontière de mot) + apostrophes françaises."""
+    text = _ACCENT_RE.sub(lambda m: _ACCENT_MAP[m.group(1)], text)
+    for k, v in _APOSTROPHE_FIXES:
+        text = re.sub(rf'\b{re.escape(k)}\b', v, text)
+    # « a l insuline » → « à l'insuline » (l'apostrophe consomme l'espace)
+    text = re.sub(r"\ba l\s+(?=[a-zàâäéèêëîïôöùûüç])", "à l'", text)
+    # « que + voyelle » → « qu' + voyelle » (qu insuline → qu'insuline)
+    text = re.sub(r"\bque ([aeiouyhàâäéèêëîïôöùûü])", r"qu'\1", text)
+    return text
+
+
+# Préfixes de question (FR) — retirés de la prose (« Qu est-ce que le
+# diabete ? » → « le diabete »)
+_QUESTION_PREFIXES_FR = [
+    'qu est ce que', 'qu est-ce que', 'qu est ce qu', 'qu est-ce qu',
+    'qu est ce qui', 'qu est ce', 'qu est', 'qui a invente', 'qui a cree',
+    'qui a decouvert', 'qui a', 'qui est', 'explique moi', 'explique',
+    'expliquez', 'pourquoi', 'comment', 'decris', 'definis', 'donne moi',
+    'parle moi de', 'parle moi', 'dis moi', 'quelle est', 'que signifie',
+    'que veut dire', 'que sait on de', 'que sais tu sur', 'que sais tu de',
+    'c est quoi', 'c est quoi un', 'c est quoi une',
+]
+
+
+def _clean_subject_phrase(question: str) -> str:
+    """« Qu est-ce que le diabete ? » → « le diabete » (phrase sujet propre)."""
+    q = question.strip()
+    low = q.lower()
+    for pfx in sorted(_QUESTION_PREFIXES_FR, key=len, reverse=True):
+        if low.startswith(pfx):
+            q = q[len(pfx):].strip()
+            break
+    q = q.strip(' ?.!:;,')
+    return q[:60] or 'ce sujet'
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PROFILS DE VOIX (par domaine d'hologramme)
@@ -353,6 +484,39 @@ def _is_logical_chain(facts, min_links: float = 0.5) -> bool:
     return links >= (len(facts) - 1) * min_links
 
 
+def _pick(options: list, seed_text: str, salt: str, used: set) -> str:
+    """
+    Sélection DÉTERMINISTE par cohérence de phase (φ-spacing) : le choix est
+    un hash du texte précédent (la phase narrative du fait élu), pas un
+    tirage aléatoire — reproductible ET sans répétition immédiate.
+    """
+    if not options:
+        return ''
+    h = hashlib.sha256(f"{seed_text}|{salt}".encode()).digest()
+    idx = int.from_bytes(h[:4], 'big') % len(options)
+    for _ in range(len(options)):
+        if options[idx] not in used:
+            used.add(options[idx])
+            return options[idx]
+        idx = (idx + 1) % len(options)
+    return options[idx]
+
+
+def _finish(text: str) -> str:
+    """Polissage final : accents, contractions, typographie française."""
+    text = _restore_accents(text)
+    text = re.sub(r'\.{2,}', '.', text)
+    text = re.sub(r'\s+', ' ', text)
+    # Typographie française : espace AVANT : ; ! ? — jamais avant . et ,
+    text = re.sub(r'\s+([,;:!?])', r' \1', text)
+    text = re.sub(r'\s+([.,])', r'\1', text)
+    # Contractions avec l'article du sujet (« de le diabete » → « du diabète »)
+    text = re.sub(r'\bde le\b', 'du', text)
+    text = re.sub(r'\bde les\b', 'des', text)
+    text = re.sub(r'\ba le\b', 'au', text)
+    return text.strip()
+
+
 def render_facts(facts, question: str = '', profile: dict = None,
                  depth: str = 'standard', personality: str = 'ka') -> str:
     """
@@ -364,14 +528,14 @@ def render_facts(facts, question: str = '', profile: dict = None,
       'détaillé'  — multi-paragraphes (intro / développement / conclusion)
 
     Le style est un OPÉRATEUR : aucun mot n'est ajouté hors des faits.
+    Les connecteurs sont choisis par cohérence de phase (déterministe).
     """
-    import random
     profile = profile or STYLE_PROFILES[DEFAULT_PROFILE]
     facts = [f for f in facts if str(f[0]).strip()][:6]
     if not facts:
         return ''
 
-    sujet = question.strip(' ?.!')[:60] if question else str(facts[0][0])[:40]
+    sujet = _clean_subject_phrase(question) if question else str(facts[0][0])[:40]
 
     # Nettoyer les faits
     clean = []
@@ -380,9 +544,11 @@ def render_facts(facts, question: str = '', profile: dict = None,
         if s:
             clean.append((s, r, o))
 
+    used = set()  # connecteurs déjà employés (pas de répétition immédiate)
+
     def _render_single(fact) -> str:
         s, r, o = fact
-        tpl = random.choice(profile['single'])
+        tpl = _pick(profile['single'], f"{s} {o}", 'single', used)
         return tpl.format(S=_capitalize(s), s=s, r=r, o=o.rstrip('.'))
 
     def _plain(fact) -> str:
@@ -390,50 +556,42 @@ def render_facts(facts, question: str = '', profile: dict = None,
         s, r, o = fact
         return f"{_capitalize(s)} {r} {o.rstrip('.')}."
 
-    def _conn(role: str = 'connectors') -> str:
-        """Connecteur du profil, formaté (espace propre)."""
-        return random.choice(profile.get(role, profile['connectors'])).strip()
+    def _conn(role: str, seed: str, salt: str = 'conn') -> str:
+        """Connecteur du profil choisi par phase (déterministe)."""
+        return _pick(profile.get(role, profile['connectors']), seed, salt, used).strip()
 
     # ── COURT : phrases simples ───────────────────────────────────────────
     if depth == 'court':
-        return ' '.join(_render_single(f) for f in clean[:3])
+        return _finish(' '.join(_render_single(f) for f in clean[:3]))
 
     # ── DÉTAILLÉ : multi-paragraphes (intro / dev / conclusion) ───────────
     if depth == 'détaillé' and len(clean) >= 3:
         half = max(1, len(clean) // 2)
         p1, p2 = clean[:half], clean[half:]
-        para1 = _conn('section_intro').format(sujet=sujet) + ' ' + _render_single(p1[0])
+        para1 = _conn('section_intro', sujet, 'intro').format(sujet=sujet) + ' ' + _render_single(p1[0])
         for f in p1[1:]:
-            para1 += ' ' + _conn() + ' ' + _plain(f)[0].lower() + _plain(f)[1:]
-        para2 = _conn('section_dev').format(sujet=sujet) + ' '
-        para2 += ' '.join(_conn() + ' ' + _plain(f)[0].lower() + _plain(f)[1:] for f in p2)
-        para3 = _conn('section_conclusion').format(sujet=sujet)
-        return '\n\n'.join([para1, para2, para3])
+            para1 += ' ' + _conn('connectors', f"{f[0]} {f[1]}") + ' ' + _plain(f)[0].lower() + _plain(f)[1:]
+        para2 = _conn('section_dev', sujet + p1[-1][0], 'dev').format(sujet=sujet) + ' '
+        para2 += ' '.join(_conn('connectors', f"{f[0]} {f[1]}", f'p2{i}') + ' ' + _plain(f)[0].lower() + _plain(f)[1:]
+                          for i, f in enumerate(p2))
+        para3 = _conn('section_conclusion', sujet + p2[-1][0], 'concl').format(sujet=sujet)
+        return _finish('\n\n'.join([para1, para2, para3]))
 
     # ── STANDARD : chaîne logique ou collection connectée ─────────────────
     if len(clean) == 1:
-        return _render_single(clean[0])
+        return _finish(_render_single(clean[0]))
 
-    opener = _conn('openers').format(sujet=sujet)
-    if _is_logical_chain(clean):
-        # Chaîne : connecteurs causaux du profil entre faits
-        parts = [opener + ' ' + _render_single(clean[0])]
-        for f in clean[1:]:
-            parts.append(_conn() + ' ' + _plain(f)[0].lower() + _plain(f)[1:])
-        text = ' '.join(parts)
-    else:
-        # Collection : connecteurs du profil entre faits
-        parts = [opener + ' ' + _render_single(clean[0])]
-        for f in clean[1:]:
-            parts.append(_conn() + ' ' + _plain(f)[0].lower() + _plain(f)[1:])
-        text = ' '.join(parts)
+    opener = _conn('openers', sujet, 'open').format(sujet=sujet)
+    parts = [opener + ' ' + _render_single(clean[0])]
+    for i, f in enumerate(clean[1:]):
+        conn = _conn('connectors', f"{f[0]} {f[1]}", f'c{i}')
+        parts.append(conn + ' ' + _plain(f)[0].lower() + _plain(f)[1:])
+    text = ' '.join(parts)
 
-    closer = random.choice(profile['closers'])
+    closer = _pick(profile['closers'], sujet + clean[-1][0], 'close', used)
     if text and not text.rstrip().endswith(('!', '?', '…')):
         text = text.rstrip() + closer
-    # Nettoyage : points multiples des faits sources (« sang.. » → « sang. »)
-    text = re.sub(r'\.{2,}', '.', text)
-    return text
+    return _finish(text)
 
 
 def profile_of(holo_meta) -> dict:

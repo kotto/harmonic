@@ -502,12 +502,15 @@ def _polish_with_deepseek(response_text: str, user_message: str = "") -> str:
         return response_text
 
 def _style_response(response_text: str, user_message: str = "",
-                    personality: str = 'ka', narrative: bool = True) -> str:
+                    personality: str = 'ka', narrative: bool = True,
+                    diversity: bool = True) -> str:
     """Applique le style harmonique (empathie + vocabulaire + diversité).
 
     narrative=False : la prose est déjà structurée (voie M4, voix du
     hologramme) — on évite la double ponctuation de l'arc narratif, sauf si
     une personnalité explicite est demandée.
+    diversity=False : la voix de l'hologramme connecte déjà les faits — le
+    DiversityEngine insérerait des connecteurs sémantiquement aveugles.
     """
     global _harmonic_styler
     if _harmonic_styler is None:
@@ -519,7 +522,8 @@ def _style_response(response_text: str, user_message: str = "",
     if not response_text or len(response_text) < 20:
         return response_text
     try:
-        styled = _harmonic_styler.style(response_text, user_message, 0.5)
+        styled = _harmonic_styler.style(response_text, user_message, 0.5,
+                                        diversity=diversity)
     except Exception:
         styled = response_text
     # 🌊 WaveStyleEngine : enrichissement ondulatoire (émotion + arc + personnalité)
@@ -1082,11 +1086,12 @@ def chat():
         pass
 
     # 🎨 Style harmonique : rendre la réponse plus agréable
-    # (voie M4 : pas de double ponctuation — la voix de l'hologramme suffit,
-    # sauf personnalité explicite demandée)
+    # (voie M4 : pas de double ponctuation ni de connecteurs aveugles — la
+    # voix de l'hologramme suffit, sauf personnalité explicite demandée)
     if not is_page and response and len(response) > 30:
         response = _style_response(response, message, personality,
-                                   narrative=(personality != 'ka' or source != 'hologram-wave'))
+                                   narrative=(personality != 'ka' or source != 'hologram-wave'),
+                                   diversity=(source != 'hologram-wave'))
 
     # 🎨 DeepSeek Style Fallback : reformulation élégante (sans ajout d'info)
     if not is_page and response and len(response) > 30:

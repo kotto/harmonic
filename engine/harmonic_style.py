@@ -215,7 +215,7 @@ class HarmonicStyler:
         self.vocabulary = VocabularyEngine()
     
     def style(self, response: str, user_message: str = "", 
-              style_level: float = PHI_INV) -> str:
+              style_level: float = PHI_INV, diversity: bool = True) -> str:
         """
         Applique le style harmonique complet à une réponse.
         
@@ -223,6 +223,10 @@ class HarmonicStyler:
             response: la réponse brute (fiable mais sobre)
             user_message: le message de l'utilisateur (pour l'empathie)
             style_level: 0.618 (1/φ) = optimal, 0.3 = sobre, 0.9 = créatif
+            diversity: False sur la prose M4 — la voix de l'hologramme
+                       connecte déjà les faits, le DiversityEngine insérerait
+                       des connecteurs sémantiquement aveugles
+                       (« En d'autres termes » sur un fait nouveau).
         
         Returns:
             réponse stylée, toujours fiable
@@ -236,7 +240,7 @@ class HarmonicStyler:
             response = self.vocabulary.enrich(response)
         
         # 3. Diversité — ajouter des variations naturelles
-        if style_level > 0.2:
+        if diversity and style_level > 0.2:
             response = self.diversity.enrich(response, style_level)
         
         return response
