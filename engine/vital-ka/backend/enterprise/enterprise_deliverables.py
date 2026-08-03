@@ -84,11 +84,16 @@ def _stem(w: str) -> str:
     return w
 
 
+_ACCENT_MAP = str.maketrans(
+    {'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e', 'à': 'a', 'â': 'a', 'î': 'i',
+     'ï': 'i', 'ô': 'o', 'ù': 'u', 'û': 'u', 'ç': 'c', 'œ': 'oe', 'æ': 'ae'})
+
+
 def _wordset(text: str) -> set:
-    """Ensemble des mots significatifs (stemmés) d'un texte."""
+    """Ensemble des mots significatifs (déaccentués + stemmés) d'un texte."""
     out = set()
     for w in re.sub(r'[^\w\s]', ' ', text.lower()).split():
-        s = _stem(w)
+        s = _stem(w.translate(_ACCENT_MAP))
         if len(s) > 2:
             out.add(s)
     return out
@@ -374,6 +379,13 @@ def query_data(engine, department_id: str, question: str,
         # pas des enregistrements comptables.
         tabular = [f for f in facts if _is_tabular(f)]
         if tabular and len(tabular) >= len(facts) / 2:
+            facts = tabular
+    else:
+        # Liste : si le rappel mélange lignes de table et texte libre
+        # (ex. « liste des factures en retard » + une phrase contenant
+        # « facturés »), la liste de données porte sur la TABLE.
+        tabular = [f for f in facts if _is_tabular(f)]
+        if tabular and len(tabular) < len(facts):
             facts = tabular
     analysis = analyze_rows(facts, question)
     analysis['aggregates'] = _aggregates(question, analysis)

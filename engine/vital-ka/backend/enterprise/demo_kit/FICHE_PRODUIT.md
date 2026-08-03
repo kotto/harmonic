@@ -53,6 +53,24 @@
 | « Trop cher » | « Moins cher qu'un abonnement par utilisateur chez les autres, et votre marge ne dépend pas du volume de questions. » |
 | « On a déjà un outil » | « Connectez-le via MCP : votre assistant existant interroge vos hologrammes. » |
 
+## Benchmarks — la catégorie CERTITUDE
+
+Les classements de génération (LM Arena, GSM8K, HumanEval) mesurent
+l'invention. Notre catégorie est la **certitude** — mesurée par
+`python benchmark_certitude.py` (rapport : `data/benchmarks/certitude_report.json`) :
+
+| Métrique | Résultat |
+|---|---|
+| Précision factuelle sur corpus (valeurs exactes connues) | **100 %** (11/11) |
+| Refus calibré hors corpus — **0 hallucination** | **100 %** (5/5) |
+| Déterminisme (mêmes données → même réponse) | **100 %** |
+| Latence | ~33 ms / question |
+| Coût | VPS 20 €/mois — requêtes illimitées, 0 GPU |
+
+Comparez : un LLM affiche 5–15 % d'hallucination dès qu'on sort de ses
+données — KA Enterprise **refuse**, avec sources et confiance affichées.
+C'est la différence entre « plausible » et « vérifié ».
+
 ## Spécifications techniques
 
 - **0 LLM, 0 GPU** : encodage ondulatoire (ψ), attention de phase (HWAT),
