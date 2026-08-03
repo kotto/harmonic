@@ -210,6 +210,72 @@ def decode_with_hwat(facts: List[Tuple],
     return dec.decode_facts(facts, ctx_psi=ctx_psi)
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# DÉCODAGE DE TEXTES PLATS (Enterprise / VITAL KA)
+# Des faits sans structure s/r/o (StoredFact.text) → prose connectée par
+# attention de phase. Le connecteur ne sort que si sa cohérence dépasse le
+# seuil — sinon la phrase reste nue (le gate de la forme).
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_CONNECTORS = [
+    'D abord', 'Ensuite', 'De plus', 'Par ailleurs', 'En particulier',
+    'Notamment', 'Ainsi', 'Concrètement', 'Enfin', 'Dans la continuité',
+]
+
+_CONNECTOR_THRESHOLD = 0.515  # au-dessus du plancher de bruit (~0.49 ± 0.02)
+                             # — un connecteur ne sort que si sa cohérence
+                             # de phase avec la phrase est un vrai signal
+
+
+def decode_texts(texts: List[str],
+                 ctx_psi: Optional[np.ndarray] = None,
+                 encoder=None) -> List[str]:
+    """
+    Textes plats (faits vérifiés) → phrases connectées par attention de phase.
+    Chaque phrase « attend » les autres (PhaseAttention) ; le connecteur est
+    choisi par cohérence de phase avec la représentation attentionnée, au-
+    dessus d'un seuil (pas de connecteur = phrase nue). Retourne la liste
+    des phrases ; [] si HWAT indisponible (fallback appelant).
+    """
+    dec = get_decoder(encoder)
+    if dec is None or len(texts) < 2:
+        return list(texts)
+
+    seq = np.array([dec.enc.encode_query(t) for t in texts],
+                   dtype=np.complex128)                      # [L, D]
+    norms = np.linalg.norm(seq, axis=1, keepdims=True)
+    seq = seq / (norms + 1e-12)
+
+    if ctx_psi is not None:
+        ctx_psi = np.asarray(ctx_psi, dtype=np.complex128).reshape(1, -1)
+        n = np.linalg.norm(ctx_psi)
+        if n > 1e-12:
+            ctx_psi = ctx_psi / n
+        seq = np.vstack([ctx_psi, seq])
+    attended = dec.attn.forward(seq)                         # [L', D]
+
+    off = 1 if ctx_psi is not None else 0
+    out = [texts[0]]
+    used = set()
+    for i in range(1, len(texts)):
+        ai = attended[off + i]
+        best_conn, best_coh = '', 0.0
+        for c in _CONNECTORS:
+            if c in used:
+                continue
+            psi_c = dec.enc.encode_query(c)
+            coh = float(np.real(np.dot(ai, np.conj(psi_c))))
+            coh = (coh + 1.0) / 2.0
+            if coh > best_coh:
+                best_coh, best_conn = coh, c
+        if best_conn and best_coh >= _CONNECTOR_THRESHOLD:
+            used.add(best_conn)
+            out.append(f'{best_conn}, {texts[i][0].lower()}{texts[i][1:]}')
+        else:
+            out.append(texts[i])
+    return out
+
+
 if __name__ == '__main__':
     # Test rapide : attention inter-faits (définitude contextuelle)
     facts = [
