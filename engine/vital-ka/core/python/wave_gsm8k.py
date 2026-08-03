@@ -796,10 +796,19 @@ class GSM8KChainMemory:
         self._M_c: Optional[np.ndarray] = None
 
         if data_path is None:
-            _d = os.path.dirname
-            root = _d(os.path.abspath(__file__))  # engine/ → data/benchmarks/
-            data_path = os.path.join(root, 'data', 'benchmarks',
-                                     'gsm8k_test.jsonl')
+            # Recherche ascendante robuste (engine/ ou vital-ka/core/python/…)
+            here = os.path.dirname(os.path.abspath(__file__))
+            found = None
+            for _ in range(6):
+                cand = os.path.join(here, 'data', 'benchmarks',
+                                    'gsm8k_test.jsonl')
+                if os.path.exists(cand):
+                    found = cand
+                    break
+                here = os.path.dirname(here)
+            if found is None:
+                raise FileNotFoundError('gsm8k_test.jsonl introuvable')
+            data_path = found
         self.data_path = data_path
 
     # ── construction ─────────────────────────────────────────────────────────

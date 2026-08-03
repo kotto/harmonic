@@ -31,9 +31,18 @@ from wave_code_generator import WaveCodeGenerator
 def load_gsm8k(path: str = None) -> List[Dict]:
     """Charge les problèmes GSM8K."""
     if path is None:
-        _d = os.path.dirname
-        root = _d(os.path.abspath(__file__))  # engine/ → data/benchmarks/
-        path = os.path.join(root, 'data', 'benchmarks', 'gsm8k_test.jsonl')
+        # Recherche ascendante robuste (engine/ ou vital-ka/core/python/…)
+        here = os.path.dirname(os.path.abspath(__file__))
+        found = None
+        for _ in range(6):
+            cand = os.path.join(here, 'data', 'benchmarks', 'gsm8k_test.jsonl')
+            if os.path.exists(cand):
+                found = cand
+                break
+            here = os.path.dirname(here)
+        if found is None:
+            raise FileNotFoundError('gsm8k_test.jsonl introuvable')
+        path = found
     with open(path, encoding='utf-8') as f:
         return [json.loads(l) for l in f]
 
