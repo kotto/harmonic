@@ -273,6 +273,61 @@ class WordProblemStateSolver:
         (production par jour, profit, aller-retour, douzaines…) qui se
         résolvent en une formule.
         """
+        # "N X which cost $Y per Z" (répété) → somme des produits
+        # (3 dozen donuts which cost $68 per dozen, 2 dozen mini cupcakes…)
+        per_matches = list(re.finditer(
+            rf'({_NUM_RE})\s+\w+(?:[ \w]+?)\s+costs?\s+\$\s*([\d,]+)\s+per\s+\w+', q))
+        if len(per_matches) >= 1:
+            has_per = re.search(r'\bper\b', q)
+            if has_per:
+                total = sum(_num(m.group(1)) * _num(m.group(2))
+                            for m in per_matches)
+                if len(per_matches) >= 2 or 'total' in q or 'spend' in q \
+                   or 'cost' in q:
+                    steps = [f"{_num(m.group(1))} × {_num(m.group(2))}"
+                             for m in per_matches]
+                    return total, steps + [f"total : {total}"]
+
+        # "paid/costs $X for N items → combien par item ?"
+        m = re.search(rf'(?:paid|costs?|bought|purchased).*?\$\s*([\d,]+)'
+                      rf'(?:[^.]*?)\bfor\s+({_NUM_RE})\s+(?:items?|boxes?|'
+                      rf'books?|pairs?|bags?|tickets?|candies?|cookies?|'
+                      rf'glasses?|shoes?|hats?|muffins?|cakes?|pies?|'
+                      rf'loaves?|pens?|bottles?|shirts?|donuts?)\b.*?'
+                      rf'(?:each|per|cost)', q)
+        if m and ('each' in q or 'per' in q or 'cost' in q):
+            a, n = _num(m.group(1)), _num(m.group(2))
+            return a / n, [f"{a} / {n} = {a / n} par item"]
+
+        # "earns N dollars per hour/day, works H hours/days → gain"
+        m = re.search(rf'(?:earns?|makes?|gets?|receives?|pays?)\s+\$\s*'
+                      rf'([\d,]+(?:\.[\d,]+)?)\s+per\s+(hour|day|week).*?'
+                      rf'(?:for|works?|hours?)\s+({_NUM_RE})\s+'
+                      rf'(hours?|days?|weeks?)', q)
+        if m:
+            rate, unit, dur = _num(m.group(1)), m.group(2), _num(m.group(3))
+            if unit.rstrip('s') == m.group(4).rstrip('s') or \
+               (unit.startswith('hour') and m.group(4).startswith('hour')):
+                return rate * dur, [f"{rate} × {dur} = {rate * dur} "
+                                    f"({unit.rstrip('s')}s)"]
+
+        # "dinner/lunch costs $X, leaves a Y% tip → total"
+        m = re.search(rf'(?:dinner|lunch|meal|bill|restaurant|check).*?'
+                      rf'costs?\s+\$\s*([\d,]+).*?(?:tip|leave|leaves)\s+'
+                      rf'({_NUM_RE})\s*%', q)
+        if m:
+            a, t = _num(m.group(1)), _num(m.group(2))
+            return a * (1 + t / 100), [f"{a} × (1 + {t}%) = "
+                                       f"{a * (1 + t / 100)}"]
+
+        # "X dollars with Y% off / discount" (remise)
+        m = re.search(rf'\$\s*([\d,]+).*?({_NUM_RE})\s*%\s*'
+                      rf'(?:off|discount|sale)', q)
+        if m:
+            a, p = _num(m.group(1)), _num(m.group(2))
+            return a * (1 - p / 100), [f"{a} × (1 − {p}%) = "
+                                       f"{a * (1 - p / 100)}"]
+
         # "lays N eggs per day, eats M every morning, how many left after D days?"
         m = re.search(rf'({_NUM_RE})(?:\s+[a-z]+)?\s+per day.*?'
                       rf'(?:eats?|uses?|consumes?)\s+({_NUM_RE}).*?'
