@@ -244,6 +244,12 @@ _ACCENT_MAP = {
     'protegent': 'protègent', 'protegee': 'protégée', 'liberee': 'libérée',
     'conserve': 'conservé', 'conservee': 'conservée',
     'precision': 'précision', 'etabli': 'établi', 'etablie': 'établie',
+    'coeur': 'cœur', 'coeurs': 'cœurs', 'eveille': 'éveille',
+    'eveillent': 'éveillent', 'eveillee': 'éveillée', 'ecrit': 'écrit',
+    'ecrits': 'écrits', 'ecrire': 'écrire', 'reveler': 'révéler',
+    'revele': 'révèle', 'revelent': 'révèlent', 'apparait': 'apparaît',
+    'resonne': 'résonne', 'resonnent': 'résonnent', 'resonner': 'résonner',
+    'apparaissent': 'apparaissent', 'disparait': 'disparaît',
     'etablis': 'établis', 'etablit': 'établit',
 }
 
