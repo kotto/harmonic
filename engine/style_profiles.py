@@ -432,7 +432,8 @@ def _finish(text: str) -> str:
 
 
 def render_facts(facts, question: str = '', profile: dict = None,
-                 depth: str = 'standard', personality: str = 'ka') -> str:
+                 depth: str = 'standard', personality: str = 'ka',
+                 ctx_psi=None) -> str:
     """
     Rendu stylé des faits vérifiés (voie M4).
 
@@ -490,15 +491,31 @@ def render_facts(facts, question: str = '', profile: dict = None,
         return _finish(' '.join(_render_single(f) for f in clean[:3]))
 
     # ── DÉTAILLÉ : multi-paragraphes (intro / dev / conclusion) ───────────
+    # 🌊 DÉCODEUR HWAT (attention inter-faits, brique F) : si disponible,
+    # les phrases sont générées par PhaseAttention (chaque fait « attend »
+    # les autres + le contexte ψ_ctx) — la définitude contextuelle émerge
+    # (« l'insuline » après « le diabète »). Fallback : composition par hash.
+    def _decode(grp):
+        try:
+            from hwat_surface import decode_with_hwat
+            ph = decode_with_hwat(grp, ctx_psi=ctx_psi)
+            if ph and len(ph) == len(grp):
+                return ph
+        except Exception:
+            pass
+        return [_render_single(f) for f in grp]
+
     if depth == 'détaillé' and len(clean) >= 3:
         half = max(1, len(clean) // 2)
         p1, p2 = clean[:half], clean[half:]
-        para1 = _conn('section_intro', sujet, 'intro').format(sujet=sujet) + ' ' + _render_single(p1[0])
-        for f in p1[1:]:
-            para1 += ' ' + _conn('connectors', f"{f[0]} {f[1]}") + ' ' + _plain(f)[0].lower() + _plain(f)[1:]
+        ph1 = _decode(p1)
+        ph2 = _decode(p2)
+        para1 = _conn('section_intro', sujet, 'intro').format(sujet=sujet) + ' ' + ph1[0]
+        for f, p in zip(p1[1:], ph1[1:]):
+            para1 += ' ' + _conn('connectors', f"{f[0]} {f[1]}") + ' ' + p[0].lower() + p[1:]
         para2 = _conn('section_dev', sujet + p1[-1][0], 'dev').format(sujet=sujet) + ' '
-        para2 += ' '.join(_conn('connectors', f"{f[0]} {f[1]}", f'p2{i}') + ' ' + _plain(f)[0].lower() + _plain(f)[1:]
-                          for i, f in enumerate(p2))
+        para2 += ' '.join(_conn('connectors', f"{f[0]} {f[1]}", f'p2{i}') + ' ' + p[0].lower() + p[1:]
+                          for i, (f, p) in enumerate(zip(p2, ph2)))
         para3 = _conn('section_conclusion', sujet + p2[-1][0], 'concl').format(sujet=sujet)
         return _finish('\n\n'.join([para1, para2, para3]))
 
@@ -507,10 +524,11 @@ def render_facts(facts, question: str = '', profile: dict = None,
         return _finish(_render_single(clean[0]))
 
     opener = _conn('openers', sujet, 'open').format(sujet=sujet)
-    parts = [opener + ' ' + _render_single(clean[0])]
-    for i, f in enumerate(clean[1:]):
+    phrases = _decode(clean)
+    parts = [opener + ' ' + phrases[0]]
+    for i, (f, p) in enumerate(zip(clean[1:], phrases[1:])):
         conn = _conn('connectors', f"{f[0]} {f[1]}", f'c{i}')
-        parts.append(conn + ' ' + _plain(f)[0].lower() + _plain(f)[1:])
+        parts.append(conn + ' ' + p[0].lower() + p[1:])
     text = ' '.join(parts)
 
     closer = _pick(profile['closers'], sujet + clean[-1][0], 'close', used)

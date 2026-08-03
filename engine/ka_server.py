@@ -1027,10 +1027,12 @@ def chat():
             # utilisateur), compose la requête du rappel M4, et la réponse
             # devient courte (sauf profondeur explicitement demandée).
             _message_m4 = message
+            _ctx_psi = None
             if history:
                 try:
                     from context_wave import (is_followup, resolve_subject,
-                                              encode_history)
+                                              encode_history, ctx_psi)
+                    _ctx_psi = ctx_psi(history)
                     if is_followup(message, history):
                         ctx_subject = resolve_subject(message, history)
                         if ctx_subject:
@@ -1058,7 +1060,8 @@ def chat():
                             from style_profiles import get_profile, render_facts
                             meta = _hologram_store._registry.get(best_holo_id)
                             profile = get_profile(meta) if meta else None
-                            prose = render_facts(shown, _message_m4, profile, depth)
+                            prose = render_facts(shown, _message_m4, profile, depth,
+                                                 ctx_psi=_ctx_psi)
                         except Exception:
                             prose = ''
                         if prose:
