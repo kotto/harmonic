@@ -98,6 +98,17 @@ CODE_ALGO_KEYWORDS = frozenset([
 ])
 
 
+def _kw_match(kw: str, q: str) -> bool:
+    """
+    Mot-clé court (≤3 lettres, sans espace) → frontière de mot :
+    « si » ne doit pas matcher « hypertenSIon ».
+    Mots longs et phrases → sous-chaîne (suffisamment discriminant).
+    """
+    if len(kw) <= 3 and ' ' not in kw:
+        return re.search(rf'\b{re.escape(kw)}\b', q) is not None
+    return kw in q
+
+
 def detect_intent(question: str) -> Dict:
     """
     Détecte l'intention principale de la question.
@@ -112,23 +123,23 @@ def detect_intent(question: str) -> Dict:
     q = question.lower()
 
     # Compter les matchs par catégorie
-    math_hits = sum(1 for kw in MATH_KEYWORDS if kw in q)
-    fe_hits = sum(1 for kw in CODE_FRONTEND_KEYWORDS if kw in q)
-    algo_hits = sum(1 for kw in CODE_ALGO_KEYWORDS if kw in q)
+    math_hits = sum(1 for kw in MATH_KEYWORDS if _kw_match(kw, q))
+    fe_hits = sum(1 for kw in CODE_FRONTEND_KEYWORDS if _kw_match(kw, q))
+    algo_hits = sum(1 for kw in CODE_ALGO_KEYWORDS if _kw_match(kw, q))
 
     detected = []
     for kw in MATH_KEYWORDS:
-        if kw in q: detected.append(kw)
+        if _kw_match(kw, q): detected.append(kw)
     for kw in CODE_FRONTEND_KEYWORDS:
-        if kw in q: detected.append(kw)
+        if _kw_match(kw, q): detected.append(kw)
     for kw in CODE_ALGO_KEYWORDS:
-        if kw in q: detected.append(kw)
+        if _kw_match(kw, q): detected.append(kw)
 
     # Détection raisonnement
     reason_hits = 0
     reason_detected = []
     for kw in REASONING_KEYWORDS:
-        if kw in q:
+        if _kw_match(kw, q):
             reason_hits += 1
             reason_detected.append(kw)
 
@@ -164,6 +175,8 @@ def detect_intent(question: str) -> Dict:
         'detected_keywords': detected[:10] + reason_detected[:5],
         'reason_hits': reason_hits,
         'math_hits': math_hits,
+        'code_frontend': fe_hits,
+        'code_algo': algo_hits,
     }
 
     # Détection de template frontend spécifique
@@ -233,7 +246,7 @@ def route(question: str) -> Optional[str]:
             pass
     
     # Fallback CODE : chercher dans l'hologramme CODE
-    if intent['intent'] in ('code_frontend', 'code_algo') or fe_hits > 0 or algo_hits > 0:
+    if intent['intent'] in ('code_frontend', 'code_algo') or intent.get('code_frontend', 0) > 0 or intent.get('code_algo', 0) > 0:
         try:
             from hologram_router import HologramRouter
             router = HologramRouter('data/holograms')

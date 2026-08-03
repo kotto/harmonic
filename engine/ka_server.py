@@ -513,9 +513,18 @@ def _style_response(response_text: str, user_message: str = "") -> str:
     if not response_text or len(response_text) < 20:
         return response_text
     try:
-        return _harmonic_styler.style(response_text, user_message, 0.5)
+        styled = _harmonic_styler.style(response_text, user_message, 0.5)
     except Exception:
-        return response_text
+        styled = response_text
+    # 🌊 WaveStyleEngine : enrichissement ondulatoire (émotion + arc + personnalité)
+    # Équivalences TRADUCTION_ONDULATOIRE_LLM.md : 7.1 émotion, 7.2 personnalité, 7.3 arc
+    try:
+        from wave_style_engine import WaveStyleEngine
+        _wse = WaveStyleEngine()
+        styled = _wse.style(styled, question=user_message)
+    except Exception:
+        pass
+    return styled
 
 def _get_wave_debugger():
     """Import paresseux du wave_debugger (évite les imports circulaires)."""
@@ -579,6 +588,142 @@ def debug_diagnose():
     })
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🌊 RAPPEL HOLOGRAPHIQUE M4 — multi-signaux + consensus inter-hologrammes
+#    Inspiré de wave_gsm8k.solve_transfer_consensus (commit 3fd207b) :
+#    - 5 signaux sémantiques sans oracle pour scorer chaque domaine
+#    - consensus pondéré : un fait qui résonne dans plusieurs domaines se renforce
+#    - le recouvrement prime : top-N domaines fusionnés au lieu d'un seul
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _holographic_consensus_recall(message: str, top_domains: int = 3,
+                                  top_k: int = 5,
+                                  w: tuple = (0.35, 0.20, 0.20, 0.15, 0.10)):
+    """
+    Rappel holographique M4 : score sémantique multi-signaux + consensus.
+
+    Signaux par domaine (sans oracle, comme semantic_scores GSM8K) :
+      1. top_score   — résonance max d'un fait (pic de résonance)
+      2. mean_score  — résonance moyenne des top-k (cohérence du domaine)
+      3. coverage    — nb de faits au-dessus du seuil (recouvrement)
+      4. sector_hit  — chevauchement secteurs hologramme ∩ mots requête
+      5. mass        — nb de faits de l'hologramme (masse critique, log-normalisée)
+
+    Consensus : un fait présent dans N domaines voit son score multiplié par
+    (1 + 0.5·(N-1)) — les domaines indépendants qui convergent se renforcent.
+
+    Returns:
+        [(sujet, relation, objet, secteur, score_consensus)] trié décroissant,
+        ou [] si rien ne résonne.
+    """
+    import math
+    holos = _hologram_store.list_holograms()
+    query_words = set(re.findall(r"[a-zàâäéèêëîïôöùûüç]{3,}", message.lower()))
+    # Mots « porteurs » : sans stopwords — « est », « que » sont partout dans
+    # les faits (relations) et fausseraient l'ancrage lexical.
+    try:
+        from holographic_encoder import _STOPWORDS
+        query_content = query_words - set(_STOPWORDS)
+    except Exception:
+        query_content = query_words
+    n_facts_by_holo = {}
+
+    domain_results = []   # (holo_id, semantic_score, recalled)
+    for h in holos:
+        holo_id = h['id']
+        # Format wave v2 uniquement : les hologrammes v1 (psies 64D sans
+        # mémoire holographique) ne résonnent pas — les scanner coûte des
+        # secondes (fallback textuel sur 46k+ faits) sans bénéfice.
+        if not _hologram_store.has_wave_format(holo_id):
+            continue
+        n_facts_by_holo[holo_id] = int(h.get('facts_count', 1))
+        try:
+            recalled = _hologram_store.recall(holo_id, message, top_k=top_k)
+        except Exception:
+            continue
+        if not recalled:
+            continue
+
+        scores = [r[4] for r in recalled]
+        top_score = max(scores)
+        mean_score = sum(scores) / len(scores)
+        coverage = sum(1 for s in scores if s > 0.02) / max(1, len(scores))
+
+        # sector_hit : fraction des mots porteurs de la requête couverts par
+        # les faits (stopwords exclus — « est »/« que » sont des relations)
+        fact_text = ' '.join(f"{r[0]} {r[1]} {r[2]}" for r in recalled).lower()
+        fact_words = set(re.findall(r"[a-zàâäéèêëîïôöùûüç]{3,}", fact_text))
+        sector_hit = (len(query_content & fact_words) / max(1, len(query_content)))
+
+        # mass : log-normalisé (un hologramme de 5k faits ≠ ×1000 un de 5)
+        mass = math.log1p(h.get('facts_count', 1)) / math.log1p(50000)
+
+        sem = (w[0] * top_score + w[1] * mean_score + w[2] * coverage
+               + w[3] * sector_hit + w[4] * mass)
+        domain_results.append((holo_id, sem, recalled))
+        log.info(f"  🌊 {holo_id}: sem={sem:.4f} (top={top_score:.3f} "
+                 f"mean={mean_score:.3f} cov={coverage:.2f} "
+                 f"hit={sector_hit:.2f} mass={mass:.2f})")
+
+    if not domain_results:
+        return []
+
+    # Top-N domaines par score sémantique (recouvrement, pas un seul gagnant)
+    domain_results.sort(key=lambda x: -x[1])
+    selected = domain_results[:top_domains]
+
+    # 🚪 Seuil de cohérence (zero-hallucination) : le meilleur domaine doit
+    # avoir un ancrage lexical (hit > 0) OU une résonance franche au-dessus
+    # du plancher de bruit. Équivalent du signal "forme" M4 — le plus
+    # discriminant bon/mauvais.
+    #
+    # Plancher de bruit : la résonance token max sur N faits × W mots de la
+    # requête (3 composants chacun) en ℂ⁵¹² croît comme sqrt(2·ln(3NW)/D).
+    # Un hologramme de 46k faits a un plancher plus haut qu'un de 9 faits —
+    # le seuil s'adapte à la taille du meilleur domaine.
+    best_sem = selected[0][1]
+    best_recall = selected[0][2]
+    best_top = max(r[4] for r in best_recall)
+    fact_text = ' '.join(f"{r[0]} {r[1]} {r[2]}" for r in best_recall).lower()
+    fact_words = set(re.findall(r"[a-zàâäéèêëîïôöùûüç]{3,}", fact_text))
+    best_hit = len(query_content & fact_words) / max(1, len(query_content))
+    n_best = n_facts_by_holo.get(selected[0][0], 1)
+    w_q = max(1, len(query_content))
+    noise_floor = math.sqrt(2.0 * math.log(3.0 * n_best * w_q) / 512.0) + 0.10
+    gate_threshold = max(0.25, noise_floor)
+    if best_hit == 0.0 and best_top < gate_threshold:
+        log.info(f"  🌊 Consensus rejeté (cohérence insuffisante: "
+                 f"hit={best_hit:.2f}, top={best_top:.3f} < {gate_threshold:.3f}) "
+                 f"— fallback cerveau")
+        return []
+
+    log.info(f"  🌊 Domaines retenus: "
+             f"{[(d, round(s, 3)) for d, s, _ in selected]}")
+
+    # Consensus : fusionner les faits, renforcer ceux qui convergent
+    fact_votes = {}   # (s, r, o) → [scores...]
+    fact_meta = {}    # (s, r, o) → (secteur, best_domain_sem)
+    for holo_id, sem, recalled in selected:
+        for s, r, o, sec, score in recalled:
+            key = (s, r, o)
+            fact_votes.setdefault(key, []).append(score)
+            if key not in fact_meta or sem > fact_meta[key][1]:
+                fact_meta[key] = (sec, sem)
+
+    consensus = []
+    for (s, r, o), votes in fact_votes.items():
+        sec, dom_sem = fact_meta[(s, r, o)]
+        # consensus_weight : les domaines indépendants qui convergent se renforcent
+        boost = 1.0 + 0.5 * (len(votes) - 1)
+        final = max(votes) * boost * (1.0 + dom_sem)
+        consensus.append((s, r, o, sec, final))
+
+    consensus.sort(key=lambda x: -x[4])
+    log.info(f"🌊 Consensus: {len(consensus)} faits "
+             f"({sum(1 for v in fact_votes.values() if len(v) > 1)} convergents)")
+    return consensus[:top_k]
+
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
     """
@@ -611,19 +756,13 @@ def chat():
     if not message:
         return jsonify({'error': 'Message requis', 'response': "Je n'ai pas compris votre message."}), 400
 
-    # 📜 Multi-tours : préfixer le contexte avec l'historique récent
+    # 📜 Multi-tours : le pipeline (HarmonicAI/HarmonicBrain) gère les follow-ups
+    # via sa conversation interne (_enrich_with_context). ⚠️ Ne pas préfixer le
+    # message avec l'historique : les mots-clés du contexte pollueraient le
+    # retriever (faits du contexte au lieu de la question) et les heuristiques
+    # de routage (détecteur de domaine, PageForge, longueur >100).
     if history:
-        try:
-            conv = []
-            for turn in history[-4:]:
-                role = turn.get('role', 'user')
-                content = (turn.get('content') or '')[:300]
-                if content:
-                    conv.append(("Utilisateur" if role == 'user' else "KA") + " : " + content)
-            if conv:
-                context = (context + "\n\nConversation récente :\n" + "\n".join(conv)).strip()
-        except Exception:
-            pass  # historique malformé → ignorer
+        log.info(f"📜 Multi-tours: {len(history)} tours reçus — suivi géré par le pipeline")
 
     # 🌐 Détection automatique de la langue
     detected_lang = 'fr'
@@ -803,6 +942,16 @@ def chat():
     if context:
         message = f"{context}\n{message}"
     
+    # ⚠️ Question utilisateur SEULE (après le préfixe multi-tours) : le message
+    # complet (avec historique) est passé au retriever, mais les heuristiques de
+    # routage (routeur d'intention, logic engine) doivent voir la question brute.
+    question_clean = message
+    if 'Conversation precedente :' in message:
+        tail = message.rsplit('Conversation precedente :', 1)[-1]
+        lines = tail.strip().split('\n')
+        if lines and lines[-1].strip():
+            question_clean = lines[-1].strip()
+    
     t0 = time.time()
     
     # 🌊 Pipeline harmonique complet (HWAT + routeur + logique + templates)
@@ -810,10 +959,10 @@ def chat():
     source = 'harmonic'
     
     # 1. Normaliser la requête (questions courtes → langage naturel)
-    normalized = message
+    normalized = question_clean
     try:
         from query_normalizer import normalize
-        normalized = normalize(message)
+        normalized = normalize(question_clean)
     except Exception:
         pass
     
@@ -821,14 +970,17 @@ def chat():
     try:
         from intent_router import route
         result = route(normalized)
-        if result:
+        # 🛡️ Anti-écho : certains moteurs renvoient la question telle quelle
+        # quand ils ne savent pas résoudre (« fait_direct » dégénéré) — ce
+        # n'est pas une réponse, on laisse le pipeline continuer.
+        if result and result != normalized and result != question_clean:
             response = result
             source = 'router'
     except Exception:
         pass
 
     # 3. Logic engine (raisonnement PUR)
-    if not response and any(w in message.lower() for w in 
+    if not response and any(w in question_clean.lower() for w in 
         ['si ', 'alors', 'donc', 'déduire', 'conclure', 'implique', 'tous les',
          'aucun', 'vrai', 'faux', '>', '<', '=', '→']):
         try:
@@ -840,24 +992,42 @@ def chat():
         except Exception:
             pass
 
-    # 4. Hologrammes — retrieval de faits (connaissances)
-    if not response and _HWAT_AVAILABLE and _hwat_bridge:
+    # 4. Hologrammes — Rappel Holographique Natif (Wave-Native)
+    #    Équivalence: RAG (LLM #23) → Rappel Holographique H ⊗ ψ_query
+    #    Refonte M4 : score sémantique multi-signaux + consensus inter-hologrammes
+    #    (inspiré de wave_gsm8k.solve_transfer_consensus, commit 3fd207b)
+    if not response and _hologram_store:
+        # 🚫 Pas de rappel holographique pour les intentions code/maths :
+        # les mots courants (« fonction », « tri ») résonnent dans les faits
+        # médicaux et produiraient du hors-sujet — le cerveau harmonique a
+        # ses propres moteurs spécialisés pour ces intentions.
+        _skip_hologram = False
         try:
-            from hologram_router import HologramRouter
-            hologram_dir = str(_ENGINE_DIR / 'data' / 'holograms')
-            r = HologramRouter(hologram_dir)
-            domains = r.route(message, top_k=2)
-            facts = []
-            for domain, _ in domains:
-                facts.extend(r.retrieve_facts(domain, message, top_k=4))
-            if facts:
-                lines = [f"🌊 {message}", ""]
-                for f in facts[:5]:
-                    lines.append(f"• {f['sujet'][:70]} {f['relation'][:30]} {f['objet'][:70]}")
-                response = '\n'.join(lines)
-                source = 'hologram'
-        except Exception as e:
-            print(f"  ⚠ Hologram: {e}")
+            from intent_router import detect_intent
+            _skip_hologram = detect_intent(normalized).get('intent') in (
+                'math', 'code_frontend', 'code_algo')
+        except Exception:
+            pass
+        if not _skip_hologram:
+            try:
+                consensus = _holographic_consensus_recall(message, top_domains=3, top_k=5)
+                if consensus:
+                    # 🎯 Filtre « forme » (M4) : ne montrer que les faits à
+                    # résonance franche (≥ 0.45) — le bruit (sims aléatoires
+                    # 0.15-0.45 sur les hologrammes larges) ne doit pas
+                    # polluer la réponse mobile.
+                    top_score = consensus[0][4]
+                    shown = [f for f in consensus if f[4] >= 0.45][:5]
+                    if shown:
+                        lines = [f"🌊 {message}", ""]
+                        for s, r, o, sec, score in shown:
+                            lines.append(f"• [{score:.3f}] {s[:60]} {r[:25]} {o[:60]}")
+                        response = '\n'.join(lines)
+                        source = 'hologram-wave'
+            except Exception as e:
+                log.error(f"  ⚠ Holographic recall error: {e}")
+                import traceback
+                traceback.print_exc()
 
     # 5. Fallback : HarmonicAI
     if not response:
@@ -3284,7 +3454,7 @@ def store_download(holo_id):
     if not _hologram_store:
         return jsonify({'error': 'Store non disponible'}), 503
 
-    facts = _hologram_store.download(holo_id)
+    facts, psi_data = _hologram_store.download(holo_id)
     if not facts:
         return jsonify({'error': f'Hologramme {holo_id} introuvable ou vide'}), 404
 
@@ -3305,11 +3475,16 @@ def store_download(holo_id):
             'message': f'✅ {len(facts):,} faits chargés en mémoire',
         })
     else:
-        # GET : retourne les faits pour traitement côté client
+        # GET : retourne les faits + données ψ en format transport polaire (JSON-safe)
+        from holographic_encoder import hologram_to_transport
+        psi_transport = hologram_to_transport(psi_data) if psi_data else {}
+        
         return jsonify({
             'holo_id': holo_id,
             'facts': [[f[0], f[1], f[2], f[3]] for f in facts],
             'count': len(facts),
+            'has_psi_data': bool(psi_data),
+            'psi_data': psi_transport,  # Format polaire : amplitude + phase
         })
 
 
@@ -3318,6 +3493,9 @@ def store_load():
     """
     Charge un hologramme dans le cerveau actif.
     Body: { "holo_id": "...", "facts": [...] } ou juste { "holo_id": "..." }
+    
+    Wave-native: injecte la mémoire holographique H directement dans HarmonicBrain
+    via brain.store(H, amplitude=2.0) — renforcement d'amplitude (équivalent fine-tuning)
     """
     if not _hologram_store:
         return jsonify({'error': 'Store non disponible'}), 503
@@ -3334,12 +3512,12 @@ def store_load():
         facts = [(str(f[0]), str(f[1]), str(f[2]), str(f[3]) if len(f) > 3 else 'GENERAL')
                  for f in facts_raw]
     else:
-        facts = _hologram_store.download(holo_id)
+        facts, _ = _hologram_store.download(holo_id)
 
     if not facts:
         return jsonify({'error': 'Aucun fait à charger'}), 404
 
-    # Fusionner dans le FastRetriever
+    # 1. Fusionner dans le FastRetriever (pour recherche textuelle)
     try:
         from page_forge import _init_fast_retriever, _FAST_RETRIEVER
         _init_fast_retriever()
@@ -3348,7 +3526,22 @@ def store_load():
     except Exception:
         pass
 
-    # Injecter aussi dans le modèle harmonique si disponible
+    # 2. 🌊 WAVE-NATIVE: Injecter la mémoire holographique H dans HarmonicBrain
+    #    Équivalence: Fine-Tuning (LLM #17) → Renforcement d'Amplitude
+    try:
+        _brain = ai._get_brain() if ai else brain
+        if _brain and hasattr(_brain, 'store'):
+            # Télécharger les données ψ pour récupérer H
+            _, psi_data = _hologram_store.download(holo_id)
+            if 'hologram_memory' in psi_data:
+                hologram_memory = psi_data['hologram_memory']
+                # Injecter avec renforcement d'amplitude (α += 1 par répétition)
+                _brain.store(hologram_memory, amplitude=2.0)
+                log.info(f"🌊 Mémoire holographique H injectée dans HarmonicBrain ({holo_id})")
+    except Exception as e:
+        log.debug(f"Injection H échouée: {e}")
+
+    # 3. Fallback: ingestion texte dans le modèle harmonique
     try:
         if ai is not None and hasattr(ai, 'model'):
             for s, r, o, sec in facts[:500]:
@@ -3361,7 +3554,7 @@ def store_load():
         'success': True,
         'holo_id': holo_id,
         'facts_loaded': len(facts),
-        'message': f'✅ Hologramme chargé : {len(facts):,} faits actifs',
+        'message': f'✅ Hologramme chargé : {len(facts):,} faits actifs (H injecté)',
     })
 
 @app.route('/api/store/info/<holo_id>', methods=['GET'])
@@ -3406,6 +3599,37 @@ def store_stats():
     if not _hologram_store:
         return jsonify({'error': 'Store non disponible'}), 503
     return jsonify(_hologram_store.stats())
+
+
+@app.route('/api/store/recall', methods=['POST'])
+def store_recall():
+    """
+    Rappel holographique natif : H ⊗ ψ_query → top-k faits résonnants.
+    
+    Remplace le filtrage par mots-clés/secteurs par de la vraie résonance ondulatoire.
+    Équivalence: RAG (LLM #23) → Rappel Holographique (un seul mécanisme récupération+génération)
+    
+    Body: { "holo_id": "...", "query": "...", "top_k": 10 }
+    Returns: { "holo_id", "query", "results": [{sujet, relation, objet, secteur, score}] }
+    """
+    if not _hologram_store:
+        return jsonify({'error': 'Store non disponible'}), 503
+    
+    data = request.get_json(force=True, silent=True) or {}
+    holo_id = data.get('holo_id', '').strip()
+    query = data.get('query', '').strip()
+    top_k = data.get('top_k', 10)
+    
+    if not holo_id or not query:
+        return jsonify({'error': 'holo_id et query requis'}), 400
+    
+    results = _hologram_store.recall(holo_id, query, top_k)
+    return jsonify({
+        'holo_id': holo_id,
+        'query': query,
+        'results': [{'sujet': s, 'relation': r, 'objet': o, 'secteur': sec, 'score': score}
+                   for s, r, o, sec, score in results],
+    })
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

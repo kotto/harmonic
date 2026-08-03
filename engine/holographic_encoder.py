@@ -1201,6 +1201,139 @@ def _render_collection(facts: List[Tuple[str, str, str, str]],
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# TRANSPORT POLAIRE ψ ∈ ℂᴰ → JSON (Wave IR sérialisation)
+# ═══════════════════════════════════════════════════════════════════════════════
+# Équivalence: Wave IR → JSON (transport sans perte de phase)
+#   amplitude = |ψ|  (confiance, force du signal)
+#   phase     = arg(ψ)  (information relationnelle, phase-locking)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def psi_to_transport(psi: np.ndarray) -> dict:
+    """
+    Convertit un vecteur ψ ∈ ℂᴰ en format transport JSON-safe (polaire).
+    
+    Args:
+        psi: Vecteur complexe unitaire ou non (shape: (D,) ou (N, D))
+    
+    Returns:
+        dict avec:
+        - 'amplitude': list[float] = |ψ| (magnitude) — flat si 1D, list[list[float]] si 2D
+        - 'phase': list[float] = arg(ψ) ∈ [-π, π] — flat si 1D, list[list[float]] si 2D
+        - 'dtype': 'polar'
+        - 'dim': int (dimension D)
+        - 'shape': tuple (shape original)
+    
+    Note: Préserve le phase-locking (équivalent Few-Shot → Verrouillage de Phase)
+    """
+    psi = np.asarray(psi, dtype=np.complex64)
+    original_shape = psi.shape
+    
+    # Décomposition polaire : ψ = |ψ| * exp(i * arg(ψ))
+    amplitude = np.abs(psi).astype(np.float32)
+    phase = np.angle(psi).astype(np.float32)  # ∈ [-π, π]
+    
+    # Pour JSON : flat list si 1D, nested list si 2D+
+    if psi.ndim == 1:
+        amp_list = amplitude.tolist()
+        phase_list = phase.tolist()
+    else:
+        amp_list = amplitude.tolist()
+        phase_list = phase.tolist()
+    
+    return {
+        'amplitude': amp_list,
+        'phase': phase_list,
+        'dtype': 'polar',
+        'dim': int(psi.shape[-1]),
+        'shape': list(original_shape),
+    }
+
+
+def psi_from_transport(data: dict) -> np.ndarray:
+    """
+    Reconstitue ψ ∈ ℂᴰ depuis le format transport polaire.
+    
+    Args:
+        dict avec clés 'amplitude', 'phase', 'dim', 'shape'
+    
+    Returns:
+        np.ndarray complexe de forme originale (shape) ou (N, D)
+    """
+    amplitude = np.array(data['amplitude'], dtype=np.float32)
+    phase = np.array(data['phase'], dtype=np.float32)
+    
+    # Reconstruction : ψ = |ψ| * exp(i * φ)
+    psi_complex = amplitude * np.exp(1j * phase)
+    
+    # Reshape vers forme originale
+    target_shape = data.get('shape', (-1, data['dim']))
+    return psi_complex.reshape(target_shape).astype(np.complex64)
+
+
+def hologram_to_transport(hologram_data: dict) -> dict:
+    """
+    Sérialise un hologramme complet (H + ψ_faits) en JSON transport.
+    
+    Args:
+        hologram_data: dict avec clés 'hologram_memory', 'psi_subjects', 
+                       'psi_relations', 'psi_objects', 'amplitudes', etc.
+    
+    Returns:
+        dict JSON-safe avec toutes les composantes en format polaire
+    """
+    transport = {}
+    
+    # Mémoire holographique principale
+    if 'hologram_memory' in hologram_data:
+        transport['hologram_memory'] = psi_to_transport(hologram_data['hologram_memory'])
+    
+    # Vecteurs ψ par fait
+    for key in ['psi_subjects', 'psi_relations', 'psi_objects']:
+        if key in hologram_data:
+            transport[key] = psi_to_transport(hologram_data[key])
+    
+    # Amplitudes (float) - déjà JSON-safe
+    if 'amplitudes' in hologram_data:
+        transport['amplitudes'] = np.asarray(hologram_data['amplitudes'], dtype=np.float32).tolist()
+    
+    # Métadonnées
+    for key in ['version', 'kb_hash', 'domain', 'created_at']:
+        if key in hologram_data:
+            transport[key] = hologram_data[key]
+    
+    # Textes pour compatibilité
+    for key in ['subjects', 'relations', 'objects', 'sectors']:
+        if key in hologram_data:
+            transport[key] = list(hologram_data[key])
+    
+    return transport
+
+
+def hologram_from_transport(transport: dict) -> dict:
+    """
+    Reconstitue un hologramme complet depuis le format transport.
+    """
+    hologram = {}
+    
+    if 'hologram_memory' in transport:
+        hologram['hologram_memory'] = psi_from_transport(transport['hologram_memory'])
+    
+    for key in ['psi_subjects', 'psi_relations', 'psi_objects']:
+        if key in transport:
+            hologram[key] = psi_from_transport(transport[key])
+    
+    if 'amplitudes' in transport:
+        hologram['amplitudes'] = np.array(transport['amplitudes'], dtype=np.float32)
+    
+    for key in ['version', 'kb_hash', 'domain', 'created_at',
+                'subjects', 'relations', 'objects', 'sectors']:
+        if key in transport:
+            hologram[key] = transport[key]
+    
+    return hologram
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # TEST RAPIDE
 # ═══════════════════════════════════════════════════════════════════════════════
 
