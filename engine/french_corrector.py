@@ -271,6 +271,9 @@ def _restore_accents(text: str) -> str:
         text = re.sub(rf'\b{re.escape(k)}\b', v, text)
     # « a l insuline » → « à l'insuline » (l'apostrophe consomme l'espace)
     text = re.sub(r"\ba l\s+(?=[a-zàâäéèêëîïôöùûüç])", "à l'", text)
+    text = re.sub(r"\b([lL]) ([a-zàâäéèêëîïôöùûüç])", r"\1'\2", text)
+    # Élision générique « l + voyelle » → « l' + voyelle » (l insuline →
+    # l'insuline, L insuline → L'insuline) — obligatoire en français
     # « que + voyelle » → « qu' + voyelle »
     text = re.sub(rf"\bque ([{_VOWEL}])", r"qu'\1", text)
     # « de + voyelle » → « d' + voyelle » (de insuline → d'insuline)
