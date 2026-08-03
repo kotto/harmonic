@@ -3593,6 +3593,79 @@ def store_publish():
     result = _hologram_store.publish(domain, facts, author, name, description)
     return jsonify(result)
 
+
+@app.route('/api/store/specialize', methods=['POST'])
+def store_specialize():
+    """
+    🎯 Spécialisation à la demande : centres d'intérêt → hologramme dédié.
+    
+    Body: { "interests": ["diabete", "nutrition"], "language": "fr",
+            "enrich": false, "user_id": "..." }
+    
+    Pipeline (M4, sans oracle) :
+      1. ancres = mots des intérêts + équivalents bilingues FR/EN
+      2. pool lexical → résonance token vectorisée → seed pur (résonance
+         au centroid du sujet obligatoire pour entrer)
+      3. benchmark interne : precision@1 des questions « Qu est-ce que X ? »
+         → quality_score écrit dans le registre
+      4. enrich=True : extraction Wikipedia en arrière-plan (TripleExtractor)
+    
+    L'hologramme créé (type personal, wave v2) entre automatiquement dans
+    le pipeline M4 de chat (consensus + gate).
+    """
+    if not _hologram_store:
+        return jsonify({'error': 'Store non disponible'}), 503
+    
+    data = request.get_json(force=True, silent=True) or {}
+    interests = [str(i).strip() for i in (data.get('interests') or []) if str(i).strip()]
+    language = str(data.get('language', 'fr'))[:5]
+    enrich = bool(data.get('enrich', False))
+    user_id = str(data.get('user_id', 'anonymous'))
+    
+    if not interests:
+        return jsonify({'error': 'Centres d intérêt requis (interests: [...])'}), 400
+    if len(interests) > 4:
+        return jsonify({'error': 'Maximum 4 centres d intérêt'}), 400
+    
+    try:
+        from specialize_holograms import HologramSpecializer, dispatch_enrichment
+        # KB qualitative (harmonique) en source de candidats supplémentaire
+        kb = []
+        try:
+            from harmonic_model import KNOWLEDGE_BASE
+            kb = [(str(s), str(r), str(o), str(sec))
+                  for s, r, o, sec in KNOWLEDGE_BASE]
+        except Exception:
+            pass
+        spec = HologramSpecializer(_hologram_store, kb=kb)
+        result = spec.build(interests, language=language)
+    except Exception as e:
+        log.error(f"  ⚠ Specialize error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Spécialisation échouée: {e}'}), 500
+    
+    if 'error' in result:
+        return jsonify(result), 422
+    
+    # 📓 Enrichissement Wikipedia en arrière-plan (facultatif)
+    if enrich and 'holo_id' in result:
+        try:
+            dispatch_enrichment(_hologram_store, result['holo_id'], interests, language)
+            result['enrichment'] = 'background'
+        except Exception as e:
+            result['enrichment'] = f'échoué: {e}'
+    
+    # 🧠 Mémoriser la spécialisation dans le profil personnel
+    try:
+        from personal_hologram import PersonalHologram
+        ph = PersonalHologram(user_id)
+        ph.observe_specialization(result.get('holo_id', ''), result.get('facts_count', 0))
+    except Exception:
+        pass
+    
+    return jsonify(result)
+
 @app.route('/api/store/stats', methods=['GET'])
 def store_stats():
     """Statistiques du store."""
@@ -4374,6 +4447,7 @@ if __name__ == '__main__':
     log.info(f"   📄 PageForge: http://localhost:{port}/api/page")
     log.info(f"   🌊 J-Lens: http://localhost:{port}/api/jlens")
     log.info(f"   📦 Store: http://localhost:{port}/api/store/list")
+    log.info(f"   🎯 Store/specialize: http://localhost:{port}/api/store/specialize")
     log.info(f"   🏠 Interface: http://localhost:{port}")
     log.info(f"   /              — KA Phone (PWA)")
     log.info(f"   /api/chat      — conversation")
