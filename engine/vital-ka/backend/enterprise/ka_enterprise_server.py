@@ -116,6 +116,15 @@ def serve_readme_vps():
     return send_file(_ENGINE_DIR / 'deploy_vps' / 'README_DEPLOIEMENT_VPS.md',
                      mimetype='text/markdown')
 
+@app.route('/partners/<path:filename>')
+def serve_partner_doc(filename):
+    """Documents du kit partenaire : sécurité, fiche hébergeur, programme revendeur."""
+    safe = Path(filename).name  # anti path traversal
+    path = _ENGINE_DIR / 'partners' / safe
+    if not path.exists():
+        return jsonify({'error': 'Document inconnu'}), 404
+    return send_file(path, mimetype='text/markdown')
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # MIDDLEWARE — Sécurité
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -248,6 +257,7 @@ def index():
             <a href="/onboard" class="btn btn-primary" style="background:linear-gradient(135deg,#00d2a0,#00b894);border-color:#00d2a0">🚀 Créer mon environnement</a>
             <a href="/admin" class="btn btn-primary">📊 Dashboard Admin</a>
             <a href="/docs" class="btn">📖 API Documentation</a>
+            <a href="/partners/KIT_PARTENAIRE.md" class="btn">🤝 Devenir partenaire</a>
             <a href="/api/enterprise/info" class="btn">ℹ️ Infos Système</a>
             <div class="features">
                 <div><strong>🔒 SSO + RBAC</strong>5 rôles, permissions</div>
