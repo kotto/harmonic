@@ -169,3 +169,43 @@ des chemins différents) : le vote seul ne discrimine pas.
   question (prix après « each », quantité d'objets, taux per jour) via le
   solveur d'état, et ne permuter que les rôles compatibles → réduire les
   collisions d'un ordre de grandeur
+
+## 🧪 RAPPORT D'EXPLORATION — EXP 2a (5 août 2026) : PROFIL DE NOMBRES
+
+**Feature** : profil = (nombre de qnums, log-magnitudes normalisées,
+plage min/max). Similarité = cosinus des profils normalisés + similarité
+des plages.
+
+**Classement du bon j (parmi les peers de même squelette, 353 au plafond)** :
+| Poids (question, profil) | top-1 du bon j |
+|---|---|
+| (1,0 ; 0,0) — baseline question | 12,5 % |
+| (0,7 ; 0,3) | 14,7 % |
+| (0,5 ; 0,5) | 15,9 % |
+| (0,3 ; 0,7) | 17,8 % |
+| (0,0 ; 1,0) — profil pur | **20,1 %** |
+
+→ Le PROFIL DE NOMBRES est une feature orthogonale et SUPÉRIEURE à la
+résonance de question pour sélectionner le squelette source.
+
+**Impact sur le prototype d'instanciation (1319 problèmes, top-3 j,
+position + permutations, gate entier positif)** :
+| Classement | pass@1 | précision servie |
+|---|---|---|
+| question | 5,0 % | 7,7 % |
+| **profil** | **8,6 %** (114/1319) | 13,3 % |
+
+→ **8,6 % est le MEILLEUR pass@1 GSM8K mesuré à ce jour** (vs 1,6 % M4,
+2,0 % solveur d'état). La voie instanciation + profil est validée.
+
+**Consensus 2 ondes (instanciation-profil + solveur d'état)** : les deux
+répondent à 192 problèmes seulement (14,6 %), convergent 4 fois (2,1 %),
+dont 2 correctes — les stratégies couvrent des problèmes DISJOINTS : le
+consensus ne fusionne pas ce qui ne se recouvre pas.
+
+**Conclusion 2a** : le classement progresse (le goulot P2 recule), le
+VERROU suivant est le GATE — la précision servie (13,3 %) est trop basse
+à cause des collisions de permutations. La voie : 2c (permutations par
+rôle sémantique) pour réduire le bruit, puis un gate par confirmation
+(le résultat de l'instanciation doit être cohérent avec la sémantique de
+la question — « each » → prix unitaire plausible, « total » → somme…).
