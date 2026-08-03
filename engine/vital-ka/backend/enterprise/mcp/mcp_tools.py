@@ -87,15 +87,23 @@ def _handler_ask_department(args: Dict, ctx: Dict) -> Dict:
         'elapsed_ms': result.elapsed_ms,
         'admitted_uncertainty': bool(result.admitted_uncertainty),
     }
-    # ⚡ Gate → chaînon D : une réponse incertaine est enregistrée pour
-    # enrichissement en arrière-plan (l'usage pilote la connaissance).
-    if bool(result.admitted_uncertainty) or float(result.confidence) < 0.35:
-        try:
+    # ⚡ Gate → chaînon D : une réponse sans réponse réelle (refus calibré
+    # ou confiance faible) est enregistrée ; aux seuils (facette 2× /
+    # sujet 3×), la COMPLÉTION se déclenche : Wikipedia + facettes
+    # manquantes, couverture recalculée (auto-apprentissage).
+    try:
+        from enterprise_completion import should_register_miss
+        if should_register_miss(result):
             from completion_queue import register_miss
-            register_miss(question, sujet=dept.name)
+            miss = register_miss(question, sujet=dept.name)
             out['enrichissement_planifie'] = True
-        except Exception:
-            out['enrichissement_planifie'] = False
+            if miss.get('triggered'):
+                from enterprise_completion import complete_department_background
+                complete_department_background(engine, department_id, dept.name,
+                                               facettes=[miss['facette']])
+                out['completion_lancee'] = True
+    except Exception:
+        out['enrichissement_planifie'] = False
     return out
 
 

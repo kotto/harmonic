@@ -504,13 +504,8 @@ def _seed_department(engine, department_id: str, sujet: str,
     """
     text = None
     try:
-        from web_retriever import WebRetriever
-        retriever = WebRetriever()
-        doc = retriever.search_wikipedia(sujet, lang=lang)
-        if doc:
-            title = str(doc.get('title', sujet))
-            full = retriever.get_wikipedia_full(title, lang=lang)
-            text = full if full else (doc.get('summary') or '')
+        from enterprise_completion import wikipedia_text
+        text = wikipedia_text(sujet, lang)
     except Exception:
         text = None
 

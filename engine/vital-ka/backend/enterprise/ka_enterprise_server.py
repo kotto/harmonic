@@ -444,6 +444,23 @@ def ask_department(department_id):
         webhooks.notify('low_confidence', 
                        f"Confiance {result.confidence:.2f}: {question[:80]}",
                        department_id)
+
+    # ⚡ Gate → chaînon D : auto-apprentissage piloté par l'usage — la
+    # question est enregistrée (refus calibré ou confiance faible) ; aux
+    # seuils (facette 2× / sujet 3×), la complétion se déclenche
+    # (Wikipedia + facettes manquantes, couverture recalculée).
+    try:
+        from enterprise_completion import should_register_miss
+        if should_register_miss(result):
+            from completion_queue import register_miss
+            miss = register_miss(question, sujet=engine.departments[department_id].name)
+            if miss.get('triggered'):
+                from enterprise_completion import complete_department_background
+                complete_department_background(engine, department_id,
+                                               engine.departments[department_id].name,
+                                               facettes=[miss['facette']])
+    except Exception:
+        pass
     
     return jsonify({
         'question': result.question,
@@ -664,6 +681,31 @@ def mcp_agents_list():
         result['routage'] = {'question': question,
                              'agent_gagnant': route_agent(question)}
     return jsonify(result)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CHAÎNON D — auto-apprentissage piloté par l'usage
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/enterprise/completions/status', methods=['GET'])
+@require_auth
+@rate_limit
+def completions_status():
+    """État du chaînon D : file d'attente des questions sans réponse +
+    derniers rapports de complétion (couverture avant/après)."""
+    from enterprise_completion import status
+    return jsonify(status())
+
+
+@app.route('/api/enterprise/completions/run', methods=['POST'])
+@require_auth
+@require_permission('hologram:ingest')
+@rate_limit
+@audit_log
+def completions_run():
+    """Traite les sujets en attente : complétion en arrière-plan."""
+    from enterprise_completion import run_pending
+    return jsonify(run_pending(engine))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1402,6 +1444,16 @@ pre{background:var(--bg);padding:12px;border-radius:6px;font-size:.7rem;color:va
       </div>
       <pre id="sum-preview" style="margin-top:10px;white-space:pre-wrap;max-height:220px"></pre>
     </div>
+
+    <div class="card">
+      <h3>🔄 Auto-apprentissage (chaînon D)</h3>
+      <p class="sub" style="font-size:.7rem">Les questions restées sans réponse sont enregistrées ; aux seuils (facette 2×, sujet 3×), l'enrichissement se déclenche automatiquement — Wikipedia + facettes manquantes, couverture recalculée. L'usage pilote la connaissance.</p>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-p" onclick="completionsRun()">▶ Traiter les complétions en attente</button>
+        <button class="btn" onclick="completionsStatus()">🔄 Actualiser</button>
+      </div>
+      <pre id="comp-status" style="margin-top:10px;white-space:pre-wrap;max-height:200px"></pre>
+    </div>
   </div>
 
   <!-- Audit -->
@@ -1595,6 +1647,17 @@ async function summarizeDoc() {
   document.getElementById('sum-preview').textContent = r.error
     ? r.error
     : r.resume + '\n\nSources : ' + Object.keys(r.sources||{}).join(', ');
+}
+
+async function completionsStatus() {
+  const r = await api('/completions/status');
+  document.getElementById('comp-status').textContent = JSON.stringify(r, null, 2);
+}
+
+async function completionsRun() {
+  const r = await api('/completions/run', {method:'POST'});
+  alert('Complétions lancées : ' + (r.lances || 0) + (r.error ? ' (' + r.error + ')' : ''));
+  setTimeout(completionsStatus, 2000);
 }
 
 async function createTenant() {
