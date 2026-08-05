@@ -113,6 +113,15 @@ def create_app(config_override: dict = None) -> Flask:
     def site_fondation():
         return send_from_directory(_SITES_DIR, 'fondation.html')
     
+    # Versions anglaises
+    @app.route('/en/corporation')
+    def site_corporation_en():
+        return send_from_directory(_SITES_DIR, 'corporation_en.html')
+    
+    @app.route('/en/fondation')
+    def site_fondation_en():
+        return send_from_directory(_SITES_DIR, 'fondation_en.html')
+    
     log.info("=" * 55)
     log.info(f"  KA Server v{__version__} — {(_KA_CONFIG.name if _KA_CONFIG else 'KA')}")
     log.info(f"  Produit: {(_KA_CONFIG.product if _KA_CONFIG else 'mobile')}")
