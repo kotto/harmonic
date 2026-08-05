@@ -51,6 +51,25 @@ def register_chat_routes(app, services):
             }), 503
         
         try:
+            # 🌊 HarmonicAI v3 — ARITHMÉTIQUE ÉMERGENTE EN PREMIER
+            # "combien font 15*7 ?" → 105 par émergence, sans RAG, sans LLM
+            try:
+                from ka_server.services.harmonic_v3 import detect_and_solve_math
+                math_result = detect_and_solve_math(message)
+                if math_result.get('handled'):
+                    return jsonify({
+                        'response': math_result['explanation'],
+                        'result': math_result['result'],
+                        'expression': math_result['expression'],
+                        'method': math_result['method'],
+                        'engine': 'harmonic_v3',
+                        'emergence': True,
+                        'facts_stored': 0,
+                        'code': 'EMERGENCE_ARITHMETIC',
+                    }), 200
+            except Exception as e:
+                log.debug(f"Arithmetic emergence failed: {e}")
+            
             # Détection intention spécialisation
             if _is_specialize_intent(message):
                 return jsonify({

@@ -336,6 +336,25 @@ class HarmonicAI:
     def ingest_facts(self, facts):
         for s, r, o in facts: self.ingest(s, r, o)
     
+    def solve_op(self, op: str, a: float, b: float) -> float:
+        """Résout une opération arithmétique (API interne pour chaînes)."""
+        self.stats['emergence'] += 1
+        if op == 'add':
+            return self.phase.add(a, b)
+        if op == 'subtract':
+            return self.phase.sub(a, b)
+        if op == 'multiply':
+            sign = (1.0 if a >= 0 else -1.0) * (1.0 if b >= 0 else -1.0)
+            r, _ = self.log.multiply(abs(a), abs(b))
+            return sign * r
+        if op == 'divide':
+            if abs(b) < 1e-12:
+                return float('nan')
+            sign = (1.0 if a >= 0 else -1.0) * (1.0 if b >= 0 else -1.0)
+            r, _ = self.log.divide(abs(a), abs(b))
+            return sign * r
+        return 0.0
+
     def solve(self, expr):
         """Résout une expression arithmétique par ÉMERGENCE."""
         self.stats['emergence'] += 1

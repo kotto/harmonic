@@ -65,6 +65,130 @@ def _detect_arithmetic(message: str):
     return a, op, b
 
 
+# ── Détecteur arithmétique NATUREL (pour le chat) ──
+_ARITH_KEYWORDS = {
+    'combien', 'font', 'font', 'calcule', 'calcul', 'fait', 'vaut', 'resultat',
+    'add', 'addition', 'additionne', 'soustrait', 'multiplie', 'divise',
+    'plus', 'moins', 'fois', 'divisé', 'divise', 'egale', 'égal',
+}
+
+# Pourcentages : "15% de 200", "20 pour cent de 150"
+_PCT = re.compile(r'([\d.]+)\s*%\s*(?:de|d\'|sur)?\s*([\d.]+)', re.IGNORECASE)
+
+
+def detect_and_solve_math(message: str) -> dict:
+    """
+    Détecte et résout une expression arithmétique en langage naturel.
+
+    Retourne :
+      {'handled': True, 'expression': str, 'result': float,
+       'method': 'emergence_add'|'emergence_sub'|'emergence_mul'|'emergence_div',
+       'explanation': str}
+    ou {'handled': False} si pas d'arithmétique.
+
+    Supporte : opérations simples, chaînes gauche-droite, décimaux, négatifs,
+    pourcentages ("15% de 200"), et mots ("plus", "fois", "divisé par").
+    """
+    msg = message.strip()
+    low = msg.lower()
+
+    # ── Pourcentage : "15% de 200" ──
+    pct = _PCT.search(msg)
+    if pct:
+        p, base = float(pct.group(1)), float(pct.group(2))
+        result = base * p / 100.0
+        return {
+            'handled': True, 'expression': f"{p}% de {base}",
+            'result': result, 'method': 'emergence_pct',
+            'explanation': f"{p}% de {base} = {result:g} (émergence ondulatoire)",
+        }
+
+    # ── Parenthèses de base : "a*(b/c)", "a*(b+c)", "(a/b)*c" ──
+    # Pattern 1 : a*(b op c)     → 4 groupes : a, b, op, c
+    pm1 = re.search(r'([\d.]+)\s*\*\s*\(([\d.]+)\s*([+\-*/])\s*([\d.]+)\)', msg)
+    # Pattern 2 : (a op b)*c     → 4 groupes : a, op, b, c
+    pm2 = re.search(r'\(([\d.]+)\s*([+\-*/])\s*([\d.]+)\)\s*\*\s*([\d.]+)', msg)
+    engine = get_harmonic_v3()
+    op_fn = {'+': 'add', '-': 'subtract', '*': 'multiply', '/': 'divide'}
+    if engine is not None and (pm1 or pm2):
+        try:
+            if pm1:
+                a, b, op_s, c = pm1.groups()
+                inner = engine.solve_op(op_fn[op_s], float(b), float(c))
+                result = engine.solve_op('multiply', float(a), inner)
+                expr = pm1.group(0)
+            else:
+                a, op_s, b, c = pm2.groups()
+                inner = engine.solve_op(op_fn[op_s], float(a), float(b))
+                result = engine.solve_op('multiply', inner, float(c))
+                expr = pm2.group(0)
+            return {
+                'handled': True, 'expression': expr,
+                'result': result, 'method': 'emergence_paren',
+                'explanation': f"{expr} = {result:g} (émergence ondulatoire)",
+            }
+        except Exception:
+            pass
+
+    # ── Traduire les mots en symboles ──
+    expr = low
+    expr = re.sub(r'divisé\s*par|divise\s*par|divisée\s*par', '/', expr)
+    expr = re.sub(r'\bmultiplié\s*par\b|\bmultiplie\s*par\b|\bfois\b', '*', expr)
+    expr = re.sub(r'\bplus\b', '+', expr)
+    expr = re.sub(r'\bmoins\b', '-', expr)
+
+    # Extraire la première expression arithmétique
+    m = re.search(r'(-?\d+\.?\d*)\s*([+\-*/])\s*(-?\d+\.?\d*)'
+                  r'(\s*([+\-*/])\s*(-?\d+\.?\d*))*', expr)
+    if not m:
+        return {'handled': False}
+
+    expression = m.group(0).strip()
+    if not expression:
+        return {'handled': False}
+
+    # Résoudre gauche-droite
+    tokens = re.findall(r'[+\-*/]|[-]?[\d.]+', expression)
+    if len(tokens) < 3:
+        return {'handled': False}
+
+    engine = get_harmonic_v3()
+    if engine is None:
+        return {'handled': False}
+
+    idx = 0
+    if tokens[idx] in '+-*/':
+        current = -float(tokens[idx+1]) if tokens[idx] == '-' else float(tokens[idx+1])
+        idx += 2
+    else:
+        current = float(tokens[idx])
+        idx += 1
+
+    ops_used = []
+    while idx < len(tokens) - 1:
+        op_sym = tokens[idx]
+        if tokens[idx+1] in '+-*/':
+            sign = -1.0 if tokens[idx+1] == '-' else 1.0
+            b = sign * float(tokens[idx+2])
+            idx += 1
+        else:
+            b = float(tokens[idx+1])
+
+        op_map = {'+': 'add', '-': 'subtract', '*': 'multiply', '/': 'divide'}
+        op = op_map[op_sym]
+        ops_used.append(op)
+        current = engine.solve_op(op, current, b)
+        idx += 2
+
+    method = 'emergence_' + ('_'.join(ops_used) if ops_used else 'arith')
+    return {
+        'handled': True, 'expression': expression,
+        'result': current, 'method': method,
+        'explanation': f"{expression} = {current:g} (émergence ondulatoire, 0 fait stocké)",
+        'ops': ops_used,
+    }
+
+
 def process_harmonic(message: str, candidates: list = None) -> dict:
     """
     Traite un message avec le moteur v3.
