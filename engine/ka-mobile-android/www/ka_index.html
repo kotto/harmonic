@@ -237,6 +237,7 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
 <body>
 <script src="ka_native.js"></script>
 <script src="harmonic_v3.js"></script>
+<script src="vital_ka_module.js"></script>
 <div class="dv">
   <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
 
@@ -611,6 +612,7 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
       <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-sms');closeMore()"><span style="font-size:18px">💬</span><div><div style="font-size:13px;color:var(--t1)">SMS</div><div style="font-size:11px;color:var(--t4)">Messages · Conversations</div></div></div>
 	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-camera');closeMore()"><span style="font-size:18px">📷</span><div><div style="font-size:13px;color:var(--t1)">Caméra</div><div style="font-size:11px;color:var(--t4)">Photo · Vidéo · Compression auto</div></div></div>
 	      
+	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-vitalka');closeMore()"><span style="font-size:18px">🌍</span><div><div style="font-size:13px;color:var(--t1)">Vital Ka</div><div style="font-size:11px;color:var(--t4)">Santé · Portefeuille de soins · Téléconsultation</div></div></div>
 	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-storage');closeMore()"><span style="font-size:18px">💾</span><div><div style="font-size:13px;color:var(--t1)">Espace disque</div><div style="font-size:11px;color:var(--t4)">Analyse et optimisation</div></div></div>
 	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-holo');closeMore()"><span style="font-size:18px">🧠</span><div><div style="font-size:13px;color:var(--t1)">Hologrammes</div><div style="font-size:11px;color:var(--t4)">Savoirs spécialisés · Télécharger</div></div></div>
 	      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1" onclick="go('s-code');closeMore()"><span style="font-size:18px">💻</span><div><div style="font-size:13px;color:var(--t1)">Code & Maths</div><div style="font-size:11px;color:var(--t4)">Calculs · Algorithmes · Formules</div></div></div>
@@ -619,6 +621,15 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
   </div>
 
   <!-- ESPACE DISQUE (optionnel) -->
+  <!-- ═══ VITAL KA (univers santé-social, module fondation) ═══ -->
+  <div class="sc cap" id="s-vitalka">
+    <div class="cap__top">
+      <div class="cap__label">🌍 Vital Ka</div>
+      <div class="cap__hint">Santé pour tous — Fondation KA</div>
+    </div>
+    <div id="vitalka-module" style="padding:0 12px 20px"></div>
+  </div>
+
   <div class="sc cap" id="s-storage">
     <div class="sph"><div class="sph__back" onclick="go('s-home')" role="button">‹ KA</div><div class="sph__badge" style="color:var(--t4)">ESPACE DISQUE</div><div style="width:48px"></div></div>
     <div class="sp-body">
@@ -1164,6 +1175,7 @@ function go(id){
 	if(id==='s-cap'){buildCapWave();}
 	if(id==='s-holo'){holoRender('all');}
 	if(id==='s-onboard'){onboardRender();}
+	if(id==='s-vitalka'){if(window.VitalKaModule)VitalKaModule.render();}
 	closeMore();
 }
 function showMore(){document.getElementById('more-panel').style.display='block';document.getElementById('nb-more').classList.add('nb--on');}
