@@ -206,6 +206,13 @@ async def main() -> int:
 
     print()
     print(f"🎉 FLUX WALLET VALIDÉ : {ok}/{total + 3} vérifications passées")
+
+    # Fermer proprement l'engine SQLite (sinon le process reste bloqué)
+    await engine.dispose()
+    if _TEST_DB.exists():
+        try: _TEST_DB.unlink()
+        except OSError: pass
+
     return 0 if ok == total + 3 else 1
 
 

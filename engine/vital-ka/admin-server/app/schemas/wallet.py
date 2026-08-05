@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.models.wallet import (
     WalletRole, WalletStatus, TxType, TxStatus, ConversionStatus,
@@ -16,17 +16,36 @@ UM_TO_EUR = 1.0
 UM_TO_CFA = 655.0
 MAX_SOLIDARITE_MONTHLY = 5000.0  # limite anti-blanchiment
 
+# ── Résolution déterministe walletId local → UUID serveur ──
+# Les apps Vital Ka utilisent des walletId locaux (ex: 'PAT-XXXXXX').
+# On les convertit en UUID5 déterministe pour que chaque client
+# obtienne TOUJOURS le même compte serveur.
+import hashlib
+_WALLET_NS = UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")  # DNS namespace
+
+
+def resolve_wallet_id(wallet_id: str) -> UUID:
+    """Convertit un walletId local en UUID5 déterministe."""
+    if not wallet_id:
+        raise ValueError("wallet_id requis")
+    # Si c'est déjà un UUID valide, le garder
+    try:
+        return UUID(str(wallet_id))
+    except ValueError:
+        pass
+    return UUID(hashlib.md5(wallet_id.encode()).hexdigest()[0:32])
+
 
 # ── Création de compte ──
 class WalletCreateRequest(BaseModel):
-    owner_id: UUID
+    owner_id: str | UUID   # walletId local OU UUID
     role: WalletRole
     public_id: str = Field(min_length=5, max_length=40)
 
 
 class WalletCreateResponse(BaseModel):
     id: UUID
-    owner_id: UUID
+    owner_id: str | UUID
     role: WalletRole
     public_id: str
     balance_um: float
@@ -37,7 +56,7 @@ class WalletCreateResponse(BaseModel):
 
 # ── Solde ──
 class WalletBalanceResponse(BaseModel):
-    owner_id: UUID
+    owner_id: str | UUID
     public_id: str
     role: WalletRole
     balance_um: float
@@ -49,7 +68,7 @@ class WalletBalanceResponse(BaseModel):
 
 # ── Crédit (émission / solidarité) ──
 class CreditRequest(BaseModel):
-    owner_id: UUID
+    owner_id: str | UUID
     amount_um: float = Field(gt=0)
     type: TxType = TxType.SOLIDARITE_CREDIT
     reference: Optional[str] = None
@@ -66,8 +85,8 @@ class CreditResponse(BaseModel):
 
 # ── Paiement (patient → prestataire) ──
 class PaymentRequest(BaseModel):
-    from_owner_id: UUID
-    to_owner_id: UUID
+    from_owner_id: str | UUID
+    to_owner_id: str | UUID
     amount_um: float = Field(gt=0)
     reference: Optional[str] = None          # ex: n° ordonnance
     prescription_qr: Optional[str] = None    # contenu QR de l'ordonnance
@@ -78,8 +97,8 @@ class PaymentResponse(BaseModel):
     tx_id: str
     type: TxType
     amount_um: float
-    from_owner_id: UUID
-    to_owner_id: UUID
+    from_owner_id: str | UUID
+    to_owner_id: str | UUID
     from_balance_after: float
     to_balance_after: float
     status: TxStatus
@@ -87,14 +106,14 @@ class PaymentResponse(BaseModel):
 
 # ── Transfert entre proches (frais 0%) ──
 class TransferRequest(BaseModel):
-    from_owner_id: UUID
-    to_owner_id: UUID
+    from_owner_id: str | UUID
+    to_owner_id: str | UUID
     amount_um: float = Field(gt=0)
 
 
 # ── Conversion prestataire ──
 class ConversionRequest(BaseModel):
-    account_id: UUID
+    account_id: str | UUID
     amount_um: float = Field(gt=0)
     currency: str = Field(default="CFA", pattern="^(CFA|EUR)$")
     bank_info: Optional[dict] = None
@@ -102,7 +121,7 @@ class ConversionRequest(BaseModel):
 
 class ConversionResponse(BaseModel):
     id: UUID
-    account_id: UUID
+    account_id: str | UUID
     amount_um: float
     currency: str
     amount_currency: float
@@ -123,7 +142,7 @@ class TransactionResponse(BaseModel):
 
 
 class LedgerResponse(BaseModel):
-    owner_id: UUID
+    owner_id: str | UUID
     transactions: list[TransactionResponse]
 
 

@@ -35,6 +35,7 @@ from app.schemas.wallet import (
     TransactionResponse, LedgerResponse,
     TelecomEmitRequest, TelecomEmitResponse,
     UM_TO_CFA, UM_TO_EUR, MAX_SOLIDARITE_MONTHLY,
+    resolve_wallet_id,
 )
 
 router = APIRouter(prefix="/wallet", tags=["Wallet"])
@@ -63,7 +64,8 @@ def _hmac_sign(payload: str, key: str) -> str:
     ).hexdigest()
 
 
-async def _get_account(db: AsyncSession, owner_id: UUID) -> CompteUM:
+async def _get_account(db: AsyncSession, owner_id) -> CompteUM:
+    owner_id = resolve_wallet_id(str(owner_id))  # walletId local → UUID5
     result = await db.execute(select(CompteUM).where(CompteUM.owner_id == owner_id))
     account = result.scalar_one_or_none()
     if not account:
@@ -73,9 +75,21 @@ async def _get_account(db: AsyncSession, owner_id: UUID) -> CompteUM:
     return account
 
 
-async def _get_account_by_id(db: AsyncSession, account_id: UUID) -> CompteUM:
-    """Recherche par ID interne du compte (pour conversion, ledger interne)."""
-    result = await db.execute(select(CompteUM).where(CompteUM.id == account_id))
+async def _get_account_by_id(db: AsyncSession, account_id) -> CompteUM:
+    """Recherche par ID interne du compte OU walletId (owner_id résolu)."""
+    # 1. Tenter par ID interne UUID
+    try:
+        result = await db.execute(select(CompteUM).where(CompteUM.id == UUID(str(account_id))))
+        account = result.scalar_one_or_none()
+        if account:
+            if account.status != WalletStatus.ACTIVE:
+                raise HTTPException(status_code=403, detail=f"Compte {account.status.value}")
+            return account
+    except (ValueError, TypeError):
+        pass
+    # 2. Tenter par owner_id (walletId local → UUID5)
+    owner_uuid = resolve_wallet_id(str(account_id))
+    result = await db.execute(select(CompteUM).where(CompteUM.owner_id == owner_uuid))
     account = result.scalar_one_or_none()
     if not account:
         raise HTTPException(status_code=404, detail="Compte UM introuvable")
@@ -102,9 +116,10 @@ async def create_wallet(
 ):
     """Crée un compte UM. Patient = non convertible ; prestataire = convertible."""
     # Un seul compte par (owner_id, role)
+    owner_uuid = resolve_wallet_id(data.owner_id)
     existing = await db.execute(
         select(CompteUM).where(
-            CompteUM.owner_id == data.owner_id,
+            CompteUM.owner_id == owner_uuid,
             CompteUM.role == data.role,
         )
     )
@@ -113,7 +128,7 @@ async def create_wallet(
 
     account = CompteUM(
         id=uuid4(),
-        owner_id=data.owner_id,
+        owner_id=owner_uuid,
         role=data.role,
         public_id=data.public_id or _generate_public_id(data.role),
         balance_um=Decimal("0"),

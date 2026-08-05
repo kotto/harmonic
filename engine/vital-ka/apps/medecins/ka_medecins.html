@@ -334,6 +334,12 @@ const STORE_CHATS = 'ka_medecins_chats';
 let currentChatContact = null;
 let waLocalStream = null, waPeerConnection = null, waCallType = 'video';
 
+// API serveur (wallet UM central) — configurable, fallback local
+const API_URL = (function() {
+  try { const u = localStorage.getItem('ka_api_url'); if (u) return u; } catch(e) {}
+  return 'http://localhost:8000';
+})();
+
 function loadDocProfile() { try { return JSON.parse(localStorage.getItem(STORE_DOC) || '{}'); } catch(e) { return {}; } }
 function saveDocProfile(d) { localStorage.setItem(STORE_DOC, JSON.stringify(d)); }
 function loadContacts() { try { return JSON.parse(localStorage.getItem(STORE_CONTACTS) || '[]'); } catch(e) { return []; } }
@@ -395,16 +401,54 @@ function collectDoctorFee() {
     document.getElementById('docFeeResult').innerHTML = '<span style="color:var(--error)">Montant et code wallet requis.</span>';
     return;
   }
-  // Le patient paie (debit patient) → crédite le médecin
-  const res = KA_WALLET.debit('patient', amount, 'medecin', 'Honoraires consultation',
-    { doctorId: 'DOC-' + Date.now().toString(36).toUpperCase(), type: 'consultation_fee', patientCode: code });
-  if (res.ok) {
-    document.getElementById('docFeeResult').innerHTML = '<span style="color:var(--success)">✅ ' + amount + ' UM encaissés. Nouveau solde : ' + res.wallet.balance + ' UM</span>';
-    document.getElementById('docFeeAmount').value = '';
-    document.getElementById('docFeeCode').value = '';
-    renderDoctorWallet();
-  } else {
-    document.getElementById('docFeeResult').innerHTML = '<span style="color:var(--error)">' + (res.error || 'Échec de l\'encaissement.') + '</span>';
+  // Décoder le code wallet patient si QR encodé
+  let patientWalletId = code;
+  if (code.startsWith('ey') && typeof KA_BRIDGE !== 'undefined' && KA_BRIDGE.decode) {
+    try {
+      const pkg = KA_BRIDGE.decode(code);
+      if (pkg && pkg.walletId) patientWalletId = pkg.walletId;
+      else if (pkg && pkg.type === 'patient_to_doctor' && pkg.profile?.walletId) patientWalletId = pkg.profile.walletId;
+    } catch(e) {}
+  }
+  const docWallet = KA_WALLET.getWallet('medecin');
+
+  // 1. Tenter le WALLET SERVEUR (POST /wallet/pay) — tracé
+  try {
+    fetch(API_URL + '/api/v1/wallet/pay', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from_owner_id: patientWalletId,
+        to_owner_id: docWallet.walletId,
+        amount_um: amount,
+        reference: 'HON-' + Date.now(),
+        metadata: { doctorId: 'DOC-' + Date.now().toString(36).toUpperCase(), type: 'consultation_fee' }
+      })
+    }).then(function(res) {
+      if (res.ok) {
+        return res.json().then(function(d) {
+          document.getElementById('docFeeResult').innerHTML = '<span style="color:var(--success)">✅ ' + amount + ' UM encaissés (serveur, tx ' + d.tx_id + '). Solde : ' + d.to_balance_after + ' UM</span>';
+          document.getElementById('docFeeAmount').value = '';
+          document.getElementById('docFeeCode').value = '';
+          renderDoctorWallet();
+        });
+      }
+      localFee();
+    }).catch(function() { localFee(); });
+  } catch(e) { localFee(); }
+
+  function localFee() {
+    // 2. Fallback local (hors-ligne)
+    const res = KA_WALLET.debit('patient', amount, 'medecin', 'Honoraires consultation',
+      { doctorId: 'DOC-' + Date.now().toString(36).toUpperCase(), type: 'consultation_fee', patientCode: code });
+    if (res.ok) {
+      document.getElementById('docFeeResult').innerHTML = '<span style="color:var(--warning)">⚡ ' + amount + ' UM encaissés (local, sync serveur en attente). Solde : ' + res.wallet.balance + ' UM</span>';
+      document.getElementById('docFeeAmount').value = '';
+      document.getElementById('docFeeCode').value = '';
+      renderDoctorWallet();
+    } else {
+      document.getElementById('docFeeResult').innerHTML = '<span style="color:var(--error)">' + (res.error || 'Échec de l\'encaissement.') + '</span>';
+    }
   }
 }
 
