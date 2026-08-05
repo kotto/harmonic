@@ -1,0 +1,60 @@
+# ──────────────────────────────────────────────
+# Dockerfile API (FastAPI)
+# ──────────────────────────────────────────────
+FROM python:3.12-slim AS base
+
+# Dépendances système
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Utilisateur non-root
+RUN useradd --create-home --shell /bin/bash appuser
+WORKDIR /app
+
+# Python path
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# ──────────────────────────────────────────────
+# Builder: installation dépendances
+# ──────────────────────────────────────────────
+FROM base AS builder
+
+# Installer Poetry
+RUN pip install --no-cache-dir poetry==2.4.1
+
+# Copier seulement les fichiers de déps
+COPY pyproject.toml poetry.lock* ./
+
+# Config poetry: pas de venv, installation dans system
+RUN poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-ansi --no-root
+
+# ──────────────────────────────────────────────
+# Runtime
+# ──────────────────────────────────────────────
+FROM base AS runtime
+
+# Copier les dépendances installées
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copier le code source
+COPY --chown=appuser:appuser app/ ./app/
+COPY --chown=appuser:appuser alembic/ ./alembic/
+COPY --chown=appuser:appuser alembic.ini ./
+
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+EXPOSE 8000
+
+# Commande par défaut (surchargée dans docker-compose)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

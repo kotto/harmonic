@@ -1,0 +1,334 @@
+/* ═══════════════════════════════════════════════
+   KA Telemedicine — Styles
+   ═══════════════════════════════════════════════ */
+
+/* ── Network Bar ── */
+.network-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  margin: 0 16px 8px;
+  background: #111;
+  border-radius: 10px;
+  border: 1px solid #2a2a2a;
+  font-size: 11px;
+  color: #8b7355;
+}
+.net-indicator {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #666;
+  flex-shrink: 0;
+}
+.net-indicator.online { background: #27ae60; box-shadow: 0 0 6px rgba(39,174,96,0.4); }
+.net-indicator.local { background: #d4a853; box-shadow: 0 0 6px rgba(212,168,83,0.4); }
+.net-indicator.offline { background: #e74c3c; }
+.net-indicator.slow { background: #e67e22; }
+.net-ip {
+  margin-left: auto;
+  font-family: monospace;
+  font-size: 10px;
+  color: #d4a853;
+  background: rgba(212,168,83,0.08);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.teleconsult-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  gap: 12px;
+  min-height: 80vh;
+}
+
+/* ── Double affichage vidéo ── */
+.video-duo {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  max-width: 680px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.video-box {
+  position: relative;
+  background: #111;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #2a2a2a;
+  flex: 1;
+  min-width: 260px;
+  max-width: 340px;
+  aspect-ratio: 4/3;
+}
+
+.video-box video,
+.video-box canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.video-label {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(0,0,0,0.7);
+  color: #d4a853;
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.video-status {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #666;
+}
+
+.video-status.live {
+  background: #27ae60;
+  animation: pulse 2s infinite;
+}
+
+.video-status.ringing {
+  background: #d4a853;
+  animation: pulse 1s infinite;
+}
+
+.video-status.ended {
+  background: #e74c3c;
+}
+
+/* ── Contrôles d'appel ── */
+.call-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.call-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.call-btn-start {
+  background: #27ae60;
+  color: white;
+}
+.call-btn-start:hover {
+  background: #2ecc71;
+  transform: scale(1.05);
+}
+
+.call-btn-end {
+  background: #e74c3c;
+  color: white;
+}
+.call-btn-end:hover {
+  background: #c0392b;
+  transform: scale(1.05);
+}
+
+.call-btn-mute {
+  background: #1a1a1a;
+  color: #d4a853;
+  border: 1px solid #2a2a2a;
+}
+.call-btn-mute:hover {
+  background: #2a2a2a;
+}
+.call-btn-mute.muted {
+  background: #e74c3c;
+  color: white;
+  border-color: #e74c3c;
+}
+
+.call-btn-video {
+  background: #1a1a1a;
+  color: #d4a853;
+  border: 1px solid #2a2a2a;
+}
+.call-btn-video:hover {
+  background: #2a2a2a;
+}
+.call-btn-video.off {
+  background: #e74c3c;
+  color: white;
+  border-color: #e74c3c;
+}
+
+/* ── Status call ── */
+.call-status {
+  text-align: center;
+  margin: 8px 0;
+}
+
+.call-status-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #d4a853;
+}
+
+.call-status-sub {
+  font-size: 11px;
+  color: #8b7355;
+  margin-top: 4px;
+}
+
+/* ── HCV Stats ── */
+.hcv-stats {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  font-size: 10px;
+  color: #6b6250;
+  margin-top: 4px;
+}
+
+.hcv-stats span {
+  background: #111;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #2a2a2a;
+}
+
+.hcv-stats .val {
+  color: #d4a853;
+  font-weight: 700;
+}
+
+/* ── QR Signaling ── */
+.signal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.92);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.signal-card {
+  background: #1a1a1a;
+  border: 1px solid #d4a853;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+}
+
+.signal-card h3 {
+  color: #d4a853;
+  margin-bottom: 8px;
+  font-size: 1.1em;
+}
+
+.signal-card p {
+  color: #9b8f7e;
+  font-size: 0.8em;
+  margin-bottom: 16px;
+}
+
+.signal-card .qr-box {
+  background: white;
+  padding: 12px;
+  border-radius: 12px;
+  margin: 12px 0;
+  display: inline-block;
+}
+
+.signal-card .qr-box svg {
+  display: block;
+}
+
+.signal-card textarea {
+  width: 100%;
+  min-height: 60px;
+  background: #0d0d0d;
+  color: #27ae60;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 11px;
+  font-family: monospace;
+  resize: vertical;
+}
+
+.signal-card textarea::placeholder {
+  color: #555;
+}
+
+.signal-close {
+  margin-top: 16px;
+  background: #2a2a2a;
+  color: #d4a853;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+/* ── Quality slider ── */
+.quality-slider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #8b7355;
+  margin-top: 8px;
+}
+
+.quality-slider input[type="range"] {
+  width: 100px;
+  accent-color: #d4a853;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .video-duo {
+    flex-direction: column;
+    align-items: center;
+  }
+  .video-box {
+    max-width: 100%;
+    min-width: 100%;
+  }
+  .call-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+}

@@ -1,0 +1,244 @@
+```mermaid
+%% Vital KA — Structure de Fichiers Complète v2.1.0
+%% Généré automatiquement — 2026-08-02
+
+flowchart TB
+    %% ─── STYLES ───
+    classDef root fill:#1a1a2e,stroke:#d4a853,stroke-width:3px,color:#d4a853
+    classDef apps fill:#1a1a2e,stroke:#d4a853,stroke-width:2px,color:#d4a853
+    classDef android fill:#1b003b,stroke:#9c27b0,stroke-width:2px,color:#9c27b0
+    classDef backend fill:#0f3460,stroke:#2196f3,stroke-width:2px,color:#2196f3
+    classDef core fill:#16213e,stroke:#4caf50,stroke-width:2px,color:#4caf50
+    classDef data fill:#1a1a2e,stroke:#ff9800,stroke-width:2px,color:#ff9800
+    classDef docs fill:#1a1a2e,stroke:#607d8b,stroke-width:2px,color:#607d8b
+    classDef archive fill:#2d1b00,stroke:#795548,stroke-width:1px,stroke-dasharray: 5 5,color:#795548
+
+    ROOT["📁 vital-ka/"]:::root
+
+    %% ─── APPS ───
+    subgraph APPS_DIR ["🌐 apps/ (10 applications HTML)"]
+        APP_WEB["web/
+  vital_ka.html
+  ka_index.html
+  vital_ka.css
+  vital_ka_ai.css
+  ka_telemedecine.css"]
+        APP_PATIENT["patient/
+  ka_patient.html"]
+        APP_MEDECINS["medecins/
+  ka_medecins.html"]
+        APP_PHARMACIEN["pharmacien/
+  ka_pharmacien.html"]
+        APP_LABO["labo/
+  ka_laboratoire.html"]
+        APP_DIASPORA["diaspora/
+  ka_diaspora_shop.html"]
+        APP_ADMIN["admin/
+  ka_admin.html"]
+        APP_LAUNCHER["launcher/
+  ka_launcher.html"]
+        APP_SOLIDARITE["solidarite/
+  ka_solidarite.html"]
+        APP_SPHERE["sphere/
+  ka_sphere.html"]
+    end
+
+    %% ─── ANDROID ───
+    subgraph ANDROID_DIR ["📱 android/ (Capacitor 7 Project)"]
+        ANDROID_ROOT["android/
+  capacitor.config.json
+  package.json
+  package-lock.json
+  GUIDE_ANDROID.md"]
+        ANDROID_SUB["android/android/ ← Projet Gradle
+  app/
+    build.gradle
+    capacitor.build.gradle
+    proguard-rules.pro
+    src/main/
+      AndroidManifest.xml
+      assets/
+        capacitor.config.json
+        public/
+          data/ (hologram_bundle.json + 13 vital_ka_*.json)
+          fonts/ (Inter + Material Symbols)
+      java/com/vitalka/app/
+      res/ (icônes, layouts, valeurs)
+  settings.gradle
+  gradle.properties"]
+        ANDROID_ASSETS["assets/ (fonts source)
+assets_src/ (fonts source)"]
+        ANDROID_SCRIPTS["scripts/
+  sync-assets.mjs"]
+        ANDROID_WWW["www/ ← Généré par sync-assets.mjs
+  index.html (→ vital_ka.html)
+  vital_ka.html + 9 autres HTML
+  29 JS modules (core/js)
+  3 CSS
+  data/ (hologram_bundle.json + 13 JSON)
+  fonts/ (woff2 locaux)"]
+    end
+
+    %% ─── BACKEND ───
+    subgraph BACKEND_DIR ["🐍 backend/ (9 serveurs Python)"]
+        BACK_VOICE["voice/
+  ka_voice.py
+  ka_voice_server.py
+  tts_engine.py
+  phi_piper_engine.py
+  phi_vocoder*.py"]
+        BACK_PHONE["phone/
+  unified_server.py
+  ka_phone/
+    harmonic_voice_engine.py
+    harmonic_speech_orchestrator.py
+    harmonic_audio_postprocessor.py
+    xtts_engine.py
+    speech_service.py
+    tts_streaming.py
+    vad_service.py"]
+        BACK_HOLOGRAM["hologram/
+  hologram_router.py
+  hologram_builder*.py
+  hologram_connector.py
+  build_hologram_bundle.py"]
+        BACK_ENTERPRISE["enterprise/
+  ka_enterprise_core.py
+  ka_enterprise_extensions.py
+  ka_enterprise_server.py"]
+        BACK_HWAT["hwat/
+  hwat_*.py"]
+        BACK_TRAINING["training/
+  train_*.py"]
+        BACK_INFERENCE["inference/
+  inference_server.py
+  ka_server.py
+  ka_serve.py"]
+        BACK_SONIC["sonic/
+  ka_sonic/"]
+        BACK_SERVE["serve/
+  ka_serve.py"]
+    end
+
+    %% ─── CORE ───
+    subgraph CORE_DIR ["⚙️ core/ (Source de vérité)"]
+        CORE_JS["js/ (30 modules ES6 vanilla)
+  ka_bridge.js
+  ka_care_voice.js
+  ka_core.js
+  ka_hcv.js
+  ka_hologram_router.js
+  ka_network.js
+  ka_platform.js
+  ka_secure.js
+  ka_telemedecine.js
+  ka_wallet.js
+  seed_doctors_demo.js
+  vital_ka_ai.js
+  vital_ka_app.js
+  vital_ka_ble.js
+  vital_ka_config.js
+  vital_ka_conversation.js
+  vital_ka_dialogue.js
+  vital_ka_hologram.js
+  vital_ka_knowledge.js
+  vital_ka_native.js
+  vital_ka_stt.js
+  vital_ka_voice.js"]
+        CORE_PYTHON["python/ (180+ modules)
+  harmonic_ai.py
+  harmonic_brain.py
+  harmonic_engine.py
+  harmonic_transformer.py
+  harmonic_model.py
+  harmonic_language.py
+  harmonic_attention.py
+  wave_*.py (compiler, IR, lang, etc.)
+  ka_*.py (conversational_engine, benchmarks, etc.)
+  knowledge_*.py (enricher, tree, etc.)
+  ingest_*.py
+  benchmark_*.py
+  ... et ~160 autres modules"]
+    end
+
+    %% ─── DATA ───
+    subgraph DATA_DIR ["📊 data/ (Données embarquées)"]
+        DATA_BUNDLE["hologram_bundle.json (3.8 Mo)
+  15 domaines / 62K faits"]
+        DATA_ENRICH["enrichissements.json"]
+        DATA_MEDICAL["medical_holograms/
+  13 domaines (.pt + _facts.json)
+  CHRONIQUES, CLINIQUE, GENERAL,
+  MALADIES, MERE_ENFANT, MNT,
+  NUTRITION, PALUDISME, PEDIATRIE,
+  PHARMACIE, PHYTOTHERAPIE,
+  SANTE_MENTALE, URGENCES,
+  VACCINATION, VIH_TB
+  router.json"]
+        DATA_PATHO["vital_ka_*.json (13 bases pathologiques)
+  chroniques, diseases, malaria,
+  malnutrition, mere_enfant, ntd,
+  pediatrie, pharmacie, phytotherapie,
+  sante_mentale, tropical, urgences,
+  vaccination, vih_tb
+  vital_ka_features.json"]
+    end
+
+    %% ─── DOCS ───
+    subgraph DOCS_DIR ["📚 docs/ (Documentation complète)"]
+        DOCS_ROOT["Racine docs/
+  README.md
+  ROADMAP.md
+  DEPLOY.md
+  GUIDE_DEPLOIEMENT.md
+  IMPLEMENTATION_STATUS.md
+  PHASE3_INTEGRATION_GUIDE.md
+  CAHIER_DES_CHARGES_*.md
+  HARMONIC_THEORY.md
+  LIVRE_COMPLET.md
+  ... 50+ fichiers .md"]
+        DOCS_ARCH["architecture/
+  architecture.mmd
+  file-tree.mmd"]
+        DOCS_PITCHES["pitches/
+  business_plan_vital_ka.html
+  cahier_des_charges.html
+  dossier_donateurs_ka_care.html
+  index.html"]
+    end
+
+    %% ─── ARCHIVE ───
+    subgraph ARCHIVE_DIR ["📦 archive/ (Anciens fichiers)"]
+        ARCHIVE_ANIM["animations_3d/
+  animations_officielles/
+  ... (fichiers de test/animations)"]
+        ARCHIVE_HTML["Tests HTML
+  ka_care_backup.html
+  ka_care_clean.html
+  ka_care_v2.html
+  debug_voice.html"]
+    end
+
+    %% ─── RELATIONS ───
+    ROOT --> APPS_DIR
+    ROOT --> ANDROID_DIR
+    ROOT --> BACKEND_DIR
+    ROOT --> CORE_DIR
+    ROOT --> DATA_DIR
+    ROOT --> DOCS_DIR
+    ROOT --> ARCHIVE_DIR
+
+    %% Android build flow
+    CORE_JS -.->|sync-assets.mjs| ANDROID_WWW
+    DATA_BUNDLE -.->|sync-assets.mjs| ANDROID_WWW
+    DATA_PATHO -.->|sync-assets.mjs| ANDROID_WWW
+
+    %% Classes
+    class APPS_DIR,APP_WEB,APP_PATIENT,APP_MEDECINS,APP_PHARMACIEN,APP_LABO,APP_DIASPORA,APP_ADMIN,APP_LAUNCHER,APP_SOLIDARITE,APP_SPHERE apps
+    class ANDROID_DIR,ANDROID_ROOT,ANDROID_SUB,ANDROID_ASSETS,ANDROID_SCRIPTS,ANDROID_WWW android
+    class BACKEND_DIR,BACK_VOICE,BACK_PHONE,BACK_HOLOGRAM,BACK_ENTERPRISE,BACK_HWAT,BACK_TRAINING,BACK_INFERENCE,BACK_SONIC,BACK_SERVE backend
+    class CORE_DIR,CORE_JS,CORE_PYTHON core
+    class DATA_DIR,DATA_BUNDLE,DATA_ENRICH,DATA_MEDICAL,DATA_PATHO data
+    class DOCS_DIR,DOCS_ROOT,DOCS_ARCH,DOCS_PITCHES docs
+    class ARCHIVE_DIR,ARCHIVE_ANIM,ARCHIVE_HTML archive
+```

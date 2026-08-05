@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Résonance et inférence</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#0B0E14;
+    --panel:#12161F;
+    --panel-2:#171C27;
+    --line: rgba(231,226,214,0.08);
+    --amber:#E8A33D;
+    --amber-dim: rgba(232,163,61,0.35);
+    --teal:#4FA9A8;
+    --teal-dim: rgba(79,169,168,0.35);
+    --text:#E7E2D6;
+    --muted:#8A8F9C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Space Grotesk', system-ui, sans-serif;
+    padding:32px 24px 48px;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.16em;
+    color:var(--amber);
+    text-transform:uppercase;
+    margin-bottom:8px;
+  }
+  h1{
+    font-size:26px;
+    font-weight:700;
+    margin:0 0 6px;
+    letter-spacing:-0.01em;
+  }
+  .sub{
+    color:var(--muted);
+    font-size:14px;
+    max-width:640px;
+    line-height:1.5;
+    margin-bottom:28px;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns: 1fr 340px;
+    gap:20px;
+  }
+  @media (max-width: 760px){ .grid{grid-template-columns:1fr;} }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:20px;
+  }
+  .stage{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  canvas{
+    display:block;
+    max-width:100%;
+  }
+  .coherence{
+    font-family:'IBM Plex Mono', monospace;
+    text-align:center;
+    margin-top:6px;
+  }
+  .coherence .val{
+    font-size:34px;
+    font-weight:600;
+    color:var(--amber);
+    letter-spacing:-0.02em;
+  }
+  .coherence .label{
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+
+  .side h2{
+    font-size:13px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0 0 14px;
+    font-weight:500;
+  }
+  .node-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:9px 0;
+    border-bottom:1px solid var(--line);
+    gap:10px;
+  }
+  .node-row:last-of-type{border-bottom:none;}
+  .node-tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    width:18px;
+    color:var(--muted);
+  }
+  .node-text{
+    flex:1;
+    font-size:12.5px;
+    line-height:1.35;
+    color:var(--text);
+  }
+  .node-phase{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+
+  .controls{margin-top:22px;}
+  .ctrl{margin-bottom:16px;}
+  .ctrl label{
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:6px;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .ctrl label span.v{color:var(--text);}
+  input[type=range]{
+    width:100%;
+    accent-color:var(--amber);
+  }
+  .toggle-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px 12px;
+    margin-top:18px;
+  }
+  .toggle-row span{font-size:12.5px;}
+  .switch{
+    position:relative;
+    width:38px; height:20px;
+    background:#2A3040;
+    border-radius:20px;
+    cursor:pointer;
+    transition:background .2s;
+  }
+  .switch.on{background:var(--teal);}
+  .switch::after{
+    content:'';
+    position:absolute;
+    top:2px; left:2px;
+    width:16px; height:16px;
+    background:var(--text);
+    border-radius:50%;
+    transition:left .2s;
+  }
+  .switch.on::after{left:20px;}
+
+  .caption{
+    margin-top:22px;
+    font-size:12px;
+    line-height:1.6;
+    color:var(--muted);
+    border-top:1px solid var(--line);
+    padding-top:16px;
+  }
+  .caption b{color:var(--text); font-weight:500;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Modèle d'oscillateurs couplés</div>
+  <h1>La déduction comme synchronisation de phase</h1>
+  <div class="sub">
+    Chaque proposition est un oscillateur. Les axiomes sont ancrés en phase 0 ("vrai").
+    Les propositions dérivées trouvent leur phase d'équilibre par couplage — aucune règle
+    d'inférence n'est codée explicitement, seulement des forces d'attraction et de répulsion.
+  </div>
+
+  <div class="grid">
+    <div class="panel stage">
+      <canvas id="scope" width="520" height="520"></canvas>
+      <div class="coherence">
+        <div class="val" id="rVal">—</div>
+        <div class="label">Cohérence du réseau (r)</div>
+      </div>
+    </div>
+
+    <div class="panel side">
+      <h2>Propositions</h2>
+      <div class="node-row"><span class="node-tag">A</span><span class="node-text">Tous les hommes sont mortels</span><span class="node-phase">ancré</span></div>
+      <div class="node-row"><span class="node-tag">B</span><span class="node-text">Socrate est un homme</span><span class="node-phase">ancré</span></div>
+      <div class="node-row"><span class="node-tag">C</span><span class="node-text">Socrate est mortel</span><span class="node-phase" id="pC">0°</span></div>
+      <div class="node-row" id="rowD" style="opacity:0.3"><span class="node-tag">D</span><span class="node-text">Socrate est immortel</span><span class="node-phase" id="pD">0°</span></div>
+
+      <div class="controls">
+        <div class="ctrl">
+          <label>Force de couplage K <span class="v" id="kv">1.0</span></label>
+          <input type="range" id="kSlider" min="0" max="2" step="0.05" value="1">
+        </div>
+        <div class="ctrl">
+          <label>Bruit / incertitude η <span class="v" id="nv">0.05</span></label>
+          <input type="range" id="nSlider" min="0" max="0.5" step="0.01" value="0.05">
+        </div>
+        <div class="toggle-row">
+          <span>Injecter D (contradiction)</span>
+          <div class="switch" id="dToggle"></div>
+        </div>
+      </div>
+
+      <div class="caption">
+        <b>Sans D :</b> C n'est couplée à aucun axiome directement — sa phase converge
+        vers 0 uniquement parce que A et B, ensemble, l'y attirent. La transitivité
+        n'est écrite nulle part, elle émerge de la topologie.<br><br>
+        <b>Avec D :</b> D est couplée négativement à C — elles sont repoussées vers
+        l'antiphase (π). Si K est fort, D se stabilise en désaccord net avec C.
+        Si K est faible face au bruit, r oscille sans se fixer : la contradiction
+        reste physiquement irrésolue plutôt que logiquement tranchée.<br><br>
+        <b>Variante asymétrique :</b> seule D ressent la répulsion — C reste épinglée
+        par les axiomes (conclusion synchronisée à 0° contre 180°). La variante
+        symétrique (frustration mutuelle, les deux à mi-phase) vit dans
+        <span style="font-family:'IBM Plex Mono',monospace">kuramoto_reasoner.py</span>.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('scope');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const cx = W/2, cy = H/2, R = 190;
+
+let theta = { C: Math.PI*0.9, D: Math.PI*0.3 };
+let K = 1.0, noise = 0.05, dActive = false;
+let history = { C: [], D: [] };
+
+const kSlider = document.getElementById('kSlider');
+const nSlider = document.getElementById('nSlider');
+const kv = document.getElementById('kv');
+const nv = document.getElementById('nv');
+const dToggle = document.getElementById('dToggle');
+const rowD = document.getElementById('rowD');
+
+kSlider.addEventListener('input', e => { K = parseFloat(e.target.value); kv.textContent = K.toFixed(2); });
+nSlider.addEventListener('input', e => { noise = parseFloat(e.target.value); nv.textContent = noise.toFixed(2); });
+dToggle.addEventListener('click', () => {
+  dActive = !dActive;
+  dToggle.classList.toggle('on', dActive);
+  rowD.style.opacity = dActive ? '1' : '0.3';
+});
+
+function wrap(a){
+  while(a > Math.PI) a -= 2*Math.PI;
+  while(a < -Math.PI) a += 2*Math.PI;
+  return a;
+}
+
+function step(dt){
+  // A, B anchored at phase 0. C is pulled toward 0 by both, with no direct A-C or B-C rule --
+  // just the same coupling law applied twice.
+  let dC = K*Math.sin(0 - theta.C) + K*Math.sin(0 - theta.C);
+  dC += (Math.random()-0.5)*noise*2;
+  theta.C = wrap(theta.C + dC*dt);
+
+  if(dActive){
+    // D is coupled negatively to C: repulsion pushes it toward antiphase.
+    let dD = -K*Math.sin(theta.D - theta.C);
+    dD += (Math.random()-0.5)*noise*2;
+    theta.D = wrap(theta.D + dD*dt);
+  } else {
+    // drift slowly back toward a neutral resting phase when not engaged
+    theta.D = wrap(theta.D + (Math.random()-0.5)*noise*0.5);
+  }
+
+  history.C.push(theta.C);
+  if(history.C.length > 40) history.C.shift();
+  if(dActive){
+    history.D.push(theta.D);
+    if(history.D.length > 40) history.D.shift();
+  } else if(history.D.length){
+    history.D.shift();
+  }
+}
+
+function orderParameter(){
+  // A and B sit at phase 0; include C always, include D only if active.
+  const phases = [0, 0, theta.C];
+  if(dActive) phases.push(theta.D);
+  let sx = 0, sy = 0;
+  phases.forEach(p => { sx += Math.cos(p); sy += Math.sin(p); });
+  const n = phases.length;
+  return Math.sqrt(sx*sx + sy*sy) / n;
+}
+
+function drawNode(angle, color, label, trail){
+  const x = cx + R*Math.cos(angle);
+  const y = cy - R*Math.sin(angle);
+
+  // persistence trail
+  if(trail && trail.length > 1){
+    ctx.beginPath();
+    trail.forEach((a, i) => {
+      const tx = cx + R*Math.cos(a);
+      const ty = cy - R*Math.sin(a);
+      if(i === 0) ctx.moveTo(tx, ty); else ctx.lineTo(tx, ty);
+    });
+    ctx.strokeStyle = color.replace('1)', '0.15)');
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // radius line
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(x, y);
+  ctx.strokeStyle = color.replace('1)', '0.25)');
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // node dot
+  ctx.beginPath();
+  ctx.arc(x, y, 7, 0, Math.PI*2);
+  ctx.fillStyle = color;
+  ctx.fill();
+
+  // label
+  ctx.font = "600 13px 'IBM Plex Mono', monospace";
+  ctx.fillStyle = color;
+  ctx.textAlign = x > cx ? 'left' : 'right';
+  ctx.fillText(label, x + (x > cx ? 12 : -12), y + 4);
+}
+
+function draw(){
+  ctx.clearRect(0, 0, W, H);
+
+  // background circle + grid
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(231,226,214,0.12)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy);
+  ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R);
+  ctx.strokeStyle = 'rgba(231,226,214,0.06)';
+  ctx.stroke();
+
+  // axioms A and B, both pinned at phase 0, drawn slightly offset for visibility
+  drawNode(0.06, 'rgba(138,143,156,1)', 'A', null);
+  drawNode(-0.06, 'rgba(138,143,156,1)', 'B', null);
+
+  drawNode(theta.C, 'rgba(232,163,61,1)', 'C', history.C);
+  if(dActive){
+    drawNode(theta.D, 'rgba(79,169,168,1)', 'D', history.D);
+  }
+
+  document.getElementById('pC').textContent = Math.round(theta.C*180/Math.PI) + '°';
+  document.getElementById('pD').textContent = dActive ? Math.round(theta.D*180/Math.PI) + '°' : '—';
+
+  const r = orderParameter();
+  document.getElementById('rVal').textContent = (r*100).toFixed(0) + '%';
+}
+
+function loop(){
+  step(0.06);
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>

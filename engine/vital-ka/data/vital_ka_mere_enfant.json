@@ -1,0 +1,337 @@
+{
+  "description": "Protocoles mere-enfant — OMS 2024 soins obstétricaux et neonatals essentiels",
+  "version": "1.0",
+  "source": "WHO Maternal and Newborn Health Guidelines 2024",
+  "conditions": {
+    "pre_eclampsie": {
+      "nom": "Pré-éclampsie",
+      "signes": [
+        "HTA >140/90",
+        "proteinurie",
+        "œdème visage/mains",
+        "céphalées",
+        "troubles visuels",
+        "douleur epigastrique"
+      ],
+      "signes_gravite": [
+        "TA >160/110",
+        "oligurie <400ml/24h",
+        "créatinine élevée",
+        "plaquettes <100000",
+        "transaminases élevées",
+        "OAP",
+        "trouble neurologique"
+      ],
+      "conduite": "Hospitalisation. Sulfate de magnésium 4g IV lente puis 1g/h (prévention éclampsie). Anti-hypertenseur si TA >160/110. Accouchement si terme >37 SA ou signes de gravité.",
+      "traitement": {
+        "sulfate_mg": "4g IV sur 20min puis 1g/h. Surveillance: réflexe rotulien, FR>16/min, diurèse>30ml/h",
+        "antihypertenseur": "Méthyldopa 250-500mg / 8h PO. Nifédipine 10mg si urgence."
+      },
+      "urgence": true,
+      "seuils": {
+        "logic": "any",
+        "rules": [
+          {
+            "field": "ta_syst",
+            "op": "gte",
+            "value": 140,
+            "symptoms": [
+              "céphalées",
+              "œdème_membre"
+            ],
+            "score": 0.9
+          },
+          {
+            "symptoms": [
+              "céphalées",
+              "œdème_membre",
+              "troubles_vision"
+            ],
+            "score": 0.85
+          }
+        ]
+      }
+    },
+    "eclampsie": {
+      "nom": "Éclampsie (crise convulsive)",
+      "signes": [
+        "convulsions tonico-cloniques",
+        "coma",
+        "HTA sévère",
+        "grossesse >20SA ou postpartum"
+      ],
+      "conduite": "URGENCE VITALE. Protéger la patiente (décubitus latéral). Libérer les voies aériennes. Sulfate de magnésium 4g IV + 10g IM (Pritchard). Accouchement dans les 24h quelle que soit l'IG.",
+      "traitement": {
+        "protocole": "Pritchard: 4g IV lente + 5g IM dans chaque fesse = 14g dose de charge. Puis 5g IM / 4h x 24h. Diazépam 10mg IV si convulsions persistantes."
+      },
+      "urgence": true,
+      "attention": "La priorité est le contrôle des convulsions AVANT l'accouchement. Ne pas laisser la patiente seule.",
+      "seuils": {
+        "logic": "any",
+        "rules": [
+          {
+            "symptoms": [
+              "convulsions_tonico_cloniques",
+              "coma"
+            ],
+            "score": 0.95
+          },
+          {
+            "symptoms": [
+              "convulsions",
+              "perte_conscience"
+            ],
+            "score": 0.9
+          }
+        ]
+      }
+    },
+    "hemorragie_post_partum": {
+      "nom": "Hémorragie du Post-Partum (HPP)",
+      "signes": [
+        "saignement >500ml (AVB)",
+        "saignement >1000ml (césarienne)",
+        "utérus atone",
+        "tachycardie",
+        "hypotension",
+        "pâleur",
+        "choc"
+      ],
+      "conduite": "APPEL À L'AIDE. Masser le fond utérin. Ocytocine 10 UI IM + 20 UI dans 500ml soluté. Vider la vessie (sondage). Réviser le canal (déchirures?). Réviser la cavité utérine (rétention placentaire?). Remplissage IV (Ringer Lactate 2L).",
+      "traitement": {
+        "ocytocine": "10 UI IM + 20 UI dans 500ml RL à 60 gouttes/min",
+        "misoprostol": "800µg IR si pas d'ocytocine disponible",
+        "acide_tranexamique": "1g IV dans les 3h du début du saignement"
+      },
+      "urgence": true,
+      "attention": "⚠️ 1ère cause de mortalité maternelle en Afrique. Chaque minute compte. Si l'utérus ne se contracte pas → compression bimanuelle de l'aorte.",
+      "seuils": {
+        "logic": "any",
+        "rules": [
+          {
+            "symptoms": [
+              "saignements",
+              "hypotension",
+              "pâleur"
+            ],
+            "score": 0.9
+          },
+          {
+            "symptoms": [
+              "choc",
+              "pâleur",
+              "tachycardie"
+            ],
+            "score": 0.85
+          }
+        ]
+      }
+    },
+    "infection_neonatale": {
+      "nom": "Infection néonatale sévère",
+      "signes": [
+        "fièvre ou hypothermie",
+        "refus de téter",
+        "léthargie",
+        "geignements",
+        "respiration rapide",
+        "convulsions",
+        "ictère précoce",
+        "fontanelle bombée"
+      ],
+      "tokens": [
+        "fièvre",
+        "léthargie",
+        "geignement",
+        "respiration_rapide",
+        "convulsions",
+        "ictère",
+        "fontanelle_bombée"
+      ],
+      "signes_mineurs": [
+        "respiration rapide (>60/min)",
+        "tirage",
+        "geignements",
+        "cyanose",
+        "apnées",
+        "hypotonie"
+      ],
+      "conduite": "HOSPITALISATION URGENTE. Ampicilline 50mg/kg/12h IV + Gentamicine 5mg/kg/24h IV. Si méningite suspectée: Céfotaxime 50mg/kg/12h IV. Support: oxygène si SpO2<90%, réchauffer (peau-à-peau), glycémie, SNG si ne tète pas.",
+      "traitement": {
+        "antibiotherapie": "Ampicilline IV + Gentamicine IV 7-10 jours. Si signes neurologiques → Céfotaxime 14-21 jours.",
+        "support": "Peau-à-peau (mère Kangourou). Allaitement maternel (tirer le lait si ne tète pas). Vitamine K 1mg IM à la naissance."
+      },
+      "urgence": true
+    },
+    "asphyxie_neonatale": {
+      "nom": "Asphyxie néonatale (Helping Babies Breathe)",
+      "signes": [
+        "pas de respiration à la naissance",
+        "apnée",
+        "bradycardie <100/min",
+        "cyanose",
+        "hypotonie"
+      ],
+      "conduite": "GOLDEN MINUTE. 1. Sécher/stimuler. 2. Positionner la tête (sniffing position). 3. Désobstruction si besoin. 4. Ventilation au ballon-masque (40-60 insufflations/min) si apnée ou FC<100. 5. Réévaluer après 1 minute de ventilation efficace. Si FC<60 → masser (3:1).",
+      "traitement": {
+        "ventilation": "Ballon auto-gonflable néonatal. Air ambiant (pas d'O2 systématique). Fréquence 40-60/min.",
+        "massage_cardiaque": "Si FC<60 après 1min ventilation. Technique des 2 pouces, 1/3 inférieur sternum, 3 compressions pour 1 ventilation.",
+        "adrenaline": "Si FC<60 après 30s massage+ventilation: 0.01-0.03mg/kg IV/IO."
+      },
+      "urgence": true,
+      "attention": "⚠️ 90% des bébés respirent spontanément après séchage + stimulation seuls. Ne PAS faire de ventilation si le bébé respire. L'aspiration systématique est contre-indiquée.",
+      "seuils": {
+        "logic": "any",
+        "rules": [
+          {
+            "field": "fr",
+            "op": "lt",
+            "value": 10,
+            "age_range": [
+              0,
+              1
+            ],
+            "score": 0.95
+          },
+          {
+            "symptoms": [
+              "apnée",
+              "cyanose",
+              "hypotonie"
+            ],
+            "score": 0.9
+          }
+        ]
+      }
+    },
+    "prematurite": {
+      "nom": "Prématurité / Faible poids de naissance",
+      "signes": [
+        "âge gestationnel <37 SA",
+        "poids <2500g",
+        "peau fine",
+        "difficulté alimentaire",
+        "hypothermie"
+      ],
+      "conduite": "Méthode Kangourou (peau-à-peau continu) si stable. Surveillance température, glycémie, alimentation. Vitamine K 1mg IM. Soins du cordon (chlorhexidine).",
+      "traitement": {
+        "kangourou": "Peau-à-peau 24h/24. Mère ou substitut. Température ambiante 25-28°C. Bonnet, chaussettes. Allaitement maternel exclusif.",
+        "vitamine_k": "1mg IM à la naissance",
+        "cafeine": "Citrate de caféine 20mg/kg charge puis 5-10mg/kg/j si apnées (<32 SA)"
+      },
+      "urgence": false,
+      "suivi": "Consultation J3, J7, J14, J28. Surveillance poids, alimentation, ictère, signes infectieux.",
+      "seuils": {
+        "logic": "any",
+        "rules": [
+          {
+            "field": "poids",
+            "op": "lt",
+            "value": 2500,
+            "age_range": [
+              0,
+              1
+            ],
+            "score": 0.8
+          },
+          {
+            "symptoms": [
+              "hypothermie",
+              "hypotonie"
+            ],
+            "score": 0.7
+          }
+        ]
+      }
+    },
+    "ictere_neonatal": {
+      "nom": "Ictère néonatal pathologique",
+      "signes": [
+        "ictère <24h de vie",
+        "ictère >2 semaines",
+        "ictère atteignant les pieds (Kramer 4-5)",
+        "léthargie",
+        "refus téter"
+      ],
+      "conduite": "Évaluer la bilirubine si possible. Photothérapie intensive si ictère sévère. Poursuivre allaitement (tétées fréquentes). Si signes neurologiques → exsanguino-transfusion (urgence).",
+      "traitement": {
+        "phototherapie": "Lampe bleue 420-480nm, intensité >30µW/cm²/nm. Distance 20-30cm. Protection oculaire. Rotation toutes les 3h. Allaitement continu.",
+        "allaitement": "Tétées fréquentes (8-12x/j). Ne pas donner d'eau ou de glucose. Si lait maternel insuffisant → tire-lait + complément."
+      },
+      "urgence": true,
+      "attention": "⚠️ L'ictère du 1er jour de vie est TOUJOURS pathologique. L'ictère nucléaire (atteinte cérébrale) est irréversible.",
+      "seuils": {
+        "logic": "any",
+        "rules": [
+          {
+            "field": "age_jours",
+            "op": "lt",
+            "value": 1,
+            "symptoms": [
+              "ictère"
+            ],
+            "score": 0.9
+          },
+          {
+            "field": "age_jours",
+            "op": "lt",
+            "value": 14,
+            "symptoms": [
+              "ictère"
+            ],
+            "score": 0.8
+          }
+        ]
+      }
+    },
+    "cpn1": {
+      "nom": "Consultation Prénatale (CPN1) — Premier trimestre",
+      "signes": [
+        "grossesse confirmée <12 SA"
+      ],
+      "conduite": "1. Anamnèse complète (ATCD, allergies, médicaments). 2. Examen clinique (TA, poids, taille, MUAC). 3. Bilan: groupe sanguin, Rh, VIH, syphilis, Hb, protéinurie, glycémie. 4. VAT1 (tétanos). 5. Fer 60mg + AF 0.4mg/jour. 6. MII (moustiquaire imprégnée). 7. TPIS (sulfadoxine-pyriméthamine) à partir de 13 SA.",
+      "traitement": {
+        "fer_af": "Fer 60mg + Acide Folique 0.4mg / jour pendant toute la grossesse",
+        "vat": "VAT1 (0.5ml IM). VAT2 à 1 mois. VAT3 à 6 mois.",
+        "mii": "Moustiquaire imprégnée d'insecticide — 1 par femme enceinte",
+        "tpis": "SP 3 doses: à 13 SA, 20 SA, 28 SA (1 mois d'intervalle minimum)"
+      },
+      "urgence": false
+    },
+    "allaitement_difficile": {
+      "nom": "Difficultés d'allaitement / Mastite",
+      "signes": [
+        "douleur mamelon",
+        "crevasses",
+        "sein rouge/chaud/dur",
+        "fièvre maternelle",
+        "bébé ne prend pas assez de poids"
+      ],
+      "tokens": [
+        "douleur_mamelon",
+        "crevasses",
+        "sein_rouge",
+        "fièvre"
+      ],
+      "conduite": "Vérifier la prise du sein (bouche grande ouverte, lèvre inférieure retroussée, aréole plus visible au-dessus). Position: ventre contre ventre, tête libre. Crevasses: appliquer lait maternel en fin de tétée (anti-infectieux). Mastite: continuer l'allaitement (le lait reste bon).",
+      "traitement": {
+        "mastite": "Continuer allaitement (sein affecté en premier pour le vider). Compresses chaudes. Paracétamol. Si fièvre >24h ou abcès: Flucloxacilline 500mg / 6h PO x 7j + drainage chirurgical si abcès.",
+        "crevasses": "Lait maternel appliqué après chaque tétée. Éviter savon, alcool. Corriger la position."
+      },
+      "urgence": false
+    },
+    "contraception_post_partum": {
+      "nom": "Contraception du Post-Partum",
+      "signes": [
+        "femme en post-partum souhaitant espacement des naissances"
+      ],
+      "conduite": "Conseil: idéalement 2 ans entre 2 grossesses (OMS). Méthodes disponibles: MAMA (allaitement maternel exclusif — 98% efficace si <6 mois, aménorrhée, allaitement exclusif). Implant (Jadelle) ou DIU dans les 48h post-partum. Progestatifs (pilule, injectable) après 6 semaines.",
+      "traitement": {
+        "mama": "Critères: <6 mois PP, aménorrhée, allaitement exclusif jour+nuit. Efficacité 98% si les 3 critères réunis.",
+        "implant": "Jadelle (5 ans) ou Implanon NXT (3 ans). Peut être inséré dans les 48h post-partum.",
+        "diu": "DIU cuivre (10 ans) peut être inséré dans les 48h post-partum ou à 4 semaines."
+      },
+      "urgence": false
+    }
+  }
+}

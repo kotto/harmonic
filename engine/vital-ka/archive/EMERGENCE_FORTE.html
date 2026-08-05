@@ -1,0 +1,48 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>🔴 Force Nucléaire Forte — n=5</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#050508;color:#fafafa;font-family:Inter,system-ui,sans-serif;overflow:hidden;height:100vh}canvas{display:block}#info{position:absolute;top:20px;left:50%;transform:translateX(-50%);text-align:center;z-index:10;pointer-events:none}#title{font-size:22px;font-weight:700}#subtitle{font-size:13px;color:#a1a1aa;margin-top:4px}#ui{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:10}button{padding:8px 20px;border-radius:6px;border:1px solid #333;background:#111;color:#ccc;font-size:13px;cursor:pointer}button:hover{border-color:#ef4444;background:#1a1a1a;color:#fff}button.active{background:#ef4444;border-color:#ef4444;color:#000}</style></head><body><div id="info"><div id="title">🔴 Force Nucléaire Forte — n=5</div><div id="subtitle">3 quarks en TRIANGLE : le confinement émerge de l'interférence</div></div><canvas id="c"></canvas><div id="ui"><button id="btn-play" class="active">▶</button><button id="btn-pause">⏸</button><button id="btn-reset">↺</button><span style="color:#666;font-size:11px">| Séparation:</span><input type="range" id="sep" min="20" max="180" value="80" style="width:100px"><span id="sepVal" style="color:#ef4444;font-size:12px;min-width:30px">80</span></div><script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');let W,H,cx,cy,t=0,playing=!0,manualSep=80,useManual=!1;
+function resize(){W=c.width=innerWidth;H=c.height=innerHeight;cx=W/2;cy=H/2}resize();addEventListener('resize',resize);
+function draw(){
+  ctx.fillStyle='#050508';ctx.fillRect(0,0,W,H);
+  const sep=useManual?manualSep:80+60*Math.sin(t*0.15);
+  const r=sep;const p=[{x:cx,y:cy-r},{x:cx-r*.866,y:cy+r*.5},{x:cx+r*.866,y:cy+r*.5}];
+  // Gluon tubes (8 degrees of interference)
+  const colors=['#ef4444','#f59e0b','#22c55e','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+  for(let i=0;i<3;i++){const j=(i+1)%3;
+    for(let k=0;k<8;k++){
+      const t_f=k/8,fx=p[i].x+(p[j].x-p[i].x)*t_f,fy=p[i].y+(p[j].y-p[i].y)*t_f;
+      const wave=Math.sin(t_f*Math.PI*4+t*0.1+k)*4;
+      const alpha=0.15+0.08*Math.sin(t*0.2+k);
+      ctx.fillStyle=`rgba(${hexToRgb(colors[k])},${alpha})`;
+      ctx.beginPath();ctx.arc(fx,fy+wave,3,0,Math.PI*2);ctx.fill();
+    }
+    // Tube principal
+    ctx.strokeStyle='rgba(239,68,68,.4)';ctx.lineWidth=3;ctx.setLineDash([2,6]);ctx.beginPath();ctx.moveTo(p[i].x,p[i].y);ctx.lineTo(p[j].x,p[j].y);ctx.stroke();ctx.setLineDash([]);
+  }
+  // Quarks
+  const qNames=['u (up)','d (down)','u (up)'];const qColors=['#ef4444','#3b82f6','#ef4444'];
+  for(let i=0;i<3;i++){
+    const grad=ctx.createRadialGradient(p[i].x,p[i].y,3,p[i].x,p[i].y,25);
+    grad.addColorStop(0,'rgba(255,255,255,.9)');grad.addColorStop(.3,`${qColors[i]}.5`);grad.addColorStop(1,'transparent');
+    ctx.fillStyle=grad;ctx.beginPath();ctx.arc(p[i].x,p[i].y,25,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(p[i].x,p[i].y,5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=qColors[i];ctx.font='bold 11px Inter,sans-serif';ctx.textAlign='center';ctx.fillText(qNames[i],p[i].x,p[i].y-30);
+  }
+  // Triangle central
+  ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(p[0].x,p[0].y);ctx.lineTo(p[1].x,p[1].y);ctx.lineTo(p[2].x,p[2].y);ctx.closePath();ctx.stroke();ctx.setLineDash([]);
+  // Label
+  ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='bold 13px Inter,sans-serif';ctx.textAlign='center';
+  ctx.fillText('PROTON = uud (3 quarks confinés)',cx,cy+sep+50);
+  ctx.fillText('Médiateur : AUCUN — le triangle EST la force',cx,cy+sep+68);
+  ctx.fillText('8 degrés d\'interférence = « 8 gluons » du Modèle Standard',cx,cy+sep+86);
+  document.getElementById('sepVal').textContent=Math.round(sep);
+  if(sep<50)document.getElementById('subtitle').textContent='Confinement MAXIMAL — les quarks sont INSEPARABLES (force forte)';
+  else if(sep<120)document.getElementById('subtitle').textContent='Liberté asymptotique — à courte distance, les quarks sont libres';
+  else document.getElementById('subtitle').textContent='Distance critique — AU-DELÀ, le triangle se brise (confinement violé)';
+}
+function hexToRgb(h){const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return r+','+g+','+b}
+function loop(){if(playing&&!useManual)t+=0.05;draw();requestAnimationFrame(loop)}
+document.getElementById('btn-play').onclick=()=>{playing=!0;useManual=!1;document.getElementById('btn-play').classList.add('active');document.getElementById('btn-pause').classList.remove('active')};
+document.getElementById('btn-pause').onclick=()=>{playing=!1;useManual=!0;manualSep=Math.round(80+60*Math.sin(t*.15));document.getElementById('btn-pause').classList.add('active');document.getElementById('btn-play').classList.remove('active')};
+document.getElementById('btn-reset').onclick=()=>{t=0;useManual=!1;playing=!0;document.getElementById('btn-play').classList.add('active');document.getElementById('btn-pause').classList.remove('active')};
+document.getElementById('sep').oninput=(e)=>{manualSep=parseInt(e.target.value);useManual=!0;playing=!1;document.getElementById('btn-pause').classList.add('active');document.getElementById('btn-play').classList.remove('active')};
+loop();</script></body></html>

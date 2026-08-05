@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang=fr><head><meta charset=utf-8>
+<title>CAHIER DES CHARGES — Vital Ka × HWAT</title>
+<style>
+@page { size: A4; margin: 18mm 16mm; }
+html, body { margin:0; padding:0; background:#f4f6f8; color:#1e2021;
+  font-family:'Segoe UI','DejaVu Sans',Arial,sans-serif; font-size:10pt; line-height:1.55; }
+.page { max-width:178mm; margin:0 auto; padding:10mm 4mm; background:#f4f6f8; }
+h1 { font-size:19pt; color:#516a77; border-bottom:2px solid #bdced7; padding-bottom:3mm; margin:12mm 0 5mm; page-break-after:avoid; }
+h1:first-of-type { margin-top:0; }
+h2 { font-size:14pt; color:#426a7e; margin:8mm 0 4mm; page-break-after:avoid; }
+h3 { font-size:11.5pt; color:#1e2021; margin:6mm 0 3mm; page-break-after:avoid; }
+p { margin:2mm 0; text-align:justify; }
+ul, ol { margin:2mm 0 2mm 6mm; }
+li { margin:1mm 0; }
+table { width:100%; border-collapse:collapse; margin:3mm auto; font-size:8.5pt; page-break-inside:avoid; }
+thead th { background:#516a77; color:#fff; text-align:left; padding:2mm 3mm; }
+tbody td { padding:1.8mm 3mm; border-bottom:1px solid #bdced7; vertical-align:top; }
+tbody tr:nth-child(even) { background:#e9ebec; }
+code { background:#eff0f1; border:1px solid #bdced7; border-radius:1.5mm; padding:0.4mm 1.5mm; font-size:8pt; font-family:Consolas,monospace; }
+pre { background:#1e2a35; color:#d6e2ea; border-radius:2mm; padding:4mm; white-space:pre-wrap; page-break-inside:avoid; font-size:8pt; }
+pre code { background:none; border:none; color:inherit; padding:0; }
+blockquote { border-left:3px solid #c42f48; background:#edeff1; margin:3mm 0; padding:2.5mm 4mm; }
+.mermaid-fallback { font-family:Consolas,monospace; font-size:8pt; background:#1e2a35; color:#9fd0e8; }
+hr { border:none; border-top:1px solid #bdced7; margin:6mm 0; }
+</style></head>
+<body><div class=page>
+<h1>📐 CAHIER DES CHARGES — Projet Vital Ka × HWAT</h1>
+<p><strong>Écosystème de santé panafricain alimenté par l'IA harmonique</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Version</strong></td>
+<td>2.0</td>
+</tr>
+<tr>
+<td><strong>Date</strong></td>
+<td>1er août 2026</td>
+</tr>
+<tr>
+<td><strong>Statut</strong></td>
+<td>Spécification finale — implémentation en cours</td>
+</tr>
+<tr>
+<td><strong>Auteur</strong></td>
+<td>Vital Ka — Équipe HarmoniqLLM</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Table des matières</h2>
+<ol>
+<li><a href="#1-présentation-générale">Présentation générale</a></li>
+<li><a href="#2-contexte-et-objectifs">Contexte et objectifs</a></li>
+<li><a href="#3-architecture-globale">Architecture globale</a></li>
+<li><a href="#4-spécifications-fonctionnelles">Spécifications fonctionnelles</a></li>
+<li><a href="#5-spécifications-techniques">Spécifications techniques</a></li>
+<li><a href="#6-api--contrats-dinterface">API — Contrats d'interface</a></li>
+<li><a href="#7-données">Données</a></li>
+<li><a href="#8-sécurité-et-conformité">Sécurité et conformité</a></li>
+<li><a href="#9-performance">Performance</a></li>
+<li><a href="#10-déploiement">Déploiement</a></li>
+<li><a href="#11-planification-et-budget">Planification et budget</a></li>
+<li><a href="#12-risques-et-mitigations">Risques et mitigations</a></li>
+<li><a href="#13-critères-de-validation">Critères de validation</a></li>
+<li><a href="#14-annexes">Annexes</a></li>
+</ol>
+<hr>
+<h2>1. Présentation générale</h2>
+<h3>1.1 Le projet en une phrase</h3>
+<p><strong>Vital Ka</strong> est un écosystème de santé panafricain (4 applications mobiles + IA embarquée) dont le cerveau est <strong>HWAT</strong> (Harmonic Wavelet Attention Transformer), une architecture d'intelligence artificielle fondée sur la physique ondulatoire : les mots sont des ondes complexes ψ = A·e^(iφ), et l'attention est une interférence de phase cos(Δφ).</p>
+<h3>1.2 Les trois piliers</h3>
+<table>
+<thead>
+<tr>
+<th>Pilier</th>
+<th>Description</th>
+<th>Statut</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>IA harmonique</strong></td>
+<td>HWAT + 15 hologrammes médicaux spécialisés</td>
+<td>✅ Fonctionnel</td>
+</tr>
+<tr>
+<td><strong>Santé connectée</strong></td>
+<td>4 apps : Patient, Médecin, Pharmacien, Solidarité</td>
+<td>✅ Fonctionnel</td>
+</tr>
+<tr>
+<td><strong>Économie médicale</strong></td>
+<td>Unités Médicales (UM) : 1 UM = 1 EUR = 655 CFA</td>
+<td>✅ Fonctionnel</td>
+</tr>
+</tbody>
+</table>
+<h3>1.3 Les 13 fonctionnalités livrées (récapitulatif)</h3>
+<pre class="mermaid-fallback">mindmap
+  root((Vital Ka × HWAT))
+    IA Harmonique
+      HWAT (attention de phase)
+      15 hologrammes médicaux
+      Routeur spectral
+      Phrasé naturel
+      Anti-hallucination
+      Enrichissement 158 faits
+    Applications
+      Patient (dossier + wallet)
+      Médecin (diagnostic + honoraires)
+      Pharmacien (caisse + interactions)
+      Solidarité (diaspora → UM)
+    API (7 endpoints)
+      Diagnose
+      Prescribe
+      Interactions
+      Explain
+      Hologram/query
+      Health / Model-info
+    Android Capacitor
+      Routeur offline JS
+      Bundle 62K faits embarqué
+      Portefeuille santé UM
+    Entraînement 125M
+      Corpus médical 63.7M chars
+      Tokenizer BPE 50K
+      Kaggle GPU (en cours)
+    Partenariat MTN
+      Dossier technique
+      Compression massive</pre>
+
+<hr>
+<h2>2. Contexte et objectifs</h2>
+<h3>2.1 Problème</h3>
+<ul>
+<li><strong>60% des consultations en Afrique subsaharienne</strong> sont informelles (pas de dossier médical)</li>
+<li>Les LLM classiques <strong>hallucinent</strong> (3-10%) — inacceptable en santé</li>
+<li>L'IA nécessite des <strong>GPU massifs</strong> inexistants sur le continent</li>
+<li>Les paiements de santé sont <strong>non tracés</strong> (cash, mobile money non dédié)</li>
+</ul>
+<h3>2.2 Objectifs</h3>
+<pre class="mermaid-fallback">graph LR
+    A[Diagnostic fiable<br>0.5% hallucination] --> D[Vital Ka]
+    B[IA sur smartphone<br>0 GPU requis] --> D
+    C[Paiement santé tracé<br>Unités Médicales] --> D
+    D --> E[Accès aux soins<br>panafricain]
+    D --> F[Souveraineté IA<br>africaine]</pre>
+
+<table>
+<thead>
+<tr>
+<th>Objectif</th>
+<th>Indicateur</th>
+<th>Cible</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fiabilité médicale</td>
+<td>Taux d'hallucination</td>
+<td>&lt; 1%</td>
+</tr>
+<tr>
+<td>Accessibilité</td>
+<td>Fonctionnement hors-ligne</td>
+<td>100% des fonctions cœur</td>
+</tr>
+<tr>
+<td>Souveraineté</td>
+<td>Entraînement sur le continent</td>
+<td>Kaggle/clouds accessibles</td>
+</tr>
+<tr>
+<td>Économie</td>
+<td>Wallet UM tracé</td>
+<td>0 frais entre proches, AML 5000 UM/mois</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>3. Architecture globale</h2>
+<h3>3.1 Vue système (déploiement)</h3>
+<pre class="mermaid-fallback">flowchart TB
+    subgraph DEVICE["📱 Appareil (smartphone / PC)"]
+        A1["KA Patient"] 
+        A2["KA Médecin"]
+        A3["KA Pharmacien"]
+        A4["KA Solidarité"]
+        A5["Routeur offline JS<br>15 hologrammes embarqués"]
+    end
+
+    subgraph LOCAL["🖥️ Station / Serveur local"]
+        API["API FastAPI :8010<br>7 endpoints"]
+        ROUTER["Routeur spectral Python<br>15 domaines · 62K faits"]
+        MODEL["Modèle 125M<br>(quand entraîné)"]
+    end
+
+    subgraph CLOUD["☁️ Kaggle GPU"]
+        K["Entraînement HWAT-Med-125M<br>100K steps · RUNNING"]
+    end
+
+    subgraph DATA["🗄️ Données"]
+        D1["medical_holograms/ 8.2 MB"]
+        D2["hologram_bundle.json 3.7 MB"]
+        D3["tokenizer_medical_50k"]
+        D4["medical_corpus/ 63.7 MB"]
+    end
+
+    A1 --> A5
+    A2 --> A5
+    A3 --> A5
+    A4 --> A5
+    A5 --> API
+    API --> ROUTER
+    API --> MODEL
+    ROUTER --> D1
+    D2 --> A5
+    MODEL --> K
+    K -.checkpoints.-> MODEL
+    ROUTER --> D3
+    ROUTER --> D4</pre>
+
+<h3>3.2 Vue logique — pipeline IA</h3>
+<pre class="mermaid-fallback">sequenceDiagram
+    participant App as Application
+    participant Router as Routeur spectral
+    participant Facts as Faits médicaux
+    participant Phrase as Phrasé naturel
+
+    App->>Router: Requête (symptômes, médicaments...)
+    Router->>Router: 1. Couverture lexicale (≥50% mots médicaux ?)
+    alt Hors-sujet
+        Router-->>App: "Aucune correspondance fiable"
+    else Sujet médical
+        Router->>Router: 2. Routage top-3 domaines (index lexical)
+        Router->>Facts: 3. Retrieval pondéré (sujet 3×, objet 2×)
+        Facts-->>Router: Faits + scores normalisés [0,1]
+        Router->>Phrase: 4. Template par relation
+        Phrase-->>App: Phrases naturelles + seuil 0.15
+    end</pre>
+
+<h3>3.3 Vue physique — modules</h3>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Technologie</th>
+<th>Rôle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hwat_torch.py</code></td>
+<td>PyTorch</td>
+<td>Architecture HWAT (458 lignes)</td>
+</tr>
+<tr>
+<td><code>train_hwat_kaggle.py</code></td>
+<td>PyTorch</td>
+<td>Entraînement 125M (GPU)</td>
+</tr>
+<tr>
+<td><code>train_medical_holograms.py</code></td>
+<td>PyTorch</td>
+<td>15 experts médicaux (2.6 min CPU)</td>
+</tr>
+<tr>
+<td><code>hologram_router.py</code></td>
+<td>Python</td>
+<td>Routeur spectral + coverage()</td>
+</tr>
+<tr>
+<td><code>inference_server.py</code></td>
+<td>FastAPI</td>
+<td>API 7 endpoints</td>
+</tr>
+<tr>
+<td><code>ka_hologram_router.js</code></td>
+<td>JavaScript</td>
+<td>Portage offline Android</td>
+</tr>
+<tr>
+<td><code>ka_wallet.js</code></td>
+<td>JavaScript</td>
+<td>Wallet UM (crédit/débit/conversion)</td>
+</tr>
+<tr>
+<td><code>launch_app.py</code></td>
+<td>Python HTTP</td>
+<td>Serveur frontend web</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>4. Spécifications fonctionnelles</h2>
+<h3>4.1 Module IA Harmonique</h3>
+<table>
+<thead>
+<tr>
+<th>Fonctionnalité</th>
+<th>Exigence</th>
+<th>Critère d'acceptation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Diagnostic</strong></td>
+<td>À partir de symptômes → hypothèses hiérarchisées</td>
+<td>Top-3 avec scores, refus si hors-sujet</td>
+</tr>
+<tr>
+<td><strong>Prescription</strong></td>
+<td>Pathologie + profil patient → posologies</td>
+<td>Doses adulte/enfant selon poids</td>
+</tr>
+<tr>
+<td><strong>Interactions</strong></td>
+<td>Liste de médicaments → paires dangereuses</td>
+<td>Sévérité (contraindicated → minor), accents tolérés</td>
+</tr>
+<tr>
+<td><strong>Explication</strong></td>
+<td>Sujet + public → explication lisible</td>
+<td>Phrasé patient vs clinique</td>
+</tr>
+<tr>
+<td><strong>Hologrammes</strong></td>
+<td>Requête libre → faits des 15 domaines</td>
+<td>Routage auto, plantes incluses</td>
+</tr>
+</tbody>
+</table>
+<h3>4.2 Module Applications</h3>
+<h4>KA Patient</h4>
+<ul>
+<li>Dossier médical, médicaments + rappels, constantes, RDV</li>
+<li>Wallet UM : <strong>recevoir</strong> (QR), <strong>envoyer</strong> (frais 0%, AML 5000), <strong>payer soins</strong> (QR prestataire)</li>
+<li>Partage QR (KA Bridge)</li>
+</ul>
+<h4>KA Médecin</h4>
+<ul>
+<li>Diagnostic harmonique enrichi (hologrammes offline)</li>
+<li>Prescription QR → pharmacie</li>
+<li><strong>Nouveau : Honoraires UM</strong> (encaisser + conversion CFA/EUR)</li>
+</ul>
+<h4>KA Pharmacien</h4>
+<ul>
+<li>Scan ordonnance QR, dispensation</li>
+<li><strong>Nouveau : Vérification d'interactions</strong> (KA_HOLOGRAM offline)</li>
+<li>Caisse UM + conversion</li>
+</ul>
+<h4>KA Solidarité (diaspora)</h4>
+<ul>
+<li>Achat UM → transfert patient (limite mensuelle)</li>
+</ul>
+<h3>4.3 Module Portefeuille Santé (UM)</h3>
+<pre class="mermaid-fallback">flowchart LR
+    A["💝 Solidarité<br>Achat UM (EUR/CFA)"] --> B["👤 Patient<br>Wallet UM"]
+    B --> C["🏪 Pharmacien<br>Encaissement"]
+    B --> D["🩺 Médecin<br>Honoraires"]
+    D --> E["🏦 Conversion<br>UM → CFA/EUR"]
+    C --> E
+    B --> F["📤 Envoi entre proches<br>frais 0% · AML 5000/mois"]</pre>
+
+<table>
+<thead>
+<tr>
+<th>Règle</th>
+<th>Valeur</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Taux fixe</td>
+<td>1 UM = 1 EUR = 655 CFA</td>
+</tr>
+<tr>
+<td>Frais entre proches</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>Limite AML</td>
+<td>5000 UM/mois (solidarité)</td>
+</tr>
+<tr>
+<td>Conversion prestataire</td>
+<td>UM → CFA/EUR (gel des fonds en attente)</td>
+</tr>
+<tr>
+<td>Traçabilité</td>
+<td>Ledger signé HMAC (1000 tx max)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>5. Spécifications techniques</h2>
+<h3>5.1 Architecture HWAT</h3>
+<p>$$\psi_{t,p} = A_t \cdot e^{i(\varphi_{token,t} + \varphi_{pos,p})}$$</p>
+<table>
+<thead>
+<tr>
+<th>Composant</th>
+<th>Spécification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Embeddings</td>
+<td>Déterministes (FNV-1a, φ-spaced) — <strong>0 octet stocké</strong></td>
+</tr>
+<tr>
+<td>Attention</td>
+<td>Cohérence de phase cos(φᵢ−φⱼ) × amplitude</td>
+</tr>
+<tr>
+<td>MLP</td>
+<td>GELU sur amplitude, phase préservée</td>
+</tr>
+<tr>
+<td>LayerNorm</td>
+<td>Sur amplitude uniquement</td>
+</tr>
+<tr>
+<td>Head</td>
+<td>[Re(ψ), Im(ψ)] → vocabulaire</td>
+</tr>
+<tr>
+<td>Déterminisme</td>
+<td>Bit-à-bit (zéro dropout)</td>
+</tr>
+</tbody>
+</table>
+<h3>5.2 Hologrammes médicaux (15 domaines)</h3>
+<table>
+<thead>
+<tr>
+<th>Domaine</th>
+<th>Faits</th>
+<th>PPL</th>
+<th>Domaine</th>
+<th>Faits</th>
+<th>PPL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CLINIQUE</td>
+<td>60 000</td>
+<td>5.7</td>
+<td>MERE_ENFANT</td>
+<td>142</td>
+<td>17.3</td>
+</tr>
+<tr>
+<td>MALADIES</td>
+<td>428</td>
+<td>10.0</td>
+<td>MNT</td>
+<td>135</td>
+<td>18.5</td>
+</tr>
+<tr>
+<td>PHARMACIE</td>
+<td>249</td>
+<td>13.4</td>
+<td>VIH_TB</td>
+<td>125</td>
+<td>16.7</td>
+</tr>
+<tr>
+<td>GENERAL</td>
+<td>229</td>
+<td>13.6</td>
+<td>NUTRITION</td>
+<td>106</td>
+<td>18.9</td>
+</tr>
+<tr>
+<td>URGENCES</td>
+<td>188</td>
+<td>16.0</td>
+<td>PHYTOTHERAPIE</td>
+<td>101</td>
+<td>14.8</td>
+</tr>
+<tr>
+<td>CHRONIQUES</td>
+<td>184</td>
+<td>14.4</td>
+<td>PALUDISME</td>
+<td>77</td>
+<td>18.9</td>
+</tr>
+<tr>
+<td>SANTE_MENTALE</td>
+<td>160</td>
+<td>14.0</td>
+<td>VACCINATION</td>
+<td>72</td>
+<td>24.1</td>
+</tr>
+<tr>
+<td>PEDIATRIE</td>
+<td>160</td>
+<td>14.2</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>TOTAL</strong></td>
+<td><strong>62 356 faits</strong></td>
+<td>—</td>
+<td><strong>Taille</strong></td>
+<td><strong>8.2 MB</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3>5.3 Routing et anti-hallucination</h3>
+<pre class="mermaid-fallback">flowchart TD
+    Q[Requête] --> C{Couverture lexicale<br>≥ 50% mots médicaux ?}
+    C -- Non --> R1["Refus : hors-sujet"]
+    C -- Oui --> R2{Routage top-3<br>index lexical}
+    R2 --> S{Meilleur score<br>≥ 0.15 ?}
+    S -- Non --> R3["Refus : 'je ne sais pas'"]
+    S -- Oui --> R4["Réponse avec phrases + scores"]</pre>
+
+<hr>
+<h2>6. API — Contrats d'interface</h2>
+<h3>6.1 Endpoints</h3>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Méthode</th>
+<th>Requête</th>
+<th>Réponse</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/health</code></td>
+<td>GET</td>
+<td>—</td>
+<td><code>{status, model_loaded, device}</code></td>
+</tr>
+<tr>
+<td><code>/model/info</code></td>
+<td>GET</td>
+<td>—</td>
+<td><code>{name, parameters, vocab_size...}</code></td>
+</tr>
+<tr>
+<td><code>/diagnose</code></td>
+<td>POST</td>
+<td><code>{symptoms[], patient_age, history}</code></td>
+<td><code>{diagnoses[], confidence}</code></td>
+</tr>
+<tr>
+<td><code>/prescribe</code></td>
+<td>POST</td>
+<td><code>{diagnosis, patient_age, weight, allergies}</code></td>
+<td><code>{medications[], warnings}</code></td>
+</tr>
+<tr>
+<td><code>/interactions</code></td>
+<td>POST</td>
+<td><code>{medications[], patient_factors}</code></td>
+<td><code>{interactions[], severity}</code></td>
+</tr>
+<tr>
+<td><code>/explain</code></td>
+<td>POST</td>
+<td><code>{topic, audience, language}</code></td>
+<td><code>{explanation, sources}</code></td>
+</tr>
+<tr>
+<td><code>/hologram/query</code></td>
+<td>POST</td>
+<td><code>{domain, query, top_k}</code></td>
+<td><code>{results[], domain}</code></td>
+</tr>
+</tbody>
+</table>
+<h3>6.2 Exemple — <code>/diagnose</code></h3>
+<pre><code class="language-json">// Requête
+POST /diagnose
+{
+  &quot;symptoms&quot;: [&quot;fièvre&quot;, &quot;toux&quot;, &quot;fatigue&quot;],
+  &quot;patient_age&quot;: 30,
+  &quot;max_diagnoses&quot;: 3
+}
+
+// Réponse
+{
+  &quot;diagnoses&quot;: [
+    {&quot;text&quot;: &quot;Le patient présente le symptôme « fièvre_progressive » dans le cadre de Fièvre typhoïde.&quot;,
+     &quot;score&quot;: 0.42, &quot;secteur&quot;: &quot;MALADIES&quot;}
+  ],
+  &quot;confidence&quot;: 0.42,
+  &quot;disclaimer&quot;: &quot;Avertissement: Ceci est une assistance IA, pas un avis médical.&quot;
+}
+</code></pre>
+<h3>6.3 Exemple — <code>/interactions</code></h3>
+<pre><code class="language-json">// Requête
+POST /interactions
+{ &quot;medications&quot;: [&quot;diazépam&quot;, &quot;alcool&quot;] }
+
+// Réponse
+{
+  &quot;interactions&quot;: [{
+    &quot;pair&quot;: [&quot;diazepam + alcool + opiaces&quot;, &quot;Dépression respiratoire additive — RISQUE MORTEL&quot;],
+    &quot;severity&quot;: &quot;contraindicated&quot;,
+    &quot;mechanism&quot;: &quot;Interaction médicamenteuse : diazepam + alcool + opiaces → Dépression respiratoire additive — RISQUE MORTEL&quot;
+  }],
+  &quot;severity&quot;: &quot;contraindicated&quot;
+}
+</code></pre>
+<hr>
+<h2>7. Données</h2>
+<h3>7.1 Corpus médical</h3>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Segments</th>
+<th>Caractères</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>14 JSON vital_ka (maladies, paludisme, pédiatrie, pharmacie...)</td>
+<td>42 000</td>
+<td>18.2M</td>
+</tr>
+<tr>
+<td>Cas cliniques réels (real_clinical_dataset)</td>
+<td>45 000</td>
+<td>28.5M</td>
+</tr>
+<tr>
+<td>Q/A synthétiques</td>
+<td>45 000</td>
+<td>17.0M</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>132 000</strong></td>
+<td><strong>63.7M</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>7.2 Tokenizer</h3>
+<ul>
+<li>BPE, <strong>50 000 tokens</strong></li>
+<li>Tokens spéciaux : <code>&lt;icd10&gt;</code>, <code>&lt;rx&gt;</code>, <code>&lt;dose&gt;</code>, tags africains (<code>&lt;wo&gt;</code>, <code>&lt;bm&gt;</code>...)</li>
+</ul>
+<h3>7.3 Bundle offline Android</h3>
+<table>
+<thead>
+<tr>
+<th>Fichier</th>
+<th>Taille</th>
+<th>Contenu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hologram_bundle.json</code></td>
+<td>3.7 MB</td>
+<td>15 domaines, 62 356 faits, vocabulaire, templates</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>8. Sécurité et conformité</h2>
+<pre class="mermaid-fallback">flowchart LR
+    A[Chiffrement AES-GCM<br>dossiers] --> D[Applications]
+    B[QR signés HMAC<br>transferts] --> D
+    C[PIN obligatoire<br>verrouillage] --> D
+    D --> E[Anonymisation<br>k-anonymity]
+    D --> F[Ledger UM<br>auditable]</pre>
+
+<table>
+<thead>
+<tr>
+<th>Menace</th>
+<th>Protection</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hallucination médicale</td>
+<td>Seuil 0.15 + couverture lexicale + refus explicite</td>
+</tr>
+<tr>
+<td>Fraude wallet</td>
+<td>Limite AML 5000/mois, ledger signé, PIN</td>
+</tr>
+<tr>
+<td>Interception transfert</td>
+<td>QR HMAC, chiffrement AES-GCM</td>
+</tr>
+<tr>
+<td>Données patients</td>
+<td>100% local (localStorage), anonymisation</td>
+</tr>
+<tr>
+<td>Accès non autorisé</td>
+<td>PIN + verrouillage automatique</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>9. Performance</h2>
+<table>
+<thead>
+<tr>
+<th>Métrique</th>
+<th>Cible</th>
+<th>Mesuré</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Latence <code>/hologram/query</code></td>
+<td>&lt; 100 ms</td>
+<td><strong>3 ms</strong> (médiane)</td>
+</tr>
+<tr>
+<td>Routage clinique</td>
+<td>&gt; 90%</td>
+<td><strong>10/10</strong> (100%)</td>
+</tr>
+<tr>
+<td>Pièges bloqués</td>
+<td>100%</td>
+<td>3/3 + couverture lexicale</td>
+</tr>
+<tr>
+<td>Taille bundle offline</td>
+<td>&lt; 5 MB</td>
+<td>3.7 MB</td>
+</tr>
+<tr>
+<td>Chargement routeur JS</td>
+<td>&lt; 1 s</td>
+<td>~0.5 s</td>
+</tr>
+<tr>
+<td>Mémoire serveur</td>
+<td>&lt; 1 GB</td>
+<td>~200 MB</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>10. Déploiement</h2>
+<h3>10.1 Topologie</h3>
+<table>
+<thead>
+<tr>
+<th>Environnement</th>
+<th>Services</th>
+<th>Ports</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Station locale</td>
+<td>API + frontend</td>
+<td>8010 + 8080</td>
+</tr>
+<tr>
+<td>Android (APK Capacitor)</td>
+<td>Tout embarqué (offline)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Cloud (future)</td>
+<td>API + 125M + monitoring</td>
+<td>80/443</td>
+</tr>
+</tbody>
+</table>
+<h3>10.2 Pipeline de build Android</h3>
+<pre class="mermaid-fallback">flowchart LR
+    S["engine/ (source de vérité)"] --> SYNC["sync-assets.mjs"]
+    B["build_hologram_bundle.py"] --> BUNDLE["hologram_bundle.json"]
+    BUNDLE --> SYNC
+    SYNC --> WWW["www/ (Capacitor)"]
+    WWW --> APK["npx cap sync android → APK"]</pre>
+
+<blockquote>
+<p>⚠️ <strong>Règle d'or</strong> : toute modification se fait dans <code>engine/</code>, puis <code>node scripts/sync-assets.mjs</code>. <code>www/</code> est régénéré (ignoré par git).</p>
+</blockquote>
+<hr>
+<h2>11. Planification et budget</h2>
+<h3>11.1 Jalons</h3>
+<table>
+<thead>
+<tr>
+<th>Jalon</th>
+<th>État</th>
+<th>Date</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1 — Phase 1 (NPZ→PT)</td>
+<td>✅</td>
+<td>Juillet 2026</td>
+</tr>
+<tr>
+<td>S2 — Corpus + tokenizer</td>
+<td>✅</td>
+<td>Août 2026</td>
+</tr>
+<tr>
+<td>S3 — Hologrammes médicaux</td>
+<td>✅</td>
+<td>Août 2026</td>
+</tr>
+<tr>
+<td>S4 — API 7 endpoints</td>
+<td>✅</td>
+<td>Août 2026</td>
+</tr>
+<tr>
+<td>S5 — Apps complètes (wallet, interactions)</td>
+<td>✅</td>
+<td>Août 2026</td>
+</tr>
+<tr>
+<td>S6 — Entraînement 125M</td>
+<td>🟢 EN COURS</td>
+<td>Kaggle GPU</td>
+</tr>
+<tr>
+<td>S7 — SFT + alignement</td>
+<td>⏳</td>
+<td>Après S6</td>
+</tr>
+<tr>
+<td>S8 — LoRA 12 spécialités</td>
+<td>⏳</td>
+<td>Après S7</td>
+</tr>
+<tr>
+<td>S9 — Production + monitoring</td>
+<td>⏳</td>
+<td>T4 2026</td>
+</tr>
+</tbody>
+</table>
+<h3>11.2 Budget</h3>
+<table>
+<thead>
+<tr>
+<th>Poste</th>
+<th>Coût</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Phase 1-3 (déjà réalisées)</td>
+<td>~$25-35K</td>
+</tr>
+<tr>
+<td>GPU 125M (Kaggle gratuit + complément)</td>
+<td>$0-400</td>
+</tr>
+<tr>
+<td>Production (2× serveur)</td>
+<td>$300-600/mois</td>
+</tr>
+<tr>
+<td><strong>Total vers production</strong></td>
+<td><strong>$25-70K</strong></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>12. Risques et mitigations</h2>
+<table>
+<thead>
+<tr>
+<th>Risque</th>
+<th>Prob.</th>
+<th>Impact</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Corpus 63.7M trop petit pour fluence</td>
+<td>Moyenne</td>
+<td>Élevé</td>
+<td>Hologrammes (voie A) déjà opérationnels, 125M en bonus</td>
+</tr>
+<tr>
+<td>Hallucination résiduelle</td>
+<td>Faible</td>
+<td>Critique</td>
+<td>Seuil + couverture + refus explicite + validation médecins</td>
+</tr>
+<tr>
+<td>GPU indisponible</td>
+<td>Moyenne</td>
+<td>Moyen</td>
+<td>Kaggle 30h/sem, RunPod, partenariat MTN</td>
+</tr>
+<tr>
+<td>Adoption soignants</td>
+<td>Moyenne</td>
+<td>Moyen</td>
+<td>Co-design, valeur immédiate (gain de temps)</td>
+</tr>
+<tr>
+<td>RGPD / données</td>
+<td>Faible</td>
+<td>Élevé</td>
+<td>100% local, anonymisation, consentement</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>13. Critères de validation</h2>
+<table>
+<thead>
+<tr>
+<th>Critère</th>
+<th>Test</th>
+<th>Résultat attendu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Routage clinique</td>
+<td>10 requêtes types</td>
+<td>≥ 9/10 corrects</td>
+</tr>
+<tr>
+<td>Anti-hallucination</td>
+<td>Hors-sujets (football, gâteau)</td>
+<td>100% bloqués</td>
+</tr>
+<tr>
+<td>Interactions</td>
+<td>diazépam+alcool, metronidazole+alcool</td>
+<td>contraindicated</td>
+</tr>
+<tr>
+<td>Wallet</td>
+<td>Crédit → envoi → paiement → conversion</td>
+<td>Flux complet sans perte</td>
+</tr>
+<tr>
+<td>Offline</td>
+<td>APK sans réseau</td>
+<td>Diagnostic + interactions + wallet OK</td>
+</tr>
+<tr>
+<td>Latence</td>
+<td>20 requêtes</td>
+<td>Médiane &lt; 20 ms</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>14. Annexes</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Lien</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Plan d'implémentation session</td>
+<td><code>PLAN_IMPLEMENTATION_SESSION.md</code></td>
+</tr>
+<tr>
+<td>Roadmap 3 phases</td>
+<td><code>ROADMAP_HARMONIC_TRANSFORMER_VITAL_KA.md</code></td>
+</tr>
+<tr>
+<td>Dossier MTN</td>
+<td><code>dossier_mtn/</code></td>
+</tr>
+<tr>
+<td>Guide Android</td>
+<td><code>vital-ka-android/GUIDE_ANDROID.md</code></td>
+</tr>
+<tr>
+<td>Doc fondateur HWAT</td>
+<td><code>DOCUMENT_FONDATEUR_HWAT.md</code></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p><em>Cahier des charges v2.0 — Vital Ka × HWAT — 2026-08-01</em></p></div></body></html>

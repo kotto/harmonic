@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#0d0d0d">
+<title>Vital Ka — Acheter des Unités Médicales</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0d0d;--bg-elevated:#141414;--surface:#1a1a1a;--surface-hover:#222225;--glass:rgba(26,26,26,.7);--glass-border:rgba(212,168,83,.08);--border-light:rgba(212,168,83,.12);--text-faint:#6b635a;--text-muted:#9b8f7e;--accent:#d4a853;--accent-dim:#b89030;--accent-glow:rgba(212,168,83,.12);--accent-glow-strong:rgba(212,168,83,.25);--accent-grad:linear-gradient(135deg,#d4a853,#b89030);--success:#27ae60;--warning:#f39c12;--error:#e74c3c;--error-dim:rgba(231,76,60,.15);--urgent:#e74c3c;--font:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;--border:#2a2a2a;--muted:var(--text-muted);--text:#eae1d7;--card:var(--glass);--radius:16px;--gold-grad:linear-gradient(135deg,#d4a853,#7b5804)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5}
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:1}
+.container{max-width:720px;margin:0 auto;padding:0 16px 100px;position:relative;z-index:2}
+header{text-align:center;padding:32px 0 20px}
+header img{width:56px;height:56px;border-radius:50%;object-fit:cover;box-shadow:0 4px 20px rgba(0,0,0,.3),0 0 20px var(--accent-glow);border:2px solid var(--glass-border)}
+.card{background:var(--glass);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--glass-border);border-radius:var(--radius);padding:20px 16px;margin-bottom:16px;box-shadow:0 4px 16px rgba(0,0,0,.35)}
+.card h3{font-size:16px;font-weight:700;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.btn{display:block;width:100%;padding:14px 20px;border:none;border-radius:12px;font-weight:600;font-size:15px;cursor:pointer;font-family:inherit;text-align:center;transition:all .3s cubic-bezier(.16,1,.3,1)}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--gold-grad);color:#0a0a0f;box-shadow:0 4px 20px var(--accent-glow);font-weight:700}
+.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--accent);margin-top:8px}
+.btn-green{background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;margin-top:8px;box-shadow:0 4px 16px rgba(39,174,96,.2)}
+input,select,textarea{background:rgba(15,15,25,.8);color:var(--text);border:1px solid var(--border);padding:12px 16px;border-radius:12px;font-size:14px;font-family:inherit;width:100%;margin-bottom:8px}
+input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.amount-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.amount-btn{background:rgba(15,15,25,.8);border:1px solid var(--border);border-radius:12px;padding:14px 8px;text-align:center;cursor:pointer;transition:all .15s;color:var(--text)}
+.amount-btn b{display:block;font-size:17px;color:var(--accent)}
+.amount-btn span{font-size:10px;color:var(--muted)}
+.amount-btn:hover{border-color:var(--border-light)}
+.amount-btn.selected{border-color:var(--accent);background:var(--accent-glow);box-shadow:0 0 0 1px var(--accent)}
+.pay-method{display:flex;gap:8px;margin-bottom:12px}
+.pay-method .pm{flex:1;background:rgba(15,15,25,.8);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;cursor:pointer;font-size:12px;color:var(--muted);transition:all .15s}
+.pay-method .pm.active{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
+.rate-box{background:var(--accent-glow);border-radius:10px;padding:10px 12px;text-align:center;font-size:12px;color:var(--accent);margin-bottom:12px}
+.contact-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(15,15,25,.8);border:1px solid var(--glass-border);border-radius:20px;padding:6px 12px;font-size:12px;cursor:pointer;margin:0 6px 6px 0;transition:all .15s}
+.contact-chip:hover,.contact-chip.selected{border-color:var(--accent);background:var(--accent-glow);color:var(--accent)}
+.stats{display:flex;gap:8px;margin-bottom:16px}
+.stat{flex:1;background:var(--glass);border:1px solid var(--glass-border);border-radius:12px;padding:12px;text-align:center}
+.stat b{display:block;font-size:20px;color:var(--accent)}
+.stat span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.tx-item{background:rgba(15,15,25,.8);border:1px solid var(--glass-border);border-radius:12px;padding:12px;margin-bottom:8px}
+.tx-item .tx-amount{font-weight:700;color:var(--success);font-size:15px}
+.tx-item .tx-date{font-size:11px;color:var(--muted)}
+.badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600}
+.badge.ok{background:rgba(39,174,96,.15);color:var(--success)}
+.receipt{background:#fff;color:#1a1a1a;border-radius:14px;padding:20px;margin-top:12px;text-align:center}
+.receipt .r-logo{font-size:28px}
+.receipt h4{color:#1a1a1a;margin:4px 0;font-size:18px}
+.receipt .r-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px dashed #ddd;color:#444}
+.receipt .r-total{font-size:16px;font-weight:800;color:#b89030}
+.receipt .r-footer{font-size:10px;color:#888;margin-top:8px}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:688px;display:flex;justify-content:space-around;align-items:center;padding:8px 16px 12px;background:rgba(20,20,30,.85);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);border:1px solid var(--glass-border);border-radius:28px 28px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.5);z-index:50}
+.nav-item{display:flex;flex-direction:column;align-items:center;cursor:pointer;color:var(--text-faint);transition:all .15s;padding:6px 14px;border-radius:12px;position:relative}
+.nav-item.active{color:var(--accent);background:var(--accent-glow)}
+.nav-item .nav-icon{font-size:22px;margin-bottom:2px}
+.nav-item .nav-label{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.screen{display:none;opacity:0;transform:translateY(12px);transition:opacity .3s cubic-bezier(.16,1,.3,1),transform .3s cubic-bezier(.16,1,.3,1)}
+.screen.active{display:block;opacity:1;transform:translateY(0)}
+.hero{text-align:center;padding:20px 0 8px}
+.hero h1{font-size:26px;font-weight:800;background:var(--gold-grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
+.hero p{color:var(--muted);font-size:13px}
+</style>
+<script src="vital_ka_config.js"></script>
+<script src="ka_bridge.js"></script>
+<script src="ka_secure.js"></script>
+<script src="ka_platform.js"></script>
+<script src="ka_wallet.js"></script>
+</head>
+<body>
+<div class="container">
+
+<!-- ═══ ACCUEIL (LANDING) ═══ -->
+<div class="screen active" id="screen-home">
+<header><img src="logo2.jpg" alt="Vital Ka"></header>
+<div class="hero">
+<h1>💝 Offrez des soins à distance</h1>
+<p>Achetez des Unités Médicales (UM) et envoyez-les à vos proches en Afrique — 100% tracé, frais 0%.</p>
+</div>
+<div class="stats">
+<div class="stat"><b>1 UM</b><span>= 1 EUR</span></div>
+<div class="stat"><b>655</b><span>CFA / UM</span></div>
+<div class="stat"><b>0%</b><span>frais proches</span></div>
+</div>
+<div class="card">
+<h3>💳 Acheter des UM</h3>
+<button class="btn btn-primary" onclick="showScreen('achat')">🛒 Acheter maintenant</button>
+</div>
+<div class="card">
+<h3>👨‍👩‍👧 Mes bénéficiaires</h3>
+<div id="contactsList"><span style="color:var(--muted);font-size:.8em">Aucun bénéficiaire enregistré.</span></div>
+<div style="display:flex;gap:8px;margin-top:8px">
+<input id="newContactName" placeholder="Nom du proche" style="flex:1;margin:0">
+<input id="newContactCode" placeholder="Code wallet (ex: PAT-XXXXXX)" style="flex:1;margin:0">
+<button class="btn btn-secondary" style="width:auto;padding:12px 16px;margin:0" onclick="addContact()">➕</button>
+</div>
+</div>
+<div class="card">
+<h3>📜 Comment ça marche</h3>
+<p style="font-size:13px;color:var(--muted)">1. Choisissez un montant en UM (1 UM = 1 EUR = 655 CFA)<br>
+2. Sélectionnez votre bénéficiaire (code wallet du patient)<br>
+3. Payez par Mobile Money ou carte — le patient reçoit les UM instantanément<br>
+4. Le patient utilise les UM pour consultations, médicaments et analyses</p>
+</div>
+</div>
+
+<!-- ═══ ACHAT ═══ -->
+<div class="screen" id="screen-achat">
+<header><h2 style="color:var(--accent)">🛒 Acheter des UM</h2></header>
+<div class="card">
+<h3>💰 Montant</h3>
+<div class="amount-grid">
+<div class="amount-btn" onclick="selectAmount(25)"><b>25</b><span>UM</span></div>
+<div class="amount-btn" onclick="selectAmount(50)"><b>50</b><span>UM</span></div>
+<div class="amount-btn" onclick="selectAmount(100)"><b>100</b><span>UM</span></div>
+<div class="amount-btn" onclick="selectAmount(250)"><b>250</b><span>UM</span></div>
+<div class="amount-btn" onclick="selectAmount(500)"><b>500</b><span>UM</span></div>
+<div class="amount-btn" onclick="selectAmount(1000)"><b>1000</b><span>UM</span></div>
+</div>
+<div style="display:flex;gap:8px">
+<input id="customAmount" type="number" min="1" placeholder="Montant personnalisé (UM)" oninput="customAmountInput(this.value)" style="flex:1">
+<select id="paymentCurrency" onchange="updatePricing()" style="width:auto">
+<option value="EUR">EUR</option>
+<option value="USD">USD</option>
+<option value="CFA">CFA</option>
+<option value="GBP">GBP</option>
+</select>
+</div>
+<div class="rate-box" id="amountDisplay">Sélectionnez un montant</div>
+</div>
+<div class="card">
+<h3>👤 Bénéficiaire</h3>
+<div id="beneficiariesChips"></div>
+<input id="recipientCode" placeholder="Code wallet du patient (ex: PAT-XXXXXX)" oninput="updateBeneficiary(this.value)">
+</div>
+<div class="card">
+<h3>💳 Méthode de paiement</h3>
+<div class="pay-method">
+<div class="pm active" onclick="selectPayMethod('momo', this)">📱 Mobile Money</div>
+<div class="pm" onclick="selectPayMethod('card', this)">💳 Carte bancaire</div>
+</div>
+<div id="payDetails"></div>
+</div>
+<button class="btn btn-primary" onclick="purchaseUnits()">✅ Payer et envoyer</button>
+<div id="purchaseResult" style="margin-top:12px"></div>
+<button class="btn btn-secondary" onclick="showScreen('home')">← Retour</button>
+</div>
+
+<!-- ═══ HISTORIQUE ═══ -->
+<div class="screen" id="screen-history">
+<header><h2 style="color:var(--accent)">📜 Mes envois</h2></header>
+<div id="txList"><div class="card"><p style="text-align:center;color:var(--muted)">Aucun envoi pour le moment.</p></div></div>
+<button class="btn btn-secondary" onclick="showScreen('home')">← Retour</button>
+</div>
+
+<nav class="bottom-nav">
+<div class="nav-item active" data-screen="home" onclick="showScreen('home')"><span class="nav-icon">🏠</span><span class="nav-label">Accueil</span></div>
+<div class="nav-item" data-screen="achat" onclick="showScreen('achat')"><span class="nav-icon">🛒</span><span class="nav-label">Achat</span></div>
+<div class="nav-item" data-screen="history" onclick="showScreen('history')"><span class="nav-icon">📜</span><span class="nav-label">Envois</span></div>
+</nav>
+
+<script>
+// ═══ ÉTAT ═══
+let selectedAmount = 0;
+let payMethod = 'momo';
+let selectedBeneficiary = '';
+const STORE_TX = 'ka_diaspora_txs';
+const STORE_CONTACTS = 'ka_diaspora_contacts';
+const RATES = { EUR: 1, USD: 1.09, CFA: 655, GBP: 0.84 };
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + name);
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.screen === name));
+  document.querySelector('.bottom-nav').style.display = (name === 'home') ? 'flex' : 'flex';
+  if (name === 'achat') { renderBeneficiaries(); renderPayDetails(); }
+  if (name === 'history') renderHistory();
+  if (name === 'home') renderContacts();
+}
+
+// ═══ MONTANT ═══
+function selectAmount(v) {
+  selectedAmount = v;
+  document.getElementById('customAmount').value = '';
+  document.querySelectorAll('.amount-btn').forEach(b => b.classList.toggle('selected', parseInt(b.querySelector('b').textContent) === v));
+  updatePricing();
+}
+function customAmountInput(v) {
+  selectedAmount = parseInt(v || '0', 10) || 0;
+  document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+  updatePricing();
+}
+function updatePricing() {
+  const el = document.getElementById('amountDisplay');
+  if (!selectedAmount) { el.textContent = 'Sélectionnez un montant'; return; }
+  const curr = document.getElementById('paymentCurrency').value;
+  const rate = RATES[curr] || 1;
+  const equiv = Math.round(selectedAmount * rate * 100) / 100;
+  el.innerHTML = '<b style="font-size:15px">' + selectedAmount + ' UM</b> = ' + equiv + ' ' + curr +
+    ' <span style="opacity:.7">(1 UM = ' + rate + ' ' + curr + ')</span>';
+}
+
+// ═══ BÉNÉFICIAIRE ═══
+function updateBeneficiary(v) {
+  selectedBeneficiary = v.trim().toUpperCase();
+  document.querySelectorAll('.contact-chip').forEach(c => c.classList.toggle('selected', c.dataset.code === selectedBeneficiary));
+}
+function selectBeneficiary(code, name) {
+  selectedBeneficiary = code;
+  document.getElementById('recipientCode').value = code;
+  document.querySelectorAll('.contact-chip').forEach(c => c.classList.toggle('selected', c.dataset.code === code));
+  renderPayDetails();
+}
+function renderBeneficiaries() {
+  const contacts = loadContacts();
+  const el = document.getElementById('beneficiariesChips');
+  if (!contacts.length) { el.innerHTML = '<p style="font-size:12px;color:var(--muted)">Ajoutez des bénéficiaires depuis l\'accueil.</p>'; return; }
+  el.innerHTML = contacts.map(c =>
+    '<span class="contact-chip" data-code="' + KA_SECURE.escapeHtml(c.code) + '" onclick="selectBeneficiary(\'' + KA_SECURE.escapeHtml(c.code) + '\',\'' + KA_SECURE.escapeHtml(c.name).replace(/'/g, "\\'") + '\')">👤 ' + KA_SECURE.escapeHtml(c.name) + '</span>'
+  ).join('');
+}
+
+// ═══ PAIEMENT ═══
+function selectPayMethod(m, el) {
+  payMethod = m;
+  document.querySelectorAll('.pm').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderPayDetails();
+}
+function renderPayDetails() {
+  const el = document.getElementById('payDetails');
+  if (payMethod === 'momo') {
+    el.innerHTML = '<input id="momoNumber" placeholder="Numéro Mobile Money (ex: 77 123 45 67)" inputmode="tel">' +
+      '<p style="font-size:11px;color:var(--muted)">Paiement sécurisé via le réseau Mobile Money — MTN MoMo, Orange Money, Wave...</p>';
+  } else {
+    el.innerHTML = '<input id="cardNumber" placeholder="Numéro de carte" inputmode="numeric">' +
+      '<div style="display:flex;gap:8px"><input id="cardExp" placeholder="MM/AA" style="flex:1"><input id="cardCvv" placeholder="CVV" type="password" style="flex:1"></div>' +
+      '<p style="font-size:11px;color:var(--muted)">Paiement sécurisé par carte bancaire (Visa, Mastercard).</p>';
+  }
+}
+
+// ═══ ACHAT ═══
+function purchaseUnits() {
+  if (!selectedAmount || selectedAmount <= 0) { alert('Choisissez un montant.'); return; }
+  const recipient = selectedBeneficiary || document.getElementById('recipientCode').value.trim().toUpperCase();
+  if (!recipient) { alert('Entrez le code wallet du bénéficiaire.'); return; }
+
+  // Vérification de la méthode de paiement
+  const payValid = payMethod === 'momo'
+    ? (document.getElementById('momoNumber')?.value?.trim() || '').length >= 6
+    : (document.getElementById('cardNumber')?.value?.trim() || '').length >= 10;
+  if (!payValid) { alert('Renseignez correctement votre moyen de paiement.'); return; }
+
+  // Limite AML mensuelle (5000 UM)
+  if (typeof KA_WALLET !== 'undefined') {
+    const limitCheck = KA_WALLET.checkMonthlySolidariteLimit();
+    if (!limitCheck.ok) {
+      alert('Limite mensuelle de ' + limitCheck.limit + ' UM atteinte. Réessayez le mois prochain.');
+      return;
+    }
+  }
+
+  const currency = document.getElementById('paymentCurrency').value;
+  const rate = RATES[currency] || 1;
+  const montantPaye = Math.round(selectedAmount * rate * 100) / 100;
+
+  // Simuler le paiement (15% frais mobile money selon opérateur, carte 2.5%)
+  const frais = payMethod === 'card' ? 0.025 : 0.015;
+  const totalPaye = Math.round(montantPaye * (1 + frais) * 100) / 100;
+
+  // Créditer le wallet du patient
+  let tx = null;
+  if (typeof KA_WALLET !== 'undefined') {
+    const res = KA_WALLET.credit('patient', selectedAmount, 'Achat solidarité — ' + selectedAmount + ' UM', { currency, recipient, payMethod });
+    tx = res.tx;
+  }
+
+  // Enregistrer la transaction diaspora
+  const txs = loadTxs();
+  const record = {
+    date: new Date().toISOString(),
+    amount: selectedAmount,
+    currency, montantPaye, frais, totalPaye,
+    recipient, payMethod,
+    txId: tx ? tx.txId : 'tx_' + Date.now().toString(36),
+    status: 'completed'
+  };
+  txs.unshift(record);
+  if (txs.length > 100) txs.pop();
+  saveTxs(txs);
+
+  // Émettre l'événement cross-app (le patient est notifié en temps réel)
+  if (typeof KA_PLATFORM !== 'undefined' && KA_PLATFORM.emit) {
+    KA_PLATFORM.emit('solidarite_credit', { amount: selectedAmount, recipient, txId: record.txId });
+  }
+
+  // Afficher le reçu
+  document.getElementById('purchaseResult').innerHTML = receiptHTML(record);
+  document.getElementById('recipientCode').value = '';
+  selectedAmount = 0;
+  selectedBeneficiary = '';
+  document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+  renderHistory();
+  scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function receiptHTML(r) {
+  return '<div class="receipt">' +
+    '<div class="r-logo">💝</div>' +
+    '<h4>Vital Ka — Reçu d\'envoi</h4>' +
+    '<p style="font-size:10px;color:#888">' + new Date(r.date).toLocaleDateString('fr-FR', {day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}) + '</p>' +
+    '<div style="margin:10px 0">' +
+    '<div class="r-row"><span>Unités Médicales</span><b>' + r.amount + ' UM</b></div>' +
+    '<div class="r-row"><span>Montant payé (' + r.currency + ')</span><span>' + r.montantPaye + '</span></div>' +
+    '<div class="r-row"><span>Frais (' + (r.payMethod === 'card' ? 'carte 2.5%' : 'MoMo 1.5%') + ')</span><span>' + r.frais + '</span></div>' +
+    '<div class="r-row" style="border-bottom:none"><span>Total</span><span class="r-total">' + r.totalPaye + ' ' + r.currency + '</span></div>' +
+    '</div>' +
+    '<div style="font-size:12px;padding:6px 0;border-top:1px solid #eee">👤 Bénéficiaire : <b>' + KA_SECURE.escapeHtml(r.recipient) + '</b></div>' +
+    '<div style="font-size:10px;color:#888;margin-top:4px">Transaction : ' + KA_SECURE.escapeHtml(r.txId) + '</div>' +
+    '<div class="r-footer">✅ Envoyé — le patient a été notifié<br>1 UM = 1 EUR = 655 CFA · AML 5000 UM/mois</div>' +
+    '</div>';
+}
+
+// ═══ CONTACTS ═══
+function loadContacts() { try { return JSON.parse(localStorage.getItem(STORE_CONTACTS) || '[]'); } catch(e) { return []; } }
+function saveContacts(c) { localStorage.setItem(STORE_CONTACTS, JSON.stringify(c)); }
+function addContact() {
+  const name = document.getElementById('newContactName').value.trim();
+  const code = document.getElementById('newContactCode').value.trim().toUpperCase();
+  if (!name || !code) { alert('Nom et code wallet requis.'); return; }
+  const contacts = loadContacts();
+  if (!contacts.some(c => c.code === code)) {
+    contacts.push({ name, code, added: new Date().toISOString() });
+    saveContacts(contacts);
+  }
+  document.getElementById('newContactName').value = '';
+  document.getElementById('newContactCode').value = '';
+  renderContacts();
+}
+function renderContacts() {
+  const contacts = loadContacts();
+  const el = document.getElementById('contactsList');
+  if (!contacts.length) {
+    el.innerHTML = '<span style="color:var(--muted);font-size:.8em">Aucun bénéficiaire enregistré.</span>';
+    return;
+  }
+  el.innerHTML = contacts.map(c =>
+    '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--glass-border)">' +
+    '<div><div style="font-weight:600;font-size:13px">👤 ' + KA_SECURE.escapeHtml(c.name) + '</div>' +
+    '<div style="font-size:11px;color:var(--muted);font-family:monospace">' + KA_SECURE.escapeHtml(c.code) + '</div></div>' +
+    '<button class="btn btn-secondary" style="width:auto;padding:6px 12px;font-size:11px;margin:0" onclick="selectBeneficiary(\'' + KA_SECURE.escapeHtml(c.code) + '\',\'' + KA_SECURE.escapeHtml(c.name).replace(/'/g, "\\'") + '\');showScreen(\'achat\')">Envoyer</button>' +
+    '</div>'
+  ).join('');
+}
+
+// ═══ HISTORIQUE ═══
+function loadTxs() { try { return JSON.parse(localStorage.getItem(STORE_TX) || '[]'); } catch(e) { return []; } }
+function saveTxs(d) { localStorage.setItem(STORE_TX, JSON.stringify(d)); }
+function renderHistory() {
+  const txs = loadTxs();
+  const el = document.getElementById('txList');
+  if (!txs.length) {
+    el.innerHTML = '<div class="card"><p style="text-align:center;color:var(--muted)">Aucun envoi pour le moment.</p></div>';
+    return;
+  }
+  let html = '';
+  txs.slice(0, 10).forEach(t => {
+    html += '<div class="tx-item">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+      '<div><div class="tx-amount">+' + t.amount + ' UM</div>' +
+      '<div class="tx-date">' + new Date(t.date).toLocaleDateString('fr-FR', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) + ' · ' + KA_SECURE.escapeHtml(t.recipient) + '</div></div>' +
+      '<span class="badge ok">✅ Livré</span></div>' +
+      '<div style="font-size:10px;color:var(--muted);margin-top:4px">' + t.totalPaye + ' ' + t.currency + ' via ' + (t.payMethod === 'card' ? 'carte' : 'Mobile Money') + ' · ' + KA_SECURE.escapeHtml(t.txId) + '</div>' +
+      '</div>';
+  });
+  el.innerHTML = html;
+}
+
+// ═══ INIT ═══
+(function init() {
+  if (typeof KA_PLATFORM !== 'undefined' && KA_PLATFORM.login && !KA_PLATFORM.getSession()) {
+    KA_PLATFORM.login('solidarite', 'Diaspora');
+  }
+  renderContacts();
+  renderPayDetails();
+})();
+</script>
+</body></html>

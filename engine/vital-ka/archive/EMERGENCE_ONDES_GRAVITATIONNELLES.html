@@ -1,0 +1,54 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>🌊 Ondes Gravitationnelles — Propagation du Couplage</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#050508;color:#fafafa;font-family:Inter,system-ui,sans-serif;overflow:hidden;height:100vh}canvas{display:block}#info{position:absolute;top:20px;left:50%;transform:translateX(-50%);text-align:center;z-index:10;pointer-events:none}#title{font-size:22px;font-weight:700}#subtitle{font-size:13px;color:#a1a1aa;margin-top:4px}#ui{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:10}button{padding:8px 20px;border-radius:6px;border:1px solid #333;background:#111;color:#ccc;font-size:13px;cursor:pointer}button:hover{border-color:#f59e0b;background:#1a1a1a;color:#fff}button.active{background:#f59e0b;border-color:#f59e0b;color:#000}</style></head><body><div id="info"><div id="title">🌊 Ondes Gravitationnelles — n=2</div><div id="subtitle">Le couplage D^{1/φ}[Ψ]=G[Ψ] se propage quand les masses orbitent</div></div><canvas id="c"></canvas><div id="ui"><button id="btn-play" class="active">▶</button><button id="btn-pause">⏸</button><button id="btn-reset">↺</button><span style="color:#666;font-size:11px">| Vitesse:</span><input type="range" id="speed" min="1" max="30" value="8" style="width:100px"><span id="speedVal" style="color:#f59e0b;font-size:12px">8x</span></div><script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');let W,H,cx,cy,t=0,playing=!0,speed=8;
+function resize(){W=c.width=innerWidth;H=c.height=innerHeight;cx=W/2;cy=H/2}resize();addEventListener('resize',resize);
+function draw(){
+  ctx.fillStyle='#050508';ctx.fillRect(0,0,W,H);const T=t,spd=speed/8;
+  // Two orbiting masses
+  const orbitR=120+30*Math.sin(T*.02);const decay=Math.min(1,T/40);const r=orbitR*(1-decay*.7);
+  const a1=T*spd*.4,a2=a1+Math.PI;
+  const m1x=cx+r*Math.cos(a1),m1y=cy+r*Math.sin(a1);
+  const m2x=cx+r*Math.cos(a2),m2y=cy+r*Math.sin(a2);
+  // Gravitational waves — concentric rings from the binary
+  for(let ring=0;ring<6;ring++){
+    const ringAge=(T*spd*.15+ring*.8)%3;if(ringAge>.1){
+      const ringR=30+ringAge*180;const ringAlpha=(1-ringAge/3)*.25*decay;
+      ctx.strokeStyle=`rgba(245,200,80,${ringAlpha})`;ctx.lineWidth=2*(1-ringAge/3);ctx.beginPath();ctx.arc(cx,cy,ringR,0,Math.PI*2);ctx.stroke();
+      // Quadrupole distortion (±)
+      for(let a=0;a<Math.PI*2;a+=.1){
+        const quad=Math.cos(2*(a-a1))*8*(1-ringAge/3);
+        const wr=ringR+quad;const wx=cx+wr*Math.cos(a),wy=cy+wr*Math.sin(a);
+        if(a===0)ctx.beginPath();ctx.lineTo(wx,wy);
+      }
+    }
+  }
+  // Coupling grid between masses
+  for(let i=0;i<20;i++){const frac=i/20;const ix=m1x+(m2x-m1x)*frac,iy=m1y+(m2y-m1y)*frac;
+    const wave=Math.sin(frac*Math.PI*3+T*spd*.3)*6*decay;
+    ctx.fillStyle=`rgba(245,200,80,${.1+.05*Math.sin(frac*10+T)}`;
+    ctx.beginPath();ctx.arc(ix,iy+wave,1.5,0,Math.PI*2);ctx.fill();
+  }
+  // Masses
+  for(const [mx,my] of[[m1x,m1y],[m2x,m2y]]){
+    const grad=ctx.createRadialGradient(mx,my,3,mx,my,20+decay*15);grad.addColorStop(0,'rgba(255,255,255,.9)');grad.addColorStop(.3,'rgba(245,158,11,.5)');grad.addColorStop(1,'transparent');
+    ctx.fillStyle=grad;ctx.beginPath();ctx.arc(mx,my,20+decay*15,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(mx,my,4,0,Math.PI*2);ctx.fill();
+  }
+  // Orbit trail
+  ctx.strokeStyle='rgba(245,158,11,.15)';ctx.setLineDash([2,6]);ctx.lineWidth=1;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+  // Equation
+  ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='bold 12px Inter,sans-serif';ctx.textAlign='center';
+  ctx.fillText('D{1/φ}[Ψ_A] = G[Ψ_B]  →  propagation du couplage = onde gravitationnelle',cx,cy+r+60);
+  if(decay>.3)ctx.fillText('Énergie emportée → orbites DÉCROISSENT (Hulse-Taylor 1993)',cx,cy+r+80);
+  if(decay>.7){ctx.fillStyle='rgba(245,200,80,.9)';ctx.fillText('↗ CHIRP — fusion imminente ↗',cx,cy+r+100)}
+  // Phase
+  document.getElementById('speedVal').textContent=speed+'x';
+  if(decay<.2)document.getElementById('subtitle').textContent='Deux masses en orbite — le couplage oscille → ONDE émise';
+  else if(decay<.5)document.getElementById('subtitle').textContent='L\'onde emporte de l\'énergie → les orbites DÉCROISSENT';
+  else if(decay<.8)document.getElementById('subtitle').textContent='Le CHIRP : fréquence et amplitude augmentent — fusion proche';
+  else document.getElementById('subtitle').textContent='Fusion — un seul objet, le couplage externe CESSE. Silence.';
+}
+function loop(){if(playing)t+=0.05;draw();requestAnimationFrame(loop)}
+document.getElementById('btn-play').onclick=()=>{playing=!0;document.getElementById('btn-play').classList.add('active');document.getElementById('btn-pause').classList.remove('active')};
+document.getElementById('btn-pause').onclick=()=>{playing=!1;document.getElementById('btn-pause').classList.add('active');document.getElementById('btn-play').classList.remove('active')};
+document.getElementById('btn-reset').onclick=()=>{t=0;playing=!0;document.getElementById('btn-play').classList.add('active');document.getElementById('btn-pause').classList.remove('active')};
+document.getElementById('speed').oninput=(e)=>{speed=parseInt(e.target.value)};
+loop();</script></body></html>

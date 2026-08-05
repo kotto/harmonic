@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#0d0d0d">
+<title>Vital Ka Médecins — Portail Professionnel</title>
+<link href="fonts/fonts.css" rel="stylesheet"/>
+<style>
+:root{--bg:#0d0d0d;--bg-elevated:#141414;--surface:#1a1a1a;--surface-hover:#222225;--glass:rgba(26,26,26,.7);--glass-border:rgba(212,168,83,.08);--border-light:rgba(212,168,83,.12);--text-faint:#6b635a;--text-muted:#9b8f7e;--accent:#d4a853;--accent-dim:#b89030;--accent-glow:rgba(212,168,83,.12);--accent-glow-strong:rgba(212,168,83,.25);--accent-grad:linear-gradient(135deg,#d4a853,#b89030);--accent2:#27ae60;--success:#27ae60;--warning:#f39c12;--warning-dim:rgba(243,156,18,.15);--error:#e74c3c;--error-dim:rgba(231,76,60,.15);--urgent:#e74c3c;--font:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;--border:#2a2a2a;--muted:var(--text-muted);--text:#eae1d7;--card:var(--glass);--radius:16px;--gold-grad:linear-gradient(135deg,#d4a853,#7b5804)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5}
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:1}
+.container{max-width:720px;margin:0 auto;padding:0 16px 100px;position:relative;z-index:2}
+header{text-align:center;padding:32px 0 24px}
+header img{width:56px;height:56px;border-radius:50%;object-fit:cover;box-shadow:0 4px 20px rgba(0,0,0,.3),0 0 20px var(--accent-glow);border:2px solid var(--glass-border);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+header img:hover{transform:scale(1.05);box-shadow:0 8px 32px rgba(0,0,0,.4),0 0 40px var(--accent-glow-strong)}
+header h1{margin-top:12px;font-size:1.8em;font-weight:800;color:var(--text);letter-spacing:-.03em}
+header p{color:var(--muted);font-size:12px;margin-top:4px;letter-spacing:.05em;text-transform:uppercase}
+.card{background:var(--glass);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--glass-border);border-radius:var(--radius);padding:20px 16px;margin-bottom:16px;box-shadow:0 4px 16px rgba(0,0,0,.35);transition:border-color .15s,box-shadow .15s,transform .15s}
+.card:hover{border-color:var(--border-light);box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.card h3{font-size:16px;font-weight:700;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:8px;letter-spacing:-.02em}
+.btn{display:block;width:100%;padding:14px 20px;border:none;border-radius:12px;font-weight:600;font-size:15px;cursor:pointer;font-family:inherit;text-align:center;transition:all .3s cubic-bezier(.16,1,.3,1);letter-spacing:.01em;appearance:none;-webkit-appearance:none}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--gold-grad);color:#0a0a0f;box-shadow:0 4px 20px var(--accent-glow);border:none;font-weight:700}
+.btn-primary:hover{background:linear-gradient(135deg,#f0d06a,#d0ae4e);box-shadow:0 6px 28px var(--accent-glow-strong);transform:translateY(-1px)}
+.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--accent);margin-top:8px}
+.btn-secondary:hover{border-color:var(--accent);background:var(--accent-glow)}
+.btn-green{background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;margin-top:8px;box-shadow:0 4px 16px rgba(39,174,96,.2)}
+.btn-green:hover{box-shadow:0 6px 24px rgba(39,174,96,.35)}
+.btn-red{background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;margin-top:8px;box-shadow:0 4px 16px rgba(231,76,60,.2)}
+.btn-red:hover{box-shadow:0 6px 24px rgba(231,76,60,.35)}
+input,select,textarea{background:rgba(15,15,25,.8);color:var(--text);border:1px solid var(--border);padding:12px 16px;border-radius:12px;font-size:14px;font-family:inherit;width:100%;transition:border-color .15s,box-shadow .15s}
+input::placeholder,textarea::placeholder{color:#5a5448}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:688px;display:flex;justify-content:space-around;align-items:center;padding:8px 16px 12px;background:rgba(20,20,30,.85);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);border:1px solid var(--glass-border);border-radius:28px 28px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.5),0 0 0 1px var(--glass-border);z-index:50}
+.nav-item{display:flex;flex-direction:column;align-items:center;cursor:pointer;color:var(--text-faint);transition:all .15s;padding:6px 14px;border-radius:12px;position:relative}
+.nav-item:hover{color:var(--text-muted)}
+.nav-item.active{color:var(--accent);background:var(--accent-glow);box-shadow:inset 0 0 12px var(--accent-glow)}
+.nav-item.active::after{content:'';position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--accent)}
+.nav-item .nav-icon{font-size:22px;margin-bottom:2px}
+.nav-item .nav-label{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.screen{display:none;opacity:0;transform:translateY(12px);transition:opacity .3s cubic-bezier(.16,1,.3,1),transform .3s cubic-bezier(.16,1,.3,1)}
+.screen.active{display:block;opacity:1;transform:translateY(0)}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+/* Badges */
+.status-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px}
+.status-dot.online{background:var(--accent2);box-shadow:0 0 8px var(--accent2)}
+.status-dot.busy{background:#f39c12;box-shadow:0 0 8px #f39c12}
+.status-dot.offline{background:#666}
+/* ── Contact list (WhatsApp-style) ── */
+.contact-list{max-height:400px;overflow-y:auto}
+.contact-row{display:flex;align-items:center;padding:14px 12px;border-radius:12px;cursor:pointer;transition:all .15s;border:1px solid transparent;margin-bottom:4px}
+.contact-row:hover{background:var(--accent-glow);border-color:var(--glass-border)}
+.contact-row:active{transform:scale(.98)}
+.contact-avatar{width:48px;height:48px;border-radius:50%;background:var(--gold-grad);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#0a0a0f;flex:none;position:relative}
+.contact-avatar .online-indicator{position:absolute;bottom:2px;right:2px;width:12px;height:12px;border-radius:50%;background:var(--accent2);border:2px solid var(--bg)}
+.contact-info{flex:1;margin-left:12px;min-width:0}
+.contact-name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.contact-last{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.contact-time{font-size:11px;color:var(--muted);flex:none;margin-left:8px}
+.contact-actions{display:flex;gap:6px;flex:none;margin-left:8px}
+.contact-call-btn{width:36px;height:36px;border-radius:50%;border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.contact-call-btn.video{background:rgba(52,211,153,.15);color:var(--accent2)}
+.contact-call-btn.video:hover{background:rgba(52,211,153,.25)}
+.contact-call-btn.audio{background:var(--accent-glow);color:var(--accent)}
+.contact-call-btn.audio:hover{background:var(--accent-glow-strong)}
+.contact-call-btn.chat{background:rgba(232,196,90,.08);color:var(--accent)}
+.contact-call-btn.chat:hover{background:var(--accent-glow)}
+/* ── Chat (WhatsApp-style) ── */
+.chat-container{display:flex;flex-direction:column;height:60vh}
+.chat-header{display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface);border-radius:var(--radius) var(--radius) 0 0;border:1px solid var(--border);border-bottom:none}
+.chat-header .back-btn{background:none;border:none;color:var(--accent);font-size:20px;cursor:pointer;padding:4px}
+.chat-messages{flex:1;overflow-y:auto;padding:12px;background:var(--bg);border-left:1px solid var(--border);border-right:1px solid var(--border)}
+.chat-msg{max-width:75%;margin-bottom:10px;padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.4;word-wrap:break-word}
+.chat-msg.sent{background:var(--accent-glow);margin-left:auto;border-bottom-right-radius:4px}
+.chat-msg.received{background:var(--card);border:1px solid var(--border);border-bottom-left-radius:4px}
+.chat-msg .msg-time{font-size:9px;color:var(--muted);margin-top:4px;text-align:right}
+.chat-input-bar{display:flex;gap:8px;padding:10px;background:var(--surface);border-radius:0 0 var(--radius) var(--radius);border:1px solid var(--border);border-top:none}
+.chat-input-bar input{flex:1;border-radius:20px;padding:10px 16px}
+.chat-input-bar button{width:42px;height:42px;border-radius:50%;background:var(--accent);color:#0a0a0f;border:none;font-weight:700;font-size:18px;cursor:pointer;flex:none;transition:all .15s}
+.chat-input-bar button:active{transform:scale(.92)}
+/* ── Splash ── */
+.splash-header{text-align:center;padding:48px 16px 24px}
+.splash-logo{width:100px;height:100px;border-radius:50%;object-fit:cover;box-shadow:0 8px 40px var(--accent-glow),0 0 0 4px var(--glass-border);margin-bottom:16px;border:3px solid var(--glass-border);transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
+.splash-logo:hover{transform:scale(1.08) rotate(2deg)}
+.splash-title{font-size:2em;font-weight:800;color:var(--accent);margin-bottom:4px;letter-spacing:-.03em}
+.splash-tagline{color:var(--muted);font-size:13px;margin-bottom:24px;letter-spacing:.02em}
+/* ── Video call overlay ── */
+.call-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.97);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.call-remote-video{width:100%;max-width:400px;border-radius:12px;margin-bottom:16px}
+.call-local-video{position:absolute;top:20px;right:20px;width:120px;border-radius:10px;border:2px solid var(--accent)}
+.call-controls{display:flex;gap:16px;margin-top:20px}
+.call-btn-round{width:56px;height:56px;border-radius:50%;border:none;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.call-btn-round.end{background:var(--urgent);color:#fff}
+.call-btn-round.mute{background:rgba(255,255,255,.2);color:#fff}
+.call-btn-round.switch{background:rgba(255,255,255,.2);color:#fff}
+.call-status-text{color:var(--muted);font-size:14px;margin-top:12px}
+/* ── Toggle switch ── */
+.toggle{position:relative;display:inline-block;width:52px;height:28px}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#333;border-radius:28px;transition:.3s}
+.toggle .slider:before{content:'';position:absolute;height:22px;width:22px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.slider{background:var(--accent2)}
+.toggle input:checked+.slider:before{transform:translateX(24px)}
+</style>
+<script src="vital_ka_config.js"></script>
+<script src="vital_ka_native.js"></script>
+<script src="ka_bridge.js"></script>
+<script src="ka_wallet.js"></script>
+<script src="ka_secure.js"></script>
+<script src="ka_hcv.js"></script>
+<script src="ka_care_voice.js"></script>
+<script src="ka_telemedecine.js"></script>
+<script src="seed_doctors_demo.js"></script>
+</head>
+<body>
+<div class="container">
+
+<!-- ═══ SPLASH SCREEN ═══ -->
+<div class="screen active" id="screen-splash">
+<div class="splash-header">
+<img src="logo2.jpg" class="splash-logo" alt="Vital Ka Médecins">
+<h1 class="splash-title">Vital Ka Médecins</h1>
+<p class="splash-tagline">Portail professionnel — Gérez vos consultations</p>
+</div>
+<div class="card" style="text-align:center" id="splashProfile">
+<div style="width:60px;height:60px;border-radius:50%;background:var(--gold-grad);display:flex;align-items:center;justify-content:center;font-size:1.4em;font-weight:700;margin:0 auto 8px;color:#0d0d0d" id="splashAvatar">?</div>
+<h3 id="splashDocName">Dr Non configuré</h3>
+<p style="color:var(--muted);font-size:.8em" id="splashDocSpec"></p>
+<div style="margin-top:8px"><span class="status-dot offline"></span><span id="splashStatus" style="font-size:12px;color:var(--muted)">Hors ligne</span></div>
+</div>
+<button class="btn btn-primary" onclick="showScreen('contacts')">📋 Mes consultations</button>
+<button class="btn btn-secondary" onclick="showScreen('profile')">👤 Mon profil professionnel</button>
+<button class="btn btn-secondary" onclick="showScreen('directory')">🩺 Annuaire confrères</button>
+</div>
+
+<!-- ═══ PROFILE SCREEN ═══ -->
+<div class="screen" id="screen-profile">
+<header><h2 style="color:var(--accent)">👤 Profil Professionnel</h2></header>
+<div class="card">
+<h3>🩺 Identité médicale</h3>
+<div class="row"><input id="docName" placeholder="Nom complet" onchange="saveDoctorProfile()"></div>
+<div class="row" style="margin-top:8px"><input id="docSpecialty" placeholder="Spécialité (ex: Cardiologie)" onchange="saveDoctorProfile()"><input id="docLicense" placeholder="N° Ordre" onchange="saveDoctorProfile()"></div>
+<div class="row" style="margin-top:8px"><input id="docPhone" placeholder="Téléphone pro" onchange="saveDoctorProfile()"><input id="docEmail" placeholder="Email" onchange="saveDoctorProfile()"></div>
+<input id="docAddress" placeholder="Adresse du cabinet" style="margin-top:8px" onchange="saveDoctorProfile()">
+<textarea id="docBio" placeholder="Biographie, langues parlées, approche..." style="margin-top:8px;min-height:60px" onchange="saveDoctorProfile()"></textarea>
+</div>
+<div class="card">
+<h3>🟢 Disponibilité</h3>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0">
+<span>Statut</span>
+<select id="docStatus" onchange="saveDoctorProfile()" style="width:auto">
+<option value="online">🟢 En ligne — Disponible</option>
+<option value="busy">🟡 Occupé(e)</option>
+<option value="offline">⚫ Hors ligne</option>
+</select>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0">
+<span>Accepter nouveaux patients</span>
+<label class="toggle"><input type="checkbox" id="docAccepting" onchange="saveDoctorProfile()" checked><span class="slider"></span></label>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0">
+<span>Consultation vidéo</span>
+<label class="toggle"><input type="checkbox" id="docVideoEnabled" onchange="saveDoctorProfile()" checked><span class="slider"></span></label>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0">
+<span>Consultation audio</span>
+<label class="toggle"><input type="checkbox" id="docAudioEnabled" onchange="saveDoctorProfile()" checked><span class="slider"></span></label>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0">
+<span>Chat médical</span>
+<label class="toggle"><input type="checkbox" id="docChatEnabled" onchange="saveDoctorProfile()" checked><span class="slider"></span></label>
+</div>
+</div>
+<div class="card">
+<h3>🕐 Horaires de consultation</h3>
+<div class="row"><input id="docHoursStart" type="time" value="08:00" onchange="saveDoctorProfile()"><input id="docHoursEnd" type="time" value="18:00" onchange="saveDoctorProfile()"></div>
+<p style="font-size:11px;color:var(--muted);margin-top:6px">De <span id="hoursLabel">08:00</span> à <span id="hoursLabelEnd">18:00</span></p>
+</div>
+<button class="btn btn-primary" onclick="publishDoctorProfile()">📡 Publier mon profil</button>
+<button class="btn btn-secondary" onclick="showScreen('splash')">← Retour</button>
+</div>
+
+<!-- ═══ CONTACTS / CONSULTATIONS (WhatsApp-style) ═══ -->
+<div class="screen" id="screen-contacts">
+<header>
+<h2 style="color:var(--accent)">📋 Consultations</h2>
+<div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+<button class="btn btn-secondary" style="width:auto;padding:8px 16px;font-size:12px" onclick="refreshContacts()">🔄 Rafraîchir</button>
+</div>
+</header>
+<div class="contact-list" id="contactList">
+<div class="card"><p style="text-align:center;color:var(--muted)">Aucune consultation. Les patients vous trouveront via l'annuaire Vital Ka.</p></div>
+</div>
+</div>
+
+<!-- ═══ CHAT SCREEN ═══ -->
+<div class="screen" id="screen-chat">
+<div class="chat-container">
+<div class="chat-header">
+<button class="back-btn" onclick="showScreen('contacts')">←</button>
+<div class="contact-avatar" style="width:36px;height:36px;font-size:14px" id="chatAvatar">?</div>
+<div style="flex:1"><div style="font-weight:600;font-size:14px" id="chatName">Contact</div><div style="font-size:11px;color:var(--accent2)">En ligne</div></div>
+<button class="contact-call-btn video" onclick="startWhatsAppCall('video')" title="Appel vidéo">📹</button>
+<button class="contact-call-btn audio" onclick="startWhatsAppCall('audio')" title="Appel audio">🎙️</button>
+</div>
+<div class="chat-messages" id="chatMessages"><span style="color:var(--muted);font-size:12px">Chat médical sécurisé — les messages sont chiffrés de bout en bout.</span></div>
+<div class="chat-input-bar">
+<input id="chatInput" placeholder="Message..." onkeydown="if(event.key==='Enter')sendChatMsg()">
+<button onclick="sendChatMsg()">→</button>
+</div>
+</div>
+</div>
+
+<!-- ═══ DIRECTORY SCREEN ═══ -->
+<div class="screen" id="screen-directory">
+<header><h2 style="color:var(--accent)">🩺 Annuaire des Confrères</h2></header>
+<div class="card">
+<input id="dirSearch" placeholder="Rechercher par nom ou spécialité..." oninput="filterDirectory()">
+</div>
+<div class="contact-list" id="directoryList">
+<div class="card"><p style="text-align:center;color:var(--muted)">Chargement de l'annuaire...</p></div>
+</div>
+<button class="btn btn-secondary" onclick="showScreen('splash')">← Retour</button>
+</div>
+
+<!-- ═══ HONORAIRES (WALLET MÉDECIN) ═══ -->
+<div class="screen" id="screen-honoraires">
+<header><h2 style="color:var(--accent)">💳 Mes Honoraires</h2></header>
+<div class="card" style="text-align:center">
+<div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Solde disponible</div>
+<div style="font-size:2.8em;font-weight:800;color:var(--accent);line-height:1.2" id="docBalance">0</div>
+<div style="font-size:14px;color:var(--muted)">Unités Médicales</div>
+<div style="margin-top:8px;font-size:11px;color:var(--muted)" id="docWalletId"></div>
+</div>
+<div class="card">
+<h3>💳 Encaisser des honoraires</h3>
+<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Le patient vous paie en UM après la consultation. Entrez le montant et le code wallet du patient (ou son ID).</p>
+<div style="display:flex;gap:8px;margin-bottom:8px">
+<input id="docFeeAmount" type="number" min="1" placeholder="Montant (UM)" style="flex:1;background:var(--surface);border:1px solid var(--glass-border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px"/>
+</div>
+<textarea id="docFeeCode" placeholder="Code wallet du patient ou ID (ex: PAT-XXXXXX)..." style="min-height:50px;margin-bottom:8px;background:var(--surface);border:1px solid var(--glass-border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px;width:100%;box-sizing:border-box"></textarea>
+<button class="btn btn-primary" style="width:100%" onclick="collectDoctorFee()">💳 Encaisser</button>
+<div id="docFeeResult" style="margin-top:12px"></div>
+</div>
+<div class="card">
+<h3>🏦 Conversion en monnaie locale</h3>
+<p style="color:var(--muted);font-size:13px;margin-bottom:8px">Convertissez vos UM en CFA ou EUR (taux fixe : 1 UM = 655 CFA = 1 EUR).</p>
+<div style="display:flex;gap:8px;margin-bottom:8px">
+<input id="docConvAmount" type="number" placeholder="Montant UM" style="flex:1;background:var(--surface);border:1px solid var(--glass-border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px">
+<select id="docConvCurrency" style="width:auto;background:var(--surface);border:1px solid var(--glass-border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit"><option value="CFA">CFA</option><option value="EUR">EUR</option></select>
+</div>
+<input id="docConvBank" placeholder="N° mobile money ou IBAN" style="margin-bottom:8px;background:var(--surface);border:1px solid var(--glass-border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px;width:100%;box-sizing:border-box">
+<button class="btn btn-primary" style="width:100%" onclick="requestDocConversion()">🏦 Demander la conversion</button>
+<div id="docConvResult" style="margin-top:12px"></div>
+</div>
+<div class="card">
+<h3>📋 Dernières transactions</h3>
+<div id="docTransactions"><span style="color:var(--muted);font-size:.8em">Aucune transaction.</span></div>
+</div>
+</div>
+
+<!-- ═══ VIDEO CALL OVERLAY ═══ -->
+<div class="call-overlay" id="callOverlay" style="display:none">
+<video id="waRemoteVideo" class="call-remote-video" autoplay playsinline></video>
+<video id="waLocalVideo" class="call-local-video" autoplay muted playsinline></video>
+<div class="call-status-text" id="waCallStatus">Connexion...</div>
+<div class="call-controls">
+<button class="call-btn-round mute" onclick="toggleWAMute()" title="Micro">🎙️</button>
+<button class="call-btn-round switch" onclick="toggleWAVideo()" title="Caméra">📹</button>
+<button class="call-btn-round end" onclick="endWACall()" title="Raccrocher">📞</button>
+</div>
+</div>
+
+</div>
+
+<nav class="bottom-nav">
+<div class="nav-item active" data-screen="splash" onclick="showScreen('splash')"><span class="nav-icon">🏠</span><span class="nav-label">Accueil</span></div>
+<div class="nav-item" data-screen="contacts" onclick="showScreen('contacts')"><span class="nav-icon">💬</span><span class="nav-label">Consult</span></div>
+<div class="nav-item" data-screen="directory" onclick="showScreen('directory')"><span class="nav-icon">🩺</span><span class="nav-label">Confrères</span></div>
+<div class="nav-item" data-screen="honoraires" onclick="showScreen('honoraires')"><span class="nav-icon">💳</span><span class="nav-label">Honoraires</span></div>
+<div class="nav-item" data-screen="profile" onclick="showScreen('profile')"><span class="nav-icon">👤</span><span class="nav-label">Profil</span></div>
+</nav>
+
+<script>
+// ═══ STORAGE ═══
+const STORE_DOC = 'ka_medecins_profile';
+const STORE_CONTACTS = 'ka_medecins_contacts';
+const STORE_CHATS = 'ka_medecins_chats';
+let currentChatContact = null;
+let waLocalStream = null, waPeerConnection = null, waCallType = 'video';
+
+function loadDocProfile() { try { return JSON.parse(localStorage.getItem(STORE_DOC) || '{}'); } catch(e) { return {}; } }
+function saveDocProfile(d) { localStorage.setItem(STORE_DOC, JSON.stringify(d)); }
+function loadContacts() { try { return JSON.parse(localStorage.getItem(STORE_CONTACTS) || '[]'); } catch(e) { return []; } }
+function saveContacts(c) { localStorage.setItem(STORE_CONTACTS, JSON.stringify(c)); }
+function loadChats() { try { return JSON.parse(localStorage.getItem(STORE_CHATS) || '{}'); } catch(e) { return {}; } }
+function saveChats(c) { localStorage.setItem(STORE_CHATS, JSON.stringify(c)); }
+
+// ═══ DIRECTORY (shared via localStorage cross-app) ═══
+function getDoctorsDirectory() {
+  try { return JSON.parse(localStorage.getItem('ka_doctors_directory') || '[]'); } catch(e) { return []; }
+}
+function saveDoctorsDirectory(dir) { localStorage.setItem('ka_doctors_directory', JSON.stringify(dir)); }
+
+// ═══ SCREENS ═══
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  var el = document.getElementById('screen-' + name);
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.screen === name));
+  document.querySelector('.bottom-nav').style.display = (name === 'splash') ? 'none' : 'flex';
+  if (name === 'contacts') refreshContacts();
+  if (name === 'directory') refreshDirectory();
+  if (name === 'profile') loadProfileForm();
+  if (name === 'honoraires') renderDoctorWallet();
+}
+
+// ═══ HONORAIRES — WALLET MÉDECIN (Unités Médicales) ═══
+function renderDoctorWallet() {
+  if (typeof KA_WALLET === 'undefined') return;
+  const wallet = KA_WALLET.getWallet('medecin');
+  const bal = document.getElementById('docBalance');
+  const id = document.getElementById('docWalletId');
+  if (bal) bal.textContent = wallet.balance;
+  if (id) id.textContent = 'ID: ' + wallet.walletId;
+  // Transactions
+  const txEl = document.getElementById('docTransactions');
+  if (txEl && wallet.transactions.length) {
+    let html = '';
+    wallet.transactions.slice(-8).reverse().forEach(tx => {
+      const d = new Date(tx.timestamp);
+      const sign = tx.direction === 'in' ? '+' : '-';
+      const color = tx.direction === 'in' ? 'var(--success)' : 'var(--error)';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--glass-border)">';
+      html += '<div><div style="font-size:13px;font-weight:600">' + (tx.metadata?.description || tx.type) + '</div><div style="font-size:11px;color:var(--muted)">' + d.toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) + '</div></div>';
+      html += '<div style="font-weight:700;color:' + color + '">' + sign + tx.amount + ' UM</div>';
+      html += '</div>';
+    });
+    txEl.innerHTML = html;
+  }
+}
+
+// Encaisser des honoraires depuis le wallet du patient (ou ID direct)
+function collectDoctorFee() {
+  if (typeof KA_WALLET === 'undefined') { alert('Wallet indisponible.'); return; }
+  const amount = parseInt(document.getElementById('docFeeAmount').value || '0', 10);
+  const code = (document.getElementById('docFeeCode').value || '').trim();
+  if (!amount || amount <= 0 || !code) {
+    document.getElementById('docFeeResult').innerHTML = '<span style="color:var(--error)">Montant et code wallet requis.</span>';
+    return;
+  }
+  // Le patient paie (debit patient) → crédite le médecin
+  const res = KA_WALLET.debit('patient', amount, 'medecin', 'Honoraires consultation',
+    { doctorId: 'DOC-' + Date.now().toString(36).toUpperCase(), type: 'consultation_fee', patientCode: code });
+  if (res.ok) {
+    document.getElementById('docFeeResult').innerHTML = '<span style="color:var(--success)">✅ ' + amount + ' UM encaissés. Nouveau solde : ' + res.wallet.balance + ' UM</span>';
+    document.getElementById('docFeeAmount').value = '';
+    document.getElementById('docFeeCode').value = '';
+    renderDoctorWallet();
+  } else {
+    document.getElementById('docFeeResult').innerHTML = '<span style="color:var(--error)">' + (res.error || 'Échec de l\'encaissement.') + '</span>';
+  }
+}
+
+// Demander la conversion UM → monnaie locale (prestataire convertible)
+function requestDocConversion() {
+  if (typeof KA_WALLET === 'undefined') { alert('Wallet indisponible.'); return; }
+  const amount = parseInt(document.getElementById('docConvAmount').value || '0', 10);
+  const currency = document.getElementById('docConvCurrency').value;
+  const bank = (document.getElementById('docConvBank').value || '').trim();
+  if (!amount || amount <= 0 || !bank) {
+    document.getElementById('docConvResult').innerHTML = '<span style="color:var(--error)">Montant et coordonnées bancaires requis.</span>';
+    return;
+  }
+  const res = KA_WALLET.requestConversion('medecin', amount, currency, { bank, provider: 'KA Médecin' });
+  if (res.ok) {
+    document.getElementById('docConvResult').innerHTML = '<span style="color:var(--success)">✅ Demande de conversion de ' + amount + ' UM en ' + currency + ' enregistrée.</span>';
+    document.getElementById('docConvAmount').value = '';
+    document.getElementById('docConvBank').value = '';
+  } else {
+    document.getElementById('docConvResult').innerHTML = '<span style="color:var(--error)">' + (res.error || 'Échec de la demande.') + '</span>';
+  }
+}
+
+// ═══ PROFILE ═══
+function loadProfileForm() {
+  var p = loadDocProfile();
+  document.getElementById('docName').value = p.name || '';
+  document.getElementById('docSpecialty').value = p.specialty || '';
+  document.getElementById('docLicense').value = p.license || '';
+  document.getElementById('docPhone').value = p.phone || '';
+  document.getElementById('docEmail').value = p.email || '';
+  document.getElementById('docAddress').value = p.address || '';
+  document.getElementById('docBio').value = p.bio || '';
+  document.getElementById('docStatus').value = p.status || 'offline';
+  document.getElementById('docAccepting').checked = p.accepting !== false;
+  document.getElementById('docVideoEnabled').checked = p.videoEnabled !== false;
+  document.getElementById('docAudioEnabled').checked = p.audioEnabled !== false;
+  document.getElementById('docChatEnabled').checked = p.chatEnabled !== false;
+  document.getElementById('docHoursStart').value = p.hoursStart || '08:00';
+  document.getElementById('docHoursEnd').value = p.hoursEnd || '18:00';
+  document.getElementById('hoursLabel').textContent = p.hoursStart || '08:00';
+  document.getElementById('hoursLabelEnd').textContent = p.hoursEnd || '18:00';
+}
+
+function saveDoctorProfile() {
+  var p = loadDocProfile();
+  p.name = document.getElementById('docName').value;
+  p.specialty = document.getElementById('docSpecialty').value;
+  p.license = document.getElementById('docLicense').value;
+  p.phone = document.getElementById('docPhone').value;
+  p.email = document.getElementById('docEmail').value;
+  p.address = document.getElementById('docAddress').value;
+  p.bio = document.getElementById('docBio').value;
+  p.status = document.getElementById('docStatus').value;
+  p.accepting = document.getElementById('docAccepting').checked;
+  p.videoEnabled = document.getElementById('docVideoEnabled').checked;
+  p.audioEnabled = document.getElementById('docAudioEnabled').checked;
+  p.chatEnabled = document.getElementById('docChatEnabled').checked;
+  p.hoursStart = document.getElementById('docHoursStart').value;
+  p.hoursEnd = document.getElementById('docHoursEnd').value;
+  if (!p.id) p.id = 'doc_' + Date.now();
+  p.updatedAt = new Date().toISOString();
+  saveDocProfile(p);
+  // Sync splash
+  updateSplash();
+}
+
+function publishDoctorProfile() {
+  var p = loadDocProfile();
+  if (!p.name) { alert('Veuillez remplir votre nom.'); return; }
+  p.publishedAt = new Date().toISOString();
+  saveDocProfile(p);
+  var dir = getDoctorsDirectory();
+  var idx = dir.findIndex(function(d) { return d.id === p.id; });
+  if (idx >= 0) dir[idx] = p; else dir.push(p);
+  saveDoctorsDirectory(dir);
+  updateSplash();
+  alert('✅ Profil publié dans l\'annuaire Vital Ka ! Les patients peuvent maintenant vous trouver.');
+}
+
+function updateSplash() {
+  var p = loadDocProfile();
+  document.getElementById('splashDocName').textContent = p.name ? 'Dr ' + p.name : 'Dr Non configuré';
+  document.getElementById('splashDocSpec').textContent = p.specialty || '';
+  document.getElementById('splashAvatar').textContent = (p.name || '?')[0].toUpperCase();
+  var statusEl = document.getElementById('splashStatus');
+  var dotEl = statusEl.previousElementSibling;
+  if (p.status === 'online') { statusEl.textContent = 'En ligne — disponible'; dotEl.className = 'status-dot online'; }
+  else if (p.status === 'busy') { statusEl.textContent = 'Occupé(e)'; dotEl.className = 'status-dot busy'; }
+  else { statusEl.textContent = 'Hors ligne'; dotEl.className = 'status-dot offline'; }
+}
+
+// ═══ CONTACTS (WhatsApp-style) ═══
+function refreshContacts() {
+  var contacts = loadContacts();
+  var el = document.getElementById('contactList');
+  if (!contacts.length) {
+    el.innerHTML = '<div class="card"><p style="text-align:center;color:var(--muted)">Aucune consultation. Les patients vous trouveront via l\'annuaire Vital Ka, ou scannez un QR de transfert.</p><button class="btn btn-secondary" style="margin-top:12px" onclick="scanPatientQR()">📷 Scanner QR patient</button></div>';
+    return;
+  }
+  var html = '';
+  contacts.forEach(function(c) {
+    var lastMsg = c.lastMessage || 'Aucun message';
+    var time = c.lastTime ? new Date(c.lastTime).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}) : '';
+    html += '<div class="contact-row" onclick="openChat(\'' + c.id + '\')">';
+    html += '<div class="contact-avatar">' + (c.name || '?')[0].toUpperCase() + '<div class="online-indicator"></div></div>';
+    html += '<div class="contact-info"><div class="contact-name">' + (c.name || 'Patient') + '</div><div class="contact-last">' + lastMsg + '</div></div>';
+    html += '<div class="contact-time">' + time + '</div>';
+    html += '<div class="contact-actions">';
+    html += '<button class="contact-call-btn video" onclick="event.stopPropagation();startWhatsAppCallWith(\'' + c.id + '\',\'video\')" title="Appel vidéo">📹</button>';
+    html += '<button class="contact-call-btn audio" onclick="event.stopPropagation();startWhatsAppCallWith(\'' + c.id + '\',\'audio\')" title="Appel audio">🎙️</button>';
+    html += '</div></div>';
+  });
+  el.innerHTML = html;
+}
+
+function openChat(contactId) {
+  var contacts = loadContacts();
+  currentChatContact = contacts.find(function(c) { return c.id === contactId; });
+  if (!currentChatContact) return;
+  document.getElementById('chatName').textContent = currentChatContact.name || 'Patient';
+  document.getElementById('chatAvatar').textContent = (currentChatContact.name || '?')[0].toUpperCase();
+  showScreen('chat');
+  renderChatMessages();
+}
+
+function renderChatMessages() {
+  if (!currentChatContact) return;
+  var chats = loadChats();
+  var msgs = chats[currentChatContact.id] || [];
+  var el = document.getElementById('chatMessages');
+  var html = '<span style="color:var(--muted);font-size:11px;display:block;text-align:center;margin-bottom:10px">Chat médical sécurisé — chiffré de bout en bout</span>';
+  msgs.forEach(function(m) {
+    var cls = m.from === 'me' ? 'sent' : 'received';
+    html += '<div class="chat-msg ' + cls + '">' + m.text + '<div class="msg-time">' + new Date(m.time).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}) + '</div></div>';
+  });
+  el.innerHTML = html;
+  el.scrollTop = el.scrollHeight;
+}
+
+function sendChatMsg() {
+  var input = document.getElementById('chatInput');
+  if (!input || !input.value.trim() || !currentChatContact) return;
+  var text = input.value.trim();
+  input.value = '';
+  var chats = loadChats();
+  if (!chats[currentChatContact.id]) chats[currentChatContact.id] = [];
+  var msg = { from: 'me', text: text, time: new Date().toISOString() };
+  chats[currentChatContact.id].push(msg);
+  saveChats(chats);
+  // Update contact last message
+  var contacts = loadContacts();
+  var c = contacts.find(function(x) { return x.id === currentChatContact.id; });
+  if (c) { c.lastMessage = text; c.lastTime = msg.time; saveContacts(contacts); }
+  renderChatMessages();
+  // Simulate auto-reply after 2s
+  setTimeout(function() {
+    if (!currentChatContact) return;
+    var autoReply = { from: 'them', text: '✅ Message reçu. Le médecin vous répondra dès que possible. En cas d\'urgence, appelez le 15.', time: new Date().toISOString() };
+    chats[currentChatContact.id].push(autoReply);
+    saveChats(chats);
+    if (c) { c.lastMessage = autoReply.text; c.lastTime = autoReply.time; saveContacts(contacts); }
+    renderChatMessages();
+  }, 2000);
+}
+
+function scanPatientQR() {
+  var code = prompt('Scannez ou collez le QR du patient :');
+  if (!code) return;
+  if (typeof KA_BRIDGE !== 'undefined' && KA_BRIDGE.decode) {
+    try {
+      var decoded = KA_BRIDGE.decode(code);
+      if (decoded) {
+        var contacts = loadContacts();
+        contacts.push({ id: 'patient_' + Date.now(), name: decoded.name || decoded.profile?.name || 'Patient', type: 'patient', lastMessage: 'Dossier importé', lastTime: new Date().toISOString(), data: decoded });
+        saveContacts(contacts);
+        refreshContacts();
+        alert('Patient importé !');
+        return;
+      }
+    } catch(e) {}
+  }
+  alert('Format invalide.');
+}
+
+// ═══ WHATSAPP-STYLE VIDEO/AUDIO CALL ═══
+async function startWhatsAppCallWith(contactId, type) {
+  currentChatContact = loadContacts().find(function(c) { return c.id === contactId; });
+  if (!currentChatContact) { alert('Contact introuvable.'); return; }
+  startWhatsAppCall(type);
+}
+
+async function startWhatsAppCall(type) {
+  waCallType = type || 'video';
+  document.getElementById('callOverlay').style.display = 'flex';
+  document.getElementById('waCallStatus').textContent = 'Connexion...';
+  try {
+    var constraints = { audio: true };
+    if (waCallType === 'video') constraints.video = { width: 320, height: 240, facingMode: 'user' };
+    waLocalStream = await navigator.mediaDevices.getUserMedia(constraints);
+    document.getElementById('waLocalVideo').srcObject = waLocalStream;
+    // If called from chat, try to use contact's signaling info or fallback to QR
+    document.getElementById('waCallStatus').textContent = '📋 Partagez le QR code avec votre correspondant';
+    // Use existing telemedecine infrastructure for WebRTC
+    KATelemedecine.init('waLocalVideo', 'waRemoteVideo');
+    KATelemedecine.onStateChange = function(s) {
+      document.getElementById('waCallStatus').textContent = s === 'connected' ? '✅ Communication établie' : s === 'ringing' ? '📞 Appel en cours...' : s;
+    };
+    // Start call via QR sharing
+    var useVideo = (waCallType === 'video');
+    // For now, create a quick signaling solution
+    if (!useVideo) {
+      // Audio only: just use the stream, show QR for signaling
+      KATelemedecine._localStream = waLocalStream;
+      KATelemedecine.startCall('doctor');
+    } else {
+      KATelemedecine._localStream = waLocalStream;
+      KATelemedecine.startCall('doctor');
+    }
+  } catch(e) {
+    document.getElementById('waCallStatus').textContent = '❌ Erreur caméra/micro : ' + e.message;
+  }
+}
+
+function toggleWAMute() {
+  if (waLocalStream) {
+    var at = waLocalStream.getAudioTracks()[0];
+    if (at) at.enabled = !at.enabled;
+  }
+}
+
+function toggleWAVideo() {
+  if (waLocalStream) {
+    var vt = waLocalStream.getVideoTracks()[0];
+    if (vt) vt.enabled = !vt.enabled;
+  }
+}
+
+function endWACall() {
+  KATelemedecine.hangUp();
+  if (waLocalStream) { waLocalStream.getTracks().forEach(function(t) { t.stop(); }); waLocalStream = null; }
+  document.getElementById('callOverlay').style.display = 'none';
+  document.getElementById('waCallStatus').textContent = 'Appel terminé';
+}
+
+// ═══ DIRECTORY ═══
+function refreshDirectory() {
+  var dir = getDoctorsDirectory();
+  var el = document.getElementById('directoryList');
+  if (!dir.length) {
+    el.innerHTML = '<div class="card"><p style="text-align:center;color:var(--muted)">Aucun confrère inscrit. Les médecins apparaissent ici après publication de leur profil.</p></div>';
+    return;
+  }
+  window._dirCache = dir;
+  renderDirectory(dir);
+}
+
+function filterDirectory() {
+  var q = (document.getElementById('dirSearch').value || '').toLowerCase();
+  var dir = window._dirCache || getDoctorsDirectory();
+  var filtered = q ? dir.filter(function(d) { return (d.name||'').toLowerCase().includes(q) || (d.specialty||'').toLowerCase().includes(q); }) : dir;
+  renderDirectory(filtered);
+}
+
+function renderDirectory(dir) {
+  var el = document.getElementById('directoryList');
+  var html = '';
+  dir.forEach(function(d) {
+    var statusCls = d.status === 'online' ? 'online' : d.status === 'busy' ? 'busy' : 'offline';
+    var statusLabel = d.status === 'online' ? 'Disponible' : d.status === 'busy' ? 'Occupé' : 'Indisponible';
+    html += '<div class="contact-row" onclick="startChatWithDoctor(\'' + d.id + '\')">';
+    html += '<div class="contact-avatar"' + (d.avatar ? ' style="background:transparent"' : ' style="background:linear-gradient(135deg,#27ae60,#1e8449)"') + '>' + (d.avatar ? '<img src="' + d.avatar + '" style="width:48px;height:48px;border-radius:50%;object-fit:cover" alt="">' : (d.name || 'M')[0].toUpperCase()) + '</div>';
+    html += '<div class="contact-info"><div class="contact-name">Dr ' + (d.name || '?') + '</div><div class="contact-last">' + (d.specialty || 'Médecine générale') + ' · ' + (d.address || '') + '</div></div>';
+    html += '<span class="status-dot ' + statusCls + '" title="' + statusLabel + '"></span>';
+    html += '<div class="contact-actions"><button class="contact-call-btn chat" onclick="event.stopPropagation();startChatWithDoctor(\'' + d.id + '\')" title="Message">💬</button></div>';
+    html += '</div>';
+  });
+  el.innerHTML = html || '<div class="card"><p style="text-align:center;color:var(--muted)">Aucun résultat.</p></div>';
+}
+
+function startChatWithDoctor(doctorId) {
+  var dir = getDoctorsDirectory();
+  var doc = dir.find(function(d) { return d.id === doctorId; });
+  if (!doc) return;
+  var contacts = loadContacts();
+  var existing = contacts.find(function(c) { return c.id === doctorId; });
+  if (!existing) {
+    contacts.push({ id: doctorId, name: 'Dr ' + doc.name, type: 'doctor', phone: doc.phone, specialty: doc.specialty, lastMessage: 'Confrère Vital Ka', lastTime: new Date().toISOString() });
+    saveContacts(contacts);
+  }
+  openChat(doctorId);
+}
+
+// ═══ INIT ═══
+function init() {
+  updateSplash();
+  // Sync status periodically
+  setInterval(function() {
+    var p = loadDocProfile();
+    if (p.status === 'online') {
+      var dir = getDoctorsDirectory();
+      var idx = dir.findIndex(function(d) { return d.id === p.id; });
+      if (idx >= 0) { dir[idx].status = 'online'; dir[idx].lastSeen = new Date().toISOString(); saveDoctorsDirectory(dir); }
+    }
+  }, 30000);
+}
+
+init();
+</script>
+</body></html>

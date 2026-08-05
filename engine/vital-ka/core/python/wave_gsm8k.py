@@ -46,12 +46,13 @@ import json
 import math
 import os
 import re
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from wave_lang import encode, coherence
+from wave_lang import encode, bind, coherence
 from wave_ir import Program, Assign, Return, MathOp, Literal, Var
 from wave_compiler import WaveCompiler
 from wave_word_problems import _normalize_numbers
@@ -706,7 +707,7 @@ def tag_chain(chain: Chain, question: str) -> Chain:
 
 def question_numbers(q: str) -> List[Tuple[float, bool]]:
     """Nombres de l'énoncé, ordre d'apparition, avec drapeau %.
-
+    
     « 80,000 » → 80000 ; « three » → 3 ; « 40% » → (40.0, True).
     """
     qn = _normalize_numbers(q.lower())
@@ -715,6 +716,391 @@ def question_numbers(q: str) -> List[Tuple[float, bool]]:
     for m in re.finditer(r'(\d+(?:\.\d+)?)\s*%?', qn):
         out.append((float(m.group(1)), m.group(0).rstrip().endswith('%')))
     return out
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# RÔLES SÉMANTIQUES DES NOMBRES (alignement fin — Exp 2c / alignement par rôle)
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Le verrou de l'instanciation : l'ordre des nombres de l'énoncé source ≠
+# l'ordre d'utilisation dans la chaîne cible. Les permutations libres
+# collisionnent (Exp 1.2 → 26,8 % de plafond, mais bruit). La solution :
+# identifier le RÔLE de chaque nombre (prix unitaire, quantité, taux,
+# multiplicateur, total…) et ne permuter QUE les rôles compatibles →
+# réduire le bruit d'un ordre de grandeur (Exp 2c-2).
+
+# Compatibilité : un slot de rôle R peut recevoir un nombre de rôle T.
+_ROLE_COMPAT = {
+    'plain': {'plain', 'quantity', 'money', 'unit_price', 'rate',
+              'percent', 'times', 'total', 'left'},
+    'quantity': {'quantity', 'plain'},
+    'money': {'money', 'unit_price', 'plain'},
+    'unit_price': {'unit_price', 'money', 'plain'},
+    'rate': {'rate', 'plain'},
+    'percent': {'percent', 'plain'},
+    'times': {'times', 'plain'},
+    'total': {'total', 'plain'},
+    'left': {'left', 'plain'},
+}
+
+
+def role_numbers(question: str) -> List[Tuple[float, str]]:
+    """(valeur, rôle) pour chaque nombre de l'énoncé, ordre d'apparition.
+
+    Rôles FINS via le solveur d'état (detect_action PAR PHRASE — pas de
+    fenêtre glissante qui chevauche les nombres voisins) :
+      rate_each → unit_price ; items_at → quantity + unit_price ;
+      rate → rate ; set_mult → times ; init/add/sub → quantity ;
+      each_has → quantity. Fallbacks : % → percent, $/dollars → money.
+    """
+    qn = _normalize_numbers(question.lower())
+    qn = re.sub(r'(\d),(\d{3})(?:\.\d+)?', r'\1\2', qn)
+    nums = []
+    for m in re.finditer(r'(\d+(?:\.\d+)?)\s*%?', qn):
+        nums.append((m.start(), m.end(), float(m.group(1)),
+                     m.group(0).rstrip().endswith('%')))
+    roles = ['plain'] * len(nums)
+
+    try:
+        from word_problem_state import detect_action, _split_sentences
+        for sentence in _split_sentences(question):
+            action = detect_action(sentence)
+            if not action:
+                continue
+            op = action.get('op')
+            if op == 'items_at':
+                tagged = [(action.get('val'), 'quantity'),
+                          (action.get('prix'), 'unit_price')]
+            else:
+                tagged = [(action.get('val'), _ACTION_ROLE.get(op, 'plain'))]
+            for sval, srole in tagged:
+                if sval is None:
+                    continue
+                for gi, (_gs, _ge, gv, _p) in enumerate(nums):
+                    if roles[gi] == 'plain' and abs(gv - sval) < 1e-6:
+                        roles[gi] = srole
+                        break
+    except ImportError:
+        pass
+
+    # Fallbacks fins (aucun chevauchement : contexte immédiat)
+    for i, (gs, ge, gv, is_pct) in enumerate(nums):
+        if roles[i] != 'plain':
+            continue
+        if is_pct:
+            roles[i] = 'percent'
+        elif re.search(r'\$|\bdollars?\b', qn[max(0, gs - 30):ge + 30]):
+            roles[i] = 'money'
+        elif re.search(r'\bper\s+(day|hour|week|month|year)\b',
+                       qn[ge:ge + 40]):
+            roles[i] = 'rate'
+    return [(v, r) for (_s, _e, v, _p), r in zip(nums, roles)]
+
+
+# Rôle ondulatoire de chaque action du solveur d'état
+_ACTION_ROLE = {
+    'set_mult': 'times',      # « N times as many X as Y » → multiplicateur
+    'rate_each': 'unit_price',   # « $N each » → prix unitaire
+    'rate': 'rate',           # « N per day/hour » → taux
+    'each_has': 'quantity',
+    'init': 'quantity',       # « has/started with N X » → quantité
+    'add': 'quantity',        # « buys N more X »
+    'sub': 'quantity',        # « sells N X »
+    'set_plus': 'quantity',
+    'set_minus': 'quantity',
+}
+
+# Abstraction des entités : la structure, pas le lexique
+# (eggs≈glasses≈apples → objet ; Alice≈Bob → personne). C'est le test
+# direct de « similarité par configuration relationnelle ».
+_MONEY = {'$', 'dollars', 'dollar', 'cents', 'cent', 'money'}
+_TIME = {'days', 'day', 'weeks', 'week', 'months', 'month', 'years', 'year',
+         'hours', 'hour', 'minutes', 'minute', 'seconds', 'second', 'time'}
+_MEASURE = {'pounds', 'pound', 'lbs', 'kg', 'grams', 'gram', 'miles', 'mile',
+            'feet', 'foot', 'inches', 'inch', 'meters', 'meter', 'km',
+            'kilometers', 'gallons', 'gallon', 'liters', 'liter', 'ounces'}
+_PERSONS = {'alice', 'bob', 'john', 'mary', 'tom', 'jane', 'kylar', 'jim',
+            'susan', 'david', 'lisa', 'sam', 'peter', 'ann', 'amy', 'jack',
+            'jill', 'sarah', 'joe', 'ben', 'ron', 'sally', 'nancy', 'bill',
+            'fred', 'lucy', 'emily', 'james', 'mike', 'carl', 'gina', 'tina'}
+
+
+def _abstract_entity(e: str) -> str:
+    """Catégorise une entité : personne, monnaie, temps, mesure, objet."""
+    if not e:
+        return ''
+    el = e.lower().rstrip('s')          # singulier
+    if el in _PERSONS or e.lower() in _PERSONS:
+        return 'personne'
+    if el in _MONEY or e == '$':
+        return '$'
+    if el in _TIME:
+        return 'temps'
+    if el in _MEASURE:
+        return 'mesure'
+    return 'objet'
+
+
+# Traduction humaine des actions (opération, direction) pour les atomes.
+_OP_HUMAN = {
+    'init': ('possède', '+'),
+    'add': ('acquiert', '+'),
+    'sub': ('cède', '-'),
+    'set_plus': ('ajoute', '+'),
+    'set_minus': ('retire', '-'),
+    'rate': ('gagne par', '+'),
+    'rate_each': ('coûte', '+'),
+    'items_at': ('achète', '+'),
+    'each_has': ('contient', '+'),
+    'set_mult': ('multiplie', '+'),
+}
+
+
+def extract_atoms(question: str, abstract: bool = False) -> List[dict]:
+    """Atomes enrichis relationnels : un par nombre de l'énoncé.
+
+    Chaque atome est INTERPRÉTÉ dans sa propre phrase (solveur d'état) :
+        {valeur, entité, propriétaire, rôle, opération, direction, dépend_de}
+    « dépend_de » = l'état du récit (sentence_idx) d'où provient l'atome.
+    Le graphe de ces atomes, et non le texte, porte la requête.
+    Si abstract=True : entités/propriétaires réduits à des catégories
+    (objet, $, personne…) — la résonance compare des configurations,
+    plus le lexique.
+    """
+    from word_problem_state import detect_action, _split_sentences
+    qn = _normalize_numbers(question.lower())
+    qn = re.sub(r'(\d),(\d{3})(?:\.\d+)?', r'\1\2', qn)
+    nums = [(m.start(), m.end(), float(m.group(1)))
+            for m in re.finditer(r'(\d+(?:\.\d+)?)\s*%?', qn)]
+    sentences = _split_sentences(question)
+    # bornes normalisées de chaque phrase
+    spans = []
+    pos = 0
+    for s in sentences:
+        sn = _normalize_numbers(s.lower())
+        sn = re.sub(r'(\d),(\d{3})(?:\.\d+)?', r'\1\2', sn)
+        spans.append((pos, pos + len(sn), s, sn))
+        pos += len(sn) + 1
+    atoms: List[dict] = []
+    for gpos, gend, gval in nums:
+        s_idx = next((k for k, (a, b, _s, _sn) in enumerate(spans)
+                      if a <= gpos < b), 0)
+        _a, _b, sentence, sn = spans[s_idx]
+        role, ent, owner, operation, direction = 'plain', '', '', '', ''
+        action = detect_action(sentence)
+        if action:
+            op = action.get('op')
+            owner = action.get('person') or ''
+            ent = action.get('obj') or ''
+            operation, direction = _OP_HUMAN.get(op, ('', ''))
+            # le rôle ne s'applique qu'au(x) nombre(s) ciblé(s) par l'action
+            targeted = [action.get('val')]
+            if op == 'items_at' and action.get('prix') is not None:
+                targeted.append(action['prix'])
+            if any(t is not None and abs(gval - t) < 1e-6
+                   for t in targeted):
+                role = _ACTION_ROLE.get(op, 'plain')
+            if op == 'items_at' and action.get('prix') is not None \
+                    and abs(gval - action['prix']) < 1e-6:
+                role, ent, operation = 'unit_price', '$', 'coûte'
+        # entité de repli : nom juste après le nombre
+        if not ent:
+            m2 = re.match(r'\s*([a-z]{2,})', sn[gend:gend + 30])
+            if m2:
+                ent = m2.group(1)
+        if abstract:
+            ent = _abstract_entity(ent)
+            owner = 'personne' if owner else ''
+        atoms.append({'valeur': gval, 'entité': ent, 'propriétaire': owner,
+                      'rôle': role, 'opération': operation,
+                      'direction': direction, 'dépend_de': f'état_{s_idx}'})
+    return atoms
+
+
+class GraphIndex:
+    """Index par CONFIGURATION RELATIONNELLE (expérience « graphe d'atomes »).
+
+    La requête n'est plus le texte ni les nombres : c'est le graphe des
+    atomes interprétés (rôle, entité, propriétaire, opération, direction,
+    dépendance), encodé puis superposé (nœuds) et lié (arêtes par
+    même-entité / même-propriétaire). La résonance compare les
+    configurations, pas les surfaces.
+
+    Principe : encoder les nœuds, binder les relations, superposer les
+    graphes — et ne récupérer les voisins qu'après cette composition.
+    """
+
+    def __init__(self, mem, dim: int = 512, abstract: bool = False,
+                 causal: bool = False):
+        self.mem = mem
+        self.dim = dim
+        self.abstract = abstract
+        self.causal = causal
+        self.psi_graphs: List[Optional[np.ndarray]] = []
+
+    def _graph_psi(self, question: str) -> Optional[np.ndarray]:
+        atoms = extract_atoms(question, abstract=self.abstract)
+        if not atoms:
+            return None
+        nodes = [encode('|'.join([a['rôle'], a['entité'], a['propriétaire'],
+                                  a['opération'], a['direction'],
+                                  a['dépend_de']]), dim=self.dim)
+                 for a in atoms]
+        edges = []
+        for i in range(len(atoms)):
+            for j in range(i + 1, len(atoms)):
+                rel = None
+                if atoms[i]['entité'] and atoms[i]['entité'] == atoms[j]['entité']:
+                    rel = 'même_entité'
+                elif atoms[i]['propriétaire'] \
+                        and atoms[i]['propriétaire'] == atoms[j]['propriétaire']:
+                    rel = 'même_propriétaire'
+                if rel:
+                    edges.append(bind(encode(atoms[i]['rôle'], dim=self.dim),
+                                      encode(rel, dim=self.dim)))
+        # arêtes CAUSALES : le même objet continue d'un état au suivant
+        # (résultat → entrée du récit), quand les atomes sont en position
+        # d'états consécutifs.
+        if self.causal:
+            for i in range(len(atoms) - 1):
+                a, b = atoms[i], atoms[i + 1]
+                if b['dépend_de'] == a['dépend_de']:
+                    continue
+                if a['entité'] and a['entité'] == b['entité']:
+                    edges.append(bind(encode(a['rôle'], dim=self.dim),
+                                      encode('résultat→' + b['rôle'],
+                                             dim=self.dim)))
+        psi = np.zeros(self.dim, dtype=complex)
+        for n in nodes:
+            psi += n
+        for e in edges:
+            psi += 0.5 * e
+        nrm = float(np.linalg.norm(psi))
+        return psi / nrm if nrm else None
+
+    def build(self) -> int:
+        self.psi_graphs = [self._graph_psi(p['question'])
+                           for p in self.mem.patterns]
+        self.atom_configs = []
+        for p in self.mem.patterns:
+            atoms = extract_atoms(p['question'], abstract=self.abstract)
+            self.atom_configs.append(Counter(
+                (a['rôle'], a['entité'], a['opération'], a['direction'])
+                for a in atoms) or None)
+        return sum(1 for p in self.psi_graphs if p is not None)
+
+    def _config_of(self, question: str) -> Counter:
+        atoms = extract_atoms(question, abstract=self.abstract)
+        return Counter((a['rôle'], a['entité'], a['opération'], a['direction'])
+                       for a in atoms)
+
+    @staticmethod
+    def _fit(cfg_q, cfg_m) -> float:
+        """Alignement STRUCTUREL (Jaccard sur la configuration d'atomes).
+
+        Multiset des quadruplets (rôle, entité, opération, direction) —
+        sans valeur ni position de phrase : la similarité ne dépend ni
+        des nombres ni du texte, uniquement de la configuration.
+        """
+        if not cfg_q or not cfg_m:
+            return 0.0
+        inter = sum((cfg_q & cfg_m).values())
+        total = sum(cfg_q.values()) + sum(cfg_m.values()) - inter
+        return inter / total if total else 0.0
+
+    def retrieve(self, question: str, top_k: int = 10,
+                 exclude_idx: Optional[int] = None,
+                 rank: str = 'blend') -> List[Tuple[int, float]]:
+        """Top-k voisins de la configuration relationnelle.
+
+        rank='linear' → résonance brute |⟨ψ|ψ⟩| ;
+        rank='fit'    → alignement structurel seul (Jaccard de config) ;
+        rank='blend'  → résonance + alignement (la configuration prime
+                        sur le recouvrement de tokens).
+        """
+        psi_q = self._graph_psi(question)
+        if psi_q is None:
+            return []
+        cfg_q = self._config_of(question) if rank != 'linear' else None
+        scored = []
+        for i, ps in enumerate(self.psi_graphs):
+            if i == exclude_idx or ps is None:
+                continue
+            s = abs(float(np.real(ps @ np.conj(psi_q))))
+            if cfg_q is not None:
+                fit = self._fit(cfg_q, self.atom_configs[i])
+                s = fit if rank == 'fit' else s + fit
+            scored.append((i, s))
+        scored.sort(key=lambda x: -x[1])
+        return scored[:top_k]
+
+    def solve(self, idx: int, top_k: int = 10, max_perms: int = 48,
+              min_sources: int = 1,
+              rank: str = 'blend') -> Tuple[Optional[float], int, str]:
+        """Résolution : requête relationnelle → instanciation par rôle des
+        voisins → consensus (1 vote par source) + gate produit.
+
+        rank='linear'/'fit'/'blend' → classement du voisinage (voir retrieve).
+        """
+        question = self.mem.patterns[idx]['question']
+        hits = self.retrieve(question, top_k, exclude_idx=idx, rank=rank)
+        prof = self.mem.patterns[idx]['qnums']
+        t_roles = [r for _v, r in role_numbers(question)]
+        votes: Dict[float, set] = {}
+        winner_skel: Dict[float, str] = {}
+        for j, _s in hits:
+            chain = self.mem.patterns[j]['chain']
+            s_roles = [r for _v, r in role_numbers(self.mem.patterns[j]['question'])]
+            q_idx = []
+            for st in chain.steps:
+                for o in (st.a, st.b):
+                    if o is not None and o[0] == 'Q' and o[1] not in q_idx:
+                        q_idx.append(o[1])
+            if not q_idx or len(prof) <= max(q_idx):
+                continue
+            slots = []
+            ok = True
+            for qi in q_idx:
+                slot_role = s_roles[qi] if qi < len(s_roles) else 'plain'
+                cands = [k for k, (_v, tr) in enumerate(zip(prof, t_roles))
+                         if _compatible(slot_role, tr)]
+                if not cands:
+                    ok = False
+                    break
+                slots.append((qi, cands))
+            if not ok:
+                continue
+            assignments = [()]
+            for _qi, cands in slots:
+                assignments = [a + (c,) for a in assignments for c in cands]
+                if len(assignments) > max_perms:
+                    assignments = assignments[:max_perms]
+                    break
+            for assign in assignments:
+                remapped = list(prof)
+                for pos, tgt_idx in enumerate(assign):
+                    remapped[q_idx[pos]] = prof[tgt_idx]
+                val = execute_chain(chain, remapped, self.mem.compiler)
+                if val is not None:
+                    key = round(val, 4)
+                    votes.setdefault(key, set()).add(j)
+                    winner_skel.setdefault(key, self.mem.patterns[j]['chain'].skeleton)
+                    break
+        if not votes:
+            return None, 0, ""
+        v_top, srcs = max(votes.items(), key=lambda kv: len(kv[1]))
+        if len(srcs) < min_sources:
+            return None, len(srcs), ""          # refus calibré
+        return v_top, len(srcs), winner_skel.get(v_top, "")
+
+
+def _compatible(slot_role: str, target_role: str) -> bool:
+    return target_role in _ROLE_COMPAT.get(slot_role, {'plain'})
+
+
+# Poids par défaut du classement multi-signaux des SOURCES (Exp 2.2) :
+# (profil de nombres, résonance question, résonance combinée, thème).
+_RANK_DEFAULT_W = (0.45, 0.25, 0.20, 0.10)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -863,14 +1249,45 @@ class GSM8KChainMemory:
     # ── récupération par résonance ───────────────────────────────────────────
 
     def retrieve(self, question: str, exclude: Optional[int] = None,
-                 top_k: int = 3, by: str = 'combined') -> List[Tuple[int, float]]:
+                 top_k: int = 3, by: str = 'combined',
+                 rank_w: Optional[Tuple] = None) -> List[Tuple[int, float]]:
         """
         Top-k patterns par résonance (cohérence de phase |Re(⟨ψq|ψp⟩)|).
 
         by='question'  → ψ(énoncé) — voisinage sémantique
         by='combined'  → ψ(énoncé) ⊗ ψ(séquence de nombres) — structure
         by='skeleton'  → ψ(squelette de chaîne) — diagnostic
+        by='profile'   → profil de nombres (Exp 2a : résonance structurelle)
+        by='ranked'    → multi-signaux pondérés (profil + résonances + thème)
         """
+        if by == 'ranked':
+            w = rank_w if rank_w is not None else _RANK_DEFAULT_W
+            qc = question_numbers(question)
+            psi_q = encode(self._signature(question), dim=self.dim)
+            psi_c = encode(self._signature_combined(question), dim=self.dim)
+            scored = []
+            for i, other in enumerate(self.patterns):
+                if i == exclude:
+                    continue
+                sp = self._profile_score(other['qnums'], qc)
+                sq = abs(float(np.real(self._M_q[i] @ np.conj(psi_q))))
+                sc = abs(float(np.real(self._M_c[i] @ np.conj(psi_c))))
+                st = self._jac(other['question'], question)
+                scored.append((i, w[0] * sp + w[1] * sq
+                               + w[2] * sc + w[3] * st))
+            scored.sort(key=lambda x: -x[1])
+            return scored[:top_k]
+        if by == 'profile':
+            # Résonance STRUCTURELLE : similarité des profils de nombres.
+            # Boucle directe (1319 patterns) — coût négligeable.
+            target = question_numbers(question)
+            if not target:
+                return []
+            scored = [(i, self._profile_score(pat['qnums'], target))
+                      for i, pat in enumerate(self.patterns)
+                      if i != exclude]
+            scored.sort(key=lambda x: -x[1])
+            return scored[:top_k]
         if self._M_q is None:
             return []
         if by == 'question':
@@ -1061,22 +1478,67 @@ class GSM8KChainMemory:
             s += 0.5
         return s
 
+    # ═══════════════════════════════════════════════════════════════════
+    # SIGNAL 6 — PROFIL DE NOMBRES (Exp 2a : la feature n°1 du classement)
+    # ═══════════════════════════════════════════════════════════════════
+    #
+    # Le profil = (nombre de nombres, log-magnitudes triées, plage min/max).
+    # Deux problèmes qui partagent un squelette ont le MÊME nombre d'opérandes
+    # → même taille de profil. La similarité des magnitudes triées capture le
+    # même « gabarit » de calcul (Exp 2a : profil pur = 20,1 % top-1 vs 12,5 %
+    # pour la résonance de question).
+    #
+    # Lecture ondulatoire : c'est la résonance STRUCTURELLE — on compare la
+    # forme du paquet d'ondes (spectre de magnitudes) avant le contenu.
+
+    @staticmethod
+    def _profile_vector(qnums: List[Tuple[float, bool]]) -> Tuple:
+        """Vecteur de profil d'un énoncé : (nb, log-magnitudes, min, max)."""
+        vals = [v for v, _f in qnums if v > 0]
+        mags = np.array(sorted(math.log10(v) for v in vals)) if vals \
+            else np.array([0.0])
+        lo = min(vals) if vals else 0.0
+        hi = max(vals) if vals else 0.0
+        return (len(qnums), mags, lo, hi)
+
+    @classmethod
+    def _profile_score(cls, a: List[Tuple[float, bool]],
+                       b: List[Tuple[float, bool]]) -> float:
+        """Similarité de profils ∈ [0, 1] (Exp 2a : cosinus + plage)."""
+        na, magsa, _la, ha = cls._profile_vector(a)
+        nb, magsb, _lb, hb = cls._profile_vector(b)
+        # 1) taille (nombre d'opérandes)
+        s_count = 1.0 - abs(na - nb) / max(1, max(na, nb))
+        # 2) cosinus des log-magnitudes (padding à la longueur commune)
+        L = max(len(magsa), len(magsb))
+        va = np.pad(magsa, (0, L - len(magsa)))
+        vb = np.pad(magsb, (0, L - len(magsb)))
+        na_, nb_ = float(np.linalg.norm(va)), float(np.linalg.norm(vb))
+        s_mag = float(np.dot(va, vb) / (na_ * nb_)) if na_ and nb_ else 0.0
+        s_mag = max(0.0, s_mag)
+        # 3) plage supérieure (ordre de grandeur)
+        denom = max(1.0, abs(ha), abs(hb), 1e-9)
+        s_range = 1.0 - abs(ha - hb) / denom
+        return 0.35 * s_count + 0.45 * s_mag + 0.20 * s_range
+
     def semantic_scores(self, idx: int, top_k: int = 20, by: str = 'combined',
-                        w: Tuple = (0.0, 0.1, 0.3, 0.15, 0.45)) -> List[Tuple]:
+                        w: Tuple = (0.0, 0.1, 0.3, 0.15, 0.45, 0.0),
+                        rank_w: Optional[Tuple] = None) -> List[Tuple]:
         """
         Top-k candidats avec leur score sémantique (sans oracle).
 
         score = w[0]·rôle + w[1]·couverture + w[2]·plausibilité
-                + w[3]·ordre + w[4]·forme.
+                + w[3]·ordre + w[4]·forme + w[5]·profil de nombres.
 
         Returns:
             [(valeur, pattern_idx, score_sémantique, résonance, squelette)]
         """
         pat = self.patterns[idx]
         qc = pat['qnums']
+        w5 = (w + (0.0,) * (6 - len(w)))[:6]
         out: List[Tuple] = []
         for j, rs in self.retrieve(pat['question'], exclude=idx,
-                                   top_k=top_k, by=by):
+                                   top_k=top_k, by=by, rank_w=rank_w):
             chain_j = self.patterns[j]['chain']
             steps = chain_j.steps
             qs = self.patterns[j]['qnums']
@@ -1084,11 +1546,12 @@ class GSM8KChainMemory:
             vt = self._step_values(steps, qc)      # valeurs instanciées
             n_q = sum(1 for st in steps
                       for o in (st.a, st.b) if o is not None and o[0] == 'Q')
-            sem = (w[0] * self._role_score(j, pat['question'], qc)
-                   + w[1] * min(1.0, n_q / max(1, len(qc)))
-                   + w[2] * self._plaus_score(vt)
-                   + w[3] * self._magnitude_score(vs, vt)
-                   + w[4] * self._form_score(vs, vt))
+            sem = (w5[0] * self._role_score(j, pat['question'], qc)
+                   + w5[1] * min(1.0, n_q / max(1, len(qc)))
+                   + w5[2] * self._plaus_score(vt)
+                   + w5[3] * self._magnitude_score(vs, vt)
+                   + w5[4] * self._form_score(vs, vt)
+                   + w5[5] * self._profile_score(qs, qc))
             val = execute_chain(chain_j, qc, self.compiler)
             out.append((val, j, sem, rs, chain_j.skeleton))
         out.sort(key=lambda x: -x[2])
@@ -1104,7 +1567,7 @@ class GSM8KChainMemory:
 
     def solve_transfer_consensus(self, idx: int, top_k: int = 20,
                                  by: str = 'combined',
-                                 w: Tuple = (0.0, 0.1, 0.3, 0.15, 0.45),
+                                 w: Tuple = (0.0, 0.1, 0.3, 0.15, 0.45, 0.0),
                                  tol: float = 1e-3) -> Tuple[Optional[float], Optional[int], float, str]:
         """
         M4 — généralisation par consensus pondéré (self-consistency).
@@ -1130,6 +1593,200 @@ class GSM8KChainMemory:
         val, j, sem, _rs, skel = cands[0]
         return val, j, sem, skel
 
+    def solve_emerge(self, idx: int, top_k: int = 20, by: str = 'profile',
+                     w: Tuple = (0.0, 0.1, 0.3, 0.15, 0.45, 0.4),
+                     rank_w: Optional[Tuple] = None,
+                     tol: float = 1e-3, min_votes: int = 2
+                     ) -> Tuple[Optional[float], int, str]:
+        """
+        P3 — ÉMERGENCE par consensus (self-consistency + gate produit).
+
+        Règle du plan : 2+ chemins indépendants qui convergent → servir ;
+        divergence → REFUS calibré (jamais de réponse fausse servie).
+
+        Retourne (valeur, nombre de votes, squelette) — None = refus.
+        """
+        cands = self.semantic_scores(idx, top_k=top_k, by=by, w=w,
+                                     rank_w=rank_w)
+        if not cands:
+            return None, 0, ""
+        # Vote par valeur : candidats INDÉPENDANTS (squelettes ≠) qui convergent
+        from collections import Counter
+        votes = Counter()
+        for c in cands:
+            if c[0] is None:
+                continue
+            votes[round(c[0], 4)] += 1
+        if not votes:
+            return None, 0, ""
+        v_top, n_votes = votes.most_common(1)[0]
+        if n_votes < min_votes:
+            return None, n_votes, ""          # refus calibré
+        for c in cands:
+            if c[0] is not None and round(c[0], 4) == v_top:
+                return c[0], n_votes, c[4]
+        return None, n_votes, ""
+
+    def explain_solution(self, idx: int, top_k: int = 20,
+                         by: str = 'profile',
+                         w: Tuple = (0.0, 0.1, 0.3, 0.15, 0.45, 0.4),
+                         rank_w: Optional[Tuple] = None,
+                         min_votes: int = 2,
+                         lang: str = 'fr') -> dict:
+        """
+        Pipeline SOLUTION → NARRATION complet (l'inversion de causalité).
+
+        1. ÉMERGE : solve_emerge → valeur servie (ou refus calibré)
+        2. TRADUCTION : chaîne gagnante → prose humaine étape par étape
+        3. PREUVE : re-exécution de la chaîne == valeur servie
+
+        Retourne dict {valeur, votes, squelette, source_idx, narration,
+        verified, refus, question} — la narration est un artefact de
+        sortie, jamais un mécanisme de calcul.
+        """
+        v_top, n_votes, skel = self.solve_emerge(
+            idx, top_k, by, w, rank_w, min_votes=min_votes)
+        out = {
+            'question': self.patterns[idx]['question'],
+            'votes': n_votes,
+            'squelette': skel,
+            'refus': v_top is None,
+        }
+        if v_top is None:
+            return out
+
+        # Chaîne gagnante : le candidat dont la valeur converge
+        cands = self.semantic_scores(idx, top_k=top_k, by=by, w=w,
+                                     rank_w=rank_w)
+        winner = None
+        for c in cands:
+            if c[0] is not None and round(c[0], 4) == round(v_top, 4):
+                winner = c
+                break
+        if winner is None:
+            out['valeur'] = v_top
+            out['narration'] = []
+            out['verified'] = False
+            return out
+
+        _, j, _sem, _rs, _sk = winner
+        chain = self.patterns[j]['chain']
+        qc = self.patterns[idx]['qnums']
+        narr = Narrateur()
+        out['valeur'] = v_top
+        out['source_idx'] = j
+        out['narration'] = narr.narrate(chain, qc, lang=lang)
+        final = execute_chain(chain, qc, self.compiler)
+        out['verified'] = (final is not None and abs(final - v_top) < 1e-6)
+        return out
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # ALIGNEMENT PAR RÔLE SÉMANTIQUE FIN (Exp 2c-2 — la suite du plan)
+    # ═══════════════════════════════════════════════════════════════════════
+    #
+    # Les permutations libres des nombres collisionnent (des chemins faux
+    # donnent les mêmes résultats). L'alignement fin restreint chaque slot
+    # d'opérande (Q) de la chaîne source aux nombres cibles dont le RÔLE
+    # sémantique est compatible (prix unitaire ↔ prix, quantité ↔ quantité,
+    # taux ↔ taux…) → le bruit diminue d'un ordre de grandeur.
+
+    def transfer_role_guided(self, idx: int, top_k: int = 10,
+                             by: str = 'profile',
+                             max_perms: int = 48,
+                             rank_w: Optional[Tuple] = None) -> List[Tuple]:
+        """
+        Instanciation GUIDÉE PAR RÔLE : ne permute que les nombres cibles
+        dont le rôle est compatible avec le rôle du slot source.
+
+        Retourne [(valeur, pattern_idx, résonance, squelette, n_assign)],
+        triés par résonance décroissante.
+        """
+        pat = self.patterns[idx]
+        target = pat['qnums']
+        t_roles = [r for _v, r in role_numbers(pat['question'])]
+        out: List[Tuple] = []
+        for j, rs in self.retrieve(pat['question'], exclude=idx,
+                                   top_k=top_k, by=by, rank_w=rank_w):
+            src = self.patterns[j]
+            chain = src['chain']
+            s_roles = [r for _v, r in role_numbers(src['question'])]
+
+            # indices des opérandes liées à l'énoncé (Q) dans la chaîne source
+            q_idx: List[int] = []
+            for st in chain.steps:
+                for o in (st.a, st.b):
+                    if o is not None and o[0] == 'Q' and o[1] not in q_idx:
+                        q_idx.append(o[1])
+            if not q_idx:
+                continue
+            if len(target) <= max(q_idx):
+                continue                 # pas assez de nombres cibles
+
+            # chaque slot source → candidats cibles de rôle compatible
+            slots = []
+            ok_slots = True
+            for qi in q_idx:
+                slot_role = s_roles[qi] if qi < len(s_roles) else 'plain'
+                cands = [k for k, (_v, tr) in enumerate(zip(target, t_roles))
+                         if _compatible(slot_role, tr)]
+                if not cands:
+                    ok_slots = False
+                    break
+                slots.append((qi, cands))
+            if not ok_slots:
+                continue
+
+            # énumération bornée des assignments (src_idx → tgt_idx)
+            assignments: List[Tuple] = [()]
+            for _qi, cands in slots:
+                assignments = [a + (c,) for a in assignments for c in cands]
+                if len(assignments) > max_perms:
+                    assignments = assignments[:max_perms]
+                    break
+
+            for assign in assignments:
+                remapped = list(target)
+                for pos, tgt_idx in enumerate(assign):
+                    remapped[q_idx[pos]] = target[tgt_idx]
+                val = execute_chain(chain, remapped, self.compiler)
+                if val is not None:
+                    out.append((val, j, rs, chain.skeleton, len(assign)))
+        out.sort(key=lambda x: -x[2])
+        return out
+
+    def solve_role_guided(self, idx: int, top_k: int = 10,
+                          by: str = 'profile', max_perms: int = 48,
+                          min_sources: int = 2,
+                          rank_w: Optional[Tuple] = None,
+                          tol: float = 1e-3) -> Tuple[Optional[float], int, str]:
+        """
+        Résolution par alignement de rôle + émergence.
+
+        Vote par valeur sur les SOURCES INDÉPENDANTES (squelettes ≠) qui
+        convergent ; ne sert que si ≥ min_sources sources convergent
+        (gate produit : sinon refus calibré).
+
+        Retourne (valeur, nb sources convergentes, squelette) — None = refus.
+        """
+        cands = self.transfer_role_guided(idx, top_k, by, max_perms, rank_w)
+        if not cands:
+            return None, 0, ""
+        from collections import defaultdict
+        sources_by_val: dict = defaultdict(set)
+        for c in cands:
+            if c[0] is None:
+                continue
+            sources_by_val[round(c[0], 4)].add(c[1])
+        if not sources_by_val:
+            return None, 0, ""
+        v_top, srcs = max(sources_by_val.items(), key=lambda kv: len(kv[1]))
+        if len(srcs) < min_sources:
+            return None, len(srcs), ""       # refus calibré
+        for c in cands:
+            if c[0] is not None and round(c[0], 4) == v_top:
+                return c[0], len(srcs), c[3]
+        return None, len(srcs), ""
+
     @property
     def stats(self) -> dict:
         return {
@@ -1142,6 +1799,471 @@ class GSM8KChainMemory:
 def _fmt(n: float) -> str:
     """Formate sans .0 inutile."""
     return str(int(n)) if float(n).is_integer() else str(round(n, 4))
+
+
+def detect_intent(question: str) -> Optional[str]:
+    """Intention arithmétique finale de la question (Exp 2c-2).
+
+    total/altogether → ADD ; left/remaining → SUB ; each/per/shared → DIV ;
+    times/double/half/as many → MUL ; sinon None.
+    """
+    q = question.lower()
+    if re.search(r'\b(?:in total|altogether|combined|total|sum)\b', q):
+        return 'ADD'
+    if re.search(r'\b(left|remaining|remain|away)\b', q):
+        return 'SUB'
+    if re.search(r'\b(each|per|shared equally|equally|equal)\b', q):
+        return 'DIV'
+    if re.search(r'\b(times|double|twice|half|as many)\b', q):
+        return 'MUL'
+    return None
+
+
+class StructureIndex:
+    """Index des STRUCTURES fondamentales (familles de squelettes).
+
+    La généralisation ne cherche plus LE problème le plus proche parmi
+    1319 — elle retrouve LA STRUCTURE (famille de squelette) parmi ~287
+    à partir de la signature EXTRACTIBLE d'une question neuve :
+
+        signature = (profil de nombres, rôles sémantiques, intention)
+
+    Chaque famille stocke : son squelette, le nombre d'opérandes liées
+    (n_Q), les rôles de ces opérandes, et l'opération finale. La
+    résonance structurelle compare la FORME, jamais le contenu lexical.
+    """
+
+    def __init__(self, mem, dim: int = 512):
+        self.mem = mem
+        self.dim = dim
+        self.families: Dict[str, dict] = {}
+
+    def build(self) -> int:
+        """Regroupe les 1319 patterns par squelette → familles."""
+        for i, pat in enumerate(self.mem.patterns):
+            sk = pat['chain'].skeleton
+            fam = self.families.setdefault(sk, {'members': []})
+            fam['members'].append(i)
+        for sk, fam in self.families.items():
+            chain = self.mem.patterns[fam['members'][0]]['chain']
+            src_q = self.mem.patterns[fam['members'][0]]['question']
+            s_roles = [r for _v, r in role_numbers(src_q)]
+            # indices des opérandes liées (Q) dans la chaîne de la famille
+            q_idx = []
+            for st in chain.steps:
+                for o in (st.a, st.b):
+                    if o is not None and o[0] == 'Q' and o[1] not in q_idx:
+                        q_idx.append(o[1])
+            fam['n_q'] = len(q_idx)
+            fam['q_roles'] = [s_roles[i] if i < len(s_roles) else 'plain'
+                              for i in q_idx]
+            fam['final_op'] = chain.steps[-1].op if chain.steps else 'CONST'
+            # onde de la structure pure (squelette ⊗ rôles)
+            sig = f"{sk} | {' '.join(fam['q_roles'])}"
+            fam['psi'] = encode(sig, dim=self.dim)
+        return len(self.families)
+
+    def retrieve(self, question: str, top_k: int = 8,
+                 exclude_idx: Optional[int] = None) -> List[Tuple[str, float]]:
+        """Top-k familles par résonance STRUCTURELLE (profil + rôles + intention).
+        exclude_idx : le membre testé est exclu du score de profil (leave-one-out)."""
+        prof = question_numbers(question)
+        roles = role_numbers(question)
+        intent = detect_intent(question)
+        n = len(prof)
+        scored: List[Tuple[str, float]] = []
+        for sk, fam in self.families.items():
+            # 1) comptage : la famille consomme n_Q nombres
+            s_count = 1.0 - abs(n - fam['n_q']) / max(1, n, fam['n_q'])
+            # 2) rôles : chaque slot de la famille a-t-il un candidat compatible ?
+            hits = sum(1 for r in fam['q_roles']
+                       if any(_compatible(r, tr) for _v, tr in roles))
+            s_role = hits / max(1, len(fam['q_roles']))
+            # 3) intention : la question appelle-t-elle la même op finale ?
+            s_intent = 1.0 if (intent is not None and intent == fam['final_op']) \
+                else 0.5
+            # 4) résonance fine : profil le plus proche parmi les membres
+            #    (hors échantillon testé)
+            best = 0.0
+            for j in fam['members'][:8]:
+                if j == exclude_idx:
+                    continue
+                s = GSM8KChainMemory._profile_score(
+                    self.mem.patterns[j]['qnums'], prof)
+                if s > best:
+                    best = s
+            score = 0.30 * s_count + 0.25 * s_role + 0.20 * s_intent \
+                + 0.25 * best
+            scored.append((sk, score))
+        scored.sort(key=lambda x: -x[1])
+        return scored[:top_k]
+
+    def _family_slots(self, fam: dict, max_members: int = 8,
+                      exclude_idx: Optional[int] = None) -> dict:
+        """Slots Q agrégés de la famille (rôle majoritaire + gabarits de
+        magnitudes par position). Cache par famille ; le membre testé est
+        exclu uniquement pour la famille qui le contient (rare)."""
+        if 'slots' not in fam:
+            fam['slots'] = self._compute_slots(fam, max_members, None)
+        if exclude_idx is None or exclude_idx not in fam['members']:
+            return fam['slots']
+        return self._compute_slots(fam, max_members, exclude_idx)
+
+    def _compute_slots(self, fam: dict, max_members: int,
+                       exclude_idx: Optional[int]) -> dict:
+        slots: dict = {}
+        for j in fam['members'][:max_members]:
+            if j == exclude_idx:
+                continue
+            pat = self.mem.patterns[j]
+            s_roles = [r for _v, r in role_numbers(pat['question'])]
+            for st_idx, st in enumerate(pat['chain'].steps):
+                for pos in ('a', 'b'):
+                    o = getattr(st, pos)
+                    if o is not None and o[0] == 'Q':
+                        qi = o[1]
+                        role = s_roles[qi] if qi < len(s_roles) else 'plain'
+                        val = pat['qnums'][qi][0] \
+                            if qi < len(pat['qnums']) else None
+                        key = (st_idx, pos)
+                        slots.setdefault(key, {'roles': Counter(), 'vals': []})
+                        slots[key]['roles'][role] += 1
+                        if val is not None:
+                            slots[key]['vals'].append(val)
+        out = {}
+        for key, info in slots.items():
+            role = info['roles'].most_common(1)[0][0]
+            mags = sorted(math.log10(v) for v in info['vals'] if v > 0)
+            out[key] = {'role': role, 'mags': mags}
+        return out
+
+    def _family_value(self, fam: dict, prof, t_roles,
+                      max_perms: int = 32,
+                      exclude_idx: Optional[int] = None) -> Optional[float]:
+        """Valeur de la famille : consensus intra-famille par exécution.
+
+        Le membre testé (exclude_idx) est exclu : la famille ne vote que
+        sur les AUTRES membres. L'instanciation attribue les nombres du
+        problème neuf aux slots Q par COMPATIBILITÉ DE RÔLE uniquement
+        (aucune pénalité de magnitude familiale — les magnitudes d'une
+        famille ne transfèrent pas à un problème neuf). La valeur de la
+        famille = le MODE des valeurs exécutables (la famille s'accorde).
+        """
+        slots = self._family_slots(fam, exclude_idx=exclude_idx)
+        if not slots:
+            return None
+        rep = next((j for j in fam['members'] if j != exclude_idx), None)
+        if rep is None:
+            return None
+        chain = self.mem.patterns[rep]['chain']
+
+        # (step, pos) → index qnums référencé par la chaîne représentative
+        key_to_qi: dict = {}
+        for st_idx, st in enumerate(chain.steps):
+            for pos in ('a', 'b'):
+                o = getattr(st, pos)
+                if o is not None and o[0] == 'Q':
+                    key_to_qi[(st_idx, pos)] = o[1]
+
+        keys = [k for k in slots
+                if k in key_to_qi and key_to_qi[k] < len(prof)]
+        if not keys:
+            return None
+        cands_per_slot = []
+        ok = True
+        for key in keys:
+            role = slots[key]['role']
+            cands = [k for k, (_v, tr) in enumerate(zip(prof, t_roles))
+                     if _compatible(role, tr)]
+            if not cands:
+                ok = False
+                break
+            cands_per_slot.append(cands)
+        if not ok:
+            return None
+
+        assignments = [()]
+        for cands in cands_per_slot:
+            assignments = [a + (c,) for a in assignments for c in cands]
+            if len(assignments) > max_perms:
+                assignments = assignments[:max_perms]
+                break
+
+        # consensus intra-famille : mode des valeurs exécutables
+        val_counter: Counter = Counter()
+        for assign in assignments:
+            remapped = list(prof)
+            for pos, tgt_idx in enumerate(assign):
+                remapped[key_to_qi[keys[pos]]] = prof[tgt_idx]
+            val = execute_chain(chain, remapped, self.mem.compiler)
+            if val is not None:
+                val_counter[round(val, 4)] += 1
+        if not val_counter:
+            return None
+        v_mode, _ = val_counter.most_common(1)[0]
+        return v_mode
+
+    def _atom_fit(self, fam: dict, prof, t_roles,
+                  exclude_idx: Optional[int] = None) -> float:
+        """Score ATOMIQUE d'une famille : chaque slot de squelette résonne
+        sur (rôle compatible + magnitude la plus proche du gabarit du slot).
+
+        Le problème n'est PAS comparé globalement — il est décomposé en
+        atomes (nombres+rôles) qui remplissent les slots de la structure.
+        Les slots proviennent des AUTRES membres (leave-one-out strict)."""
+        slots = self._family_slots(fam, exclude_idx=exclude_idx)
+        if not slots:
+            return 0.0
+        slot_scores = []
+        for _key, info in slots.items():
+            role = info['role']
+            mags = info['mags']
+            # atomes du problème neuf compatibles avec le rôle du slot
+            cands = [v for (v, _f), tr in zip(prof, t_roles)
+                     if _compatible(role, tr)]
+            if not cands:
+                slot_scores.append(0.0)
+                continue
+            # magnitude la plus proche du gabarit du slot (médiane)
+            if mags:
+                med = mags[len(mags) // 2]
+                pos = [math.log10(v) for v in cands if v > 0]
+                if pos:
+                    best = min(abs(p - med) for p in pos)
+                    mag_fit = max(0.0, 1.0 - best / 3.0)  # 3 décades → 0
+                else:
+                    mag_fit = 0.5
+            else:
+                mag_fit = 0.5
+            slot_scores.append(0.5 + 0.5 * mag_fit)
+        return sum(slot_scores) / max(1, len(slot_scores))
+
+    def retrieve_atoms(self, question: str, top_k: int = 8,
+                       exclude_idx: Optional[int] = None) -> List[Tuple[str, float]]:
+        """Top-k familles par résonance ATOMIQUE (slot par slot)."""
+        prof = question_numbers(question)
+        t_roles = [r for _v, r in role_numbers(question)]
+        scored = [(sk, self._atom_fit(fam, prof, t_roles, exclude_idx))
+                  for sk, fam in self.families.items()]
+        scored.sort(key=lambda x: -x[1])
+        return scored[:top_k]
+
+    def solve_atoms(self, question: str, top_k: int = 8,
+                    max_perms: int = 32, min_families: int = 1,
+                    exclude_idx: Optional[int] = None
+                    ) -> Tuple[Optional[float], int, str]:
+        """Résolution par ATOMES : familles rangées par fit atomique →
+        consensus intra-famille (mode des valeurs exécutables) → vote
+        (1 par famille) + gate produit. Leave-one-out strict."""
+        prof = question_numbers(question)
+        t_roles = [r for _v, r in role_numbers(question)]
+        votes: Dict[float, set] = {}
+        winner_skel: Dict[float, str] = {}
+        for sk, _score in self.retrieve_atoms(question, top_k, exclude_idx):
+            val = self._family_value(self.families[sk], prof, t_roles,
+                                     max_perms, exclude_idx)
+            if val is not None:
+                key = round(val, 4)
+                votes.setdefault(key, set()).add(sk)
+                winner_skel.setdefault(key, sk)
+        if not votes:
+            return None, 0, ""
+        v_top, fams = max(votes.items(), key=lambda kv: len(kv[1]))
+        if len(fams) < min_families:
+            return None, len(fams), ""          # refus calibré
+        return v_top, len(fams), winner_skel.get(v_top, "")
+
+    def solve(self, question: str, top_k: int = 20, max_perms: int = 32,
+              min_families: int = 1,
+              exclude_idx: Optional[int] = None) -> Tuple[Optional[float], int, str]:
+        """Résolution par structure : familles (vote élargi top-20) →
+        alignement intra-famille (slots agrégés + gabarits) → consensus
+        (1 vote par famille) + gate produit (refus calibré). Le membre
+        testé (exclude_idx) est exclu des familles (leave-one-out strict)."""
+        prof = question_numbers(question)
+        t_roles = [r for _v, r in role_numbers(question)]
+        votes: Dict[float, set] = {}
+        winner_skel: Dict[float, str] = {}
+        for sk, _score in self.retrieve(question, top_k):
+            fam = self.families[sk]
+            val = self._family_value(fam, prof, t_roles, max_perms,
+                                     exclude_idx=exclude_idx)
+            if val is not None:
+                key = round(val, 4)
+                votes.setdefault(key, set()).add(sk)
+                winner_skel.setdefault(key, sk)
+        if not votes:
+            return None, 0, ""
+        v_top, fams = max(votes.items(), key=lambda kv: len(kv[1]))
+        if len(fams) < min_families:
+            return None, len(fams), ""          # refus calibré
+        return v_top, len(fams), winner_skel.get(v_top, "")
+
+
+class Narrateur:
+    """Traduction des étapes exécutées en prose humaine VÉRIFIABLE.
+
+    Pipeline SOLUTION → NARRATION (jamais l'inverse) : chaque phrase
+    provient d'une étape réelle de la chaîne exécutée. La re-exécution
+    des phrases reproduit la valeur servie — la narration est une
+    PREUVE, pas une génération libre.
+    """
+
+    _VERB = {
+        'ADD': ('ajoute', 'à'),
+        'SUB': ('retire', 'de'),
+        'MUL': ('multiplie', 'par'),
+        'DIV': ('divise', 'par'),
+    }
+
+    def narrate(self, chain, qnums=None, lang: str = 'fr') -> List[str]:
+        """Chaîne exécutée → une phrase humaine par étape (dans l'ordre)."""
+        phrases: List[str] = []
+        vals: List[float] = []
+        for i, st in enumerate(chain.steps):
+            a = _operand_value(st.a, vals, qnums)
+            if st.op == 'CONST':
+                phrases.append(f"La valeur est {_fmt(a)}.")
+                vals.append(a)
+                continue
+            b = _operand_value(st.b, vals, qnums)
+            r = _OP_FN[st.op](a, b)
+            if lang == 'fr':
+                verb, prep = self._VERB.get(st.op, ('calcule', 'avec'))
+                if st.op in ('ADD', 'SUB'):
+                    phrases.append(f"Étape {i + 1} : {verb} {_fmt(b)} {prep} "
+                                   f"{_fmt(a)} → {_fmt(r)}.")
+                else:
+                    phrases.append(f"Étape {i + 1} : {verb} {_fmt(a)} {prep} "
+                                   f"{_fmt(b)} → {_fmt(r)}.")
+            else:
+                phrases.append(f"Step {i + 1}: {_fmt(a)} {st.symbol} "
+                               f"{_fmt(b)} = {_fmt(r)}.")
+            vals.append(r)
+        return phrases
+
+
+class SpectralStructureIndex:
+    """Index des STRUCTURES par plongement spectral (PPMI → S¹).
+
+    Principe (découverte 3.5 du document fondateur) : les concepts
+    sémantiques extraits des énoncés — rôles, opérations, directions,
+    catégories d'entités, intention — sont plongés dans S¹ par SVD
+    sur la matrice PPMI de co-occurrence. Deux slots qui co-occurrent
+    dans les mêmes énoncés reçoivent des phases proches → la résonance
+    d'un problème neuf se fait sur la FORME (configuration de slots),
+    jamais sur le lexique ni sur les nombres.
+
+    Chaque famille = superposition des ψ de ses membres. La
+    récupération = cohérence de phase |⟨ψ_q|ψ_F⟩|, en leave-one-out
+    (le membre testé est retiré de la somme de sa famille).
+    """
+
+    def __init__(self, mem, n_phases: int = 4, window: int = 40,
+                 min_freq: int = 3):
+        self.mem = mem
+        self.n_phases = n_phases              # phases sémantiques par slot
+        self.window = window                  # fenêtre de co-occurrence PPMI
+        self.min_freq = min_freq
+        self.families: Dict[str, dict] = {}
+        self._concept_phases: Dict[str, List[float]] = {}
+        self._q_psi: List[np.ndarray] = []          # ψ de chaque question
+        self._family_psi: Dict[str, np.ndarray] = {}  # somme des ψ membres
+
+    # ── extraction des slots sémantiques ─────────────────────────────────────
+    @staticmethod
+    def _concepts(question: str) -> List[str]:
+        """Slots sémantiques de l'énoncé → vocabulaire PPMI."""
+        out = []
+        intent = detect_intent(question)
+        if intent:
+            out.append(f'intent:{intent}')
+        for _v, role in role_numbers(question):
+            out.append(f'rôle:{role}')
+        for a in extract_atoms(question, abstract=True):
+            op = a.get('opération')
+            direction = a.get('direction')
+            ent = a.get('entité')       # déjà catégorisée (objet, $, personne…)
+            if op:
+                out.append(f'op:{op}')
+            if direction:
+                out.append(f'dir:{direction}')
+            if ent:
+                out.append(f'ent:{ent}')
+        return out
+
+    def _psi(self, concepts: List[str]) -> np.ndarray:
+        """Superposition des phaseurs des slots → vecteur complexe n_phases."""
+        psi = np.zeros(self.n_phases, dtype=complex)
+        for c in concepts:
+            ph = self._concept_phases.get(c)
+            if ph is None:
+                continue
+            for j in range(min(self.n_phases, len(ph))):
+                psi[j] += np.exp(1j * ph[j])
+        return psi
+
+    @staticmethod
+    def _norm(psi: np.ndarray) -> np.ndarray:
+        n = float(np.linalg.norm(psi))
+        return psi / n if n > 1e-12 else psi
+
+    # ── construction ─────────────────────────────────────────────────────────
+    def build(self) -> int:
+        """Corpus de slots → PPMI → SVD → phases S¹ → familles + ψ."""
+        from spectral_embedding import (build_ppmi_matrix, svd_embedding,
+                                        embedding_to_phases)
+
+        # 1) chaque énoncé = une « phrase » de concepts
+        corpus = [self._concepts(p['question']) for p in self.mem.patterns]
+
+        # 2) PPMI → plongement spectral → phases S¹ par slot
+        W, vocab = build_ppmi_matrix(corpus, window=self.window,
+                                     min_freq=self.min_freq)
+        if len(vocab) < 3:
+            return 0
+        emb, _vals = svd_embedding(W, k=2 * self.n_phases)
+        phases = embedding_to_phases(emb)            # [N, n_phases]
+        for word, idx in vocab.items():
+            self._concept_phases[word] = phases[idx].tolist()
+
+        # 3) regroupement par squelette (mêmes familles que StructureIndex)
+        for i, pat in enumerate(self.mem.patterns):
+            sk = pat['chain'].skeleton
+            fam = self.families.setdefault(sk, {'members': []})
+            fam['members'].append(i)
+
+        # 4) ψ de chaque question + somme par famille
+        for p in self.mem.patterns:
+            self._q_psi.append(self._psi(self._concepts(p['question'])))
+        for sk, fam in self.families.items():
+            S = np.zeros(self.n_phases, dtype=complex)
+            for j in fam['members']:
+                S += self._q_psi[j]
+            self._family_psi[sk] = S
+        return len(self.families)
+
+    # ── récupération par résonance de phase (LOO) ────────────────────────────
+    def retrieve(self, question: str, top_k: int = 10,
+                 exclude_idx: Optional[int] = None) -> List[Tuple[str, float]]:
+        """Top-k familles par cohérence de phase |⟨ψ_q|ψ_F⟩| (LOO)."""
+        q = self._psi(self._concepts(question))
+        if not np.any(q):
+            return []
+        qn = self._norm(q)
+        scored: List[Tuple[str, float]] = []
+        for sk, S in self._family_psi.items():
+            S_loo = S
+            fam = self.families[sk]
+            if exclude_idx is not None and exclude_idx in fam['members']:
+                S_loo = S - self._q_psi[exclude_idx]
+            if not np.any(S_loo):
+                continue
+            Sn = self._norm(S_loo)
+            score = float(abs(np.vdot(qn, Sn)))     # cohérence ∈ [0, 1]
+            scored.append((sk, score))
+        scored.sort(key=lambda x: -x[1])
+        return scored[:top_k]
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

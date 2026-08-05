@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌊 L'Onde Primordiale — Ψ₁ — Le premier son</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#fafafa;font-family:'Inter',system-ui,sans-serif;overflow:hidden;height:100vh}
+canvas{display:block}
+#info{position:absolute;top:20px;left:50%;transform:translateX(-50%);text-align:center;z-index:10;pointer-events:none}
+#title{font-size:24px;font-weight:700;letter-spacing:-.01em;margin-bottom:4px}
+#subtitle{font-size:13px;color:#a1a1aa;max-width:600px}
+#ui{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;z-index:10}
+button{padding:8px 20px;border-radius:6px;border:1px solid #333;background:#111;color:#ccc;font-size:13px;cursor:pointer;transition:all .2s}
+button:hover{border-color:#f59e0b;background:#1a1a1a;color:#fff}
+button.active{background:#f59e0b;border-color:#f59e0b;color:#000;font-weight:600}
+#counter{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);font-size:60px;font-weight:800;color:rgba(245,158,11,.3);z-index:5;pointer-events:none;letter-spacing:-.03em;font-family:'Inter',system-ui,sans-serif}
+</style>
+</head>
+<body>
+
+<div id="info">
+  <div id="title">🌊 Ψ₁ — L'Onde Primordiale</div>
+  <div id="subtitle">Avant l'espace, avant le temps. Le premier son.</div>
+</div>
+<div id="counter"></div>
+<canvas id="c"></canvas>
+<div id="ui">
+  <button id="btn-play" class="active">▶ Écouter</button>
+  <button id="btn-pause">⏸ Silence</button>
+  <button id="btn-reset">↺ ∅</button>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H, cx, cy;
+let time = 0;
+let playing = true;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  cx = W/2; cy = H/2;
+}
+resize();
+window.addEventListener('resize', resize);
+
+function draw() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  const T = time;
+  const totalDuration = 45; // secondes pour le cycle complet
+  const phaseInCycle = (T % totalDuration) / totalDuration; // 0→1
+
+  // ═══════════════════════════════════════════════════════════
+  // ACTE 0 : ∅ Le silence absolu (0-5s)
+  // ═══════════════════════════════════════════════════════════
+  if (T < 5) {
+    // Rien. Juste le noir.
+    // Même pas de fluctuations. Le vrai vide.
+    if (T < 2) {
+      document.getElementById('subtitle').textContent = '∅ Rien. Même pas le vide.';
+      document.getElementById('counter').textContent = '';
+    } else if (T < 4) {
+      document.getElementById('subtitle').textContent = '∅ Pas d\'espace. Pas de temps. Pas de son.';
+      document.getElementById('counter').textContent = '';
+    } else {
+      document.getElementById('subtitle').textContent = '∅ Et pourtant... quelque chose va émerger.';
+      document.getElementById('counter').textContent = '';
+    }
+    return;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ACTE 1 : La première vibration (5-12s)
+  // ═══════════════════════════════════════════════════════════
+  if (T >= 5 && T < 12) {
+    const actProgress = (T - 5) / 7;
+    const intensity = Math.min(1, actProgress * 1.3);
+
+    // Un point apparaît au centre. Il PULSE.
+    // C'est la première chose qui existe.
+    const pulseSize = 2 + intensity * 8 + Math.sin(T * 3) * 2 * intensity;
+    const pulseAlpha = 0.3 + intensity * 0.6 + Math.sin(T * 3) * 0.2;
+
+    // Halo pulsant
+    const rings = 3;
+    for (let r = 0; r < rings; r++) {
+      const ringPhase = (T * 1.5 + r * 2) % (Math.PI * 2);
+      const ringR = 30 + r * 40 + Math.sin(ringPhase) * 20 * intensity;
+      const ringAlpha = intensity * (0.15 - r * 0.04) * (1 + Math.sin(ringPhase) * 0.5);
+      if (ringAlpha > 0.01) {
+        ctx.strokeStyle = `rgba(245,220,150,${ringAlpha})`;
+        ctx.lineWidth = 0.5 + r * 0.3;
+        ctx.beginPath();
+        ctx.arc(cx, cy, ringR, 0, Math.PI*2);
+        ctx.stroke();
+      }
+    }
+
+    // Le point central
+    const primalGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, pulseSize * 3);
+    primalGrad.addColorStop(0, `rgba(255,255,255,${pulseAlpha})`);
+    primalGrad.addColorStop(0.3, `rgba(245,200,100,${pulseAlpha*0.7})`);
+    primalGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = primalGrad;
+    ctx.beginPath(); ctx.arc(cx, cy, pulseSize * 3, 0, Math.PI*2); ctx.fill();
+
+    // Le point lui-même
+    ctx.fillStyle = `rgba(255,255,255,${Math.min(1, intensity*1.2)})`;
+    ctx.beginPath(); ctx.arc(cx, cy, Math.max(1, pulseSize), 0, Math.PI*2); ctx.fill();
+
+    // Nom
+    if (intensity > 0.4) {
+      ctx.fillStyle = `rgba(245,200,100,${intensity*0.8})`;
+      ctx.font = `${14 + intensity*10}px Inter, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('Ψ₁', cx, cy - 25 - intensity*15);
+    }
+
+    document.getElementById('counter').textContent = 'n=1';
+    if (actProgress < 0.4) {
+      document.getElementById('subtitle').textContent = '🌊 Une vibration. La première. Elle n\'est NULLE PART — car « quelque part » n\'existe pas encore.';
+    } else if (actProgress < 0.7) {
+      document.getElementById('subtitle').textContent = '🌊 Elle pulse. Chaque pulsation EST un « maintenant ». Le temps commence.';
+    } else {
+      document.getElementById('subtitle').textContent = '🌊 Ψ₁ = l\'onde qui contient tout en puissance. Σ Hₙ·(Ψ₁)ⁿ.';
+    }
+    return;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ACTE 2 : L'onde se déploie — naissance de l'espace (12-22s)
+  // ═══════════════════════════════════════════════════════════
+  if (T >= 12 && T < 22) {
+    const actProgress = (T - 12) / 10;
+    const spread = actProgress * 300;
+    const intensity = 1;
+
+    // Ψ₁ se déploie en cercles concentriques
+    // Chaque cercle = une « couche » de réalité qui émerge
+    const numRings = 7; // les 7 harmoniques H_n
+    for (let n = 1; n <= numRings; n++) {
+      const ringR = spread * (n / numRings);
+      const ringAlpha = intensity * (0.4 - n * 0.05) * (0.7 + 0.3 * Math.sin(T * 0.5 + n));
+
+      // Chaque harmonique a sa propre fréquence
+      const waveFreq = 1.618 / n; // φ/n
+      const waveAmp = 8 / n;
+
+      // Cercle ondulé
+      ctx.strokeStyle = `rgba(245,${200-n*20},${100+n*15},${ringAlpha})`;
+      ctx.lineWidth = 1.5 / n + 0.5;
+      ctx.beginPath();
+      const points = 120;
+      for (let i = 0; i <= points; i++) {
+        const angle = (i / points) * Math.PI * 2;
+        const r = ringR + Math.sin(angle * n * 3 + T * waveFreq) * waveAmp;
+        const x = cx + r * Math.cos(angle);
+        const y = cy + r * Math.sin(angle);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Label d'harmonique
+      if (ringR > 20 && ringR < W * 0.7) {
+        const labelAngle = n * 0.9;
+        const lx = cx + (ringR + 15) * Math.cos(labelAngle);
+        const ly = cy + (ringR + 15) * Math.sin(labelAngle);
+        ctx.fillStyle = `rgba(245,200,100,${ringAlpha*1.5})`;
+        ctx.font = '10px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`H${n}`, lx, ly);
+      }
+    }
+
+    // Centre : la source
+    const sourceGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 20);
+    sourceGrad.addColorStop(0, 'rgba(255,255,255,0.8)');
+    sourceGrad.addColorStop(0.5, 'rgba(245,200,100,0.4)');
+    sourceGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sourceGrad;
+    ctx.beginPath(); ctx.arc(cx, cy, 20, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI*2); ctx.fill();
+
+    document.getElementById('counter').textContent = 'n=1..7';
+    if (actProgress < 0.4) {
+      document.getElementById('subtitle').textContent = '🌐 Ψ₁ se déploie en 7 harmoniques. Chaque cercle = un niveau de réalité.';
+    } else if (actProgress < 0.7) {
+      document.getElementById('subtitle').textContent = '🌐 H₁=φ, H₂=π, H₃=e, H₄=√2, H₅=√3, H₆=√5, H₇=e/π';
+    } else {
+      document.getElementById('subtitle').textContent = '🌐 L\'ESPACE naît comme la structure d\'interférence entre ces 7 ondes.';
+    }
+    return;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ACTE 3 : Interférence — les ondes se croisent (22-32s)
+  // ═══════════════════════════════════════════════════════════
+  if (T >= 22 && T < 32) {
+    const actProgress = (T - 22) / 10;
+    const intensity = actProgress;
+
+    // Les 7 ondes interfèrent — pattern de Moiré cosmique
+    for (let x = -W; x < W*2; x += 3) {
+      for (let y = -H; y < H*2; y += 3) {
+        const dx = x - cx;
+        const dy = y - cy;
+        const r = Math.sqrt(dx*dx + dy*dy);
+        const angle = Math.atan2(dy, dx);
+
+        // Superposition des 7 harmoniques
+        let value = 0;
+        for (let n = 1; n <= 7; n++) {
+          const freq = 1.618 / n;
+          const amp = 1.5 / n;
+          value += Math.sin(r * freq * 0.05 + angle * n * 0.8 + T * 0.03 * n) * amp;
+        }
+
+        const alpha = Math.abs(value) * intensity * 0.5;
+        if (alpha < 0.02) continue;
+
+        if (value > 0) {
+          const r_col = Math.floor(245);
+          const g = Math.floor(180 - value * 40);
+          const b = Math.floor(50 + value * 60);
+          ctx.fillStyle = `rgba(${r_col},${g},${b},${alpha})`;
+        } else {
+          const r_col = Math.floor(40 - value * 20);
+          const g = Math.floor(30 - value * 15);
+          const b = Math.floor(120 - value * 40);
+          ctx.fillStyle = `rgba(${r_col},${g},${b},${alpha})`;
+        }
+        ctx.fillRect(x, y, 3, 3);
+      }
+    }
+
+    // Centre
+    const sourceGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 15);
+    sourceGrad.addColorStop(0, 'rgba(255,255,255,0.9)');
+    sourceGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sourceGrad;
+    ctx.beginPath(); ctx.arc(cx, cy, 15, 0, Math.PI*2); ctx.fill();
+
+    document.getElementById('counter').textContent = 'Σ Hₙ';
+    if (actProgress < 0.4) {
+      document.getElementById('subtitle').textContent = '💫 Les 7 ondes INTERFÈRENT. Le pattern de Moiré cosmique.';
+    } else if (actProgress < 0.7) {
+      document.getElementById('subtitle').textContent = '💫 Là où les ondes se renforcent → MATIÈRE. Là où elles s\'annulent → VIDE.';
+    } else {
+      document.getElementById('subtitle').textContent = '💫 Tout l\'univers visible est dans les franges d\'interférence de Ψ₁.';
+    }
+    return;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ACTE 4 : Retour — le silence n'est pas vide (32-45s)
+  // ═══════════════════════════════════════════════════════════
+  if (T >= 32) {
+    const actProgress = (T - 32) / 13;
+    const fadeIn = Math.min(1, actProgress * 2);
+    const fadeOut = Math.max(0, 1 - (actProgress - 0.6) / 0.4);
+
+    // L'interférence s'atténue — retour au centre
+    // Mais ce n'est PLUS le vide du début.
+    // C'est un silence « informé » — le potentiel PUR.
+
+    for (let x = -W; x < W*2; x += 3) {
+      for (let y = -H; y < H*2; y += 3) {
+        const dx = x - cx;
+        const dy = y - cy;
+        const r = Math.sqrt(dx*dx + dy*dy);
+        const angle = Math.atan2(dy, dx);
+        let value = 0;
+        for (let n = 1; n <= 7; n++) {
+          value += Math.sin(r * (1.618/n) * 0.05 + angle * n * 0.8 + T * 0.03 * n) * (1.5/n);
+        }
+        const alpha = Math.abs(value) * 0.4 * fadeOut;
+        if (alpha < 0.01) continue;
+        const warmth = 100 + (1 - actProgress) * 155;
+        ctx.fillStyle = `rgba(${warmth},${warmth*0.7},${warmth*0.2},${alpha})`;
+        ctx.fillRect(x, y, 3, 3);
+      }
+    }
+
+    // Le point central — intense, calme
+    const finalGlow = 15 + fadeIn * 25;
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, finalGlow);
+    grad.addColorStop(0, 'rgba(255,255,255,0.9)');
+    grad.addColorStop(0.3, `rgba(245,200,100,${0.6*fadeIn})`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(cx, cy, finalGlow, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = `rgba(255,255,255,${0.7+fadeIn*0.3})`;
+    ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI*2); ctx.fill();
+
+    document.getElementById('counter').textContent = 'Ψ₁';
+    if (actProgress < 0.3) {
+      document.getElementById('subtitle').textContent = '🌑 L\'interférence se retire. Mais le silence n\'est plus vide.';
+    } else if (actProgress < 0.7) {
+      document.getElementById('subtitle').textContent = '🌑 Il contient TOUT en puissance. Comme une graine contient l\'arbre.';
+    } else {
+      document.getElementById('subtitle').textContent = '🌑 Ψ₁ = le son primordial. Il pulse. Il a toujours pulsé. Il pulsera toujours.';
+    }
+    return;
+  }
+}
+
+function loop() {
+  if (playing) time += 0.05;
+  draw();
+  requestAnimationFrame(loop);
+}
+
+document.getElementById('btn-play').addEventListener('click',()=>{
+  playing=true; document.getElementById('btn-play').classList.add('active');
+  document.getElementById('btn-pause').classList.remove('active');
+});
+document.getElementById('btn-pause').addEventListener('click',()=>{
+  playing=false; document.getElementById('btn-pause').classList.add('active');
+  document.getElementById('btn-play').classList.remove('active');
+});
+document.getElementById('btn-reset').addEventListener('click',()=>{
+  time=0; playing=true; document.getElementById('btn-play').classList.add('active');
+  document.getElementById('btn-pause').classList.remove('active');
+});
+
+loop();
+</script>
+</body>
+</html>

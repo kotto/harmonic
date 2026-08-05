@@ -1,0 +1,193 @@
+```mermaid
+%% Vital KA — Architecture Globale v2.1.0
+%% Généré automatiquement — 2026-08-02
+
+flowchart TB
+    %% ─── STYLES ───
+    classDef app fill:#1a1a2e,stroke:#d4a853,stroke-width:2px,color:#d4a853
+    classDef core fill:#16213e,stroke:#4caf50,stroke-width:2px,color:#4caf50
+    classDef backend fill:#0f3460,stroke:#2196f3,stroke-width:2px,color:#2196f3
+    classDef data fill:#1a1a2e,stroke:#ff9800,stroke-width:2px,color:#ff9800
+    classDef android fill:#1b003b,stroke:#9c27b0,stroke-width:2px,color:#9c27b0
+    classDef optional fill:#2d1b00,stroke:#795548,stroke-width:1px,stroke-dasharray: 5 5,color:#795548
+
+    %% ─── APPS WEB (www/) ───
+    subgraph APPS ["🌐 Applications Web (www/)"]
+        VKA[["vital_ka.html<br/>App Principale<br/>Diagnostic + IA + Téléc."]]
+        KPA[["ka_patient.html<br/>Vue Patient<br/>Dossier + Médics + QR"]]
+        KME[["ka_medecins.html<br/>Portail Médecins<br/>Ordonnances + Labo"]]
+        KPH[["ka_pharmacien.html<br/>Interface Pharmacien<br/>Scan QR + Interactions"]]
+        KLA[["ka_laboratoire.html<br/>Laboratoire<br/>Résultats auto → Patient"]]
+        KDI[["ka_diaspora_shop.html<br/>E-commerce Multi-devises<br/>MoMo + Carte + AML"]]
+        KAD[["ka_admin.html<br/>Administration"]]
+        KLE[["ka_launcher.html<br/>Lanceur / Raccourcis"]]
+        KSO[["ka_solidarite.html<br/>Santé Communautaire"]]
+        KSP[["ka_sphere.html<br/>Visualisation 3D"]]
+    end
+
+    %% ─── CORE JAVASCRIPT (core/js/) ───
+    subgraph CORE_JS ["⚙️ Core JavaScript (core/js/)"]
+        CFG[[vital_ka_config.js<br/>Config centralisée]]
+        NAT[[vital_ka_native.js<br/>Adaptateur Capacitor STT]]
+        HOL[[vital_ka_hologram.js<br/>Encodeur C⁵¹²]]
+        KNO[[vital_ka_knowledge.js<br/>Phytothérapie + Résonance]]
+        VOI[[vital_ka_voice.js<br/>TTS Tiered (Edge/Piper/Web)]]
+        STT[[vital_ka_stt.js<br/>STT Web + Plugin Natif]]
+        DIA[[vital_ka_dialogue.js<br/>Orchestration conversation]]
+        CON[[vital_ka_conversation.js<br/>Mémoire contextuelle]]
+        BLE[[vital_ka_ble.js<br/>BLE Vitals (SpO2/TA/Temp)]]
+        AI[[vital_ka_ai.js<br/>KACareAI Local + Hybrid]]
+        APP[[vital_ka_app.js<br/>Logique Métier Principale]]
+        KCO[[ka_core.js<br/>Moteur Diagnostic 41 patho]]
+        KSE[[ka_secure.js<br/>AES-GCM + PIN SHA-256]]
+        KBR[[ka_bridge.js<br/>Transfert Patient↔Médecin↔Labo]]
+        KHC[[ka_hcv.js<br/>Compression Delta-H]]
+        KHR[[ka_hologram_router.js<br/>Routeur Spectral 15/62K]]:::core
+        KNE[[ka_network.js<br/>Détection Réseau + P2P]]
+        KPL[[ka_platform.js<br/>Abstraction Capacitor]]
+        KTE[[ka_telemedecine.js<br/>WebRTC + HCV Temps Réel]]
+        KWA[[ka_wallet.js<br/>Portefeuille UM Multi-devises]]
+    end
+
+    %% ─── BACKEND PYTHON (backend/) ───
+    subgraph BACKEND ["🐍 Backends Python (backend/)"]
+        direction TB
+        subgraph VOICE_B ["🎙️ Voice"]
+            KVS[ka_voice_server.py<br/>Piper TTS :8420]:::optional
+            KVP[ka_voice.py]
+            TTS[tts_engine.py]
+            PHI[phi_piper_engine.py]
+            VOC[phi_vocoder*.py]
+        end
+        subgraph PHONE_B ["📞 Phone / IA"]
+            USV[unified_server.py<br/>:8421]:::optional
+            KPC[ka_phone/]
+        end
+        subgraph HOLO_B ["🌿 Hologrammes"]
+            HRT[hologram_router.py<br/>Routeur Python]
+            HBT[hologram_builder*.py]
+            HCT[hologram_connector.py]
+            BHB[build_hologram_bundle.py]
+        end
+        subgraph ENTP_B ["🏢 Enterprise"]
+            ECO[ka_enterprise_core.py]
+            EEX[ka_enterprise_extensions.py]
+            ESV[ka_enterprise_server.py]
+        end
+        subgraph HWAT_B ["🌊 HWAT / Training"]
+            HWA[hwat_*.py]
+            TRN[train_*.py]
+        end
+        subgraph SONIC_B ["🔊 Sonic"]
+            SNC[ka_sonic/]
+        end
+        subgraph INFER_B ["🔮 Inference"]
+            INF[inference_server.py<br/>:8010]
+            KSV[ka_server.py]
+            KSE[ka_serve.py]
+        end
+    end
+
+    %% ─── DATA (data/) ───
+    subgraph DATA ["📊 Données Embarquées (data/)"]
+        HLB[[hologram_bundle.json<br/>3.8 Mo — 15 domaines / 62K faits]]
+        ENR[[enrichissements.json]]
+        MED[[medical_holograms/<br/>13 domaines JSON]]
+        DIS[[vital_ka_*.json<br/>13 bases pathologiques]]
+    end
+
+    %% ─── ANDROID (android/) ───
+    subgraph ANDROID ["📱 Android Capacitor 7 (android/)"]
+        CAP[capacitor.config.json<br/>appId: com.vitalka.app]
+        GRD[android/app/build.gradle<br/>minSdk 24, targetSdk 35]
+        WWW[www/ ← sync-assets.mjs<br/>56 fichiers]
+        APK[app-debug.apk<br/>6.14 Mo]
+    end
+
+    %% ─── RELATIONS ───
+    %% Apps → Core JS
+    VKA -.-> CFG
+    VKA -.-> NAT
+    VKA -.-> HOL
+    VKA -.-> KNO
+    VKA -.-> VOI
+    VKA -.-> STT
+    VKA -.-> DIA
+    VKA -.-> CON
+    VKA -.-> BLE
+    VKA -.-> AI
+    VKA -.-> APP
+    VKA -.-> KCO
+    VKA -.-> KSE
+    VKA -.-> KBR
+    VKA -.-> KHC
+    VKA -.-> KHR
+    VKA -.-> KNE
+    VKA -.-> KPL
+    VKA -.-> KTE
+    VKA -.-> KWA
+
+    KPA -.-> CFG
+    KPA -.-> NAT
+    KPA -.-> KBR
+    KPA -.-> KSE
+    KPA -.-> KWA
+    KME -.-> KBR
+    KME -.-> KSE
+    KPH -.-> KHR
+    KPH -.-> KSE
+    KLA -.-> KBR
+
+    %% Core JS Interdependencies
+    CFG --> NAT
+    CFG --> VOI
+    NAT --> STT
+    HOL --> AI
+    KNO --> APP
+    VOI --> APP
+    VOI --> CON
+    STT --> CON
+    DIA --> CON
+    AI --> KHR
+    AI --> KNO
+    APP --> KCO
+    APP --> KHR
+    APP --> KNO
+    APP --> KBR
+    APP --> KTE
+    APP --> KWA
+    KHC --> KTE
+    KHR --> HLB
+    KBR --> KSE
+
+    %% Backend → Data
+    HRT --> HLB
+    HBT --> MED
+    BHB --> MED
+    BHB --> HLB
+
+    %% Backend optional (serveurs locaux)
+    KVS -.->|Tier 2 Voix| VOI
+    USV -.->|IA Avancée| AI
+    INF -.->|API Hologrammes| KHR
+
+    %% Android Build
+    CAP --> GRD
+    WWW --> APK
+    GRD --> APK
+    CFG -.->|isNative| NAT
+    CFG -.->|nativeMode| VOI
+
+    %% Data → Apps (via fetch)
+    HLB -.->|fetch data/| KHR
+    HLB -.->|fetch data/| AI
+    MED -.->|fetch data/| KNO
+    DIS -.->|fetch data/| KCO
+
+    %% Classes
+    class VKA,KPA,KME,KPH,KLA,KDI,KAD,KLE,KSO,KSP app
+    class CFG,NAT,HOL,KNO,VOI,STT,DIA,CON,BLE,AI,APP,KCO,KSE,KBR,KHC,KHR,KNE,KPL,KTE,KWA core
+    class KVS,KVP,TTS,PHI,VOC,USV,KPC,HRT,HBT,HCT,BHB,ECO,EEX,ESV,HWA,TRN,SNC,INF,KSV,KSE backend
+    class HLB,ENR,MED,DIS data
+    class CAP,GRD,WWW,APK android
+```
