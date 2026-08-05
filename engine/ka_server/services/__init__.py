@@ -14,6 +14,10 @@ from .harmonic_ai import (
     init_enterprise_ingestor, get_enterprise_ingestor, is_enterprise_available,
     holographic_consensus_recall, is_refusal, is_garbage_answer, is_non_subject,
 )
+from .docling_harmonique import (
+    init_docling_harmonique, get_docling_harmonique, is_docling_available,
+    ingest_structured, recall_structured, list_documents, get_document_json,
+)
 from .hcv_codec import init_hcv_codec, compress_image, upscale_image, analyze_storage, get_hcv_status
 from .voice_engine import init_voice_engine, get_voice_engine
 
@@ -44,7 +48,7 @@ def init_services(app) -> dict:
     log.info("  🔧 Initialisation services...")
     
     # 1. Harmonic AI (core)
-    facts = _load_facts(ka_config)
+    facts = _load_facts(services['config'])
     harmonic_ai = init_harmonic_ai(facts, services['config'])
     services['harmonic_ai'] = harmonic_ai
     services['brain'] = get_brain()
@@ -74,6 +78,11 @@ def init_services(app) -> dict:
     # 7. Enterprise Ingestor
     ent_ok = init_enterprise_ingestor()
     services['enterprise_ingestor'] = get_enterprise_ingestor()
+    
+    # 📄 Ingestion structurée type Docling → hologrammes spécialisés
+    dh_ok = init_docling_harmonique()
+    services['docling_harmonique'] = get_docling_harmonique()
+    services['docling_available'] = dh_ok
     
     # 8. HCV Codec
     hcv_status = init_hcv_codec()
@@ -156,6 +165,8 @@ __all__ = [
     'init_hologram_store', 'get_hologram_store', 'get_personal_hologram',
     'init_wave_poet', 'get_wave_poet',
     'init_enterprise_ingestor', 'get_enterprise_ingestor', 'is_enterprise_available',
+    'init_docling_harmonique', 'get_docling_harmonique', 'is_docling_available',
+    'ingest_structured', 'recall_structured', 'list_documents', 'get_document_json',
     'init_hcv_codec', 'compress_image', 'upscale_image', 'analyze_storage', 'get_hcv_status',
     'init_voice_engine', 'get_voice_engine',
     'holographic_consensus_recall', 'is_refusal', 'is_garbage_answer', 'is_non_subject',

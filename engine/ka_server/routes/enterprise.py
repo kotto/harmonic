@@ -7,26 +7,30 @@ Nécessitent authentification API Key.
 
 import logging
 from functools import wraps
-from flask import request, jsonify, g
+from flask import request, jsonify, g, current_app
 
 log = logging.getLogger(__name__)
 
 
 def _require_enterprise_auth(f):
-    """Décorateur pour exiger auth Enterprise."""
+    """Décorateur pour exiger auth Enterprise.
+
+    Valide la clé via le middleware (current_app.ka_auth), jamais via `g` :
+    `g.ka_auth` n'est pas défini par le middleware (il pose app.ka_auth).
+    """
     @wraps(f)
     def decorated(*args, **kwargs):
         # Vérifier API key
         api_key = request.headers.get('X-API-Key') or request.headers.get('Authorization', '').replace('Bearer ', '')
         if not api_key:
             return jsonify({'error': 'API Key requise', 'code': 'AUTH_REQUIRED'}), 401
-        
-        # Valider via auth middleware
-        auth = g.get('ka_auth') or {}
-        if hasattr(g, 'ka_auth') and callable(g.ka_auth.get('validate_api_key')):
-            if not g.ka_auth['validate_api_key'](api_key):
-                return jsonify({'error': 'API Key invalide', 'code': 'INVALID_API_KEY'}), 401
-        
+
+        # Valider via le middleware d'auth (app.ka_auth, pas g.ka_auth)
+        auth = getattr(current_app, 'ka_auth', None)
+        validate = auth.get('validate_api_key') if isinstance(auth, dict) else None
+        if not callable(validate) or not validate(api_key):
+            return jsonify({'error': 'API Key invalide', 'code': 'INVALID_API_KEY'}), 401
+
         g.enterprise_user = f'ent_{api_key[:8]}'
         return f(*args, **kwargs)
     return decorated
@@ -131,6 +135,77 @@ def register_enterprise_routes(app, services):
             log.error(f"File ingest error: {e}")
             return jsonify({'error': str(e), 'code': 'FILE_INGEST_FAILED'}), 500
     
+    @app.route('/api/v2/enterprise/ingest/structured', methods=['POST', 'OPTIONS'])
+    @_require_enterprise_auth
+    def api_enterprise_ingest_structured():
+        """Ingestion STRUCTURÉE (inspirée de Docling) → hologramme spécialisé.
+
+        Body: {
+          "content": "# Titre\\n\\n## Section\\n\\n| a | b |...",   # markdown | text | html
+          "format": "markdown",          # markdown | text | html
+          "domain": "pack_ka",           # nom de l'hologramme spécialisé
+          "category": "tech",            # secteur des faits
+          "source": "fiche_produit.md"
+        }
+        Le document est découpé en sections hiérarchiques, tables ligne/colonne
+        et ordre de lecture → faits STRUCTURELS (section_contient, item_précède,
+        est_valeur_de) + faits de contenu, versés dans l'hologramme du domaine.
+        """
+        if request.method == 'OPTIONS':
+            return '', 200
+        from ka_server.services import ingest_structured as _ingest
+        data = request.get_json() or {}
+        content = data.get('content', '')
+        if not content:
+            return jsonify({'error': 'Contenu requis', 'code': 'MISSING_CONTENT'}), 400
+        try:
+            result = _ingest(
+                content=content,
+                format=data.get('format', 'markdown'),
+                domain=data.get('domain', 'enterprise'),
+                category=data.get('category', 'enterprise'),
+                source=data.get('source', 'doc'),
+            )
+            if result.get('error'):
+                return jsonify(result), 503
+            return jsonify(result)
+        except Exception as e:
+            log.error(f"Structured ingest error: {e}")
+            return jsonify({'error': str(e), 'code': 'STRUCTURED_INGEST_FAILED'}), 500
+
+    @app.route('/api/v2/enterprise/recall/structured', methods=['POST', 'OPTIONS'])
+    @_require_enterprise_auth
+    def api_enterprise_recall_structured():
+        """Rappel STRUCTUREL : la question remonte la hiérarchie du document.
+
+        Body: {"domain": "pack_ka", "query": "quel est le prix de la formule pro ?", "top_k": 3}
+        Retourne les sections complètes (titre, parent, table entière) —
+        pas des chunks plats.
+        """
+        if request.method == 'OPTIONS':
+            return '', 200
+        from ka_server.services import recall_structured as _recall
+        data = request.get_json() or {}
+        try:
+            sections = _recall(
+                domain=data.get('domain', 'enterprise'),
+                query=data.get('query', ''),
+                top_k=int(data.get('top_k', 3)),
+            )
+            return jsonify({'success': True, 'domain': data.get('domain'), 'sections': sections})
+        except Exception as e:
+            log.error(f"Structured recall error: {e}")
+            return jsonify({'error': str(e), 'code': 'STRUCTURED_RECALL_FAILED'}), 500
+
+    @app.route('/api/v2/enterprise/documents', methods=['GET', 'OPTIONS'])
+    @_require_enterprise_auth
+    def api_enterprise_documents():
+        """Liste des domaines ingérés en structuré."""
+        if request.method == 'OPTIONS':
+            return '', 200
+        from ka_server.services import list_documents as _list
+        return jsonify({'success': True, 'documents': _list()})
+
     @app.route('/api/v2/enterprise/compliance/check', methods=['POST', 'OPTIONS'])
     @_require_enterprise_auth
     def api_compliance_check():
