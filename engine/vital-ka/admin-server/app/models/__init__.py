@@ -9,6 +9,7 @@ from app.models.wallet import (
     CompteUM, TransactionUM, ConversionUM, EmissionUM,
     WalletRole, WalletStatus, TxType, TxStatus, ConversionStatus,
 )
+from app.models.record import MedicalRecord, RecordStatus
 
 __all__ = [
     # User
@@ -40,4 +41,7 @@ __all__ = [
     "TxType",
     "TxStatus",
     "ConversionStatus",
+    # Dossier médical
+    "MedicalRecord",
+    "RecordStatus",
 ]

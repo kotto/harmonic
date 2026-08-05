@@ -67,6 +67,7 @@ with patch("sqlalchemy.ext.asyncio.create_async_engine", _sqlite_engine), \
      patch("sqlalchemy.dialects.postgresql.JSONB", SQLiteJSON):
     from app.core.database import Base, engine, async_session_maker
     from app.models import CompteUM, TransactionUM, ConversionUM, EmissionUM
+    from app.models.record import MedicalRecord
     from app.schemas.wallet import (
         WalletCreateRequest, CreditRequest, PaymentRequest,
         TelecomEmitRequest, ConversionRequest,
@@ -76,6 +77,8 @@ with patch("sqlalchemy.ext.asyncio.create_async_engine", _sqlite_engine), \
         get_balance, convert_wallet, get_ledger,
     )
     from app.api.v1.telecom import telecom_emit
+    from app.schemas.record import MedicalRecordCreate, MedicalRecordUpdate
+    from app.api.v1.records import create_record, get_record, update_record
 
 
 async def main() -> int:
@@ -96,12 +99,13 @@ async def main() -> int:
                     ConversionUM.__table__,
                     EmissionUM.__table__,
                     AuditLog.__table__,
+                    MedicalRecord.__table__,
                 ],
             )
         )
 
     ok = 0
-    total = 8
+    total = 15  # 11 wallet + 4 dossier médical
 
     # Mock Request FastAPI pour l'émission télécom
     class _FakeRequest:
@@ -204,8 +208,43 @@ async def main() -> int:
             print(f"   - {t.type.value}: {t.amount_um} UM [{t.status.value}]")
         ok += 1
 
+        # ── DOSSIER MÉDICAL (Phase 2) ──
+        # 12. Création du dossier (walletId patient local → UUID5)
+        record = await create_record(MedicalRecordCreate(
+            patient_id="PAT-TEST01",
+            profile={"name": "Awa Diop", "age": 34, "blood": "O+"},
+            allergies=["pénicilline"],
+            antecedents=["paludisme 2024"],
+            medications=[],
+        ), None, db)
+        assert record.allergies == ["pénicilline"]
+        print(f"✅ Dossier créé : {record.profile.get('name')} · allergie: {record.allergies[0]}")
+        ok += 1
+
+        # 13. Lecture par walletId (médecin scanne le QR patient)
+        fetched = await get_record("PAT-TEST01", db)
+        assert fetched.antecedents == ["paludisme 2024"]
+        print(f"✅ Lecture dossier (scan QR) : antécédents={fetched.antecedents}")
+        ok += 1
+
+        # 14. Mise à jour (le médecin ajoute une prescription)
+        updated = await update_record("PAT-TEST01", MedicalRecordUpdate(
+            medications=[{"name": "Artéméther", "dosage": "80mg"}],
+        ), None, db)
+        assert updated.medications[0]["name"] == "Artéméther"
+        print(f"✅ Dossier mis à jour : {len(updated.medications)} médicament")
+        ok += 1
+
+        # 15. Dossier inexistant → 404
+        try:
+            await get_record("PAT-INEXISTANT", db)
+            print("❌ Dossier inexistant ACCEPTÉ (BUG)")
+        except Exception as e:
+            print(f"✅ Dossier inexistant refusé : {getattr(e, 'detail', e)}")
+            ok += 1
+
     print()
-    print(f"🎉 FLUX WALLET VALIDÉ : {ok}/{total + 3} vérifications passées")
+    print(f"🎉 FLUX WALLET VALIDÉ : {ok}/{total} vérifications passées")
 
     # Fermer proprement l'engine SQLite (sinon le process reste bloqué)
     await engine.dispose()
@@ -213,7 +252,7 @@ async def main() -> int:
         try: _TEST_DB.unlink()
         except OSError: pass
 
-    return 0 if ok == total + 3 else 1
+    return 0 if ok == total else 1
 
 
 if __name__ == "__main__":

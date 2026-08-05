@@ -3,7 +3,7 @@
 # ──────────────────────────────────────────────
 from fastapi import APIRouter
 
-from app.api.v1 import auth, doctors, versions, admin, wallet, telecom
+from app.api.v1 import auth, doctors, versions, admin, wallet, telecom, records
 
 api_router = APIRouter()
 
@@ -14,3 +14,4 @@ api_router.include_router(versions.router, tags=["Versions"])
 api_router.include_router(admin.router, tags=["Admin"])
 api_router.include_router(wallet.router, tags=["Wallet"])
 api_router.include_router(telecom.router, tags=["Telecom"])
+api_router.include_router(records.router, tags=["Records"])

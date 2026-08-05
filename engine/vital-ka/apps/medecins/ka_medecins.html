@@ -112,6 +112,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 <script src="ka_care_voice.js"></script>
 <script src="ka_telemedecine.js"></script>
 <script src="seed_doctors_demo.js"></script>
+<script src="vital_ka_ble.js"></script>
 </head>
 <body>
 <div class="container">
@@ -176,6 +177,14 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 <h3>🕐 Horaires de consultation</h3>
 <div class="row"><input id="docHoursStart" type="time" value="08:00" onchange="saveDoctorProfile()"><input id="docHoursEnd" type="time" value="18:00" onchange="saveDoctorProfile()"></div>
 <p style="font-size:11px;color:var(--muted);margin-top:6px">De <span id="hoursLabel">08:00</span> à <span id="hoursLabelEnd">18:00</span></p>
+</div>
+<div class="card">
+<h3>🔐 Connexion professionnelle (KYC)</h3>
+<p style="color:var(--muted);font-size:13px;margin-bottom:8px">Connectez-vous avec votre compte médecin Vital Ka pour vérifier votre statut (validation KYC) avant la publication dans l'annuaire.</p>
+<input id="docLoginEmail" placeholder="Email professionnel" style="margin-bottom:8px">
+<input id="docLoginPass" type="password" placeholder="Mot de passe" style="margin-bottom:8px">
+<button class="btn btn-green" onclick="doctorLogin()">🔐 Se connecter</button>
+<div id="docLoginResult" style="margin-top:10px;font-size:12px"></div>
 </div>
 <button class="btn btn-primary" onclick="publishDoctorProfile()">📡 Publier mon profil</button>
 <button class="btn btn-secondary" onclick="showScreen('splash')">← Retour</button>
@@ -303,6 +312,49 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 <button class="btn btn-secondary" onclick="showScreen('splash')">← Retour</button>
 </div>
 
+<!-- ═══ DOSSIER PATIENT (Phase 2) ═══ -->
+<div class="screen" id="screen-dossier">
+<header><h2 style="color:var(--accent)">📁 Dossier Patient</h2></header>
+<div class="card">
+<h3>📷 Charger le dossier (QR patient)</h3>
+<p style="color:var(--muted);font-size:13px;margin-bottom:8px">Scannez ou collez le QR du patient (app Patient → Partage). Le dossier est téléchargé depuis le serveur Vital Ka.</p>
+<textarea id="dosQRInput" placeholder="Collez le QR patient ici..." style="min-height:70px;margin-bottom:8px"></textarea>
+<button class="btn btn-primary" onclick="loadPatientDossier()">📁 Charger le dossier</button>
+<div id="dosResult" style="margin-top:12px"></div>
+</div>
+<div class="card" id="dosRecordCard" style="display:none">
+<h3>👤 <span id="dosPatientName">Patient</span></h3>
+<div style="font-size:12px;color:var(--muted);margin-bottom:10px" id="dosPatientMeta"></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+<div class="badge-al" style="flex:1;min-width:140px;background:rgba(231,76,60,.12);border:1px solid rgba(231,76,60,.25);border-radius:10px;padding:10px">
+<div style="font-size:10px;text-transform:uppercase;color:var(--error)">⚠️ Allergies</div>
+<div id="dosAllergies" style="font-size:12px;margin-top:4px">—</div></div>
+<div class="badge-ant" style="flex:1;min-width:140px;background:rgba(15,15,25,.8);border:1px solid var(--glass-border);border-radius:10px;padding:10px">
+<div style="font-size:10px;text-transform:uppercase;color:var(--accent)">📋 Antécédents</div>
+<div id="dosAntecedents" style="font-size:12px;margin-top:4px">—</div></div>
+</div>
+<div class="badge-med" style="background:rgba(15,15,25,.8);border:1px solid var(--glass-border);border-radius:10px;padding:10px;margin-bottom:8px">
+<div style="font-size:10px;text-transform:uppercase;color:var(--accent2)">💊 Traitements en cours</div>
+<div id="dosMedications" style="font-size:12px;margin-top:4px">—</div></div>
+<div class="badge-vit" style="background:rgba(15,15,25,.8);border:1px solid var(--glass-border);border-radius:10px;padding:10px">
+<div style="font-size:10px;text-transform:uppercase;color:var(--accent2)">📊 Constantes récentes</div>
+<div id="dosVitals" style="font-size:12px;margin-top:4px">—</div></div>
+</div>
+<div class="card" id="dosIACard">
+<h3>🤖 Diagnostic assisté (IA harmonique)</h3>
+<input id="dosSymptoms" placeholder="Symptômes (ex: fièvre, toux, fatigue)" style="margin-bottom:8px">
+<button class="btn btn-green" onclick="aiDiagnose()">🤖 Analyser les symptômes</button>
+<div id="dosAIResult" style="margin-top:12px"></div>
+</div>
+<div class="card" id="dosBLECard">
+<h3>📡 Objets connectés (BLE)</h3>
+<p style="color:var(--muted);font-size:13px;margin-bottom:8px">Connectez un tensiomètre, saturomètre ou thermomètre Bluetooth pour capturer automatiquement les mesures.</p>
+<button class="btn btn-secondary" style="width:auto;padding:10px 18px;font-size:12px" onclick="scanBLE()">📡 Scanner un appareil</button>
+<div id="dosBLEResult" style="margin-top:10px;font-size:12px;color:var(--muted)">Aucun appareil connecté.</div>
+</div>
+<button class="btn btn-secondary" onclick="showScreen('splash')">← Retour</button>
+</div>
+
 <!-- ═══ VIDEO CALL OVERLAY ═══ -->
 <div class="call-overlay" id="callOverlay" style="display:none">
 <video id="waRemoteVideo" class="call-remote-video" autoplay playsinline></video>
@@ -321,6 +373,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 <div class="nav-item active" data-screen="splash" onclick="showScreen('splash')"><span class="nav-icon">🏠</span><span class="nav-label">Accueil</span></div>
 <div class="nav-item" data-screen="contacts" onclick="showScreen('contacts')"><span class="nav-icon">💬</span><span class="nav-label">Consult</span></div>
 <div class="nav-item" data-screen="ordonnances" onclick="showScreen('ordonnances')"><span class="nav-icon">📝</span><span class="nav-label">Ordonn.</span></div>
+<div class="nav-item" data-screen="dossier" onclick="showScreen('dossier')"><span class="nav-icon">📁</span><span class="nav-label">Dossier</span></div>
 <div class="nav-item" data-screen="directory" onclick="showScreen('directory')"><span class="nav-icon">🩺</span><span class="nav-label">Confrères</span></div>
 <div class="nav-item" data-screen="honoraires" onclick="showScreen('honoraires')"><span class="nav-icon">💳</span><span class="nav-label">Honoraires</span></div>
 <div class="nav-item" data-screen="profile" onclick="showScreen('profile')"><span class="nav-icon">👤</span><span class="nav-label">Profil</span></div>
@@ -868,6 +921,190 @@ function showPrescriptionQR(ordId) {
   } else if (o.qr) {
     document.getElementById('ordQRCode').innerHTML = '<div style="padding:8px;font-size:10px;word-break:break-all;max-height:180px;overflow-y:auto">' + o.qr.substring(0, 400) + '</div>';
   }
+}
+
+// ═══ DOSSIER PATIENT — téléchargement QR + serveur /records ═══
+let currentDossier = null;
+
+function loadPatientDossier() {
+  const code = document.getElementById('dosQRInput').value.trim();
+  if (!code) { alert('Collez le QR patient.'); return; }
+
+  // Décoder le QR patient (KA_BRIDGE ou JSON)
+  let patientId = null, pkg = null;
+  if (typeof KA_BRIDGE !== 'undefined') {
+    try { pkg = KA_BRIDGE.decode(code); } catch(e) {}
+  }
+  if (pkg && (pkg.walletId || (pkg.profile && pkg.profile.walletId))) {
+    patientId = pkg.walletId || pkg.profile.walletId;
+  } else {
+    try {
+      const j = JSON.parse(atob(code));
+      patientId = j.walletId || (j.profile && j.profile.walletId);
+    } catch(e) {
+      // Peut-être un walletId direct
+      patientId = code.trim();
+    }
+  }
+  if (!patientId) { document.getElementById('dosResult').innerHTML = '<span style="color:var(--error)">❌ QR patient invalide.</span>'; return; }
+
+  const el = document.getElementById('dosResult');
+  el.innerHTML = '<span style="color:var(--muted)">Téléchargement du dossier...</span>';
+
+  // 1. Tenter le SERVEUR /records (walletId patient)
+  fetch(API_URL + '/api/v1/records/' + encodeURIComponent(patientId))
+    .then(function(res) {
+      if (res.ok) return res.json();
+      throw new Error('dossier_non_trouve');
+    })
+    .then(function(record) {
+      currentDossier = record;
+      renderDossier(record, patientId);
+      el.innerHTML = '<span style="color:var(--success)">✅ Dossier téléchargé depuis le serveur.</span>';
+    })
+    .catch(function() {
+      // 2. Fallback : données locales du QR (profil seul)
+      const profile = (pkg && pkg.profile) || null;
+      if (profile) {
+        currentDossier = {
+          patient_id: patientId,
+          profile: profile,
+          allergies: profile.allergies || [],
+          antecedents: profile.history ? [profile.history] : [],
+          medications: profile.medications || [],
+          vitals: profile.vitals || [],
+          _local: true
+        };
+        renderDossier(currentDossier, patientId);
+        el.innerHTML = '<span style="color:var(--warning)">⚡ Dossier local (QR seul — sync serveur indisponible).</span>';
+      } else {
+        el.innerHTML = '<span style="color:var(--error)">❌ Dossier introuvable sur le serveur.</span>';
+      }
+    });
+}
+
+function renderDossier(rec, patientId) {
+  document.getElementById('dosRecordCard').style.display = 'block';
+  const p = rec.profile || {};
+  document.getElementById('dosPatientName').textContent = p.name || 'Patient ' + (patientId || '');
+  document.getElementById('dosPatientMeta').textContent =
+    ((p.age ? p.age + ' ans' : '') + (p.gender ? ' · ' + p.gender : '') + (p.blood ? ' · Groupe ' + p.blood : '') + (p.weight ? ' · ' + p.weight + ' kg' : '')).trim() || '—';
+
+  const al = (rec.allergies || []);
+  document.getElementById('dosAllergies').innerHTML = al.length
+    ? al.map(function(a) { return '<span style="display:inline-block;background:rgba(231,76,60,.2);border-radius:6px;padding:2px 8px;margin:2px">' + a + '</span>'; }).join('')
+    : '<span style="color:var(--success)">Aucune allergie connue</span>';
+
+  const ant = (rec.antecedents || []);
+  document.getElementById('dosAntecedents').innerHTML = ant.length
+    ? ant.map(function(a) { return '<div>• ' + a + '</div>'; }).join('')
+    : '—';
+
+  const meds = (rec.medications || []);
+  document.getElementById('dosMedications').innerHTML = meds.length
+    ? meds.map(function(m) { return '<div>💊 ' + (m.name || m.medication || '') + ' ' + (m.dosage || m.dose || '') + '</div>'; }).join('')
+    : '—';
+
+  const vits = (rec.vitals || []).slice(-5).reverse();
+  document.getElementById('dosVitals').innerHTML = vits.length
+    ? vits.map(function(v) { return '<div>📊 ' + (v.type || '') + ' : ' + (v.value || '') + ' ' + (v.unit || '') + '</div>'; }).join('')
+    : '—';
+}
+
+// ═══ DIAGNOSTIC IA — appel /diagnose (hologrammes médicaux) ═══
+function aiDiagnose() {
+  const symptoms = document.getElementById('dosSymptoms').value.trim();
+  const el = document.getElementById('dosAIResult');
+  if (!symptoms) { el.innerHTML = '<span style="color:var(--error)">Saisissez des symptômes.</span>'; return; }
+
+  el.innerHTML = '<span style="color:var(--muted)">Analyse de la base de connaissances (hologrammes)...</span>';
+
+  // 1. Tenter le serveur inference /diagnose
+  const INFER_URL = (function() { try { return localStorage.getItem('ka_infer_url') || 'http://localhost:8010'; } catch(e) { return 'http://localhost:8010'; } })();
+  fetch(INFER_URL + '/diagnose', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      symptoms: symptoms.split(/[,;\n]+/).map(function(s) { return s.trim(); }).filter(Boolean),
+      patient_age: currentDossier && currentDossier.profile ? (currentDossier.profile.age || 30) : 30,
+      max_diagnoses: 3
+    })
+  }).then(function(res) {
+    if (!res.ok) throw new Error('inference_down');
+    return res.json();
+  }).then(function(d) {
+    if (!d.diagnoses || !d.diagnoses.length) {
+      el.innerHTML = '<div style="padding:10px;border-left:3px solid var(--warning);background:rgba(243,156,18,.1);border-radius:8px;font-size:13px">🤖 Aucune hypothèse fiable (couverture insuffisante).</div>';
+      return;
+    }
+    let html = '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Hypothèses hiérarchisées</div>';
+    d.diagnoses.forEach(function(dg, i) {
+      html += '<div style="padding:8px 12px;border-left:3px solid var(--accent);background:rgba(15,15,25,.8);border-radius:6px;margin:6px 0;font-size:13px">'
+        + '<b>' + (i + 1) + '. ' + (dg.text || dg.diagnosis || '') + '</b>'
+        + '<div style="font-size:11px;color:var(--muted)">Score : ' + (dg.score != null ? (dg.score * 100).toFixed(0) + '%' : '—') + ' · ' + (dg.secteur || '') + '</div></div>';
+    });
+    html += '<div style="font-size:10px;color:var(--muted);margin-top:6px">' + (d.disclaimer || 'Assistance IA, pas un avis médical.') + '</div>';
+    el.innerHTML = html;
+  }).catch(function() {
+    el.innerHTML = '<span style="color:var(--warning)">⚠️ Serveur IA indisponible. Vérifiez que le service inference (8010) tourne.</span>';
+  });
+}
+
+// ═══ OBJETS CONNECTÉS BLE ═══
+function scanBLE() {
+  const el = document.getElementById('dosBLEResult');
+  if (typeof KA_BLE === 'undefined') { el.innerHTML = '<span style="color:var(--error)">Module BLE non chargé.</span>'; return; }
+
+  if (!navigator.bluetooth) {
+    el.innerHTML = '<span style="color:var(--warning)">Web Bluetooth non supporté sur ce navigateur/appareil. Sur Android Chrome, autorisez le Bluetooth.</span>';
+    return;
+  }
+
+  el.innerHTML = '<span style="color:var(--muted)">Recherche d\'appareils médicaux BLE...</span>';
+  navigator.bluetooth.requestDevice({
+    acceptAllDevices: true,
+    optionalServices: ['battery_service']
+  }).then(function(device) {
+    el.innerHTML = '<span style="color:var(--success)">✅ Connecté : ' + device.name + ' (' + device.id + ')</span>';
+    device.addEventListener('gattserverdisconnected', function() {
+      el.innerHTML = '<span style="color:var(--warning)">🔌 Appareil déconnecté.</span>';
+    });
+  }).catch(function(err) {
+    el.innerHTML = '<span style="color:var(--error)">❌ ' + (err.message || err) + '</span>';
+  });
+}
+
+// ═══ LOGIN KYC MÉDECIN ═══
+function doctorLogin() {
+  const email = document.getElementById('docLoginEmail').value.trim();
+  const pass = document.getElementById('docLoginPass').value;
+  const el = document.getElementById('docLoginResult');
+  if (!email || !pass) { el.innerHTML = '<span style="color:var(--error)">Email et mot de passe requis.</span>'; return; }
+
+  el.innerHTML = '<span style="color:var(--muted)">Vérification KYC...</span>';
+  fetch(API_URL + '/api/v1/auth/doctor/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email, password: pass })
+  }).then(function(res) {
+    return res.json().then(function(d) {
+      if (!res.ok) throw new Error(d.detail || 'Échec connexion');
+      return d;
+    });
+  }).then(function(d) {
+    // Stocker le token + profil médecin
+    const p = loadDocProfile();
+    p.token = d.access_token;
+    p.kycStatus = d.doctor ? d.doctor.status : 'validated';
+    p.name = p.name || (d.doctor ? (d.doctor.first_name + ' ' + d.doctor.last_name) : '');
+    p.license = p.license || (d.doctor ? d.doctor.license_number : '');
+    p.specialty = p.specialty || (d.doctor ? d.doctor.specialty : '');
+    saveDocProfile(p);
+    updateSplash();
+    el.innerHTML = '<span style="color:var(--success)">✅ Connecté — statut KYC : ' + (p.kycStatus === 'validated' ? 'VALIDÉ' : p.kycStatus.toUpperCase()) + '</span>';
+  }).catch(function(err) {
+    el.innerHTML = '<span style="color:var(--error)">❌ ' + (err.message || err) + '</span>';
+  });
 }
 
 // ═══ INIT ═══
