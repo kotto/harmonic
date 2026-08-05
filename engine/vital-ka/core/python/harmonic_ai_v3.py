@@ -44,37 +44,40 @@ TAU = 2 * math.pi
 PI = math.pi
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# ENCODEUR DE PHASE — O(1), zéro aliasing, add/sub émergents
+# ENCODEUR DE PHASE v2 — O(1), zéro aliasing, négatifs & sommes ±500 000
 # ═══════════════════════════════════════════════════════════════════════════════
 class PhaseEncoder:
     """
     s_n = exp(i·α·n) — information dans la PHASE, pas la fréquence.
     
-    s_a · s_b = exp(i·α·(a+b)) → l'addition ÉMERGE de la multiplication complexe.
-    α < 2π/max_n → aucun repliement de phase → précision exacte.
-    """
-    def __init__(self, max_n=200000):
-        self.max_n = max_n
-        self.alpha = TAU / (max_n * 2 + 1)
+    CORRIGÉ (Axe 4b) :
+    • α = TAU/(2R+1) avec R = 500 000 → sommes jusqu'à ±500 000 sans repliement
+    • decode SANS +2π pour les négatifs (atan2 ∈ (-π, π]) → négatifs restitués
+    • décimaux supportés (pas d'arrondi à l'encodage)
     
+    s_a · s_b = exp(i·α·(a+b)) → l'addition ÉMERGE de la multiplication complexe.
+    """
+    def __init__(self, R=500000.0):
+        self.R = R
+        self.alpha = TAU / (2 * R + 1)
+
     def encode(self, n):
         return complex(math.cos(self.alpha * n), math.sin(self.alpha * n))
-    
+
     def decode(self, s):
-        p = math.atan2(s.imag, s.real)
-        if p < 0: p += TAU
+        p = math.atan2(s.imag, s.real)   # ∈ (-π, π] — négatifs OK
         n = p / self.alpha
         r = round(n)
-        return r if abs(n - r) < 0.001 else n
-    
+        return float(r) if abs(n - r) < 1e-6 else n
+
     def add(self, a, b):
         """Addition ÉMERGENTE : s_a · s_b = s_{a+b}"""
         return self.decode(self.encode(a) * self.encode(b))
-    
+
     def sub(self, a, b):
-        """Soustraction ÉMERGENTE : s_a · conj(s_b) = s_{a-b}"""
+        """Soustraction ÉMERGENTE : s_a · conj(s_b) = s_{a-b} (négatifs inclus)"""
         return self.decode(self.encode(a) * self.encode(b).conjugate())
-    
+
     def add_many(self, values):
         """Addition de N nombres en une seule multiplication complexe."""
         s = complex(1.0, 0.0)
@@ -82,53 +85,54 @@ class PhaseEncoder:
         return self.decode(s)
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# ENCODEUR LOG — multiplication/division émergentes (FFT)
+# ENCODEUR LOG v2 — DFT Harmonique (fréquence exacte, fractions OK)
 # ═══════════════════════════════════════════════════════════════════════════════
 class LogEncoder:
     """
     Ψ_n = exp(i·log(n)·SCALE·k₀·x)
-    Ψ_a · Ψ_b = exp(i·(log a + log b)·SCALE·k₀·x) = Ψ_{a×b} !
-    Ψ_a · conj(Ψ_b) = Ψ_{a÷b} !
+    Ψ_a · Ψ_b = exp(i·(log a+log b)·SCALE·k₀·x) = Ψ_{a×b} !
+    
+    CORRIGÉ (Axe 4b) — PAS de FFT :
+    Extraction par différence de phase (DFT Harmonique, découverte 3.3) :
+      s_{j+1}·conj(s_j) = exp(i·f·dx) → f = arg(·)/dx EXACT
+    • pas de bins → pas de quantification → erreur ~0
+    • fréquences NÉGATIVES (fractions n<1) décodées correctement
+    • grille 16384 → n ∈ [e^-50, e^50]
     """
-    def __init__(self, grid_size=4096, L=2.0, SCALE=100.0):
+    def __init__(self, SCALE=100.0, n_samples=16384, L=2.0):
         self.SCALE = SCALE
-        self.grid_size = grid_size
+        self.n_samples = n_samples
         self.L = L
         self.k0 = PHI * TAU / L
-        self.dx = L / grid_size
-        self.x = np.linspace(0, L, grid_size, endpoint=False)
-        self.max_freq = grid_size // 2
+        self.dx = L / n_samples
+        self.x = np.arange(n_samples, dtype=np.float64) * self.dx
         self._cache = {}
-    
+
     def encode(self, n):
-        if n <= 0: return np.zeros(self.grid_size, dtype=np.complex128)
-        freq = int(round(math.log(n) * self.SCALE))
-        if freq in self._cache: return self._cache[freq].copy()
-        psi = np.exp(1j * freq * self.k0 * self.x)
-        self._cache[freq] = psi.copy()
+        if n <= 0: return np.zeros(self.n_samples, dtype=np.complex128)
+        key = round(n, 12)
+        if key in self._cache: return self._cache[key].copy()
+        f = math.log(n) * self.SCALE
+        psi = np.exp(1j * f * self.k0 * self.x)
+        self._cache[key] = psi.copy()
         return psi
-    
+
     def decode(self, psi):
-        spectrum = np.abs(np.fft.fft(psi))
-        positive = spectrum[1:self.max_freq]
-        if len(positive) == 0: return 0.0, 0.0
-        peak_idx = np.argmax(positive) + 1
-        freqs = np.fft.fftfreq(self.grid_size, d=self.dx)
-        freq_enc = freqs[peak_idx] / (self.k0 / TAU)
-        freq_int = int(round(freq_enc))
-        if freq_int <= 0: return 0.0, 0.0
-        value = math.exp(freq_int / self.SCALE)
-        conf = min(spectrum[peak_idx] / (np.mean(positive) + 1e-10) / 10.0, 1.0)
-        if abs(value - round(value)) < 0.001: value = round(value)
-        return value, float(conf)
-    
+        ratios = psi[1:] * np.conj(psi[:-1])
+        phases = np.angle(ratios)
+        f = np.median(phases) / self.dx if np.std(phases) > 1e-3 else np.mean(phases) / self.dx
+        n = math.exp(f / (self.k0 * self.SCALE))
+        r = round(n)
+        if abs(n - r) < 1e-6: n = float(r)
+        return n, float(1.0 - min(1.0, np.std(phases) / (PI / 4)))
+
     def multiply(self, a, b):
         """Multiplication ÉMERGENTE : Ψ_a·Ψ_b = Ψ_{a×b}"""
         return self.decode(self.encode(a) * self.encode(b))
-    
+
     def divide(self, a, b):
-        """Division ÉMERGENTE : Ψ_a·conj(Ψ_b) = Ψ_{a÷b}"""
-        if abs(b) < 1e-10: return float('nan'), 0.0
+        """Division ÉMERGENTE : Ψ_a·conj(Ψ_b) = Ψ_{a÷b} (fractions OK)"""
+        if abs(b) < 1e-12: return float('nan'), 0.0
         return self.decode(self.encode(a) * np.conj(self.encode(b)))
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -301,8 +305,8 @@ class HarmonicAI:
         h.coherence()             → r  (1=cohérent, <0.7=contradiction)
     """
     def __init__(self, use_hologram=True):
-        self.phase = PhaseEncoder(max_n=200000)
-        self.log = LogEncoder(grid_size=4096, L=2.0, SCALE=100.0)
+        self.phase = PhaseEncoder(R=500000.0)
+        self.log = LogEncoder(SCALE=100.0, n_samples=16384, L=2.0)
         self.net = KuramotoNet(kappa=1.0)
         self.field = ContinuousField(grid_size=128, L=1.0)
         self.stats = {'facts': 0, 'emergence': 0, 'questions': 0}
@@ -347,8 +351,13 @@ class HarmonicAI:
                 if len(parts) == 2:
                     try:
                         a, b = float(parts[0]), float(parts[1])
-                        r, _ = self.log.multiply(a, b) if op_sym == '*' else self.log.divide(a, b)
-                        return r
+                        # Règle des signes : log(négatif) indéfini → |n| + signe
+                        sign = (1.0 if a >= 0 else -1.0) * (1.0 if b >= 0 else -1.0)
+                        if op_sym == '*':
+                            r, _ = self.log.multiply(abs(a), abs(b))
+                        else:
+                            r, _ = self.log.divide(abs(a), abs(b))
+                        return sign * r
                     except ValueError: pass
         return 0.0
     
