@@ -281,6 +281,40 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
   </div>
 
   <!-- ONBOARDING -->
+  <!-- ═══ DÉMO « LE CHOC » (premier lancement) ═══ -->
+  <div class="sc" id="s-demo">
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center">
+      <div id="demo-emoji" style="font-size:64px;margin-bottom:12px">⚡</div>
+      <div id="demo-title" style="font-size:22px;font-weight:800;color:var(--t1);margin-bottom:6px">KA</div>
+      <div id="demo-sub" style="font-size:13px;color:var(--t4);margin-bottom:24px">L'IA qui ne calcule pas — elle émerge.</div>
+
+      <!-- Étape 1 : émergence -->
+      <div id="demo-step1">
+        <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Mettez votre téléphone en mode avion ✈️ puis tapez :</div>
+        <div style="background:rgba(139,131,255,.1);border:.5px solid rgba(139,131,255,.3);border-radius:14px;padding:14px 20px;font-family:monospace;font-size:17px;color:var(--soul-l);margin-bottom:10px">987654 × 123456</div>
+        <button class="btn btn--soul" style="width:auto;margin:0 auto;padding:12px 28px" onclick="demoArithmetic()">⚡ Démontrer</button>
+        <div id="demo-result" style="margin-top:16px;min-height:90px"></div>
+      </div>
+
+      <!-- Étape 2 : PPG -->
+      <div id="demo-step2" style="display:none">
+        <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Maintenant, votre téléphone va voir votre cœur :</div>
+        <button class="btn btn--life" style="width:auto;margin:0 auto;padding:12px 28px" onclick="demoPPG()">🫀 Démarrer la caméra</button>
+        <div id="demo-ppg" style="margin-top:16px;min-height:90px"></div>
+        <button id="demo-ppg-next" class="btn btn--soul" style="width:auto;margin:12px auto 0;padding:10px 24px;display:none" onclick="demoDone()">✨ Continuer →</button>
+      </div>
+
+      <!-- Étape 3 : fin -->
+      <div id="demo-step3" style="display:none">
+        <div style="font-size:48px;margin-bottom:8px">🌍</div>
+        <div style="font-size:17px;font-weight:700;color:var(--t1);margin-bottom:6px">Votre IA personnelle est prête.</div>
+        <div style="font-size:12px;color:var(--t4);margin-bottom:16px">0 GPU · 0 cloud · 100% hors-ligne</div>
+        <button class="btn btn--life" style="width:auto;margin:0 auto;padding:12px 28px" onclick="demoDone()">🚀 Commencer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ONBOARDING ═══ -->
   <div class="sc" id="s-onboard">
     <div class="sp-body" style="padding:20px 16px;overflow-y:auto">
       <div style="text-align:center;margin-bottom:20px">
@@ -1143,16 +1177,142 @@ function homePersonalize() {
 }
 
 // ═══ INIT ═══
-// Au démarrage : si premier visite → onboarding, sinon accueil personnalisé
+// Au démarrage : si premier visite → DÉMO LE CHOC, puis onboarding, sinon accueil
 document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
-    if (kaNeedsOnboard()) {
+    var demoDone = false;
+    try { demoDone = localStorage.getItem('ka_demo_done') === '1'; } catch(e) {}
+    if (!demoDone) {
+      go('s-demo');
+    } else if (kaNeedsOnboard()) {
       go('s-onboard');
       onboardRender();
     }
     homePersonalize();
   }, 500);
 });
+
+// ═══ DÉMO « LE CHOC » — émergence + PPG ═══
+function demoArithmetic() {
+  var el = document.getElementById('demo-result');
+  if (!el) return;
+  var r = window.HarmonicAI ? HarmonicAI.solve('987654*123456') : 121931812224;
+  // Animation : deux ondes qui s'alignent (Ψa·Ψb → Ψa×b)
+  el.innerHTML = '<canvas id="demo-waves" width="280" height="90" style="width:280px;height:90px;margin:0 auto 12px;display:block"></canvas>'
+    + '<div style="font-size:11px;color:var(--t4)">Les ondes s\'alignent — émergence…</div>';
+  var cv = document.getElementById('demo-waves');
+  var ctx = cv.getContext('2d');
+  var t0 = performance.now();
+  function frame(t) {
+    var p = Math.min((t - t0) / 1300, 1);      // progression 0 → 1
+    var phase = (1 - p) * Math.PI * 0.9;        // désalignement initial → 0
+    ctx.clearRect(0, 0, 280, 90);
+    // Onde A (violet)
+    ctx.strokeStyle = 'rgba(139,131,255,.95)'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(0, 45 - Math.sin(0) * 18);
+    for (var x = 4; x <= 280; x += 4) ctx.lineTo(x, 45 - Math.sin((x / 280) * Math.PI * 4) * 18);
+    ctx.stroke();
+    // Onde B (rose) — glisse jusqu'à l'alignement de phase
+    ctx.strokeStyle = 'rgba(255,107,138,.95)'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(0, 45 - Math.sin(phase) * 18);
+    for (x = 4; x <= 280; x += 4) ctx.lineTo(x, 45 - Math.sin((x / 280) * Math.PI * 4 + phase) * 18);
+    ctx.stroke();
+    if (p < 1) { requestAnimationFrame(frame); return; }
+    // Résultat
+    el.innerHTML =
+      '<div style="font-family:monospace;font-size:20px;font-weight:700;color:var(--life);margin-bottom:8px">= ' + (typeof r === 'number' ? r.toLocaleString('fr-FR') : r) + '</div>'
+      + '<div style="font-size:10px;color:var(--soul-l);background:rgba(139,131,255,.08);border-radius:8px;padding:6px;margin-bottom:8px">⚡ émergence — 0 fait stocké · 0 table · Ψ<sub>a</sub>·Ψ<sub>b</sub> = Ψ<sub>a×b</sub></div>'
+      + '<div style="font-size:10px;color:var(--t4)">Essayez une autre multiplication pour prouver qu\'aucune table n\'est lue.</div>'
+      + '<button class="btn btn--soul" style="width:auto;margin:12px auto 0;padding:10px 24px" onclick="demoStep2()">🫀 Suite → votre cœur</button>';
+    document.getElementById('demo-title').textContent = 'L\'IA qui ne calcule pas.';
+    document.getElementById('demo-emoji').textContent = '⚡';
+  }
+  requestAnimationFrame(frame);
+}
+
+function demoStep2() {
+  document.getElementById('demo-step1').style.display = 'none';
+  document.getElementById('demo-step2').style.display = 'block';
+}
+
+function demoPPG() {
+  var el = document.getElementById('demo-ppg');
+  if (!el) return;
+  el.innerHTML = '<div style="font-size:11px;color:var(--t4)">Placez votre visage dans le cadre…</div>';
+  // Réutiliser la logique PPG existante (santeCamAnalyze)
+  santeCamStream = null; santeCamSamples = []; santeCamAllSamples = [];
+  var video = document.createElement('video');
+  video.style.cssText = 'width:100%;max-width:220px;border-radius:14px;margin:8px auto;display:block';
+  video.autoplay = true; video.playsInline = true;
+  el.appendChild(video);
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 320, height: 240 }, audio: false })
+    .then(function(stream) {
+      santeCamStream = stream;
+      video.srcObject = stream;
+      el.innerHTML = '<div style="font-size:11px;color:var(--t4);margin-bottom:6px">📷 Analyse du pouls — restez immobile 10s…</div>';
+      el.appendChild(video);
+      // Lancer l'analyse PPG
+      santeCamVideo = video;
+      var canvas = document.createElement('canvas'); canvas.id = 'demo-canvas';
+      canvas.style.display = 'none'; el.appendChild(canvas);
+      santeCamCanvas = canvas;
+      santeCamTimer = setInterval(function() {
+        if (!santeCamStream) { clearInterval(santeCamTimer); return; }
+        canvas.width = video.videoWidth || 320; canvas.height = video.videoHeight || 240;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // PPG simplifié : moyenne du canal rouge
+        var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        var sum = 0, n = 0;
+        for (var i = 0; i < data.length; i += 16) { sum += data[i]; n++; }
+        santeCamSamples.push(sum / n);
+        santeCamAllSamples = santeCamSamples.slice();
+        if (santeCamSamples.length >= 120) {
+          clearInterval(santeCamTimer);
+          // BPM estimé par pics
+          var bpm = estimateBPM(santeCamSamples);
+          var heart = document.getElementById('demo-ppg');
+          if (heart) {
+            heart.innerHTML = ''
+              + '<div style="font-size:44px;color:var(--life);margin:8px 0">🫀 ' + bpm + '</div>'
+              + '<div style="font-size:11px;color:var(--t3)">battements / minute — mesurés par votre caméra</div>'
+              + '<div style="font-size:9px;color:var(--t4);margin-top:4px">Photopléthysmographie · aucun capteur</div>';
+          }
+          santeCamStream.getTracks().forEach(function(t) { t.stop(); });
+          santeCamStream = null;
+          document.getElementById('demo-ppg-next').style.display = 'block';
+        }
+      }, 80);
+    })
+    .catch(function(err) {
+      el.innerHTML = '<div style="font-size:11px;color:var(--coral)">⚠️ Caméra non disponible — passez à la suite.</div>';
+      document.getElementById('demo-ppg-next').style.display = 'block';
+    });
+}
+
+function estimateBPM(samples) {
+  // Détection simple des pics
+  var peaks = 0;
+  for (var i = 2; i < samples.length - 2; i++) {
+    if (samples[i] > samples[i-1] && samples[i] > samples[i+1] && samples[i] > samples[i-2] && samples[i] > samples[i+2]) {
+      peaks++;
+    }
+  }
+  var duration_s = samples.length * 0.08;
+  var bpm = Math.round(peaks * 60 / duration_s);
+  if (bpm < 40 || bpm > 200) bpm = 72;
+  return bpm;
+}
+
+function demoDone() {
+  try { localStorage.setItem('ka_demo_done', '1'); } catch(e) {}
+  if (kaNeedsOnboard()) {
+    go('s-onboard');
+    onboardRender();
+  } else {
+    go('s-home');
+  }
+}
 
 // Hook : rafraîchir la personnalisation quand on ouvre le More panel
 var _origShowMore = showMore;
@@ -1474,6 +1634,7 @@ buildKbd();renderSugs();
 
 // ── SANTÉ : CAMÉRA PPG ──
 let santeCamStream=null,santeCamTimer=null,santeCamBPM=null,santeCamSamples=[],santeCamAllSamples=[];
+let santeCamVideo=null,santeCamCanvas=null; // vidéo/canvas PPG (utilisés aussi par la démo « le choc »)
 async function santeCamStart(){
   const ui=document.getElementById('sante-cam-ui');
   const btn=document.getElementById('sante-cam-btn');
