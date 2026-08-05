@@ -861,6 +861,28 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
       </div>
       <!-- Indicateurs harmoniques (remplis après mesure caméra) -->
       <div id="sante-indicators" class="card card--raised" style="display:none;font-size:11px;margin-bottom:10px;line-height:1.5"></div>
+      <!-- 🫁 ASSISTANCE RESPIRATION HARMONIQUE -->
+      <div style="margin-bottom:10px;text-align:center">
+        <div class="btn btn--ghost" id="breath-btn" onclick="breathToggle()" style="font-size:12px;padding:8px 16px">🫁 Assistance respiration harmonique</div>
+        <div id="breath-ui" style="display:none;margin-top:10px;background:var(--g1);border:.5px solid var(--b1);border-radius:16px;padding:16px">
+          <div style="font-size:10px;color:var(--t4);margin-bottom:10px">Fréquence de résonance · 6 cycles/min · 0,1 Hz · cohérence φ</div>
+          <div style="position:relative;width:150px;height:150px;margin:0 auto 10px">
+            <div style="position:absolute;inset:0;border-radius:50%;border:1px dashed var(--b3)"></div>
+            <div id="breath-orb" style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 50% 50%,var(--soul-d),var(--soul-g));box-shadow:0 0 40px rgba(139,131,255,.25);transform:scale(.65)"></div>
+          </div>
+          <div id="breath-phase" style="font-size:18px;font-weight:700;color:var(--soul-l)">Inspirez…</div>
+          <div id="breath-cycle" style="font-size:11px;color:var(--t3);margin-top:2px">cycle 1 · 0:00</div>
+          <div id="breath-stats" style="font-size:10px;color:var(--t4);margin-top:6px"></div>
+          <div style="margin-top:10px">
+            <div class="btn btn--life" id="breath-start" onclick="breathStart()" style="font-size:12px;padding:8px 20px">▶ Commencer</div>
+            <div class="btn btn--ghost" id="breath-stop" onclick="breathStop()" style="font-size:12px;padding:8px 20px;display:none">■ Arrêter</div>
+            <div style="margin-top:8px;font-size:10px;color:var(--t4)">
+              <label style="cursor:pointer"><input type="checkbox" id="breath-voice" checked onchange="breathVoice=this.checked" style="accent-color:var(--life)"> Voix</label>
+              <span style="margin-left:12px">📸 FC caméra : <span id="breath-live-bpm">--</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
       <!-- Symptômes -->
 	      <div style="margin-bottom:10px">
 	        <label style="font-size:11px;color:var(--t4);display:block;margin-bottom:4px">Symptômes (séparés par des virgules)</label>
@@ -1307,6 +1329,114 @@ function demoDone() {
   } else {
     go('s-home');
   }
+}
+
+// ═══ ASSISTANCE RESPIRATION HARMONIQUE ═══
+// Fréquence de résonance : 6 cycles/min (0,1 Hz) — inspir 4 s / expir 6 s
+// La même fréquence que celle mesurée par la caméra (indicateur φ Cohérence)
+var breathOn = false, breathTimer = null, breathT0 = 0;
+var breathLastPhase = '', breathVoice = true;
+var BREATH_IN = 4, BREATH_OUT = 6;
+
+function breathToggle() {
+  var ui = document.getElementById('breath-ui');
+  var btn = document.getElementById('breath-btn');
+  if (!ui) return;
+  if (ui.style.display === 'none') {
+    ui.style.display = 'block';
+    btn.textContent = '✕ Fermer la respiration';
+    renderBreathStats();
+  } else {
+    breathStop();
+    ui.style.display = 'none';
+    btn.textContent = '🫁 Assistance respiration harmonique';
+  }
+}
+
+function breathStart() {
+  if (breathOn) return;
+  breathOn = true;
+  breathLastPhase = '';
+  breathT0 = Date.now();
+  document.getElementById('breath-start').style.display = 'none';
+  document.getElementById('breath-stop').style.display = 'inline-block';
+  document.getElementById('breath-cycle').textContent = 'cycle 1 · 0:00';
+  document.getElementById('breath-phase').textContent = 'Inspirez…';
+  breathTimer = setInterval(breathFrame, 100);
+}
+
+function breathStop() {
+  if (!breathOn) return;
+  breathOn = false;
+  if (breathTimer) { clearInterval(breathTimer); breathTimer = null; }
+  document.getElementById('breath-start').style.display = 'inline-block';
+  document.getElementById('breath-stop').style.display = 'none';
+  var orb = document.getElementById('breath-orb');
+  if (orb) { orb.style.transform = 'scale(.65)'; orb.style.background = 'radial-gradient(circle at 50% 50%,var(--soul-d),var(--soul-g))'; }
+  var ph = document.getElementById('breath-phase');
+  if (ph) ph.textContent = 'Inspirez…';
+  saveBreathSession();
+}
+
+function breathFrame() {
+  var t = (Date.now() - breathT0) / 1000;
+  var period = BREATH_IN + BREATH_OUT;
+  var cyc = t / period;
+  var f = cyc % 1;
+  var inFrac = BREATH_IN / period;
+  var isIn = f < inFrac;
+  var p = isIn ? f / inFrac : (f - inFrac) / (1 - inFrac);
+  var s = p * p * (3 - 2 * p); // smoothstep — souffle naturel
+  var scale = isIn ? 0.65 + 0.35 * s : 1 - 0.35 * s;
+  var orb = document.getElementById('breath-orb');
+  if (orb) {
+    orb.style.transform = 'scale(' + scale.toFixed(3) + ')';
+    orb.style.background = isIn
+      ? 'radial-gradient(circle at 50% 50%,var(--soul-d),var(--soul-g))'
+      : 'radial-gradient(circle at 50% 50%,var(--life-d),var(--life-g))';
+  }
+  var label = isIn ? 'Inspirez…' : 'Expirez…';
+  var ph = document.getElementById('breath-phase');
+  if (ph) {
+    ph.textContent = label;
+    ph.style.color = isIn ? 'var(--soul-l)' : 'var(--life)';
+  }
+  // Annonce vocale locale (hors-ligne) à chaque changement de phase
+  if (label !== breathLastPhase) {
+    breathLastPhase = label;
+    if (breathVoice) kaCallSpeakFallback(isIn ? 'Inspirez' : 'Expirez');
+  }
+  var mm = Math.floor(t / 60), ss = Math.floor(t % 60);
+  var cycEl = document.getElementById('breath-cycle');
+  if (cycEl) cycEl.textContent = 'cycle ' + (Math.floor(cyc) + 1) + ' · ' + mm + ':' + String(ss).padStart(2, '0');
+  // FC en direct si la caméra PPG tourne
+  var bpmEl = document.getElementById('breath-live-bpm');
+  if (bpmEl && typeof santeCamBPM === 'number' && santeCamBPM) bpmEl.textContent = Math.round(santeCamBPM) + ' bpm';
+}
+
+function renderBreathStats() {
+  var log = breathLoadLog();
+  var total = 0;
+  log.forEach(function(s) { total += s.dur; });
+  var el = document.getElementById('breath-stats');
+  if (el) el.textContent = log.length
+    ? 'Séances : ' + log.length + ' · total ' + Math.round(total / 60) + ' min'
+    : 'Première séance ? 4 s inspir · 6 s expir.';
+}
+
+function breathLoadLog() {
+  try { return JSON.parse(localStorage.getItem('ka_breath_log') || '[]'); } catch(e) { return []; }
+}
+
+function saveBreathSession() {
+  var dur = (Date.now() - breathT0) / 1000;
+  if (dur < 10) return; // ignorer les séances de moins de 10 s
+  var cycles = Math.floor(dur / (BREATH_IN + BREATH_OUT));
+  var log = breathLoadLog();
+  log.push({ d: Date.now(), dur: Math.round(dur), cyc: cycles });
+  if (log.length > 100) log = log.slice(-100);
+  try { localStorage.setItem('ka_breath_log', JSON.stringify(log)); } catch(e) {}
+  renderBreathStats();
 }
 
 // Hook : rafraîchir la personnalisation quand on ouvre le More panel
