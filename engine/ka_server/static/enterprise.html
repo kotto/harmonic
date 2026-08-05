@@ -32,6 +32,24 @@ textarea{resize:vertical;line-height:1.5}
 ::-webkit-scrollbar-thumb{background:var(--b3);border-radius:9px}
 ::-webkit-scrollbar-track{background:transparent}
 
+/* ═══ THÈME CLAIR ═══ */
+[data-theme="light"]{
+  --void:#f4f5fa;--soul:#6a5cff;--soul-l:#5a4cf0;--soul-d:rgba(106,92,255,.12);--soul-g:rgba(106,92,255,.3);
+  --life:#0f9e6e;--life-d:rgba(15,158,110,.12);--life-g:rgba(15,158,110,.3);
+  --wisdom:#b8860b;--wisdom-d:rgba(184,134,11,.12);--wisdom-g:rgba(184,134,11,.3);
+  --rose:#c2456e;--rose-d:rgba(194,69,110,.12);--rose-g:rgba(194,69,110,.3);
+  --sky:#2f6fb2;--sky-d:rgba(47,111,178,.12);--sky-g:rgba(47,111,178,.3);
+  --coral:#c0392b;
+  --g1:rgba(20,25,45,.035);--g2:rgba(20,25,45,.06);--g3:rgba(20,25,45,.11);
+  --b1:rgba(20,25,45,.09);--b2:rgba(20,25,45,.14);--b3:rgba(20,25,45,.22);
+  --t1:rgba(15,18,35,.92);--t2:rgba(15,18,35,.62);--t3:rgba(15,18,35,.4);--t4:rgba(15,18,35,.2);
+}
+[data-theme="light"] .sidebar{background:#eceef5;border-color:var(--b1)}
+[data-theme="light"] .topbar{background:rgba(244,245,250,.88)}
+[data-theme="light"] .login-card{background:rgba(255,255,255,.92);border-color:var(--b2)}
+[data-theme="light"] input,[data-theme="light"] select,[data-theme="light"] textarea{background:#fff;border-color:var(--b2)}
+[data-theme="light"] #login{background:radial-gradient(ellipse at 50% 0%,#e8e9f2 0%,#f4f5fa 45%,var(--void) 100%)}
+
 /* ═══ LAYOUT PC-FIRST ═══ */
 .app{display:flex;min-height:100vh}
 .sidebar{width:224px;flex-shrink:0;background:#0a0a16;border-right:1px solid var(--b1);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
@@ -105,6 +123,10 @@ td.mono{font-family:var(--mono);font-size:11.5px;color:var(--soul-l)}
 .section-tree .table{color:var(--life)}
 .section-tree .code{color:var(--wisdom)}
 .empty{padding:30px;text-align:center;color:var(--t4);font-size:12.5px}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:18px}
+.chart-box{background:linear-gradient(180deg,var(--g1),transparent);border:1px solid var(--b1);border-radius:14px;padding:16px}
+.chart-box .title{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:10px}
+.chart-box canvas{width:100%;height:150px;display:block}
 
 /* ═══ LOGIN ═══ */
 #login{display:none;position:fixed;inset:0;z-index:100;background:radial-gradient(ellipse at 50% 0%,#1e1630 0%,#0e0d1c 45%,var(--void) 100%);align-items:center;justify-content:center}
@@ -143,6 +165,7 @@ td.mono{font-family:var(--mono);font-size:11.5px;color:var(--soul-l)}
       <a data-v="documents" onclick="show('documents');loadDocuments()"><span class="ico">📄</span> Documents</a>
       <a data-v="holograms" onclick="show('holograms');loadHolograms()"><span class="ico">🌀</span> Hologrammes</a>
       <a data-v="keys" onclick="show('keys');loadKeys()"><span class="ico">🔑</span> Clés API</a>
+      <a data-v="users" onclick="show('users');loadUsers()"><span class="ico">👤</span> Utilisateurs</a>
       <a data-v="audit" onclick="show('audit');loadAudit()"><span class="ico">📜</span> Audit</a>
       <a data-v="compliance" onclick="show('compliance')"><span class="ico">🛡️</span> Conformité</a>
       <a data-v="deploy" onclick="show('deploy')"><span class="ico">🚀</span> Déploiement</a>
@@ -154,6 +177,7 @@ td.mono{font-family:var(--mono);font-size:11.5px;color:var(--soul-l)}
     <div class="topbar">
       <h1 id="page-title">Dashboard</h1>
       <div class="right">
+        <button class="btn btn--ghost btn--xs" id="theme-btn" onclick="toggleTheme()" title="Basculer clair/sombre">🌙</button>
         <span class="pill"><span class="dot" id="srv-dot"></span><span id="srv-state">Serveur…</span></span>
         <span class="pill" id="key-pill" style="font-family:var(--mono)">key_…</span>
         <button class="btn btn--ghost btn--xs" onclick="logout()">Se déconnecter</button>
@@ -169,6 +193,11 @@ td.mono{font-family:var(--mono);font-size:11.5px;color:var(--soul-l)}
           <div class="kpi"><div class="label">Hologrammes actifs</div><div class="value life" id="k-holo">—</div><div class="hint" id="k-holo-hint">spécialisés + starter</div></div>
           <div class="kpi"><div class="label">Stockage</div><div class="value gold" id="k-sto">—</div><div class="hint" id="k-sto-hint">quota 100 Go</div></div>
           <div class="kpi"><div class="label">Requêtes harmoniques</div><div class="value rose" id="k-har">—</div><div class="hint">émergence · 0 GPU</div></div>
+        </div>
+        <div class="charts">
+          <div class="chart-box"><div class="title">Appels — 24 dernières heures</div><canvas id="chart-hourly"></canvas></div>
+          <div class="chart-box"><div class="title">Appels — 7 derniers jours</div><canvas id="chart-daily"></canvas></div>
+          <div class="chart-box"><div class="title">Répartition par endpoint (top 10)</div><canvas id="chart-endpoints"></canvas></div>
         </div>
         <div class="card">
           <h3>Quotas <span class="sub">consommation du mois</span></h3>
@@ -280,6 +309,25 @@ td.mono{font-family:var(--mono);font-size:11.5px;color:var(--soul-l)}
         </div>
       </section>
 
+      <!-- ═══ UTILISATEURS ═══ -->
+      <section id="v-users" class="hidden">
+        <div class="card">
+          <h3>Utilisateurs <span class="sub">rôles : admin · viewer · auditor</span></h3>
+          <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+            <div class="form-row" style="flex:1;min-width:180px"><label>Nom d'utilisateur</label><input id="new-user" placeholder="ex. alice"></div>
+            <div class="form-row"><label>Rôle</label>
+              <select id="new-user-role"><option value="viewer">viewer</option><option value="admin">admin</option><option value="auditor">auditor</option></select>
+            </div>
+            <button class="btn btn--life" onclick="createUser()">+ Créer</button>
+          </div>
+          <table style="margin-top:14px">
+            <thead><tr><th>Utilisateur</th><th>Rôle</th><th>Clés liées</th><th>Créé il y a</th><th></th></tr></thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+          <div class="msg" id="users-msg"></div>
+        </div>
+      </section>
+
       <!-- ═══ AUDIT ═══ -->
       <section id="v-audit" class="hidden">
         <div class="card">
@@ -349,8 +397,108 @@ function show(v) {
     a.classList.toggle('active', a.dataset.v === v);
   });
   var titles = { dashboard: 'Dashboard', ingest: 'Ingestion', documents: 'Documents structurés',
-    holograms: 'Hologrammes', keys: 'Clés API', audit: 'Audit', compliance: 'Conformité', deploy: 'Déploiement' };
+    holograms: 'Hologrammes', keys: 'Clés API', users: 'Utilisateurs', audit: 'Audit',
+    compliance: 'Conformité', deploy: 'Déploiement' };
   document.getElementById('page-title').textContent = titles[v];
+}
+
+// ═══ THÈME CLAIR / SOMBRE ═══
+function toggleTheme() {
+  var cur = document.documentElement.getAttribute('data-theme');
+  var next = cur === 'light' ? '' : 'light';
+  if (next) document.documentElement.setAttribute('data-theme', 'light');
+  else document.documentElement.removeAttribute('data-theme');
+  try { localStorage.setItem('ka_ent_theme', next || 'dark'); } catch (e) {}
+  updateThemeBtn();
+  redrawCharts();
+}
+function updateThemeBtn() {
+  var light = document.documentElement.getAttribute('data-theme') === 'light';
+  document.getElementById('theme-btn').textContent = light ? '☀️' : '🌙';
+}
+function applySavedTheme() {
+  try {
+    if (localStorage.getItem('ka_ent_theme') === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  } catch (e) {}
+  updateThemeBtn();
+}
+
+// ═══ GRAPHIQUES D'USAGE (canvas pur) ═══
+function drawCharts() {
+  fetch(API + '/api/v2/enterprise/usage/timeseries?days=7&hours=24', { headers: hdr() })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      drawBars('chart-hourly', d.hourly || [], '#8b83ff');
+      drawBars('chart-daily', d.daily || [], '#3ddba0');
+      drawDonut('chart-endpoints', d.by_endpoint || []);
+    })
+    .catch(function () {});
+}
+function redrawCharts() { drawCharts(); }
+
+function drawBars(canvasId, data, color) {
+  var cv = document.getElementById(canvasId);
+  if (!cv) return;
+  var ctx = cv.getContext('2d');
+  var w = cv.width = cv.clientWidth * 2, h = cv.height = cv.clientHeight * 2;
+  ctx.clearRect(0, 0, w, h);
+  if (!data.length) { ctx.fillStyle = 'rgba(128,128,160,.4)'; ctx.font = '12px sans-serif'; ctx.fillText('aucune donnée', 10, h / 2); return; }
+  var max = Math.max.apply(null, data.map(function (x) { return x.count; })) || 1;
+  var pad = 8, bw = (w - pad * 2) / data.length;
+  var themeLight = document.documentElement.getAttribute('data-theme') === 'light';
+  var labelColor = themeLight ? 'rgba(15,18,35,.5)' : 'rgba(255,255,255,.35)';
+  data.forEach(function (p, i) {
+    var bh = (p.count / max) * (h - 30);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = p.errors > 0 ? 0.6 : 1;
+    ctx.fillRect(pad + i * bw + bw * 0.15, h - 20 - bh, bw * 0.7, bh);
+    ctx.globalAlpha = 1;
+    if (i % Math.max(1, Math.floor(data.length / 12)) === 0) {
+      ctx.fillStyle = labelColor;
+      ctx.font = '9px sans-serif';
+      ctx.fillText(p.label, pad + i * bw, h - 6);
+    }
+  });
+}
+
+function drawDonut(canvasId, items) {
+  var cv = document.getElementById(canvasId);
+  if (!cv) return;
+  var ctx = cv.getContext('2d');
+  var w = cv.width = cv.clientWidth * 2, h = cv.height = cv.clientHeight * 2;
+  ctx.clearRect(0, 0, w, h);
+  if (!items.length) { ctx.fillStyle = 'rgba(128,128,160,.4)'; ctx.font = '12px sans-serif'; ctx.fillText('aucune donnée', 10, h / 2); return; }
+  var total = items.reduce(function (a, x) { return a + x.count; }, 0) || 1;
+  var colors = ['#8b83ff', '#3ddba0', '#f0c060', '#ed93b1', '#85b7eb', '#d85a30', '#b8b2ff', '#1fae7c', '#b8860b', '#c2456e'];
+  var cx = w * 0.32, cy = h / 2, R = Math.min(h, w) * 0.38, r = R * 0.55;
+  var a0 = -Math.PI / 2;
+  items.forEach(function (it, i) {
+    var a1 = a0 + (it.count / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, a0, a1);
+    ctx.arc(cx, cy, r, a1, a0, true);
+    ctx.closePath();
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fill();
+    a0 = a1;
+  });
+  ctx.fillStyle = 'rgba(128,128,160,.8)';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(String(total), cx, cy + 4);
+  // Légende
+  var lx = w * 0.55, ly = h * 0.18;
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'left';
+  items.slice(0, 8).forEach(function (it, i) {
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fillRect(lx, ly + i * 16, 9, 9);
+    ctx.fillStyle = 'rgba(128,128,160,.9)';
+    var label = it.endpoint.length > 26 ? it.endpoint.slice(0, 25) + '…' : it.endpoint;
+    ctx.fillText(label + ' · ' + it.count, lx + 14, ly + i * 16 + 8);
+  });
 }
 
 function msg(el, text, type) {
@@ -383,6 +531,7 @@ function logout() {
 function init() {
   loadUsage();
   loadServices();
+  drawCharts();
 }
 function loadUsage() {
   fetch(API + '/api/v2/enterprise/usage', { headers: hdr() })
@@ -607,6 +756,55 @@ function revokeKey(k) {
     .catch(function (e) { msg('keys-msg', 'Erreur : ' + e.message, 'err'); });
 }
 
+// ═══ UTILISATEURS ═══
+function loadUsers() {
+  fetch(API + '/api/v2/enterprise/users', { headers: hdr() })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var users = d.users || [];
+      document.getElementById('users-tbody').innerHTML = users.map(function (u) {
+        var roleBadge = u.role === 'admin' ? 'badge--rose' : u.role === 'auditor' ? 'badge--gold' : 'badge--soul';
+        return '<tr><td style="font-weight:700;color:var(--t1)">' + escapeHtml(u.username) + '</td>'
+          + '<td><span class="badge ' + roleBadge + '">' + escapeHtml(u.role) + '</span></td>'
+          + '<td class="mono">' + (u.keys || []).join(', ') + '</td>'
+          + '<td>' + u.age_days + ' j</td>'
+          + '<td><button class="btn btn--ghost btn--xs" onclick="changeUserRole(\'' + escapeHtml(u.username) + '\')">↻ Rôle</button> '
+          + '<button class="btn btn--danger btn--xs" onclick="deleteUser(\'' + escapeHtml(u.username) + '\')">Supprimer</button></td></tr>';
+      }).join('') || '<tr><td colspan="5"><div class="empty">aucun utilisateur — créez le premier</div></td></tr>';
+    })
+    .catch(function () { document.getElementById('users-tbody').innerHTML = '<tr><td colspan="5"><div class="empty">erreur de chargement</div></td></tr>'; });
+}
+function createUser() {
+  var username = document.getElementById('new-user').value.trim();
+  var role = document.getElementById('new-user-role').value;
+  if (!username) { msg('users-msg', 'Nom requis', 'err'); return; }
+  fetch(API + '/api/v2/enterprise/users', {
+    method: 'POST', headers: hdr(), body: JSON.stringify({ username: username, role: role })
+  }).then(function (r) { return r.json(); })
+    .then(function (d) {
+      msg('users-msg', d.message || d.error || 'OK', d.error ? 'err' : 'ok');
+      loadUsers();
+    })
+    .catch(function (e) { msg('users-msg', 'Erreur : ' + e.message, 'err'); });
+}
+function changeUserRole(username) {
+  var next = prompt('Nouveau rôle pour « ' + username + ' » (admin | viewer | auditor) :', 'viewer');
+  if (!next) return;
+  fetch(API + '/api/v2/enterprise/users', {
+    method: 'POST', headers: hdr(), body: JSON.stringify({ username: username, role: next.toLowerCase() })
+  }).then(function (r) { return r.json(); })
+    .then(function (d) { msg('users-msg', d.message || d.error || 'OK', d.error ? 'err' : 'ok'); loadUsers(); })
+    .catch(function (e) { msg('users-msg', 'Erreur : ' + e.message, 'err'); });
+}
+function deleteUser(username) {
+  if (!confirm('Supprimer l\'utilisateur « ' + username + ' » ?')) return;
+  fetch(API + '/api/v2/enterprise/users', {
+    method: 'DELETE', headers: hdr(), body: JSON.stringify({ username: username })
+  }).then(function (r) { return r.json(); })
+    .then(function (d) { msg('users-msg', d.message || d.error || 'OK', d.error ? 'err' : 'ok'); loadUsers(); })
+    .catch(function (e) { msg('users-msg', 'Erreur : ' + e.message, 'err'); });
+}
+
 // ═══ AUDIT ═══
 function loadAudit() {
   fetch(API + '/api/v2/enterprise/audit/log?limit=60', { headers: hdr() })
@@ -670,6 +868,7 @@ function deploy() {
 }
 
 // ═══ BOOT ═══
+applySavedTheme();
 if (KEY) {
   document.getElementById('login-key').value = KEY;
   fetch(API + '/api/v2/enterprise/usage', { headers: hdr() })

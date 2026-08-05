@@ -337,6 +337,13 @@ def register_enterprise_routes(app, services):
             metadata['created_by'] = g.enterprise_user
             
             if add_api_key(key, metadata):
+                # Lier la clé à un utilisateur si demandé
+                owner = data.get('owner') or metadata.get('created_by')
+                try:
+                    from ka_server.middleware.auth import _link_key_to_user
+                    _link_key_to_user(key, owner)
+                except Exception:
+                    pass
                 return jsonify({
                     'success': True,
                     'key': key,
@@ -354,6 +361,65 @@ def register_enterprise_routes(app, services):
                 return jsonify({'success': True, 'message': 'Clé révoquée'})
             return jsonify({'error': 'Clé non trouvée', 'code': 'KEY_NOT_FOUND'}), 404
     
+    @app.route('/api/v2/enterprise/usage/timeseries', methods=['GET', 'OPTIONS'])
+    @_require_enterprise_auth
+    def api_enterprise_usage_timeseries():
+        """Séries temporelles d'usage pour les graphiques de la console.
+
+        ?days=7&hours=24 → hourly (appels+erreurs par heure), daily (par jour),
+        by_endpoint (top 10), latence moyenne.
+        """
+        if request.method == 'OPTIONS':
+            return '', 200
+        try:
+            from ka_server.middleware.metrics import get_usage_timeseries
+            days = min(int(request.args.get('days', 7)), 30)
+            hours = min(int(request.args.get('hours', 24)), 168)
+            return jsonify({'success': True, **get_usage_timeseries(days=days, hours=hours)})
+        except Exception as e:
+            log.error(f"Timeseries error: {e}")
+            return jsonify({'error': str(e), 'code': 'TIMESERIES_FAILED'}), 500
+
+    @app.route('/api/v2/enterprise/users', methods=['GET', 'POST', 'DELETE', 'OPTIONS'])
+    @_require_enterprise_auth
+    def api_enterprise_users():
+        """Gestion des utilisateurs Enterprise (admin | viewer | auditor).
+
+        GET    → liste des utilisateurs
+        POST   {username, role}           → créer
+        POST   {username, role} (PATCH)   → changer le rôle
+        DELETE {username}                 → supprimer
+        """
+        if request.method == 'OPTIONS':
+            return '', 200
+        from ka_server.middleware.auth import (
+            list_users, create_user, delete_user, set_user_role,
+        )
+        if request.method == 'GET':
+            return jsonify({'success': True, 'users': list_users()})
+
+        data = request.get_json() or {}
+        username = (data.get('username') or '').strip().lower()
+        role = data.get('role', 'viewer')
+
+        if request.method == 'POST':
+            # PATCH : si l'utilisateur existe et un rôle est fourni → changement de rôle
+            if data.get('action') == 'role' or (username and any(u['username'] == username for u in list_users()) and data.get('role')):
+                ok, message = set_user_role(username, role)
+            else:
+                ok, message = create_user(username, role)
+            if not ok:
+                return jsonify({'error': message, 'code': 'USER_ERROR'}), 409 if 'existant' in message else 400
+            return jsonify({'success': True, 'message': message})
+
+        if request.method == 'DELETE':
+            ok, message = delete_user(username)
+            if not ok:
+                return jsonify({'error': message, 'code': 'USER_NOT_FOUND'}), 404
+            return jsonify({'success': True, 'message': message})
+
+        return jsonify({'error': 'Méthode non supportée'}), 405
+
     @app.route('/api/v2/enterprise/billing', methods=['GET'])
     @_require_enterprise_auth
     def api_enterprise_billing():
