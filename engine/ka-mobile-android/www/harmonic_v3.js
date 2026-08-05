@@ -35,6 +35,10 @@
     var p = Math.atan2(s.im, s.re);
     if (p < 0) p += TAU;
     var n = p / this.alpha;
+    // Déplier le wrap : une somme négative s'enroule dans [0, TAU)
+    // (même règle de signe que PhaseEncoderV2 côté Python)
+    if (n > this.maxN) n -= (2 * this.maxN + 1);
+    else if (n < -this.maxN) n += (2 * this.maxN + 1);
     var r = Math.round(n);
     return Math.abs(n - r) < 0.001 ? r : n;
   };
@@ -54,17 +58,21 @@
     expr = expr.replace(/\s+/g, '');
     // Addition / soustraction (émergence phase)
     var m;
-    if ((m = expr.match(/^([\d.]+)\+([\d.]+)$/))) return this.phase.add(parseFloat(m[1]), parseFloat(m[2]));
-    if ((m = expr.match(/^([\d.]+)-([\d.]+)$/))) return this.phase.sub(parseFloat(m[1]), parseFloat(m[2]));
+    if ((m = expr.match(/^(-?[\d.]+)\+(-?[\d.]+)$/))) return this.phase.add(parseFloat(m[1]), parseFloat(m[2]));
+    if ((m = expr.match(/^(-?[\d.]+)-(-?[\d.]+)$/))) return this.phase.sub(parseFloat(m[1]), parseFloat(m[2]));
     // Multiplication / division (fallback natif — FFT JS non dispo)
-    if ((m = expr.match(/^([\d.]+)\*([\d.]+)$/))) return parseFloat(m[1]) * parseFloat(m[2]);
-    if ((m = expr.match(/^([\d.]+)\/([\d.]+)$/))) return parseFloat(m[1]) / parseFloat(m[2]);
-    // Chaîne additive a+b+c
-    if ((m = expr.match(/^[\d.]+(\+[\d.]+)+$/))) {
-      var parts = expr.split('+').map(parseFloat);
-      var s = this.phase.encode(parts[0]);
-      for (var i = 1; i < parts.length; i++) s = this.phase.mul(s, this.phase.encode(parts[i]));
-      return this.phase.decode(s);
+    if ((m = expr.match(/^(-?[\d.]+)\*(-?[\d.]+)$/))) return parseFloat(m[1]) * parseFloat(m[2]);
+    if ((m = expr.match(/^(-?[\d.]+)\/(-?[\d.]+)$/))) return parseFloat(m[1]) / parseFloat(m[2]);
+    // Chaîne mixte a+b-c+d… (gauche → droite, opérations élémentaires émergentes)
+    if ((m = expr.match(/^(-?[\d.]+)((?:[+\-]-?[\d.]+)+)$/))) {
+      var v = parseFloat(m[1]);
+      var restOps = m[2].match(/[+\-]-?[\d.]+/g);   // ['-3','-2'] — opérateur détaché du nombre
+      for (var j = 0; j < restOps.length; j++) {
+        var op = restOps[j][0];
+        var num = parseFloat(restOps[j].slice(1));
+        v = op === '+' ? this.phase.add(v, num) : this.phase.sub(v, num);
+      }
+      return v;
     }
     return NaN;
   };
@@ -126,15 +134,20 @@
     return theta;
   };
   KuramotoNet.prototype.infer = function (question, candidates, steps) {
+    // Ancrage : si la question contient un concept connu, les scores sont
+    // mesurés RELATIVEMENT à sa phase (alignement = vrai, opposition = faux)
     var tokens = question.toLowerCase().match(/[a-zà-ÿ]+/g) || [];
-    var qe = tokens.filter(function (t) { return t in this.idx; });
-    // Pas d'ancrage dans cette version légère — on mesure la cohérence
-    var theta = this.run(steps || 200, 42);
+    var anchor = null;
+    for (var i = 0; i < tokens.length; i++) {
+      if (tokens[i] in this.idx) { anchor = this.idx[tokens[i]]; break; }
+    }
+    var theta = this.run(steps || 600, 42);
     var out = [];
+    var base = anchor !== null ? theta[anchor] : 0;
     for (var i = 0; i < candidates.length; i++) {
       var c = candidates[i].toLowerCase();
       if (c in this.idx) {
-        var ph = theta[this.idx[c]] % TAU;
+        var ph = (theta[this.idx[c]] - base + TAU) % TAU;
         var dist = Math.min(ph, TAU - ph);
         out.push({ candidate: candidates[i], score: 1 / (1 + dist), verdict: dist < 0.35 ? 'true' : '?' });
       } else out.push({ candidate: candidates[i], score: 0, verdict: '?' });
@@ -159,7 +172,7 @@
 
     /** Vérifie si un message contient une arithmétique émergente. */
     detect: function (message) {
-      var m = message.match(/([\d.]+)\s*([+\-*/])\s*([\d.]+)/);
+      var m = message.match(/(-?[\d.]+)\s*([+\-*/])\s*(-?[\d.]+)/);
       if (!m) return null;
       return { a: parseFloat(m[1]), op: m[2], b: parseFloat(m[3]) };
     },
@@ -172,7 +185,7 @@
 
     /** Inférence logique par synchronisation. */
     ask: function (question, candidates) {
-      return this.net.infer(question, candidates || [], 200);
+      return this.net.infer(question, candidates || []);
     },
 
     /** Émergence vs calcul : statistiques d'utilisation. */

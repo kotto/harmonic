@@ -73,7 +73,19 @@ _ARITH_KEYWORDS = {
 }
 
 # Pourcentages : "15% de 200", "20 pour cent de 150"
-_PCT = re.compile(r'([\d.]+)\s*%\s*(?:de|d\'|sur)?\s*([\d.]+)', re.IGNORECASE)
+_PCT = re.compile(r'([\d.]+)\s*(?:%|pour\s*cent)\s*(?:de|d\'|sur)?\s*([\d.]+)', re.IGNORECASE)
+
+# Nombres en lettres françaises (composés traités avant les simples)
+_FR_NUM = {
+    'dix-sept': 17, 'dix-huit': 18, 'dix-neuf': 19, 'soixante-dix': 70,
+    'quatre-vingt-dix': 90, 'quatre-vingt': 80,
+    'zéro': 0, 'un': 1, 'une': 1, 'deux': 2, 'trois': 3, 'quatre': 4, 'cinq': 5,
+    'six': 6, 'sept': 7, 'huit': 8, 'neuf': 9, 'dix': 10, 'onze': 11, 'douze': 12,
+    'treize': 13, 'quatorze': 14, 'quinze': 15, 'seize': 16, 'vingt': 20,
+    'trente': 30, 'quarante': 40, 'cinquante': 50, 'soixante': 60,
+    'cent': 100, 'mille': 1000,
+}
+_FR_NUM_RE = re.compile(r'\b(' + '|'.join(sorted(_FR_NUM, key=len, reverse=True)) + r')\b')
 
 
 def detect_and_solve_math(message: str) -> dict:
@@ -132,10 +144,33 @@ def detect_and_solve_math(message: str) -> dict:
 
     # ── Traduire les mots en symboles ──
     expr = low
-    expr = re.sub(r'divisé\s*par|divise\s*par|divisée\s*par', '/', expr)
-    expr = re.sub(r'\bmultiplié\s*par\b|\bmultiplie\s*par\b|\bfois\b', '*', expr)
+    # "divise 144 par 12" → "144/12" (nombre intercalé)
+    expr = re.sub(r'divis[ée]s?\s*([\d.]+)\s*par\s*([\d.]+)', r'\1/\2', expr)
+    expr = re.sub(r'divis[ée]s?\s*par', '/', expr)
+    expr = re.sub(r'multipli[ée]s?\s*([\d.]+)\s*par\s*([\d.]+)', r'\1*\2', expr)
+    expr = re.sub(r'\bmultipli[ée]s?\s*par\b|\bfois\b', '*', expr)
     expr = re.sub(r'\bplus\b', '+', expr)
     expr = re.sub(r'\bmoins\b', '-', expr)
+
+    # ── Nombres en lettres → chiffres ("trois plus quatre" → "3 + 4") ──
+    expr = _FR_NUM_RE.sub(lambda m: str(_FR_NUM[m.group(1)]), expr)
+    # ── "le double de X" / "la moitié de X" → résultat direct ──
+    m_double = re.search(r'(?:le\s+)?double\s+de\s+([\d.]+)', expr)
+    if m_double:
+        result = 2.0 * float(m_double.group(1))
+        return {
+            'handled': True, 'expression': f"2 × {m_double.group(1)}",
+            'result': result, 'method': 'emergence_double',
+            'explanation': f"le double de {m_double.group(1)} = {result:g} (émergence ondulatoire)",
+        }
+    m_moitie = re.search(r'(?:la\s+)?moiti[ée]\s+de\s+([\d.]+)', expr)
+    if m_moitie:
+        result = float(m_moitie.group(1)) / 2.0
+        return {
+            'handled': True, 'expression': f"{m_moitie.group(1)} ÷ 2",
+            'result': result, 'method': 'emergence_moitie',
+            'explanation': f"la moitié de {m_moitie.group(1)} = {result:g} (émergence ondulatoire)",
+        }
 
     # Extraire la première expression arithmétique
     m = re.search(r'(-?\d+\.?\d*)\s*([+\-*/])\s*(-?\d+\.?\d*)'
