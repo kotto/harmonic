@@ -865,7 +865,12 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
       <div style="margin-bottom:10px;text-align:center">
         <div class="btn btn--ghost" id="breath-btn" onclick="breathToggle()" style="font-size:12px;padding:8px 16px">🫁 Assistance respiration harmonique</div>
         <div id="breath-ui" style="display:none;margin-top:10px;background:var(--g1);border:.5px solid var(--b1);border-radius:16px;padding:16px">
-          <div style="font-size:10px;color:var(--t4);margin-bottom:10px">Fréquence de résonance · 6 cycles/min · 0,1 Hz · cohérence φ</div>
+          <div id="breath-profile-info" style="font-size:10px;color:var(--t4);margin-bottom:10px">🌊 Résonance · 6 cycles/min · 0,1 Hz · cohérence φ</div>
+          <div id="breath-profiles" style="display:flex;gap:6px;justify-content:center;margin-bottom:10px">
+            <div class="btn" id="bp-resonance" onclick="breathSetProfile('resonance')" style="font-size:10px;padding:5px 10px;background:var(--soul-d);border:.5px solid var(--soul-g);color:var(--soul-l)">🌊 Résonance</div>
+            <div class="btn" id="bp-relaxation" onclick="breathSetProfile('relaxation')" style="font-size:10px;padding:5px 10px;background:var(--g1);border:.5px solid var(--b1);color:var(--t3)">😌 Relaxation</div>
+            <div class="btn" id="bp-energie" onclick="breathSetProfile('energie')" style="font-size:10px;padding:5px 10px;background:var(--g1);border:.5px solid var(--b1);color:var(--t3)">⚡ Énergie</div>
+          </div>
           <div style="position:relative;width:150px;height:150px;margin:0 auto 10px">
             <div style="position:absolute;inset:0;border-radius:50%;border:1px dashed var(--b3)"></div>
             <div id="breath-orb" style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 50% 50%,var(--soul-d),var(--soul-g));box-shadow:0 0 40px rgba(139,131,255,.25);transform:scale(.65)"></div>
@@ -878,7 +883,11 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
             <div class="btn btn--ghost" id="breath-stop" onclick="breathStop()" style="font-size:12px;padding:8px 20px;display:none">■ Arrêter</div>
             <div style="margin-top:8px;font-size:10px;color:var(--t4)">
               <label style="cursor:pointer"><input type="checkbox" id="breath-voice" checked onchange="breathVoice=this.checked" style="accent-color:var(--life)"> Voix</label>
-              <span style="margin-left:12px">📸 FC caméra : <span id="breath-live-bpm">--</span></span>
+              <span style="margin-left:12px">FC : <span id="breath-live-bpm">--</span></span>
+              <span style="margin-left:12px">φ : <span id="breath-live-phi">--</span></span>
+            </div>
+            <div style="margin-top:8px">
+              <div class="btn btn--ghost" onclick="santeCamStart()" style="font-size:10px;padding:5px 12px">📸 Caméra PPG — cohérence en direct</div>
             </div>
           </div>
         </div>
@@ -1336,7 +1345,36 @@ function demoDone() {
 // La même fréquence que celle mesurée par la caméra (indicateur φ Cohérence)
 var breathOn = false, breathTimer = null, breathT0 = 0;
 var breathLastPhase = '', breathVoice = true;
-var BREATH_IN = 4, BREATH_OUT = 6;
+var breathPhiTick = 0, breathProfile = 'resonance';
+var BREATH_PROFILES = {
+  resonance:  { in: 4, out: 6,  emoji: '🌊', name: 'Résonance' },
+  relaxation: { in: 4, out: 8,  emoji: '😌', name: 'Relaxation' },
+  energie:    { in: 4, out: 4,  emoji: '⚡', name: 'Énergie' }
+};
+function breathIn() { return BREATH_PROFILES[breathProfile].in; }
+function breathOut() { return BREATH_PROFILES[breathProfile].out; }
+
+function breathSetProfile(name) {
+  if (!BREATH_PROFILES[name]) return;
+  breathProfile = name;
+  var p = BREATH_PROFILES[name];
+  // Mise en évidence du profil actif
+  Object.keys(BREATH_PROFILES).forEach(function(k) {
+    var el = document.getElementById('bp-' + k);
+    if (!el) return;
+    var active = k === name;
+    el.style.background = active ? 'var(--soul-d)' : 'var(--g1)';
+    el.style.border = active ? '.5px solid var(--soul-g)' : '.5px solid var(--b1)';
+    el.style.color = active ? 'var(--soul-l)' : 'var(--t3)';
+  });
+  var info = document.getElementById('breath-profile-info');
+  if (info) {
+    var cpm = 60 / (p.in + p.out);
+    var cpmStr = (cpm % 1 === 0) ? String(cpm) : cpm.toFixed(1).replace('.', ',');
+    info.textContent = p.emoji + ' ' + p.name + ' · ' + p.in + ' s inspir / ' + p.out + ' s expir · ' + cpmStr + ' cycles/min';
+  }
+  if (breathOn) { breathStop(); breathStart(); } // redémarrer avec le nouveau rythme
+}
 
 function breathToggle() {
   var ui = document.getElementById('breath-ui');
@@ -1357,6 +1395,7 @@ function breathStart() {
   if (breathOn) return;
   breathOn = true;
   breathLastPhase = '';
+  breathPhiTick = 0;
   breathT0 = Date.now();
   document.getElementById('breath-start').style.display = 'none';
   document.getElementById('breath-stop').style.display = 'inline-block';
@@ -1380,10 +1419,10 @@ function breathStop() {
 
 function breathFrame() {
   var t = (Date.now() - breathT0) / 1000;
-  var period = BREATH_IN + BREATH_OUT;
+  var period = breathIn() + breathOut();
   var cyc = t / period;
   var f = cyc % 1;
-  var inFrac = BREATH_IN / period;
+  var inFrac = breathIn() / period;
   var isIn = f < inFrac;
   var p = isIn ? f / inFrac : (f - inFrac) / (1 - inFrac);
   var s = p * p * (3 - 2 * p); // smoothstep — souffle naturel
@@ -1412,6 +1451,18 @@ function breathFrame() {
   // FC en direct si la caméra PPG tourne
   var bpmEl = document.getElementById('breath-live-bpm');
   if (bpmEl && typeof santeCamBPM === 'number' && santeCamBPM) bpmEl.textContent = Math.round(santeCamBPM) + ' bpm';
+  // φ Cohérence en direct (~toutes les 3 s, si signal PPG suffisant)
+  breathPhiTick++;
+  if (breathPhiTick % 30 === 0) {
+    var phiEl = document.getElementById('breath-live-phi');
+    if (phiEl && santeCamAllSamples && santeCamAllSamples.length >= 120) {
+      var ind = santeComputeAllIndicators(santeCamAllSamples);
+      if (ind && ind.coherence_phi !== undefined) {
+        phiEl.textContent = ind.coherence_phi + '%';
+        phiEl.style.color = ind.coherence_phi > 70 ? 'var(--life)' : 'var(--coral)';
+      }
+    }
+  }
 }
 
 function renderBreathStats() {
@@ -1431,9 +1482,9 @@ function breathLoadLog() {
 function saveBreathSession() {
   var dur = (Date.now() - breathT0) / 1000;
   if (dur < 10) return; // ignorer les séances de moins de 10 s
-  var cycles = Math.floor(dur / (BREATH_IN + BREATH_OUT));
+  var cycles = Math.floor(dur / (breathIn() + breathOut()));
   var log = breathLoadLog();
-  log.push({ d: Date.now(), dur: Math.round(dur), cyc: cycles });
+  log.push({ d: Date.now(), dur: Math.round(dur), cyc: cycles, profil: breathProfile });
   if (log.length > 100) log = log.slice(-100);
   try { localStorage.setItem('ka_breath_log', JSON.stringify(log)); } catch(e) {}
   renderBreathStats();
@@ -2048,14 +2099,30 @@ async function santeDiagnostic(){
   if(sys)vitaux.pression_systolique=sys;
   if(dia)vitaux.pression_diastolique=dia;
   if(spo2)vitaux.saturation_oxygene=spo2;
+  // Contexte respiration (dernières 24 h) — le serveur ignore le champ s'il ne le connaît pas
+  let respiration=null;
+  try{
+    const now=Date.now();
+    const log=JSON.parse(localStorage.getItem('ka_breath_log')||'[]');
+    const recent=log.filter(s=>now-s.d<86400000);
+    if(recent.length){
+      const totalMin=Math.round(recent.reduce((a,s)=>a+s.dur,0)/60);
+      const lastMin=Math.round((now-recent[recent.length-1].d)/60000);
+      respiration={seances:recent.length,duree_totale_min:totalMin,derniere_seance_il_y_a_min:lastMin};
+    }
+  }catch(e){}
   try{
     const resp=await fetch(API_URL+'/api/health/diagnostic',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({symptomes,vitaux,age})
+      body:JSON.stringify({symptomes,vitaux,age,respiration})
     });
     const d=await resp.json();
     l.style.display='none'; r.style.display='block';
     let html='';
+    // Note de contexte respiratoire (séance de cohérence récente)
+    if(respiration){
+      html+=`<div style="font-size:10px;color:var(--life);background:var(--life-d);border-radius:8px;padding:6px;margin-bottom:8px;text-align:center">🫁 Cohérence respiratoire : ${respiration.seances} séance(s) · ${respiration.duree_totale_min} min au total · dernière il y a ${respiration.derniere_seance_il_y_a_min} min</div>`;
+    }
     // Score global
     const sc=d.score_harmonique_global||0;
     const color=sc>0.75?'var(--life)':sc>0.5?'var(--sun)':'var(--coral)';
