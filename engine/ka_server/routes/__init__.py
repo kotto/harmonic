@@ -14,6 +14,7 @@ from .voice import register_voice_routes
 from .code import register_code_routes
 from .specialize import register_specialize_routes
 from .system import register_system_routes
+from .harmonic import register_harmonic_routes
 
 
 def register_routes(app, services):
@@ -39,6 +40,9 @@ def register_routes(app, services):
     # Routes Enterprise (nécessitent API key)
     register_enterprise_routes(app, services)
     
+    # Routes Harmonic AI v3 (intelligence ondulatoire unifiée)
+    register_harmonic_routes(app, services)
+    
     # Routes Agent (peuvent nécessiter auth selon config)
     register_agent_routes(app, services)
     
@@ -61,4 +65,5 @@ __all__ = [
     'register_code_routes',
     'register_specialize_routes',
     'register_system_routes',
+    'register_harmonic_routes',
 ]
