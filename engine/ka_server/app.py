@@ -8,6 +8,7 @@ middleware et services selon la configuration produit active.
 import sys
 import os
 import logging
+import logging.handlers
 from pathlib import Path
 from flask import Flask
 from flask_cors import CORS
@@ -26,12 +27,13 @@ except Exception:
 # Version locale pour éviter import circulaire
 __version__ = '4.0.0'
 
-# ── Logging structuré ────────────────────────────────────────────────────────
+# ── Logging structuré (avec rotation : 5 × 10 Mo) ───────────────────────────
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
     handlers=[
-        logging.FileHandler('ka_server.log', encoding='utf-8'),
+        logging.handlers.RotatingFileHandler(
+            'ka_server.log', maxBytes=10 * 1024 * 1024, backupCount=5, encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
@@ -64,6 +66,8 @@ def create_app(config_override: dict = None) -> Flask:
         'MAX_CONTENT_LENGTH': 100 * 1024 * 1024,  # 100MB max upload
         'JSON_SORT_KEYS': False,
         'JSONIFY_PRETTYPRINT_REGULAR': False,
+        # Config produit active — lue par ka_server/services (init_services)
+        'KA_CONFIG': _KA_CONFIG,
     })
     
     # Surcharge config si fournie
@@ -96,6 +100,18 @@ def create_app(config_override: dict = None) -> Flask:
             'status': 'running',
             'endpoints': '/api/health pour health check'
         }
+    
+    # ── Sites publics (KA Corporation & KA Fondation) ───────────────────────
+    from flask import send_from_directory
+    _SITES_DIR = Path(__file__).resolve().parent / 'static'
+    
+    @app.route('/corporation')
+    def site_corporation():
+        return send_from_directory(_SITES_DIR, 'corporation.html')
+    
+    @app.route('/fondation')
+    def site_fondation():
+        return send_from_directory(_SITES_DIR, 'fondation.html')
     
     log.info("=" * 55)
     log.info(f"  KA Server v{__version__} — {(_KA_CONFIG.name if _KA_CONFIG else 'KA')}")
