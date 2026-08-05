@@ -122,6 +122,11 @@ def create_app(config_override: dict = None) -> Flask:
     def site_fondation_en():
         return send_from_directory(_SITES_DIR, 'fondation_en.html')
     
+    @app.route('/enterprise')
+    def site_enterprise():
+        """Console d'administration KA Enterprise (PC-first)."""
+        return send_from_directory(_SITES_DIR, 'enterprise.html')
+    
     log.info("=" * 55)
     log.info(f"  KA Server v{__version__} — {(_KA_CONFIG.name if _KA_CONFIG else 'KA')}")
     log.info(f"  Produit: {(_KA_CONFIG.product if _KA_CONFIG else 'mobile')}")

@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KA Enterprise — Console d'administration</title>
+<meta name="description" content="Console d'administration KA Enterprise : ingestion structurée, hologrammes spécialisés, rappel structurel, clés API, audit, conformité, déploiement.">
+<style>
+:root{
+  --void:#07070f;--soul:#8b83ff;--soul-l:#b8b2ff;--soul-d:rgba(139,131,255,.18);--soul-g:rgba(139,131,255,.32);
+  --life:#3ddba0;--life-d:rgba(61,219,160,.15);--life-g:rgba(61,219,160,.28);
+  --wisdom:#f0c060;--wisdom-d:rgba(240,192,96,.15);--wisdom-g:rgba(240,192,96,.28);
+  --rose:#ed93b1;--rose-d:rgba(212,83,126,.15);--rose-g:rgba(212,83,126,.28);
+  --sky:#85b7eb;--sky-d:rgba(133,183,235,.15);--sky-g:rgba(133,183,235,.28);
+  --coral:#d85a30;
+  --g1:rgba(255,255,255,.04);--g2:rgba(255,255,255,.075);--g3:rgba(255,255,255,.13);
+  --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.1);--b3:rgba(255,255,255,.16);
+  --t1:rgba(255,255,255,.92);--t2:rgba(255,255,255,.62);--t3:rgba(255,255,255,.36);--t4:rgba(255,255,255,.18);
+  --font:-apple-system,"SF Pro Display","Inter",system-ui,sans-serif;
+  --mono:"SF Mono","JetBrains Mono",Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--void);color:var(--t1);font-family:var(--font);-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.55;min-height:100vh}
+a{color:var(--soul-l);text-decoration:none}
+a:hover{color:#fff}
+button{font-family:var(--font);cursor:pointer}
+input,select,textarea{font-family:var(--font);background:#0d0d1c;border:1px solid var(--b2);color:var(--t1);border-radius:8px;padding:8px 12px;font-size:13px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--soul-g)}
+textarea{resize:vertical;line-height:1.5}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--b3);border-radius:9px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ═══ LAYOUT PC-FIRST ═══ */
+.app{display:flex;min-height:100vh}
+.sidebar{width:224px;flex-shrink:0;background:#0a0a16;border-right:1px solid var(--b1);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sidebar .brand{display:flex;align-items:center;gap:10px;padding:18px 20px;border-bottom:1px solid var(--b1);font-weight:800;font-size:15px;letter-spacing:.02em}
+.sidebar .brand b{color:var(--soul-l)}
+.sidebar .brand .logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--soul),var(--sky));display:flex;align-items:center;justify-content:center;font-size:15px}
+.sidebar nav{padding:12px 10px;flex:1}
+.sidebar nav a{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;color:var(--t2);font-size:13px;font-weight:600;margin-bottom:2px;border:1px solid transparent}
+.sidebar nav a:hover{background:var(--g1);color:var(--t1)}
+.sidebar nav a.active{background:var(--soul-d);color:var(--soul-l);border-color:var(--soul-g)}
+.sidebar nav a .ico{width:20px;text-align:center}
+.sidebar .side-foot{padding:14px 20px;border-top:1px solid var(--b1);font-size:10px;color:var(--t3)}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:58px;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between;padding:0 26px;background:rgba(7,7,15,.85);backdrop-filter:blur(10px);position:sticky;top:0;z-index:40}
+.topbar h1{font-size:16px;font-weight:800}
+.topbar .right{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--t3)}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--b2);border-radius:999px;padding:4px 12px;font-size:11px;color:var(--t2)}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--life);box-shadow:0 0 8px var(--life)}
+.pill .dot.off{background:var(--coral);box-shadow:0 0 8px var(--coral)}
+.content{padding:26px;max-width:1240px;width:100%;margin:0 auto}
+
+/* ═══ COMPOSANTS ═══ */
+.card{background:linear-gradient(180deg,var(--g1),transparent);border:1px solid var(--b1);border-radius:14px;padding:20px;margin-bottom:18px}
+.card h3{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:14px}
+.card h3 .sub{text-transform:none;letter-spacing:0;font-weight:500;color:var(--t4);font-size:11px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:18px}
+.kpi{background:linear-gradient(180deg,var(--g1),transparent);border:1px solid var(--b1);border-radius:14px;padding:18px 20px}
+.kpi .label{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em}
+.kpi .value{font-size:26px;font-weight:800;margin-top:4px}
+.kpi .value.soul{color:var(--soul-l)} .kpi .value.life{color:var(--life)} .kpi .value.gold{color:var(--wisdom)} .kpi .value.rose{color:var(--rose)}
+.kpi .hint{font-size:11px;color:var(--t4);margin-top:3px}
+.bar{height:6px;background:var(--g2);border-radius:6px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--soul),var(--sky))}
+.bar i.life{background:linear-gradient(90deg,var(--life),#1fae7c)}
+.bar i.gold{background:linear-gradient(90deg,var(--wisdom),#b8860b)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;color:var(--t3);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;border-bottom:1px solid var(--b2)}
+td{padding:9px 10px;border-bottom:1px solid var(--b1);color:var(--t2);vertical-align:top}
+tr:hover td{background:var(--g1)}
+td.mono{font-family:var(--mono);font-size:11.5px;color:var(--soul-l)}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;letter-spacing:.03em}
+.badge--life{background:var(--life-d);color:var(--life);border:1px solid var(--life-g)}
+.badge--soul{background:var(--soul-d);color:var(--soul-l);border:1px solid var(--soul-g)}
+.badge--gold{background:var(--wisdom-d);color:var(--wisdom);border:1px solid var(--wisdom-g)}
+.badge--rose{background:var(--rose-d);color:var(--rose);border:1px solid var(--rose-g)}
+.badge--gray{background:var(--g2);color:var(--t3);border:1px solid var(--b1)}
+.btn{display:inline-block;font-weight:700;font-size:12.5px;padding:8px 16px;border-radius:9px;border:1px solid transparent;transition:transform .12s}
+.btn:hover{transform:translateY(-1px)}
+.btn--soul{background:linear-gradient(135deg,var(--soul),#6a5cff);color:#fff}
+.btn--life{background:linear-gradient(135deg,var(--life),#1fae7c);color:#04261a}
+.btn--ghost{background:var(--g2);color:var(--t1);border-color:var(--b2)}
+.btn--danger{background:var(--rose-d);color:var(--rose);border-color:var(--rose-g)}
+.btn--xs{padding:4px 10px;font-size:11px}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:960px){.grid2{grid-template-columns:1fr}}
+.msg{font-size:12.5px;border-radius:9px;padding:10px 14px;margin-top:10px;display:none}
+.msg.show{display:block}
+.msg.ok{background:var(--life-d);border:1px solid var(--life-g);color:var(--life)}
+.msg.err{background:var(--rose-d);border:1px solid var(--rose-g);color:var(--rose)}
+.msg.info{background:var(--soul-d);border:1px solid var(--soul-g);color:var(--soul-l)}
+.form-row{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.form-row label{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--b1);margin-bottom:16px}
+.tabs button{background:none;border:none;color:var(--t3);font-size:12.5px;font-weight:700;padding:9px 14px;border-bottom:2px solid transparent}
+.tabs button.active{color:var(--soul-l);border-bottom-color:var(--soul)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+.section-tree{font-family:var(--mono);font-size:11.5px;color:var(--t2);line-height:1.7;overflow-x:auto}
+.section-tree .sec{color:var(--soul-l);font-weight:700}
+.section-tree .table{color:var(--life)}
+.section-tree .code{color:var(--wisdom)}
+.empty{padding:30px;text-align:center;color:var(--t4);font-size:12.5px}
+
+/* ═══ LOGIN ═══ */
+#login{display:none;position:fixed;inset:0;z-index:100;background:radial-gradient(ellipse at 50% 0%,#1e1630 0%,#0e0d1c 45%,var(--void) 100%);align-items:center;justify-content:center}
+#login.on{display:flex}
+.login-card{width:min(420px,92vw);background:rgba(13,13,28,.9);border:1px solid var(--b2);border-radius:18px;padding:34px;backdrop-filter:blur(14px)}
+.login-card .logo{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,var(--soul),var(--sky));display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 16px}
+.login-card h2{text-align:center;font-size:19px;margin-bottom:6px}
+.login-card p{text-align:center;color:var(--t3);font-size:12.5px;margin-bottom:22px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="login">
+  <div class="login-card">
+    <div class="logo">🏢</div>
+    <h2>KA Enterprise</h2>
+    <p>Console d'administration · entrez votre clé API</p>
+    <div class="form-row">
+      <label>Clé API (X-API-Key)</label>
+      <input id="login-key" type="password" placeholder="ka_...">
+    </div>
+    <button class="btn btn--soul" style="width:100%;padding:11px" onclick="login()">Accéder à la console</button>
+    <div class="msg" id="login-msg"></div>
+  </div>
+</div>
+
+<!-- ═══ LAYOUT ═══ -->
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">🏢</div>KA <b>Enterprise</b></div>
+    <nav id="nav">
+      <a data-v="dashboard" class="active" onclick="show('dashboard')"><span class="ico">📊</span> Dashboard</a>
+      <a data-v="ingest" onclick="show('ingest')"><span class="ico">📥</span> Ingestion</a>
+      <a data-v="documents" onclick="show('documents');loadDocuments()"><span class="ico">📄</span> Documents</a>
+      <a data-v="holograms" onclick="show('holograms');loadHolograms()"><span class="ico">🌀</span> Hologrammes</a>
+      <a data-v="keys" onclick="show('keys');loadKeys()"><span class="ico">🔑</span> Clés API</a>
+      <a data-v="audit" onclick="show('audit');loadAudit()"><span class="ico">📜</span> Audit</a>
+      <a data-v="compliance" onclick="show('compliance')"><span class="ico">🛡️</span> Conformité</a>
+      <a data-v="deploy" onclick="show('deploy')"><span class="ico">🚀</span> Déploiement</a>
+    </nav>
+    <div class="side-foot">KA Enterprise v4.0 · IA ondulatoire<br>0 GPU · données souveraines</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <h1 id="page-title">Dashboard</h1>
+      <div class="right">
+        <span class="pill"><span class="dot" id="srv-dot"></span><span id="srv-state">Serveur…</span></span>
+        <span class="pill" id="key-pill" style="font-family:var(--mono)">key_…</span>
+        <button class="btn btn--ghost btn--xs" onclick="logout()">Se déconnecter</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ═══ DASHBOARD ═══ -->
+      <section id="v-dashboard">
+        <div class="kpis" id="kpis">
+          <div class="kpi"><div class="label">Appels API (mois)</div><div class="value soul" id="k-api">—</div><div class="hint" id="k-api-hint">quota 1 000 000</div></div>
+          <div class="kpi"><div class="label">Hologrammes actifs</div><div class="value life" id="k-holo">—</div><div class="hint" id="k-holo-hint">spécialisés + starter</div></div>
+          <div class="kpi"><div class="label">Stockage</div><div class="value gold" id="k-sto">—</div><div class="hint" id="k-sto-hint">quota 100 Go</div></div>
+          <div class="kpi"><div class="label">Requêtes harmoniques</div><div class="value rose" id="k-har">—</div><div class="hint">émergence · 0 GPU</div></div>
+        </div>
+        <div class="card">
+          <h3>Quotas <span class="sub">consommation du mois</span></h3>
+          <div id="quota-bars"></div>
+        </div>
+        <div class="card">
+          <h3>Services <span class="sub">état du moteur</span></h3>
+          <div id="services-list"></div>
+        </div>
+      </section>
+
+      <!-- ═══ INGESTION ═══ -->
+      <section id="v-ingest" class="hidden">
+        <div class="card">
+          <h3>Ingestion de documents <span class="sub">→ hologramme spécialisé</span></h3>
+          <div class="tabs">
+            <button class="active" onclick="ingestTab('struct')">📐 Structurel (Docling)</button>
+            <button onclick="ingestTab('json')">🧩 JSON</button>
+            <button onclick="ingestTab('file')">📁 Fichiers</button>
+          </div>
+          <div class="tab-pane active" id="tab-struct">
+            <div class="grid2">
+              <div>
+                <div class="form-row">
+                  <label>Document (markdown · text · html)</label>
+                  <textarea id="ingest-content" rows="14" placeholder="# Titre&#10;&#10;## Section&#10;&#10;| Colonne A | Colonne B |&#10;|---|---|&#10;| valeur | valeur |"></textarea>
+                </div>
+              </div>
+              <div>
+                <div class="form-row"><label>Format</label>
+                  <select id="ingest-format"><option>markdown</option><option>text</option><option>html</option></select>
+                </div>
+                <div class="form-row"><label>Domaine (nom de l'hologramme)</label><input id="ingest-domain" placeholder="pack_ka"></div>
+                <div class="form-row"><label>Catégorie (secteur des faits)</label><input id="ingest-category" placeholder="tech"></div>
+                <div class="form-row"><label>Source (nom du fichier)</label><input id="ingest-source" placeholder="fiche_produit.md"></div>
+                <button class="btn btn--soul" onclick="ingestStructured()">📥 Ingrérer en structuré</button>
+              </div>
+            </div>
+            <div class="msg" id="ingest-msg"></div>
+            <div id="ingest-result" class="hidden">
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px" id="ingest-kpis"></div>
+              <div style="margin-top:14px" class="section-tree" id="ingest-tree"></div>
+            </div>
+          </div>
+          <div class="tab-pane" id="tab-json">
+            <div class="form-row"><label>Documents JSON (liste {content, metadata})</label>
+              <textarea id="ingest-json" rows="10" placeholder='[{"content": "Le pack déploie l&#39;IA harmonique.", "metadata": {"source": "doc1"}}]'></textarea>
+            </div>
+            <div class="form-row"><label>Domaine</label><input id="ingest-json-domain" placeholder="enterprise"></div>
+            <button class="btn btn--soul" onclick="ingestJson()">📥 Ingrérer (JSON)</button>
+            <div class="msg" id="ingest-json-msg"></div>
+          </div>
+          <div class="tab-pane" id="tab-file">
+            <div class="form-row"><label>Fichiers (txt, md, json, csv…)</label><input type="file" id="ingest-files" multiple></div>
+            <div class="form-row"><label>Domaine</label><input id="ingest-file-domain" placeholder="enterprise"></div>
+            <button class="btn btn--soul" onclick="ingestFiles()">📥 Uploader</button>
+            <div class="msg" id="ingest-file-msg"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ DOCUMENTS ═══ -->
+      <section id="v-documents" class="hidden">
+        <div class="card">
+          <h3>Documents structurés <span class="sub">domaines ingérés en structuré</span></h3>
+          <table>
+            <thead><tr><th>Domaine</th><th>Titre</th><th>Langue</th><th>Source</th><th>Sections</th><th>Items</th><th></th></tr></thead>
+            <tbody id="docs-tbody"></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Rappel structurel <span class="sub">la question remonte la hiérarchie</span></h3>
+          <div class="grid2">
+            <div>
+              <div class="form-row"><label>Domaine</label><input id="recall-domain" placeholder="pack_ka"></div>
+              <div class="form-row"><label>Question</label><input id="recall-query" placeholder="quel est le prix de la formule pro ?"></div>
+              <button class="btn btn--life" onclick="recallStructured()">🔍 Interroger</button>
+            </div>
+            <div id="recall-results"></div>
+          </div>
+          <div class="msg" id="recall-msg"></div>
+        </div>
+      </section>
+
+      <!-- ═══ HOLOGRAMMES ═══ -->
+      <section id="v-holograms" class="hidden">
+        <div class="card">
+          <h3>Hologrammes <span class="sub">store spécialisé + starter pack</span></h3>
+          <table>
+            <thead><tr><th>ID</th><th>Nom</th><th>Catégorie</th><th>Description</th></tr></thead>
+            <tbody id="holo-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ═══ CLÉS API ═══ -->
+      <section id="v-keys" class="hidden">
+        <div class="card">
+          <h3>Clés API <span class="sub">authentification X-API-Key</span></h3>
+          <div style="display:flex;gap:10px;align-items:end">
+            <div class="form-row" style="flex:1"><label>Nouvelle clé (optionnel)</label><input id="new-key" placeholder="laisser vide = générée"></div>
+            <button class="btn btn--life" onclick="createKey()">+ Créer</button>
+          </div>
+          <table style="margin-top:14px">
+            <thead><tr><th>Clé</th><th>Créée par</th><th></th></tr></thead>
+            <tbody id="keys-tbody"></tbody>
+          </table>
+          <div class="msg" id="keys-msg"></div>
+        </div>
+      </section>
+
+      <!-- ═══ AUDIT ═══ -->
+      <section id="v-audit" class="hidden">
+        <div class="card">
+          <h3>Journal d'audit <span class="sub">dernières actions</span></h3>
+          <table>
+            <thead><tr><th>Horodatage</th><th>Action</th><th>Utilisateur</th><th>Chemin</th></tr></thead>
+            <tbody id="audit-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ═══ CONFORMITÉ ═══ -->
+      <section id="v-compliance" class="hidden">
+        <div class="card">
+          <h3>Vérification de conformité <span class="sub">RGPD · AI Act · HIPAA · SOX</span></h3>
+          <div class="form-row"><label>Texte / document à vérifier</label>
+            <textarea id="comp-text" rows="6" placeholder="Collez un extrait de document…"></textarea>
+          </div>
+          <div class="form-row"><label>Réglementations</label>
+            <select id="comp-regs" multiple size="4" style="min-height:110px">
+              <option value="rgpd" selected>RGPD</option>
+              <option value="ai_act" selected>AI Act</option>
+              <option value="hipaa">HIPAA</option>
+              <option value="sox">SOX</option>
+            </select>
+          </div>
+          <button class="btn btn--soul" onclick="checkCompliance()">🛡️ Vérifier</button>
+          <div class="msg" id="comp-msg"></div>
+          <div id="comp-results" class="hidden" style="margin-top:14px"></div>
+        </div>
+      </section>
+
+      <!-- ═══ DÉPLOIEMENT ═══ -->
+      <section id="v-deploy" class="hidden">
+        <div class="card">
+          <h3>Déploiement <span class="sub">edge · cloud · onprem · mobile</span></h3>
+          <div class="form-row"><label>Hologramme</label><input id="deploy-holo" placeholder="pack_ka"></div>
+          <div class="form-row"><label>Cible</label>
+            <select id="deploy-target"><option value="edge">Edge</option><option value="cloud">Cloud</option><option value="onprem">On-premise</option><option value="mobile">Mobile</option></select>
+          </div>
+          <button class="btn btn--soul" onclick="deploy()">🚀 Déployer</button>
+          <div class="msg" id="deploy-msg"></div>
+          <div id="deploy-result" class="hidden" style="margin-top:14px"></div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+var KEY = null;
+try { KEY = localStorage.getItem('ka_ent_key') || null; } catch (e) {}
+var API = (function () {
+  var host = location.hostname;
+  var isLocal = host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.');
+  return isLocal ? location.protocol + '//' + host + ':8765' : '';
+})();
+
+function hdr() { return { 'X-API-Key': KEY, 'Content-Type': 'application/json' }; }
+
+function show(v) {
+  document.querySelectorAll('.content > section').forEach(function (s) { s.classList.add('hidden'); });
+  document.getElementById('v-' + v).classList.remove('hidden');
+  document.querySelectorAll('#nav a').forEach(function (a) {
+    a.classList.toggle('active', a.dataset.v === v);
+  });
+  var titles = { dashboard: 'Dashboard', ingest: 'Ingestion', documents: 'Documents structurés',
+    holograms: 'Hologrammes', keys: 'Clés API', audit: 'Audit', compliance: 'Conformité', deploy: 'Déploiement' };
+  document.getElementById('page-title').textContent = titles[v];
+}
+
+function msg(el, text, type) {
+  var m = document.getElementById(el);
+  m.textContent = text; m.className = 'msg show ' + (type || 'info');
+  setTimeout(function () { m.classList.remove('show'); }, type === 'err' ? 6000 : 3500);
+}
+
+// ═══ AUTH ═══
+function login() {
+  KEY = document.getElementById('login-key').value.trim();
+  if (!KEY) { msg('login-msg', 'Entrez une clé API', 'err'); return; }
+  fetch(API + '/api/v2/enterprise/usage', { headers: hdr() })
+    .then(function (r) { if (r.status === 401) throw new Error('Clé invalide'); return r.json(); })
+    .then(function () {
+      try { localStorage.setItem('ka_ent_key', KEY); } catch (e) {}
+      document.getElementById('login').classList.remove('on');
+      document.getElementById('key-pill').textContent = KEY.slice(0, 18) + '…';
+      init();
+    })
+    .catch(function (e) { msg('login-msg', 'Accès refusé : ' + e.message, 'err'); });
+}
+function logout() {
+  KEY = null;
+  try { localStorage.removeItem('ka_ent_key'); } catch (e) {}
+  document.getElementById('login').classList.add('on');
+}
+
+// ═══ DASHBOARD ═══
+function init() {
+  loadUsage();
+  loadServices();
+}
+function loadUsage() {
+  fetch(API + '/api/v2/enterprise/usage', { headers: hdr() })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      document.getElementById('k-api').textContent = d.api_calls.toLocaleString('fr-FR');
+      document.getElementById('k-holo').textContent = d.active_holograms;
+      document.getElementById('k-sto').textContent = (d.storage_gb || 0).toFixed(1) + ' Go';
+      document.getElementById('k-har').textContent = d.harmonic_requests.toLocaleString('fr-FR');
+      var bars = '';
+      var q = d.quotas || {};
+      var items = [
+        ['Appels API', d.api_calls, q.api_calls_limit, ''],
+        ['Stockage', d.storage_gb || 0, q.storage_limit_gb, 'Go'],
+        ['Bande passante', d.bandwidth_gb || 0, q.bandwidth_limit_gb, 'Go']
+      ];
+      items.forEach(function (it) {
+        var pct = Math.min(100, Math.round((it[1] / (it[2] || 1)) * 100));
+        bars += '<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t3)">'
+          + '<b>' + it[0] + '</b><span>' + it[1].toLocaleString('fr-FR') + ' ' + it[3] + ' / ' + it[2].toLocaleString('fr-FR') + ' ' + it[3] + ' (' + pct + '%)</span></div>'
+          + '<div class="bar"><i style="width:' + pct + '%" class="' + (pct > 85 ? 'gold' : 'life') + '"></i></div></div>';
+      });
+      document.getElementById('quota-bars').innerHTML = bars;
+      document.getElementById('srv-dot').classList.remove('off');
+      document.getElementById('srv-state').textContent = 'Connecté';
+    })
+    .catch(function () {
+      document.getElementById('srv-dot').classList.add('off');
+      document.getElementById('srv-state').textContent = 'Serveur injoignable';
+    });
+}
+function loadServices() {
+  fetch(API + '/api/health/services', { headers: hdr() })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var svcs = (d.services || d).map ? (d.services || d) : [];
+      var html = '';
+      (Array.isArray(svcs) ? svcs : Object.entries(svcs).map(function (e) { return { name: e[0], status: e[1] }; }))
+        .forEach(function (s) {
+          var st = String(s.status || s.state || 'unknown').toLowerCase();
+          var on = st === 'ok' || st === 'active' || st === 'up' || st === 'true' || st === '1';
+          html += '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--g1)">'
+            + '<span class="badge ' + (on ? 'badge--life' : 'badge--rose') + '">' + (on ? '● actif' : '○ off') + '</span>'
+            + '<span style="font-size:12.5px;color:var(--t2)">' + (s.name || 'service') + '</span></div>';
+        });
+      document.getElementById('services-list').innerHTML = html || '<div class="empty">aucun service rapporté</div>';
+    })
+    .catch(function () {
+      document.getElementById('services-list').innerHTML = '<div class="empty">services indisponibles</div>';
+    });
+}
+
+// ═══ INGESTION ═══
+function ingestTab(t) {
+  document.querySelectorAll('#v-ingest .tab-pane').forEach(function (p) { p.classList.remove('active'); });
+  document.getElementById('tab-' + t).classList.add('active');
+  document.querySelectorAll('#v-ingest .tabs button').forEach(function (b, i) {
+    b.classList.toggle('active', ['struct', 'json', 'file'][i] === t);
+  });
+}
+function ingestStructured() {
+  var body = {
+    content: document.getElementById('ingest-content').value,
+    format: document.getElementById('ingest-format').value,
+    domain: document.getElementById('ingest-domain').value || 'enterprise',
+    category: document.getElementById('ingest-category').value || 'enterprise',
+    source: document.getElementById('ingest-source').value || 'doc'
+  };
+  if (!body.content) { msg('ingest-msg', 'Contenu requis', 'err'); return; }
+  fetch(API + '/api/v2/enterprise/ingest/structured', {
+    method: 'POST', headers: hdr(), body: JSON.stringify(body)
+  }).then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d.error) { msg('ingest-msg', d.error, 'err'); return; }
+      msg('ingest-msg', '✅ Hologramme « ' + d.hologram_id + ' » — ' + d.facts + ' faits', 'ok');
+      var kpis = [
+        ['Faits', d.facts, 'soul'], ['Structurels', d.structural_facts, 'life'],
+        ['Tables', d.table_facts, 'gold'], ['Sections', d.sections, 'rose'], ['Items', d.items, 'soul']
+      ];
+      document.getElementById('ingest-kpis').innerHTML = kpis.map(function (k) {
+        return '<span class="badge badge--' + k[2] + '" style="font-size:12px;padding:5px 12px">' + k[0] + ' : <b>' + k[1] + '</b></span>';
+      }).join('');
+      var doc = d.document || {};
+      document.getElementById('ingest-tree').innerHTML = renderTree(doc.sections || []);
+      document.getElementById('ingest-result').classList.remove('hidden');
+    })
+    .catch(function (e) { msg('ingest-msg', 'Erreur : ' + e.message, 'err'); });
+}
+function renderTree(sections, depth) {
+  depth = depth || 0;
+  var html = '';
+  sections.forEach(function (s) {
+    html += '<div style="padding-left:' + (depth * 18) + 'px" class="sec">' + '#' .repeat(s.level || 1) + ' ' + escapeHtml(s.text) + '</div>';
+    (s.items || []).forEach(function (it) {
+      var cls = it.label === 'table' ? 'table' : (it.label === 'code' ? 'code' : '');
+      html += '<div style="padding-left:' + ((depth + 1) * 18) + 'px" class="' + cls + '">'
+        + (it.label === 'table' ? '▦ ' : it.label === 'list_item' ? '• ' : it.label === 'code' ? '⌨ ' : '')
+        + escapeHtml(String(it.text).slice(0, 90)) + '</div>';
+    });
+    html += renderTree(s.children || [], depth + 1);
+  });
+  return html || '<div class="empty">aucune section</div>';
+}
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function ingestJson() {
+  var docs;
+  try { docs = JSON.parse(document.getElementById('ingest-json').value); } catch (e) { msg('ingest-json-msg', 'JSON invalide', 'err'); return; }
+  fetch(API + '/api/v2/enterprise/ingest', {
+    method: 'POST', headers: hdr(),
+    body: JSON.stringify({ documents: docs, domain: document.getElementById('ingest-json-domain').value || 'enterprise' })
+  }).then(function (r) { return r.json(); })
+    .then(function (d) {
+      msg('ingest-json-msg', d.error ? d.error : '✅ ' + d.documents_processed + ' documents · ' + d.facts_extracted + ' faits', d.error ? 'err' : 'ok');
+    })
+    .catch(function (e) { msg('ingest-json-msg', 'Erreur : ' + e.message, 'err'); });
+}
+function ingestFiles() {
+  var input = document.getElementById('ingest-files');
+  if (!input.files.length) { msg('ingest-file-msg', 'Choisissez des fichiers', 'err'); return; }
+  var fd = new FormData();
+  for (var i = 0; i < input.files.length; i++) fd.append('files', input.files[i]);
+  fd.append('domain', document.getElementById('ingest-file-domain').value || 'enterprise');
+  fetch(API + '/api/v2/enterprise/ingest/file', { method: 'POST', headers: { 'X-API-Key': KEY }, body: fd })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      msg('ingest-file-msg', d.error ? d.error : '✅ ' + d.files_processed + ' fichier(s) · ' + (d.facts || 0) + ' faits', d.error ? 'err' : 'ok');
+    })
+    .catch(function (e) { msg('ingest-file-msg', 'Erreur : ' + e.message, 'err'); });
+}
+
+// ═══ DOCUMENTS ═══
+function loadDocuments() {
+  fetch(API + '/api/v2/enterprise/documents', { headers: hdr() })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var docs = d.documents || [];
+      document.getElementById('docs-tbody').innerHTML = docs.length ? docs.map(function (x) {
+        return '<tr><td class="mono">' + escapeHtml(x.domain) + '</td><td>' + escapeHtml(x.title) + '</td>'
+          + '<td><span class="badge badge--gray">' + escapeHtml(x.language) + '</span></td>'
+          + '<td>' + escapeHtml(x.source) + '</td><td>' + x.sections + '</td><td>' + x.items + '</td>'
+          + '<td><button class="btn btn--ghost btn--xs" onclick="useDomain(\'' + escapeHtml(x.domain) + '\')">Utiliser</button></td></tr>';
+      }).join('') : '<tr><td colspan="7"><div class="empty">aucun domaine ingéré — allez dans Ingestion</div></td></tr>';
+    })
+    .catch(function () { document.getElementById('docs-tbody').innerHTML = '<tr><td colspan="7"><div class="empty">erreur de chargement</div></td></tr>'; });
+}
+function useDomain(d) {
+  document.getElementById('recall-domain').value = d;
+  document.getElementById('recall-query').focus();
+}
+function recallStructured() {
+  var domain = document.getElementById('recall-domain').value;
+  var query = document.getElementById('recall-query').value;
+  if (!domain || !query) { msg('recall-msg', 'Domaine et question requis', 'err'); return; }
+  fetch(API + '/api/v2/enterprise/recall/structured', {
+    method: 'POST', headers: hdr(), body: JSON.stringify({ domain: domain, query: query, top_k: 3 })
+  }).then(function (r) { return r.json(); })
+    .then(function (d) {
+      var secs = d.sections || [];
+      if (!secs.length) { msg('recall-msg', 'Aucune section pertinente', 'info'); }
+      document.getElementById('recall-results').innerHTML = secs.map(function (s) {
+        return '<div style="border:1px solid var(--b1);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--g1)">'
+          + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+          + '<span class="badge badge--' + (s.score > 1 ? 'life' : 'soul') + '">score ' + s.score + '</span>'
+          + (s.parent ? '<span class="badge badge--gray">↳ ' + escapeHtml(s.parent) + '</span>' : '')
+          + '</div>'
+          + '<div style="font-weight:700;margin:8px 0 4px">' + escapeHtml(s.section) + '</div>'
+          + '<div style="font-family:var(--mono);font-size:11px;color:var(--t2);white-space:pre-wrap;max-height:180px;overflow:auto">' + escapeHtml(s.content) + '</div></div>';
+      }).join('') || '<div class="empty">—</div>';
+    })
+    .catch(function (e) { msg('recall-msg', 'Erreur : ' + e.message, 'err'); });
+}
+
+// ═══ HOLOGRAMMES ═══
+function loadHolograms() {
+  fetch(API + '/api/store/holograms', { headers: hdr() })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var holos = d.holograms || [];
+      document.getElementById('holo-tbody').innerHTML = holos.map(function (h) {
+        return '<tr><td class="mono">' + escapeHtml(h.id || h.holo_id || '—') + '</td>'
+          + '<td>' + escapeHtml(h.name || '') + '</td>'
+          + '<td><span class="badge badge--soul">' + escapeHtml(h.category || '—') + '</span></td>'
+          + '<td>' + escapeHtml(String(h.description || '').slice(0, 90)) + '</td></tr>';
+      }).join('') || '<tr><td colspan="4"><div class="empty">aucun hologramme</div></td></tr>';
+    })
+    .catch(function () { document.getElementById('holo-tbody').innerHTML = '<tr><td colspan="4"><div class="empty">erreur de chargement</div></td></tr>'; });
+}
+
+// ═══ CLÉS API ═══
+function loadKeys() {
+  fetch(API + '/api/v2/enterprise/keys', { headers: hdr() })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var keys = d.keys || [];
+      document.getElementById('keys-tbody').innerHTML = keys.map(function (k) {
+        var id = typeof k === 'string' ? k : (k.key || '');
+        return '<tr><td class="mono">' + escapeHtml(id) + '</td><td>' + escapeHtml((typeof k === 'object' && k.metadata && k.metadata.created_by) || '—') + '</td>'
+          + '<td><button class="btn btn--danger btn--xs" onclick="revokeKey(\'' + escapeHtml(id) + '\')">Révoquer</button></td></tr>';
+      }).join('') || '<tr><td colspan="3"><div class="empty">aucune clé</div></td></tr>';
+    })
+    .catch(function () {});
+}
+function createKey() {
+  var key = document.getElementById('new-key').value.trim();
+  fetch(API + '/api/v2/enterprise/keys', {
+    method: 'POST', headers: hdr(), body: JSON.stringify(key ? { key: key } : {})
+  }).then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d.error) { msg('keys-msg', d.error, 'err'); return; }
+      msg('keys-msg', '🔑 ' + d.key + ' — sauvegardez-la, elle ne sera plus affichée', 'ok');
+      loadKeys();
+    })
+    .catch(function (e) { msg('keys-msg', 'Erreur : ' + e.message, 'err'); });
+}
+function revokeKey(k) {
+  fetch(API + '/api/v2/enterprise/keys', {
+    method: 'DELETE', headers: hdr(), body: JSON.stringify({ key: k })
+  }).then(function (r) { return r.json(); })
+    .then(function (d) { msg('keys-msg', d.message || d.error || 'OK', d.error ? 'err' : 'ok'); loadKeys(); })
+    .catch(function (e) { msg('keys-msg', 'Erreur : ' + e.message, 'err'); });
+}
+
+// ═══ AUDIT ═══
+function loadAudit() {
+  fetch(API + '/api/v2/enterprise/audit/log?limit=60', { headers: hdr() })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var logs = d.logs || [];
+      document.getElementById('audit-tbody').innerHTML = logs.map(function (l) {
+        return '<tr><td class="mono">' + escapeHtml(l.timestamp || l.time || '') + '</td>'
+          + '<td><span class="badge badge--soul">' + escapeHtml(l.action || '') + '</span></td>'
+          + '<td class="mono">' + escapeHtml(l.user || '') + '</td>'
+          + '<td class="mono">' + escapeHtml(l.path || '') + '</td></tr>';
+      }).join('') || '<tr><td colspan="4"><div class="empty">journal vide</div></td></tr>';
+    })
+    .catch(function () { document.getElementById('audit-tbody').innerHTML = '<tr><td colspan="4"><div class="empty">erreur de chargement</div></td></tr>'; });
+}
+
+// ═══ CONFORMITÉ ═══
+function checkCompliance() {
+  var text = document.getElementById('comp-text').value;
+  if (!text) { msg('comp-msg', 'Texte requis', 'err'); return; }
+  var regs = Array.prototype.map.call(document.getElementById('comp-regs').selectedOptions, function (o) { return o.value; });
+  fetch(API + '/api/v2/enterprise/compliance/check', {
+    method: 'POST', headers: hdr(), body: JSON.stringify({ text: text, regulations: regs })
+  }).then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d.error) { msg('comp-msg', d.error, 'err'); return; }
+      document.getElementById('comp-results').classList.remove('hidden');
+      var findings = d.findings || d.issues || [];
+      document.getElementById('comp-results').innerHTML =
+        '<h3 style="font-size:12px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Résultats</h3>'
+        + (findings.length ? findings.map(function (f) {
+          return '<div style="padding:8px 0;border-bottom:1px solid var(--g1);font-size:12.5px;color:var(--t2)">'
+            + '<span class="badge ' + (f.severity === 'high' ? 'badge--rose' : f.severity === 'medium' ? 'badge--gold' : 'badge--gray') + '">'
+            + escapeHtml(f.severity || 'info') + '</span> ' + escapeHtml(f.regulation || '') + ' · ' + escapeHtml(f.rule || f.message || '') + '</div>';
+        }).join('') : '<div class="empty">aucun écart détecté ✅</div>')
+        + '<div style="margin-top:10px;font-size:11px;color:var(--t4)">Score : ' + (d.score !== undefined ? d.score : '—') + '</div>';
+    })
+    .catch(function (e) { msg('comp-msg', 'Erreur : ' + e.message, 'err'); });
+}
+
+// ═══ DÉPLOIEMENT ═══
+function deploy() {
+  var body = {
+    hologram_id: document.getElementById('deploy-holo').value,
+    target: document.getElementById('deploy-target').value
+  };
+  if (!body.hologram_id) { msg('deploy-msg', 'hologram_id requis', 'err'); return; }
+  fetch(API + '/api/v2/enterprise/deploy', {
+    method: 'POST', headers: hdr(), body: JSON.stringify(body)
+  }).then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d.error) { msg('deploy-msg', d.error, 'err'); return; }
+      msg('deploy-msg', '✅ ' + d.message, 'ok');
+      document.getElementById('deploy-result').classList.remove('hidden');
+      document.getElementById('deploy-result').innerHTML =
+        '<div class="section-tree"><span class="sec">' + d.deployment_id + '</span><br>'
+        + 'cible : ' + d.target + ' · statut : <span class="table">' + d.status + '</span><br>'
+        + 'endpoint : ' + d.endpoint + '</div>';
+    })
+    .catch(function (e) { msg('deploy-msg', 'Erreur : ' + e.message, 'err'); });
+}
+
+// ═══ BOOT ═══
+if (KEY) {
+  document.getElementById('login-key').value = KEY;
+  fetch(API + '/api/v2/enterprise/usage', { headers: hdr() })
+    .then(function (r) { if (r.status === 401) throw new Error('bad'); return r.json(); })
+    .then(function () {
+      document.getElementById('login').classList.remove('on');
+      document.getElementById('key-pill').textContent = KEY.slice(0, 18) + '…';
+      init();
+    })
+    .catch(function () { document.getElementById('login').classList.add('on'); });
+} else {
+  document.getElementById('login').classList.add('on');
+}
+</script>
+</body>
+</html>
