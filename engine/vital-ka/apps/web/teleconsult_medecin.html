@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Vital Ka — Consultation à distance</title>
+<style>
+:root{--bg:#0d0d0d;--surface:#1a1a1a;--accent:#d4a853;--success:#27ae60;--error:#e74c3c;--text:#eae1d7;--muted:#9b8f7e;--border:#2a2a2a}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:420px;width:100%;text-align:center}
+h1{font-size:1.4em;color:var(--accent);margin-bottom:8px}
+p{color:var(--muted);font-size:14px;margin-bottom:16px;line-height:1.5}
+input{background:rgba(15,15,25,.8);color:var(--text);border:1px solid var(--border);padding:12px 16px;border-radius:10px;font-size:14px;width:100%;margin-bottom:10px;font-family:inherit}
+input:focus{outline:none;border-color:var(--accent)}
+button{width:100%;padding:14px;border:none;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit;margin-top:6px}
+.btn-gold{background:linear-gradient(135deg,#d4a853,#b89030);color:#0a0a0f}
+.btn-green{background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff}
+.btn-red{background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff}
+.badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;margin-bottom:12px}
+.badge.pending{background:rgba(243,156,18,.15);color:#f39c12}
+.badge.active{background:rgba(39,174,96,.15);color:var(--success)}
+.badge.expired{background:rgba(231,76,60,.15);color:var(--error)}
+#videoBox{position:relative;background:#000;border-radius:12px;overflow:hidden;margin-bottom:12px;min-height:200px;display:none}
+#remoteVideo,#localVideo{width:100%;max-height:280px;object-fit:cover}
+#localVideo{position:absolute;top:8px;right:8px;width:110px;border-radius:8px;border:2px solid var(--accent)}
+.hidden{display:none}
+.controls{display:flex;gap:10px;margin-top:10px}
+.controls button{flex:1}
+.info-row{text-align:left;font-size:13px;color:var(--muted);margin-bottom:6px}
+.info-row b{color:var(--text)}
+</style>
+</head><body>
+<div class="card" id="card">
+  <h1>🌊 Vital Ka — Consultation à distance</h1>
+  <p>Session de téléconsultation sécurisée. Le patient vous a envoyé ce lien.</p>
+
+  <div id="loading"><p>Vérification du lien...</p></div>
+
+  <!-- Étape 1 : validation du lien -->
+  <div id="step-validate" class="hidden">
+    <div class="badge pending" id="statusBadge">⏳ En attente</div>
+    <div class="info-row">👤 Patient : <b id="infoPatient">—</b></div>
+    <div class="info-row">📅 Session créée : <b id="infoDate">—</b></div>
+    <div class="info-row">💳 Honoraires : <b id="infoAmount">—</b></div>
+    <div style="height:8px"></div>
+    <input id="docName" placeholder="Votre nom complet (Dr ...)">
+    <input id="docLicense" placeholder="N° d'ordre / licence (optionnel)">
+    <button class="btn-gold" onclick="acceptSession()">✅ Accepter la consultation</button>
+    <p style="font-size:10px;margin-top:10px">En acceptant, vous confirmez être un professionnel de santé. La prescription transfrontalière est soumise à la réglementation du pays du patient.</p>
+  </div>
+
+  <!-- Étape 2 : consultation en cours -->
+  <div id="step-call" class="hidden">
+    <div class="badge active">● Consultation en cours</div>
+    <div class="info-row">Patient : <b id="callPatient">—</b></div>
+    <div id="videoBox">
+      <video id="remoteVideo" autoplay playsinline></video>
+      <video id="localVideo" autoplay muted playsinline></video>
+    </div>
+    <div id="callStatus" style="font-size:13px;color:var(--muted);margin-bottom:8px">Connexion en cours...</div>
+    <div class="controls">
+      <button class="btn-green" onclick="toggleMute()">🎙️</button>
+      <button class="btn-green" onclick="toggleCam()">📹</button>
+      <button class="btn-red" onclick="endCall()">📞 Terminer</button>
+    </div>
+  </div>
+
+  <!-- Étape 3 : terminée -->
+  <div id="step-done" class="hidden">
+    <div style="font-size:48px;margin-bottom:8px">✅</div>
+    <h1>Consultation terminée</h1>
+    <p>Le patient peut régler les honoraires en UM via son application. Merci pour votre service.</p>
+  </div>
+</div>
+
+<script>
+// ── Récupérer le token depuis l'URL : /t/{token} ou ?token= ──
+const path = window.location.pathname;
+const m = path.match(/\/t\/([A-Za-z0-9]+)/);
+let TOKEN = m ? m[1] : null;
+if (!TOKEN) {
+  const q = new URLSearchParams(window.location.search);
+  TOKEN = q.get('token');
+}
+const API_URL = (function() {
+  try { const u = localStorage.getItem('ka_api_url'); if (u) return u; } catch(e) {}
+  return 'http://localhost:8000';
+})();
+
+let localStream = null;
+let peer = null;
+
+function show(step) {
+  ['step-validate','step-call','step-done','loading'].forEach(function(id) {
+    document.getElementById(id).classList.toggle('hidden', id !== step);
+  });
+  if (step === 'step-validate') document.getElementById('step-validate').classList.remove('hidden');
+}
+
+async function init() {
+  if (!TOKEN) {
+    document.getElementById('loading').innerHTML = '<p style="color:var(--error)">❌ Lien invalide — token manquant.</p>';
+    return;
+  }
+  try {
+    const res = await fetch(API_URL + '/api/v1/teleconsult/' + TOKEN);
+    if (!res.ok) {
+      const d = await res.json().catch(function() { return {}; });
+      document.getElementById('loading').innerHTML = '<p style="color:var(--error)">❌ ' + (d.detail || 'Lien invalide ou expiré') + '</p>';
+      return;
+    }
+    const s = await res.json();
+    document.getElementById('infoPatient').textContent = s.patient_name || ('Patient ' + s.patient_id.slice(0, 8));
+    document.getElementById('infoDate').textContent = new Date(s.created_at).toLocaleString('fr-FR');
+    document.getElementById('infoAmount').textContent = s.amount_um > 0 ? s.amount_um + ' UM' : 'À convenir';
+    document.getElementById('callPatient').textContent = s.patient_name || 'Patient';
+    show('step-validate');
+  } catch(e) {
+    document.getElementById('loading').innerHTML = '<p style="color:var(--error)">❌ Serveur injoignable. Vérifiez la connexion.</p>';
+  }
+}
+
+async function acceptSession() {
+  const name = document.getElementById('docName').value.trim();
+  if (!name) { alert('Veuillez entrer votre nom.'); return; }
+  try {
+    const res = await fetch(API_URL + '/api/v1/teleconsult/' + TOKEN + '/accept', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        doctor_name: name,
+        doctor_license: document.getElementById('docLicense').value.trim()
+      })
+    });
+    if (!res.ok) { alert('Impossible d\'accepter : ' + (await res.text())); return; }
+    startCall();
+  } catch(e) { alert('Serveur injoignable : ' + e.message); }
+}
+
+async function startCall() {
+  show('step-call');
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    document.getElementById('localVideo').srcObject = localStream;
+    document.getElementById('videoBox').style.display = 'block';
+    document.getElementById('callStatus').textContent = '✅ Caméra et micro actifs. Patient connecté côté application.';
+
+    // Tentative WebRTC simple (offre/réponse via QR/URL si pas de signal serveur)
+    if (typeof KATelemedecine !== 'undefined') {
+      KATelemedecine.init('localVideo', 'remoteVideo');
+      KATelemedecine._localStream = localStream;
+      try { KATelemedecine.startCall('doctor-remote'); } catch(e) {}
+    } else {
+      // Fallback : afficher un code de partage pour l'app patient
+      document.getElementById('callStatus').innerHTML = '📋 Partagez ce code avec le patient (saisie dans son app) : <br><b>' + TOKEN + '</b>';
+    }
+  } catch(e) {
+    document.getElementById('callStatus').textContent = '❌ Accès caméra/micro refusé : ' + e.message;
+  }
+}
+
+function toggleMute() {
+  if (localStream) {
+    const t = localStream.getAudioTracks()[0];
+    if (t) t.enabled = !t.enabled;
+  }
+}
+function toggleCam() {
+  if (localStream) {
+    const t = localStream.getVideoTracks()[0];
+    if (t) t.enabled = !t.enabled;
+  }
+}
+function endCall() {
+  if (localStream) localStream.getTracks().forEach(function(t) { t.stop(); });
+  if (typeof KATelemedecine !== 'undefined') { try { KATelemedecine.hangUp(); } catch(e) {} }
+  show('step-done');
+}
+
+init();
+</script>
+</body></html>

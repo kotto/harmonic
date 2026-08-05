@@ -63,17 +63,20 @@ with patch("sqlalchemy.ext.asyncio.create_async_engine", _sqlite_engine), \
         MedicalRecord,
     )
     from app.models.config import AuditLog
+    from app.models.teleconsult import TeleconsultSession
     from app.schemas.wallet import (
         WalletCreateRequest, CreditRequest, PaymentRequest,
         TelecomEmitRequest, ConversionRequest,
     )
     from app.schemas.record import MedicalRecordCreate, MedicalRecordUpdate
+    from app.schemas.teleconsult import TeleconsultLinkRequest, TeleconsultAcceptRequest
     from app.api.v1.wallet import (
         create_wallet, credit_wallet, pay_wallet, get_balance,
         convert_wallet, get_ledger,
     )
     from app.api.v1.telecom import telecom_emit
     from app.api.v1.records import create_record, get_record, update_record
+    from app.api.v1.teleconsult import create_link, get_session, accept_session
 
 
 class _FakeRequest:
@@ -92,7 +95,8 @@ async def main() -> int:
         await conn.run_sync(lambda c: Base.metadata.create_all(
             c, tables=[CompteUM.__table__, TransactionUM.__table__,
                        ConversionUM.__table__, EmissionUM.__table__,
-                       AuditLog.__table__, MedicalRecord.__table__]))
+                       AuditLog.__table__, MedicalRecord.__table__,
+                       TeleconsultSession.__table__]))
 
     # Acteurs (walletIds locaux comme sur les téléphones)
     PATIENT = "PAT-AWA123"
@@ -100,7 +104,7 @@ async def main() -> int:
     MEDECIN = "MED-DIOP01"
     SOLIDARITE = "SOL-PARIS77"
     ok = 0
-    total = 10
+    total = 14
 
     async with async_session_maker() as db:
         # ── 1. Création des comptes (comme les apps au premier lancement) ──
@@ -192,6 +196,43 @@ async def main() -> int:
         for t in txs[:4]:
             print(f"     {t.type.value:>22} : {t.amount_um:>5.0f} UM [{t.status.value}]")
         ok += 1
+
+        # ── 11. TÉLÉCONSULTATION : le patient génère un lien pour son médecin ──
+        link = await create_link(TeleconsultLinkRequest(
+            patient_id=PATIENT,
+            patient_name="Awa Diop",
+            doctor_name="Dr Kouadio (Paris)",
+            amount_um=2500,
+        ), None, db)
+        assert link.ttl_minutes == 30
+        assert link.token
+        print(f"✅ Lien généré : {link.link} (valable {link.ttl_minutes} min)")
+        ok += 1
+
+        # ── 12. Le médecin (à l'étranger) clique sur le lien → valide la session ──
+        session = await get_session(link.token, db)
+        assert session.patient_name == "Awa Diop"
+        assert session.status.value == "pending"
+        print(f"✅ Médecin valide le lien : patient={session.patient_name}, statut={session.status.value}")
+        ok += 1
+
+        # ── 13. Le médecin s'identifie et accepte ──
+        accepted = await accept_session(link.token, TeleconsultAcceptRequest(
+            doctor_name="Dr Kouadio",
+            doctor_license="PAR-12345",
+            doctor_wallet_id=MEDECIN,
+        ), None, db)
+        assert accepted.status.value == "accepted"
+        print(f"✅ Médecin identifié : {accepted.doctor_name}, statut={accepted.status.value}")
+        ok += 1
+
+        # ── 14. Lien expiré → rejet (token inconnu) ──
+        try:
+            await get_session("token_inexistant_123", db)
+            print("❌ Lien inconnu ACCEPTÉ (BUG)")
+        except Exception as e:
+            print(f"✅ Lien inconnu rejeté : {getattr(e, 'detail', e)}")
+            ok += 1
 
     print()
     print(f"🎉 ÉCOSYSTÈME VALIDÉ : {ok}/{total} vérifications")

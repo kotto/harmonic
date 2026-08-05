@@ -10,6 +10,7 @@ from app.models.wallet import (
     WalletRole, WalletStatus, TxType, TxStatus, ConversionStatus,
 )
 from app.models.record import MedicalRecord, RecordStatus
+from app.models.teleconsult import TeleconsultSession, TeleconsultStatus
 
 __all__ = [
     # User
@@ -44,4 +45,7 @@ __all__ = [
     # Dossier médical
     "MedicalRecord",
     "RecordStatus",
+    # Téléconsultation
+    "TeleconsultSession",
+    "TeleconsultStatus",
 ]

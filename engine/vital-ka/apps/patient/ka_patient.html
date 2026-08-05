@@ -309,7 +309,9 @@ else{alert('Erreur.');}
 <div style="margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
 <button class="btn btn-secondary" style="width:auto;padding:8px 16px;font-size:12px" onclick="patScanQR()">📷 Scanner QR</button>
 <button class="btn btn-secondary" style="width:auto;padding:8px 16px;font-size:12px" onclick="patPasteSDP()">📋 Code SDP</button>
+<button class="btn btn-primary" style="width:auto;padding:8px 16px;font-size:12px" onclick="generateTeleconsultLink()">🔗 Envoyer un lien au médecin</button>
 </div>
+<div id="teleLinkResult" style="margin-top:8px;font-size:12px;text-align:center"></div>
 </div>
 </div>
 
@@ -845,6 +847,71 @@ function payWithQR() {
     } else {
       alert(res.error || 'Échec du paiement.');
     }
+  }
+}
+
+// ═══ LIEN TÉLÉCONSULTATION → médecin (souvent à l'étranger) ═══
+function generateTeleconsultLink() {
+  const el = document.getElementById('teleLinkResult');
+  if (!el) return;
+  el.innerHTML = '<span style="color:var(--muted)">Génération du lien...</span>';
+
+  // Montant convenu (optionnel — le médecin peut être informé)
+  const amount = parseInt(prompt('Honoraires convenus (UM) — 0 si à convenir :') || '0', 10) || 0;
+
+  // walletId du patient (KA_WALLET)
+  let patientWalletId = null;
+  if (typeof KA_WALLET !== 'undefined') {
+    try { patientWalletId = KA_WALLET.getWallet('patient').walletId; } catch(e) {}
+  }
+  if (!patientWalletId) patientWalletId = data.profile.shortCode || 'PAT-' + Date.now();
+
+  const p = data.profile || {};
+  fetch(API_URL + '/api/v1/teleconsult/link', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      patient_id: patientWalletId,
+      patient_name: p.name || '',
+      amount_um: amount
+    })
+  }).then(function(res) {
+    if (!res.ok) throw new Error('serveur_refus');
+    return res.json();
+  }).then(function(d) {
+    // Afficher le lien + boutons de partage
+    el.innerHTML =
+      '<div style="background:rgba(15,15,25,.8);border:1px solid var(--glass-border);border-radius:10px;padding:10px;margin-top:6px">'
+      + '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px">🔗 Lien de consultation (valable 30 min)</div>'
+      + '<div style="font-size:11px;word-break:break-all;color:var(--accent);margin-bottom:8px" id="teleLinkValue">' + d.link + '</div>'
+      + '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'
+      + '<button onclick="shareTeleLink(\'whatsapp\')" style="background:#25D366;color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:12px;font-family:inherit">WhatsApp</button>'
+      + '<button onclick="shareTeleLink(\'sms\')" style="background:var(--accent);color:#0a0a0f;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:12px;font-family:inherit">SMS</button>'
+      + '<button onclick="shareTeleLink(\'copy\')" style="background:rgba(255,255,255,.1);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:12px;font-family:inherit">Copier</button>'
+      + '</div></div>'
+      + '<div style="font-size:10px;color:var(--muted);margin-top:6px">Envoyez ce lien à votre médecin. Il clique, s\'identifie et démarre la consultation. Valable 30 minutes.</div>';
+    window._teleLink = d.link;
+  }).catch(function() {
+    // Fallback offline : générer un lien local (mode démo)
+    const token = 'demo_' + Date.now().toString(36);
+    const link = 'https://vitalka.health/t/' + token;
+    window._teleLink = link;
+    el.innerHTML = '<div style="background:rgba(243,156,18,.1);border:1px solid rgba(243,156,18,.3);border-radius:10px;padding:10px;margin-top:6px">'
+      + '<span style="color:var(--warning);font-size:12px">⚡ Serveur indisponible — lien de démonstration (non tracé).</span>'
+      + '<div style="font-size:11px;word-break:break-all;color:var(--accent);margin-top:6px">' + link + '</div></div>';
+  });
+}
+
+function shareTeleLink(mode) {
+  const link = window._teleLink;
+  if (!link) return;
+  const msg = '🔗 Consultation Vital Ka — cliquez sur ce lien pour démarrer la consultation : ' + link;
+  if (mode === 'whatsapp') {
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  } else if (mode === 'sms') {
+    window.location.href = 'sms:?body=' + encodeURIComponent(msg);
+  } else {
+    navigator.clipboard.writeText(link).then(function() { alert('✅ Lien copié ! Envoyez-le à votre médecin.'); });
   }
 }
 
