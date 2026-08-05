@@ -1238,8 +1238,8 @@ function demoStep2() {
 function demoPPG() {
   var el = document.getElementById('demo-ppg');
   if (!el) return;
-  el.innerHTML = '<div style="font-size:11px;color:var(--t4)">Placez votre visage dans le cadre…</div>';
-  // Réutiliser la logique PPG existante (santeCamAnalyze)
+  el.innerHTML = '<div style="font-size:11px;color:var(--t4)">Placez votre visage dans le cadre — restez immobile…</div>';
+  // Même pipeline que l'écran santé : ROI front + autocorrélation (santeCamComputeBPM)
   santeCamStream = null; santeCamSamples = []; santeCamAllSamples = [];
   var video = document.createElement('video');
   video.style.cssText = 'width:100%;max-width:220px;border-radius:14px;margin:8px auto;display:block';
@@ -1251,57 +1251,52 @@ function demoPPG() {
       video.srcObject = stream;
       el.innerHTML = '<div style="font-size:11px;color:var(--t4);margin-bottom:6px">📷 Analyse du pouls — restez immobile 10s…</div>';
       el.appendChild(video);
-      // Lancer l'analyse PPG
       santeCamVideo = video;
       var canvas = document.createElement('canvas'); canvas.id = 'demo-canvas';
       canvas.style.display = 'none'; el.appendChild(canvas);
       santeCamCanvas = canvas;
+      var samples = [];               // [{t, v}] — mêmes données que l'écran santé
+      var startTime = Date.now();
       santeCamTimer = setInterval(function() {
         if (!santeCamStream) { clearInterval(santeCamTimer); return; }
         canvas.width = video.videoWidth || 320; canvas.height = video.videoHeight || 240;
         var ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        // PPG simplifié : moyenne du canal rouge
-        var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-        var sum = 0, n = 0;
-        for (var i = 0; i < data.length; i += 16) { sum += data[i]; n++; }
-        santeCamSamples.push(sum / n);
-        santeCamAllSamples = santeCamSamples.slice();
-        if (santeCamSamples.length >= 120) {
+        // ROI front (zone centrale) — même extraction que l'écran santé
+        var rx = Math.floor(canvas.width * 0.3), ry = Math.floor(canvas.height * 0.2);
+        var rw = Math.floor(canvas.width * 0.4), rh = Math.floor(canvas.height * 0.3);
+        var data = ctx.getImageData(rx, ry, rw, rh).data;
+        // Moyenne du canal rouge (le sang absorbe le vert, reflète le rouge)
+        var sum = 0;
+        for (var i = 0; i < data.length; i += 4) sum += data[i];
+        samples.push({ t: Date.now() - startTime, v: sum / (data.length / 4) });
+        if (samples.length >= 300) {   // ~10 s à 30 fps
           clearInterval(santeCamTimer);
-          // BPM estimé par pics
-          var bpm = estimateBPM(santeCamSamples);
+          var bpm = santeCamComputeBPM(samples);   // autocorrélation — même code que l'écran santé
           var heart = document.getElementById('demo-ppg');
           if (heart) {
-            heart.innerHTML = ''
-              + '<div style="font-size:44px;color:var(--life);margin:8px 0">🫀 ' + bpm + '</div>'
-              + '<div style="font-size:11px;color:var(--t3)">battements / minute — mesurés par votre caméra</div>'
-              + '<div style="font-size:9px;color:var(--t4);margin-top:4px">Photopléthysmographie · aucun capteur</div>';
+            if (bpm && bpm > 40 && bpm < 180) {
+              heart.innerHTML = ''
+                + '<div style="font-size:44px;color:var(--life);margin:8px 0">🫀 ' + bpm + '</div>'
+                + '<div style="font-size:11px;color:var(--t3)">battements / minute — mesurés par votre caméra</div>'
+                + '<div style="font-size:9px;color:var(--t4);margin-top:4px">Photopléthysmographie · aucun capteur</div>';
+            } else {
+              // Échec honnête : aucun chiffre n'est inventé
+              heart.innerHTML = ''
+                + '<div style="font-size:12px;color:var(--coral);margin:8px 0">📡 Signal trop faible — réessayez</div>'
+                + '<div style="font-size:10px;color:var(--t4)">Astuce : posez le doigt sur l\'objectif, éclairez le visage, restez immobile.</div>';
+            }
           }
           santeCamStream.getTracks().forEach(function(t) { t.stop(); });
           santeCamStream = null;
           document.getElementById('demo-ppg-next').style.display = 'block';
         }
-      }, 80);
+      }, 33); // ~30 fps
     })
     .catch(function(err) {
       el.innerHTML = '<div style="font-size:11px;color:var(--coral)">⚠️ Caméra non disponible — passez à la suite.</div>';
       document.getElementById('demo-ppg-next').style.display = 'block';
     });
-}
-
-function estimateBPM(samples) {
-  // Détection simple des pics
-  var peaks = 0;
-  for (var i = 2; i < samples.length - 2; i++) {
-    if (samples[i] > samples[i-1] && samples[i] > samples[i+1] && samples[i] > samples[i-2] && samples[i] > samples[i+2]) {
-      peaks++;
-    }
-  }
-  var duration_s = samples.length * 0.08;
-  var bpm = Math.round(peaks * 60 / duration_s);
-  if (bpm < 40 || bpm > 200) bpm = 72;
-  return bpm;
 }
 
 function demoDone() {
@@ -1758,9 +1753,11 @@ function santeCamComputeBPM(samples){
     filtered.push(signal[i]-signal[i-2]);
   }
   // Détection de pics (zero-crossing du signal filtré)
+  // > à gauche && >= à droite : tolère les paliers de quantification
+  // (>= des deux côtés détecterait tout élément d'un plateau → pics parasites)
   let peaks=[];
   for(let i=2;i<filtered.length-1;i++){
-    if(filtered[i]>filtered[i-1]&&filtered[i]>filtered[i+1]&&filtered[i]>0.5){
+    if(filtered[i]>filtered[i-1]&&filtered[i]>=filtered[i+1]&&filtered[i]>0.5){
       peaks.push(i);
     }
   }
@@ -1797,7 +1794,8 @@ function santeComputeAllIndicators(ppgSamples){
   for(let i=2;i<n;i++) filtered.push(normalized[i]-normalized[i-2]);
   const peaks=[];
   for(let i=2;i<filtered.length-1;i++){
-    if(filtered[i]>filtered[i-1]&&filtered[i]>filtered[i+1]&&filtered[i]>0.3){
+    // > à gauche && >= à droite : tolère les paliers de quantification
+    if(filtered[i]>filtered[i-1]&&filtered[i]>=filtered[i+1]&&filtered[i]>0.3){
       peaks.push(i+2); // index dans le signal original
     }
   }
