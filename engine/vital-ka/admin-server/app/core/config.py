@@ -26,22 +26,27 @@ class Settings(BaseSettings):
     # ──────────────────────────────────────────────
     # Base de données
     # ──────────────────────────────────────────────
-    database_url: str = Field(..., description="URL PostgreSQL asyncpg")
+    # Mode local (défaut) : SQLite fichier — démarrage sans infrastructure.
+    # Production : PostgreSQL asyncpg (ex: postgresql+asyncpg://user:pass@host/db)
+    database_url: str = Field(
+        default="sqlite+aiosqlite:///./ka_vital.db",
+        description="URL de base de données (PostgreSQL asyncpg en production, SQLite en local)",
+    )
     database_pool_size: int = 10
     database_max_overflow: int = 20
 
     # ──────────────────────────────────────────────
     # Redis
     # ──────────────────────────────────────────────
-    redis_url: str = Field(..., description="URL Redis")
+    redis_url: str = Field(default=None, description="URL Redis (optionnel en local)")
     redis_max_connections: int = 50
 
     # ──────────────────────────────────────────────
     # MinIO / S3
     # ──────────────────────────────────────────────
-    minio_endpoint: str = Field(..., description="Endpoint MinIO (host:port)")
-    minio_access_key: str = Field(..., description="Access Key MinIO")
-    minio_secret_key: str = Field(..., description="Secret Key MinIO")
+    minio_endpoint: str = Field(default=None, description="Endpoint MinIO (host:port)")
+    minio_access_key: str = Field(default=None, description="Access Key MinIO")
+    minio_secret_key: str = Field(default=None, description="Secret Key MinIO")
     minio_bucket: str = "assets"
     minio_secure: bool = False  # True en prod avec TLS
 

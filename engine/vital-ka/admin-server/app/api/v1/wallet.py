@@ -150,7 +150,7 @@ async def create_wallet(
 # ──────────────────────────────────────────────
 @router.get("/{owner_id}/balance", response_model=WalletBalanceResponse)
 async def get_balance(
-    owner_id: UUID,
+    owner_id: str,   # walletId local (KAUSER…) ou UUID — résolu par _get_account
     db: AsyncSession = Depends(get_db),
 ):
     """Solde d'un compte en UM, EUR et CFA."""
@@ -361,7 +361,7 @@ async def convert_wallet(
 # ──────────────────────────────────────────────
 @router.get("/{owner_id}/ledger", response_model=LedgerResponse)
 async def get_ledger(
-    owner_id: UUID,
+    owner_id: str,   # walletId local (KAUSER…) ou UUID — résolu par _get_account
     limit: int = 50,
     db: AsyncSession = Depends(get_db),
 ):

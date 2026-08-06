@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
-from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST, CollectorRegistry
 import structlog
 import time
 import uuid
@@ -43,16 +43,22 @@ logger = structlog.get_logger()
 # ──────────────────────────────────────────────
 # Prometheus Metrics
 # ──────────────────────────────────────────────
+# Registre dédié : uvicorn.run("app.main:app") réimporte le module → les
+# métriques du registre par défaut seraient déclarées en double (ValueError)
+METRICS_REGISTRY = CollectorRegistry()
+
 REQUEST_COUNT = Counter(
     "http_requests_total",
     "Total HTTP requests",
     ["method", "endpoint", "status"],
+    registry=METRICS_REGISTRY,
 )
 
 REQUEST_LATENCY = Histogram(
     "http_request_duration_seconds",
     "HTTP request latency",
     ["method", "endpoint"],
+    registry=METRICS_REGISTRY,
 )
 
 
@@ -202,7 +208,7 @@ async def health():
 @app.get("/metrics", include_in_schema=False)
 async def metrics():
     """Prometheus metrics endpoint"""
-    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+    return Response(content=generate_latest(METRICS_REGISTRY), media_type=CONTENT_TYPE_LATEST)
 
 
 # ──────────────────────────────────────────────

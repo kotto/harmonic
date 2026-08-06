@@ -90,7 +90,9 @@ class SystemConfig(Base):
     )
 
     __table_args__ = (
-        Index("ix_system_config_category", "category"),
+        # L'index ix_system_config_category est déjà créé par
+        # mapped_column(..., index=True) sur `category` — ne pas le redéclarer
+        # ici (doublon → échec CREATE INDEX sur SQLite et PostgreSQL)
     )
 
     def __repr__(self) -> str:

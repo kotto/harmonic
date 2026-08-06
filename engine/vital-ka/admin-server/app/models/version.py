@@ -82,7 +82,8 @@ class APKVersion(Base):
 
     __table_args__ = (
         Index("ix_apk_versions_channel_active", "channel", "is_active"),
-        Index("ix_apk_versions_version_code", "version_code"),
+        # ix_apk_versions_version_code est déjà créé par mapped_column(index=True)
+        # sur version_code — ne pas le redéclarer (doublon → échec CREATE INDEX)
     )
 
     def __repr__(self) -> str:
