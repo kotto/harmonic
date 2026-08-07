@@ -128,17 +128,11 @@ Hors ligne → 503 propre (« démarrez ka_voice_server.py »).
 
 ### Benchmark GSM8K (complet, 1 319 problèmes)
 ```bash
-python -c "from gsm8k import GSM8KOndulatoire; print(GSM8KOndulatoire().benchmark(n=1319))"
+python benchmark_revision.py   # complet avec révision LLM (checkpoint/reprise)
 ```
-**Résultats de référence (07/08/2026) : 59/1319 = 4,47 % · 0 LLM, déterministe**
-(base initiale : 41 = 3,11 %). Le **typeur de nombres** (la couche de traduction
-manquante, cf. analyse des échecs) multiplie par 3 la précision sur les problèmes
-structurés : échantillon 300 → 11,3 % (vs 3,7 %), 12/12 canoniques, tuteur 25/25,
-et des structures auparavant insolubles : pièces de monnaie (5 quarters + 2 dimes
-− 55 cents = 90), taux horaire (50 $/h × 6 h − dépenses = 150), distribution
-(27 élèves × 2 bâtons ÷ 8 par paquet = 7), années ignorées (2007), prix unitaire
-(300 F × 4 cahiers = 1 200). Le gap restant (sémantique avancée : moyennes,
-demi-tours, dépréciation composée) reste documenté.
+**Résultats officiels (07/08/2026) :**
+- **0 LLM déterministe : 59/1319 = 4,47 %** (typeur + machine à états + 45 patrons + résonance)
+- **Avec révision LLM sélective (DeepSeek) : 436/1319 = 33,06 %** — +379 gagnés, −2 corrompus, 454 appels LLM, 12,3 min (~0,30 $). Le consensus des patrons passe de 5,7 % à 84,1 % de précision (le solveur propose, DeepSeek valide la sémantique, le calcul reste exact). Les 713 problèmes « résonance » (aucun nombre détecté) ne sont pas révisés — piste ouverte (`reviser_tous`).
 
 ### Benchmark éducatif
 ```bash
