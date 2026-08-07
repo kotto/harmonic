@@ -36,8 +36,9 @@ python serveur.py        # API des 3 apps sur http://localhost:8767
 | `medical.py` | **Vital KA** : les 62 356 faits médicaux (`data/medical_holograms/*_facts.json`) encodés nativement, diagnostic par interférence (ENCODE → SUPERPOSE → RESONATE → EMERGE → DÉCODER) |
 | `entreprise.py` | **KA Enterprise** : un hologramme par département, ingest (texte → BIND_MANY → STORE), ask (QUERY → EMERGE → DÉCODER + sources), résumé (EMERGE), composition (INTERFERE), RBAC X-API-Key |
 | `educal.py` | **EDUCAL KA** : catalogue + leçons (contenu JSON existant), hologrammes disciplinaires natifs, correction quiz/exercices, diagnostic pédagogique par résonance, carnet de progression, tuteur 5 familles (0 LLM), **unité éducative transférable** (hologramme → download ψ polaires → injection H_connaissances → rappel) |
-| `gsm8k.py` | **GSM8K ondulatoire** : **trois moteurs fusionnés en cascade**, ordonnés par précision interne mesurée — ① les **45 solveurs de patrons GSM8K** hérités de l'écosystème (`wave_word_problems.py`, import défensif, 7,5 %) ② machine à états sémantique (compteurs d'objets, équations relatives « k fois plus que », densités « per/each », fractions « 3/4 of », 4,0 %) ③ pipeline par résonance contre des prototypes d'ondes (SUPERPOSE → RESONATE → DÉCODER, 3,4 %) — 0 LLM |
-| `machine_etats.py` | La machine à états sémantique : objets comptés (EN/FR), actions de transition (avoir/manger/donner/acheter/partager/%), garde-fou de confiance (ne répond que si elle comprend tous les nombres) |
+| `gsm8k.py` | **GSM8K ondulatoire** : **trois moteurs fusionnés en cascade**, ordonnés par précision interne mesurée — ① les **45 solveurs de patrons GSM8K** hérités de l'écosystème (`wave_word_problems.py`, import défensif) ② machine à états sémantique **typée** ③ pipeline par résonance contre des prototypes d'ondes (SUPERPOSE → RESONATE → DÉCODER) — 0 LLM |
+| `machine_etats.py` | La machine à états sémantique : compteurs par objet, transitions dimension-aware (taux × durée, prix × quantité → montant, année ignorée, pièces converties), équations relatives, densités, fractions, distribution (« chaque élève reçoit 2 bâtons »), paquets (ceil), garde-fou de confiance strict |
+| `typeur.py` | **La couche de traduction** : chaque nombre est typé (dimension : monnaie/durée/longueur/objet/année/fraction + rôle : montant/taux/prix_unitaire/facteur/duree/année) avant tout calcul — c'est elle qui distingue « 6 heures » (durée) de « 2007 » (année ignorée), « 5 quarters » (1,25 $) de « 55 cents » (retrait) |
 | `voix.py` | **KA Voice** : pont TTS vers `ka_voice_server` :8420 (Piper) — mêmes contrats `/api/voice/*`, dégradation 503 propre si hors ligne |
 | `benchmark_educal.py` | **Benchmark éducatif** : F1@5 par discipline (rappel par résonance des faits pertinents), contrôle du tuteur par re-résolution ondulatoire, rapport JSON |
 | `serveur.py` | **API Flask des 3 apps** (port 8767) + compatibilité OpenAI (`/v1/chat/completions`) |
@@ -120,13 +121,14 @@ Hors ligne → 503 propre (« démarrez ka_voice_server.py »).
 python -c "from gsm8k import GSM8KOndulatoire; print(GSM8KOndulatoire().benchmark(n=1319))"
 ```
 **Résultats de référence (07/08/2026) : 59/1319 = 4,47 % · 0 LLM, déterministe**
-(base machine seule : 47 = 3,56 % · base initiale : 41 = 3,11 %). La fusion des
-**trois moteurs** (45 patrons hérités + machine à états + résonance) est ordonnée
-par précision interne mesurée sur le benchmark : les patrons d'abord (7,5 % sur
-leurs matchs — dont « consensus » 5,7 % sur 348 problèmes), puis la machine
-(4,0 %), puis la résonance (3,4 %). Les 12 canoniques structurés sont exacts via
-la machine à états (test unitaire) ; le reste du benchmark (sémantique avancée :
-moyennes, demi-tours, pourcentages imbriqués) reste un gap ouvert documenté.
+(base initiale : 41 = 3,11 %). Le **typeur de nombres** (la couche de traduction
+manquante, cf. analyse des échecs) multiplie par 3 la précision sur les problèmes
+structurés : échantillon 300 → 11,3 % (vs 3,7 %), 12/12 canoniques, tuteur 25/25,
+et des structures auparavant insolubles : pièces de monnaie (5 quarters + 2 dimes
+− 55 cents = 90), taux horaire (50 $/h × 6 h − dépenses = 150), distribution
+(27 élèves × 2 bâtons ÷ 8 par paquet = 7), années ignorées (2007), prix unitaire
+(300 F × 4 cahiers = 1 200). Le gap restant (sémantique avancée : moyennes,
+demi-tours, dépréciation composée) reste documenté.
 
 ### Benchmark éducatif
 ```bash

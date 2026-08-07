@@ -56,6 +56,8 @@ OBJETS = [
     "meter", "centimeter", "centimetre", "kilometer", "kilogram", "gram", "ounce",
     "pound", "cup", "tablespoon", "teaspoon", "quart", "pint", "glass", "pie",
     "candle", "candle", "beeswax", "unit", "building", "floor", "brick", "plank",
+    "lemon", "lemons", "glue stick", "video game", "lego set", "badge", "stick",
+    "cube", "selfie", "like", "like", "lollipop", "egg", "degree", "hour",
 ]
 OBJETS = sorted(set(OBJETS), key=len, reverse=True)
 
@@ -124,20 +126,30 @@ _MOMENTUM_ACTION = ["soustraction", "addition"]   # actions à rejouer si objet 
 
 
 class MachineEtatsSemantique:
-    """Analyse sémantique → compteurs par objet → réponse ciblée."""
+    """Analyse sémantique typée → compteurs par objet → réponse ciblée.
+
+    v3 : chaque nombre est d'abord TYPÉ (typeur.py : dimension + rôle), puis
+    les transitions sont dimension-aware — un taux × une durée multiplie, un
+    prix unitaire × une quantité produit un montant, une année est ignorée.
+    """
 
     def __init__(self):
         self.compteurs: Dict[str, float] = {}
-        self.densites: Dict[str, float] = {}       # objet → quantité par conteneur
+        self.densites: Dict[str, float] = {}       # objet → quantité par unité
+        self.prix: Dict[str, float] = {}           # objet → prix unitaire (monnaie)
+        self.montant = 0.0                         # compteur monétaire courant
         self.etapes: List[str] = []
         self.derniere_action: Optional[str] = None
 
     # ── le résolveur principal ──────────────────────────────────────────
     def resoudre(self, question: str) -> Optional[Dict[str, Any]]:
         """Retourne None si l'analyse échoue (fallback ondulatoire)."""
+        from typeur import typer, CONVERSIONS_MONNAIE
         q = _numeriser(question)
         self.compteurs = {}
         self.densites = {}
+        self.prix = {}
+        self.montant = 0.0
         self.etapes = []
         self.derniere_action = None
 
@@ -146,248 +158,329 @@ class MachineEtatsSemantique:
         if relatif is not None:
             return relatif
 
-        # passe 1 : chaque nombre avec sa fenêtre locale (40 avant / 30 après,
-        # tronquée au séparateur de phrase précédent) — fractions « 3/4 » incluses
-        matches = list(re.finditer(r"-?\d+(?:[.,]\d+)?(?:/\d+)?", q))
-        if not matches:
+        # passe 1 : le TYPEUR traduit le texte en nombres typés
+        nombres = [n for n in typer(question) if not n.ignore]
+        if not nombres:
             return None
         traites = 0
 
-        # passe 0b : densités pré-analyse — « 60 meters each sprint », « 16 eggs
-        # per day » (le conteneur peut précéder la quantité dans l'énoncé)
-        densites_skippees = set()
-        for m_d in re.finditer(r"(\d+(?:[.,]\d+)?)\s+([a-zà-ü]+)\s+(?:each|per)\s+([a-zà-ü]+)",
-                               q, re.IGNORECASE):
-            n_d = float(m_d.group(1).replace(",", "."))
-            objet_d = _objet_de(m_d.group(2))
-            if objet_d is not None:
-                self.compteurs.setdefault(objet_d, n_d)
-                self.densites[objet_d] = n_d
-                densites_skippees.add(m_d.start())
-                self.etapes.append(f"« densité » → {n_d:g} {objet_d}/unité")
-
-        for m in matches:
-            if m.start() in densites_skippees:
-                continue                     # déjà traité par la pré-analyse
-            m_frac = re.match(r"(\d+)/(\d+)$", m.group())
-            if m_frac:
-                n = float(m_frac.group(1)) / float(m_frac.group(2))
-            else:
-                n = float(m.group().replace(",", "."))
-            debut_ctx = max(0, m.start() - 40)
-            avant = q[:m.start()]
-            sep = max(avant.rfind(". "), avant.rfind("! "), avant.rfind("? "))
-            if sep > debut_ctx:
-                debut_ctx = sep + 2
-            # fenêtre après : tronquée au séparateur de phrase suivant — seule
-            # l'intention locale du nombre doit parler
-            apres = q[m.end(): m.end() + 30]
-            positions = [apres.find(s) for s in (". ", "! ", "? ", ".\n") if s in apres]
-            sep_apres = min(positions) if positions else -1
-            if sep_apres > 0:
-                apres = apres[:sep_apres + 1]
-            ctx = (q[debut_ctx: m.end()] + apres).replace("\n", " ")
-            objet = _objet_apres(q, m.end()) or _objet_de(apres) or _objet_de(ctx)
-            if objet is None:
-                # action sans objet local (« eats 3 », « gives 2 ») : l'objet est
-                # implicite — mono-compteur → l'action s'applique au compteur unique
-                if len(self.compteurs) == 1 and (
-                        re.search(_RETRAIT, ctx) or re.search(_AJOUT, ctx)):
-                    objet = next(iter(self.compteurs))
-                else:
-                    continue
-            # règle mono-objet : un seul compteur → les objets implicites s'y appliquent
-            cible = objet if objet in self.compteurs else (
-                next(iter(self.compteurs)) if len(self.compteurs) == 1 else None)
-            if cible is None and objet not in self.compteurs:
-                cible = objet
-
-            # 0. fraction : « 3/4 of the cookies » → × 3/4 ; « gives away 3/4 » → × (1−3/4)
-            if m_frac and cible is not None and cible in self.compteurs \
-                    and re.search(r"\bof\b", ctx):
-                if re.search(_RETRAIT, ctx):
-                    self.compteurs[cible] *= 1 - n
-                else:
-                    self.compteurs[cible] *= n
-                self.etapes.append(f"« {ctx.strip()[-40:]} » → ×{n:g} (fraction) = "
-                                   f"{self.compteurs[cible]:g}")
-                continue
-
-            # 0b. « N were left » après un état → retrait (« 14 pieces were left »)
-            if re.search(r"\b(?:were\s+\d+(?:[.,]\d+)?\s+[a-zà-ü]+\s+left|"
-                         r"\d+(?:[.,]\d+)?\s+[a-zà-ü]+\s+were\s+left)\b", ctx) \
-                    and cible is not None and cible in self.compteurs \
-                    and not re.search(r"\bleft\b", _derniere_phrase(q)):
-                self.compteurs[cible] -= n
-                self.etapes.append(f"« {ctx.strip()[-40:]} » → −{n:g} (restant) = "
-                                   f"{self.compteurs[cible]:g}")
-                continue
-
-            # 0b. conversion interne : « cut each pie into 8 pieces » → 5×8
-            m_cut = re.search(
-                r"\b(cut|divided|split|broke)\s+(?:each|the)\s+([a-zà-ü]+)\s+into\s+"
-                r"(\d+(?:[.,]\d+)?)\s+([a-zà-ü]+)", ctx, re.IGNORECASE)
-            if m_cut:
-                source = _objet_de(m_cut.group(2))
-                cible_cut = _objet_de(m_cut.group(4))
-                if source is not None and source not in self.compteurs \
-                        and len(self.compteurs) == 1:
-                    source = next(iter(self.compteurs))   # « 5 apple pies » → pie
-                if source is not None and source in self.compteurs and cible_cut:
-                    self.compteurs[cible_cut] = self.compteurs[source] \
-                        * float(m_cut.group(3))
-                    self.etapes.append(f"« {ctx.strip()[-40:]} » → {source} ×"
-                                       f"{m_cut.group(3)} = "
-                                       f"{self.compteurs[cible_cut]:g}")
-                    continue
-
-            # 1. pourcentage sur le compteur courant
-            if re.search(_POURCENT, ctx) and cible is not None \
-                    and cible in self.compteurs:
-                if re.search(r"\b(increase|gain|profit|earn|gagne|augmente|markup)\b",
-                             ctx, re.IGNORECASE):
-                    self.compteurs[cible] *= 1 + n / 100
-                elif re.search(r"\b(decrease|lose|discount|off|baisse|perd|reduces?)\b"
-                               + "|" + _RETRAIT, ctx, re.IGNORECASE):
-                    self.compteurs[cible] *= 1 - n / 100
-                else:
-                    self.compteurs[cible] *= n / 100
-                self.etapes.append(f"« {ctx.strip()[-40:]} » → % = "
-                                   f"{self.compteurs[cible]:g}")
-                continue
-
-            # 2a. conversion d'unité : « for $2 per egg » → compteur × 2
-            m_conv = re.search(
-                r"\b(?:for|at|costs?|coûte|coute)\s+\$?\s*(\d+(?:[.,]\d+)?)\s*"
-                r"(?:per|each|chaque|par)\s+([a-zà-ü]+(?:\s+[a-zà-ü]+){0,3})",
-                ctx, re.IGNORECASE)
-            if m_conv and cible is not None and cible in self.compteurs:
-                prix = float(m_conv.group(1).replace(",", "."))
-                self.compteurs[cible] *= prix
-                self.etapes.append(f"« {ctx.strip()[-40:]} » → ×{prix:g} = "
-                                   f"{self.compteurs[cible]:g}")
-                continue
-
-            # 2b. coût total : « combien coûtent 4 cahiers » → prix unitaire × 4
-            if re.search(r"\b(combien coûtent|combien coutent|how much do|"
-                         r"how much does|cost in total)\b", ctx, re.IGNORECASE) \
-                    and cible is not None and cible in self.compteurs:
-                self.compteurs[cible] *= n
-                self.etapes.append(f"« {ctx.strip()[-40:]} » → ×{n:g} (coût) = "
-                                   f"{self.compteurs[cible]:g}")
-                continue
-
-            # 2c. conteneur : « buys 5 boxes » / « runs 3 sprints » avec
-            # « 12 pencils in a box » / « 60 meters each sprint » → densité × n
-            conteneur = _objet_apres(q, m.end()) or _objet_de(apres)
-            if conteneur in CONTENEURS and self.densites \
-                    and not re.search(_RETRAIT, ctx):
-                contenu = next(iter(self.densites))
-                if contenu in self.compteurs:
-                    self.compteurs[contenu] *= n        # compteur déjà amorcé
-                else:
-                    self.compteurs[contenu] = self.densites[contenu] * n
-                self.etapes.append(f"« {ctx.strip()[-40:]} » → densité ×{n:g} "
-                                   f"= {self.compteurs[contenu]:g}")
-                continue
-
-            # 2d. conteneur temporel : « 60 miles per hour for 3 hours » → × 3
-            if conteneur in TEMPS and self.densites:
-                contenu = next(iter(self.densites))
-                if contenu in self.compteurs:
-                    self.compteurs[contenu] *= n
-                else:
-                    self.compteurs[contenu] = self.densites[contenu] * n
-                self.etapes.append(f"« {ctx.strip()[-40:]} » → ×{n:g} ({conteneur}s) "
-                                   f"= {self.compteurs[contenu]:g}")
-                continue
-
-            # 2e. vitesse moyenne : « Quelle est sa vitesse moyenne ? » → ÷ n
-            # (le marqueur peut vivre dans la question entière, après le point)
-            if (re.search(r"\b(vitesse moyenne|average speed)\b", ctx, re.IGNORECASE)
-                    or re.search(r"\b(vitesse moyenne|average speed)\b", q, re.IGNORECASE)) \
-                    and cible is not None and cible in self.compteurs \
-                    and not re.search(_RETRAIT + "|" + _AJOUT + "|" + _PARTAGE, ctx):
-                self.compteurs[cible] /= n
-                self.etapes.append(f"« {ctx.strip()[-40:]} » → ÷{n:g} (vitesse) = "
-                                   f"{self.compteurs[cible]:g}")
-                continue
-
-            # 3. partage : « equally among N children » → division
-            if re.search(_PARTAGE, ctx) and cible is not None \
-                    and cible in self.compteurs:
-                self.compteurs[cible] /= n
-                self.etapes.append(f"« {ctx.strip()[-40:]} » → ÷{n:g} = "
-                                   f"{self.compteurs[cible]:g}")
-                continue
-
-            # 4. retrait / ajout / initialisation (avec momentum).
-            # Les actions ne s'appliquent à un compteur NON initialisé que si
-            # le verbe est PROCHE du nombre (« bakes 24 cookies and gives away
-            # 3/4 » : le « gives away » du 3/4 ne doit pas toucher le 24).
-            ctx_proche = q[max(0, m.start() - 25): m.end() + 15]
-            retrait_proche = re.search(_RETRAIT, ctx_proche)
-            ajout_proche = re.search(_AJOUT, ctx_proche)
-            if retrait_proche or (re.search(_RETRAIT, ctx) and cible is not None
-                                  and cible in self.compteurs):
+        for n in nombres:
+            ctx = n.contexte or ""
+            # ── fraction : « 3/4 of the cookies », « 25% discount » ──────
+            if n.role == "fraction":
+                cible = self._cible(n.objet)
                 if cible is not None and cible in self.compteurs:
-                    self.compteurs[cible] -= n
-                    self.derniere_action = "soustraction"
-                    self.etapes.append(f"« {ctx.strip()[-40:]} » → −{n:g} = "
+                    if re.search(_RETRAIT, ctx):
+                        self.compteurs[cible] *= 1 - n.valeur
+                    elif re.search(r"\b(increase|gain|profit|earn|gagne|augmente)\b",
+                                   ctx, re.IGNORECASE):
+                        self.compteurs[cible] *= 1 + n.valeur
+                    else:
+                        self.compteurs[cible] *= n.valeur
+                    self.etapes.append(f"« {ctx.strip()[-38:]} » → ×{n.valeur:g} = "
                                        f"{self.compteurs[cible]:g}")
-                elif cible is None and self.derniere_action == "soustraction" \
-                        and len(self.compteurs) == 1:
-                    cle = next(iter(self.compteurs))
-                    self.compteurs[cle] -= n
-                    self.etapes.append(f"« {ctx.strip()[-40:]} » → −{n:g} (momentum) = "
-                                       f"{self.compteurs[cle]:g}")
-            elif ajout_proche or (re.search(_AJOUT, ctx) and cible is not None
-                                  and cible in self.compteurs):
-                self.compteurs[cible] = self.compteurs.get(cible, 0.0) + n
-                self.derniere_action = "addition"
-                self.etapes.append(f"« {ctx.strip()[-40:]} » → +{n:g} = "
-                                   f"{self.compteurs[cible]:g}")
-            elif cible is not None and cible in self.compteurs \
-                    and self.derniere_action:
-                # momentum : objet implicite, dernière action rejouée (Janet « with 4 »)
-                if self.derniere_action == "soustraction":
-                    self.compteurs[cible] -= n
-                    self.etapes.append(f"« {ctx.strip()[-40:]} » → −{n:g} (momentum) = "
-                                       f"{self.compteurs[cible]:g}")
+                    traites += 1
+                elif self.montant:               # « costs 40$ with a 25% discount »
+                    if re.search(r"\b(discount|off|baisse|perd|decrease|reduces?)\b",
+                                 ctx, re.IGNORECASE):
+                        self.montant *= 1 - n.valeur
+                    else:
+                        self.montant *= n.valeur
+                    self.etapes.append(f"« {ctx.strip()[-38:]} » → ×{n.valeur:g} "
+                                       f"(montant) = {self.montant:g} $")
+                    traites += 1
+                continue
+
+            # ── taux : « 16 eggs per day », « 60 miles per hour » ────────
+            if n.role == "taux":
+                if n.dimension == "monnaie":
+                    self.prix["default"] = n.valeur * CONVERSIONS_MONNAIE.get(n.unite, 1.0)
                 else:
-                    self.compteurs[cible] += n
-                    self.etapes.append(f"« {ctx.strip()[-40:]} » → +{n:g} (momentum) = "
-                                       f"{self.compteurs[cible]:g}")
+                    objet = n.objet or (n.unite if n.dimension == "objet" else "")
+                    if objet:
+                        self.densites[objet] = n.valeur
+                        self.compteurs.setdefault(objet, n.valeur)
+                        self.etapes.append(f"« densité » → {n.valeur:g} {objet}/unité")
+                traites += 1
+                continue
+
+            # ── durée / incrément : « for 3 hours » → densité × durée ;
+            #    avec un taux horaire (« earns 50$/hour, 6 hours ») → montant
+            if n.role in ("duree", "increment"):
+                if self.prix:
+                    self.montant += self.prix.get("default", 0.0) * n.valeur
+                    self.etapes.append(f"« {ctx.strip()[-38:]} » → {n.valeur:g} h × "
+                                       f"{self.prix.get('default', 0):g} $ = "
+                                       f"{self.montant:g} $")
+                    traites += 1
+                elif self.densites:
+                    contenu = next(iter(self.densites))
+                    if contenu in self.compteurs:
+                        self.compteurs[contenu] *= n.valeur
+                    else:
+                        self.compteurs[contenu] = self.densites[contenu] * n.valeur
+                    self.etapes.append(f"« {ctx.strip()[-38:]} » → ×{n.valeur:g} "
+                                       f"({n.unite}) = {self.compteurs[contenu]:g}")
+                    traites += 1
+                continue
+
+            # ── facteur : « 3 times », « 3 sprints » → multiplie ─────────
+            if n.role == "facteur":
+                if self.densites:
+                    contenu = next(iter(self.densites))
+                    self.compteurs[contenu] = self.compteurs.get(
+                        contenu, self.densites[contenu]) * n.valeur
+                    self.etapes.append(f"« {ctx.strip()[-38:]} » → ×{n.valeur:g} "
+                                       f"(facteur) = {self.compteurs[contenu]:g}")
+                    traites += 1
+                elif len(self.compteurs) == 1:
+                    cle = next(iter(self.compteurs))
+                    self.compteurs[cle] *= n.valeur
+                    traites += 1
+                continue
+
+            # ── prix unitaire : « for $2 each » → prix[objet] ────────────
+            if n.role == "prix_unitaire":
+                self.prix[n.objet or "default"] = n.valeur \
+                    * CONVERSIONS_MONNAIE.get(n.unite, 1.0)
+                self.etapes.append(f"« {ctx.strip()[-38:]} » → prix {n.valeur:g} $")
+                traites += 1
+                continue
+
+            # ── montant : « earns 50 dollars », « 5 quarters », « $20000 » ─
+            if n.role == "montant":
+                v = n.valeur * CONVERSIONS_MONNAIE.get(n.unite, 1.0)
+                # la dépense/le gain se décide dans la PHRASE du nombre
+                # (« buys a can for 55 cents » = retrait ; « has 5 quarters » = ajout)
+                phrase_n = q[:n.position].rpartition(". ")[2] + q[n.position:]
+                phrase_n = phrase_n.split(".")[0] if "." in phrase_n else phrase_n
+                if re.search(r"\b(buys?|bought|pays?|paid|spends?|spent|"
+                             r"saves?|save|dépense|depense|dépensé|withheld|"
+                             r"withdraws?|donates?)\b", phrase_n, re.IGNORECASE):
+                    self.montant -= v
+                    action = "−"
+                else:
+                    self.montant += v
+                    action = "+"
+                self.etapes.append(f"« {ctx.strip()[-38:]} » → {action}{v:g} $ "
+                                   f"= {self.montant:g} $")
+                traites += 1
+                continue
+
+            # ── quantite : init / retrait / ajout / momentum ─────────────
+            phrase_n = q[:n.position].rpartition(". ")[2] + q[n.position:]
+            if re.search(_PARTAGE, ctx + " " + phrase_n) and self.montant:
+                self.montant /= n.valeur          # « partage 500 francs entre 4 »
+                self.etapes.append(f"« {ctx.strip()[-38:]} » → ÷{n.valeur:g} = "
+                                   f"{self.montant:g} $")
+                traites += 1
+            elif self._transition_quantite(q, n, ctx):
+                traites += 1
+
+        # motifs spéciaux sans nombre : « half that much », « twice as many »
+        if self.compteurs or self.montant:
+            for phrase in re.split(r"(?<=[.!?])\s+|\n+", q):
+                if re.search(r"\bhalf (that|as) much\b", phrase, re.IGNORECASE):
+                    if self.compteurs:
+                        cle = next(iter(self.compteurs))
+                        self.compteurs[cle] *= 1.5
+                        self.etapes.append("« half that much » → ×1.5 = "
+                                           f"{self.compteurs[cle]:g}")
+                    else:
+                        self.montant *= 1.5
+                        self.etapes.append("« half that much » → ×1.5 = "
+                                           f"{self.montant:g} $")
+                    break
+                if re.search(r"\btwice as many\b", phrase, re.IGNORECASE) \
+                        and self.compteurs:
+                    cle = next(iter(self.compteurs))
+                    self.compteurs[cle] *= 2
+                    self.etapes.append("« twice as many » → ×2 = "
+                                       f"{self.compteurs[cle]:g}")
+                    break
+
+        # garde-fou de confiance : la machine ne répond que si elle a compris
+        # TOUS les nombres de l'énoncé (sinon → fallback résonance)
+        if traites < len(nombres):
+            return None
+
+        # réponse finale : montant ou objet demandé
+        reponse = self._reponse_finale(q)
+        if reponse is None:
+            return None
+        return self._paquet(question, reponse, "machine_etats")
+
+    # ── transition d'une quantité (comportement v2 conservé) ────────────
+    def _transition_quantite(self, q: str, n, ctx: str) -> bool:
+        """Retourne True si la transition a été appliquée (compréhension)."""
+        # ── conteneur : « buys 5 boxes » avec « 12 pencils in a box » → densité × n
+        if n.objet in CONTENEURS and self.densites \
+                and not re.search(_RETRAIT, ctx):
+            contenu = next(iter(self.densites))
+            if contenu in self.compteurs:
+                self.compteurs[contenu] *= n.valeur
             else:
-                # initialisation : « lay 16 eggs per day », « there are 12 pencils in a box »
-                # (jamais d'écrasement : un compteur existant sans action = distracteur)
-                if objet in self.compteurs:
-                    continue
-                self.compteurs[objet] = n
-                self.etapes.append(f"« {ctx.strip()[-40:]} » → {objet} = {n:g}")
-                if re.search(r"\bin a|in each|per\b", ctx):
-                    self.densites[objet] = n     # contenu d'un conteneur
+                self.compteurs[contenu] = self.densites[contenu] * n.valeur
+            self.etapes.append(f"« {ctx.strip()[-38:]} » → densité ×{n.valeur:g} "
+                               f"= {self.compteurs[contenu]:g}")
+            return True
+        # ── partage : « equally among 5 children » → division ────────────
+        if re.search(_PARTAGE, ctx) and len(self.compteurs) == 1:
+            cle = next(iter(self.compteurs))
+            self.compteurs[cle] /= n.valeur
+            self.etapes.append(f"« {ctx.strip()[-38:]} » → ÷{n.valeur:g} = "
+                               f"{self.compteurs[cle]:g}")
+            return True
+        # ── coût total : « combien coûtent 4 cahiers » → prix × 4 ───────
+        if re.search(r"\b(combien coûtent|combien coutent|how much do|"
+                     r"how much does|cost in total)\b", ctx, re.IGNORECASE):
+            if self.prix:
+                self.montant = n.valeur * self.prix.get("default", 0.0)
+                self.etapes.append(f"« {ctx.strip()[-38:]} » → {n.valeur:g} × "
+                                   f"{self.prix.get('default', 0):g} $ = "
+                                   f"{self.montant:g} $")
+                return True
+            if len(self.compteurs) == 1:
+                cle = next(iter(self.compteurs))
+                self.compteurs[cle] *= n.valeur
+                self.etapes.append(f"« {ctx.strip()[-38:]} » → ×{n.valeur:g} (coût) = "
+                                   f"{self.compteurs[cle]:g}")
+                return True
+        # ── conversion interne : « cut each pie into 8 pieces » → 5×8 ───
+        m_cut = re.search(
+            r"\b(cut|divided|split|broke)\s+(?:each|the)\s+([a-zà-ü]+)\s+into\s+"
+            r"(\d+(?:[.,]\d+)?)\s+([a-zà-ü]+)", ctx, re.IGNORECASE)
+        if m_cut:
+            from typeur import _trouver_objet_texte
+            source = _objet_de(m_cut.group(2))
+            cible_cut = _objet_de(m_cut.group(4))
+            if source is not None and source not in self.compteurs \
+                    and len(self.compteurs) == 1:
+                source = next(iter(self.compteurs))   # « 5 apple pies » → pie
+            if source is not None and source in self.compteurs and cible_cut:
+                self.compteurs[cible_cut] = self.compteurs[source] \
+                    * float(m_cut.group(3))
+                self.etapes.append(f"« {ctx.strip()[-38:]} » → {source} ×"
+                                   f"{m_cut.group(3)} = {self.compteurs[cible_cut]:g}")
+                return True
+        # ── distribution : « give each student 2 glue sticks » → 27×2 ───
+        m_dist = re.search(
+            r"\b(give|gives|bought|buys|needs)\s+(?:each|every)\s+([a-zà-ü]+)\s+"
+            r"(\d+(?:[.,]\d+)?)\s+([a-zà-ü]+(?:\s+[a-zà-ü]+)?)", ctx, re.IGNORECASE)
+        if m_dist:
+            donne = _objet_de(m_dist.group(2))
+            recu = _objet_de(m_dist.group(4))
+            if donne is not None and donne in self.compteurs and recu is not None:
+                self.compteurs[recu] = self.compteurs[donne] * float(m_dist.group(3))
+                self.etapes.append(f"« {ctx.strip()[-38:]} » → {donne} ×"
+                                   f"{m_dist.group(3)} = {self.compteurs[recu]:g}")
+                return True
+        # ── « N were left » après un état → retrait (« 14 pieces were left »)
+        if re.search(r"\b(?:were\s+\d+(?:[.,]\d+)?\s+[a-zà-ü]+\s+left|"
+                     r"\d+(?:[.,]\d+)?\s+[a-zà-ü]+\s+were\s+left)\b", ctx) \
+                and (len(self.compteurs) == 1
+                     or (n.objet is not None and n.objet in self.compteurs)) \
+                and not re.search(r"\bleft\b", _derniere_phrase(q)):
+            cle = n.objet if n.objet in self.compteurs else next(iter(self.compteurs))
+            self.compteurs[cle] -= n.valeur
+            self.etapes.append(f"« {ctx.strip()[-38:]} » → −{n.valeur:g} (restant) = "
+                               f"{self.compteurs[cle]:g}")
+            return True
+        # ── paquets : « come in packs of 8 » → ceil(quantité / 8) ───────
+        if re.search(r"\bin packs?\s+of\b", ctx):
+            import math as _math
+            objets = {k: v for k, v in self.compteurs.items() if k != "pack"}
+            if objets:
+                cle = max(objets, key=objets.get)
+                self.compteurs["pack"] = _math.ceil(objets[cle] / n.valeur)
+                self.etapes.append(f"« {ctx.strip()[-38:]} » → packs = ceil("
+                                   f"{objets[cle]:g} ÷ {n.valeur:g}) = "
+                                   f"{self.compteurs['pack']:g}")
+                return True
+        objet = n.objet or None
+        if objet is None:
+            objet = self._objet_implicite(ctx)
+            if objet is None:
+                return False
+        cible = objet if objet in self.compteurs else (
+            next(iter(self.compteurs)) if len(self.compteurs) == 1 else None)
+        if cible is None and objet not in self.compteurs:
+            cible = objet
+        retrait_proche = re.search(_RETRAIT, ctx)
+        ajout_proche = re.search(_AJOUT, ctx)
+        if retrait_proche and cible is not None and cible in self.compteurs:
+            self.compteurs[cible] -= n.valeur
+            self.derniere_action = "soustraction"
+            self.etapes.append(f"« {ctx.strip()[-38:]} » → −{n.valeur:g} = "
+                               f"{self.compteurs[cible]:g}")
+            return True
+        if ajout_proche:
+            self.compteurs[cible] = self.compteurs.get(cible, 0.0) + n.valeur
+            self.derniere_action = "addition"
+            self.etapes.append(f"« {ctx.strip()[-38:]} » → +{n.valeur:g} = "
+                               f"{self.compteurs[cible]:g}")
+            return True
+        if cible is not None and cible in self.compteurs and self.derniere_action:
+            if self.derniere_action == "soustraction":
+                self.compteurs[cible] -= n.valeur
+                self.etapes.append(f"« {ctx.strip()[-38:]} » → −{n.valeur:g} (momentum) = "
+                                   f"{self.compteurs[cible]:g}")
+            else:
+                self.compteurs[cible] += n.valeur
+                self.etapes.append(f"« {ctx.strip()[-38:]} » → +{n.valeur:g} (momentum) = "
+                                   f"{self.compteurs[cible]:g}")
+            return True
+        if objet not in self.compteurs:
+            self.compteurs[objet] = n.valeur
+            self.etapes.append(f"« {ctx.strip()[-38:]} » → {objet} = {n.valeur:g}")
+            if re.search(r"\bin a|in each|per\b", ctx):
+                self.densites[objet] = n.valeur
+            return True
+        return False
 
-        if not self.compteurs:
-            return None
-        # garde-fou de confiance (strict) : la machine ne répond que si elle a
-        # compris TOUS les nombres à traiter (les nombres hors densité skip sont
-        # exclus) — sinon elle rend la main au pipeline par résonance
-        a_traiter = len(matches) - len(densites_skippees)
-        if len(self.etapes) < a_traiter:
-            return None
+    def _objet_implicite(self, ctx: str) -> Optional[str]:
+        """Action sans objet local (« eats 3 ») : mono-compteur → l'objet unique."""
+        if len(self.compteurs) == 1 and (re.search(_RETRAIT, ctx)
+                                         or re.search(_AJOUT, ctx)):
+            return next(iter(self.compteurs))
+        return None
 
-        # réponse : l'objet interrogé dans la question finale
-        derniere_phrase = _derniere_phrase(q)
-        cible_finale = _objet_de(derniere_phrase)
-        if cible_finale is not None and cible_finale in self.compteurs:
-            valeur = self.compteurs[cible_finale]
-        else:
-            cle = list(self.compteurs.keys())[-1]
-            valeur = self.compteurs[cle]
-        return self._paquet(question, valeur, "machine_etats")
+    def _cible(self, objet: Optional[str]) -> Optional[str]:
+        """Objet cible d'une opération : le compteur de l'objet, ou le mono-compteur."""
+        if objet is not None and objet in self.compteurs:
+            return objet
+        if len(self.compteurs) == 1:
+            return next(iter(self.compteurs))
+        return None
 
-    # ── équations relatives ─────────────────────────────────────────────
+    def _reponse_finale(self, q: str) -> Optional[float]:
+        """Montant (si demandé) ou compteur de l'objet de la question finale."""
+        from typeur import CONVERSIONS_MONNAIE
+        derniere = _derniere_phrase(q)
+        # 1. demande monétaire → montant (objet × prix unitaire, sinon compteur $)
+        if re.search(r"\b(in dollars|dollars|cents|money|pay|profit|earn|make|"
+                     r"cost|francs|euros|net|coûtent|coutent|value|worth)\b",
+                     derniere, re.IGNORECASE) \
+                or (self.montant and self.prix):
+            # unité monétaire demandée (« cents » → ×100)
+            for unite, facteur in CONVERSIONS_MONNAIE.items():
+                if unite and re.search(rf"\b{unite}s?\b", derniere):
+                    return self.montant / facteur if self.montant else None
+            if self.prix:
+                for objet, prix in self.prix.items():
+                    if objet in self.compteurs:
+                        return self.compteurs[objet] * prix
+            return self.montant if self.montant else None
+        # 2. objet de la question finale (détection directe)
+        objet_final = _objet_de(derniere)
+        if objet_final is not None and objet_final in self.compteurs:
+            return self.compteurs[objet_final]
+        # 3. dernier compteur
+        if self.compteurs:
+            return self.compteurs[list(self.compteurs.keys())[-1]]
+        return None
+
+    # ── le résolveur principal ──────────────────────────────────────────
     def _equations_relatives(self, q: str) -> Optional[Dict[str, Any]]:
         """« A has twice as many X as B » / « A has k times as many X as B »,
         base « if C has n X » → propager et répondre (somme si « together »)."""
