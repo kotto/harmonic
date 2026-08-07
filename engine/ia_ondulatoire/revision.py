@@ -70,6 +70,15 @@ class RevisionLLM:
             racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             if racine not in sys.path:
                 sys.path.insert(0, racine)
+            # auto-chargement du .env de la racine (clés DEEPSEEK_API_KEY…)
+            if not os.environ.get("DEEPSEEK_API_KEY"):
+                chemin_env = os.path.join(racine, ".env")
+                if os.path.exists(chemin_env):
+                    for ligne in open(chemin_env, encoding="utf-8"):
+                        ligne = ligne.strip()
+                        if ligne and not ligne.startswith("#") and "=" in ligne:
+                            cle, valeur = ligne.split("=", 1)
+                            os.environ.setdefault(cle.strip(), valeur.strip())
             from llm.router import HarmonicLLM          # noqa: E402
             from llm.base import LLMConfig              # noqa: E402
             self._llm = HarmonicLLM()
@@ -127,7 +136,9 @@ class RevisionLLM:
         if llm is None:
             return None
         try:
-            rep = llm.generate(prompt, config=self._cfg)
+            # category="code" → routeur deepseek-chat (rapide, fiable pour le
+            # format PLAN) ; fallback propre si la clé DeepSeek est absente
+            rep = llm.generate(prompt, category="code", config=self._cfg)
             if rep is not None and getattr(rep, "success", False) and rep.content:
                 return rep.content
             return None

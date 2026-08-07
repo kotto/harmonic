@@ -107,13 +107,13 @@ python gsm8k.py   # benchmark officiel (n configurable) → data/ia_ondulatoire/
 ```
 **La révision LLM** (mode 1 : révision sélective) : le solveur 0-LLM propose
 (nombres typés + étapes), le LLM valide la sémantique et répond au format
-`PLAN: <expression>` (ex. « every second glass costs 60% » → `16*(5+5*0.6)/2`),
+`PLAN: <expression>` (ex. « every second glass costs 60% » → `16/2*5*0.6 + 16/2*5`),
 évaluée localement par un parseur sécurisé — le calcul reste exact à 100 %.
-Démonstration validée : Kylar corrigé 80 → 64 ✅ (mock). **État des fournisseurs
-au 07/08/2026** : Anthropic crédits épuisés · OpenAI gpt-4o-mini 429 · pas de
-clé DeepSeek → la révision se dégrade proprement (solution déterministe
-conservée) tant qu'aucun fournisseur ne répond ; rebrancher via
-`llm/router.py` (clé DEEPSEEK_API_KEY).
+**Active avec la clé DeepSeek du `.env`** (auto-chargée, routeur category=code) :
+Kylar corrigé 80 → 64 ✅ en ~3 s. **Politique sélective** mesurée sur 30
+problèmes : +7 net, 0 corrompu, 9 appels LLM (révision systématique : +13 /
+−2 / 30 appels — activable via `{"reviser_tous": true}`). La machine typée
+confiante n'est jamais révisée (anti-corruption).
 La sélection d'opération est une expérience d'interférence : chaque famille
 (addition, soustraction, multiplication, division) est un **prototype d'onde** =
 SUPERPOSE des encodages de ses mots-clés ; l'onde de la phrase résonne avec

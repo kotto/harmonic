@@ -172,7 +172,7 @@ class GSM8KOndulatoire:
         return a + b
 
     def resoudre(self, question: str, reviser: bool = False,
-                 revision=None) -> Dict[str, Any]:
+                 revision=None, reviser_tous: bool = False) -> Dict[str, Any]:
         """Résout un énoncé. Trois moteurs en cascade, ordonnés par précision
         interne mesurée sur le benchmark complet (07/08/2026) :
         1. les 45 solveurs de patrons GSM8K (7,5 % — solution héritée de
@@ -198,7 +198,17 @@ class GSM8KOndulatoire:
         if reviser and resultat.get("reponse_num") is not None:
             from revision import RevisionLLM
             revision = revision or RevisionLLM()
-            resultat = revision.reviser(question, resultat)
+            # politique sélective (défaut) : ne réviser que les moteurs FAIBLES
+            # (résonance, consensus, enchaîné, multiplication par unité) —
+            # mesuré : +7 net / 0 corrompu / 9 appels (vs +13 / −2 / 30 en
+            # révision systématique). La machine typée confiante est conservée.
+            moteur = (str(resultat.get("moteur") or "resonance") + " "
+                      + " ".join(str(o) for o in resultat.get("operations", [])))
+            faible = (moteur == "resonance" or any(m in moteur for m in
+                                                   ("consensus", "enchaîné",
+                                                    "multiplication par unité")))
+            if reviser_tous or faible:
+                resultat = revision.reviser(question, resultat)
         return resultat
 
     def _resoudre_patrons(self, question: str) -> Optional[Dict[str, Any]]:

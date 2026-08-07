@@ -131,7 +131,10 @@ class OrchestrateurApps:
                    f"contre les prototypes d'ondes, 0 LLM)")
         return {"response": texte, "confidence": 0.9, "latency_ms": r["temps_ms"],
                 "etapes": r["etapes"], "reponse": r["reponse"],
-                "operations": r["operations"], "source": "ondulatoire-maths"}
+                "reponse_num": r["reponse_num"],
+                "operations": r.get("operations", []),
+                "moteur": r.get("moteur"),
+                "source": "ondulatoire-maths"}
 
     # ── EDUCAL KA ───────────────────────────────────────────────────────
     def quiz_submit(self, user_id: str, unit_id: str, answers: list,
@@ -471,7 +474,8 @@ if _FLASK:
         # propre si aucun fournisseur n'est disponible)
         if donnees.get("reviser") and resultat.get("reponse_num") is not None:
             from revision import RevisionLLM
-            resultat = RevisionLLM().reviser(question, resultat)
+            resultat = obtenir_orchestrateur().maths.resoudre(
+                question, reviser=True, reviser_tous=bool(donnees.get("reviser_tous")))
             resultat["source"] = "ondulatoire-maths+llm"
         return jsonify(resultat)
 
