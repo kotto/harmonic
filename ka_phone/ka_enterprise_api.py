@@ -1,4 +1,4 @@
-<![CDATA[#!/usr/bin/env python3
+#!/usr/bin/env python3
 r"""
 ╔══════════════════════════════════════════════════════════════════╗
 ║  KA-ENTERPRISE API v1 — Serveur SaaS complet                  ║
@@ -459,4 +459,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-]]>

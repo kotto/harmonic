@@ -1,0 +1,250 @@
+{
+  "description": "Protocoles VIH/Tuberculose/MST — OMS 2024 soins primaires",
+  "version": "1.0",
+  "source": "WHO Consolidated Guidelines on HIV, TB and STIs 2024",
+  "conditions": {
+    "vih_depistage": {
+      "nom": "Dépistage du VIH",
+      "signes_indicateurs": [
+        "perte de poids inexpliquée",
+        "diarrhée persistante >1 mois",
+        "candidose orale",
+        "zona étendu",
+        "adénopathies persistantes",
+        "tuberculose",
+        "pneumocystose",
+        "herpès chronique"
+      ],
+      "tokens": [
+        "perte_poids",
+        "diarrhée",
+        "candidose_orale",
+        "zona_étendu",
+        "adénopathies",
+        "bronchectasie"
+      ],
+      "methode": "Test rapide VIH (TROD) — anticorps. Si positif, test de confirmation. Chez enfant <18 mois : PCR-ADN viral (les anticorps sont ceux de la mère).",
+      "conduite": "Si positif: bilan initial (CD4, charge virale, co-infections). Orientation vers filière de prise en charge. Prévention de la transmission (PTME).",
+      "urgence": false,
+      "attention": "Offrir le dépistage de manière systématique (opt-out) en consultation prénatale, TB, MST, malnutrition, accueil hospitalier. Toute personne sexuellement active devrait connaître son statut."
+    },
+    "vih_stade_oms": {
+      "nom": "Stadification clinique OMS du VIH",
+      "stades": {
+        "stade_1": "Asymptomatique. Adénopathies persistantes.",
+        "stade_2": "Perte de poids <10%. Manifestations muco-cutanées mineures (angularite, zona, ulcérations buccales récidivantes). Infections respiratoires hautes récidivantes.",
+        "stade_3": "Perte de poids >10%. Diarrhée chronique >1 mois. Fièvre prolongée >1 mois. Candidose orale. Leucoplasie chevelue. Tuberculose pulmonaire. Angine streptococcique sévère.",
+        "stade_4": "Stade SIDA. Pneumocystose. Toxoplasmose cérébrale. Cryptococcose. Cancers (Kaposi, lymphome). Encéphalopathie VIH. Wasting syndrome. Candidose œsophagienne. CMV."
+      },
+      "traitement": "Démarrer TARV si: stade 3-4 OU CD4 <350 OU toute personne quelle que soit la stadification (Treat All / Traitement Universel OMS 2024).",
+      "urgence": false,
+      "seuils": {
+        "logic": "any",
+        "rules": [
+          {
+            "symptoms": [
+              "perte_poids",
+              "diarrhée",
+              "fièvre_prolongée"
+            ],
+            "score": 0.8
+          },
+          {
+            "symptoms": [
+              "candidose_orale",
+              "adénopathies"
+            ],
+            "score": 0.7
+          }
+        ]
+      }
+    },
+    "tarv_premiere_ligne": {
+      "nom": "Traitement Antirétroviral (TARV) — Première Ligne",
+      "regimes": {
+        "tdf_3tl_dtg": "Tenofovir (TDF) + Emtricitabine (3TC/FTC) + Dolutégravir (DTG) — Schéma préféré OMS 2024. 1 cp/jour.",
+        "tdf_3tc_efv": "TDF + 3TC + Efavirenz (EFV) — Alternative. 1 cp/jour.",
+        "abc_3tc_dtg": "Abacavir + 3TC + DTG — Alternative (si insuffisance rénale)."
+      },
+      "grossesse": "DTG : OK tous trimestres (OMS 2024). Préférer DTG même T1 (bénéfice > risque).",
+      "attention": "⚠️ DTG peut interférer avec la rifampicine (TB) → doubler la dose DTG (50mg 2x/j) si rifampicine. Surveiller prise de poids, troubles du sommeil (EFV).",
+      "suivi": "Charge virale à 6 mois, puis /an. Objectif: indétectable (<50 copies/ml). CD4 /6-12 mois.",
+      "urgence": false
+    },
+    "ptme": {
+      "nom": "Prévention Transmission Mère-Enfant (PTME/PTCT)",
+      "conduite": "1. Dépister toutes les femmes enceintes. 2. Si VIH+: démarrer TARV IMMÉDIATEMENT (DTG-3TC-TDF). 3. Mode d'accouchement: césarienne si charge virale détectable à terme. 4. Nouveau-né: NVP prophylaxie 6 semaines (si mère non traitée) ou 2 semaines (si mère bien traitée). 5. Allaitement: maternel exclusif 6 mois + TARV maternel OU substitut lacté si disponible. 6. Test bébé: PCR à 6 semaines, 6 mois, 18 mois.",
+      "traitement": {
+        "mere": "TDF + 3TC + DTG pendant toute la grossesse et post-partum",
+        "bebe": "Névirapine sirop 2mg/kg / jour x 6 semaines (mère non traitée) ou 2 semaines (mère traitée)",
+        "allaitement": "Allaitement maternel exclusif 6 mois si mère sous TARV. Sevrage progressif 6-12 mois."
+      },
+      "urgence": false,
+      "attention": "Sans intervention, taux de transmission = 15-45%. Avec PTME optimale = <2%. L'enjeu est de démarrer le TARV le PLUS TÔT possible dans la grossesse."
+    },
+    "tuberculose_depistage": {
+      "nom": "Dépistage de la Tuberculose (TB)",
+      "signes": [
+        "toux >2 semaines",
+        "expectorations (parfois hémoptysie)",
+        "fièvre prolongée",
+        "sueurs nocturnes",
+        "perte de poids",
+        "asthénie",
+        "douleur thoracique",
+        "adénopathies périphériques"
+      ],
+      "tokens": [
+        "toux_grasse",
+        "expectorations",
+        "fièvre_prolongée",
+        "sueurs_nocturnes",
+        "perte_poids",
+        "asthénie",
+        "douleur_thoracique",
+        "adénopathies"
+      ],
+      "methode": "1. Examen des crachats: GeneXpert MTB/RIF (méthode préférée — détecte TB + résistance rifampicine en 2h). 2. Microscopie (BAAR) si pas de GeneXpert. 3. Radiographie thoracique si disponible. 4. Chez enfant: test tuberculinique, IDR, gastric lavage.",
+      "conduite": "Si suspicion: recueillir 2 crachats (matin + spot). Si BAAR+ ou GeneXpert+: Déclarer (notification obligatoire). Démarrer traitement TB. Dépister co-infection VIH systématiquement.",
+      "urgence": false,
+      "attention": "La TB extrapulmonaire (ganglionnaire, osseuse, méningée) est fréquente en zone d'endémie VIH. Toujours dépister le VIH chez tout patient TB."
+    },
+    "tb_traitement": {
+      "nom": "Traitement de la Tuberculose (DOTS/STR)",
+      "regimes": {
+        "sensible": "Phase intensive (2 mois): RHZE = Rifampicine + Isoniazide + Pyrazinamide + Ethambutol. Phase d'entretien (4 mois): RH = Rifampicine + Isoniazide. Total: 6 mois.",
+        "sensible_4mois": "Phase intensive: HRZE(E) + moxifloxacine (régime court 4 mois OMS 2024 — pour formes non cavitaraires).",
+        "resistante": "BPaLM 6 mois: Béd aquiline + Prétonamide + Linezolide + Moxifloxacine (TB-MDR préférentiel OMS 2024)."
+      },
+      "doses": {
+        "rifampicine": "10mg/kg (max 600mg) / jour PO",
+        "isoniazide": "5mg/kg (max 300mg) / jour PO. Vitamine B6 25mg/j pour prévenir neuropathie.",
+        "pyrazinamide": "25mg/kg (max 2g) / jour PO",
+        "ethambutol": "15-20mg/kg / jour PO"
+      },
+      "effets_secondaires": "Hépatotoxicité (surveiller transaminases), neuropathie périphérique (INH — vitamine B6), névrite optique (EMB — acuité visuelle, vision des couleurs), urticaire/flush (RIF), urate élevé (PZA).",
+      "suivi": "Examen crachats à 2, 5, 6 mois. Radiographie à 2 et 6 mois. Transaminases à 1 mois. Observation directe (DOT) recommandée.",
+      "attention": "⚠️ Rifampicine: urine/larmes/sueur orange-rouge (normal). Interactions médicamenteuses majeures: AVK, contraception orale (utiliser autre méthode), DTG (doubler dose), inhibiteurs protéase.",
+      "urgence": false
+    },
+    "tb_vih_coinfection": {
+      "nom": "Co-infection VIH-TB",
+      "conduite": "1. Dépister VIH chez tout patient TB. 2. Dépister TB active chez tout patient VIH (symptômes, GeneXpert). 3. Traitement TB en priorité (commencer AVANT le TARV si CD4 bas). 4. TARV: démarrer dans les 2 semaines si CD4 <50, sinon après 2-8 semaines de TB. 5. ITP (Isoniazide Préventive): 6 mois si test tuberculique + et pas de TB active.",
+      "attention": "⚠️ Syndrome de reconstitution immunitaire (IRIS): aggravation apparente des symptômes après démarrage TARV (réaction immunitaire excessive contre mycobactéries). Distinguer de l'échec thérapeutique. Corticoïdes si IRIS sévère.",
+      "urgence": true
+    },
+    "mst_uretrite": {
+      "nom": "Urétrite chez l'homme (syndrome écoulement urétral)",
+      "signes": [
+        "écoulement urétral purulent ou muqueux",
+        "brûlures mictionnelles",
+        "prurit urétral"
+      ],
+      "tokens": [
+        "écoulement_urétral",
+        "brûlures_urinaires",
+        "prurit_urétral"
+      ],
+      "conduite": "Traitement syndromique OMS (traiter les 2 causes principales simultanément): Gonocoque + Chlamydia.",
+      "traitement": {
+        "gonocoque": "Ceftriaxone 250mg IM dose unique (OU Cefixime 400mg PO)",
+        "chlamydia": "Azithromycine 1g PO dose unique (OU Doxycycline 100mg 2x/j x 7j)",
+        "partner": "Traiter le/les partenaire(s). Abstinence 7 jours. Dépistage VIH/syphilis."
+      },
+      "urgence": false,
+      "attention": "Ne pas attendre les résultats de laboratoire — traiter syndromiquement. Le partenaire doit être traité même asymptomatique."
+    },
+    "mst_ulcere_genital": {
+      "nom": "Ulcère génital",
+      "signes": [
+        "ulcération géniale",
+        "douleur (herpès) ou indolore (syphilis)",
+        "adénopathie inguinale"
+      ],
+      "tokens": [
+        "ulcération_génitale",
+        "douleur_locale",
+        "adénopathie_inguinale"
+      ],
+      "conduite": "Traitement syndromique selon aspect:",
+      "traitement": {
+        "viral_herpès": "Aciclovir 400mg / 8h PO x 7 jours (herpès récurrent: 5 jours)",
+        "syphilis": "Pénicilline G Benzathine 2.4 millions UI IM dose unique (syphilis précoce).",
+        "chancre_mou": "Azithromycine 1g PO dose unique OU Ceftriaxone 250mg IM dose unique.",
+        "donovanose": "Azithromycine 1g/semaine x 3 semaines minimum."
+      },
+      "attention": "Dépister VIH systématiquement. L'ulcération augmente le risque de transmission du VIH de 2-5x. Traiter le partenaire.",
+      "urgence": false
+    },
+    "mst_leucorrhees": {
+      "nom": "Leucorrhées (écoulement vaginal)",
+      "signes": [
+        "pertes vaginales anormales (quantité, couleur, odeur)",
+        "prurit vulvaire",
+        "dyspareunie",
+        "odeur de poisson (vaginose)"
+      ],
+      "tokens": [
+        "pertes_vaginales",
+        "prurit_vulvaire",
+        "dyspareunie",
+        "odeur_poisson"
+      ],
+      "conduite": "Traitement syndromique:",
+      "traitement": {
+        "vaginose": "Métronidazole 2g PO dose unique OU 400mg / 12h x 7 jours",
+        "trichomonase": "Métronidazole 2g PO dose unique (partenaire aussi)",
+        "candidose": "Fluconazole 150mg PO dose unique OU ovules miconazole 3 jours",
+        "cervicite": "Ceftriaxone 250mg IM + Azithromycine 1g PO (si cervicite à gonocoque/chlamydia suspectée)"
+      },
+      "urgence": false
+    },
+    "hepatite_b": {
+      "nom": "Hépatite B",
+      "signes": [
+        "asthénie",
+        "ictère",
+        "urines foncées",
+        "selles décolorées",
+        "douleur hypocondre droit",
+        "parfois asymptomatique"
+      ],
+      "tokens": [
+        "asthénie",
+        "ictère",
+        "urines_foncées",
+        "selles_décolorées",
+        "douleur_hypocondre_droit"
+      ],
+      "depistage": "AgHBs (antigène de surface). Si positif: AgHBe, ADN-VHB, transaminases, échographie. Charge virale pour décider du traitement.",
+      "traitement": {
+        "teneofovir": "Tenofovir (TDF) 300mg / jour — traitement de 1ère intention OMS",
+        "entecavir": "Entécavir 0.5-1mg / jour — alternative"
+      },
+      "prevention": {
+        "vaccin": "Vaccin hépatite B — dose à la naissance, puis pentavalent à 6-10-14 semaines. 3 doses = protection à vie chez 95%.",
+        "perinatal": "Si mère AgHBs+: immunoglobulines HB + vaccin dans les 24h après naissance"
+      },
+      "urgence": false,
+      "attention": "La transmission verticale mère-enfant est la principale voie en Afrique. Vacciner TOUS les nouveau-nés à la naissance."
+    },
+    "prophylaxie_prep": {
+      "nom": "PrEP (Prophylaxie Pré-Exposition VIH)",
+      "indications": [
+        "partenaire séropositif non supprimé",
+        "travailleur du sexe",
+        "MSM",
+        "usager de drogue IV",
+        "sérodiscordance stable",
+        "population clé à haut risque"
+      ],
+      "traitement": {
+        "quotidienne": "TDF + FTC (Tenofovir + Emtricitabine) 1 cp / jour. Efficacité 99% si observance.",
+        "on_demand_2211": "PrEP à la demande (2-1-1): 2 cp avant rapport, 1 cp à 24h, 1 cp à 48h. Pour hommes MSM."
+      },
+      "contre_indications": "Créatinine clairance <60ml/min, AgHBs+ avec flambée (risque d'exacerbation hépatique à l'arrêt), <35kg (ou <15 ans selon pays)",
+      "suivi": "Test VIH / 3 mois, créatinine / 6 mois, AgHBs à l'initiation.",
+      "urgence": false
+    }
+  }
+}

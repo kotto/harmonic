@@ -22,10 +22,12 @@ from .mistral_client import MistralLLM
 from .local_llm import LocalLLM
 from .router import HarmonicLLM
 from .open_router import HarmonicOpenRouter, detect_machine, estimate_model_size
+from .deepseek_styler import DeepSeekStyleFormatter, get_styler, polish_response
 
 __all__ = [
     'LLMInterface', 'LLMResponse', 'LLMConfig',
     'OpenAILLM', 'AnthropicLLM', 'MistralLLM', 'LocalLLM',
     'HarmonicLLM',
     'HarmonicOpenRouter', 'detect_machine', 'estimate_model_size',
+    'DeepSeekStyleFormatter', 'get_styler', 'polish_response',
 ]

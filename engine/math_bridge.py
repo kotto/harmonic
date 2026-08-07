@@ -9,6 +9,68 @@ _LM_ARENA_DIR = os.path.join(os.path.dirname(__file__), '..', 'lm_arena')
 if _LM_ARENA_DIR not in sys.path:
     sys.path.insert(0, _LM_ARENA_DIR)
 
+
+def _safe_eval_arith(expr: str):
+    """
+    Évalue une expression arithmétique PURE (chiffres + opérateurs) avec la
+    priorité correcte et les entiers EXACTS — « 25 * 4 + 10 » → 110,
+    « 2^40 » → 1099511627776. Basé sur ast (jamais eval) : seuls les
+    nombres et les opérateurs binaires sont acceptés.
+    Retourne la chaîne résultat, ou None si ce n'est pas une expression pure.
+    """
+    import ast
+    import operator
+    expr = expr.rstrip('?！!.').strip()
+    expr = expr.replace('^', '**').replace('×', '*').replace(':', '/')
+    # Les mots « plus / moins / fois / divise » → opérateurs
+    expr = re.sub(r'\bplus\b', '+', expr)
+    expr = re.sub(r'\bmoins\b', '-', expr)
+    expr = re.sub(r'\b(?:fois|multipli[ée] par)\b', '*', expr)
+    expr = re.sub(r'\bdivis[ée] par\b', '/', expr)
+    expr = re.sub(r'\bpuissance\b', '**', expr)
+    expr = expr.replace('x', '*')
+    if not re.fullmatch(r'[\d\s+\-*/().]+', expr):
+        return None  # contient des lettres ou d'autres symboles
+    ops = {ast.Add: operator.add, ast.Sub: operator.sub,
+           ast.Mult: operator.mul, ast.Div: operator.truediv,
+           ast.Pow: operator.pow, ast.USub: operator.neg,
+           ast.UAdd: operator.pos}
+
+    def _eval(node):
+        if isinstance(node, ast.Expression):
+            return _eval(node.body)
+        if isinstance(node, ast.BinOp) and type(node.op) in ops:
+            l, r = _eval(node.left), _eval(node.right)
+            if l is None or r is None:
+                return None
+            if isinstance(node.op, ast.Div):
+                if r == 0:
+                    return None
+                res = l / r
+                return int(res) if float(res).is_integer() else res
+            if isinstance(node.op, ast.Pow):
+                if isinstance(l, int) and isinstance(r, int):
+                    return l ** r
+                return l ** r
+            return ops[type(node.op)](l, r)
+        if isinstance(node, ast.UnaryOp) and type(node.op) in ops:
+            v = _eval(node.operand)
+            return ops[type(node.op)](v) if v is not None else None
+        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+            return node.value
+        return None
+
+    try:
+        tree = ast.parse(expr, mode='eval')
+    except SyntaxError:
+        return None
+    result = _eval(tree.body)
+    if result is None:
+        return None
+    if isinstance(result, float) and float(result).is_integer():
+        result = int(result)
+    return str(result).replace('.0', '') if isinstance(result, float) else str(result)
+
 # Cache du moteur mathématique (import paresseux)
 _MATH_ENGINE = None
 
@@ -17,11 +79,6 @@ def _get_math_engine():
     global _MATH_ENGINE
     if _MATH_ENGINE is None:
         try:
-            # Ajouter aussi le projet cerveau_harmonique_v1 au path
-            projet_dir = os.path.join(os.path.dirname(__file__), '..', 'projet', 'cerveau_harmonique_v1')
-            if projet_dir not in sys.path:
-                sys.path.insert(0, projet_dir)
-            
             from harmonic_math_engine import HarmonicMathEngine
             _MATH_ENGINE = HarmonicMathEngine()
             print("  🧮 Moteur mathématique LM Arena chargé")
@@ -44,7 +101,16 @@ def try_math_solve(question: str, lang: str = 'fr') -> str:
     result = _try_simple_calc(question, lang)
     if result:
         return result
-    
+
+    # Niveau 1.5 : CAS symbolique (SymPy) — dérivées, intégrales, limites, équations
+    try:
+        from harmonic_cas import cas_solve
+        cas_result = cas_solve(question)
+        if cas_result:
+            return cas_result
+    except ImportError:
+        pass
+
     # Niveau 2 : Moteur mathématique LM Arena (algèbre, géométrie, trigonométrie, etc.)
     engine = _get_math_engine()
     if engine:
@@ -63,6 +129,12 @@ def try_math_solve(question: str, lang: str = 'fr') -> str:
 def _try_simple_calc(q: str, lang: str) -> str:
     """Micro-calculateur local — opérations simples."""
     q = q.lower().strip()
+    # Déaccentuation : les patterns sont écrits sans accents (« carree? »)
+    # et la question peut arriver sous forme « racine carrée de 169 ».
+    for _a, _b in [('é', 'e'), ('è', 'e'), ('ê', 'e'), ('ë', 'e'),
+                   ('à', 'a'), ('â', 'a'), ('î', 'i'), ('ï', 'i'),
+                   ('ô', 'o'), ('ù', 'u'), ('û', 'u'), ('ç', 'c')]:
+        q = q.replace(_a, _b)
     
     # === CONSTANTES CONNUES (mot entier, pas substring!) ===
     q_words = set(q.split())
@@ -114,67 +186,118 @@ def _try_simple_calc(q: str, lang: str) -> str:
         return f"{c/f:.1f} m."
     
     # === ARITHMÉTIQUE ===
+    # Nettoyer les préfixes
+    arithmetic_q = re.sub(r'^(combien\s+font\s+|calcule\s+|que\s+vaut\s+|calculer?\s+|compute\s+|what\s+is\s+)', '', q)
+
+    # Si la question contient des variables algébriques (x, y, z suivies d'exposant)
+    # ou un signe =, c'est une expression algébrique → ne pas traiter ici
+    if re.search(r'[xyznt]\s*[\^2-9]', arithmetic_q) or '=' in arithmetic_q:
+        return None  # Laisser le CAS gérer
+    arithmetic_q = re.sub(r'^(combien\s+font\s+|calcule\s+|que\s+vaut\s+|calculer?\s+|compute\s+|what\s+is\s+)', '', q)
+
+    # ÉVALUATEUR ARITHMÉTIQUE EXACT (priorité correcte, entiers purs) :
+    # « 25 * 4 + 10 » → 110 (et non 4 + 10), « 2^40 » → 1099511627776
+    # (au-delà de la limite d'exposant des patterns). n'accepte QUE des
+    # expressions pures (chiffres + opérateurs) — jamais de code.
+    exact = _safe_eval_arith(arithmetic_q)
+    if exact is not None:
+        return exact
+
     # Addition : X + Y, X plus Y
-    m = re.search(r'(\d+)\s*(\+|plus)\s*(\d+)(?!\s*(%|pourcent|fois|×|\*|x|divise|/))', q)
+    m = re.search(r'(\d+)\s*(\+|plus)\s*(\d+)(?!\s*(%|pourcent|fois|×|\*|x|divise|/))', arithmetic_q)
     if m:
         return f"{float(m.group(1)) + float(m.group(3)):.0f}"
-    
+
     # Soustraction : X - Y, X moins Y
-    m = re.search(r'(\d+)\s*(-|moins)\s*(\d+)', q)
+    m = re.search(r'(\d+)\s*(-|moins)\s*(\d+)', arithmetic_q)
     if m:
         return f"{float(m.group(1)) - float(m.group(3)):.0f}"
-    m = re.search(r'(\d+)\s*(divise\s*par|/)\s*(\d+)', q)
-    if m:
-        a, b = float(m.group(1)), float(m.group(3))
-        return f"{a/b:.1f}" if a % b != 0 else f"{int(a/b)}"
-    
-    # Multiplication + addition : X fois Y plus Z, X*Y+Z
-    m = re.search(r'(\d+)\s*(fois|×|\*|x)\s*(\d+)\s*(plus|\+)\s*(\d+)', q)
+
+    # Division : X / Y, X divise par Y
+    for pat in [r'(\d+)\s*(divise\s*par|/)\s*(\d+)', r'(\d+)\s*//\s*(\d+)']:
+        m = re.search(pat, arithmetic_q)
+        if m:
+            groups = m.groups()
+            if len(groups) == 3:
+                a, b = float(groups[0]), float(groups[2])
+            else:
+                a, b = float(groups[0]), float(groups[1])
+            if b == 0: return "∞"
+            return f"{int(a/b)}" if a % b == 0 else f"{a/b:.1f}"
+
+    # Multiplication + addition : X fois Y plus Z, X*Y+Z, 3+4*5
+    m = re.search(r'(\d+)\s*(fois|×|\*|x)\s*(\d+)\s*(plus|\+)\s*(\d+)', arithmetic_q)
     if m:
         a, b, c = float(m.group(1)), float(m.group(3)), float(m.group(5))
         return f"{a * b + c:.0f}"
-    
+
+    # Addition + multiplication (respect precedence): X + Y * Z
+    m = re.search(r'(\d+)\s*(\+)\s*(\d+)\s*(\*)\s*(\d+)', arithmetic_q)
+    if m:
+        a, b, c = float(m.group(1)), float(m.group(3)), float(m.group(5))
+        return f"{a + b * c:.0f}"
+
     # Distance : X km/h (ou km h) pendant Y min/h
-    m = re.search(r'(\d+)\s*km[/\s]*h.*?(\d+)\s*(minute|min|heure|h)', q)
+    m = re.search(r'(\d+)\s*km[/\s]*h.*?(\d+)\s*(minute|min|heure|h)', arithmetic_q)
     if m:
         v, t, unit = float(m.group(1)), float(m.group(2)), m.group(3)
         d = v * t if unit in ('heure', 'h') else v * t / 60
         return f"{d:.0f} km."
-    
+
     # Pourcentage : X% de Y
     for pat in [r'(\d+)\s*%\s*(de|of|sur)\s*(\d+)', r'(\d+)\s*(%|pourcent|pour cent).*?(\d+)']:
-        m = re.search(pat, q)
+        m = re.search(pat, arithmetic_q)
         if m:
             groups = m.groups()
-            if '%' in str(groups[1]) or 'pourcent' in str(groups[1]):
-                pct, val = float(groups[0]), float(groups[2])
-            else:
-                pct, val = float(groups[0]), float(groups[2])
-            return f"{pct * val / 100:.1f}"
-    
+            pct = float(groups[0])
+            val = float(groups[-1])
+            result = pct * val / 100
+            return f"{int(result)}" if result == int(result) else f"{result:.1f}"
+
     # Réduction : X€/Y%
-    m = re.search(r'(\d+)\s*(€|euros?).*?(\d+)\s*(%|pourcent).*?(reduction|remise|solde)', q)
+    m = re.search(r'(\d+)\s*(€|euros?).*?(\d+)\s*(%|pourcent).*?(reduction|remise|solde)', arithmetic_q)
     if m:
         prix, pct = float(m.group(1)), float(m.group(3))
         return f"{prix * (1 - pct/100):.2f} €."
-    
-    # Multiplication simple : X fois Y
-    m = re.search(r'(\d+)\s*(fois|×|\*|x)\s*(\d+)', q)
+
+    # Factorielle : factorielle de X, X!, factorial X
+    for pat in [r'factorielle\s+(?:de\s+)?(\d+)', r'factorial\s+(?:of\s+)?(\d+)', r'(\d+)\s*!']:
+        m = re.search(pat, arithmetic_q)
+        if m:
+            n = int(m.group(1))
+            if n > 50: break
+            fact = 1
+            for i in range(2, n+1): fact *= i
+            return f"{fact}"
+
+    # Puissance : X^Y, X puissance Y
+    for pat in [r'(\d+)\s*\^\s*(\d+)', r'(\d+)\s+puissance\s+(\d+)', r'(\d+)\s*\*\*\s*(\d+)']:
+        m = re.search(pat, arithmetic_q)
+        if m:
+            a, b = float(m.group(1)), float(m.group(2))
+            # Entiers purs → puissance EXACTE sans limite (2^40, 7^15…)
+            if float(a).is_integer() and float(b).is_integer():
+                return str(int(a) ** int(b))
+            if b <= 20:
+                result = a ** b
+                return f"{int(result)}" if result == int(result) else f"{result:.1f}"
+
+    # Multiplication simple : X fois Y, X * Y
+    m = re.search(r'(\d+)\s*(fois|×|\*|x)\s*(\d+)', arithmetic_q)
     if m:
         return f"{float(m.group(1)) * float(m.group(3)):.0f}"
-    
-    # Puissance : X^Y, X puissance Y
-    m = re.search(r'(\d+)\s*(\^|puissance)\s*(\d+)', q)
+
+    # Carré : X², X au carre
+    m = re.search(r'(\d+)\s*(au\s+carre|carre|²)', arithmetic_q)
     if m:
-        a, b = float(m.group(1)), float(m.group(3))
-        if b <= 10:
-            return f"{a ** b:.0f}"
+        return f"{float(m.group(1))**2:.0f}"
     
     # Racine carrée (FR + EN)
-    for pat in [r'racine\s*carree?\s*(de\s*)?(\d+)', r'sqrt\s*(of\s*)?(\d+)', r'square\s*root\s*(of\s*)?(\d+)']:
+    # Patterns: "racine carrée de X", "racine de X", "sqrt(X)", "square root of X"
+    for pat in [r'racine\s+carree?\s+(?:de\s+)?(\d+)', r'racine\s+de\s+(\d+)', r'racine\s+(\d+)', r'sqrt\s*(?:of\s*)?(\d+)', r'square\s*root\s*(?:of\s*)?(\d+)']:
         m = re.search(pat, q)
         if m:
-            val = float(m.group(2))
+            val = float(m.group(1))
             s = math.sqrt(val)
             return f"{int(s)}" if s == int(s) else f"{s:.3f}"
     

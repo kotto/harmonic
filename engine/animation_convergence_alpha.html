@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Équation Maîtresse — Convergence vers α (1/137)</title>
+<style>
+  :root {
+    --bg: #020208;
+    --text: #c8bc90;
+    --gold: #c9a84c;
+    --accent: #6c5ce7;
+    --surface: rgba(15,15,30,0.92);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    cursor: grab;
+  }
+  body:active { cursor: grabbing; }
+  body.dragging { cursor: grabbing; }
+
+  #canvas3d {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 1;
+  }
+
+  .overlay {
+    position: fixed;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  /* Header */
+  .header {
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid rgba(201,168,76,0.15);
+    border-radius: 16px;
+    padding: 12px 32px;
+    backdrop-filter: blur(12px);
+  }
+
+  .header h1 {
+    font-size: 1.3rem;
+    font-weight: 300;
+    letter-spacing: 0.04em;
+    background: linear-gradient(180deg, #e8d090, #8b6914);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header .sub {
+    font-size: 0.7rem;
+    color: #6b6040;
+    font-family: 'Georgia', serif;
+    margin-top: 2px;
+  }
+
+  /* Alpha HUD */
+  .alpha-hud {
+    top: 50%;
+    right: 24px;
+    transform: translateY(-50%);
+    background: var(--surface);
+    border: 1px solid rgba(201,168,76,0.25);
+    border-radius: 20px;
+    padding: 20px 24px;
+    text-align: center;
+    backdrop-filter: blur(12px);
+    min-width: 180px;
+  }
+
+  .alpha-hud .label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: #6b6040;
+    margin-bottom: 4px;
+  }
+
+  .alpha-hud .value {
+    font-size: 2.8rem;
+    font-weight: 700;
+    font-family: 'Georgia', serif;
+    background: linear-gradient(180deg, #ffd700, #c9a84c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+
+  .alpha-hud .delta {
+    font-size: 0.6rem;
+    color: #00d2a0;
+    margin-top: 4px;
+  }
+
+  .alpha-hud .convergence {
+    margin-top: 12px;
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .alpha-hud .convergence-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00d2a0, #c9a84c);
+    border-radius: 2px;
+    transition: width 0.6s;
+  }
+
+  /* Bottom controls */
+  .controls {
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    pointer-events: auto;
+  }
+
+  .btn {
+    padding: 8px 18px;
+    border-radius: 24px;
+    border: 1px solid rgba(201,168,76,0.2);
+    background: var(--surface);
+    color: #998;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.7rem;
+    backdrop-filter: blur(12px);
+    transition: all 0.3s;
+    letter-spacing: 0.03em;
+  }
+
+  .btn:hover { color: var(--gold); border-color: rgba(201,168,76,0.5); }
+  .btn.active { color: #e74c3c; border-color: #e74c3c; }
+
+  /* Info */
+  .info-card {
+    bottom: 100px;
+    left: 24px;
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 0.65rem;
+    color: #888;
+    backdrop-filter: blur(12px);
+    max-width: 260px;
+    pointer-events: auto;
+  }
+
+  .info-card strong { color: var(--gold); }
+  .info-card .interference { color: #e74c3c; font-size: 0.6rem; margin-top: 4px; }
+
+  /* Timeline */
+  .timeline-mini {
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 3px;
+    pointer-events: auto;
+  }
+
+  .t-dot {
+    width: 24px;
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.08);
+    transition: all 0.5s;
+    cursor: pointer;
+  }
+
+  .t-dot.active { background: var(--gold); box-shadow: 0 0 8px rgba(201,168,76,0.4); }
+  .t-dot:hover { background: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body>
+
+<canvas id="canvas3d"></canvas>
+
+<div class="overlay header">
+  <h1>Convergence Harmonique — Émergence de α</h1>
+  <div class="sub">Ψ = H₁φ·Ψ₁ + H₂π·Ψ₁² + H₃e·Ψ₁³ + ... → α ≈ 1/137.035999</div>
+</div>
+
+<div class="overlay alpha-hud" id="alpha-hud">
+  <div class="label">Constante de Structure Fine</div>
+  <div class="value" id="alpha-value">1/∞</div>
+  <div class="delta" id="alpha-delta">en convergence...</div>
+  <div class="convergence"><div class="convergence-fill" id="alpha-bar" style="width:0%"></div></div>
+</div>
+
+<div class="overlay info-card" id="info-card">
+  <strong id="info-title">Mode : Séquence</strong><br>
+  <span id="info-desc">Les 7 constantes s'appliquent une par une</span>
+  <div class="interference" id="info-interference"></div>
+</div>
+
+<div class="overlay controls">
+  <button class="btn" onclick="setMode('sequence')" id="btn-seq">📐 Séquence</button>
+  <button class="btn active" onclick="setMode('interference')" id="btn-int">⚡ Interférence</button>
+  <button class="btn" onclick="setMode('converge')" id="btn-conv">🎯 Convergence α</button>
+  <button class="btn" onclick="setMode('free')" id="btn-free">🌀 Libre</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONSTANTES
+// ═══════════════════════════════════════════════════════════════════════════════
+const PHI = 1.618033988749895;
+const PI = Math.PI;
+const E = Math.E;
+const SQRT2 = Math.SQRT2;
+const SQRT3 = Math.sqrt(3);
+const SQRT5 = Math.sqrt(5);
+const E_OVER_PI = E / PI;
+const TAU = 2 * PI;
+const PHI_INV = 1 / PHI;
+
+// Fine-structure constant (CODATA 2022)
+const ALPHA_CODATA = 0.0072973525693; // ≈ 1/137.035999
+const ALPHA_INV = 1 / ALPHA_CODATA;
+
+// Constants array
+const CONSTS = [
+  { n:1, sym:'φ',   val:PHI,     color:0x00d2a0, name:'Anti-résonance' },
+  { n:2, sym:'π',   val:PI,      color:0x6c5ce7, name:'Courbure/Gravité' },
+  { n:3, sym:'e',   val:E,       color:0xe74c3c, name:'Croissance/Temps' },
+  { n:4, sym:'√2',  val:SQRT2,   color:0x3498db, name:'Symétrie plane' },
+  { n:5, sym:'√3',  val:SQRT3,   color:0xe67e22, name:'Volume 3D' },
+  { n:6, sym:'√5',  val:SQRT5,   color:0x2ecc71, name:'Vie' },
+  { n:7, sym:'e/π', val:E_OVER_PI, color:0xf39c12, name:'Synthèse' },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// THREE.JS
+// ═══════════════════════════════════════════════════════════════════════════════
+const canvas = document.getElementById('canvas3d');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 80);
+camera.position.set(0, 3, 12);
+camera.lookAt(0, 0, 0);
+
+// Fog for depth
+scene.fog = new THREE.FogExp2(0x020208, 0.0008);
+
+// Lighting
+scene.add(new THREE.AmbientLight(0x111122, 0.4));
+const sunLight = new THREE.PointLight(0xffd700, 2.5, 30); sunLight.position.set(0, 0, 0); scene.add(sunLight);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 7 WAVE RINGS — one per constant
+// ═══════════════════════════════════════════════════════════════════════════════
+const rings = [];
+const PARTICLE_COUNT_PER_RING = 800;
+
+function createRing(constant, index) {
+  const count = PARTICLE_COUNT_PER_RING;
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+  
+  const r = constant.color >> 16 & 0xff;
+  const g = constant.color >> 8 & 0xff;
+  const b = constant.color & 0xff;
+  
+  for (let i = 0; i < count; i++) {
+    positions[i*3] = (Math.random() - 0.5) * 0.5;
+    positions[i*3+1] = (Math.random() - 0.5) * 0.5;
+    positions[i*3+2] = (Math.random() - 0.5) * 0.5;
+    colors[i*3] = r/255; colors[i*3+1] = g/255; colors[i*3+2] = b/255;
+  }
+  
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  
+  const mat = new THREE.PointsMaterial({
+    size: 0.06, vertexColors: true, blending: THREE.AdditiveBlending,
+    depthWrite: false, transparent: true, opacity: 0.7,
+  });
+  
+  const ring = new THREE.Points(geo, mat);
+  ring.userData = { constant, index, count };
+  scene.add(ring);
+  rings.push(ring);
+  
+  return ring;
+}
+
+// Create all 7 rings
+CONSTS.forEach((c, i) => createRing(c, i));
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CENTRAL ALPHA SPHERE — grows as convergence improves
+// ═══════════════════════════════════════════════════════════════════════════════
+const alphaSphereGeo = new THREE.SphereGeometry(0.2, 48, 48);
+const alphaSphereMat = new THREE.MeshPhongMaterial({
+  color: 0xffd700, emissive: 0xffd700, emissiveIntensity: 3,
+  transparent: true, opacity: 0.9,
+});
+const alphaSphere = new THREE.Mesh(alphaSphereGeo, alphaSphereMat);
+scene.add(alphaSphere);
+
+// Glow ring around alpha
+const alphaRingGeo = new THREE.TorusGeometry(0.35, 0.02, 16, 100);
+const alphaRingMat = new THREE.MeshBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0.5 });
+const alphaRing = new THREE.Mesh(alphaRingGeo, alphaRingMat);
+scene.add(alphaRing);
+
+// Prediction trail (particles that spiral into alpha)
+const trailCount = 300;
+const trailPositions = new Float32Array(trailCount * 3);
+const trailColors = new Float32Array(trailCount * 3);
+for (let i = 0; i < trailCount; i++) {
+  trailPositions[i*3] = 0; trailPositions[i*3+1] = 0; trailPositions[i*3+2] = 0;
+  trailColors[i*3] = 1; trailColors[i*3+1] = 0.84; trailColors[i*3+2] = 0;
+}
+const trailGeo = new THREE.BufferGeometry();
+trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+trailGeo.setAttribute('color', new THREE.BufferAttribute(trailColors, 3));
+const trailMat = new THREE.PointsMaterial({
+  size: 0.04, vertexColors: true, blending: THREE.AdditiveBlending,
+  depthWrite: false, transparent: true, opacity: 0.8,
+});
+const trail = new THREE.Points(trailGeo, trailMat);
+scene.add(trail);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════════════
+let mode = 'interference'; // 'sequence' | 'interference' | 'converge' | 'free'
+let time = 0;
+let sequenceStep = 0;
+let sequenceTimer = 0;
+let computedAlpha = 0;
+let alphaConverged = false;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COMPUTE ALPHA FROM WAVE POSITIONS (the big prediction)
+// ═══════════════════════════════════════════════════════════════════════════════
+function computeAlpha() {
+  // α = π⁴ · e⁻⁴ · φ⁻⁵ · (√2)⁻¹ · (√3)⁻⁵
+  // This is the prediction from the Master Equation
+  const a = Math.pow(PI, 4) * Math.pow(E, -4) * Math.pow(PHI, -5) * Math.pow(SQRT2, -1) * Math.pow(SQRT3, -5);
+  return a;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UPDATE RING POSITIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+function updateRingPositions(ring, dt) {
+  const pos = ring.geometry.attributes.position.array;
+  const col = ring.geometry.attributes.color.array;
+  const { constant, index, count } = ring.userData;
+  const H = constant.val;
+  const n = constant.n;
+  
+  // Base radius increases with n (higher constants orbit further out)
+  const baseRadius = 1.5 + index * 1.0;
+  
+  for (let i = 0; i < count; i++) {
+    const frac = i / count;
+    
+    // ── SEQUENCE MODE ──────────────────────────────────────────
+    if (mode === 'sequence') {
+      const active = index <= sequenceStep;
+      const opacity = active ? 1.0 : 0.05;
+      ring.material.opacity += (opacity - ring.material.opacity) * 0.1;
+      
+      if (!active) {
+        pos[i*3] *= 0.95; pos[i*3+1] *= 0.95; pos[i*3+2] *= 0.95;
+        continue;
+      }
+      
+      const r = baseRadius + Math.sin(frac * TAU * H * 0.5 + time) * 0.4;
+      const theta = frac * TAU * H * 0.3 + time * (0.5 + index * 0.1);
+      const height = Math.cos(frac * TAU * 0.7 + time * 0.5) * (1 + index * 0.3);
+      
+      pos[i*3] = Math.cos(theta) * r;
+      pos[i*3+1] = height;
+      pos[i*3+2] = Math.sin(theta) * r;
+    }
+    
+    // ── INTERFERENCE MODE ──────────────────────────────────────
+    else if (mode === 'interference') {
+      ring.material.opacity += (0.7 - ring.material.opacity) * 0.05;
+      
+      // Each ring's position is modulated by ALL other constants (cross-interference)
+      let totalPhase = 0;
+      let totalAmp = 1;
+      for (let j = 0; j < CONSTS.length; j++) {
+        const Hj = CONSTS[j].val;
+        const weight = 1 / (1 + Math.abs(index - j));
+        totalPhase += Hj * frac * weight * 0.3;
+        totalAmp *= (1 + Math.sin(Hj * PHI * frac + time * 0.3) * weight * 0.1);
+      }
+      
+      const r = (baseRadius * totalAmp) + Math.sin(totalPhase + time * 0.7) * 0.5;
+      const theta = totalPhase * TAU * 0.5 + time * (0.3 + index * 0.07);
+      const phi = totalPhase * 0.5 + time * 0.2;
+      
+      pos[i*3] = Math.cos(theta) * Math.cos(phi) * r;
+      pos[i*3+1] = Math.sin(phi) * r * 1.3;
+      pos[i*3+2] = Math.sin(theta) * Math.cos(phi) * r;
+      
+      // Color modulation by interference
+      const interferenceStrength = Math.abs(Math.sin(totalPhase * 5 + time));
+      col[i*3] = Math.min(1, col[i*3] * (0.8 + interferenceStrength * 0.4));
+      col[i*3+1] = Math.min(1, col[i*3+1] * (0.8 + interferenceStrength * 0.3));
+      col[i*3+2] = Math.min(1, col[i*3+2] * (0.8 + interferenceStrength * 0.2));
+    }
+    
+    // ── CONVERGE MODE ──────────────────────────────────────────
+    else if (mode === 'converge') {
+      ring.material.opacity += (0.85 - ring.material.opacity) * 0.05;
+      
+      // All rings spiral inward toward the center
+      // The spiral rate is determined by how close α is to 1/137
+      const targetAlpha = ALPHA_CODATA;
+      const currentAlpha = computedAlpha || targetAlpha * 0.5;
+      const convergence = 1 - Math.abs(currentAlpha - targetAlpha) / targetAlpha;
+      
+      // Spiral parameters tighten as we converge
+      const spiralTightness = 0.2 + convergence * 3.0;
+      const spiralRadius = baseRadius * (1 - convergence * 0.95);
+      
+      const spiralAngle = frac * TAU * spiralTightness + time * (0.8 - convergence * 0.6);
+      const inwardSpiral = Math.exp(-frac * (1 + convergence * 4));
+      
+      pos[i*3] = Math.cos(spiralAngle) * spiralRadius * inwardSpiral;
+      pos[i*3+1] = (frac - 0.5) * 6 * (1 - convergence * 0.9);
+      pos[i*3+2] = Math.sin(spiralAngle) * spiralRadius * inwardSpiral;
+      
+      // Golden color as we approach alpha
+      const goldBlend = convergence;
+      col[i*3] = 1.0 * goldBlend + col[i*3] * (1 - goldBlend);
+      col[i*3+1] = 0.84 * goldBlend + col[i*3+1] * (1 - goldBlend);
+      col[i*3+2] = 0.0 * goldBlend + col[i*3+2] * (1 - goldBlend);
+    }
+    
+    // ── FREE MODE ──────────────────────────────────────────────
+    else {
+      ring.material.opacity += (0.6 - ring.material.opacity) * 0.03;
+      
+      // Chaotic but beautiful — all constants interacting freely
+      let chaos = 0;
+      for (let j = 0; j < CONSTS.length; j++) {
+        chaos += Math.sin(CONSTS[j].val * PHI * frac + time * (0.5 + j * 0.13)) * 0.3;
+      }
+      
+      const r = baseRadius + chaos * 1.5;
+      const theta = frac * TAU * (1 + chaos * 0.5) + time * 0.4;
+      const height = Math.sin(frac * TAU * 2 + time * 0.6) * (2 + chaos * 2);
+      
+      pos[i*3] = Math.cos(theta) * r;
+      pos[i*3+1] = height;
+      pos[i*3+2] = Math.sin(theta) * r;
+    }
+  }
+  
+  ring.geometry.attributes.position.needsUpdate = true;
+  if (mode === 'interference') ring.geometry.attributes.color.needsUpdate = true;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UPDATE TRAIL PARTICLES (spiraling into alpha)
+// ═══════════════════════════════════════════════════════════════════════════════
+function updateTrail(dt) {
+  const pos = trail.geometry.attributes.position.array;
+  const count = pos.length / 3;
+  
+  const convergence = mode === 'converge' ? 
+    Math.min(1, time / 8) : 
+    mode === 'interference' ? 0.5 : 0.1;
+  
+  for (let i = 0; i < count; i++) {
+    const frac = i / count;
+    const spiralAngle = frac * TAU * 2.5 + time * 1.2;
+    const r = 0.15 + frac * 5 * Math.exp(-frac * (1 + convergence * 3));
+    const h = Math.sin(frac * TAU * 1.5 + time * 0.4) * (0.5 + convergence * 0.5);
+    
+    pos[i*3] = Math.cos(spiralAngle) * r;
+    pos[i*3+1] = h;
+    pos[i*3+2] = Math.sin(spiralAngle) * r;
+  }
+  
+  trail.geometry.attributes.position.needsUpdate = true;
+  
+  // Update alpha prediction
+  computedAlpha = computeAlpha();
+  
+  // Update HUD
+  const invAlpha = 1 / computedAlpha;
+  const deltaPct = ((computedAlpha - ALPHA_CODATA) / ALPHA_CODATA * 100);
+  const absDelta = Math.abs(deltaPct);
+  
+  document.getElementById('alpha-value').textContent = 
+    '1/' + invAlpha.toFixed(3);
+  document.getElementById('alpha-delta').textContent = 
+    `Δ CODATA: ${deltaPct > 0 ? '+' : ''}${deltaPct.toFixed(5)}%`;
+  
+  const barWidth = mode === 'converge' ? 
+    Math.min(100, 100 - absDelta * 200) : 
+    mode === 'interference' ? 65 : 25;
+  document.getElementById('alpha-bar').style.width = barWidth + '%';
+  
+  // Alpha sphere pulsates with convergence
+  const alphaScale = 0.6 + convergence * 1.8;
+  alphaSphere.scale.setScalar(alphaScale);
+  alphaSphere.material.emissiveIntensity = 2 + convergence * 5;
+  
+  // Prediction accuracy color
+  if (absDelta < 0.01) {
+    alphaSphere.material.color.setHex(0x00ff88);
+    alphaSphere.material.emissive.setHex(0x00ff88);
+  } else if (absDelta < 1) {
+    alphaSphere.material.color.setHex(0xffd700);
+    alphaSphere.material.emissive.setHex(0xffd700);
+  } else {
+    alphaSphere.material.color.setHex(0xff8844);
+    alphaSphere.material.emissive.setHex(0xff8844);
+  }
+  
+  alphaRing.rotation.x += dt * 0.5;
+  alphaRing.rotation.y += dt * 0.7;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MODE SWITCHING
+// ═══════════════════════════════════════════════════════════════════════════════
+function setMode(newMode) {
+  mode = newMode;
+  document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + (newMode === 'interference' ? 'int' : newMode === 'converge' ? 'conv' : newMode === 'free' ? 'free' : 'seq')).classList.add('active');
+  
+  const titles = {
+    sequence:     { title: 'Mode : Séquence',   desc: 'Les 7 constantes s\'appliquent une par une', interference: '' },
+    interference: { title: 'Mode : Interférence croisée', desc: 'Toutes les constantes agissent SIMULTANÉMENT', interference: 'φ·π·Ψ₁³ + π·e·Ψ₁⁵ + √2·√3·Ψ₁⁹ + ...' },
+    converge:     { title: 'Mode : Convergence vers α', desc: 'Les 7 ondes spiralent vers la prédiction de la constante de structure fine', interference: 'α ≈ π⁴·e⁻⁴·φ⁻⁵·(√2)⁻¹·(√3)⁻⁵' },
+    free:         { title: 'Mode : Chaos harmonique', desc: 'Interaction libre de toutes les constantes', interference: 'Ψ libre = Σ Hᵢ·Hⱼ·Ψ₁ⁱ⁺ʲ' },
+  };
+  
+  const info = titles[newMode];
+  document.getElementById('info-title').textContent = info.title;
+  document.getElementById('info-desc').textContent = info.desc;
+  document.getElementById('info-interference').textContent = info.interference;
+  
+  if (newMode === 'sequence') sequenceStep = 0;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN LOOP
+// ═══════════════════════════════════════════════════════════════════════════════
+let lastTime = performance.now();
+let isDragging = false;
+let dragStart = { x: 0, y: 0 };
+let cameraAngle = { theta: 0, phi: 0.3 };
+let cameraZoom = 12;
+
+canvas.addEventListener('mousedown', (e) => { isDragging = true; dragStart = { x: e.clientX, y: e.clientY }; document.body.classList.add('dragging'); });
+canvas.addEventListener('mouseup', () => { isDragging = false; document.body.classList.remove('dragging'); });
+canvas.addEventListener('mouseleave', () => { isDragging = false; document.body.classList.remove('dragging'); });
+canvas.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  cameraAngle.theta += (e.clientX - dragStart.x) * 0.005;
+  cameraAngle.phi = Math.max(-1.2, Math.min(1.2, cameraAngle.phi + (e.clientY - dragStart.y) * 0.005));
+  dragStart = { x: e.clientX, y: e.clientY };
+});
+canvas.addEventListener('wheel', (e) => {
+  cameraZoom = Math.max(5, Math.min(25, cameraZoom + e.deltaY * 0.02));
+});
+
+function animate(timestamp) {
+  requestAnimationFrame(animate);
+  
+  const dt = Math.min(0.1, (timestamp - lastTime) / 1000);
+  lastTime = timestamp;
+  time += dt;
+  
+  // Sequence auto-advance
+  if (mode === 'sequence') {
+    sequenceTimer += dt;
+    if (sequenceTimer > 2.5 && sequenceStep < 6) {
+      sequenceTimer = 0;
+      sequenceStep++;
+    }
+    if (sequenceTimer > 4 && sequenceStep >= 6) {
+      sequenceTimer = 0;
+      sequenceStep = 0;
+    }
+  }
+  
+  // Update all rings
+  rings.forEach(ring => updateRingPositions(ring, dt));
+  
+  // Update trail
+  updateTrail(dt);
+  
+  // Camera
+  const camR = cameraZoom + Math.sin(time * 0.15) * 1.5;
+  const camTheta = mode === 'converge' ? time * 0.2 : cameraAngle.theta + time * 0.1;
+  const camPhi = mode === 'converge' ? 0.3 + Math.sin(time * 0.3) * 0.2 : cameraAngle.phi;
+  
+  camera.position.x = Math.cos(camTheta) * Math.cos(camPhi) * camR;
+  camera.position.y = Math.sin(camPhi) * camR;
+  camera.position.z = Math.sin(camTheta) * Math.cos(camPhi) * camR;
+  camera.lookAt(0, mode === 'converge' ? 0 : -1, 0);
+  
+  renderer.render(scene, camera);
+  
+  // Timeline dots
+  document.querySelectorAll('.t-dot').forEach((dot, i) => {
+    dot.classList.toggle('active', i === sequenceStep && mode === 'sequence');
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TIMELINE DOTS (for sequence mode)
+// ═══════════════════════════════════════════════════════════════════════════════
+const timeline = document.createElement('div');
+timeline.className = 'overlay timeline-mini';
+timeline.id = 'timeline-mini';
+for (let i = 0; i < 7; i++) {
+  const dot = document.createElement('div');
+  dot.className = 't-dot';
+  dot.title = CONSTS[i].sym + ' — ' + CONSTS[i].name;
+  dot.addEventListener('click', () => { setMode('sequence'); sequenceStep = i; });
+  timeline.appendChild(dot);
+}
+document.body.appendChild(timeline);
+
+// Keyboard
+document.addEventListener('keydown', (e) => {
+  switch(e.key) {
+    case '1': setMode('sequence'); break;
+    case '2': setMode('interference'); break;
+    case '3': setMode('converge'); break;
+    case '4': setMode('free'); break;
+    case 'ArrowRight': if(mode==='sequence') sequenceStep = Math.min(6, sequenceStep+1); break;
+    case 'ArrowLeft':  if(mode==='sequence') sequenceStep = Math.max(0, sequenceStep-1); break;
+  }
+});
+
+// Resize
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════════
+setMode('interference');
+requestAnimationFrame(animate);
+
+// Auto demo: cycle modes
+let demoPhase = 0;
+setInterval(() => {
+  if (isDragging) return;
+  const modes = ['interference', 'converge', 'free', 'interference'];
+  demoPhase = (demoPhase + 1) % modes.length;
+  setMode(modes[demoPhase]);
+}, 15000);
+</script>
+</body>
+</html>

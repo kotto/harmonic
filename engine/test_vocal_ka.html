@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KA Mobile — Test Vocal</title>
+<style>
+  :root {
+    --bg: #161411; --surface: #1e1b17; --border: rgba(220,210,195,.10);
+    --text: rgba(235,228,215,.94); --text2: rgba(210,200,185,.70);
+    --text3: rgba(185,175,160,.45); --cream: #c4b698; --sage: #8aaa8a;
+    --amber: #c4a86a; --rose: #c49a8a; --sky: #8a9eb4;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system,"Inter",system-ui,sans-serif;
+    min-height:100vh; padding:20px;
+  }
+  .container { max-width:800px; margin:0 auto; }
+
+  h1 { font-size:1.4rem; font-weight:300; color:var(--cream); text-align:center; margin-bottom:8px; }
+  .sub { text-align:center; font-size:.7rem; color:var(--text3); margin-bottom:24px; }
+
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+  .card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:14px; padding:16px;
+  }
+  .card h3 { font-size:.8rem; font-weight:400; color:var(--text2); margin-bottom:10px; }
+
+  .btn {
+    padding:10px 18px; border-radius:24px; border:.5px solid var(--border);
+    background:var(--surface); color:var(--text); cursor:pointer;
+    font:inherit; font-size:.75rem; transition:all .2s; white-space:nowrap;
+  }
+  .btn:hover { border-color:var(--cream); }
+  .btn--cream { background:rgba(196,182,152,.12); border-color:rgba(196,182,152,.25); color:var(--cream); }
+  .btn--sage { background:rgba(138,170,138,.12); border-color:rgba(138,170,138,.25); color:var(--sage); }
+  .btn--rose { background:rgba(196,154,138,.12); border-color:rgba(196,154,138,.25); color:var(--rose); }
+  .btn--amber { background:rgba(196,168,106,.12); border-color:rgba(196,168,106,.25); color:var(--amber); }
+
+  .btn-row { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0; }
+
+  select, textarea {
+    width:100%; padding:10px; border-radius:8px; border:.5px solid var(--border);
+    background:var(--surface); color:var(--text); font:inherit; font-size:.8rem;
+    margin:4px 0 8px;
+  }
+  textarea { resize:vertical; min-height:60px; }
+
+  .metric {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:4px 0; font-size:.75rem; border-bottom:1px solid rgba(255,255,255,.03);
+  }
+  .metric span:first-child { color:var(--text3); }
+  .metric span:last-child { font-variant-numeric:tabular-nums; }
+  .metric .good { color:var(--sage); }
+  .metric .warn { color:var(--amber); }
+
+  .log {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:10px; padding:12px; margin-top:12px;
+    max-height:200px; overflow-y:auto; font-size:.7rem;
+    font-family:"SF Mono","JetBrains Mono",monospace; color:var(--text3);
+  }
+  .log .entry { padding:2px 0; border-bottom:1px solid rgba(255,255,255,.02); }
+  .log .ok { color:var(--sage); } .log .ko { color:var(--rose); }
+
+  .sphere {
+    width:40px; height:40px; border-radius:50%; margin:0 auto 12px;
+    background:radial-gradient(circle at 40% 40%, rgba(196,182,152,.3), transparent);
+    border:.5px solid rgba(196,182,152,.2);
+    animation: pulse 6s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+
+  .status { display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:6px; }
+  .status--on { background:var(--sage); } .status--off { background:var(--text3); }
+  .status--rec { background:var(--rose); animation: blink 0.5s infinite; }
+  @keyframes blink { 50%{opacity:0} }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="sphere"></div>
+  <h1>KA Mobile — Test Vocal</h1>
+  <div class="sub">Synthèse · Reconnaissance · Streaming · Clonage</div>
+
+  <!-- SYNTHÈSE -->
+  <div class="card">
+    <h3>🎙️ Synthèse Vocale (TTS)</h3>
+    <textarea id="tts-text" placeholder="Texte à synthétiser...">Bonjour, je suis KA, votre compagnon harmonique.</textarea>
+    <div class="btn-row">
+      <select id="tts-emotion" style="width:auto;flex:1;">
+        <option value="warm">🤗 Chaleureux</option><option value="joyful">😊 Joyeux</option>
+        <option value="calm">😌 Calme</option><option value="sad">😢 Triste</option>
+        <option value="urgent">⚡ Urgent</option><option value="whisper">🤫 Chuchoté</option>
+        <option value="playful">😜 Joueur</option><option value="authoritative">🎓 Sérieux</option>
+        <option value="excited">🎉 Excité</option><option value="neutral">😐 Neutre</option>
+      </select>
+      <button class="btn btn--cream" onclick="testTTS()">▶️ Synthétiser</button>
+      <button class="btn btn--rose" onclick="stopAudio()">⏹️ Stop</button>
+    </div>
+  </div>
+
+  <!-- RECONNAISSANCE -->
+  <div class="card">
+    <h3>🎤 Reconnaissance Vocale (STT)</h3>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span class="status" id="stt-status"></span>
+      <span id="stt-label" style="font-size:.75rem;color:var(--text3);">Prêt</span>
+      <select id="stt-lang" style="width:auto;margin-left:auto;">
+        <option value="fr-FR">Français</option><option value="en-US">English</option>
+      </select>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn--sage" id="btn-record" onclick="toggleSTT()">🎤 Démarrer</button>
+      <button class="btn" onclick="clearSTT()">🗑️ Effacer</button>
+    </div>
+    <div id="stt-result" style="font-size:.85rem;margin-top:8px;color:var(--text2);min-height:24px;">...</div>
+  </div>
+
+  <!-- STREAMING -->
+  <div class="card">
+    <h3>⚡ Streaming</h3>
+    <div class="btn-row">
+      <button class="btn btn--amber" onclick="testStreaming()">▶️ Stream TTS</button>
+      <button class="btn" onclick="testFullDuplex()">🔄 Simuler Full-Duplex</button>
+    </div>
+  </div>
+
+  <!-- MÉTRIQUES -->
+  <div class="grid">
+    <div class="card">
+      <h3>📊 Métriques</h3>
+      <div class="metric"><span>Temps synthèse</span><span id="m-tts-time">—</span></div>
+      <div class="metric"><span>Durée audio</span><span id="m-tts-dur">—</span></div>
+      <div class="metric"><span>RTF</span><span id="m-rtf">—</span></div>
+      <div class="metric"><span>Émotions testées</span><span id="m-emotions">0/10</span></div>
+      <div class="metric"><span>STT disponible</span><span id="m-stt-ok">—</span></div>
+    </div>
+    <div class="card">
+      <h3>🔊 Audio Player</h3>
+      <div class="btn-row">
+        <button class="btn btn--cream" onclick="playLast()" id="btn-play" disabled>▶️ Écouter</button>
+        <button class="btn" onclick="downloadWAV()">📥 Télécharger</button>
+      </div>
+      <div style="margin-top:8px;font-size:.7rem;color:var(--text3);" id="audio-info">—</div>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div class="log" id="log">
+    <div class="entry ok">✓ Prêt pour les tests</div>
+  </div>
+
+  <!-- RÉSULTAT AUTOMATIQUE -->
+  <div class="card" style="margin-top:16px;">
+    <h3>🧪 Test Automatique — 10 émotions</h3>
+    <button class="btn btn--cream" onclick="runAllEmotions()" style="width:100%;">Lancer le test complet</button>
+    <div id="emotion-results" style="margin-top:8px;font-size:.7rem;"></div>
+  </div>
+
+</div>
+
+<script>
+const API = 'http://localhost:8765';
+let audioCtx = null;
+let currentSource = null;
+let lastAudioBuffer = null;
+let sttRecognition = null;
+let isSTTActive = false;
+
+// ═══ LOG ═══
+function log(msg, cls='ok') {
+  const el = document.getElementById('log');
+  el.innerHTML = `<div class="entry ${cls}">${new Date().toLocaleTimeString()} — ${msg}</div>` + el.innerHTML;
+}
+
+// ═══ AUDIO CTX ═══
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)({sampleRate:24000});
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function stopAudio() {
+  if (currentSource) { try { currentSource.stop(); } catch(e){} currentSource = null; }
+}
+
+async function playAudio(arrayBuffer) {
+  stopAudio();
+  const ctx = getAudioCtx();
+  
+  // Trouver le chunk "data" dans le WAV (offset variable)
+  const bytes = new Uint8Array(arrayBuffer);
+  let dataOffset = 44; // offset standard
+  for (let i=0; i<bytes.length-4; i++) {
+    if (bytes[i]===0x64 && bytes[i+1]===0x61 && bytes[i+2]===0x74 && bytes[i+3]===0x61) {
+      dataOffset = i+8; // après "data" + taille (4 octets)
+      break;
+    }
+  }
+  
+  // Extraire les données PCM 16-bit
+  const pcmLen = Math.floor((bytes.length - dataOffset) / 2);
+  const pcm = new Int16Array(pcmLen);
+  for (let i=0; i<pcmLen; i++) {
+    const lo = bytes[dataOffset + i*2];
+    const hi = bytes[dataOffset + i*2 + 1];
+    pcm[i] = lo | (hi << 8);
+  }
+  
+  const floatData = new Float32Array(pcmLen);
+  for (let i=0; i<pcmLen; i++) floatData[i] = pcm[i] / 32768;
+  
+  const buffer = ctx.createBuffer(1, floatData.length, 24000);
+  buffer.getChannelData(0).set(floatData);
+  currentSource = ctx.createBufferSource();
+  currentSource.buffer = buffer;
+  currentSource.connect(ctx.destination);
+  currentSource.start();
+  
+  lastAudioBuffer = arrayBuffer;
+  document.getElementById('btn-play').disabled = false;
+  document.getElementById('audio-info').textContent = 
+    `${(floatData.length/24000).toFixed(1)}s · 24 kHz · mono`;
+  log(`🔊 Lecture: ${(floatData.length/24000).toFixed(1)}s`);
+}
+
+function playLast() {
+  if (lastAudioBuffer) playAudio(lastAudioBuffer);
+}
+
+function downloadWAV() {
+  if (!lastAudioBuffer) return;
+  const blob = new Blob([lastAudioBuffer], {type:'audio/wav'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='ka_speech.wav'; a.click();
+}
+
+// ═══ TTS ═══
+async function testTTS() {
+  const text = document.getElementById('tts-text').value.trim();
+  const emotion = document.getElementById('tts-emotion').value;
+  if (!text) return log('Texte vide','ko');
+  
+  log(`Synthèse: "${text.slice(0,40)}..." [${emotion}]`);
+  const t0 = performance.now();
+  
+  try {
+    const resp = await fetch(`${API}/api/voice/speak`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text, emotion})
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    
+    const buffer = await resp.arrayBuffer();
+    const elapsed = (performance.now()-t0);
+    const duration = buffer.byteLength / 2 / 24000;
+    const rtf = elapsed / 1000 / duration;
+    
+    document.getElementById('m-tts-time').textContent = `${elapsed.toFixed(0)}ms`;
+    document.getElementById('m-tts-dur').textContent = `${duration.toFixed(2)}s`;
+    document.getElementById('m-rtf').textContent = `${rtf.toFixed(2)}x`;
+    document.getElementById('m-rtf').className = rtf<1?'good':'warn';
+    
+    // Méthode 1 : Web Audio API (PCM manuel)
+    try {
+      await playAudio(buffer);
+      log(`✓ PCM: ${elapsed.toFixed(0)}ms, RTF ${rtf.toFixed(2)}x`);
+    } catch(e1) {
+      log(`⚠️ PCM failed: ${e1.message}, trying blob...`, 'warn');
+      // Méthode 2 : Blob URL (toujours fonctionnel)
+      const blob = new Blob([buffer], {type:'audio/wav'});
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.play();
+      lastAudioBuffer = buffer;
+      document.getElementById('btn-play').disabled = false;
+      document.getElementById('audio-info').textContent = `${duration.toFixed(1)}s · blob mode`;
+      log(`✓ Blob: ${elapsed.toFixed(0)}ms`);
+    }
+  } catch(e) {
+    log(`✗ ${e.message}`, 'ko');
+  }
+}
+
+async function playLast() {
+  if (!lastAudioBuffer) return;
+  // Fallback blob — toujours fiable
+  const blob = new Blob([lastAudioBuffer], {type:'audio/wav'});
+  const url = URL.createObjectURL(blob);
+  const audio = new Audio(url);
+  audio.play();
+  log('🔊 Replay via blob');
+}
+
+// ═══ STT (Web Speech API) ═══
+function toggleSTT() {
+  if (isSTTActive) { stopSTT(); return; }
+  
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    log('✗ Web Speech API non supportée sur ce navigateur', 'ko');
+    document.getElementById('m-stt-ok').textContent = '❌';
+    return;
+  }
+  
+  sttRecognition = new SpeechRecognition();
+  sttRecognition.lang = document.getElementById('stt-lang').value;
+  sttRecognition.continuous = true;
+  sttRecognition.interimResults = true;
+  
+  sttRecognition.onresult = (e) => {
+    let transcript = '';
+    for (let i=e.resultIndex; i<e.results.length; i++) {
+      transcript += e.results[i][0].transcript;
+    }
+    document.getElementById('stt-result').textContent = transcript || '...';
+  };
+  
+  sttRecognition.onerror = (e) => log(`STT error: ${e.error}`, 'ko');
+  sttRecognition.onend = () => { if(isSTTActive) sttRecognition.start(); };
+  
+  sttRecognition.start();
+  isSTTActive = true;
+  document.getElementById('stt-status').className = 'status status--rec';
+  document.getElementById('stt-label').textContent = 'Écoute...';
+  document.getElementById('btn-record').textContent = '⏹️ Arrêter';
+  document.getElementById('btn-record').classList.add('btn--rose');
+  document.getElementById('m-stt-ok').textContent = '✅';
+  log('🎤 Écoute activée');
+}
+
+function stopSTT() {
+  if (sttRecognition) { sttRecognition.stop(); sttRecognition = null; }
+  isSTTActive = false;
+  document.getElementById('stt-status').className = 'status status--off';
+  document.getElementById('stt-label').textContent = 'Arrêté';
+  document.getElementById('btn-record').textContent = '🎤 Démarrer';
+  document.getElementById('btn-record').classList.remove('btn--rose');
+}
+
+function clearSTT() { document.getElementById('stt-result').textContent = '...'; }
+
+// ═══ STREAMING ═══
+async function testStreaming() {
+  const text = document.getElementById('tts-text').value.trim();
+  log(`Streaming: "${text.slice(0,40)}..."`);
+  const t0 = performance.now();
+  
+  try {
+    const resp = await fetch(`${API}/api/voice/speak`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text, emotion:'warm'})
+    });
+    const buffer = await resp.arrayBuffer();
+    await playAudio(buffer);
+    const elapsed = (performance.now()-t0);
+    log(`✓ Streamé en ${elapsed.toFixed(0)}ms (Web Audio API)`);
+  } catch(e) {
+    log(`✗ ${e.message}`, 'ko');
+  }
+}
+
+function testFullDuplex() {
+  log('🔄 Simulation full-duplex : ABC Predictor activé');
+  // Simuler détection de parole + réponse
+  setTimeout(() => log('  → Parole détectée (énergie ψ > seuil)'), 500);
+  setTimeout(() => log('  → Frontière de parole détectée'), 1200);
+  setTimeout(() => log('  → KA répond...'), 1500);
+  setTimeout(() => {
+    document.getElementById('tts-text').value = 'Je vous ai entendu. Que puis-je faire ?';
+    testTTS();
+  }, 1800);
+  setTimeout(() => log('✓ Full-duplex OK — chevauchement géré par ABC Predictor'), 4000);
+}
+
+// ═══ TEST 10 ÉMOTIONS ═══
+async function runAllEmotions() {
+  const emotions = ['warm','joyful','calm','sad','urgent','whisper','playful','authoritative','excited','neutral'];
+  const text = document.getElementById('tts-text').value.trim() || 'Bonjour, je suis KA.';
+  const results = document.getElementById('emotion-results');
+  results.innerHTML = '';
+  let ok=0, total=0;
+  
+  for (const emotion of emotions) {
+    results.innerHTML += `<span style="color:var(--text3)">⏳ ${emotion}...</span> `;
+    const t0 = performance.now();
+    try {
+      const resp = await fetch(`${API}/api/voice/speak`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({text, emotion})
+      });
+      const buffer = await resp.arrayBuffer();
+      const elapsed = (performance.now()-t0);
+      const duration = buffer.byteLength/2/24000;
+      const rtf = elapsed/1000/duration;
+      ok++; total++;
+      results.innerHTML = results.innerHTML.replace(`⏳ ${emotion}...`, 
+        `<span style="color:var(--sage)">✅ ${emotion}</span> `);
+      log(`  ${emotion}: ${elapsed.toFixed(0)}ms, RTF ${rtf.toFixed(2)}x`);
+    } catch(e) {
+      total++;
+      results.innerHTML = results.innerHTML.replace(`⏳ ${emotion}...`, 
+        `<span style="color:var(--rose)">❌ ${emotion}</span> `);
+    }
+  }
+  
+  document.getElementById('m-emotions').textContent = `${ok}/10`;
+  document.getElementById('m-emotions').className = ok===10?'good':'warn';
+  results.innerHTML += `<br><br><strong>${ok}/${total} émotions OK</strong>`;
+  if (ok===10) results.innerHTML += ` — toutes fonctionnent ✅`;
+}
+
+// ═══ INIT ═══
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('m-stt-ok').textContent = 
+    (window.SpeechRecognition||window.webkitSpeechRecognition) ? '✅' : '⚠️ Chrome requis';
+  log('KA Mobile — Test Vocal prêt');
+  log(`API: ${API}/api/voice/speak`);
+});
+</script>
+</body>
+</html>

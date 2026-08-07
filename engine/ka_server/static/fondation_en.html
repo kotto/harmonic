@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KA Foundation — Vital Ka: healthcare that flows</title>
+<meta name="description" content="KA Foundation · Vital Ka: healthcare ecosystem in Africa — portable medical record, UM economy (1 UM = €1 = 655 FCFA), teleconsultation with the diaspora, solidarity.">
+<style>
+:root{
+  --void:#07070f;--soul:#8b83ff;--soul-l:#b8b2ff;--soul-d:rgba(139,131,255,.18);--soul-g:rgba(139,131,255,.32);
+  --life:#3ddba0;--life-d:rgba(61,219,160,.15);--life-g:rgba(61,219,160,.28);
+  --wisdom:#f0c060;--wisdom-d:rgba(240,192,96,.15);--wisdom-g:rgba(240,192,96,.28);
+  --rose:#ed93b1;--rose-d:rgba(212,83,126,.15);--rose-g:rgba(212,83,126,.28);
+  --sky:#85b7eb;--sky-d:rgba(133,183,235,.15);--sky-g:rgba(133,183,235,.28);
+  --coral:#d85a30;
+  --g1:rgba(255,255,255,.04);--g2:rgba(255,255,255,.075);--g3:rgba(255,255,255,.13);
+  --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.1);--b3:rgba(255,255,255,.16);
+  --t1:rgba(255,255,255,.92);--t2:rgba(255,255,255,.62);--t3:rgba(255,255,255,.36);--t4:rgba(255,255,255,.18);
+  --font:-apple-system,"SF Pro Display","Inter",system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--void);color:var(--t1);font-family:var(--font);-webkit-font-smoothing:antialiased;line-height:1.6}
+a{color:var(--life);text-decoration:none}
+a:hover{color:#fff}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+section{padding:84px 0}
+h1{font-size:clamp(34px,6vw,58px);font-weight:800;letter-spacing:-.02em;line-height:1.08}
+h2{font-size:clamp(26px,4vw,38px);font-weight:800;letter-spacing:-.01em;margin-bottom:18px}
+h3{font-size:18px;font-weight:700;margin-bottom:10px}
+p.sub{color:var(--t2);font-size:17px;max-width:660px}
+.chip{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 12px;border-radius:999px;margin-bottom:16px}
+.chip--life{background:var(--life-d);color:var(--life);border:1px solid var(--life-g)}
+.chip--gold{background:var(--wisdom-d);color:var(--wisdom);border:1px solid var(--wisdom-g)}
+.chip--rose{background:var(--rose-d);color:var(--rose);border:1px solid var(--rose-g)}
+
+/* ── NAV ── */
+nav{position:sticky;top:0;z-index:50;background:rgba(7,7,15,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--b1)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{font-weight:800;font-size:18px}
+.brand b{color:var(--life)}
+nav .links{display:flex;gap:22px;font-size:14px}
+nav .links a{color:var(--t2)}
+nav .links a:hover{color:var(--t1)}
+nav .lang{font-size:12px;color:var(--t3);border:1px solid var(--b2);border-radius:999px;padding:4px 12px}
+nav .lang:hover{color:var(--t1);border-color:var(--life-g)}
+@media(max-width:720px){nav .links{display:none}}
+
+/* ── HERO ── */
+.hero{min-height:88vh;display:flex;align-items:center;position:relative;overflow:hidden;
+  background:radial-gradient(ellipse at 50% -10%,#0e1e18 0%,#0b1512 45%,var(--void) 100%)}
+.hero .inner{position:relative;z-index:2}
+.hero h1 b{color:var(--life)}
+.hero .proof{margin-top:28px;display:flex;flex-wrap:wrap;gap:10px}
+.hero .proof span{font-size:13px;color:var(--t2);background:var(--g1);border:1px solid var(--b1);padding:8px 14px;border-radius:10px}
+.btn{display:inline-block;font-weight:700;font-size:15px;padding:13px 26px;border-radius:12px;margin-top:30px;margin-right:12px;transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn--life{background:linear-gradient(135deg,var(--life),#1fae7c);color:#04261a;font-weight:800}
+.btn--ghost{background:var(--g2);color:var(--t1);border:1px solid var(--b2)}
+
+/* ── CARDS ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:34px}
+.card{background:linear-gradient(180deg,var(--g1),transparent);border:1px solid var(--b1);border-radius:18px;padding:26px}
+.card .ico{font-size:26px;margin-bottom:12px}
+.card h3{color:var(--t1)}
+.card p{font-size:14px;color:var(--t2)}
+.card .metric{font-size:30px;font-weight:800;color:var(--life);margin:6px 0}
+.card .metric--gold{color:var(--wisdom)}
+.card .metric--rose{color:var(--rose)}
+
+/* ── JOURNEY (steps) ── */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:34px;counter-reset:st}
+.step{background:var(--g1);border:1px solid var(--b1);border-radius:16px;padding:22px;position:relative}
+.step::before{counter-increment:st;content:counter(st);position:absolute;top:-12px;left:18px;background:var(--life);color:#04261a;font-weight:800;font-size:13px;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.step h3{font-size:15px;margin-bottom:6px}
+.step p{font-size:13px;color:var(--t2)}
+
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse;margin-top:26px;font-size:14px}
+th{text-align:left;color:var(--t3);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em;padding:10px 12px;border-bottom:1px solid var(--b2)}
+td{padding:13px 12px;border-bottom:1px solid var(--b1);color:var(--t2)}
+td:first-child{color:var(--t1);font-weight:600}
+.ok{color:var(--life)}
+.no{color:var(--coral)}
+
+/* ── UM ECONOMY ── */
+.um{background:linear-gradient(135deg,var(--life-d),var(--wisdom-d));border:1px solid var(--life-g);border-radius:18px;padding:34px;margin:34px 0;text-align:center}
+.um .formula{font-size:clamp(20px,3.4vw,30px);font-weight:800;color:#fff}
+.um .formula span{color:var(--life)}
+.um .note{color:var(--t2);font-size:13px;margin-top:10px}
+
+.quote{border-left:3px solid var(--life);padding:4px 0 4px 20px;color:var(--t2);font-style:italic;margin:26px 0;max-width:700px}
+footer{border-top:1px solid var(--b1);padding:44px 0 60px;color:var(--t3);font-size:13px}
+footer .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;margin-bottom:26px}
+footer h4{color:var(--t2);font-size:13px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+footer a{display:block;color:var(--t3);padding:3px 0}
+footer a:hover{color:var(--t1)}
+@media(max-width:720px){section{padding:60px 0}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="brand">KA <b>Foundation</b></div>
+    <div class="links">
+      <a href="#mission">Mission</a>
+      <a href="#um">UM economy</a>
+      <a href="#journey">The journey</a>
+      <a href="#apps">Applications</a>
+      <a href="#solidarity">Solidarity</a>
+    </div>
+    <a class="lang" href="/fondation">FR</a>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<header class="hero">
+  <div class="wrap inner">
+    <span class="chip chip--life">Vital Ka · social project</span>
+    <h1>Healthcare that <b>flows</b>.</h1>
+    <p class="sub" style="margin-top:16px">In Africa, a medical record travels with the patient — never the other way around. Vital Ka makes that record <b>portable</b> (QR code), <b>payable in UM</b> (1 UM = €1 = 655 FCFA) and connects the village to the diaspora through <b>teleconsultation</b>.</p>
+    <div class="proof">
+      <span>📱 Portable record via QR</span>
+      <span>💚 Non-convertible UM economy for patients</span>
+      <span>🩺 Teleconsultation with diaspora doctors</span>
+      <span>🤝 Capped, traceable solidarity</span>
+    </div>
+    <a class="btn btn--life" href="#journey">See the journey</a>
+    <a class="btn btn--ghost" href="#solidarity">Get involved</a>
+  </div>
+</header>
+
+<!-- ═══ MISSION ═══ -->
+<section id="mission">
+  <div class="wrap">
+    <span class="chip chip--gold">Mission</span>
+    <h2>An infrastructure problem, not a resources problem</h2>
+    <p class="sub">Care exists. What is missing is circulation: records don't follow patients, payments don't cross borders, specialists are far away. KA Foundation builds the invisible infrastructure that connects what already exists.</p>
+    <div class="grid">
+      <div class="card">
+        <div class="ico">📱</div>
+        <h3>The record, not the hospital</h3>
+        <p>History, allergies, prescriptions: a QR code in the patient's hands, readable by any caregiver in the ecosystem. The record belongs to the patient, not to the institution.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🌍</div>
+        <h3>The diaspora as medical bridge</h3>
+        <p>The family doctor lives in Paris or Brussels? The patient sends a secure teleconsultation link (30 minutes), and a cross-border second opinion becomes possible.</p>
+      </div>
+      <div class="card">
+        <div class="ico">💚</div>
+        <h3>Pay in UM, not in cash</h3>
+        <p>A local unit, issued with the telecom operator, non-convertible for the patient (they cannot exchange it for currency), convertible for the caregiver. Money stays in the care loop.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ UM ECONOMY ═══ -->
+<section id="um" style="background:linear-gradient(180deg,transparent,rgba(61,219,160,.05))">
+  <div class="wrap">
+    <span class="chip chip--life">The UM unit</span>
+    <h2>A currency for care, not for speculation</h2>
+    <div class="um">
+      <div class="formula">1 <span>UM</span> = €1 = 655 FCFA</div>
+      <div class="note">Issued only by the partner telecom operator · every issuance is signed (HMAC) and idempotent</div>
+    </div>
+    <table>
+      <tr><th>Stakeholder</th><th>Convertible?</th><th>Why</th></tr>
+      <tr><td>Patient</td><td class="no" style="color:var(--coral)">No</td><td>UM received can only be used for care: impossible to take them out of the loop or speculate.</td></tr>
+      <tr><td>Caregiver (doctor, pharmacist, laboratory)</td><td class="ok">Yes</td><td>Caregiver income is convertible — with temporary fund freezing and anti-money-laundering caps (AML).</td></tr>
+      <tr><td>Solidarity</td><td class="ok">Yes, capped</td><td>Donations and support are traced, capped (5,000 UM/month) and auditable.</td></tr>
+    </table>
+    <div class="quote">"The UM is designed for one thing only: that health money stays in health."</div>
+  </div>
+</section>
+
+<!-- ═══ JOURNEY ═══ -->
+<section id="journey">
+  <div class="wrap">
+    <span class="chip chip--rose">The journey</span>
+    <h2>From the village to the pharmacy, in five steps</h2>
+    <div class="steps">
+      <div class="step">
+        <h3>Consultation</h3>
+        <p>The doctor examines and writes the prescription in their app — it becomes a QR code.</p>
+      </div>
+      <div class="step">
+        <h3>Record</h3>
+        <p>The prescription is added to the patient's portable record, accessible anywhere, to any authorized caregiver.</p>
+      </div>
+      <div class="step">
+        <h3>Pharmacy</h3>
+        <p>The pharmacist scans the QR, verifies authenticity, dispenses. Payment in UM, instant.</p>
+      </div>
+      <div class="step">
+        <h3>Diaspora</h3>
+        <p>Need a second opinion? The patient shares a teleconsultation link with their doctor abroad.</p>
+      </div>
+      <div class="step">
+        <h3>Laboratory</h3>
+        <p>Results come back into the same record. The loop is closed, traceable, no lost paper.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ APPLICATIONS ═══ -->
+<section id="apps" style="background:linear-gradient(180deg,transparent,rgba(240,192,96,.05))">
+  <div class="wrap">
+    <span class="chip chip--gold">Applications</span>
+    <h2>One ecosystem, six doorways</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="ico">🧑🏾‍⚕️</div>
+        <h3>Patient</h3>
+        <p>Their record, their prescriptions, their UM balance, their teleconsultation links.</p>
+      </div>
+      <div class="card">
+        <div class="ico">👨🏾‍⚕️</div>
+        <h3>Doctor</h3>
+        <p>QR prescriptions, patient record, assisted diagnosis (KA Care), teleconsultation.</p>
+      </div>
+      <div class="card">
+        <div class="ico">💊</div>
+        <h3>Pharmacist</h3>
+        <p>Prescription scan, dispensing, UM checkout — with or without connection (local queue).</p>
+      </div>
+      <div class="card">
+        <div class="ico">🔬</div>
+        <h3>Laboratory</h3>
+        <p>Orders received, results published into the patient's record.</p>
+      </div>
+      <div class="card">
+        <div class="ico">✈️</div>
+        <h3>Diaspora</h3>
+        <p>The doctor abroad: accepts a teleconsultation link, consults, gives their opinion.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🤝</div>
+        <h3>Solidarity</h3>
+        <p>Top up a loved one's UM wallet, fund a treatment, track usage.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SOLIDARITY ═══ -->
+<section id="solidarity">
+  <div class="wrap" style="text-align:center">
+    <span class="chip chip--life">Solidarity</span>
+    <h2>Your UM can pay a prescription, not a rumor</h2>
+    <p class="sub" style="margin:0 auto">Every credit is traced, every use is visible to the donor, every loop is capped. Generosity becomes a system, not a lottery.</p>
+    <div class="grid" style="text-align:left">
+      <div class="card">
+        <div class="metric">100 %</div>
+        <p>of solidarity UM stays in the care loop — non-convertible for the beneficiary.</p>
+      </div>
+      <div class="card">
+        <div class="metric metric--gold">5,000 UM</div>
+        <p>monthly cap per account (AML) — transparency as a shield.</p>
+      </div>
+      <div class="card">
+        <div class="metric metric--rose">0 GPU</div>
+        <p>the ecosystem runs on modest servers and phones — built for the field.</p>
+      </div>
+    </div>
+    <a class="btn btn--life" href="mailto:fondation@ka-ai.com">Join the pilot</a>
+    <a class="btn btn--ghost" href="/en/corporation">KA Corporation →</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <h4>KA Foundation</h4>
+        <p style="font-size:13px;color:var(--t3)">Vital Ka — healthcare that flows. Social project carried by KA Corporation.</p>
+      </div>
+      <div>
+        <h4>Ecosystem</h4>
+        <a href="#apps">Patient</a>
+        <a href="#apps">Doctor</a>
+        <a href="#apps">Pharmacist</a>
+        <a href="#apps">Laboratory</a>
+        <a href="#apps">Diaspora</a>
+      </div>
+      <div>
+        <h4>Links</h4>
+        <a href="#mission">Mission</a>
+        <a href="#um">UM economy</a>
+        <a href="#solidarity">Solidarity</a>
+        <a href="/en/corporation">KA Corporation</a>
+      </div>
+    </div>
+    <div>© 2026 KA Foundation — 1 UM = €1 = 655 FCFA · health money stays in health</div>
+  </div>
+</footer>
+
+</body>
+</html>

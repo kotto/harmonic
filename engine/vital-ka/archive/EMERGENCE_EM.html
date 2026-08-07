@@ -1,0 +1,52 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>⚡ Force Électromagnétique — n=4</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#050508;color:#fafafa;font-family:Inter,system-ui,sans-serif;overflow:hidden;height:100vh}canvas{display:block}#info{position:absolute;top:20px;left:50%;transform:translateX(-50%);text-align:center;z-index:10;pointer-events:none}#title{font-size:22px;font-weight:700}#subtitle{font-size:13px;color:#a1a1aa;margin-top:4px}#ui{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:10}button{padding:8px 20px;border-radius:6px;border:1px solid #333;background:#111;color:#ccc;font-size:13px;cursor:pointer}button:hover{border-color:#f59e0b;background:#1a1a1a;color:#fff}button.active{background:#f59e0b;border-color:#f59e0b;color:#000}</style></head><body><div id="info"><div id="title">⚡ Force Électromagnétique — n=4</div><div id="subtitle">Interférence électron-proton : l'atome naît de l'onde</div></div><canvas id="c"></canvas><div id="ui"><button id="btn-play" class="active">▶</button><button id="btn-pause">⏸</button><button id="btn-reset">↺</button><span style="color:#666;font-size:11px">| Δφ:</span><input type="range" id="phase" min="0" max="360" value="0" style="width:100px"><span id="phaseVal" style="color:#f59e0b;font-size:12px;min-width:30px">0°</span></div><script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');let W,H,cx,cy,t=0,playing=!0,manual=!1,manPhase=0;
+function resize(){W=c.width=innerWidth;H=c.height=innerHeight;cx=W/2;cy=H/2}resize();addEventListener('resize',resize);
+function draw(){
+  ctx.fillStyle='#050508';ctx.fillRect(0,0,W,H);
+  const T=t,ph=manual?manPhase*Math.PI/180:T*0.03;
+  const orbitR=100+20*Math.sin(T*0.2),eAngle=T*0.6+ph;
+  const ex=cx+orbitR*Math.cos(eAngle),ey=cy+orbitR*Math.sin(eAngle);
+  // EM field lines
+  const fieldAlpha=0.15+0.1*Math.sin(T*0.3);
+  for(let a=0;a<Math.PI*2;a+=Math.PI/12){
+    ctx.strokeStyle=`rgba(245,200,80,${fieldAlpha})`;ctx.lineWidth=1;ctx.beginPath();
+    for(let r=15;r<250;r+=5){const fx=cx+r*Math.cos(a),fy=cy+r*Math.sin(a);const dx=fx-ex,dy=fy-ey;const dist=Math.sqrt(dx*dx+dy*dy);const nx=dx/(dist+1),ny=dy/(dist+1);const deflect=Math.sin(dist*0.05+T*0.5)*8;ctx.lineTo(fx+nx*deflect,fy+ny*deflect)}
+    ctx.stroke()}
+  // Interference field
+  for(let x=0;x<W;x+=3){for(let y=0;y<H;y+=3){
+    const dx1=x-cx,dy1=y-cy,dx2=x-ex,dy2=y-ey;
+    const r1=Math.sqrt(dx1*dx1+dy1*dy1),r2=Math.sqrt(dx2*dx2+dy2*dy2);
+    const psi1=Math.cos(r1*0.08)*Math.exp(-r1/200);
+    const psi2=Math.cos(r2*0.08+ph)*Math.exp(-r2/200);
+    const v=psi1+psi2;const alpha=Math.abs(v)*0.6;
+    if(alpha<0.02)continue;
+    ctx.fillStyle=`rgba(${v>0?'245,200,80':'139,92,246'},${alpha})`;
+    ctx.fillRect(x,y,3,3);
+  }}
+  // Proton
+  const pg=ctx.createRadialGradient(cx,cy,0,cx,cy,25);pg.addColorStop(0,'rgba(255,255,255,.9)');pg.addColorStop(.3,'rgba(245,200,80,.5)');pg.addColorStop(1,'transparent');
+  ctx.fillStyle=pg;ctx.beginPath();ctx.arc(cx,cy,25,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fill();
+  // Electron
+  const eg=ctx.createRadialGradient(ex,ey,0,ex,ey,12);eg.addColorStop(0,'rgba(139,210,255,.9)');eg.addColorStop(.3,'rgba(34,200,238,.5)');eg.addColorStop(1,'transparent');
+  ctx.fillStyle=eg;ctx.beginPath();ctx.arc(ex,ey,12,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ex,ey,2,0,Math.PI*2);ctx.fill();
+  // Orbit
+  ctx.strokeStyle='rgba(139,92,246,.25)';ctx.setLineDash([4,6]);ctx.beginPath();ctx.arc(cx,cy,orbitR,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+  // Labels
+  ctx.fillStyle='rgba(245,200,80,.9)';ctx.font='bold 13px Inter,sans-serif';ctx.fillText('PROTON (+)',cx+30,cy-30);
+  ctx.fillStyle='rgba(34,200,238,.9)';ctx.fillText('ÉLECTRON (−)',ex+20,ey-20);
+  ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='11px Inter,sans-serif';ctx.textAlign='center';
+  ctx.fillText('⚡ Force Électromagnétique = interférence ψ_p ⊕ ψ_e',cx,cy+orbitR+40);
+  ctx.fillText('Médiateur : AUCUN (pas de photon) — juste l\'interférence',cx,cy+orbitR+58);
+  // Phase
+  const delta=Math.round((ph%(2*Math.PI))*180/Math.PI);
+  document.getElementById('phaseVal').textContent=delta+'°';
+  if(delta<60)document.getElementById('subtitle').textContent='Δφ petit → interférence constructive → liaison STABLE (atome)';
+  else if(delta<150)document.getElementById('subtitle').textContent='Δφ moyen → interférence partielle → liaison FAIBLE';
+  else document.getElementById('subtitle').textContent='Δφ grand → interférence destructive → PAS de liaison (ionisation)';
+}
+function loop(){if(playing&&!manual)t+=0.05;draw();requestAnimationFrame(loop)}
+document.getElementById('btn-play').onclick=()=>{playing=!0;manual=!1;document.getElementById('btn-play').classList.add('active');document.getElementById('btn-pause').classList.remove('active')};
+document.getElementById('btn-pause').onclick=()=>{playing=!1;manual=!0;manPhase=Math.round((t*0.03*180/Math.PI)%360);document.getElementById('btn-pause').classList.add('active');document.getElementById('btn-play').classList.remove('active')};
+document.getElementById('btn-reset').onclick=()=>{t=0;manual=!1;playing=!0;document.getElementById('btn-play').classList.add('active');document.getElementById('btn-pause').classList.remove('active');document.getElementById('phase').value=0};
+document.getElementById('phase').oninput=(e)=>{manPhase=parseInt(e.target.value);manual=!0;playing=!1;document.getElementById('btn-pause').classList.add('active');document.getElementById('btn-play').classList.remove('active')};
+loop();</script></body></html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>🟢 Force Nucléaire Faible — n=5-6</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#050508;color:#fafafa;font-family:Inter,system-ui,sans-serif;overflow:hidden;height:100vh}canvas{display:block}#info{position:absolute;top:20px;left:50%;transform:translateX(-50%);text-align:center;z-index:10;pointer-events:none}#title{font-size:22px;font-weight:700}#subtitle{font-size:13px;color:#a1a1aa;margin-top:4px}#ui{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:10}button{padding:8px 20px;border-radius:6px;border:1px solid #333;background:#111;color:#ccc;font-size:13px;cursor:pointer}button:hover{border-color:#22c55e;background:#1a1a1a;color:#fff}button.active{background:#22c55e;border-color:#22c55e;color:#000}</style></head><body><div id="info"><div id="title">🟢 Force Nucléaire Faible — n=5-6</div><div id="subtitle">Un quark change de phase — le triangle se réarrange (désintégration β)</div></div><canvas id="c"></canvas><div id="ui"><button id="btn-play" class="active">▶</button><button id="btn-pause">⏸</button><button id="btn-reset">↺</button></div><script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');let W,H,cx,cy,t=0,playing=!0;
+function resize(){W=c.width=innerWidth;H=c.height=innerHeight;cx=W/2;cy=H/2}resize();addEventListener('resize',resize);
+function draw(){
+  ctx.fillStyle='#050508';ctx.fillRect(0,0,W,H);
+  const T=t;const cycle=(T%14)/14; // 14s per decay cycle
+  // Quark positions (triangle with one quark changing)
+  const r=80;let p=[{x:cx,y:cy-r},{x:cx-r*.866,y:cy+r*.5},{x:cx+r*.866,y:cy+r*.5}];
+  // During decay (cycle 0.3-0.7), quark 1 changes phase and moves
+  let decay=0;
+  if(cycle>.3&&cycle<.7){decay=Math.min(1,(cycle-.3)/.2)*Math.min(1,(.7-cycle)/.2);}
+  if(decay>0){const angle=decay*Math.PI;p[1]={x:cx+r*.866*Math.cos(angle+Math.PI*.85),y:cy+r*.5+40*decay};}
+  // Gluon tubes
+  for(let i=0;i<3;i++){const j=(i+1)%3;
+    ctx.strokeStyle=i===0&&decay>.5?`rgba(34,197,94,${.2+decay*.3})`:'rgba(239,68,68,.2)';
+    ctx.lineWidth=2;ctx.setLineDash([3,5]);ctx.beginPath();ctx.moveTo(p[i].x,p[i].y);ctx.lineTo(p[j].x,p[j].y);ctx.stroke();ctx.setLineDash([]);
+  }
+  // Quarks
+  const qLabels=['u (up)','d (down)','u (up)'];const qColors=['#ef4444','#3b82f6','#ef4444'];
+  for(let i=0;i<3;i++){
+    const grad=ctx.createRadialGradient(p[i].x,p[i].y,3,p[i].x,p[i].y,20+decay*15);
+    if(i===1&&decay>0){grad.addColorStop(0,'rgba(255,255,255,.9)');grad.addColorStop(.3,'rgba(34,197,94,.6)');grad.addColorStop(1,'transparent')}
+    else{grad.addColorStop(0,'rgba(255,255,255,.9)');grad.addColorStop(.3,qColors[i]+'.5');grad.addColorStop(1,'transparent')}
+    ctx.fillStyle=grad;ctx.beginPath();ctx.arc(p[i].x,p[i].y,20+decay*15,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(p[i].x,p[i].y,4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=i===1&&decay>.3?'#22c55e':qColors[i];ctx.font='bold 10px Inter,sans-serif';ctx.textAlign='center';ctx.fillText(qLabels[i],p[i].x,p[i].y-28);
+  }
+  // Emitted particles during decay
+  if(decay>.4){
+    const eAlpha=decay*.8;const ex=cx+180*decay,ey=cy-60*decay;
+    // Electron trail
+    for(let i=0;i<10;i++){const ta=(i/10);const tx=cx+(ex-cx)*ta,ty=cy-20+(ey-cy+20)*ta;ctx.fillStyle=`rgba(34,211,238,${eAlpha*(1-ta)*.5})`;ctx.beginPath();ctx.arc(tx,ty,2,0,Math.PI*2);ctx.fill()}
+    ctx.fillStyle=`rgba(34,211,238,${eAlpha})`;ctx.font='bold 11px Inter,sans-serif';ctx.textAlign='center';ctx.fillText('e⁻ (électron)',ex,ey-15);
+    const eg=ctx.createRadialGradient(ex,ey,0,ex,ey,10);eg.addColorStop(0,'rgba(34,211,238,.8)');eg.addColorStop(1,'transparent');
+    ctx.fillStyle=eg;ctx.beginPath();ctx.arc(ex,ey,10,0,Math.PI*2);ctx.fill();
+    // Anti-neutrino
+    const nx=cx+150*decay,ny=cy+80*decay;ctx.fillStyle=`rgba(168,85,247,${eAlpha*.6})`;ctx.font='italic 10px Inter,sans-serif';ctx.textAlign='center';ctx.fillText('ν̄ₑ',nx,ny-15);ctx.beginPath();ctx.arc(nx,ny,5,0,Math.PI*2);ctx.fill();
+  }
+  // Labels
+  ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='bold 13px Inter,sans-serif';ctx.textAlign='center';
+  if(decay<.3){ctx.fillText('NEUTRON (udd) — stable',cx,cy+r+70);ctx.fillText('Les 3 quarks forment un triangle stable',cx,cy+r+88)}
+  else if(decay<.7){ctx.fillText('DÉSINTÉGRATION β : d → u + e⁻ + ν̄ₑ',cx,cy+r+70);ctx.fillText('Un quark down change de phase → le triangle se réarrange',cx,cy+r+88);ctx.fillText('→ PROTON (uud) + ÉLECTRON + ANTI-NEUTRINO',cx,cy+r+106)}
+  else{ctx.fillText('PROTON (uud) — stable après désintégration',cx,cy+r+70);ctx.fillText('Le triangle s\'est reformé avec uud',cx,cy+r+88)}
+  ctx.fillText('Médiateur : AUCUN — le changement de phase EST la force faible',cx,cy+r+124);
+}
+function loop(){if(playing)t+=0.05;draw();requestAnimationFrame(loop)}
+document.getElementById('btn-play').onclick=()=>{playing=!0;document.getElementById('btn-play').classList.add('active');document.getElementById('btn-pause').classList.remove('active')};
+document.getElementById('btn-pause').onclick=()=>{playing=!1;document.getElementById('btn-pause').classList.add('active');document.getElementById('btn-play').classList.remove('active')};
+document.getElementById('btn-reset').onclick=()=>{t=0;playing=!0;document.getElementById('btn-play').classList.add('active');document.getElementById('btn-pause').classList.remove('active')};
+loop();</script></body></html>

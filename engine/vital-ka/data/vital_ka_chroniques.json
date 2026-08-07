@@ -1,0 +1,290 @@
+{
+  "description": "Maladies chroniques — HTA, diabète, drépanocytose, épilepsie, asthme chronique, insuffisance cardiaque",
+  "version": "1.0",
+  "source": "WHO Guidelines on Management of Non-Communicable Diseases 2024",
+  "conditions": {
+    "hta": {
+      "nom": "Hypertension Artérielle (HTA)",
+      "definition": "Pression artérielle ≥140/90 mmHg à 2 consultations séparées. Objectif: <140/90 (<130/80 si diabète ou IRC).",
+      "classification": {
+        "normale": "<130/85",
+        "haute_normale": "130-139 / 85-89",
+        "hta_grade_1": "140-159 / 90-99",
+        "hta_grade_2": "160-179 / 100-109",
+        "hta_grade_3": "≥180 / ≥110",
+        "hta_severe_symptomatique": "≥180/110 + symptômes (céphalées, troubles visuels, OAP)"
+      },
+      "mesure": "Patient assis, repos 5 min. Brassard adapté (recouvre 80% bras). Au moins 2 mesures. Préférer MAPA si disponible.",
+      "traitement": {
+        "etape1": "1 inhibiteur RAAS (ARA2 ou IEC) OU thiazidique OU inhibiteur calcique. Commencer par 1 molécule.",
+        "etape2": "Bithérapie: ARA2 + thiazidique OU IEC + inhibiteur calcique",
+        "etape3": "Trithérapie: ARA2 + thiazidique + inhibiteur calcique",
+        "resistant": "Ajouter Spironolactone 25mg/j. Vérifier l'observance. Exclure HTA secondaire."
+      },
+      "medicaments_cles": {
+        "valsartan": "ARA2 — 80-320mg / jour",
+        "ramipril": "IEC — 2.5-10mg / jour",
+        "amlodipine": "Inhibiteur calcique — 5-10mg / jour",
+        "hydrochlorothiazide": "Thiazidique — 12.5-25mg / jour",
+        "spironolactone": "Anti-aldostérone — 25-50mg / jour (HTA résistante)"
+      },
+      "mesures_hygienodiet": "Réduction sel (<5g/j), perte poids (IMC<25), activité physique 30min/j, modération alcool, arrêt tabac, fruits/légumes (5 portions/j), réduire graisses saturées.",
+      "complications": [
+        "AVC",
+        "infarctus",
+        "insuffisance cardiaque",
+        "insuffisance rénale",
+        "rétinopathie",
+        "démence vasculaire"
+      ],
+      "urgence": false,
+      "suivi": "TA / 2-4 semaines jusqu'à équilibre, puis / 3-6 mois. Créatinine, K+ à l'initiation et à 2-4 semaines. ECG annuel.",
+      "attention": "⚠️ Ne pas arrêter brutalement les bêtabloquants (risque de tachycardie rebond). La clampie (éclampsie) = urgence absolue.",
+      "seuils": {
+        "logic": "any",
+        "rules": [
+          {
+            "field": "ta_syst",
+            "op": "gte",
+            "value": 180,
+            "score": 0.95
+          },
+          {
+            "field": "ta_syst",
+            "op": "gte",
+            "value": 160,
+            "score": 0.9
+          },
+          {
+            "field": "ta_syst",
+            "op": "gte",
+            "value": 140,
+            "score": 0.85
+          },
+          {
+            "field": "ta_diast",
+            "op": "gte",
+            "value": 90,
+            "score": 0.8
+          },
+          {
+            "symptoms": [
+              "céphalées",
+              "vertiges"
+            ],
+            "score": 0.7
+          }
+        ]
+      }
+    },
+    "diabete_type2": {
+      "nom": "Diabète Type 2",
+      "definition": "Glycémie à jeun ≥1.26g/L (7.0mmol/L) à 2 reprises. OU HbA1c ≥6.5%. OU glycémie aléatoire ≥2g/L avec symptômes.",
+      "tokens": [
+        "polyurie",
+        "polydipsie",
+        "polyphagie",
+        "perte_poids",
+        "fatigue",
+        "vision_floue",
+        "prurit",
+        "cicatrisation_lente"
+      ],
+      "signes": [
+        "polyurie",
+        "polydipsie",
+        "polyphagie",
+        "perte de poids",
+        "fatigue",
+        "vision floue",
+        "infections récidivantes",
+        "prurit",
+        "cicatrisation lente"
+      ],
+      "classification": {
+        "controle_optimal": "HbA1c <7% — Objectif standard",
+        "controle_sous_optimal": "HbA1c 7-8%",
+        "mauvais_controle": "HbA1c >8% — Ajustement thérapeutique",
+        "non_controle": "HbA1c >9% — Réévaluation"
+      },
+      "traitement": {
+        "etape1": "Mesures hygiéno-diététiques 3 mois + Metformine 500-2000mg/j",
+        "etape2": "Ajouter: Sulfamide (Glibenclamide 5-15mg/j) OU inhibiteur SGLT2 OU agoniste GLP-1",
+        "etape3": "Trithérapie / Insuline (basale: Glargine ou NPH 0.1-0.2 UI/kg/j)",
+        "insuline": "Si HbA1c >10%, symptômes, perte de poids: insuline d'emblée"
+      },
+      "medicaments_cles": {
+        "metformine": "500mg 2x/j → augmenter jusqu'à 1000mg 2x/j. À prendre pendant le repas. Ne pas donner si IRC stade 4-5.",
+        "glibenclamide": "Sulfamide — 5-15mg / jour. Risque hypoglycémie. Éviter chez sujet âgé.",
+        "empagliflozine": "Inhibiteur SGLT2 — 10-25mg / jour. Bénéfice cardio-rénal. Surveillance infection génitale.",
+        "insuline_glargine": "Insuline lente — 0.1-0.2 UI/kg/jour le soir. Titration selon glycémie matinale."
+      },
+      "complications": [
+        "neuropathie",
+        "rétinopathie",
+        "néphropathie",
+        "pied diabétique",
+        "AVC",
+        "infarctus",
+        "infections",
+        "acidocétose"
+      ],
+      "urgence": "Acidocétose: haleine acétonique, polypnée de Kussmaul, déshydratation, troubles de conscience → HOSPITALISATION immédiate. Soluté + Insuline IV.",
+      "pied_diabetique": "Examiner les pieds à chaque consultation. Monofilament de Semmes-Weinstein. Soins podologiques. Chaussures adaptées. Hyperbarie si ulcère.",
+      "suivi": "Glycémie / semaine (automesure). HbA1c / 3 mois. Microalbuminurie, fond d'œil, examen pieds / an. Créatinine / an.",
+      "attention": "⚠️ Metformine: arrêter 48h avant injection de produit de contraste iodé (risque d'acidose lactique). Hypoglycémie (sulfamides): sucre 15g PO, recontrôler à 15min."
+    },
+    "drepanocytose": {
+      "nom": "Drépanocytose (Anémie falciforme)",
+      "definition": "Maladie génétique de l'hémoglobine (HbS). Homozygote SS = forme majeure. Fréquente en Afrique (1/4 porteurs sains dans certaines régions).",
+      "tokens": [
+        "douleur_osseuse",
+        "pâleur",
+        "ictère",
+        "urines_foncées",
+        "douleur_thoracique",
+        "fièvre",
+        "détresse_respiratoire",
+        "grosse_rate"
+      ],
+      "manifestations": {
+        "crise_vaso_occlusive": "Douleur osseuse intense (dos, thorax, extrémités). Déclenchée par: fièvre, déshydratation, froid, hypoxie, stress.",
+        "crise_hemolytique": "Pâleur, ictère, urines foncées, chute de l'Hb.",
+        "syndrome_thoracique_aigu": "Douleur thoracique + fièvre + syndrome de détresse respiratoire. Complication grave, mortalité élevée.",
+        "sequestration_splenique": "Grosse rate + chute brutale Hb (chez enfant <5 ans). Urgence vitale.",
+        "avc": "Accident vasculaire cérébral — surtout enfant. Dépister par Doppler transcrânien annuel (vésicules cérébrales)."
+      },
+      "traitement": {
+        "fond": "Hydroxyurée (Hydroxycarbamide) 15-35mg/kg/j — augmente HbF, réduit crises de 50%. Pénicilline V prophylactique 125mg 2x/j <5 ans (prévention pneumococcique).",
+        "crise": "Hydratation IV (Ringer Lactate 3L/m²/j). Antalgiques (Paracétamol → Codéine → Morphine si besoin). Oxygène si SpO2<92%. Transfusion si Hb<6g/dL.",
+        "urgence": "Syndrome thoracique aigu / AVC / Séquestration splénique → HOSPITALISATION, transfusion d'échange, antibiotiques."
+      },
+      "prevention": {
+        "vaccination": "Pneumocoque (conjugué + polysaccharidique), Haemophilus, Méningocoque, Hépatite B, Grippe annuelle.",
+        "prophylaxie": "Pénicilline V 125mg 2x/j (<3 ans) ou 250mg 2x/j (3-5 ans). Acide folique 5mg/j."
+      },
+      "suivi": "Hb / 3 mois. Doppler transcrânien annuel (enfant). Échographie abdominale (vésicules lithiase, rate). Fond d'œil.",
+      "urgence": true,
+      "attention": "⚠️ Dépister par test d'Emmel (falciformation) ou électrophorèse Hb. Conseil génétique prénuptial. Toute fièvre chez drépanocytaire = urgence (risque de septicémie, sequestration)."
+    },
+    "epilepsie": {
+      "nom": "Épilepsie",
+      "definition": "Affection neurologique caractérisée par des crises récidivantes non provoquées. Prévalence élevée en Afrique (cysticercose, paludisme, traumatismes).",
+      "tokens": [
+        "perte_conscience",
+        "convulsions",
+        "morsure_langue",
+        "perte_urine",
+        "somnolence",
+        "confusion",
+        "pas_de_réponse"
+      ],
+      "types": {
+        "generalisee_tonico_clonique": "Perte de connaissance, convulsions généralisées, morsure de langue, perte d'urine, phase post-critique (somnolence, confusion).",
+        "absence": "Brève suspension de conscience (5-10s), clignement, pas de chute. Enfant.",
+        "partielle": "Crise focale avec ou sans généralisation secondaire."
+      },
+      "traitement": {
+        "premiere_ligne": "Phénobarbital 2-4mg/kg/j (adulte: 100-200mg/j) — préféré en Afrique (peu coûteux, disponible).",
+        "alternative_1": "Valproate de sodium 15-30mg/kg/j (adulte: 600-2000mg/j).",
+        "alternative_2": "Carbamazépine 10-20mg/kg/j (adulte: 400-1200mg/j).",
+        "alternative_3": "Lévétiracétam 1000-3000mg/j."
+      },
+      "etat_mal": "Crise >5 min ou crises répétées sans reprise de conscience. URGENCE: Diazépam 10mg IV (ou 20mg IR) → répéter à 10 min → Fosphénytoïne 15-20mg/kg IV. Voies aériennes, glycémie, température.",
+      "grossesse": "⚠️ Valproate: CONTRE-INDIQUÉ (tératogène — risque malformations 10%). Préférer Lévétiracétam. Acide folique 5mg/j.",
+      "suivi": "Observance (cause #1 d'échec). EEG si disponible. Neuropsychologique. Pas d'arrêt brutal (risque état de mal).",
+      "urgence": false,
+      "attention": "La stigmatisation sociale est majeure en Afrique. Éducation: l'épilepsie n'est pas contagieuse, pas une malédiction. Conseils: éviter conduite, natation solitaire, hauteur."
+    },
+    "asthme_chronique": {
+      "nom": "Asthme Chronique (persistent)",
+      "definition": "Inflammation chronique des voies aériennes avec bronchoconstriction réversible. Se distingue de la crise aiguë (qui nécessite un traitement immédiat).",
+      "classification": {
+        "persistant_leger": "Symptômes 2-6 jours/semaine. 1-3 réveils/mois.",
+        "persistant_modere": "Symptômes quotidiens. Plusieurs réveils/semaine.",
+        "persistant_severe": "Symptômes continus. Réveils fréquents. Activité limitée."
+      },
+      "traitement": {
+        "palier_1_leger": "Corticostéroïde inhalé (Budésonide ou Béclométasone) faible dose + Salbutamol en rescue",
+        "palier_2": "Corticostéroïde inhalé + LABA (Formotérol ou Salmétérol) en combinaison",
+        "palier_3_severe": "Dose moyenne/forte de corticoïde inhalé + LABA. LTRA (Montélukast). Théophylline LP.",
+        "severe_refractaire": "Anti-IgE (Omalizumab), anti-IL5 (Mépolizumab) — centres spécialisés."
+      },
+      "medicaments_cles": {
+        "budesonide_inhale": "200-800µg / jour (selon sévérité). Chambre d'inhalation recommandée. Rinçage bouche après.",
+        "salmeterol_formoterol": "LABA — en combinaison fixe avec corticoïde. Ne JAMAIS en monothérapie.",
+        "salbutamol_rescue": "100µg, 1-2 bouffées en cas de symptômes. Si >2x/semaine = mauvais contrôle.",
+        "montelukast": "Antileucotriène — 4-10mg / soir. Utile dans asthme allergique et asthme induit par exercice."
+      },
+      "plan_action": "Donner un plan d'action écrit au patient: Quand augmenter le traitement. Quand utiliser les rescues. Quand consulter en urgence.",
+      "suivi": "Évaluer le contrôle (ACT questionnaire) à chaque visite. Spirométrie si disponible. Vérifier la technique d'inhalation.",
+      "urgence": "Crise aiguë sévère: Salbutamol nébulisé 5mg, Oxygène, Corticoïde PO (Prednisone 1mg/kg), hospitalisation si pas d'amélioration.",
+      "attention": "⚠️ Éviter les déclencheurs (poussière, pollen, AINS si sensible, stress). Vaccination antigrippale annuelle. Arrêt tabac essentiel.",
+      "seuils": {
+        "logic": "any",
+        "rules": [
+          {
+            "field": "fr",
+            "op": "lt",
+            "value": 20,
+            "symptoms": [
+              "sifflement_respiratoire"
+            ],
+            "score": 0.7
+          },
+          {
+            "symptoms": [
+              "sifflement_respiratoire",
+              "oppression_thoracique"
+            ],
+            "score": 0.75
+          }
+        ]
+      }
+    },
+    "insuffisance_cardiaque": {
+      "nom": "Insuffisance Cardiaque Chronique (ICC)",
+      "definition": "Incapacité du cœur à assurer un débit suffisant. Causes: HTA, cardiopathie ischémique, valvulopathie, cardiomyopathie.",
+      "tokens": [
+        "essoufflement",
+        "orthopnée",
+        "œdèmes_bilatéraux",
+        "asthénie",
+        "turgescence_jugulaire",
+        "crépitants_pulmonaires",
+        "hépatomégalie"
+      ],
+      "signes": [
+        "dyspnée d'effort puis de repos",
+        "orthopnée",
+        "œdèmes des membres inférieurs",
+        "asthénie",
+        "turgescence jugulaire",
+        "ralentissement du débit",
+        "hépatomégalie douloureuse",
+        "crépitants pulmonaires"
+      ],
+      "classification": {
+        "nyha_1": "Pas de symptômes à l'effort habituel",
+        "nyha_2": "Symptômes à l'effort soutenu",
+        "nyha_3": "Symptômes à l'effort léger",
+        "nyha_4": "Symptômes au repos"
+      },
+      "traitement": {
+        "quatre_piliers": "1. IEC (Ramipril) ou ARA2 (Valsartan). 2. Bêtabloquant (Bisoprolol, Carvédilol). 3. Antialdostérone (Spironolactone). 4. Inhibiteur SGLT2 (Dapagliflozine, Empagliflozine).",
+        "diuretique": "Furosémide 20-80mg/j (selon congestion). Surveiller kaliémie, créatinine.",
+        "digoxine": "Si FA + ICC. Dose 0.125-0.25mg/j. Surveiller digoxinémie, kaliémie."
+      },
+      "medicaments_cles": {
+        "ramipril_icc": "2.5mg → 10mg/j. ICC systolique.",
+        "bisoprolol": "1.25mg → 10mg/j. Commencer petite dose, augmenter progressivement.",
+        "spironolactone": "25-50mg/j. ICC modérée à sévère.",
+        "dapagliflozine": "10mg/j. Nouveau pilier OMS 2024 — réduit mortalité."
+      },
+      "oap": "Œdème aigu du poumon: position assise, O2 haut débit, Furosémide 40-80mg IV, Morphine 2-3mg IV (si pas de dépression respiratoire), Nitrés si TA élevée. Hospitalisation.",
+      "suivi": "Poids quotidien. TA, fréquence cardiaque. Créatinine, K+, NT-proBNP. Échographie cardiaque à l'initiation.",
+      "urgence": false,
+      "attention": "⚠️ La rhumatismale (cardiopathie rhumatismale) est fréquente en Afrique — toujours demander antécédents d'angine/RAA. Prophylaxie: Pénicilline G Benzathine 1.2M UI IM / 3-4 semaines à vie."
+    }
+  }
+}

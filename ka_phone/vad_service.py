@@ -31,11 +31,13 @@ os.makedirs(DATA_DIR, exist_ok=True)
 # SILERO-VAD — Chargement lazy
 # ══════════════════════════════════════════════════════════════════════════
 
+# torch : détection SANS import (~2 s) — import différé au chargement de silero
 try:
-    import torch
-    HAS_TORCH = True
-except ImportError:
+    import importlib.util as _ilu
+    HAS_TORCH = _ilu.find_spec("torch") is not None
+except Exception:
     HAS_TORCH = False
+torch = None  # importé paresseusement dans _ensure_silero
 
 HAS_SILERO = False
 _silero_model = None
@@ -44,13 +46,14 @@ _silero_utils = None
 
 def _ensure_silero():
     """Charge silero-vad lazily (1.5 Mo)."""
-    global HAS_SILERO, _silero_model, _silero_utils
+    global HAS_SILERO, _silero_model, _silero_utils, torch
     if HAS_SILERO:
         return True
     if not HAS_TORCH:
         print("[VAD] PyTorch non installé → fallback energy-based VAD")
         return False
     try:
+        import torch  # import paresseux (~2 s) — seulement si VAD neuronal demandé
         model, utils = torch.hub.load(
             repo_or_dir='snakers4/silero-vad',
             model='silero_vad',

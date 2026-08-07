@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>Vital Ka — Administration</title>
+<link href="fonts/fonts.css" rel="stylesheet"/>
+<style>
+:root{--bg:#0d0d0d;--glass:rgba(26,26,26,.7);--glass-border:rgba(212,168,83,.08);--text:#eae1d7;--muted:#9b8f7e;--accent:#d4a853;--accent-glow:rgba(212,168,83,.12);--success:#27ae60;--warning:#f39c12;--error:#e74c3c;--border:#2a2a2a;--gold-grad:linear-gradient(135deg,#d4a853,#7b5804);--font:'Inter',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:1}
+.container{max-width:1100px;margin:0 auto;padding:24px 20px 60px;position:relative;z-index:2}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 0 24px;border-bottom:1px solid var(--glass-border);margin-bottom:24px}
+header h1{font-size:1.4em;font-weight:800;color:var(--accent);letter-spacing:-.02em}
+header .badge{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--accent-glow);color:var(--accent)}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat-box{background:var(--glass);backdrop-filter:blur(24px);border:1px solid var(--glass-border);border-radius:14px;padding:20px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.stat-box .num{font-size:2em;font-weight:800;color:var(--accent);display:block}
+.stat-box .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:4px}
+.card{background:var(--glass);backdrop-filter:blur(24px);border:1px solid var(--glass-border);border-radius:14px;padding:20px;margin-bottom:16px;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.card h3{font-size:15px;font-weight:700;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.table{width:100%;border-collapse:collapse;font-size:13px}
+.table th{text-align:left;padding:8px 12px;color:var(--accent);font-weight:600;border-bottom:1px solid var(--glass-border);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.03);color:var(--text)}
+.table tr:hover td{background:rgba(212,168,83,.02)}
+.badge-status{display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600}
+.badge-status.online{background:rgba(39,174,96,.15);color:var(--success)}
+.badge-status.pending{background:rgba(243,156,18,.15);color:var(--warning)}
+.badge-status.error{background:rgba(231,76,60,.15);color:var(--error)}
+.btn{background:var(--accent);color:#0d0d0d;border:none;padding:10px 18px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s}
+.btn:hover{opacity:.9}
+.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--accent)}
+.row{display:flex;gap:12px;align-items:center}
+input{background:rgba(15,15,25,.8);color:var(--text);border:1px solid var(--border);padding:10px 14px;border-radius:10px;font-size:13px;font-family:inherit}
+input:focus{outline:none;border-color:var(--accent)}
+.tabs{display:flex;gap:4px;margin-bottom:16px}
+.tab{padding:10px 20px;border-radius:10px;background:transparent;border:1px solid var(--glass-border);color:var(--muted);cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;transition:all .2s}
+.tab.active{background:var(--accent-glow);border-color:var(--accent);color:var(--accent)}
+.app-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.app-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:12px;padding:14px;text-align:center;cursor:pointer;transition:all .2s}
+.app-card:hover{border-color:var(--accent);background:var(--accent-glow)}
+.app-card .icon{font-size:28px;margin-bottom:6px}
+.app-card .name{font-size:12px;font-weight:600}
+</style>
+<script src="ka_platform.js"></script>
+<script src="ka_wallet.js"></script>
+<script src="ka_bridge.js"></script>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>🔧 Vital Ka — Administration</h1>
+<div class="row">
+<div class="badge" id="versionBadge">v1.0</div>
+<button class="btn btn-secondary" onclick="window.open('ka_launcher.html','_blank')">← Launcher</button>
+</div>
+</header>
+
+<!-- APPS RAPIDES -->
+<div class="card">
+<h3>🚀 Accès rapide aux apps</h3>
+<div class="app-grid">
+<div class="app-card" onclick="window.open('vital_ka.html','_blank')"><div class="icon">🩺</div><div class="name">Médecin</div></div>
+<div class="app-card" onclick="window.open('ka_patient.html','_blank')"><div class="icon">👤</div><div class="name">Patient</div></div>
+<div class="app-card" onclick="window.open('ka_pharmacien.html','_blank')"><div class="icon">🏪</div><div class="name">Pharmacie</div></div>
+<div class="app-card" onclick="window.open('ka_solidarite.html','_blank')"><div class="icon">💝</div><div class="name">Solidarité</div></div>
+<div class="app-card" onclick="window.open('ka_medecins.html','_blank')"><div class="icon">🏥</div><div class="name">Médecins</div></div>
+</div>
+</div>
+
+<!-- STATS -->
+<div class="stats-grid" id="statsGrid"></div>
+
+<!-- LEDGER -->
+<div class="card">
+<h3>📒 Ledger — Transactions</h3>
+<div class="tabs" id="ledgerTabs">
+<div class="tab active" onclick="filterLedger('all')">Toutes</div>
+<div class="tab" onclick="filterLedger('solidarite_credit')">💝 Solidarité</div>
+<div class="tab" onclick="filterLedger('payment')">💳 Paiements</div>
+<div class="tab" onclick="filterLedger('conversion_request')">🏦 Conversions</div>
+</div>
+<div style="max-height:300px;overflow-y:auto">
+<table class="table" id="ledgerTable"><tr><th>ID</th><th>Type</th><th>De</th><th>Vers</th><th>Montant</th><th>Date</th></tr></table>
+</div>
+</div>
+
+<!-- CONVERSIONS EN ATTENTE -->
+<div class="card">
+<h3>🏦 Demandes de conversion en attente</h3>
+<div id="conversionsList"><span style="color:var(--muted);font-size:12px">Aucune demande en attente.</span></div>
+</div>
+
+<!-- CONFIG -->
+<div class="card">
+<h3>⚙️ Configuration plateforme</h3>
+<div class="row" style="flex-wrap:wrap;margin-bottom:12px">
+<input id="cfgApiKey" placeholder="Clé API MTN MoMo (sandbox)" style="flex:1">
+<input id="cfgStripeKey" placeholder="Clé Stripe/PayPal (test)" style="flex:1">
+<button class="btn" onclick="saveConfig()">Sauver</button>
+</div>
+<div style="font-size:11px;color:var(--muted)">Version API : <span id="cfgVersion">—</span> · MTN MoMo : <span id="cfgMtn">—</span> · Stripe : <span id="cfgStripe">—</span></div>
+</div>
+
+<!-- RESET -->
+<div class="card" style="text-align:center">
+<h3 style="justify-content:center">🗑️ Réinitialisation</h3>
+<p style="color:var(--muted);font-size:12px;margin-bottom:12px">Efface toutes les données de démonstration (wallets, ledger, conversions, patients).</p>
+<button class="btn" style="background:var(--error);margin:0 auto" onclick="resetAll()">⚠️ Reset complet</button>
+</div>
+
+</div>
+
+<script>
+let ledgerFilter = 'all';
+
+function refresh() {
+  const stats = KA_PLATFORM.getAggregateStats();
+  document.getElementById('versionBadge').textContent = 'v' + stats.version;
+  document.getElementById('statsGrid').innerHTML =
+    '<div class="stat-box"><span class="num">' + stats.totalTx + '</span><span class="lbl">Transactions totales</span></div>'
+    + '<div class="stat-box"><span class="num">' + stats.todayTx + '</span><span class="lbl">Aujourd\'hui</span></div>'
+    + '<div class="stat-box"><span class="num">' + stats.totalVolume + '</span><span class="lbl">Volume total (UM)</span></div>'
+    + '<div class="stat-box"><span class="num">' + stats.todayVolume + '</span><span class="lbl">Volume aujourd\'hui</span></div>';
+
+  renderLedger();
+  renderConversions();
+  renderConfig();
+}
+
+function filterLedger(type) {
+  ledgerFilter = type;
+  document.querySelectorAll('#ledgerTabs .tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  renderLedger();
+}
+
+function renderLedger() {
+  const ledger = KA_WALLET.getLedger();
+  const filtered = ledgerFilter === 'all' ? ledger : ledger.filter(tx => tx.type === ledgerFilter);
+  let html = '<tr><th>ID</th><th>Type</th><th>De</th><th>Vers</th><th>Montant</th><th>Date</th></tr>';
+  filtered.reverse().slice(0, 50).forEach(tx => {
+    const d = new Date(tx.timestamp);
+    const typeLabel = {solidarite_credit:'💝 Crédit', payment:'💳 Paiement', conversion_request:'🏦 Conversion'}[tx.type] || tx.type;
+    html += '<tr><td style="font-size:11px;font-family:monospace">' + tx.txId.slice(0,12) + '</td>'
+      + '<td>' + typeLabel + '</td>'
+      + '<td style="font-size:11px">' + (tx.from||'').slice(0,14) + '</td>'
+      + '<td style="font-size:11px">' + (tx.to||'').slice(0,14) + '</td>'
+      + '<td style="font-weight:700;color:var(--accent)">' + tx.amount + ' UM</td>'
+      + '<td style="font-size:11px;color:var(--muted)">' + d.toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) + '</td></tr>';
+  });
+  document.getElementById('ledgerTable').innerHTML = html || '<tr><td colspan="6" style="color:var(--muted)">Aucune transaction.</td></tr>';
+}
+
+function renderConversions() {
+  const convs = KA_WALLET.getConversions ? KA_WALLET.getConversions() : [];
+  const pending = convs.filter(c => c.status === 'pending');
+  const el = document.getElementById('conversionsList');
+  if (!pending.length) { el.innerHTML = '<span style="color:var(--muted);font-size:12px">Aucune demande en attente.</span>'; return; }
+  let h = '';
+  pending.forEach(c => {
+    h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:rgba(15,15,25,.8);border-radius:8px;margin-bottom:6px">';
+    h += '<div><strong>' + c.amount + ' UM → ' + c.convertedAmount + ' ' + c.currency + '</strong><div style="font-size:11px;color:var(--muted)">' + c.role + ' · ' + (c.bankInfo?.account||'') + '</div></div>';
+    h += '<div><span class="badge-status pending">En attente</span> <button class="btn" style="padding:4px 10px;font-size:11px;margin-left:8px" onclick="approveConversion(\'' + c.id + '\')">✅ Approuver</button></div>';
+    h += '</div>';
+  });
+  el.innerHTML = h;
+}
+
+function approveConversion(id) {
+  const convs = KA_WALLET.getConversions ? KA_WALLET.getConversions() : [];
+  const idx = convs.findIndex(c => c.id === id);
+  if (idx < 0) return;
+  convs[idx].status = 'approved';
+  convs[idx].processedAt = new Date().toISOString();
+  KA_WALLET.saveConversions(convs);
+  // Libérer les fonds gelés
+  const wallet = KA_WALLET.getWallet(convs[idx].role);
+  wallet.pendingConversion = Math.max(0, (wallet.pendingConversion||0) - convs[idx].amount);
+  KA_WALLET.saveWallet(convs[idx].role, wallet);
+  refresh();
+}
+
+function renderConfig() {
+  const cfg = KA_PLATFORM.getConfig();
+  document.getElementById('cfgApiKey').value = cfg.mtnApiKey || '';
+  document.getElementById('cfgStripeKey').value = cfg.stripeKey || '';
+  document.getElementById('cfgVersion').textContent = KA_PLATFORM.VERSION;
+  document.getElementById('cfgMtn').textContent = cfg.mtnApiKey ? '✅ Configuré' : '⏳ Non configuré';
+  document.getElementById('cfgStripe').textContent = cfg.stripeKey ? '✅ Configuré' : '⏳ Non configuré';
+}
+
+function saveConfig() {
+  KA_PLATFORM.setConfig('mtnApiKey', document.getElementById('cfgApiKey').value.trim());
+  KA_PLATFORM.setConfig('stripeKey', document.getElementById('cfgStripeKey').value.trim());
+  renderConfig();
+  alert('✅ Configuration sauvegardée.');
+}
+
+function resetAll() {
+  if (!confirm('⚠️ Effacer TOUTES les données (wallets, ledger, conversions, patients) ?')) return;
+  const keys = ['ka_wallet_patient','ka_wallet_pharmacie','ka_wallet_medecin','ka_wallet_solidarite','ka_ledger','ka_conversions','ka_solidarite_transactions','ka_solidarite_contacts','vital_ka_patients','vital_ka_history'];
+  keys.forEach(k => localStorage.removeItem(k));
+  refresh();
+  alert('✅ Reset complet effectué.');
+}
+
+// Init
+KA_PLATFORM.login('admin', 'Administrateur');
+refresh();
+setInterval(refresh, 30000);
+</script>
+</body></html>

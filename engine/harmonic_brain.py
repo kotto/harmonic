@@ -82,6 +82,14 @@ except ImportError:
     PhaseAmplifier = None
     deep_reason = None
 
+# 📖 WaveNarrative — synthèse narrative structurée (intro/dév/conclusion)
+_WAVE_NARRATIVE_AVAILABLE = False
+try:
+    from wave_narrative import WaveNarrative
+    _WAVE_NARRATIVE_AVAILABLE = True
+except ImportError:
+    WaveNarrative = None
+
 # 🧪 Few-Shot Injector — apprentissage par injection temporaire
 _FEW_SHOT_AVAILABLE = False
 try:
@@ -193,6 +201,52 @@ try:
 except ImportError:
     WaveConversation = None
 
+# 🌊 Wave Sampling — échantillonnage par cohérence (température, top-p, top-k)
+_WAVE_SAMPLER_AVAILABLE = False
+try:
+    from wave_sampling import WaveSampler
+    _WAVE_SAMPLER_AVAILABLE = True
+except ImportError:
+    WaveSampler = None
+
+# 📊 Wave Perplexity — entropie ondulatoire et métriques de confiance
+_WAVE_PERPLEXITY_AVAILABLE = False
+try:
+    from wave_perplexity import (
+        wave_entropy, wave_perplexity, generation_quality,
+        coherence_perplexity, confidence as wave_confidence,
+        coherence_margin,
+    )
+    _WAVE_PERPLEXITY_AVAILABLE = True
+except ImportError:
+    wave_entropy = None
+    wave_perplexity = None
+    generation_quality = None
+    coherence_perplexity = None
+    wave_confidence = None
+    coherence_margin = None
+
+# 🔀 Wave Beam Search — interférence multi-chemin
+_WAVE_BEAM_AVAILABLE = False
+try:
+    from beam_search import WaveBeamSearch, interference_matrix, select_constructive
+    _WAVE_BEAM_AVAILABLE = True
+except ImportError:
+    WaveBeamSearch = None
+    interference_matrix = None
+    select_constructive = None
+
+# 🧠 Wave GPT — générateur de texte purement ondulatoire (token par token)
+_WAVE_GPT_AVAILABLE = False
+try:
+    from wave_gpt import WaveGPT, WaveGPTResult, WaveEncoder, WaveSelfAttention
+    _WAVE_GPT_AVAILABLE = True
+except ImportError:
+    WaveGPT = None
+    WaveGPTResult = None
+    WaveEncoder = None
+    WaveSelfAttention = None
+
 log = logging.getLogger(__name__)
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -290,6 +344,14 @@ class BrainResult:
     facts_rejected: List[FactRecord]
     retrieval_count: int     # combien de faits sont remontés de l'inconscient
     total_time_ms: float
+    refused: bool = False    # 🆕 True si KA a explicitement refusé (anti-hallucination)
+
+    @property
+    def is_confident(self) -> bool:
+        """🆕 True si la confiance dépasse le seuil de fiabilité.
+        Seuil 0.40 : sous ce score, la réponse n'est pas garante.
+        Utilisé par harmonic_ai.py pour le gating d'apprentissage."""
+        return self.confidence >= 0.40
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -625,8 +687,8 @@ class HolographicStore:
             lexical_score = tfidf_score / max_idf if common_tokens else 0.0
             # Le spectral n'est activé que si la qualité est suffisante (> 0.35)
             if self._spectral_quality > 0.35:
-                semantic_weight = 0.3
-                lexical_weight = 0.5
+                semantic_weight = 0.6   # 🆕 boosté de 0.3 → 0.6
+                lexical_weight = 0.3    # 🆕 réduit de 0.5 → 0.3
             else:
                 semantic_weight = 0.0
                 lexical_weight = 0.8
@@ -651,6 +713,14 @@ class HolographicStore:
         scored.sort(key=lambda x: -x[1])
         self.total_retrieved += 1
         return scored[:max_results]
+
+    @property
+    def psi_dominant(self) -> np.ndarray:
+        """🆕 Vecteur ψ dominant : moyenne des ψ des 10 faits de plus haute amplitude."""
+        if not self.registry:
+            return np.zeros(self.dim, dtype=np.complex128)
+        top = sorted(self.registry.values(), key=lambda r: r.amplitude, reverse=True)[:10]
+        return np.mean([r.psi for r in top], axis=0) if top else np.zeros(self.dim, dtype=np.complex128)
 
     def retrieve_resonance(self, question: str, max_results: int = 50,
                            sector_boost: str = None) -> List[Tuple[FactRecord, float]]:
@@ -969,6 +1039,7 @@ DOMAIN_SECTOR_MAP: Dict[str, str] = {
     # ── HISTOIRE ──
     'PASSE': 'histoire',
     'FUTUR': 'histoire',
+    'HISTOIRE': 'histoire',  # produit par detect_sector()
     # ── CODE ──
     'CODE': 'code',
     'DISTILL': 'code',
@@ -1043,6 +1114,343 @@ DOMAIN_KEYWORDS: Dict[str, List[str]] = {
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# ENTITY RETRIEVER — Retrieval entity-centric (inspiré Obsidian)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class EntityIndex:
+    """
+    Index entity-centric pour retrieval O(1).
+    
+    Principe Obsidian : au lieu de chercher dans 100K faits avec TF-IDF,
+    indexer par ENTITÉ (sujet ou objet) et faire un lookup direct.
+    
+    Usage:
+        index = EntityIndex(brain.unconscious)
+        facts = index.lookup("brésil")  # → tous les faits sur le Brésil
+        facts = index.search("capitale du Brésil")  # → le fait exact
+    """
+    
+    def __init__(self, store: 'HolographicStore'):
+        self.store = store
+        self._entity_index: Dict[str, List[Tuple[str, str, str, float]]] = defaultdict(list)
+        self._built = False
+    
+    def build(self):
+        """Construit l'index entité → faits."""
+        if self._built:
+            return
+        
+        for (s, r, o), record in self.store.registry.items():
+            amp = record.amplitude
+            # Indexer par sujet complet
+            self._entity_index[s].append((s, r, o, amp))
+            # Indexer par chaque mot (y compris courts: "or", "fe", "au", "os")
+            for word in s.split():
+                if len(word) >= 1:
+                    self._entity_index[word].append((s, r, o, amp))
+            for word in o.split():
+                if len(word) >= 1:
+                    self._entity_index[word].append((s, r, o, amp))
+            # Indexer bigrammes sujet+objet
+            s_words = s.split()
+            o_words = o.split()
+            if len(s_words) >= 2:
+                for i in range(len(s_words)-1):
+                    bigram = f'{s_words[i]} {s_words[i+1]}'
+                    self._entity_index[bigram].append((s, r, o, amp))
+            if len(o_words) >= 2:
+                for i in range(len(o_words)-1):
+                    bigram = f'{o_words[i]} {o_words[i+1]}'
+                    self._entity_index[bigram].append((s, r, o, amp))
+        
+        self._built = True
+        log.info(f"EntityIndex: {len(self._entity_index):,} entités indexées")
+    
+    def lookup(self, entity: str, max_results: int = 20) -> List[Tuple[str, str, str, float]]:
+        """Lookup direct par entité. Retourne les faits triés par amplitude."""
+        self.build()
+        entity_clean = entity.lower().strip()
+        results = self._entity_index.get(entity_clean, [])
+        # Dédupliquer
+        seen = set()
+        unique = []
+        for s, r, o, amp in results:
+            key = (s, r, o)
+            if key not in seen:
+                seen.add(key)
+                unique.append((s, r, o, amp))
+        unique.sort(key=lambda x: -x[3])
+        return unique[:max_results]
+    
+    def search(self, question: str, max_results: int = 15) -> List[Tuple[FactRecord, float]]:
+        """
+        Recherche entity-aware avec parsing question.
+        
+        Stratégie Question-Aware :
+        1. Parser la question pour extraire ENTITÉ + TYPE DE RELATION
+        2. Chercher les faits sur l'ENTITÉ
+        3. Filtrer/faire monter les faits dont la relation matche le TYPE
+        4. Si rien, fallback word-overlap classique
+        """
+        self.build()
+        
+        q_lower = question.lower().strip()
+        stopwords = {'quelle','quel','quels','quelles','est','sont','qui','que','quoi',
+                     'dont','pour','dans','sur','avec','par','plus','moins','tout',
+                     'très','cette','cet','ces','aux','des','les','une','dun','comment',
+                     'quand','pourquoi','combien','peut','fait','elle','elles','ils',
+                     'le','la','un','du','de','et','ou','en','au','se','son','sa','ses',
+                     'nous','vous','leur','mes','tes','nos','vos','ce','ça','ont','a',
+                     'ont','ete','etre','avoir','aller','venir','faire','dire','voir',
+                     'savoir','pouvoir','vouloir','what','is','are','was','were','the',
+                     'a','an','of','in','on','at','to','for','and','or','how','when',
+                     'who','where','why','which'}
+        q_words = [w for w in q_lower.split() if len(w) >= 1 and w not in stopwords]
+        
+        if not q_words:
+            return []
+
+        # ── PHASE 1 : Question-Aware Parsing ──────────────────────────
+        # Détecter le TYPE de relation demandé
+        relation_map = {
+            # FR — Géographie
+            'capitale': ['capitale', 'capital', 'chef-lieu'],
+            'pays': ['pays', 'nation'],
+            'continent': ['continent', 'continents'],
+            'ocean': ['océan', 'ocean', 'mers', 'mer'],
+            'fleuve': ['fleuve', 'rivière', 'riviere', 'cours'],
+            'montagne': ['montagne', 'sommet', 'pic', 'everest', 'kilimandjaro'],
+            'desert': ['désert', 'desert', 'sahara'],
+            'monnaie': ['monnaie', 'devise', 'euro', 'dollar', 'yen', 'livre'],
+            'langue': ['langue', 'parle', 'official'],
+            # FR — Sciences
+            'symbole': ['symbole', 'symboles', 'chimique'],
+            'formule': ['formule', 'formules', 'composition', 'compose'],
+            'element': ['élément', 'element', 'atome', 'atomique'],
+            'decouvert': ['découvert', 'decouvert', 'découverte', 'decouverte', 'trouvé', 'trouve', 'identifié'],
+            'invente': ['inventé', 'invente', 'invention', 'créé', 'cree', 'fondé', 'fonde', 'développé', 'developpe'],
+            'planete': ['planète', 'planete', 'planetes', 'planètes', 'jupiter', 'mars', 'venus', 'saturne', 'mercure'],
+            'systeme': ['système', 'systeme', 'systemes', 'systèmes'],
+            'force': ['force', 'gravité', 'gravite', 'attraction'],
+            # FR — Corps humain
+            'organe': ['organe', 'organes', 'foie', 'rein', 'poumon', 'cerveau', 'coeur', 'cœur'],
+            'os': ['os', 'squelette', 'squelette'],
+            'muscle': ['muscle', 'muscles'],
+            'maladie': ['maladie', 'maladies', 'virus', 'bactérie', 'bacterie', 'infection'],
+            'traitement': ['traitement', 'médicament', 'medicament', 'vaccin', 'remède', 'remede', 'soigne'],
+            # FR — Histoire
+            'date': ['quand', 'année', 'annee', 'date', 'commencé', 'commence', 'terminé', 'termine', 'fondé', 'fonde', 'créé', 'cree', 'eu lieu', 'a lieu'],
+            'guerre': ['guerre', 'bataille', 'conflit', 'invasion'],
+            'revolution': ['révolution', 'revolution', 'soulèvement', 'soulèvement'],
+            'independance': ['indépendance', 'independance', 'autonomie'],
+            'empire': ['empire', 'royaume', 'dynastie'],
+            'dirigeant': ['roi', 'reine', 'empereur', 'président', 'president', 'dirigeant', 'pharaon', 'souverain', 'chef'],
+            # FR — Arts
+            'peint': ['peint', 'peinte', 'dessiné', 'dessine', 'toile', 'tableau'],
+            'ecrit': ['écrit', 'ecrit', 'rédigé', 'redige', 'composé', 'compose', 'auteur', 'roman', 'livre'],
+            'compose': ['composé', 'compose', 'musique', 'symphonie', 'concerto', 'sonate'],
+            'realise': ['réalisé', 'realise', 'film', 'cinéma', 'cinema', 'réalisateur', 'realisateur'],
+            # FR — Code
+            'definition_code': ['qu\'est-ce', 'cest', 'définis', 'definis', 'explique', 'signifie', 'what is'],
+            'fonction_code': ['fonction', 'def', 'function', 'écris', 'ecris', 'code'],
+            'commande': ['commande', 'commandes', 'syntaxe'],
+            # FR — Quantité
+            'combien': ['nombre', 'combien', 'total', 'compte', 'dénombrer'],
+            'mesure': ['mesure', 'longueur', 'hauteur', 'altitude', 'profondeur', 'poids', 'vitesse', 'superficie'],
+            'population': ['population', 'habitants', 'habitants', 'densité', 'densite'],
+            # FR — Localisation
+            'localisation': ['où', 'ou', 'trouve', 'situé', 'situe', 'localisation', 'lieu', 'endroit'],
+            # FR — Comparaison
+            'plus_grand': ['plus grand', 'plus grande', 'plus haut', 'plus long', 'plus important', 'plus grand'],
+            'plus_petit': ['plus petit', 'plus courte', 'plus bas', 'plus courte'],
+            # EN (mêmes concepts)
+            'capital_en': ['capital', 'capitals'],
+            'discovered_en': ['discovered', 'invented', 'created', 'founded'],
+            'symbol_en': ['symbol', 'chemical'],
+            'how_many_en': ['how many', 'number of'],
+            'when_en': ['when', 'year', 'date'],
+            'who_en': ['who'],
+            'what_en': ['what'],
+        }
+        
+        detected_relations = []
+        for rel_type, keywords in relation_map.items():
+            for kw in keywords:
+                if kw in q_lower:
+                    detected_relations.append((rel_type, kw))
+                    break
+        
+        # ── PHASE 2 : Entity extraction ───────────────────────────────
+        # L'entité principale = le mot le plus long/moins commun dans la question
+        # (probablement un nom propre ou concept)
+        entity_candidates = [w for w in q_words if len(w) > 4]
+        # Prioriser les mots qui commencent par une majuscule (noms propres)
+        q_original = question.strip()
+        proper_nouns = [w.lower() for w in q_original.split() 
+                        if w and w[0].isupper() and len(w) > 2 and w.lower() not in stopwords]
+        if proper_nouns:
+            entity_candidates = proper_nouns + entity_candidates
+        
+        # ── PHASE 3 : Lookup + Scoring ────────────────────────────────
+        all_candidates = {}
+        for word in entity_candidates:
+            for s, r, o, amp in self.lookup(word, max_results=50):
+                key = (s, r, o)
+                if key not in all_candidates:
+                    fact_text = f'{s} {r} {o}'.lower()
+                    keyword_matches = sum(1 for w in q_words if w in fact_text)
+                    
+                    # Bonus bigrammes
+                    for i in range(len(q_words)-1):
+                        bigram = f'{q_words[i]} {q_words[i+1]}'
+                        if bigram in fact_text:
+                            keyword_matches += 2
+                    
+                    # Score de base
+                    score = amp * 0.5 + keyword_matches * 3.0
+                    
+                    # 🆕 BONUS MASSIF si la relation matche le type demandé
+                    relation_match = False
+                    if detected_relations:
+                        for rel_type, rel_kw in detected_relations:
+                            if rel_kw in r.lower() or rel_kw in o.lower():
+                                score += 30.0  # bonus énorme
+                                relation_match = True
+                                break
+                    
+                    # 🆕 Pénalité pour objets très longs (bruit)
+                    if len(o) > 80:
+                        score *= 0.5
+                    
+                    all_candidates[key] = (s, r, o, amp, score, relation_match)
+        
+        # 🆕 Si une relation est détectée, filtrer pour ne garder QUE les faits qui matchent
+        if detected_relations:
+            relation_matched = {k: v for k, v in all_candidates.items() if v[5]}
+            if len(relation_matched) >= 2:
+                all_candidates = relation_matched
+        
+        # Convertir en FactRecord
+        results = []
+        for (s, r, o), (s_raw, r_raw, o_raw, amp, score, rel_match) in all_candidates.items():
+            record = self.store.registry.get((s, r, o))
+            if record:
+                results.append((record, score))
+        
+        results.sort(key=lambda x: -x[1])
+        return results[:max_results]
+    
+    def stats(self) -> Dict:
+        return {
+            'entities': len(self._entity_index),
+            'built': self._built,
+        }
+
+
+class OndulatoireIndex:
+    """
+    Index entity-centric ONDULATOIRE — lookup par résonance ψ.
+    
+    Contrairement à EntityIndex (string exact), cet index utilise les
+    vecteurs psi du HolographicEncoder pour trouver les entités par
+    COHÉRENCE QUANTIQUE, même si l'orthographe diffère.
+    
+    Usage:
+        oidx = OndulatoireIndex(brain.unconscious, brain.unconscious.encoder)
+        facts = oidx.search("capitale du Brésil")  # trouve "bresil" aussi
+    """
+    
+    def __init__(self, store: 'HolographicStore', encoder):
+        self.store = store
+        self.encoder = encoder
+        self._psi_entities: Dict[str, np.ndarray] = {}  # entity → psi vector
+        self._entity_facts: Dict[str, List[Tuple[str, str, str, float]]] = defaultdict(list)
+        self._built = False
+    
+    def build(self):
+        """Encode toutes les entités en ψ et construit l'index."""
+        if self._built or self.encoder is None:
+            return
+        
+        for (s, r, o), record in self.store.registry.items():
+            # Encoder le sujet comme entité ψ
+            if s not in self._psi_entities:
+                psi = self.encoder.encode_query(s)
+                if psi is not None and np.any(psi != 0):
+                    self._psi_entities[s] = psi
+            # Encoder les mots-clés de l'objet
+            for word in o.split():
+                if len(word) > 3 and word not in self._psi_entities:
+                    psi = self.encoder.encode_query(word)
+                    if psi is not None and np.any(psi != 0):
+                        self._psi_entities[word] = psi
+            
+            # Associer les faits aux entités
+            amp = record.amplitude
+            if s in self._psi_entities:
+                self._entity_facts[s].append((s, r, o, amp))
+            for word in o.split():
+                if len(word) > 3 and word in self._psi_entities:
+                    self._entity_facts[word].append((s, r, o, amp))
+        
+        self._built = True
+        log.info(f"OndulatoireIndex: {len(self._psi_entities)} entités ψ, "
+                 f"{sum(len(v) for v in self._entity_facts.values())} liens")
+    
+    def search(self, question: str, max_results: int = 15, 
+               coherence_threshold: float = 0.5) -> List[Tuple[FactRecord, float]]:
+        """
+        Recherche par résonance ψ.
+        
+        1. Encode la question en ψ_question
+        2. Pour chaque entité ψ, calcule la cohérence |⟨ψ_q|ψ_e⟩|
+        3. Si cohérence > seuil, ajoute les faits de cette entité
+        4. Bonus proportionnel à la cohérence
+        """
+        if not self._built or self.encoder is None:
+            return []
+        
+        psi_q = self.encoder.encode_query(question)
+        if psi_q is None or np.all(psi_q == 0):
+            return []
+        
+        all_candidates = {}
+        
+        for entity, psi_e in self._psi_entities.items():
+            # Cohérence quantique entre la question et l'entité
+            coherence = float(np.abs(np.dot(psi_q.conj(), psi_e)))
+            
+            if coherence > coherence_threshold:
+                for s, r, o, amp in self._entity_facts.get(entity, []):
+                    key = (s, r, o)
+                    if key not in all_candidates:
+                        # Score = amplitude × cohérence
+                        score = amp * coherence * 2.0
+                        all_candidates[key] = (s, r, o, amp, score)
+                    else:
+                        # Moyenne des cohérences
+                        _, _, _, _, old_score = all_candidates[key]
+                        new_score = max(old_score, amp * coherence * 2.0)
+                        all_candidates[key] = (s, r, o, amp, new_score)
+        
+        # Convertir en FactRecord
+        results = []
+        for (s, r, o), (_, _, _, amp, score) in all_candidates.items():
+            record = self.store.registry.get((s, r, o))
+            if record:
+                results.append((record, score))
+        
+        results.sort(key=lambda x: -x[1])
+        return results[:max_results]
+    
+    def stats(self) -> Dict:
+        return {
+            'entities': len(self._psi_entities),
+            'built': self._built,
+        }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # CERVEAU COMPLET — HarmonicBrain
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1074,6 +1482,9 @@ class HarmonicBrain:
         domain_dim = max(32, dim // 2)  # dim réduit par domaine (max 50K faits)
         self._domain_stores: Dict[str, DomainStore] = {}
         self._sector_to_domain_cache: Dict[str, str] = dict(DOMAIN_SECTOR_MAP)
+        
+        # 🆕 J-Lens (attached by HarmonicAI._get_brain)
+        self.jlens = None
         
         for domain_name in ['sciences', 'culture_generale', 'histoire', 'code', 'humain', 'culture_arts', 'corps_sante']:
             store = HolographicStore(dim=domain_dim, use_holographic=use_holographic)
@@ -1192,6 +1603,45 @@ class HarmonicBrain:
         except Exception:
             pass
 
+        # 📖 WAVE NARRATIVE — synthèse structurée pour réponses détaillées
+        self._narrative = None
+        if _WAVE_NARRATIVE_AVAILABLE:
+            try:
+                self._narrative = WaveNarrative(dim=dim)
+            except Exception:
+                pass
+
+        # 🌊 Wave Sampler — génération mot par mot par cohérence de phase
+        self._wave_sampler = None
+        if _WAVE_SAMPLER_AVAILABLE:
+            try:
+                self._wave_sampler = WaveSampler()
+            except Exception:
+                pass
+
+        # 🔀 Wave Beam Search — raisonnement multi-chemin avec interférence
+        self._wave_beam = None
+        if _WAVE_BEAM_AVAILABLE:
+            try:
+                self._wave_beam = WaveBeamSearch(beam_width=5)
+            except Exception:
+                pass
+
+        # 🧠 Wave GPT — générateur purement ondulatoire (GPT-like, zéro paramètre)
+        self._wave_gpt = None
+        if _WAVE_GPT_AVAILABLE:
+            try:
+                # Construire un vocabulaire à partir de l'encoder holographique du cerveau
+                brain_encoder = self.unconscious.encoder if hasattr(self.unconscious, 'encoder') else None
+                self._wave_gpt = WaveGPT(
+                    dim=dim,
+                    n_heads=4,
+                    max_context=512,
+                    external_encoder=brain_encoder,  # utiliser l'encoder du cerveau
+                )
+            except Exception:
+                pass
+
         # 📖 RÉSUMEUR HARMONIQUE (lecture de documents)
         self._summarizer = None
         try:
@@ -1218,8 +1668,14 @@ class HarmonicBrain:
             record = self.unconscious.ingest(sf_s, sf_r, sf_o, "SFT")
             if record.amplitude < amp:
                 record.amplitude = amp  # forcer l'amplitude SFT
-            # Router aussi vers les domaines
-            self._route_ingest(sf_s, sf_r, sf_o, "SFT")
+            # 🆕 Router aussi vers les domaines (détecter le secteur depuis le contenu)
+            try:
+                from bootstrapper import detect_sector
+                sft_sector = detect_sector(f"{sf_s} {sf_r} {sf_o}")
+                if sft_sector != 'GENERAL':
+                    self._route_ingest(sf_s, sf_r, sf_o, sft_sector)
+            except Exception:
+                pass
             sft_injected += 1
         if sft_injected > 0:
             log.info(f"SFT injectés: {sft_injected} faits avec amplitude {amp}")
@@ -1239,6 +1695,15 @@ class HarmonicBrain:
 
         # 👤 KB UTILISATEUR : dictionnaire de cerveaux personnels par user_id
         self._user_kbs: Dict[str, 'HarmonicBrain'] = {}
+        
+        # 🔍 ENTITY INDEX : retrieval entity-centric O(1) (inspiré Obsidian)
+        self._entity_index = EntityIndex(self.unconscious)
+        self._entity_index.build()
+        
+        # 🌊 ONDULATOIRE INDEX : lookup par résonance ψ
+        self._wave_index = OndulatoireIndex(self.unconscious, self.unconscious.encoder)
+        if use_holographic:
+            self._wave_index.build()
         
         self._init_time = time.time() - t0
         log.info(f"HarmonicBrain initialisé en {self._init_time:.1f}s "
@@ -1825,9 +2290,42 @@ class HarmonicBrain:
             except Exception:
                 pass
 
-        # ── 1. INCONSCIENT : retrieval hybride (TF-IDF + résonance ψ) ──
-        # 🆕 ROUTAGE MULTI-HOLOGRAMME : détecter le domaine et booster les faits pertinents
-        candidates = self.unconscious.retrieve(weighted_question, max_results=15)
+        # ── 1. INCONSCIENT : retrieval entity-centric + TF-IDF fallback ──
+        # 🔍 ENTITY SEARCH (O(1) lookup, inspiré Obsidian)
+        entity_candidates = self._entity_index.search(question, max_results=10)
+        
+        # 🆕 DIRECT FACT RESPONSE : si le top résultat a une relation matchee ET score > 20
+        # SAUF en mode détaillé : on veut plus de faits pour la synthèse narrative
+        if (depth != 'détaillé' and entity_candidates and entity_candidates[0][1] > 20.0):
+            top_recs = [r for r,_ in entity_candidates[:1]]
+            direct = f'{top_recs[0].sujet.title()} {top_recs[0].relation} {top_recs[0].objet}.'
+            if len(top_recs) >= 2 and top_recs[0].sujet.lower().strip() == top_recs[1].sujet.lower().strip() if len(top_recs) > 1 else False:
+                direct = f'{top_recs[0].sujet.title()} {top_recs[0].relation} {top_recs[0].objet}. De plus, {top_recs[1].sujet.title()} {top_recs[1].relation} {top_recs[1].objet}.'
+            self._update_conv_context(question, direct, use_conversation)
+            return BrainResult(
+                response=direct,
+                confidence=min(1.0, entity_candidates[0][1] / 30.0),
+                facts_used=top_recs,
+                facts_rejected=[],
+                retrieval_count=len(entity_candidates),
+                total_time_ms=(time.time() - t_start) * 1000,
+            )
+        
+        # 🆕 Mode détaillé : augmenter le périmètre de retrieval
+        _retrieval_max = 25 if depth == 'détaillé' else 15
+        if entity_candidates and entity_candidates[0][1] > 5.0:
+            candidates = entity_candidates
+        else:
+            candidates = self.unconscious.retrieve(weighted_question, max_results=_retrieval_max)
+            if entity_candidates:
+                candidates = self._merge_candidates(candidates, entity_candidates, user_boost=1.2)
+
+        # 🌊 OndulatoireIndex : fallback si EntityIndex + TF-IDF échouent
+        if not candidates or candidates[0][1] < 2.0:
+            _wave_max = 15 if depth == 'détaillé' else 10
+            wave_candidates = self._wave_index.search(question, max_results=_wave_max, coherence_threshold=0.4)
+            if wave_candidates:
+                candidates = wave_candidates
         
         # Boost des candidats qui appartiennent au(x) domaine(s) détecté(s)
         detected_domains = self._detect_domains(question)
@@ -1841,7 +2339,7 @@ class HarmonicBrain:
                 boosted = []
                 for rec, score in candidates:
                     if rec.secteur.upper().strip() in domain_sectors:
-                        boosted.append((rec, score * 1.3))  # +30% boost domaine
+                        boosted.append((rec, score * 1.3))
                     else:
                         boosted.append((rec, score))
                 boosted.sort(key=lambda x: -x[1])
@@ -1921,8 +2419,32 @@ class HarmonicBrain:
                 conv_meta['subject'] = best_subject
 
         # ── 2. CONSCIENT : filtrer + feedback ──
-        accepted, rejected = self.conscious.filter(question, candidates, max_accepted)
+        # 🆕 Mode détaillé : accepter plus de faits pour nourrir la synthèse narrative
+        effective_max = max_accepted
+        if depth == 'détaillé':
+            effective_max = max(6, max_accepted)
+        accepted, rejected = self.conscious.filter(question, candidates, effective_max)
         self.conscious.feedback(accepted, rejected)
+        self._last_accepted = accepted  # 🆕 pour Visual Knowledge
+
+        # 🆕 J-LENS / C-SPACE : capturer l'instantané du Conscient
+        # C'est ici que le J-Lens voit le résultat du ConsciousFilter —
+        # quels faits ont été acceptés (✓) et lesquels rejetés (✗).
+        if self.jlens is not None:
+            try:
+                # Convertir les FactRecord acceptés/rejetés en tuples (s,r,o,sec,amp)
+                acc_tuples = [(r.sujet, r.relation, r.objet, r.secteur, r.amplitude)
+                             for r in accepted] if accepted else []
+                rej_tuples = [(r.sujet, r.relation, r.objet, r.secteur, r.amplitude)
+                             for r in rejected[:8]] if rejected else []
+                self.jlens.capture(
+                    question,
+                    accepted=acc_tuples,
+                    rejected=rej_tuples,
+                    confidence=(accepted[0].confidence if accepted else 0.0),
+                )
+            except Exception as e:
+                log.warning(f"J-Lens capture failed: {e}")
 
         # ── 2b. INTELLIGENCE CONSCIENTE : raisonner si confiance faible ──
         # GARDE-FOU : si aucun candidat → tenter le web avant d'abandonner
@@ -2008,54 +2530,152 @@ class HarmonicBrain:
                     total_time_ms=total_time,
                 )
 
-        # ── 2c. RAISONNEMENT PROFOND (Phase Amplifier) ──
-        # Si le conscient intelligent n'a pas trouvé, tenter la propagation amplifiée
-        if self._deep_reasoner is not None and (not accepted or
-                (accepted and accepted[0].confidence < 0.5)):
-            try:
-                # Essayer d'abord le multi-branche (plus puissant)
-                deep_answer = self._deep_reasoner.reason_deep_multi(
-                    question, max_depth=7, beam_width=3
-                )
-                if deep_answer and len(deep_answer) > 40:
-                    response = self._style_response(deep_answer, question, accepted, lang, candidates)
-                    total_time = (time.time() - t_start) * 1000
-                    return BrainResult(
-                        response=response,
-                        confidence=0.70,
-                        facts_used=accepted,
-                        facts_rejected=rejected,
-                        retrieval_count=retrieval_count,
-                        total_time_ms=total_time,
-                    )
-            except Exception:
-                # Fallback : mono-branche simple
+        # ── 2c. RAISONNEMENT PROFOND (Phase Amplifier + Beam Search) ──
+        # 🌊 UPGRADE : exécuté SYSTÉMATIQUEMENT (plus seulement en fallback)
+        # Le raisonnement profond par propagation de phase est le cœur du système.
+        # Il s'exécute en parallèle du retrieval, pas seulement quand celui-ci échoue.
+        if self._deep_reasoner is not None:
+            deep_answer = None
+            deep_confidence = 0.0
+
+            # 🔀 Beam Search ondulatoire : interférence multi-chemin
+            if self._wave_beam is not None and self.unconscious.encoder is not None:
                 try:
-                    deep_answer = self._deep_reasoner.reason_deep(question, max_depth=7)
-                    if deep_answer and len(deep_answer) > 40:
-                        response = self._style_response(deep_answer, question, accepted, lang, candidates)
-                        total_time = (time.time() - t_start) * 1000
-                        return BrainResult(
-                            response=response,
-                            confidence=0.65,
-                            facts_used=accepted,
-                            facts_rejected=rejected,
-                            retrieval_count=retrieval_count,
-                            total_time_ms=total_time,
-                        )
+                    psi_q = self.unconscious.encoder.encode_query(weighted_question)
+                    # Utiliser le vocabulaire des faits acceptés comme espace de recherche
+                    if accepted and psi_q is not None:
+                        vocab = {}
+                        for rec in accepted:
+                            if rec.psi is not None:
+                                vocab[rec.sujet] = rec.psi
+                        if vocab:
+                            self._wave_beam.vocabulary = vocab
+                            paths = self._wave_beam.search(psi_q, max_steps=8,
+                                                           interference_strength=0.3)
+                            if paths and paths[0].amplitude > 0.3:
+                                deep_answer = " ".join(paths[0].tokens)
+                                deep_confidence = paths[0].amplitude
                 except Exception:
-                    pass
+                    pass  # Fallback vers PhaseAmplifier simple
+
+            # PhaseAmplifier : fallback si Beam Search n'a pas donné
+            if not deep_answer:
+                try:
+                    deep_answer = self._deep_reasoner.reason_deep_multi(
+                        question, max_depth=7, beam_width=3
+                    )
+                    if deep_answer:
+                        deep_confidence = 0.70
+                except Exception:
+                    try:
+                        deep_answer = self._deep_reasoner.reason_deep(
+                            question, max_depth=7
+                        )
+                        if deep_answer:
+                            deep_confidence = 0.65
+                    except Exception:
+                        pass
+
+            # Fusionner le raisonnement profond avec le retrieval
+            if deep_answer and len(deep_answer) > 30:
+                # Si le retrieval a aussi des résultats, fusionner par cohérence
+                if accepted:
+                    # Ajouter le raisonnement profond comme un « fait » supplémentaire
+                    response = self._style_response(
+                        deep_answer, question, accepted, lang, candidates
+                    )
+                else:
+                    response = self._style_response(
+                        deep_answer, question, [], lang, candidates
+                    )
+                total_time = (time.time() - t_start) * 1000
+                return BrainResult(
+                    response=response,
+                    confidence=max(0.70, deep_confidence),
+                    facts_used=accepted,
+                    facts_rejected=rejected,
+                    retrieval_count=retrieval_count,
+                    reasoning_method='phase_amplifier' + ('_beam' if self._wave_beam else ''),
+                    total_time_ms=total_time,
+                )
+
+        # ── 2.5. PLAN SÉMANTIQUE WAVE GPT ──
+        # Si des faits sont disponibles, Wave GPT planifie les mots de contenu
+        semantic_plan = None
+        if accepted and self._wave_gpt is not None:
+            try:
+                semantic_plan = self.structure_response(question, accepted, max_tokens=15)
+            except Exception:
+                pass
 
         # ── 3. EXPRESSION : adaptée au type de question ──
-        response = self._try_compose(accepted, question, parsed, lang)
+        # 🆕 RÉPONSE DÉTAILLÉE : si depth='détaillé', tenter la synthèse narrative
+        # structurée (intro/corps/conclusion) avant la composition standard.
+        response = None
+        if depth == 'détaillé' and accepted and len(accepted) >= 2:
+            response = self._explain_detailed(question, accepted, lang)
+
+        if not response:
+            response = self._try_compose(accepted, question, parsed, lang)
         if not response:
             response = self._express(accepted, question, parsed)
 
+        # 🎯 Si le plan sémantique Wave GPT est disponible, l'utiliser comme
+        # enrichissement de la réponse (ajouté après la réponse principale)
+        if semantic_plan and response and len(semantic_plan.split()) >= 3:
+            # Ne pas dupliquer: ajouter seulement si le plan apporte du nouveau
+            response = response.rstrip('.') + '. ' + semantic_plan.capitalize() + '.'
+
         total_time = (time.time() - t_start) * 1000
 
+        # 🌊 UPGRADE : Confiance hybride (TF-IDF + Cohérence de phase + Perplexité)
         confidence = 0.0
+        confidence_detail = {}
+
         if accepted:
-            confidence = sum(r.confidence for r in accepted) / len(accepted)
+            # 1. Confiance TF-IDF classique
+            tfidf_conf = sum(r.confidence for r in accepted) / len(accepted)
+
+            # 2. Confiance par cohérence de phase
+            wave_scores = {}
+            if self.unconscious.encoder is not None:
+                try:
+                    psi_q = self.unconscious.encoder.encode_query(weighted_question)
+                    if psi_q is not None and not np.all(psi_q == 0):
+                        for rec in accepted:
+                            if rec.psi is not None:
+                                wave_scores[rec.sujet] = float(
+                                    np.real(np.dot(rec.psi, np.conj(psi_q)))
+                                )
+                        if wave_scores:
+                            # Confiance = concentration des scores de cohérence
+                            ppl = None
+                            if coherence_perplexity is not None:
+                                ppl = coherence_perplexity(wave_scores)
+                                # Basse perplexité → haute confiance
+                                wave_conf = 1.0 / (1.0 + math.log(max(ppl, 1.0)))
+                            elif wave_confidence is not None:
+                                wave_conf = wave_confidence(wave_scores)
+                            else:
+                                wave_conf = (max(wave_scores.values()) + 1.0) / 2.0
+
+                            confidence_detail['wave_coherence'] = round(wave_conf, 3)
+                            confidence_detail['coherence_perplexity'] = round(ppl, 1) if ppl is not None else None
+                        else:
+                            wave_conf = tfidf_conf
+                    else:
+                        wave_conf = tfidf_conf
+                except Exception:
+                    wave_conf = tfidf_conf
+            else:
+                wave_conf = tfidf_conf
+
+            # 3. Fusion : moyenne pondérée (TF-IDF + Cohérence)
+            confidence = 0.4 * tfidf_conf + 0.6 * wave_conf
+            confidence_detail['tfidf'] = round(tfidf_conf, 3)
+            confidence_detail['hybrid'] = round(confidence, 3)
+        else:
+            confidence_detail = {'tfidf': 0.0, 'wave_coherence': 0.0, 'hybrid': 0.0}
 
         # 🌐 FALLBACK WEB : si confiance trop faible, tenter Internet
         if confidence < 0.35 and self._web is not None:
@@ -2066,9 +2686,6 @@ class HarmonicBrain:
 
         # 🔥 Mise à jour du contexte de conversation
         self._update_conv_context(question, response, use_conversation)
-
-        # 🔥 Appliquer le WaveStyler (améliore TOUTES les réponses)
-        response = self._style_response(response, question, accepted, lang, candidates)
 
         # 🔥 DÉDUPLICATION + FILTRE LANGUE : nettoyer la réponse
         response = self._clean_response(response, lang)
@@ -2093,6 +2710,13 @@ class HarmonicBrain:
         # 📚 APPRENTISSAGE CONTINU : feedback + fine-tune périodique
         self._maybe_learn(question, response, confidence, accepted)
 
+        # 🆕 Mettre à jour le snapshot J-Lens avec la réponse finale
+        if self.jlens is not None and self.jlens.current is not None:
+            try:
+                self.jlens.current.response_preview = (response or '')[:120]
+            except Exception:
+                pass
+
         return BrainResult(
             response=response,
             confidence=min(1.0, confidence),
@@ -2103,6 +2727,151 @@ class HarmonicBrain:
         )
 
     # ── EXPRESSION ─────────────────────────────────────────────────────────
+
+    # 🧠 WAVE GPT ────────────────────────────────────────────────────────────
+    def wave_gpt_complete(self, prompt: str,
+                          max_tokens: int = 50,
+                          temperature: float = 0.8,
+                          top_p: float = 0.9,
+                          top_k: int = 50) -> str:
+        """
+        Génération de texte purement ondulatoire — GPT-like, zéro paramètre.
+
+        Utilise le Wave GPT intégré au cerveau pour générer du texte
+        token par token par auto-attention ondulatoire sur l'historique.
+        
+        Équivalent ondulatoire de : response = openai.Completion.create(prompt=...)
+        
+        Args:
+            prompt: texte de départ
+            max_tokens: nombre maximum de tokens
+            temperature: 0 = déterministe, > 0 = créatif
+            top_p: seuil de cohérence cumulée
+            top_k: nombre maximum de candidats
+            
+        Returns:
+            Texte généré
+        """
+        if self._wave_gpt is None:
+            return self._express([], prompt, None)
+        
+        try:
+            result = self._wave_gpt.generate(
+                prompt,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                top_p=top_p,
+                top_k=top_k,
+            )
+            return result.text
+        except Exception as e:
+            return f"[Wave GPT: {e}]"
+    
+    def wave_gpt_chat(self, messages: list,
+                      max_tokens: int = 100,
+                      temperature: float = 0.8) -> str:
+        """
+        Interface chat compatible OpenAI.
+        
+        Args:
+            messages: [{"role": "user", "content": "..."}, ...]
+            max_tokens: nombre max de tokens
+            
+        Returns:
+            Réponse générée
+        """
+        if self._wave_gpt is None:
+            return self.process(messages[-1]['content'] if messages else "")
+        
+        try:
+            return self._wave_gpt.chat(messages, max_tokens=max_tokens, temperature=temperature)
+        except Exception as e:
+            return f"[Wave GPT: {e}]"
+
+    def structure_response(self, question: str, facts: list,
+                           max_tokens: int = 15) -> str:
+        """
+        Structure une réponse en utilisant Wave GPT comme PLANIFICATEUR SÉMANTIQUE.
+
+        Pipeline :
+        1. Extrait les mots-clés (seeds) des faits acceptés
+        2. Wave GPT (décodage simultané) → plan sémantique ordonné
+        3. Le plan est formaté par le ResponseComposer en français naturel
+
+        C'est la fusion du cerveau (retrieval + expression) et de Wave GPT
+        (sélection sémantique fine par cohérence de phase).
+
+        Args:
+            question: question posée
+            facts: liste de FactRecord acceptés par le conscient
+            max_tokens: nombre de mots de contenu dans le plan
+
+        Returns:
+            Réponse structurée en français
+        """
+        if self._wave_gpt is None:
+            return None
+
+        try:
+            # 1. Extraire les mots-clés des faits
+            seed_words = []
+            for fact in facts[:8]:  # max 8 faits
+                # Extraire sujets et objets comme mots de contenu
+                sujet = fact.sujet.lower().strip() if hasattr(fact, 'sujet') else str(fact)
+                objet = fact.objet.lower().strip() if hasattr(fact, 'objet') else ''
+                relation = fact.relation.lower().strip() if hasattr(fact, 'relation') else ''
+
+                for word in sujet.split():
+                    if len(word) >= 4:
+                        seed_words.append(word)
+                for word in objet.split():
+                    if len(word) >= 4:
+                        seed_words.append(word)
+                # La relation peut aussi être pertinente
+                if len(relation) >= 4:
+                    seed_words.append(relation)
+
+            if not seed_words:
+                return None
+
+            # Dédupliquer et limiter
+            seed_words = list(dict.fromkeys(seed_words))[:20]
+
+            # 2. Wave GPT : plan sémantique
+            result = self._wave_gpt.generate_simultaneous(
+                question,
+                max_tokens=max_tokens,
+                seed_words=seed_words,
+                function_penalty=0.4,
+            )
+
+            if not result or not result.text:
+                return None
+
+            # 3. Formater avec le ResponseComposer
+            semantic_plan = result.text.strip()
+            if not semantic_plan:
+                return None
+
+            # Utiliser le composer pour enrichir
+            if self.composer is not None:
+                try:
+                    from question_analyzer import analyze_question
+                    intent = analyze_question(question)
+                    fact_tuples = [(f.sujet, f.relation, f.objet, f.secteur)
+                                  for f in facts[:5]]
+                    composed = self.composer.compose(intent, fact_tuples, lang='fr')
+                    if composed and len(composed) > 30:
+                        # Enrichir avec le plan sémantique
+                        return composed
+                except Exception:
+                    pass
+
+            # Fallback : retourner le plan sémantique tel quel
+            return semantic_plan
+
+        except Exception as e:
+            return None
 
     # 🎨 CRÉATIVITÉ ─────────────────────────────────────────────────────────
     def create(self, prompt: str = "trouve une connexion creative",
@@ -2283,6 +3052,9 @@ class HarmonicBrain:
 
     # 🌐 WEB SEARCH FALLBACK ─────────────────────────────────────────────────
     def _try_web_search(self, question: str, lang: str = 'fr') -> Optional[BrainResult]:
+        # ⚡ Mode rapide (mobile) : pas de recherche web — latence ÷20
+        if os.environ.get('KA_FAST_MODE', '0') == '1':
+            return None
         """
         Tente une recherche Internet si la KB interne n'a rien trouvé.
 
@@ -2517,10 +3289,65 @@ class HarmonicBrain:
                 break
         return found
 
+    def _weave_response(self, facts: List[FactRecord], question: str) -> str:
+        """Tisse les faits en réponse conversationnelle (inspiré PageForge)."""
+        import random
+        if not facts:
+            return ''
+        
+        # Patterns de réponse naturelle (similaire à ContentWeaver)
+        SINGLE_PATTERNS = [
+            "{sujet} {relation} {objet}.",
+            "C'est simple : {sujet} {relation} {objet}.",
+            "Pour répondre à votre question, {sujet} {relation} {objet}.",
+            "La réponse est que {sujet} {relation} {objet}.",
+            "Je peux vous dire que {sujet} {relation} {objet}.",
+            "Voici la réponse : {sujet} {relation} {objet}.",
+            "Eh bien, {sujet} {relation} {objet}.",
+            "Sachez que {sujet} {relation} {objet}.",
+        ]
+        
+        DUAL_PATTERNS = [
+            "{s1} {r1} {o1}. De plus, {s2} {r2} {o2}.",
+            "D'une part, {s1} {r1} {o1} ; d'autre part, {s2} {r2} {o2}.",
+            "{s1} se caractérise par {o1}. Par ailleurs, {s2} {r2} {o2}.",
+            "Tout d'abord, {s1} {r1} {o1}. Ensuite, {s2} {r2} {o2}.",
+            "Il faut savoir que {s1} {r1} {o1}, et aussi que {s2} {r2} {o2}.",
+            "{s1} {r1} {o1} — un fait important. Ajoutons que {s2} {r2} {o2}.",
+        ]
+        
+        TRANSITIONS = [
+            "Cela dit, ", "Par ailleurs, ", "En complément, ",
+            "Précisons que ", "Ajoutons que ", "Notons également que ",
+        ]
+        
+        if len(facts) >= 2 and facts[0].sujet.lower().strip() == facts[1].sujet.lower().strip():
+            pattern = random.choice(DUAL_PATTERNS)
+            f1, f2 = facts[0], facts[1]
+            resp = pattern.format(
+                s1=f1.sujet.title(), r1=f1.relation, o1=f1.objet,
+                s2=f2.sujet.title(), r2=f2.relation, o2=f2.objet,
+            )
+        else:
+            pattern = random.choice(SINGLE_PATTERNS)
+            f1 = facts[0]
+            resp = pattern.format(
+                sujet=f1.sujet.title(), relation=f1.relation, objet=f1.objet,
+            )
+        
+        return resp
+    
     def _clean_response(self, response: str, lang: str) -> str:
-        """Nettoie la réponse : déduplication des phrases et filtre de langue."""
+        """Nettoie et formate la réponse."""
         if not response:
             return response
+        
+        # 🆕 Formater : capitaliser la première lettre, ponctuation finale
+        response = response.strip()
+        if response and response[0].islower():
+            response = response[0].upper() + response[1:]
+        if response and response[-1] not in '.!?':
+            response += '.'
         
         # Découper en phrases
         sentences = [s.strip() for s in response.replace('?', '.').replace('!', '.').split('.') if s.strip()]
@@ -2570,7 +3397,11 @@ class HarmonicBrain:
 
     def _express(self, facts: List[FactRecord], question: str,
                  parsed: StructuredPrompt = None) -> str:
-        """Exprime les faits validés — adaptatif au type de question."""
+        """Exprime les faits validés — adaptatif au type de question.
+
+        🌊 UPGRADE : utilise WaveSampler (sélection par cohérence de phase)
+        comme alternative aux templates pour plus de fluidité et diversité.
+        """
         if not facts:
             sujet = question.strip('?.,!;: ')[:80]
             if parsed and parsed.lang == 'en':
@@ -2579,11 +3410,77 @@ class HarmonicBrain:
 
         lang = parsed.lang if parsed else 'fr'
 
-        # 🔥 TENTATIVE COMPOSER (style naturel, 30+ structures)
+        # 🌊 WAVE SAMPLING : génération mot par mot par cohérence de phase
+        # Active si le sampler est disponible ET que le mode n'est pas strictement template
+        if self._wave_sampler is not None and self.unconscious.encoder is not None:
+            try:
+                psi_q = self.unconscious.encoder.encode_query(question)
+                if psi_q is not None and not np.all(psi_q == 0):
+                    # Construire le vocabulaire à partir des faits acceptés
+                    vocab = {}
+                    for rec in facts:
+                        if rec.psi is not None:
+                            vocab[rec.sujet] = rec.psi
+                            vocab[rec.relation] = rec.psi * 0.8  # pondération réduite
+                            vocab[rec.objet] = rec.psi * 0.7
+
+                    if len(vocab) >= 2:
+                        # Sélectionner les mots par cohérence avec la question
+                        sampler = self._wave_sampler
+                        sampler.set_vocabulary(vocab)
+
+                        # Générer une séquence de mots cohérents
+                        words = []
+                        psi_current = psi_q.copy()
+                        for _ in range(min(len(facts) * 5, 30)):  # max 30 mots
+                            word = sampler.deterministic(psi_current)
+                            if not word:
+                                break
+                            words.append(word)
+                            # Faire évoluer le contexte : superposition
+                            if word in vocab:
+                                psi_current = psi_current + vocab[word]
+                                psi_current = psi_current / np.linalg.norm(psi_current)
+
+                        # Dédupliquer et assembler
+                        seen = set()
+                        unique_words = []
+                        for w in words:
+                            if w not in seen:
+                                seen.add(w)
+                                unique_words.append(w)
+
+                        if len(unique_words) >= 2:
+                            # Assembler en phrase avec le composer si disponible
+                            wave_response = " ".join(unique_words).capitalize() + "."
+                            if self.composer is not None:
+                                try:
+                                    from question_analyzer import analyze_question
+                                    intent = analyze_question(question)
+                                    fact_tuples = [(f.sujet, f.relation, f.objet, f.secteur)
+                                                  for f in facts]
+                                    composed = self.composer.compose(intent, fact_tuples, lang=lang)
+                                    if composed and len(composed) > 10:
+                                        return composed
+                                except Exception:
+                                    pass
+                            # Fallback : enrichir la réponse wave avec le premier fait
+                            if len(wave_response) > 20:
+                                return wave_response
+            except Exception:
+                pass  # Fallback silencieux vers les templates
+
+        # 🔥 COMPOSER NATUREL (30+ micro-structures linguistiques)
+        # Remplace la concaténation brute "X relation Y. Z relation W."
+        # par un discours naturel adapté au type de question.
         if self.composer is not None:
             try:
-                composed = self._try_compose(facts, question, parsed, lang)
-                if composed:
+                from question_analyzer import analyze_question
+                intent = analyze_question(question)
+                fact_tuples = [(f.sujet, f.relation, f.objet, f.secteur)
+                              for f in facts]
+                composed = self.composer.compose(intent, fact_tuples, lang=lang)
+                if composed and len(composed) > 10:
                     return composed
             except Exception:
                 pass  # Fallback vers les templates simples
@@ -2644,6 +3541,145 @@ class HarmonicBrain:
         sentences.append(concl + last[0].lower() + last[1:])
 
         return ' '.join(sentences)
+
+    # ═══ RÉPONSE DÉTAILLÉE — structurée, narrative, multi-paragraphes ═══
+
+    def _explain_detailed(self, question: str, accepted: List[FactRecord],
+                          lang: str = 'fr') -> str:
+        """
+        Génère une réponse détaillée structurée (intro → corps → conclusion).
+
+        Pour depth='détaillé', on ne se contente pas de concaténer 4 faits.
+        On :
+          1. EXPANSE les faits via EntityIndex → trouver 8-15 faits connexes
+          2. PLANIFIE la structure → intro, mécanisme, implications, synthèse
+          3. COMPOSE chaque section via WaveNarrative.synthesize()
+          4. ASSEMBLE avec transitions naturelles
+
+        Returns:
+            Une réponse multi-paragraphes structurée, ou fallback vers _express().
+        """
+        # 0. Si pas assez de faits ou pas de narrative, fallback
+        if not accepted or self._narrative is None:
+            return ""
+        if len(accepted) < 2:
+            return ""
+
+        try:
+            # ── 1. EXPANSION — élargir le champ de connaissances ──
+            all_facts = list(accepted)
+            seen = {(f.sujet.lower(), f.relation.lower(), f.objet.lower()) for f in accepted}
+
+            # EntityIndex : chercher des faits connexes (mêmes concepts, domaines voisins)
+            if hasattr(self, 'entity_index') and self.entity_index is not None:
+                try:
+                    expanded = self.entity_index.search(question, max_results=10)
+                    for rec, score in expanded:
+                        key = (rec.sujet.lower(), rec.relation.lower(), rec.objet.lower())
+                        if key not in seen and score > 0.3:
+                            all_facts.append(rec)
+                            seen.add(key)
+                            if len(all_facts) >= 12:
+                                break
+                except Exception:
+                    pass
+
+            # OndulatoireIndex : chercher par résonance ψ (faits sémantiquement proches)
+            if hasattr(self, 'psi_index') and self.psi_index is not None and len(all_facts) < 10:
+                try:
+                    psi_expanded = self.psi_index.search(question, max_results=8)
+                    for rec, score in psi_expanded:
+                        key = (rec.sujet.lower(), rec.relation.lower(), rec.objet.lower())
+                        if key not in seen and score > 0.2:
+                            all_facts.append(rec)
+                            seen.add(key)
+                except Exception:
+                    pass
+
+            # ── 2. PLANIFICATION — déterminer la structure ──
+            # On regroupe les faits par thème pour créer des sections naturelles
+            sections = self._plan_sections(all_facts, question)
+            if not sections or len(sections) < 2:
+                return ""  # fallback vers _express()
+
+            # ── 3. COMPOSITION — chaque section via WaveNarrative ──
+            paragraphs = []
+            for i, (section_type, section_facts) in enumerate(sections):
+                if not section_facts:
+                    continue
+                # Convertir les FactRecord en tuples pour WaveNarrative
+                fact_tuples = [(f.sujet, f.relation, f.objet, f.secteur)
+                              for f in section_facts[:5]]
+                para = self._narrative.synthesize(
+                    fact_tuples,
+                    topic=question,
+                    section_type=section_type,
+                    style='standard',
+                )
+                if para and len(para) > 15:
+                    paragraphs.append(para)
+
+            if not paragraphs:
+                return ""
+
+            # ── 4. ASSEMBLAGE — avec transitions entre sections ──
+            return '\n\n'.join(paragraphs)
+
+        except Exception:
+            return ""  # fallback silencieux vers _express()
+
+    def _plan_sections(self, facts: List, question: str
+                      ) -> List[Tuple[str, List]]:
+        """
+        Planifie la structure d'une réponse détaillée.
+
+        Regroupe les faits en sections logiques :
+          - 'introduction' : les faits les plus généraux/définitoires
+          - 'development' : le mécanisme, les étapes, le processus
+          - 'conclusion' : les implications, conséquences, synthèse
+
+        Returns:
+            Liste de (section_type, [facts]) pour guider WaveNarrative.
+        """
+        if len(facts) <= 3:
+            return [('development', facts)]
+
+        # Trier les faits : définitions d'abord, puis processus, puis conséquences
+        def _fact_weight(f):
+            r = (f.relation or '').lower()
+            o = (f.objet or '').lower()
+            # Définitions / propriétés → intro
+            if any(w in r for w in ('est', 'définit', 'caractérise', 'consiste')):
+                return 0
+            # Actions / mécanismes → corps
+            if any(w in r for w in ('produit', 'cause', 'implique', 'permet',
+                                     'utilise', 'transforme', 'convertit',
+                                     'génère', 'crée', 'active')):
+                return 1
+            # Conséquences / implications → conclusion
+            return 2
+
+        sorted_facts = sorted(facts, key=_fact_weight)
+
+        # Répartir en 3 sections proportionnellement
+        n = len(sorted_facts)
+        intro_n = max(1, n // 4)
+        dev_n = n - intro_n - max(1, n // 4)
+        concl_n = n - intro_n - dev_n
+
+        intro_facts = sorted_facts[:intro_n]
+        dev_facts = sorted_facts[intro_n:intro_n + dev_n]
+        concl_facts = sorted_facts[intro_n + dev_n:]
+
+        sections = []
+        if intro_facts:
+            sections.append(('introduction', intro_facts))
+        if dev_facts:
+            sections.append(('development', dev_facts))
+        if concl_facts:
+            sections.append(('conclusion', concl_facts))
+
+        return sections
 
     # ── STATS ──────────────────────────────────────────────────────────────
 

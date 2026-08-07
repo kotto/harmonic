@@ -61,31 +61,38 @@ class TTSCache:
 
     def get(self, text: str, voice: str = "default", speed: float = 1.0) -> Optional[bytes]:
         """Récupère l'audio du cache."""
+        res = self.get_ex(text, voice, speed)
+        return res[0] if res else None
+
+    def get_ex(self, text: str, voice: str = "default", speed: float = 1.0) -> Optional[Tuple[bytes, str]]:
+        """Récupère (audio, format) du cache — format ∈ {'wav', 'mp3'}."""
         key = self._key(text, voice, speed)
         # Check RAM cache
         if key in self.cache:
             self.cache.move_to_end(key)
-            return self.cache[key]["audio"]
-        # Check disk cache
-        disk_path = os.path.join(self.cache_dir, f"{key}.wav")
-        if os.path.exists(disk_path):
-            with open(disk_path, "rb") as f:
-                audio = f.read()
-            self.cache[key] = {"audio": audio, "text": text[:60]}
-            if len(self.cache) > self.max_size:
-                self.cache.popitem(last=False)
-            return audio
+            entry = self.cache[key]
+            return entry["audio"], entry.get("fmt", "wav")
+        # Check disk cache (extension selon le format réel)
+        for fmt in ("wav", "mp3"):
+            disk_path = os.path.join(self.cache_dir, f"{key}.{fmt}")
+            if os.path.exists(disk_path):
+                with open(disk_path, "rb") as f:
+                    audio = f.read()
+                self.cache[key] = {"audio": audio, "text": text[:60], "fmt": fmt}
+                if len(self.cache) > self.max_size:
+                    self.cache.popitem(last=False)
+                return audio, fmt
         return None
 
-    def put(self, text: str, audio: bytes, voice: str = "default", speed: float = 1.0):
-        """Stocke l'audio dans le cache (RAM + disque)."""
+    def put(self, text: str, audio: bytes, voice: str = "default", speed: float = 1.0, fmt: str = "wav"):
+        """Stocke l'audio dans le cache (RAM + disque) avec son format réel."""
         key = self._key(text, voice, speed)
         # RAM cache
-        self.cache[key] = {"audio": audio, "text": text[:60]}
+        self.cache[key] = {"audio": audio, "text": text[:60], "fmt": fmt}
         if len(self.cache) > self.max_size:
-            old_key, _ = self.cache.popitem(last=False)
-        # Disk cache
-        disk_path = os.path.join(self.cache_dir, f"{key}.wav")
+            self.cache.popitem(last=False)
+        # Disk cache — l'extension reflète le contenu (MP3 Edge-TTS ≠ WAV Piper)
+        disk_path = os.path.join(self.cache_dir, f"{key}.{fmt}")
         try:
             with open(disk_path, "wb") as f:
                 f.write(audio)
@@ -120,29 +127,25 @@ class TTSCache:
                     print(f"  [TTS Cache] Erreur pré-génération '{phrase[:30]}': {e}")
 
     def _load_disk_cache(self):
-        """Charge le cache disque au démarrage."""
+        """Recense le cache disque au démarrage SANS tout charger en RAM.
+
+        Avant : chaque instanciation lisait tous les .wav du disque en mémoire
+        (orchestrateur → 1 instance par speak() → rechargement complet à chaque
+        phrase). Désormais le disque n'est lu qu'à la demande (dans get_ex).
+        """
         if not os.path.exists(self.cache_dir):
             return
-        count = 0
-        for fname in os.listdir(self.cache_dir):
-            if fname.endswith(".wav"):
-                try:
-                    path = os.path.join(self.cache_dir, fname)
-                    key = fname.replace(".wav", "")
-                    with open(path, "rb") as f:
-                        self.cache[key] = {"audio": f.read(), "text": "disk_cached"}
-                    count += 1
-                except Exception:
-                    pass
+        count = sum(1 for f in os.listdir(self.cache_dir)
+                    if f.endswith(".wav") or f.endswith(".mp3"))
         if count > 0:
-            print(f"  [TTS Cache] {count} fichiers chargés du disque")
+            print(f"  [TTS Cache] {count} fichiers disponibles sur disque (chargement paresseux)")
 
     def stats(self) -> dict:
         return {
             "ram_entries": len(self.cache),
             "max_size": self.max_size,
             "disk_cache_dir": self.cache_dir,
-            "disk_files": len([f for f in os.listdir(self.cache_dir) if f.endswith(".wav")]) if os.path.exists(self.cache_dir) else 0,
+            "disk_files": len([f for f in os.listdir(self.cache_dir) if f.endswith(".wav") or f.endswith(".mp3")]) if os.path.exists(self.cache_dir) else 0,
         }
 
 
@@ -225,16 +228,23 @@ class TTSStreamingService:
         Returns:
             bytes WAV/MP3 ou None si erreur
         """
+        res = self.speak_cached_ex(text, voice, speed)
+        return res[0] if res else None
+
+    def speak_cached_ex(self, text: str, voice: str = "denise", speed: float = 1.0) -> Optional[Tuple[bytes, str]]:
+        """Comme speak_cached mais retourne (audio, format) — 'mp3' (Edge) ou 'wav' (Piper)."""
         # Check cache
-        cached = self.cache.get(text, voice, speed)
+        cached = self.cache.get_ex(text, voice, speed)
         if cached:
             return cached
 
         # Synthétiser
-        audio = self._synthesize(text, voice, speed)
-        if audio:
-            self.cache.put(text, audio, voice, speed)
-        return audio
+        res = self._synthesize_ex(text, voice, speed)
+        if res:
+            audio, fmt = res
+            self.cache.put(text, audio, voice, speed, fmt=fmt)
+            return audio, fmt
+        return None
 
     def speak_stream(self, text: str, voice: str = "denise", speed: float = 1.0) -> Generator[Tuple[bytes, bool], None, None]:
         """
@@ -244,6 +254,14 @@ class TTSStreamingService:
         Yields:
             (audio_bytes, is_last_phrase) pour chaque phrase
             Si barge-in, stop immédiatement après la phrase en cours
+        """
+        for audio, _fmt, is_last in self.speak_stream_ex(text, voice, speed):
+            yield audio, is_last
+
+    def speak_stream_ex(self, text: str, voice: str = "denise", speed: float = 1.0) -> Generator[Tuple[bytes, str, bool], None, None]:
+        """
+        Comme speak_stream mais yield (audio_bytes, format, is_last_phrase).
+        Le format est constant pour tout le stream ('mp3' Edge ou 'wav' Piper).
         """
         self.start_playback()
 
@@ -258,9 +276,10 @@ class TTSStreamingService:
             is_last = (i == total - 1)
 
             # Synthétiser la phrase
-            audio = self.speak_cached(sentence, voice, speed)
-            if audio:
-                yield audio, is_last
+            res = self.speak_cached_ex(sentence, voice, speed)
+            if res:
+                audio, fmt = res
+                yield audio, fmt, is_last
 
         self.stop_playback()
 
@@ -314,9 +333,15 @@ class TTSStreamingService:
     # ═══ BACKEND TTS ═══
 
     def _synthesize(self, text: str, voice: str, speed: float) -> Optional[bytes]:
+        """Synthétise via le meilleur backend disponible (Edge-TTS → Piper)."""
+        res = self._synthesize_ex(text, voice, speed)
+        return res[0] if res else None
+
+    def _synthesize_ex(self, text: str, voice: str, speed: float) -> Optional[Tuple[bytes, str]]:
         """
         Synthétise le texte via le meilleur backend disponible.
         Priorité : Edge-TTS → Piper → None
+        Retourne (audio_bytes, format) — 'mp3' pour Edge-TTS, 'wav' pour Piper.
         """
         if not self.speech_service:
             # Initialiser speech_service paresseusement
@@ -333,17 +358,25 @@ class TTSStreamingService:
             edge_voice = self._map_voice_to_edge(voice)
             result = svc.synthesize_bytes_edge(text, voice=edge_voice, speed=speed)
             if result:
-                return result
+                return result, "mp3"
 
         # 2. Piper (local)
         result = svc.synthesize_bytes(text, speed=speed)
         if result:
-            return result
+            return result, "wav"
 
         return None
 
     def _map_voice_to_edge(self, name: str) -> str:
-        """Mappe un nom court à une voix Edge-TTS complète."""
+        """Mappe un nom court à une voix Edge-TTS complète.
+
+        Les noms complets ('fr-FR-HenriNeural', envoyés par l'orchestrateur
+        via les profils de voix) sont passés tels quels.
+        """
+        if not name:
+            return "fr-FR-DeniseNeural"
+        if "neural" in name.lower():  # déjà un nom complet Edge-TTS
+            return name
         mapping = {
             "denise": "fr-FR-DeniseNeural",
             "henri": "fr-FR-HenriNeural",

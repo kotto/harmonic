@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Test Son</title></head>
+<body style="background:#161411;color:#c4b698;font-family:sans-serif;padding:40px;text-align:center">
+<h2>🔊 Test Son — KA Mobile</h2>
+
+<button onclick="testBeep()" style="padding:16px 32px;font-size:1.2rem;border-radius:24px;border:1px solid #c4b698;background:#1e1b17;color:#c4b698;cursor:pointer">▶️ Bip de test</button>
+<br><br>
+<button onclick="testServerAudio()" style="padding:16px 32px;font-size:1.2rem;border-radius:24px;border:1px solid #8aaa8a;background:#1e1b17;color:#8aaa8a;cursor:pointer">▶️ Audio depuis le serveur</button>
+
+<div id="log" style="margin-top:20px;font-size:0.8rem;color:#8b7b60;"></div>
+
+<script>
+function log(msg) { document.getElementById('log').innerHTML += msg+'<br>'; }
+
+function testBeep() {
+  try {
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = 440;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.3;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    setTimeout(() => { osc.stop(); }, 500);
+    log('✅ Bip 440 Hz émis — le navigateur produit du son');
+  } catch(e) {
+    log('❌ Échec: ' + e.message);
+  }
+}
+
+async function testServerAudio() {
+  log('⏳ Appel API voix...');
+  try {
+    const resp = await fetch('http://localhost:8765/api/voice/speak', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({text:'bonjour test', emotion:'warm'})
+    });
+    log('  Statut: ' + resp.status);
+    const buffer = await resp.arrayBuffer();
+    log('  Reçu: ' + buffer.byteLength + ' bytes');
+    
+    // Blob — le plus simple
+    const blob = new Blob([buffer], {type:'audio/wav'});
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onplay = () => log('✅ Lecture en cours...');
+    audio.onended = () => log('✅ Lecture terminée');
+    audio.onerror = (e) => log('❌ Erreur lecture: ' + JSON.stringify(e));
+    await audio.play();
+  } catch(e) {
+    log('❌ ' + e.message);
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# KA Enterprise — docker-compose (alternative à deploy_vps.sh)
+#
+#   docker compose -f deploy_vps/docker-compose.yml up -d --build
+#
+# Les données (tenants, hologrammes, clés API, audit) sont persistées dans
+# ./ka-data — sauvegardez ce dossier régulièrement.
+# ═══════════════════════════════════════════════════════════════════════════════
+services:
+  ka-enterprise:
+    build:
+      context: ..            # racine backend/enterprise
+      dockerfile: deploy_vps/Dockerfile
+    container_name: ka-enterprise
+    restart: unless-stopped
+    ports:
+      - "8767:8767"
+    volumes:
+      - ./ka-data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1

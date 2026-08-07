@@ -1,4 +1,4 @@
-// KA Phone UI — canonic endpoint: port 8420 /api/ask
+// KA Phone UI — canonic endpoint: port 8420 /api/chat
 var API='';
 function showScreen(name){
   document.querySelectorAll('.ka-screen').forEach(function(s){s.classList.remove('active')});
@@ -8,9 +8,17 @@ function showScreen(name){
     b.classList.toggle('active',screens[i]===name);
   });
 }
-function addMsg(t,w){
+function addMsg(t,w,meta){
   var d=document.createElement('div');d.className='km km-'+w;
-  d.innerHTML=w==='bot'?'<b>KA</b><br>'+t:t;
+  // 🌊 Détection diagnostic ondulatoire
+  if(meta&&meta.source==='wave-debugger'){
+    d.classList.add('km-debug');
+    d.innerHTML='<span class="km-debug-badge">🌊</span>'+t;
+  }else if(w==='bot'){
+    d.innerHTML='<b>KA</b><br>'+t;
+  }else{
+    d.innerHTML=t;
+  }
   document.getElementById('chat-overlay').appendChild(d);
   d.scrollIntoView({behavior:'smooth'});
 }
@@ -18,15 +26,38 @@ async function sendChat(txt){
   var inp=document.getElementById('ka-inp'),t=txt||inp.value.trim();
   if(!t)return;addMsg(t,'user');if(!txt)inp.value='';
   try{
-    var r=await fetch(API+'/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:t})});
+    var r=await fetch(API+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:t})});
     var d=await r.json();
-    var meta=d.source?d.source+' | '+(d.confidence!=null?d.confidence:d.confiance):'KA';
+    var meta={source:d.source||'',confidence:d.confidence!=null?d.confidence:d.confiance,latency:d.temps_ms||''};
     var txt=d.text||d.reponse||'';
-    addMsg(txt+'<br><small style="color:#a0a0b8">['+meta+' | '+(d.temps_ms||'')+'ms]</small>','bot');
+    // Formater le texte markdown simple en HTML basique
+    txt=txt.replace(/### (.*)/g,'<h4>$1</h4>');
+    txt=txt.replace(/## (.*)/g,'<h3>$1</h3>');
+    txt=txt.replace(/\\*\\*(.*?)\\*\\*/g,'<b>$1</b>');
+    txt=txt.replace(/\\*(.*?)\\*/g,'<i>$1</i>');
+    txt=txt.replace(/\|(.*)\|/g,'<tr><td>$1</td></tr>');
+    txt=txt.replace(/> (.*)/g,'<blockquote>$1</blockquote>');
+    txt=txt.replace(/```(.*?)```/gs,'<pre><code>$1</code></pre>');
+    txt=txt.replace(/\n/g,'<br>');
+    var footer='<br><small style="color:#a0a0b8">['+(meta.source||'KA')+' | '+(meta.latency||'')+'ms]</small>';
+    addMsg(txt+footer,'bot',meta);
   }catch(e){addMsg('Erreur: '+e.message,'bot')}
 }
 document.getElementById('ka-send').onclick=function(){sendChat()};
 document.getElementById('ka-inp').onkeydown=function(e){if(e.key==='Enter')sendChat()};
+
+// 🌊 Raccourci /debug — tape /debug suivi du symptôme
+var inp=document.getElementById('ka-inp');
+inp.addEventListener('input',function(){
+  var v=inp.value;
+  if(v.startsWith('/debug ')||v.startsWith('debug:')||v.startsWith('🌊')){
+    inp.style.borderColor='#00bcd4';
+    inp.style.boxShadow='0 0 12px rgba(0,188,212,0.3)';
+  }else{
+    inp.style.borderColor='';
+    inp.style.boxShadow='';
+  }
+});
 
 var recognition=null,isListening=false;
 function initVoice(){

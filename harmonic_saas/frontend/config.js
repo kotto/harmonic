@@ -6,6 +6,16 @@ const CONFIG = {
     AUDIO_SERVICE_URL: 'http://localhost:9017',
     VIDEO_SERVICE_URL: 'http://localhost:9018',
     
+    // New service endpoints (relative to API_BASE_URL)
+    ENDPOINTS: {
+        DATACENTER: '/datacenter',
+        HPC: '/hpc',
+        KNOWLEDGE: '/knowledge',
+        REASONING: '/reasoning',
+        CODE: '/code',
+        WAVE: '/wave',
+    },
+    
     // Configuration des limites
     MAX_FILE_SIZE: {
         AUDIO: 100 * 1024 * 1024, // 100MB

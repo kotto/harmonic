@@ -1,0 +1,287 @@
+{
+  "description": "PCIME — Prise en charge intégrée des maladies de l'enfant (OMS 2024)",
+  "version": "1.0",
+  "source": "WHO Integrated Management of Childhood Illness (IMCI) 2024",
+  "conditions": {
+    "pneumonie_pcime": {
+      "nom": "Pneumonie (classification PCIME)",
+      "methode": "Compter la fréquence respiratoire pendant 60 secondes. Rechercher tirage, stridor, geignements.",
+      "classification": {
+        "pas_pneumonie": "FR normale pour l'âge. Pas de tirage. → Toux/coryza simple. Pas d'antibiotique.",
+        "pneumonie": "FR élevée pour l'âge + toux. Pas de tirage. → Amoxicilline 3-5 jours à domicile.",
+        "pneumonie_severe": "Tirage, stridor en inspiration, geignements, SpO2<90%, refus de boire. → HOSPITALISATION. Oxygène. Ampicilline + Gentamicine IV."
+      },
+      "seuils_fr": {
+        "2_11_mois": "Pneumonie si FR ≥50/min",
+        "12_59_mois": "Pneumonie si FR ≥40/min"
+      },
+      "traitement": {
+        "ambulatoire": "Amoxicilline DT 40mg/kg/j en 2 prises x 3-5 jours. Sirots contre la toux NON (inefficaces, risque).",
+        "hospitalier": "Ampicilline 50mg/kg / 6h IV + Gentamicine 7.5mg/kg / jour IV. Oxygène si SpO2<90%. Surveiller hydratation."
+      },
+      "urgence": false,
+      "attention": "Compter la FR PENDANT 60 SECONDES (pas d'estimation). Enfant calme, pas en pleurs. Répéter si doute.",
+      "seuils": {
+        "logic": "any",
+        "rules": [
+          {
+            "field": "fr",
+            "op": "gte",
+            "value": 50,
+            "age_range": [
+              2,
+              11
+            ],
+            "symptoms": [
+              "toux_grasse"
+            ],
+            "score": 0.85
+          },
+          {
+            "field": "fr",
+            "op": "gte",
+            "value": 40,
+            "age_range": [
+              12,
+              59
+            ],
+            "symptoms": [
+              "toux_grasse"
+            ],
+            "score": 0.8
+          },
+          {
+            "symptoms": [
+              "respiration_rapide",
+              "tirage",
+              "stridor"
+            ],
+            "score": 0.75
+          }
+        ]
+      }
+    },
+    "diarrhee_pcime": {
+      "nom": "Diarrhée (classification PCIME)",
+      "classification": {
+        "deces_risque_eleve": "Léthargie, yeux enfoncés, pli cutané qui se déplisse très lentement, ne boit pas / boit mal. → Déshydratation sévère. Réhydratation IV urgente.",
+        "deces_risque_modere": "Agité/irritable, yeux enfoncés, boit avidement / a soif, pli cutané lent. → Plan B: SRO 75ml/kg sur 4h en structure.",
+        "pas_deces": "Bien alerte, yeux normaux, boit normalement, pli cutané rapide. → Plan A: SRO à domicile."
+      },
+      "traitement": {
+        "plan_a": "SRO 50-100ml après chaque selle (<2 ans: 50ml, >2 ans: 100ml). Continuer allaitement. Zinc 20mg/j x 10-14j. Revenir si aggravation.",
+        "plan_b": "SRO 75ml/kg sur 4h. Évaluer après. Si amélioration: passage au Plan A. Si non: Plan C.",
+        "plan_c": "Ringer Lactate 100ml/kg ( enfants <12 mois: 30ml/kg en 1ère heure + 70ml/kg en 3h suivantes). Surveiller pouls, conscience. Reévaluer après chaque bouteille."
+      },
+      "traitement_causes": {
+        "cholera": "SRO + Doxycycline 300mg dose unique (ou Azithromycine 1g).",
+        "shigellose": "SRO + Ciprofloxacine 15mg/kg 2x/j x 3j (ou Azithromycine).",
+        "giardiase": "Métronidazole 5mg/kg 3x/j x 5j (ou Tinidazole 50mg/kg dose unique).",
+        "amibiase": "Métronidazole 10mg/kg 3x/j x 5-10j."
+      },
+      "urgence": false,
+      "attention": "Continuer TOUJOURS l'alimentation pendant la diarrhée. Ne pas donner de médicaments anti-diarrhéiques (loperamide) chez l'enfant. Zinc réduit la durée et la sévérité.",
+      "tokens": [
+        "léthargie",
+        "yeux_enfoncés",
+        "pli_cutané",
+        "refus_téter",
+        "agité",
+        "boit_avidement"
+      ]
+    },
+    "fievre_pcime": {
+      "nom": "Fièvre (classification PCIME)",
+      "definition": "Température axillaire ≥37.5°C ou rectale ≥38°C.",
+      "tokens": [
+        "somnolence",
+        "convulsions",
+        "respiration_rapide",
+        "vomissements_persistants",
+        "ictère",
+        "saignements",
+        "détresse_respiratoire"
+      ],
+      "classification": {
+        "paludisme_grave": "Fièvre + signes de gravité (troubles conscience, convulsions, détresse respiratoire, ictère, hémorragie, collapsus). → HOSPITALISATION Artésunate IV.",
+        "paludisme_non_grave": "Fièvre + TDR positif (zone endémique). → CTA 3j à domicile.",
+        "fievre_non_palustre": "TDR négatif ou zone non endémique. → Recherche autre cause: infection bactérienne, virale, virose."
+      },
+      "depistage_paludisme": "TDR (test de diagnostic rapide) pour tout enfant fiévreux en zone d'endémie. Traiter si positif — pas de traitement présomptif si TDR disponible.",
+      "traitement": {
+        "palustre_simple": "CTA (AL ou ASAQ) selon poids. Paracétamol 10-15mg/kg / 6h si fièvre.",
+        "palustre_grave": "Artésunate IV 2.4mg/kg à H0, H12, H24 puis /24h. Relais CTA dès que possible.",
+        "non_palustre": "Antibiothérapie si foyer infectieux identifié (Amoxicilline). Paracétamol. Surveillance 48h."
+      },
+      "signes_gravite_fievre": [
+        "somnolence/léthargie",
+        "convulsions",
+        "respiration rapide (pneumonie associée)",
+        "vomissements persistants (intolérance)",
+        "jaunisse",
+        "saignements",
+        "détresse respiratoire",
+        "signes méningés"
+      ],
+      "urgence": false,
+      "attention": "Toute fièvre chez enfant <3 mois = urgence (risque infection bactérienne grave). Tout enfant fiévreux doit être vu en contrôle à 48h si pas d'amélioration."
+    },
+    "rougeole": {
+      "nom": "Rougeole",
+      "signes": [
+        "fièvre élevée",
+        "coryza",
+        "conjonctivite",
+        "toux",
+        "énanthème de Koplik (taches blanches bouche)",
+        "exanthème maculopapuleux (début visage → tronc → extrémités)"
+      ],
+      "tokens": [
+        "fièvre_élevée",
+        "coryza",
+        "conjonctivite",
+        "toux_grasse",
+        "énanthème_koplik",
+        "exanthème_maculopapuleux"
+      ],
+      "incubation": "10-12 jours",
+      "period_contagieux": "4 jours avant à 4 jours après le rash",
+      "conduite": "Isolement. Vitamine A 200000 UI J1, J2 (100000 UI si <12 mois). Antibiotiques si surinfection (otite, pneumonie). Hydratation. Réhydratation si diarrhée associée.",
+      "complications": [
+        "pneumonie",
+        "otite moyenne",
+        "diarrhée/déshydratation",
+        "kératomalacie → cécité",
+        "encéphalite",
+        "panencéphalite sclérosante subaiguë (SSPE)"
+      ],
+      "traitement": {
+        "vitamine_a": "200000 UI PO (100000 UI si <12 mois, 50000 UI si <6 mois). Répéter J2. Encore 1 dose à J14 si signes oculaires.",
+        "antibio_prophylaxie": "Amoxicilline 50mg/kg/j x 5j si suspicion surinfection bactérienne."
+      },
+      "prevention": {
+        "vaccin_var": "0.5ml SC à 9 mois. Rappel à 15-18 mois. En épidémie: dose supplémentaire dès 6 mois.",
+        "prophylaxie_post_exposition": "Vacciner dans les 72h post-exposition. Immunoglobulines si immunodéprimé/grossesse (<6j)."
+      },
+      "urgence": false,
+      "attention": "⚠️ Toute suspicion de rougeole doit être NOTIFIÉE (maladie à déclaration obligatoire). Vitamine A immédiate — sauve la vue et réduit la mortalité de 50%."
+    },
+    "otite": {
+      "nom": "Otite Moyenne Aiguë (OMA)",
+      "signes": [
+        "otalgie (tiraille l'oreille chez nourrisson)",
+        "fièvre",
+        "irritabilité",
+        "otorrhée (si tympan perforé)",
+        "réveils nocturnes",
+        "refus alimentaire"
+      ],
+      "tokens": [
+        "otalgie",
+        "fièvre",
+        "irritable",
+        "otalgie_douleur",
+        "somnolence",
+        "refus_aliment"
+      ],
+      "methode": "Otoscope: tympan rouge, bombé, loss of light reflex. Chez nourrisson: tirer l'oreille = signe évocateur.",
+      "classification": {
+        "oma": "Tympan rouge/bombé + otalgie + fièvre.",
+        "oma_perforee": "Écoulement purulent <14 jours.",
+        "otite_chronique": "Écoulement >14 jours."
+      },
+      "traitement": {
+        "ama_antibio": "Amoxicilline 40-50mg/kg/j x 5-10 jours. Alternative: Amoxicilline-acide clavulanique si échec.",
+        "antalgique": "Paracétamol 10-15mg/kg / 6h. Ibuprofène si >3 mois et pas de contre-indication.",
+        "otite_perforee": "Amoxicilline + nettoyer conduit (coton-tige sec). Pas de gouttes otologiques systématiques."
+      },
+      "complications": [
+        "mastoidite (douleur rétro-auriculaire, œdème)",
+        "perforation tympan",
+        "hypoacousie (transmission)",
+        "paralysie faciale",
+        "méningite"
+      ],
+      "urgence": false,
+      "attention": "Beaucoup d'OMA guérissent spontanément (viral). Réserver l'antibiothérapie pour: enfant <2 ans, OMA certaine, symptômes sévères. Réévaluer à 48-72h si pas d'amélioration."
+    },
+    "convulsion_febrile": {
+      "nom": "Convulsion Fébrile",
+      "definition": "Convulsion généralisée associée à la fièvre chez enfant 6 mois à 5 ans, sans infection SNC et sans antécédent épileptique.",
+      "signes": [
+        "convulsion tonico-clonique généralisée",
+        "durée <15 min (simple)",
+        "récupération complète",
+        "fièvre élevée"
+      ],
+      "conduite": "1. Pendant la crise: position latérale de sécurité, libérer voies aériennes, NE PAS introduire d'objet en bouche. 2. Si crise >5 min: Diazépam 0.5mg/kg IR ou Midazolam 0.5mg/kg IR/buccal. 3. Traitement de la fièvre (Paracétamol, découvrir). 4. Recherche cause de la fièvre (TDR palu, examen infectieux).",
+      "traitement": {
+        "urgence": "Diazépam IR 0.5mg/kg OU Midazolam buccal 0.5mg/kg si >5 min. Glucose 10% si hypoglycémie.",
+        "fievre": "Paracétamol 10-15mg/kg. Découvrir (ne pas couvrir). Tepid sponging (eau tiède)."
+      },
+      "investigations": "Si 1ère convulsion: glycémie capillaire, TDR palu, examen infectieux. LP (ponction lombaire) si: <6 mois, >5 ans, signes méningés, crise prolongée, récupération lente.",
+      "recurrence": "30-35% récidivent. Prédicteurs: âge <1 an, antécédent familial, fièvre <38°C.",
+      "urgence": false,
+      "attention": "⚠️ Distinguer de la méningite/encéphalite (toujours y penser). Convulsion simple = bénin, pas d'épilepsie future. Éduquer les parents: gestion de la fièvre, que faire si récidive.",
+      "seuils": {
+        "logic": "any",
+        "rules": [
+          {
+            "field": "temp",
+            "op": "gte",
+            "value": 38,
+            "age_range": [
+              6,
+              60
+            ],
+            "symptoms": [
+              "convulsions"
+            ],
+            "score": 0.85
+          },
+          {
+            "symptoms": [
+              "convulsions",
+              "fièvre_élevée"
+            ],
+            "age_range": [
+              6,
+              60
+            ],
+            "score": 0.8
+          }
+        ]
+      }
+    },
+    "croissance_pcime": {
+      "nom": "Suivi de la croissance (courbes OMS)",
+      "methode": "Mesurer poids, taille (ou longueur <2 ans), périmètre crânien (<2 ans) à chaque visite. Reporter sur courbes OMS.",
+      "interpretation": {
+        "poids_age_z": "Z-score poids/âge: >-1 = normal. -1 à -2 = risque. <-2 = insuffisance pondérale. <-3 = sévère.",
+        "taille_age_z": "Z-score taille/âge: <-2 = retard de croissance (chronique). <-3 = sévère.",
+        "poids_taille_z": "Z-score poids/taille: <-2 = émaciation (aiguë). <-3 = sévère (MAS).",
+        "imc_age_z": "Z-score IMC/âge: <-2 = maigreur. >+2 = surpoids. >+3 = obésité."
+      },
+      "muac": "MUAC (6-59 mois): >135mm = vert. 125-134 = jaune. 115-124 = orange (MAM). <115 = rouge (MAS).",
+      "action": "Toute déviation des courbes (plateau pondéral, perte de poids) doit alerter: malnutrition, infection chronique, anomalie endocrinienne. Adapter conseil nutritionnel.",
+      "frequence": "0-6 mois: /mois. 6-24 mois: /2-3 mois. >2 ans: /6 mois.",
+      "urgence": false,
+      "attention": "Le suivi de la croissance est l'INDICATEUR le plus sensible de la santé de l'enfant. Un plateau pondéral >1 mois chez nourrisson = alerte rouge.",
+      "seuils": {
+        "logic": "any",
+        "rules": [
+          {
+            "field": "muac",
+            "op": "lt",
+            "value": 115,
+            "age_range": [
+              6,
+              59
+            ],
+            "score": 0.75
+          }
+        ]
+      }
+    }
+  }
+}

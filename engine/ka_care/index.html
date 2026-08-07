@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<meta name="theme-color" content="#0d9488">
+<meta name="description" content="KA CARE — Dépistage médical communautaire. Fonctionne sans Internet.">
+<title>KA CARE</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{
+  --bg:#f0fdfa; --bg2:#fff; --t1:#0f172a; --t2:#334155; --t3:#64748b; --t4:#94a3b8;
+  --teal:#0d9488; --teal2:#14b8a6; --red:#ef4444; --amber:#f59e0b; --green:#22c55e;
+  --card:#fff; --border:#e2e8f0; --shadow:0 2px 12px rgba(0,0,0,.06);
+  --radius:14px; --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#0f172a;--bg2:#1e293b;--t1:#f1f5f9;--t2:#cbd5e1;--t3:#94a3b8;--t4:#64748b;
+    --card:#1e293b;--border:#334155;--shadow:0 2px 12px rgba(0,0,0,.3);}
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--t1);min-height:100vh;padding-bottom:80px}
+.header{background:linear-gradient(135deg,var(--teal),var(--teal2));color:#fff;padding:16px 18px;text-align:center}
+.header h1{font-size:20px;font-weight:700;letter-spacing:-.3px}
+.header p{font-size:11px;opacity:.85;margin-top:2px}
+.lang-switch{position:absolute;top:16px;right:16px;font-size:11px;background:rgba(255,255,255,.2);border:none;color:#fff;padding:4px 10px;border-radius:8px;cursor:pointer}
+.container{max-width:500px;margin:0 auto;padding:14px}
+.card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;
+  border:1px solid var(--border);box-shadow:var(--shadow)}
+.card h2{font-size:15px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.card h2 .emoji{font-size:20px}
+.age-row{display:flex;gap:8px;margin-bottom:10px}
+.age-row input{flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--t1);font-size:13px}
+.age-row select{padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--t1);font-size:13px}
+.vital-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.vital-grid label{font-size:10px;color:var(--t4);display:block;margin-bottom:2px}
+.vital-grid input{width:100%;padding:7px 8px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--t1);font-size:12px}
+.yesno-row{display:flex;gap:6px;margin-bottom:6px;align-items:center}
+.yesno-row span{flex:1;font-size:12px;color:var(--t2)}
+.yesno-row .btns{display:flex;gap:4px}
+.yesno-row .btns button{padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--t2);font-size:11px;cursor:pointer}
+.yesno-row .btns button.on{background:var(--teal);color:#fff;border-color:var(--teal)}
+.btn{display:block;width:100%;padding:12px;border-radius:var(--radius);border:none;font-size:15px;font-weight:600;cursor:pointer;text-align:center;transition:all .2s}
+.btn--assess{background:var(--teal);color:#fff;margin-top:8px}
+.btn--assess:active{transform:scale(.97)}
+.result{margin-top:12px;display:none}
+.result .verdict{padding:14px;border-radius:var(--radius);font-weight:700;font-size:15px;text-align:center;margin-bottom:10px}
+.verdict--urgent{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+.verdict--treat{background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.3)}
+.verdict--ok{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.3)}
+.detail{font-size:11px;color:var(--t3);line-height:1.6;margin-bottom:6px}
+.detail b{color:var(--t1)}
+.tool-result{margin-bottom:8px;padding:8px;border-radius:8px;background:var(--bg)}
+.tool-result .tool-name{font-size:12px;font-weight:600;color:var(--teal)}
+.tool-result .tool-action{font-size:11px;color:var(--t3);margin-top:2px}
+.nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:8px 0}
+.nav button{background:none;border:none;color:var(--t4);font-size:10px;padding:6px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.nav button.active{color:var(--teal)}
+.nav button .nv-icon{font-size:18px}
+.lang-fr .lang-en{display:none}
+.lang-en .lang-fr{display:none}
+.spinner{display:none;text-align:center;padding:20px}
+.spinner .pulse{width:20px;height:20px;border-radius:50%;background:var(--teal);margin:0 auto;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
+</style>
+</head>
+<body class="lang-fr">
+
+<div class="header">
+  <h1>🫀 KA CARE</h1>
+  <p class="lang-fr">Dépistage communautaire · Fonctionne sans Internet</p>
+  <p class="lang-en">Community Screening · Works Offline</p>
+  <button class="lang-switch" onclick="toggleLang()">
+    <span class="lang-fr">EN</span><span class="lang-en">FR</span>
+  </button>
+</div>
+
+<div class="container" id="main">
+
+  <!-- 🆕 DOSSIER PATIENT -->
+  <div class="card" id="patient-card" style="border-left:3px solid var(--teal)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <h2 style="margin-bottom:0"><span class="emoji">📂</span>Dossier patient</h2>
+      <span style="font-size:11px;color:var(--teal);cursor:pointer;font-weight:600" onclick="patientToggleNew()" id="btn-new-patient">+ Nouveau</span>
+    </div>
+    <select id="patient-select" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--t1);font-size:13px;margin-bottom:6px" onchange="patientSelect(this.value)">
+      <option value="">— Sélectionner un patient —</option>
+    </select>
+    <div id="patient-info" style="display:none;font-size:12px;color:var(--t2);line-height:1.5">
+      <span id="patient-detail"></span>
+      <span style="float:right;font-size:11px;color:var(--t4);cursor:pointer" onclick="patientDelete()">🗑</span>
+    </div>
+    <div id="patient-new-form" style="display:none">
+      <input id="pnom" placeholder="Nom" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);margin-bottom:4px;font-size:13px">
+      <input id="pprenom" placeholder="Prénom" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);margin-bottom:4px;font-size:13px">
+      <div style="display:flex;gap:6px;margin-bottom:4px">
+        <input id="page" type="number" placeholder="Âge" value="5" style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--border);font-size:13px">
+        <select id="page-unit" style="padding:8px;border-radius:6px;border:1px solid var(--border);font-size:13px"><option value="mois">Mois</option><option value="ans">Ans</option></select>
+        <select id="psexe" style="padding:8px;border-radius:6px;border:1px solid var(--border);font-size:13px"><option value="M">M</option><option value="F">F</option></select>
+      </div>
+      <input id="pvillage" placeholder="Village (optionnel)" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);margin-bottom:6px;font-size:13px">
+      <div class="btn btn--assess" style="font-size:13px;padding:8px" onclick="patientCreate()">Créer le dossier</div>
+      <div style="text-align:center;margin-top:4px;font-size:11px;color:var(--t3);cursor:pointer" onclick="patientToggleNew()">Annuler</div>
+    </div>
+    <div id="patient-history" style="display:none;margin-top:6px;max-height:160px;overflow-y:auto;font-size:11px"></div>
+  </div>
+
+  <!-- ÉCRAN 1 : ÉVALUATION -->
+  <div id="screen-assess">
+    <div class="card">
+      <h2><span class="emoji">👤</span><span class="lang-fr">Patient</span><span class="lang-en">Patient</span></h2>
+      <div class="age-row">
+        <input type="number" id="age-val" placeholder="Âge" value="18" min="0" max="120">
+        <select id="age-unit">
+          <option value="days" class="lang-fr">Jours</option><option value="days" class="lang-en">Days</option>
+          <option value="months" selected class="lang-fr">Mois</option><option value="months" selected class="lang-en">Months</option>
+          <option value="years" class="lang-fr">Années</option><option value="years" class="lang-en">Years</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="emoji">🩺</span><span class="lang-fr">Signes vitaux</span><span class="lang-en">Vital Signs</span></h2>
+      <div class="vital-grid">
+        <div><label class="lang-fr">FC (bpm)</label><label class="lang-en">HR (bpm)</label><input type="number" id="heart_rate" placeholder="72"></div>
+        <div><label class="lang-fr">FR (rpm)</label><label class="lang-en">RR (rpm)</label><input type="number" id="resp_rate" placeholder="16"></div>
+        <div><label class="lang-fr">TRC (sec)</label><label class="lang-en">CRT (sec)</label><input type="number" id="cap_refill" placeholder="1.5" step="0.1"></div>
+        <div><label class="lang-fr">Pli cutané (sec)</label><label class="lang-en">Skin pinch (sec)</label><input type="number" id="skin_pinch" placeholder="0.5" step="0.1"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="emoji">🔍</span><span class="lang-fr">Signes cliniques</span><span class="lang-en">Clinical Signs</span></h2>
+      <div class="yesno-row"><span class="lang-fr">Tirage sous-costal</span><span class="lang-en">Chest indrawing</span><div class="btns"><button onclick="toggleYN(this,'chest')" class="lang-fr">Non</button><button onclick="toggleYN(this,'chest')" class="lang-en">No</button></div></div>
+      <div class="yesno-row"><span class="lang-fr">Yeux enfoncés</span><span class="lang-en">Sunken eyes</span><div class="btns"><button onclick="toggleYN(this,'eyes')" class="lang-fr">Non</button><button onclick="toggleYN(this,'eyes')" class="lang-en">No</button></div></div>
+      <div class="yesno-row"><span class="lang-fr">Pâleur palmaire</span><span class="lang-en">Palmar pallor</span><div class="btns"><button onclick="toggleYN(this,'pallor')" class="lang-fr">Non</button><button onclick="toggleYN(this,'pallor')" class="lang-en">No</button></div></div>
+      <div class="yesno-row"><span class="lang-fr">Fièvre rapportée</span><span class="lang-en">Reported fever</span><div class="btns"><button onclick="toggleYN(this,'fever')" class="lang-fr">Non</button><button onclick="toggleYN(this,'fever')" class="lang-en">No</button></div></div>
+      <div class="yesno-row"><span class="lang-fr">Boit normalement</span><span class="lang-en">Drinks well</span><div class="btns"><button onclick="toggleYN(this,'feeding')" class="lang-fr on">Oui</button><button onclick="toggleYN(this,'feeding')" class="lang-en on">Yes</button></div></div>
+    </div>
+
+    <button class="btn btn--assess" onclick="runAssessment()">
+      <span class="lang-fr">🔬 Évaluer le patient</span>
+      <span class="lang-en">🔬 Assess Patient</span>
+    </button>
+
+    <div class="spinner" id="spinner"><div class="pulse"></div></div>
+    <div class="result" id="result"></div>
+  </div>
+
+  <!-- ÉCRAN 2 : À PROPOS -->
+  <div id="screen-about" style="display:none">
+    <div class="card">
+      <h2><span class="emoji">📖</span><span class="lang-fr">À propos</span><span class="lang-en">About</span></h2>
+      <p style="font-size:12px;color:var(--t3);line-height:1.6" class="lang-fr">
+        <b>KA CARE</b> est un outil de dépistage communautaire fondé sur la Théorie de l'Univers Harmonique.
+        Il utilise les constantes fondamentales <b>φ, π, e, √2, √3, √5</b> pour analyser les signes vitaux
+        et détecter les pathologies courantes.<br><br>
+        <b>⚠ Ce n'est pas un dispositif médical.</b> C'est une aide au dépistage pour les agents
+        de santé communautaire. Toute décision médicale doit être validée par un professionnel.<br><br>
+        Conçu pour fonctionner <b>sans Internet</b>, sur des téléphones bas de gamme,<br>
+        dans les zones à infrastructure médicale limitée.
+      </p>
+      <p style="font-size:12px;color:var(--t3);line-height:1.6" class="lang-en">
+        <b>KA CARE</b> is a community screening tool based on the Harmonic Universe Theory.
+        It uses the fundamental constants <b>φ, π, e, √2, √3, √5</b> to analyze vital signs
+        and detect common pathologies.<br><br>
+        <b>⚠ Not a medical device.</b> This is a screening aid for community health workers.
+        All medical decisions must be validated by a professional.<br><br>
+        Designed to work <b>offline</b>, on low-end phones,<br>
+        in areas with limited medical infrastructure.
+      </p>
+    </div>
+    <div class="card">
+      <h2><span class="emoji">φ</span><span class="lang-fr">Constantes harmoniques</span><span class="lang-en">Harmonic Constants</span></h2>
+      <div style="font-size:11px;color:var(--t3);line-height:1.8">
+        <div>φ = 1.618 — <span class="lang-fr">Cohérence cardiaque, ratios optimaux</span><span class="lang-en">Heart coherence, optimal ratios</span></div>
+        <div>π = 3.142 — <span class="lang-fr">Cycles (respiratoire, cardiaque)</span><span class="lang-en">Cycles (respiratory, cardiac)</span></div>
+        <div>e  = 2.718 — <span class="lang-fr">Régulation thermique, croissance</span><span class="lang-en">Thermal regulation, growth</span></div>
+        <div>√2 = 1.414 — <span class="lang-fr">Équilibre hydrique, symétrie</span><span class="lang-en">Hydric balance, symmetry</span></div>
+        <div>√3 = 1.732 — <span class="lang-fr">Stabilité rythmique, transport O₂</span><span class="lang-en">Rhythm stability, O₂ transport</span></div>
+        <div>√5 = 2.236 — <span class="lang-fr">Inflammation, texture fine</span><span class="lang-en">Inflammation, fine texture</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="active" onclick="showScreen('assess')"><span class="nv-icon">🔬</span><span class="lang-fr">Évaluer</span><span class="lang-en">Assess</span></button>
+  <button onclick="showScreen('about')"><span class="nv-icon">📖</span><span class="lang-fr">À propos</span><span class="lang-en">About</span></button>
+</nav>
+
+<script>
+'use strict';
+const ynState={chest:false,eyes:false,pallor:false,fever:false,feeding:true};
+const API=location.origin;
+
+function toggleYN(btn,key){
+  const row=btn.parentElement.parentElement;
+  row.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  ynState[key]=btn.textContent.includes('Oui')||btn.textContent.includes('Yes');
+  // Update other button in pair to show opposite text
+  const other=Array.from(row.querySelectorAll('button')).find(b=>b!==btn);
+  if(btn.textContent.includes('Oui')||btn.textContent.includes('Yes')){
+    btn.textContent=btn.textContent.includes('Oui')?'Oui':'Yes';
+  }
+}
+
+function getAgeMonths(){
+  const val=parseInt(document.getElementById('age-val').value)||0;
+  const unit=document.getElementById('age-unit').value;
+  if(unit==='days') return val/30;
+  if(unit==='years') return val*12;
+  return val;
+}
+
+async function runAssessment(){
+  document.getElementById('spinner').style.display='block';
+  document.getElementById('result').style.display='none';
+  const v={
+    age_months:getAgeMonths(),
+    heart_rate:parseFloat(document.getElementById('heart_rate').value)||null,
+    respiratory_rate:parseFloat(document.getElementById('resp_rate').value)||null,
+    capillary_refill_seconds:parseFloat(document.getElementById('cap_refill').value)||null,
+    skin_pinch_seconds:parseFloat(document.getElementById('skin_pinch').value)||null,
+    chest_indrawing:ynState.chest,
+    sunken_eyes:ynState.eyes,
+    palmar_pallor:ynState.pallor,
+    reported_fever:ynState.fever,
+    feeding_well:ynState.feeding,
+  };
+  try{
+    const resp=await fetch(API+'/api/assess',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(v)});
+	    const d=await resp.json();
+	    renderResult(d);
+	    // 🆕 Sauvegarde automatique dans le dossier patient sélectionné
+	    if(currentPatientId) patientSaveScreening('assess', d);
+	  }catch(e){
+    document.getElementById('result').innerHTML='<div class="verdict verdict--urgent">⚠️ '+(
+      document.body.classList.contains('lang-en')?'Server unreachable. Is KA CARE running?':'Serveur inaccessible. KA CARE est-il lancé ?')+'</div>';
+  }
+  document.getElementById('spinner').style.display='none';
+}
+
+function renderResult(d){
+  let html='';
+  const isEn=document.body.classList.contains('lang-en');
+  // Verdict
+  const v=d.verdict||'';
+  if(v.includes('REFERER')||v.includes('REFER')){
+    html+='<div class="verdict verdict--urgent">⚠️ '+v+'</div>';
+  }else if(v.includes('TRAITER')||v.includes('TREAT')){
+    html+='<div class="verdict verdict--treat">💊 '+v+'</div>';
+  }else{
+    html+='<div class="verdict verdict--ok">✅ '+v+'</div>';
+  }
+  // Score
+  html+='<div class="detail" style="text-align:center;margin-bottom:10px">'+
+    (isEn?'Harmonic Score':'Score harmonique')+': <b style="font-size:20px;color:var(--teal)">'+
+    ((d.score_harmonique_global||0)*100).toFixed(0)+'%</b></div>';
+  // Actions
+  if(d.actions_recommandees&&d.actions_recommandees.length){
+    html+='<div class="detail"><b>'+(isEn?'Recommended Actions':'Actions recommandées')+':</b>';
+    d.actions_recommandees.forEach(a=>{html+='<div style="margin:3px 0">• '+a+'</div>';});
+    html+='</div>';
+  }
+  // Detailed results
+  if(d.resultats_detailles){
+    for(const [key,tool] of Object.entries(d.resultats_detailles)){
+      const cls=tool.classification||'';
+      const icon=cls.includes('SÉVÈRE')||cls.includes('SEVERE')?'🔴':cls.includes('MODÉR')||cls.includes('MODERATE')?'🟡':'🟢';
+      html+='<div class="tool-result"><div class="tool-name">'+icon+' '+tool.outil+'</div>';
+      html+='<div class="tool-action">'+tool.action+'</div>';
+      if(tool.score_harmonique) html+='<div class="tool-action" style="color:var(--teal)">Score: '+tool.score_harmonique.toFixed(3)+'</div>';
+      html+='</div>';
+    }
+  }
+  document.getElementById('result').innerHTML=html;
+  document.getElementById('result').style.display='block';
+}
+
+function toggleLang(){
+  const b=document.body;
+  if(b.classList.contains('lang-fr')){b.classList.remove('lang-fr');b.classList.add('lang-en');}
+  else{b.classList.remove('lang-en');b.classList.add('lang-fr');}
+  // Update YN buttons
+  document.querySelectorAll('.yesno-row').forEach(row=>{
+    const btns=row.querySelectorAll('button');
+    if(btns.length===2){
+      btns[0].textContent=b.classList.contains('lang-en')?'No':'Non';
+      btns[1].textContent=b.classList.contains('lang-en')?'Yes':'Oui';
+    }
+  });
+}
+
+function showScreen(id){
+  document.querySelectorAll('#main > div').forEach(d=>d.style.display='none');
+  document.getElementById('screen-'+id).style.display='block';
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  event.target.closest('button').classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// GESTION PATIENTS
+// ═══════════════════════════════════════════════════════════════════
+
+let currentPatientId = null;
+let patientsCache = [];
+
+// Charger la liste des patients au démarrage
+(async function loadPatients(){
+  try{
+    const r=await fetch('/api/patient/list');
+    const d=await r.json();
+    patientsCache=d.patients||[];
+    patientRefreshList();
+  }catch(e){}
+})();
+
+function patientRefreshList(){
+  const sel=document.getElementById('patient-select');
+  sel.innerHTML='<option value="">— Sélectionner un patient —</option>';
+  patientsCache.forEach(function(p){
+    sel.innerHTML+='<option value="'+p.id+'">'+p.prenom+' '+p.nom+' ('+p.age+' '+p.age_unite+') — '+p.nb_screenings+' dépistage(s)</option>';
+  });
+}
+
+function patientSelect(id){
+  if(!id){currentPatientId=null;document.getElementById('patient-info').style.display='none';document.getElementById('patient-history').style.display='none';return;}
+  currentPatientId=id;
+  // Charger le dossier complet
+  fetch('/api/patient/'+id).then(function(r){return r.json();}).then(function(d){
+    var p=d.patient;
+    document.getElementById('patient-detail').textContent=p.prenom+' '+p.nom+' · '+p.age+' '+p.age_unite+' · '+p.sexe+(p.village?' · '+p.village:'');
+    document.getElementById('patient-info').style.display='block';
+    // Historique
+    var hist=document.getElementById('patient-history');
+    var html='<div style="font-weight:600;margin-bottom:2px">Historique:</div>';
+    if(p.screenings.length){
+      p.screenings.slice(-5).reverse().forEach(function(s){
+        var icon=s.type==='pneumonia'?'🫁':s.type==='dehydration'?'💧':s.type==='fever'?'🌡️':s.type==='anemia'?'🩸':s.type==='newborn'?'👶':'🩺';
+        html+='<div style="padding:3px 0;border-bottom:1px solid var(--border)">'+icon+' '+s.date+' — '+s.classification+'</div>';
+      });
+    }else{html+='<div style="color:var(--t4)">Aucun dépistage</div>';}
+    hist.innerHTML=html;
+    hist.style.display='block';
+  });
+}
+
+function patientToggleNew(){
+  var form=document.getElementById('patient-new-form');
+  form.style.display=form.style.display==='none'?'block':'none';
+}
+
+async function patientCreate(){
+  var nom=document.getElementById('pnom').value.trim();
+  var prenom=document.getElementById('pprenom').value.trim();
+  if(!nom||!prenom){alert('Nom et prénom requis');return;}
+  var r=await fetch('/api/patient/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    nom:nom,prenom:prenom,age:parseInt(document.getElementById('page').value)||0,
+    age_unite:document.getElementById('page-unit').value,sexe:document.getElementById('psexe').value,
+    village:document.getElementById('pvillage').value.trim()
+  })});
+  var d=await r.json();
+  if(d.patient){
+    patientsCache.unshift(d.patient);
+    patientRefreshList();
+    document.getElementById('patient-select').value=d.patient.id;
+    patientSelect(d.patient.id);
+    document.getElementById('patient-new-form').style.display='none';
+    ['pnom','pprenom','pvillage'].forEach(function(id){document.getElementById(id).value='';});
+  }
+}
+
+async function patientDelete(){
+  if(!currentPatientId||!confirm('Supprimer ce dossier patient ?'))return;
+  await fetch('/api/patient/'+currentPatientId+'/delete',{method:'POST'});
+  patientsCache=patientsCache.filter(function(p){return p.id!==currentPatientId;});
+  currentPatientId=null;
+  patientRefreshList();
+  document.getElementById('patient-info').style.display='none';
+  document.getElementById('patient-history').style.display='none';
+}
+
+// 🆕 Sauvegarder automatiquement le résultat dans le dossier patient
+function patientSaveScreening(type, result){
+  if(!currentPatientId)return;
+  fetch('/api/patient/'+currentPatientId+'/screening',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:type,result:result})})
+    .then(function(){patientSelect(currentPatientId);});
+}
+</script>
+</body>
+</html>

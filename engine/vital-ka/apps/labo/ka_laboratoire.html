@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#0d0d0d">
+<title>Vital Ka Laboratoire — Analyses</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0d0d;--bg-elevated:#141414;--surface:#1a1a1a;--surface-hover:#222225;--glass:rgba(26,26,26,.7);--glass-border:rgba(212,168,83,.08);--border-light:rgba(212,168,83,.12);--text-faint:#6b635a;--text-muted:#9b8f7e;--accent:#d4a853;--accent-dim:#b89030;--accent-glow:rgba(212,168,83,.12);--accent-glow-strong:rgba(212,168,83,.25);--accent-grad:linear-gradient(135deg,#d4a853,#b89030);--success:#27ae60;--warning:#f39c12;--error:#e74c3c;--error-dim:rgba(231,76,60,.15);--urgent:#e74c3c;--font:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;--border:#2a2a2a;--muted:var(--text-muted);--text:#eae1d7;--card:var(--glass);--radius:16px;--gold-grad:linear-gradient(135deg,#d4a853,#7b5804)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5}
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:1}
+.container{max-width:720px;margin:0 auto;padding:0 16px 100px;position:relative;z-index:2}
+header{text-align:center;padding:32px 0 24px}
+header h2{color:var(--accent)}
+.card{background:var(--glass);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--glass-border);border-radius:var(--radius);padding:20px 16px;margin-bottom:16px;box-shadow:0 4px 16px rgba(0,0,0,.35)}
+.card h3{font-size:16px;font-weight:700;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.btn{display:block;width:100%;padding:14px 20px;border:none;border-radius:12px;font-weight:600;font-size:15px;cursor:pointer;font-family:inherit;text-align:center;transition:all .3s cubic-bezier(.16,1,.3,1)}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--gold-grad);color:#0a0a0f;box-shadow:0 4px 20px var(--accent-glow);font-weight:700}
+.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--accent);margin-top:8px}
+.btn-green{background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;margin-top:8px;box-shadow:0 4px 16px rgba(39,174,96,.2)}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:688px;display:flex;justify-content:space-around;align-items:center;padding:8px 16px 12px;background:rgba(20,20,30,.85);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);border:1px solid var(--glass-border);border-radius:28px 28px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.5);z-index:50}
+.nav-item{display:flex;flex-direction:column;align-items:center;cursor:pointer;color:var(--text-faint);transition:all .15s;padding:6px 14px;border-radius:12px;position:relative}
+.nav-item.active{color:var(--accent);background:var(--accent-glow)}
+.nav-item .nav-icon{font-size:22px;margin-bottom:2px}
+.nav-item .nav-label{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.screen{display:none;opacity:0;transform:translateY(12px);transition:opacity .3s cubic-bezier(.16,1,.3,1),transform .3s cubic-bezier(.16,1,.3,1)}
+.screen.active{display:block;opacity:1;transform:translateY(0)}
+input,textarea{background:rgba(15,15,25,.8);color:var(--text);border:1px solid var(--border);padding:12px 16px;border-radius:12px;font-size:14px;font-family:inherit;width:100%;margin-bottom:8px}
+input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.lab-item{background:rgba(15,15,25,.8);border:1px solid var(--glass-border);border-radius:12px;padding:14px;margin-bottom:10px;transition:all .15s}
+.lab-item:hover{border-color:var(--border-light)}
+.lab-item .lab-patient{font-weight:700;font-size:15px}
+.lab-item .lab-date{font-size:11px;color:var(--muted)}
+.lab-item .lab-analyse{font-size:13px;margin-top:4px;padding:4px 8px;background:var(--accent-glow);border-radius:6px;display:inline-block;margin-right:4px;margin-bottom:4px}
+.lab-badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600}
+.lab-badge.demande{background:var(--error-dim);color:var(--warning)}
+.lab-badge.resultat{background:rgba(39,174,96,.15);color:var(--success)}
+.result-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.result-row input{flex:1;margin-bottom:0}
+.result-row .anormal{width:auto;margin:0}
+.result-anormal{background:var(--error-dim)!important;border-color:var(--error)!important}
+</style>
+<script src="vital_ka_config.js"></script>
+<script src="ka_bridge.js"></script>
+<script src="ka_secure.js"></script>
+<script src="ka_platform.js"></script>
+</head>
+<body>
+<div class="container">
+
+<!-- ═══ SPLASH / ACCUEIL ═══ -->
+<div class="screen active" id="screen-splash">
+<header>
+<h2>🧪 Laboratoire</h2>
+<p style="color:var(--muted);font-size:13px">Analyses médicales · Résultats envoyés automatiquement au dossier patient</p>
+</header>
+<div class="card">
+<h3>🧪 Saisir une ordonnance</h3>
+<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Collez le code de l'ordonnance d'analyse envoyé par le médecin (QR ou code court).</p>
+<textarea id="labOrderCode" placeholder="Collez le code de l'ordonnance d'analyse..." style="min-height:60px"></textarea>
+<button class="btn btn-primary" onclick="loadLabOrder()">📥 Charger l'ordonnance</button>
+</div>
+<div class="card">
+<h3>📋 Dernières analyses</h3>
+<div id="labHistory"><span style="color:var(--muted);font-size:.8em">Aucune analyse enregistrée.</span></div>
+</div>
+</div>
+
+<!-- ═══ SAISIE DES RÉSULTATS ═══ -->
+<div class="screen" id="screen-saisie">
+<header><h2 style="color:var(--accent)">🧪 Saisie des résultats</h2></header>
+<div class="card" id="orderInfo"></div>
+<div class="card">
+<h3>🔬 Résultats d'analyses</h3>
+<div id="resultFields"></div>
+<button class="btn btn-primary" onclick="sendLabResults()">📤 Envoyer au dossier patient</button>
+<div id="sendResult" style="margin-top:12px"></div>
+</div>
+<button class="btn btn-secondary" onclick="showScreen('splash')">← Retour</button>
+</div>
+
+<nav class="bottom-nav">
+<div class="nav-item active" data-screen="splash" onclick="showScreen('splash')"><span class="nav-icon">🏠</span><span class="nav-label">Accueil</span></div>
+<div class="nav-item" data-screen="saisie" onclick="showScreen('saisie')"><span class="nav-icon">🔬</span><span class="nav-label">Saisie</span></div>
+</nav>
+
+<script>
+// ═══ ÉTAT ═══
+let currentOrder = null;      // paquet doctor_to_lab chargé
+const STORE_LAB = 'ka_lab_results';
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + name);
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.screen === name));
+  document.querySelector('.bottom-nav').style.display = (name === 'splash') ? 'none' : 'flex';
+  if (name === 'splash') renderHistory();
+}
+
+function getLabName() {
+  const prof = (typeof KA_PLATFORM !== 'undefined' && KA_PLATFORM.getProfile) ? KA_PLATFORM.getProfile() : {};
+  return prof?.name || localStorage.getItem('ka_lab_name') || 'Laboratoire';
+}
+
+// ═══ CHARGER UNE ORDONNANCE ═══
+function loadLabOrder() {
+  const code = document.getElementById('labOrderCode').value.trim();
+  if (!code) { alert('Collez le code de l\'ordonnance.'); return; }
+
+  let ord = null;
+  // 1. KA_BRIDGE.decode (paquet encodé)
+  if (typeof KA_BRIDGE !== 'undefined') {
+    try {
+      const dec = KA_BRIDGE.decode(code);
+      if (dec && dec.type === 'doctor_to_lab') ord = dec;
+    } catch(e) {}
+  }
+  // 2. JSON brut
+  if (!ord) {
+    try {
+      const j = JSON.parse(code);
+      if (j && j.type === 'doctor_to_lab') ord = j;
+    } catch(e) {}
+  }
+  // 3. Ordre en attente local (id court type LAB-XXX)
+  if (!ord) {
+    const pending = JSON.parse(localStorage.getItem('ka_lab_orders') || '[]');
+    ord = pending.find(o => (o.id || '').toUpperCase() === code.toUpperCase()) || null;
+  }
+
+  if (!ord) { alert('Ordonnance invalide ou non trouvée. Vérifiez le code.'); return; }
+
+  currentOrder = ord;
+  document.getElementById('labOrderCode').value = '';
+  renderOrderInfo();
+  renderResultFields();
+  showScreen('saisie');
+}
+
+function renderOrderInfo() {
+  const p = currentOrder.patient || {};
+  const m = currentOrder.medecin || {};
+  const el = document.getElementById('orderInfo');
+  el.innerHTML =
+    '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Ordonnance · ' + (currentOrder.id || '') + '</div>' +
+    '<div style="font-weight:700;font-size:17px;margin:4px 0">👤 ' + KA_SECURE.escapeHtml(p.name || 'Patient') +
+    ' · ' + (p.age || '?') + ' ans · ' + (p.gender || '?') + '</div>' +
+    '<div style="font-size:12px;color:var(--muted)">🩺 ' + KA_SECURE.escapeHtml(m.name || 'Médecin') +
+    (currentOrder.diagnostic ? ' · <b style="color:var(--accent)">' + KA_SECURE.escapeHtml(currentOrder.diagnostic) + '</b>' : '') + '</div>';
+}
+
+function renderResultFields() {
+  const analyses = currentOrder.analyses || [];
+  const el = document.getElementById('resultFields');
+  if (!analyses.length) {
+    el.innerHTML = '<p style="color:var(--muted)">Aucune analyse demandée — ajoutez-en une :</p>' +
+      '<div style="display:flex;gap:8px;margin-top:8px"><input id="manualAnalyse" placeholder="Nom de l\'analyse (ex : NFS, glycémie...)" style="flex:1;margin:0">' +
+      '<button class="btn btn-primary" style="width:auto;padding:12px 16px" onclick="addManualAnalyse()">➕</button></div>';
+    return;
+  }
+  el.innerHTML = analyses.map((a, i) =>
+    '<div class="result-row" style="align-items:flex-start;flex-wrap:wrap">' +
+    '<div style="width:100%;font-size:13px;font-weight:600;color:var(--accent);margin-bottom:4px">🔬 ' + KA_SECURE.escapeHtml(a) + '</div>' +
+    '<input class="res-val" placeholder="Résultat" style="flex:2;min-width:100px">' +
+    '<input class="res-unit" placeholder="Unité" style="flex:1;min-width:60px">' +
+    '<input class="res-norm" placeholder="Norme" style="flex:1;min-width:60px">' +
+    '<label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;white-space:nowrap">' +
+    '<input type="checkbox" class="res-anomal" style="width:auto;margin:0"> Anormal</label>' +
+    '</div>'
+  ).join('');
+}
+
+function addManualAnalyse() {
+  const v = (document.getElementById('manualAnalyse')?.value || '').trim();
+  if (!v) return;
+  if (!currentOrder.analyses) currentOrder.analyses = [];
+  currentOrder.analyses.push(v);
+  renderResultFields();
+}
+
+// ═══ ENVOYER LES RÉSULTATS → DOSSIER PATIENT (auto) ═══
+function sendLabResults() {
+  if (!currentOrder) return;
+  const rows = document.querySelectorAll('.result-row');
+  const resultats = [];
+  rows.forEach(row => {
+    const analyse = row.querySelector('div')?.textContent.replace('🔬 ', '').trim() || '';
+    const val = row.querySelector('.res-val')?.value?.trim() || '';
+    const unit = row.querySelector('.res-unit')?.value?.trim() || '';
+    const norm = row.querySelector('.res-norm')?.value?.trim() || '';
+    const anormal = row.querySelector('.res-anomal')?.checked || false;
+    if (val) resultats.push({ analyse, resultat: val, unite: unit, norme: norm, anormal });
+  });
+  if (!resultats.length) { alert('Saisissez au moins un résultat.'); return; }
+
+  const paquet = KA_BRIDGE.labToPatient(currentOrder, resultats, getLabName());
+  const ok = KA_BRIDGE.saveLabResult(paquet);
+  if (ok) {
+    document.getElementById('sendResult').innerHTML =
+      '<div style="padding:10px;border-left:3px solid var(--success);background:rgba(39,174,96,.08);border-radius:8px;font-size:13px">' +
+      '✅ <b>' + resultats.length + ' résultat(s) envoyé(s)</b> — le dossier du patient ' +
+      KA_SECURE.escapeHtml(currentOrder.patient?.name || '') + ' a été mis à jour automatiquement.</div>';
+    // Marquer l'ordonnance comme traitée
+    const pending = JSON.parse(localStorage.getItem('ka_lab_orders') || '[]');
+    const idx = pending.findIndex(o => o.id === currentOrder.id);
+    if (idx >= 0) { pending[idx].status = 'resultat'; localStorage.setItem('ka_lab_orders', JSON.stringify(pending)); }
+    currentOrder = null;
+    setTimeout(() => showScreen('splash'), 2200);
+  } else {
+    document.getElementById('sendResult').innerHTML = '<span style="color:var(--error)">Erreur lors de l\'envoi.</span>';
+  }
+}
+
+// ═══ HISTORIQUE ═══
+function renderHistory() {
+  const el = document.getElementById('labHistory');
+  const results = (typeof KA_BRIDGE !== 'undefined') ? KA_BRIDGE.getLabResults() : [];
+  if (!results.length) {
+    el.innerHTML = '<span style="color:var(--muted);font-size:.8em">Aucune analyse enregistrée.</span>';
+    return;
+  }
+  let html = '';
+  results.slice(0, 8).forEach(r => {
+    const nAnom = (r.resultats || []).filter(x => x.anormal).length;
+    html += '<div class="lab-item">' +
+      '<div class="lab-patient">👤 ' + KA_SECURE.escapeHtml(r.patient?.name || 'Patient') + '</div>' +
+      '<div class="lab-date">' + new Date(r.timestamp).toLocaleDateString('fr-FR', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) +
+      ' · ' + KA_SECURE.escapeHtml(r.laboratoire || '') + '</div>' +
+      '<div><span class="lab-badge ' + (nAnom ? 'demande' : 'resultat') + '">' + (nAnom ? nAnom + ' anormal(aux)' : 'OK') + '</span></div>' +
+      '<div style="margin-top:6px">' + (r.analyses || []).map(a => '<span class="lab-analyse">' + KA_SECURE.escapeHtml(a) + '</span>').join('') + '</div>' +
+      '</div>';
+  });
+  el.innerHTML = html;
+}
+
+// ═══ INIT ═══
+(function init() {
+  if (typeof KA_PLATFORM !== 'undefined' && KA_PLATFORM.login && !KA_PLATFORM.getSession()) {
+    KA_PLATFORM.login('laboratoire', 'Laboratoire');
+  }
+  renderHistory();
+})();
+</script>
+</body></html>

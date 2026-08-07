@@ -1,0 +1,142 @@
+{
+  "patterns": [
+    {
+      "type": "Absence Fréquence",
+      "explanation": "L'onde sonde frappe un nœud (amplitude nulle). La fréquence cherchée n'existe pas dans l'hologramme.",
+      "strategy": "E — Injection",
+      "action": "Ajouter une garde : vérifier null/undefined/None avant l'usage. Utiliser Optional/Option type."
+    },
+    {
+      "type": "Saturation",
+      "explanation": "L'amplitude dépasse le seuil de linéarité. L'onde sature le système jusqu'à la rupture.",
+      "strategy": "D — Dissipation",
+      "action": "Ajouter try/catch, valider les entrées, limiter l'amplitude (rate limiting, timeout, circuit breaker)."
+    },
+    {
+      "type": "Collision Phase",
+      "explanation": "Deux ondes arrivent simultanément sur la même ressource. Le résultat dépend de l'ordre d'arrivée.",
+      "strategy": "B — Synchronisation",
+      "action": "Ajouter lock/mutex/semaphore, file d'attente, rendre l'opération atomique (CAS, transaction)."
+    },
+    {
+      "type": "Onde Fantome",
+      "explanation": "Une onde persiste après sa durée de vie utile. L'amplitude fantôme s'accumule jusqu'à l'épuisement.",
+      "strategy": "E — Injection (de l'onde inverse)",
+      "action": "Ajouter free()/close()/dispose(), try-with-resources, RAII, weakref, garbage collection."
+    },
+    {
+      "type": "Déphasage Temporel",
+      "explanation": "Une onde figée dans le passé (t₀) tandis que l'autre évolue (t). L'écart se creuse.",
+      "strategy": "B — Synchronisation",
+      "action": "Capturer l'état au moment de l'usage (pas au démarrage). Invalider le cache. Refresh. Polling ou WebSocket."
+    },
+    {
+      "type": "Désaccord Fréquence",
+      "explanation": "ω_observed et ω_expected sont proches mais déphasées. Battement perceptible.",
+      "strategy": "B — Synchronisation",
+      "action": "Comparer pas à pas avec des assertions. Corriger la formule/logique. Tests unitaires."
+    },
+    {
+      "type": "Résonance Forcée",
+      "explanation": "Fréquence imposée qui n'est pas la fréquence propre du système. Vibration instable.",
+      "strategy": "F — Restauration",
+      "action": "Revenir à la version stable (revert). Mettre à jour les dépendances pour la nouvelle fréquence."
+    },
+    {
+      "type": "Interférence Multiple",
+      "explanation": "Trop d'ondes superposées. L'information utile est noyée dans le bruit ambiant.",
+      "strategy": "D — Dissipation",
+      "action": "Index, cache, pagination, lazy loading, réduire O(n²)→O(n log n), load balancing, sharding."
+    },
+    {
+      "type": "Résonance Parasite",
+      "explanation": "Fréquence parasite (input malveillant) entre en résonance avec une vulnérabilité.",
+      "strategy": "C — Filtrage",
+      "action": "Valider, sanitizer, échapper les entrées. Prepared statements. CSP headers. Never trust user input."
+    },
+    {
+      "type": "Résonance Forcée Math",
+      "explanation": "Base non-linéaire {(Ψ₁)ⁿ} forcée dans cadre PDE linéaire → contradiction. Les coefficients s'annulent.",
+      "strategy": "B — Synchronisation",
+      "action": "La non-linéarité doit être intrinsèque (tenseur G_μν GAGUT), pas ajoutée (potentiel V). Utiliser la dérivée ABC comme source de couplage entre modes."
+    },
+    {
+      "type": "Divergence Spectrale",
+      "explanation": "La série Σ cₙ(Ψ₁)ⁿ diverge ou converge vers une valeur non physique. Les termes de haute fréquence ne sont pas maîtrisés.",
+      "strategy": "D — Dissipation",
+      "action": "Régularisation spectrale : tronquer à l'ordre N où les termes deviennent négligeables. Utiliser la clôture algébrique de rang 7."
+    },
+    {
+      "type": "Dégénérescence Accidentelle",
+      "explanation": "Deux valeurs propres distinctes deviennent égales par accident → perte d'information spectrale.",
+      "strategy": "C — Filtrage",
+      "action": "Identifier le paramètre qui cause la dégénérescence. Ajuster pour restaurer la distinction. φ est l'unique valeur qui l'évite (Théorème de Steinhaus)."
+    },
+    {
+      "type": "Cascade de Pannes",
+      "explanation": "Interférence constructive de pannes : chaque défaillance amplifie la suivante (effet domino).",
+      "strategy": "D — Dissipation",
+      "action": "Bulkhead pattern : isoler les domaines de panne. Circuit breaker. Graceful degradation."
+    },
+    {
+      "type": "Onde Stationnaire Système",
+      "explanation": "Le système est bloqué dans une configuration qui s'auto-entretient. Aucune évolution possible.",
+      "strategy": "A — Opposition de phase",
+      "action": "Introduire une perturbation calibrée pour briser la stationnarité. Redémarrage propre ou chaos contrôlé."
+    },
+    {
+      "type": "Désaccord Immunitaire",
+      "explanation": "Le système ne reconnaît plus ses propres fréquences et les attaque comme étrangères (auto-immunité).",
+      "strategy": "B — Synchronisation",
+      "action": "Restaurer la tolérance au soi. Thérapie immunosuppressive calibrée. Rééducation immunitaire."
+    },
+    {
+      "type": "Mutation Silencieuse",
+      "explanation": "Changement de fréquence qui ne produit aucun battement visible — mais qui prépare une instabilité future.",
+      "strategy": "C — Filtrage",
+      "action": "Détection précoce par analyse spectrale fine. Tests de non-régression élargis."
+    },
+    {
+      "type": "Emballement Spéculatif",
+      "explanation": "Toutes les ondes d'achat se superposent en phase → interférence constructive explosive (bulle).",
+      "strategy": "D — Dissipation",
+      "action": "Régulation contracyclique. Taxe sur les transactions à haute fréquence. Délai de réflexion."
+    },
+    {
+      "type": "Silenciation Forcée",
+      "explanation": "Une seule fréquence imposée à tous les autres oscillateurs → perte de diversité.",
+      "strategy": "F — Restauration",
+      "action": "Restaurer la polyphonie. Démocratiser l'accès à l'émission. Protéger les fréquences minoritaires."
+    },
+    {
+      "type": "Corruption Spectrale",
+      "explanation": "L'information est partiellement altérée. L'onde reçue n'est pas l'onde émise.",
+      "strategy": "C — Filtrage",
+      "action": "Checksum, hash, parity bit. Redondance (RAID). Retransmission. Correction d'erreur."
+    },
+    {
+      "type": "Compression Destructive",
+      "explanation": "Réduction d'amplitude qui élimine les harmoniques faibles → perte d'information irréversible.",
+      "strategy": "F — Restauration",
+      "action": "Utiliser une compression sans perte quand la fidélité est critique. Conserver l'original."
+    },
+    {
+      "type": "Hallucination LLM",
+      "explanation": "L'onde prédite trouve une fausse résonance statistique. Corrélation sans causalité.",
+      "strategy": "C — Filtrage",
+      "action": "Vérification contre l'hologramme de réalité (fact-checking). Score de confiance. Garde-fou déterministe."
+    },
+    {
+      "type": "Catastrophic Forgetting",
+      "explanation": "L'apprentissage d'une nouvelle fréquence efface les fréquences précédemment stockées.",
+      "strategy": "B — Synchronisation",
+      "action": "Replay memory. Elastic weight consolidation. Apprentissage par interférence (pas par écrasement)."
+    }
+  ],
+  "stats": {
+    "patterns_count": 22,
+    "cases_learned": 24,
+    "accuracy": 0.9166666666666666,
+    "avg_confidence": 0.26804065470420996
+  }
+}

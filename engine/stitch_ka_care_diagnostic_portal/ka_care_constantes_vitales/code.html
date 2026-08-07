@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>KA CARE - Vitals Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline": "#9b8f7e",
+                      "on-secondary": "#313030",
+                      "surface-container-high": "#2e2923",
+                      "surface": "#16130d",
+                      "on-tertiary-fixed": "#001b3d",
+                      "on-surface-variant": "#d2c5b2",
+                      "on-primary": "#412d00",
+                      "primary-fixed": "#ffdea6",
+                      "tertiary-fixed": "#d6e3ff",
+                      "inverse-surface": "#eae1d7",
+                      "primary-container": "#d4a853",
+                      "secondary-fixed": "#e5e2e1",
+                      "on-secondary-fixed-variant": "#474746",
+                      "on-secondary-fixed": "#1c1b1b",
+                      "surface-dim": "#16130d",
+                      "on-primary-fixed": "#271900",
+                      "outline-variant": "#4e4637",
+                      "on-primary-container": "#573d00",
+                      "tertiary": "#afcbff",
+                      "tertiary-container": "#8fb0e9",
+                      "background": "#16130d",
+                      "surface-bright": "#3d3831",
+                      "tertiary-fixed-dim": "#a8c8ff",
+                      "on-surface": "#eae1d7",
+                      "surface-variant": "#39342d",
+                      "on-error-container": "#ffdad6",
+                      "on-tertiary-container": "#1d4274",
+                      "surface-container-lowest": "#110e08",
+                      "primary-fixed-dim": "#eec068",
+                      "on-tertiary": "#023061",
+                      "error-container": "#93000a",
+                      "surface-container-highest": "#39342d",
+                      "secondary-container": "#474746",
+                      "surface-tint": "#eec068",
+                      "secondary-fixed-dim": "#c8c6c5",
+                      "on-tertiary-fixed-variant": "#234779",
+                      "error": "#ffb4ab",
+                      "primary": "#f2c36b",
+                      "secondary": "#c8c6c5",
+                      "on-error": "#690005",
+                      "surface-container": "#231f19",
+                      "inverse-primary": "#7b5804",
+                      "inverse-on-surface": "#343029",
+                      "surface-container-low": "#1f1b15",
+                      "on-background": "#eae1d7",
+                      "on-primary-fixed-variant": "#5d4200",
+                      "on-secondary-container": "#b7b5b4"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "unit": "8px",
+                      "stack-sm": "12px",
+                      "stack-lg": "48px",
+                      "container-padding": "24px",
+                      "stack-md": "24px"
+              },
+              "fontFamily": {
+                      "display-lg": ["Inter"],
+                      "body-md": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "display-lg-mobile": ["Inter"],
+                      "label-sm": ["Inter"],
+                      "headline-md": ["Inter"]
+              },
+              "fontSize": {
+                      "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "letterSpacing": "0", "fontWeight": "400"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "letterSpacing": "0", "fontWeight": "400"}],
+                      "display-lg-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                      "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .resonance-border {
+            border: 1px solid rgba(212, 168, 83, 0.15);
+            box-shadow: 0 0 12px rgba(212, 168, 83, 0.05);
+        }
+        .glass-card {
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(212, 168, 83, 0.2);
+        }
+        .ecg-container {
+            mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+        }
+        @keyframes scanline {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .scanline {
+            animation: scanline 4s linear infinite;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen font-body-md text-body-md overflow-x-hidden">
+<!-- Top App Bar -->
+<header class="w-full top-0 sticky z-50 border-b border-outline-variant/20 bg-surface/80 backdrop-blur-md shadow-[0_0_15px_rgba(212,168,83,0.1)] flex justify-between items-center px-gutter py-unit">
+<div class="flex items-center gap-stack-sm">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-primary/30">
+<img class="w-full h-full object-cover" data-alt="A professional medical clinician avatar profile photo with a high-end diagnostic aesthetic. The lighting is dramatic and clinical, with a deep dark background and subtle gold rim lighting. The style is modern corporate medicine, emphasizing authority and serenity in a dark-mode environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWOa4U_hlAcwcWRg0wmOGzHQ4-ZqJ8Y3z78EItSGW0XHLl7TFfCplsjw-0WN9Qe3P42WKWESs9Dr1SLjZbzloQWTl0uj-X7Q_ZvqIa_bL1TgFVN7ZJscTRQ5OjdDOD80zZxiCJiGdF3IaoWcL1xpYW7rWNjPszBhAqGU6-pBeaZmrkrBVyEM90KnfkKwx10kXO5LcqtrHNckmwA5GWli3tbCG3eKFo6QDIxBwmsdtGqfzbLY_jcsuQFg"/>
+</div>
+<div class="flex flex-col">
+<span class="font-display-lg text-display-lg-mobile tracking-widest text-primary uppercase">KA CARE</span>
+</div>
+</div>
+<button class="cursor-pointer active:scale-95 duration-200 text-primary">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<main class="px-container-padding pt-stack-md pb-32 max-w-5xl mx-auto">
+<!-- Patient Info Header -->
+<section class="mb-stack-lg animate-in fade-in slide-in-from-top-4 duration-700">
+<div class="flex flex-col">
+<h1 class="font-headline-md text-headline-md text-on-surface mb-1">Jean-Marc Valenti</h1>
+<p class="text-on-surface-variant font-label-sm uppercase tracking-widest">ID: 4492-JV-02 • Patient Monitor</p>
+</div>
+</section>
+<!-- Real-time ECG Visualization -->
+<section class="mb-stack-md glass-card resonance-border rounded-xl p-6 relative overflow-hidden h-48 flex flex-col justify-between">
+<div class="flex justify-between items-center z-10">
+<span class="text-primary font-label-sm uppercase tracking-widest">Real-time ECG (I)</span>
+<span class="text-on-surface-variant text-xs opacity-60">25mm/sec • 10mm/mV</span>
+</div>
+<div class="ecg-container absolute inset-0 pointer-events-none flex items-center">
+<svg class="w-full h-24" preserveaspectratio="none" viewbox="0 0 1000 100">
+<defs>
+<lineargradient id="waveGradient" x1="0%" x2="100%" y1="0%" y2="0%">
+<stop offset="0%" stop-color="transparent"></stop>
+<stop offset="50%" stop-color="#d4a853"></stop>
+<stop offset="100%" stop-color="transparent"></stop>
+</lineargradient>
+</defs>
+<path class="ecg-wave" d="M0 50 L100 50 L110 50 L120 20 L130 80 L140 50 L250 50 L260 45 L270 50 L350 50 L360 10 L370 90 L380 50 L500 50 L510 50 L520 20 L530 80 L540 50 L650 50 L660 45 L670 50 L750 50 L760 10 L770 90 L780 50 L900 50 L910 50 L920 20 L930 80 L940 50" fill="none" stroke="url(#waveGradient)" stroke-width="2">
+<animate attributename="stroke-dasharray" dur="2s" from="0,1000" repeatcount="indefinite" to="1000,0"></animate>
+</path>
+</svg>
+</div>
+<div class="flex justify-end z-10">
+<div class="flex items-center gap-2 text-primary-fixed-dim">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="text-xs uppercase tracking-tighter">Monitoring Active</span>
+</div>
+</div>
+</section>
+<!-- Vitals Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-stack-md">
+<!-- Heart Rate -->
+<div class="glass-card resonance-border rounded-xl p-6 flex flex-col gap-4 group hover:bg-surface-container transition-all duration-300">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary text-3xl">graphic_eq</span>
+<span class="text-xs text-on-surface-variant font-bold uppercase">BPM</span>
+</div>
+<div>
+<h3 class="text-on-surface-variant font-label-sm uppercase tracking-wide">Heart Rate</h3>
+<div class="flex items-baseline gap-1">
+<span class="font-display-lg text-display-lg-mobile text-primary">72</span>
+<span class="text-on-surface-variant/50 text-sm">avg. 68</span>
+</div>
+</div>
+<div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[72%] transition-all duration-1000"></div>
+</div>
+</div>
+<!-- Blood Pressure -->
+<div class="glass-card resonance-border rounded-xl p-6 flex flex-col gap-4 group hover:bg-surface-container transition-all duration-300">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary text-3xl">monitor_heart</span>
+<span class="text-xs text-on-surface-variant font-bold uppercase">mmHg</span>
+</div>
+<div>
+<h3 class="text-on-surface-variant font-label-sm uppercase tracking-wide">Blood Pressure</h3>
+<div class="flex items-baseline gap-1">
+<span class="font-display-lg text-display-lg-mobile text-primary">118/76</span>
+</div>
+</div>
+<div class="flex gap-1">
+<span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold uppercase">Optimal</span>
+</div>
+</div>
+<!-- SpO2 -->
+<div class="glass-card resonance-border rounded-xl p-6 flex flex-col gap-4 group hover:bg-surface-container transition-all duration-300">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary text-3xl">bloodtype</span>
+<span class="text-xs text-on-surface-variant font-bold uppercase">%</span>
+</div>
+<div>
+<h3 class="text-on-surface-variant font-label-sm uppercase tracking-wide">SpO2</h3>
+<div class="flex items-baseline gap-1">
+<span class="font-display-lg text-display-lg-mobile text-primary">98</span>
+</div>
+</div>
+<div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[98%]"></div>
+</div>
+</div>
+<!-- Temperature -->
+<div class="glass-card resonance-border rounded-xl p-6 flex flex-col gap-4 group hover:bg-surface-container transition-all duration-300">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary text-3xl">thermostat</span>
+<span class="text-xs text-on-surface-variant font-bold uppercase">°C</span>
+</div>
+<div>
+<h3 class="text-on-surface-variant font-label-sm uppercase tracking-wide">Temperature</h3>
+<div class="flex items-baseline gap-1">
+<span class="font-display-lg text-display-lg-mobile text-primary">36.7</span>
+</div>
+</div>
+<div class="flex gap-1">
+<span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase">Stable</span>
+</div>
+</div>
+</div>
+<!-- Action Section -->
+<div class="mt-stack-lg flex flex-col items-center gap-stack-md">
+<button class="w-full py-5 bg-primary text-on-primary rounded-full font-bold tracking-[0.15em] hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20 uppercase">
+                LANCER UN NOUVEAU DIAGNOSTIC
+            </button>
+<p class="text-center text-on-surface-variant/60 text-xs max-w-xs">
+                Initiate a complete resonance-based multispectral analysis. Estimated duration: 180 seconds.
+            </p>
+</div>
+</main>
+<!-- Bottom Nav Bar -->
+<nav class="fixed bottom-0 left-0 w-full h-16 bg-surface-container-high/95 backdrop-blur-xl border-t border-outline-variant/30 flex justify-around items-center px-4 pb-safe z-50">
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 transition-all duration-300 hover:opacity-100 hover:text-primary-fixed-dim transform active:scale-90" href="#">
+<span class="material-symbols-outlined">graphic_eq</span>
+<span class="font-label-sm text-label-sm">Resonance</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 transition-all duration-300 hover:opacity-100 hover:text-primary-fixed-dim transform active:scale-90" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-sm text-label-sm">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary font-bold bg-primary-container/10 rounded-xl px-4 py-1 transition-all duration-300 ease-in-out transform active:scale-90" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">monitor_heart</span>
+<span class="font-label-sm text-label-sm">Vitals</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 transition-all duration-300 hover:opacity-100 hover:text-primary-fixed-dim transform active:scale-90" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</a>
+</nav>
+<script>
+        // Micro-interaction for vitals update simulation
+        setInterval(() => {
+            const bpmValue = document.querySelector('.font-display-lg');
+            if(bpmValue) {
+                const current = parseInt(bpmValue.innerText);
+                const variance = Math.floor(Math.random() * 3) - 1; // -1, 0, or 1
+                if(current > 60 && current < 100) {
+                    // bpmValue.innerText = current + variance; 
+                    // Temporarily disabled to keep UI static for visual assessment but logic is here
+                }
+            }
+        }, 3000);
+    </script>
+</body></html>

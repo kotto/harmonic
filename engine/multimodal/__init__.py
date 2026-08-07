@@ -50,10 +50,32 @@ from .av_generator import (
     AudioVisualTemplate,
 )
 
+# ── Génération média harmonique (Universe Language Model) ────────────────────
+# Paradigme retrieval : stocke de vrais patches → indexe par descripteurs HRR
+# → récupère par résonance → assemble avec phase-coherent blending
+# Cascade multi-échelle √2 + corrélations de phase inter-échelles (Portilla-Simoncelli)
+try:
+    from .spectral_descriptor import SpectralDescriptor
+    from .patch_store import PatchStore, StoredPatch
+    from .visual_memory import VisualMemory
+    from .visual_trainer import VisualTrainer, PhaseCoherence
+    from .visual_generator import VisualGenerator, GenerationResult
+    from .wave_audio import HarmonicAudioGenerator, AudioResult
+    from .harmonic_media import HarmonicMediaEngine, MediaResult
+
+    _HARMONIC_MEDIA_AVAILABLE = True
+except ImportError as e:
+    _HARMONIC_MEDIA_AVAILABLE = False
+    _HARMONIC_MEDIA_IMPORT_ERROR = str(e)
+
 __all__ = [
     'ImageAnalyzer', 'AudioAnalyzer', 'VideoAnalyzer', 'DocumentAnalyzer',
     'AttachedFile',
     'analyze_image', 'analyze_audio', 'analyze_video', 'analyze_document',
     'analyze_multimodal', 'fuse_signatures', 'compute_resonance',
     'HarmonicAVGenerator', 'AVGenerationResult', 'AudioVisualTemplate',
+    # Génération média harmonique (retrieval-based)
+    'SpectralDescriptor', 'PatchStore', 'StoredPatch',
+    'VisualMemory', 'VisualTrainer', 'VisualGenerator',
+    'HarmonicAudioGenerator', 'HarmonicMediaEngine', 'MediaResult',
 ]

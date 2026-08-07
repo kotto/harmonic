@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KA Corporation — The AI that doesn't compute, it emerges</title>
+<meta name="description" content="KA Corporation: wave-based artificial intelligence — emergent arithmetic, 30× compression, offline personal AI, wave language.">
+<style>
+:root{
+  --void:#07070f;--soul:#8b83ff;--soul-l:#b8b2ff;--soul-d:rgba(139,131,255,.18);--soul-g:rgba(139,131,255,.32);
+  --life:#3ddba0;--life-d:rgba(61,219,160,.15);--life-g:rgba(61,219,160,.28);
+  --wisdom:#f0c060;--wisdom-d:rgba(240,192,96,.15);--wisdom-g:rgba(240,192,96,.28);
+  --rose:#ed93b1;--rose-d:rgba(212,83,126,.15);--rose-g:rgba(212,83,126,.28);
+  --sky:#85b7eb;--sky-d:rgba(133,183,235,.15);--sky-g:rgba(133,183,235,.28);
+  --coral:#d85a30;
+  --g1:rgba(255,255,255,.04);--g2:rgba(255,255,255,.075);--g3:rgba(255,255,255,.13);
+  --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.1);--b3:rgba(255,255,255,.16);
+  --t1:rgba(255,255,255,.92);--t2:rgba(255,255,255,.62);--t3:rgba(255,255,255,.36);--t4:rgba(255,255,255,.18);
+  --font:-apple-system,"SF Pro Display","Inter",system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--void);color:var(--t1);font-family:var(--font);-webkit-font-smoothing:antialiased;line-height:1.6}
+a{color:var(--soul-l);text-decoration:none}
+a:hover{color:var(--life)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+section{padding:84px 0}
+h1{font-size:clamp(34px,6vw,58px);font-weight:800;letter-spacing:-.02em;line-height:1.08}
+h2{font-size:clamp(26px,4vw,38px);font-weight:800;letter-spacing:-.01em;margin-bottom:18px}
+h3{font-size:18px;font-weight:700;margin-bottom:10px}
+p.sub{color:var(--t2);font-size:17px;max-width:640px}
+.chip{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 12px;border-radius:999px;margin-bottom:16px}
+.chip--soul{background:var(--soul-d);color:var(--soul-l);border:1px solid var(--soul-g)}
+.chip--life{background:var(--life-d);color:var(--life);border:1px solid var(--life-g)}
+.chip--gold{background:var(--wisdom-d);color:var(--wisdom);border:1px solid var(--wisdom-g)}
+
+/* ── NAV ── */
+nav{position:sticky;top:0;z-index:50;background:rgba(7,7,15,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--b1)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{font-weight:800;font-size:18px;letter-spacing:.02em}
+.brand b{color:var(--soul-l)}
+nav .links{display:flex;gap:22px;font-size:14px;color:var(--t2)}
+nav .links a{color:var(--t2)}
+nav .links a:hover{color:var(--t1)}
+nav .lang{font-size:12px;color:var(--t3);border:1px solid var(--b2);border-radius:999px;padding:4px 12px}
+nav .lang:hover{color:var(--t1);border-color:var(--soul-g)}
+@media(max-width:720px){nav .links{display:none}}
+
+/* ── HERO ── */
+.hero{min-height:88vh;display:flex;align-items:center;position:relative;overflow:hidden;
+  background:radial-gradient(ellipse at 50% -10%,#1e1630 0%,#0e0d1c 45%,var(--void) 100%)}
+.hero canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.55}
+.hero .inner{position:relative;z-index:2}
+.hero h1 b{color:var(--soul-l)}
+.hero .proof{margin-top:28px;display:flex;flex-wrap:wrap;gap:10px}
+.hero .proof span{font-size:13px;color:var(--t2);background:var(--g1);border:1px solid var(--b1);padding:8px 14px;border-radius:10px}
+.btn{display:inline-block;font-weight:700;font-size:15px;padding:13px 26px;border-radius:12px;margin-top:30px;margin-right:12px;transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn--soul{background:linear-gradient(135deg,var(--soul),#6a5cff);color:#fff}
+.btn--ghost{background:var(--g2);color:var(--t1);border:1px solid var(--b2)}
+
+/* ── CARTES ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:34px}
+.card{background:linear-gradient(180deg,var(--g1),transparent);border:1px solid var(--b1);border-radius:18px;padding:26px}
+.card .ico{font-size:26px;margin-bottom:12px}
+.card h3{color:var(--t1)}
+.card p{font-size:14px;color:var(--t2)}
+.card .metric{font-size:30px;font-weight:800;color:var(--life);margin:6px 0}
+.card .metric--soul{color:var(--soul-l)}
+.card .metric--gold{color:var(--wisdom)}
+
+/* ── TABLEAU ── */
+table{width:100%;border-collapse:collapse;margin-top:26px;font-size:14px}
+th{text-align:left;color:var(--t3);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em;padding:10px 12px;border-bottom:1px solid var(--b2)}
+td{padding:13px 12px;border-bottom:1px solid var(--b1);color:var(--t2)}
+td:first-child{color:var(--t1);font-weight:600}
+.ok{color:var(--life)}
+.no{color:var(--coral)}
+
+/* ── ÉQUATION ── */
+.eq{background:linear-gradient(135deg,var(--soul-d),var(--life-d));border:1px solid var(--soul-g);border-radius:18px;padding:34px;text-align:center;margin:34px 0}
+.eq .formula{font-size:clamp(20px,3.4vw,30px);font-weight:800;color:#fff;letter-spacing:.01em}
+.eq .formula span{color:var(--soul-l)}
+.eq .note{color:var(--t2);font-size:13px;margin-top:10px}
+
+/* ── QUOTE / DIVIDER ── */
+.quote{border-left:3px solid var(--life);padding:4px 0 4px 20px;color:var(--t2);font-style:italic;margin:26px 0;max-width:700px}
+footer{border-top:1px solid var(--b1);padding:44px 0 60px;color:var(--t3);font-size:13px}
+footer .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;margin-bottom:26px}
+footer h4{color:var(--t2);font-size:13px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+footer a{display:block;color:var(--t3);padding:3px 0}
+footer a:hover{color:var(--t1)}
+@media(max-width:720px){section{padding:60px 0}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="brand">KA <b>Corporation</b></div>
+    <div class="links">
+      <a href="#tech">Technology</a>
+      <a href="#proofs">Proof</a>
+      <a href="#products">Products</a>
+      <a href="#telecoms">Telecoms</a>
+      <a href="#contact">Contact</a>
+    </div>
+    <a class="lang" href="/corporation">FR</a>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<header class="hero">
+  <canvas id="waves"></canvas>
+  <div class="wrap inner">
+    <span class="chip chip--soul">Wave-based artificial intelligence</span>
+    <h1>The AI that doesn't compute.<br><b>It emerges.</b></h1>
+    <p class="sub" style="margin-top:16px">Ψ<sub>a</sub>·Ψ<sub>b</sub> = Ψ<sub>a+b</sub>. Our systems never look up a table: they <b>align waves</b>. Emergent arithmetic, 30× compression, a personal AI that is 100&nbsp;% offline.</p>
+    <div class="proof">
+      <span>⚡ 400/400 verified emergence</span>
+      <span>📦 30× photos &amp; videos</span>
+      <span>📴 0 GPU · 0 cloud</span>
+      <span>🧾 Zero hallucination (measurement, not generation)</span>
+    </div>
+    <a class="btn btn--soul" href="#proofs">See the proof</a>
+    <a class="btn btn--ghost" href="#products">The products</a>
+  </div>
+</header>
+
+<!-- ═══ TECHNOLOGY ═══ -->
+<section id="tech">
+  <div class="wrap">
+    <span class="chip chip--life">Technology</span>
+    <h2>Computation as an emergent phenomenon</h2>
+    <p class="sub">Current AIs repeat what they were trained on. We built a form of reasoning unlike anything human: operations <b>emerge</b> from wave interference, with no stored facts at all.</p>
+
+    <div class="eq">
+      <div class="formula">Ψ<span>(a)</span> × Ψ<span>(b)</span> &nbsp;=&nbsp; Ψ<span>(a+b)</span></div>
+      <div class="note">Addition emerges from the product of two waves. Subtraction is destructive interference: Ψ + (−Ψ) = 0.</div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="ico">🌀</div>
+        <h3>Emergent arithmetic</h3>
+        <p>e<sup>ia</sup>·e<sup>ib</sup> = e<sup>i(a+b)</sup>: multiplying two waves <b>creates</b> addition. Verified on 400 operations: 400/400.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🔢</div>
+        <h3>Complete encoders</h3>
+        <p>Negative numbers, fractions, sums up to ±500,000: phase encoding (O(1), zero aliasing) and exact log-scale (16,384 grid) — 3643/3644 strictly exact operations.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🧭</div>
+        <h3>Reasoning by synchronization</h3>
+        <p>Kuramoto: concepts are phases. A syllogism is <b>measured</b> — collective coherence r→1 validates, frustration r→0 signals contradiction.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🌊</div>
+        <h3>Wave language</h3>
+        <p>13 wave primitives, Wave IR (AST), harmonic compiler: express a problem "in waves", not in instructions.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🖥️</div>
+        <h3>Harmonic computer (HPU)</h3>
+        <p>An architecture designed for interference: operations become phase alignments, energy-efficient by construction.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🔬</div>
+        <h3>KA Care — diagnosis</h3>
+        <p>82.9&nbsp;% exact diagnosis (top-1) on 100,000 real clinical cases, 97.4&nbsp;% in top-3, AUC 0.957, response &lt; 150&nbsp;ms. Hallucination is impossible: it generates nothing, it measures.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PROOF ═══ -->
+<section id="proofs" style="background:linear-gradient(180deg,transparent,rgba(139,131,255,.05))">
+  <div class="wrap">
+    <span class="chip chip--gold">Measured proof</span>
+    <h2>No promises: benchmarks</h2>
+    <p class="sub">Every claim KA makes is the result of a reproducible measurement, published in our lab notebooks.</p>
+
+    <table>
+      <tr><th>Measurement</th><th>Result</th><th>Detail</th></tr>
+      <tr><td>Emergent arithmetic</td><td class="ok">400 / 400</td><td>Ψ<sub>a</sub>·Ψ<sub>b</sub> = Ψ<sub>a+b</sub>, destructive interference ratio 0.0</td></tr>
+      <tr><td>Strict operations (encoders v2)</td><td class="ok">3643 / 3644</td><td>Negatives, fractions, sums ±500,000 — zero aliasing</td></tr>
+      <tr><td>Operation chains</td><td class="ok">91.1&nbsp;%</td><td>Full extraction and resolution</td></tr>
+      <tr><td>Medical diagnosis (DDXPlus, 100,000 cases)</td><td class="ok">82.9&nbsp;% top-1</td><td>97.4&nbsp;% top-3 · AUC 0.957 · &lt; 150&nbsp;ms · 79&nbsp;% of vital emergencies</td></tr>
+      <tr><td>HCV compression</td><td class="ok">30× photos / 30× videos / 3× files</td><td>No visible loss — telecom operator proposal</td></tr>
+      <tr><td>LM Arena &amp; reasoning benchmarks</td><td class="ok">On par with open LLMs</td><td>On subsets, at near-zero marginal cost</td></tr>
+    </table>
+
+    <div class="quote">"Classical AI learns; KA measures. This is a change in nature, not degree: error is no longer statistical, it is geometric."</div>
+  </div>
+</section>
+
+<!-- ═══ PRODUCTS ═══ -->
+<section id="products">
+  <div class="wrap">
+    <span class="chip chip--soul">Products</span>
+    <h2>Three families, one engine</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="ico">📱</div>
+        <h3>KA Mobile</h3>
+        <p>Your personal AI on your phone. Emergent arithmetic <b>in airplane mode</b>, camera-based pulse measurement (PPG), photo/video compression, storage optimization. 0&nbsp;GPU, 0&nbsp;cloud.</p>
+        <div class="metric">100 %</div>
+        <p>offline for the essentials</p>
+      </div>
+      <div class="card">
+        <div class="ico">🏢</div>
+        <h3>KA Enterprise</h3>
+        <p>The AI that lives <b>inside</b> your information system: harmonic holograms instead of RAG+LLM. No vectorization, no hallucination, no GPU, no data leaving your premises.</p>
+        <div class="metric metric--soul">5</div>
+        <p>RAG+LLM failures eliminated (structure, hallucination, latency, cost, sovereignty)</p>
+      </div>
+      <div class="card">
+        <div class="ico">📡</div>
+        <h3>HCV compression</h3>
+        <p>The same wave framework applied to data: up to 30× on photos and videos with no visible loss. Built for African telecom operators (95&nbsp;% traffic reduction, 3× more subscribers per bandwidth).</p>
+        <div class="metric metric--gold">30×</div>
+        <p>photos &amp; videos</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TELECOMS ═══ -->
+<section id="telecoms" style="background:linear-gradient(180deg,transparent,rgba(61,219,160,.05))">
+  <div class="wrap">
+    <span class="chip chip--life">Partnership</span>
+    <h2>The telecom operator proposal</h2>
+    <p class="sub">We delivered a complete commercial proposal to telecom operators: 30× compression of video traffic, no visible loss, integrated into the network.</p>
+    <div class="grid">
+      <div class="card">
+        <div class="metric">−95 %</div>
+        <p>of video traffic compressed before transit — the same networks serve 3× more subscribers.</p>
+      </div>
+      <div class="card">
+        <div class="metric metric--soul">$0</div>
+        <p>new hardware in the first phase — a software deployment.</p>
+      </div>
+      <div class="card">
+        <div class="metric metric--gold">100 %</div>
+        <p>measurable value: lower transit costs, maintained perceived quality, better video experience.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CONTACT ═══ -->
+<section id="contact">
+  <div class="wrap" style="text-align:center">
+    <span class="chip chip--gold">Contact</span>
+    <h2>Let's build what comes next together</h2>
+    <p class="sub" style="margin:0 auto">An emergence demonstration takes 30 seconds. A partnership starts with a conversation.</p>
+    <a class="btn btn--soul" href="mailto:contact@ka-ai.com">contact@ka-ai.com</a>
+    <a class="btn btn--ghost" href="/en/fondation">KA Foundation →</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <h4>KA Corporation</h4>
+        <p style="font-size:13px;color:var(--t3)">Wave-based artificial intelligence. Emergence, compression, measurement.</p>
+      </div>
+      <div>
+        <h4>Products</h4>
+        <a href="#products">KA Mobile</a>
+        <a href="#products">KA Enterprise</a>
+        <a href="#products">HCV compression</a>
+        <a href="/en/fondation">KA Foundation</a>
+      </div>
+      <div>
+        <h4>Resources</h4>
+        <a href="#proofs">Benchmarks</a>
+        <a href="#tech">Technology</a>
+        <a href="#telecoms">Telecom proposal</a>
+      </div>
+    </div>
+    <div>© 2026 KA Corporation — 0 GPU · 0 cloud · 100 % measured</div>
+  </div>
+</footer>
+
+<script>
+// Hero wave-alignment animation (visual emergence)
+(function(){
+  var cv=document.getElementById('waves'),ctx=cv.getContext('2d');
+  function size(){cv.width=cv.offsetWidth;cv.height=cv.offsetHeight;}
+  size();addEventListener('resize',size);
+  var t0=performance.now();
+  function frame(t){
+    var w=cv.width,h=cv.height;
+    ctx.clearRect(0,0,w,h);
+    var p=((t-t0)/2600)%1; // progression 0→1
+    var phase=(1-p)*Math.PI;
+    var mid=h*0.5;
+    // Wave A (purple)
+    ctx.strokeStyle='rgba(139,131,255,.85)';ctx.lineWidth=2.5;ctx.beginPath();
+    for(var x=0;x<=w;x+=5){var y=mid-Math.sin(x/w*Math.PI*4)*h*0.09;x?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+    ctx.stroke();
+    // Wave B (green) — slides into alignment
+    ctx.strokeStyle='rgba(61,219,160,.85)';ctx.lineWidth=2.5;ctx.beginPath();
+    for(x=0;x<=w;x+=5){y=mid-Math.sin(x/w*Math.PI*4+phase)*h*0.09;x?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+    ctx.stroke();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

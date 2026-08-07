@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>KA CARE - Diagnostic Harmonique</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#ffdad6",
+                        "error-container": "#93000a",
+                        "inverse-on-surface": "#343029",
+                        "on-primary-fixed-variant": "#5d4200",
+                        "on-secondary-container": "#b7b5b4",
+                        "outline-variant": "#4e4637",
+                        "on-primary-container": "#573d00",
+                        "secondary": "#c8c6c5",
+                        "surface-tint": "#eec068",
+                        "on-error": "#690005",
+                        "tertiary-container": "#8fb0e9",
+                        "on-surface-variant": "#d2c5b2",
+                        "background": "#0d0d0d",
+                        "on-primary-fixed": "#271900",
+                        "primary-fixed-dim": "#eec068",
+                        "on-tertiary-fixed": "#001b3d",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "surface-dim": "#16130d",
+                        "on-primary": "#412d00",
+                        "surface-variant": "#39342d",
+                        "tertiary-fixed-dim": "#a8c8ff",
+                        "surface-bright": "#3d3831",
+                        "tertiary": "#afcbff",
+                        "primary-fixed": "#ffdea6",
+                        "surface-container-highest": "#39342d",
+                        "on-tertiary-fixed-variant": "#234779",
+                        "surface": "#16130d",
+                        "inverse-primary": "#7b5804",
+                        "on-tertiary-container": "#1d4274",
+                        "secondary-fixed": "#e5e2e1",
+                        "outline": "#9b8f7e",
+                        "on-tertiary": "#023061",
+                        "primary-container": "#d4a853",
+                        "on-secondary-fixed-variant": "#474746",
+                        "surface-container-low": "#1f1b15",
+                        "primary": "#f2c36b",
+                        "surface-container": "#1a1a1a",
+                        "on-surface": "#eae1d7",
+                        "surface-container-lowest": "#110e08",
+                        "secondary-container": "#474746",
+                        "on-background": "#eae1d7",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "error": "#ffb4ab"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-sm": "12px",
+                        "gutter": "16px",
+                        "unit": "8px",
+                        "container-padding": "24px",
+                        "stack-md": "24px",
+                        "stack-lg": "48px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Inter"],
+                        "display-lg-mobile": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "display-lg-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "letterSpacing": "0", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "letterSpacing": "0", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #0d0d0d;
+            font-family: 'Inter', sans-serif;
+            color: #eae1d7;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .resonance-card {
+            background: #1a1a1a;
+            border: 1px solid rgba(212, 168, 83, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .resonance-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #d4a853, transparent);
+            opacity: 0.5;
+        }
+
+        .gold-glow {
+            box-shadow: 0 0 15px rgba(212, 168, 83, 0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #d4a853 0%, #7b5804 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.96);
+            filter: brightness(1.1);
+        }
+
+        .glass-panel {
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .pulse-urgent {
+            animation: pulse-red 2s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+
+        /* Custom Waveform Styling */
+        .waveform-container {
+            height: 40px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .wave-bar {
+            width: 3px;
+            background: #d4a853;
+            border-radius: 2px;
+            animation: wave-anim 1.2s ease-in-out infinite;
+        }
+
+        @keyframes wave-anim {
+            0%, 100% { height: 10%; }
+            50% { height: 80%; }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="pb-24">
+<!-- Top App Bar -->
+<header class="w-full sticky top-0 z-50 border-b border-outline-variant/20 bg-background/80 backdrop-blur-md shadow-[0_4px_20px_rgba(212,168,83,0.05)] flex items-center justify-between px-gutter py-unit">
+<div class="flex flex-col">
+<h1 class="font-display-lg-mobile text-display-lg-mobile tracking-tighter text-primary uppercase">KA CARE</h1>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-surface-container-high text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
+<span class="material-symbols-outlined text-[12px] mr-1">install_mobile</span> Installable
+                </span>
+<span class="text-[10px] text-outline">• 41 pathologies</span>
+<span class="text-[10px] text-primary-fixed-dim font-medium">• Hors-ligne</span>
+</div>
+</div>
+<div class="cursor-pointer active:scale-95 transition-transform">
+<div class="w-10 h-10 rounded-full border border-primary/30 flex items-center justify-center bg-surface-container overflow-hidden">
+<span class="material-symbols-outlined text-primary">account_circle</span>
+</div>
+</div>
+</header>
+<main class="max-w-md mx-auto px-4 mt-6 space-y-stack-md">
+<!-- Welcome & Atmosphere -->
+<section class="relative py-4 overflow-hidden rounded-xl bg-surface-container-lowest border border-outline-variant/10">
+<div class="absolute inset-0 opacity-10 pointer-events-none">
+
+</div>
+<div class="relative z-10 px-4 text-center">
+<p class="font-body-md text-on-surface-variant italic">"La santé est l'harmonie du corps et de l'esprit."</p>
+</div>
+</section>
+<!-- "Comment ça marche" Section -->
+<section class="resonance-card rounded-xl p-4 cursor-pointer" onclick="document.getElementById('info-content').classList.toggle('hidden')" x-data="{ open: false }">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-xl">info</span>
+</div>
+<h2 class="font-headline-md text-headline-md-mobile text-primary">Comment ça marche ?</h2>
+</div>
+<span class="material-symbols-outlined text-outline">expand_more</span>
+</div>
+<div class="hidden mt-4 space-y-3 font-body-md text-on-surface-variant border-t border-outline-variant/10 pt-4 animate-in fade-in slide-in-from-top-2" id="info-content">
+<p><strong class="text-primary">Signatures Harmoniques :</strong> Chaque pathologie possède une empreinte vibratoire unique.</p>
+<p><strong class="text-primary">Hologrammes de Données :</strong> Nous projetons vos symptômes dans un espace vectoriel multidimensionnel.</p>
+<p><strong class="text-primary">Résonance de Confiance :</strong> Le score indique la force de l'alignement entre vos symptômes et la signature médicale.</p>
+</div>
+</section>
+<!-- Symptom Input Section -->
+<section class="resonance-card rounded-xl p-5 space-y-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">chat_bubble</span>
+<h2 class="font-headline-md text-headline-md-mobile">Symptômes</h2>
+</div>
+<div class="relative">
+<textarea class="w-full min-h-[120px] bg-surface-container-lowest border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 text-on-surface p-3 rounded-t-lg transition-colors duration-300 resize-none font-body-md" id="symptomInput" placeholder="Décrivez ce que vous ressentez... (ex: J'ai de la fièvre et une toux sèche depuis 2 jours)"></textarea>
+<div class="absolute bottom-2 right-2 text-outline-variant text-[10px] uppercase font-bold">Resonance Engine v4.0</div>
+</div>
+<div class="flex flex-wrap gap-2">
+<button class="px-3 py-1.5 rounded-full border border-outline-variant hover:border-primary text-label-sm text-on-surface-variant hover:text-primary transition-all active:scale-95" onclick="addSymptom('Fièvre')">Fièvre</button>
+<button class="px-3 py-1.5 rounded-full border border-outline-variant hover:border-primary text-label-sm text-on-surface-variant hover:text-primary transition-all active:scale-95" onclick="addSymptom('Toux sèche')">Toux sèche</button>
+<button class="px-3 py-1.5 rounded-full border border-outline-variant hover:border-primary text-label-sm text-on-surface-variant hover:text-primary transition-all active:scale-95" onclick="addSymptom('Fatigue')">Fatigue</button>
+<button class="px-3 py-1.5 rounded-full border border-outline-variant hover:border-primary text-label-sm text-on-surface-variant hover:text-primary transition-all active:scale-95" onclick="addSymptom('Mal de tête')">Mal de tête</button>
+</div>
+<button class="btn-primary w-full py-4 rounded-xl flex items-center justify-center gap-2 text-background font-bold uppercase tracking-widest shadow-lg shadow-primary/20" onclick="performDiagnosis()">
+<span class="material-symbols-outlined">search</span>
+                Lancer le diagnostic
+            </button>
+</section>
+<!-- Loading State (Hidden by default) -->
+<div class="hidden flex-col items-center justify-center py-10 space-y-4" id="loadingIndicator">
+<div class="waveform-container">
+<div class="wave-bar" style="animation-delay: 0.1s"></div>
+<div class="wave-bar" style="animation-delay: 0.2s"></div>
+<div class="wave-bar" style="animation-delay: 0.3s"></div>
+<div class="wave-bar" style="animation-delay: 0.4s"></div>
+<div class="wave-bar" style="animation-delay: 0.5s"></div>
+</div>
+<p class="text-primary font-label-sm animate-pulse">ANALYSE DES HARMONIQUES EN COURS...</p>
+</div>
+<!-- Results Display Area -->
+<section class="hidden space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10" id="resultsArea">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-md text-headline-md-mobile text-on-surface">Résultats Probables</h3>
+<span class="text-[10px] text-outline uppercase tracking-widest">Confiance Harmonique</span>
+</div>
+<div class="space-y-4" id="resultsContainer">
+<!-- Result Cards will be injected here -->
+</div>
+</section>
+</main>
+<!-- Explanation Modal -->
+<div class="fixed inset-0 z-[60] hidden" id="explanationModal">
+<div class="absolute inset-0 bg-background/90 backdrop-blur-sm" onclick="closeModal()"></div>
+<div class="absolute bottom-0 left-0 right-0 max-h-[751px] bg-surface-container rounded-t-3xl border-t border-primary/20 p-6 overflow-y-auto animate-in slide-in-from-bottom duration-300">
+<div class="w-12 h-1.5 bg-outline-variant/30 rounded-full mx-auto mb-6"></div>
+<div class="space-y-6" id="modalContent">
+<!-- Dynamic Content -->
+</div>
+<button class="mt-8 w-full py-4 rounded-xl border border-outline-variant text-on-surface-variant font-bold uppercase tracking-wider" onclick="closeModal()">
+                Fermer
+            </button>
+</div>
+</div>
+<!-- Navigation Shell -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-3 pb-safe bg-surface-container/95 backdrop-blur-xl border-t border-outline-variant/30 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] z-50 rounded-t-full">
+<div class="flex flex-col items-center justify-center text-primary bg-primary-container/10 rounded-xl px-4 py-1.5 cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">waves</span>
+<span class="font-label-sm text-label-sm mt-0.5">Resonance</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant/70 hover:text-primary transition-all cursor-pointer">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-sm text-label-sm mt-0.5">History</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant/70 hover:text-primary transition-all cursor-pointer">
+<span class="material-symbols-outlined">ecg_heart</span>
+<span class="font-label-sm text-label-sm mt-0.5">Vitals</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant/70 hover:text-primary transition-all cursor-pointer">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-sm text-label-sm mt-0.5">Profile</span>
+</div>
+</nav>
+<!-- Logic Script -->
+<script>
+        // --- DATA & LOGIC FROM SPECIFICATION ---
+        const pathologyDB = [
+            { id: 1, name: "Grippe (Influenza)", symptoms: ["fièvre", "courbatures", "frissons", "toux sèche", "fatigue intense", "maux de gorge"], advice: "Reposez-vous, hydratez-vous. Surveillez votre température. Consultez si les symptômes persistent au-delà de 5 jours.", urgency: "low" },
+            { id: 2, name: "Infarctus du Myocarde", symptoms: ["douleur thoracique", "douleur bras gauche", "essoufflement", "sueurs froides", "nausées", "oppression"], advice: "Appelez immédiatement le SAMU (15) ou le 112. Ne faites aucun effort.", urgency: "high" },
+            { id: 3, name: "Gastro-entérite", symptoms: ["nausées", "vomissements", "diarrhée", "douleurs abdominales", "crampes", "fièvre légère"], advice: "Hydratation fréquente par petites gorgées. Alimentation légère (riz, carottes).", urgency: "medium" },
+            { id: 4, name: "Accident Vasculaire Cérébral (AVC)", symptoms: ["paralysie visage", "faiblesse bras", "difficulté à parler", "confusion", "troubles vision"], advice: "Appelez immédiatement le 15. Notez l'heure de début des symptômes.", urgency: "high" },
+            { id: 5, name: "Rhinopharyngite", symptoms: ["nez bouché", "éternuements", "maux de gorge", "toux grasse", "fièvre légère"], advice: "Lavage de nez régulier, repos. Guérison spontanée habituelle en 7-10 jours.", urgency: "low" }
+        ];
+
+        // Global Symptoms Registry (Unique words for vectorization)
+        const allSymptoms = [...new Set(pathologyDB.flatMap(p => p.symptoms))];
+
+        function encodeText(text) {
+            const input = text.toLowerCase();
+            return allSymptoms.map(s => input.includes(s) ? 1 : 0);
+        }
+
+        function cosineSim(v1, v2) {
+            let dot = 0, m1 = 0, m2 = 0;
+            for (let i = 0; i < v1.length; i++) {
+                dot += v1[i] * v2[i];
+                m1 += v1[i] * v1[i];
+                m2 += v2[i] * v2[i];
+            }
+            if (m1 === 0 || m2 === 0) return 0;
+            return dot / (Math.sqrt(m1) * Math.sqrt(m2));
+        }
+
+        // UI Interactions
+        function addSymptom(text) {
+            const input = document.getElementById('symptomInput');
+            if (input.value.length > 0 && !input.value.endsWith(' ')) input.value += ', ';
+            input.value += text;
+        }
+
+        async function performDiagnosis() {
+            const input = document.getElementById('symptomInput').value.trim();
+            if (!input) return;
+
+            const loader = document.getElementById('loadingIndicator');
+            const resultsArea = document.getElementById('resultsArea');
+            const resultsContainer = document.getElementById('resultsContainer');
+
+            resultsArea.classList.add('hidden');
+            loader.classList.remove('hidden');
+
+            // Simulate "Harmonic Projection" latency
+            await new Promise(r => setTimeout(r, 1500));
+
+            const inputVec = encodeText(input);
+            const matches = pathologyDB.map(p => {
+                const pathVec = allSymptoms.map(s => p.symptoms.includes(s) ? 1 : 0);
+                const score = cosineSim(inputVec, pathVec);
+                return { ...p, score };
+            })
+            .filter(m => m.score > 0)
+            .sort((a, b) => b.score - a.score);
+
+            loader.classList.add('hidden');
+            resultsArea.classList.remove('hidden');
+            resultsContainer.innerHTML = '';
+
+            if (matches.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="resonance-card rounded-xl p-6 text-center">
+                        <span class="material-symbols-outlined text-4xl text-outline-variant mb-2">signal_cellular_noda</span>
+                        <p class="font-body-md text-on-surface-variant">Aucune signature harmonique détectée. Essayez d'être plus précis dans votre description.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            matches.forEach(m => {
+                const percentage = Math.round(m.score * 100);
+                let colorClass = 'bg-primary';
+                let pulseClass = '';
+
+                if (m.urgency === 'high') {
+                    colorClass = 'bg-error';
+                    pulseClass = 'pulse-urgent';
+                } else if (percentage < 40) {
+                    colorClass = 'bg-tertiary';
+                }
+
+                const card = `
+                    <div class="resonance-card rounded-xl p-4 space-y-3 ${m.urgency === 'high' ? 'border-error/30' : ''} transition-all active:scale-[0.98]" onclick="showDetails(${m.id}, ${percentage})">
+                        <div class="flex items-start justify-between">
+                            <div class="space-y-1">
+                                <h4 class="font-headline-md text-headline-md-mobile ${m.urgency === 'high' ? 'text-error' : 'text-primary'}">${m.name}</h4>
+                                ${m.urgency === 'high' ? '<span class="px-2 py-0.5 bg-error/10 text-error text-[10px] font-bold rounded uppercase tracking-tighter">URGENCE VITALE</span>' : ''}
+                            </div>
+                            <div class="text-right">
+                                <span class="text-2xl font-bold ${m.urgency === 'high' ? 'text-error' : 'text-primary'}">${percentage}%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="w-full h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+                            <div class="h-full ${colorClass} transition-all duration-1000 ease-out" style="width: ${percentage}%"></div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-outline-variant/5">
+                            <button class="text-primary font-label-sm flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">help</span> Pourquoi ?
+                            </button>
+                            <span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+                        </div>
+                    </div>
+                `;
+                resultsContainer.insertAdjacentHTML('beforeend', card);
+            });
+        }
+
+        function showDetails(id, percentage) {
+            const pathology = pathologyDB.find(p => p.id === id);
+            const modal = document.getElementById('explanationModal');
+            const content = document.getElementById('modalContent');
+            
+            const input = document.getElementById('symptomInput').value.toLowerCase();
+            const foundSymptoms = pathology.symptoms.filter(s => input.includes(s));
+            const missingSymptoms = pathology.symptoms.filter(s => !input.includes(s));
+
+            content.innerHTML = `
+                <header class="space-y-2">
+                    <h3 class="text-3xl font-extrabold text-primary">${pathology.name}</h3>
+                    <div class="flex items-center gap-2">
+                         <span class="material-symbols-outlined text-primary-fixed-dim">verified</span>
+                         <span class="text-on-surface-variant text-sm">Résonance de ${percentage}% confirmée</span>
+                    </div>
+                </header>
+
+                <div class="space-y-4">
+                    <div>
+                        <h5 class="text-label-sm text-outline uppercase mb-2">Correspondances Clés</h5>
+                        <div class="flex flex-wrap gap-2">
+                            ${foundSymptoms.map(s => `<span class="px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full text-xs font-medium">${s}</span>`).join('')}
+                            ${missingSymptoms.map(s => `<span class="px-3 py-1 bg-surface-container-high text-on-surface-variant/40 border border-outline-variant/10 rounded-full text-xs">${s}</span>`).join('')}
+                        </div>
+                    </div>
+
+                    <div class="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/10">
+                        <h5 class="text-label-sm text-primary uppercase mb-3 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">clinical_notes</span> Conseil Clinique
+                        </h5>
+                        <p class="font-body-md text-on-surface leading-relaxed">${pathology.advice}</p>
+                    </div>
+
+                    ${pathology.urgency === 'high' ? `
+                        <div class="bg-error/10 p-4 rounded-2xl border border-error/20 flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-full bg-error flex items-center justify-center pulse-urgent shrink-0">
+                                <span class="material-symbols-outlined text-background">call</span>
+                            </div>
+                            <div>
+                                <p class="text-error font-bold">Appel Prioritaire</p>
+                                <p class="text-on-surface-variant text-xs">Cette condition nécessite une assistance immédiate.</p>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('explanationModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+    </script>
+</body></html>

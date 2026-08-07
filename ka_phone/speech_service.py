@@ -21,26 +21,28 @@ from typing import Optional, Tuple, List, Generator
 from collections import OrderedDict
 import numpy as np
 
+# faster-whisper : détection SANS import — `import faster_whisper` tire
+# ctranslate2 → torch (~7 s). L'import réel est différé au premier
+# appel de _load_whisper() (transcription uniquement).
 try:
-    from faster_whisper import WhisperModel
-    HAS_WHISPER = True
-except ImportError:
+    import importlib.util
+    HAS_WHISPER = importlib.util.find_spec("faster_whisper") is not None
+except Exception:
     HAS_WHISPER = False
 
+# edge_tts : détection sans import (aiohttp ≈ 1-2 s) — import différé à la synthèse
 try:
-    import edge_tts
-    HAS_EDGE_TTS = True
-    # Voix françaises neuronales (gratuites via API Edge)
-    EDGE_FR_VOICES = [
-        "fr-FR-HenriNeural",     # Homme, chaleureux
-        "fr-FR-DeniseNeural",    # Femme, claire
-        "fr-FR-EloiseNeural",    # Femme, jeune
-        "fr-FR-VivienneNeural",  # Femme, neutre
-        "fr-FR-JeromeNeural",    # Homme, professionnel
-    ]
-except ImportError:
+    HAS_EDGE_TTS = importlib.util.find_spec("edge_tts") is not None
+except Exception:
     HAS_EDGE_TTS = False
-    EDGE_FR_VOICES = []
+# Voix françaises neuronales (gratuites via API Edge)
+EDGE_FR_VOICES = [
+    "fr-FR-HenriNeural",     # Homme, chaleureux
+    "fr-FR-DeniseNeural",    # Femme, claire
+    "fr-FR-EloiseNeural",    # Femme, jeune
+    "fr-FR-VivienneNeural",  # Femme, neutre
+    "fr-FR-JeromeNeural",    # Homme, professionnel
+] if HAS_EDGE_TTS else []
 
 # VAD + Streaming TTS (intégration)
 try:
@@ -79,6 +81,7 @@ class SpeechService:
         if self.whisper_loaded or not HAS_WHISPER:
             return self.whisper_model
         try:
+            from faster_whisper import WhisperModel  # import paresseux (lourd)
             self.whisper_model = WhisperModel("tiny", device="cpu", compute_type="int8",
                                               download_root=os.path.join(DATA_DIR, "whisper"))
             self.whisper_loaded = True
@@ -99,8 +102,10 @@ class SpeechService:
         try:
             segments, info = model.transcribe(audio_path, language=language, beam_size=5,
                                                vad_filter=True, vad_parameters=dict(min_silence_duration_ms=500))
+            # Le générateur ne peut être consommé qu'une seule fois
+            segments = list(segments)
             full_text = " ".join(seg.text.strip() for seg in segments if seg.text.strip())
-            confidence = sum(seg.avg_logprob for seg in segments) / max(len(list(segments)), 1)
+            confidence = sum(seg.avg_logprob for seg in segments) / max(len(segments), 1)
             # Convert logprob to 0-1 confidence
             confidence = max(0.0, min(1.0, (confidence + 2.0) / 4.0))
             return full_text, confidence
@@ -110,9 +115,11 @@ class SpeechService:
 
     def transcribe_bytes(self, wav_bytes: bytes, language: str = "fr") -> Optional[Tuple[str, float]]:
         """Transcrit des bytes WAV en texte."""
-        tmp_path = os.path.join(DATA_DIR, "temp_recording.wav")
+        import tempfile
+        # Fichier temporaire unique (évite les collisions entre requêtes concurrentes)
+        fd, tmp_path = tempfile.mkstemp(prefix="stt_", suffix=".wav", dir=DATA_DIR)
         try:
-            with open(tmp_path, "wb") as f:
+            with os.fdopen(fd, "wb") as f:
                 f.write(wav_bytes)
             return self.transcribe(tmp_path, language)
         finally:
@@ -187,21 +194,14 @@ class SpeechService:
         model_path = self._piper_model_path()
 
         try:
-            # Piper: echo "text" | piper -m model.onnx --output-raw | ...
-            # Pour Windows, on utilise un fichier temporaire d'entree
-            tmp_input = os.path.join(DATA_DIR, "temp_tts_input.txt")
-            with open(tmp_input, "w", encoding="utf-8") as f:
-                f.write(text)
-
-            # Commande Piper : sortie WAV directement
-            cmd = [piper_exe, "-m", model_path, "-f", tmp_input, "--output_file", output_path]
+            # Piper lit le texte sur STDIN ; -f désigne le fichier WAV de sortie.
+            # length_scale > 1 = parole PLUS LENTE (inverse de notre convention speed).
+            cmd = [piper_exe, "-m", model_path, "-f", output_path]
             if speed != 1.0:
-                cmd.extend(["--length_scale", str(speed)])
+                cmd.extend(["--length_scale", str(round(1.0 / max(speed, 0.25), 3))])
 
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-
-            if os.path.exists(tmp_input):
-                os.remove(tmp_input)
+            subprocess.run(cmd, input=text, capture_output=True, text=True,
+                           encoding="utf-8", timeout=60)
 
             return os.path.exists(output_path) and os.path.getsize(output_path) > 100
         except Exception as e:
@@ -210,7 +210,9 @@ class SpeechService:
 
     def synthesize_bytes(self, text: str, speed: float = 1.0) -> Optional[bytes]:
         """Synthetise et retourne les bytes WAV."""
-        tmp_output = os.path.join(DATA_DIR, "temp_tts_output.wav")
+        import tempfile
+        fd, tmp_output = tempfile.mkstemp(prefix="tts_", suffix=".wav", dir=DATA_DIR)
+        os.close(fd)
         try:
             if self.synthesize(text, tmp_output, speed):
                 with open(tmp_output, "rb") as f:
@@ -242,6 +244,7 @@ class SpeechService:
         rate_str = f"{int((speed - 1.0) * 100):+d}%"
 
         async def _run():
+            import edge_tts  # import paresseux (aiohttp ≈ 1-2 s au 1er appel)
             communicate = edge_tts.Communicate(text, voice, rate=rate_str)
             await communicate.save(output_path)
 
@@ -264,7 +267,9 @@ class SpeechService:
 
     def synthesize_bytes_edge(self, text: str, voice: str = None, speed: float = 1.0) -> Optional[bytes]:
         """Synthetise via Edge-TTS et retourne les bytes MP3."""
-        tmp_output = os.path.join(DATA_DIR, "temp_edge_tts_output.mp3")
+        import tempfile
+        fd, tmp_output = tempfile.mkstemp(prefix="tts_edge_", suffix=".mp3", dir=DATA_DIR)
+        os.close(fd)
         try:
             if self.synthesize_edge(text, tmp_output, voice, speed):
                 with open(tmp_output, "rb") as f:
@@ -278,7 +283,9 @@ class SpeechService:
     # Quand le serveur n'a pas faster-whisper, le front utilise l'API navigateur
 
     def is_stt_available(self) -> bool:
-        return HAS_WHISPER and self._load_whisper() is not None
+        # Ne PAS charger le modèle ici : le chargement (~75 Mo, plusieurs secondes)
+        # est différé au premier appel de transcribe().
+        return HAS_WHISPER
 
     def is_tts_available(self) -> bool:
         """Edge-TTS prioritaire, sinon Piper."""
@@ -299,38 +306,49 @@ class SpeechService:
             "tts_engine": tts_engine,
         }
 
+    # Mapping partagé des noms courts → voix Edge-TTS complètes
+    EDGE_SHORT_MAP = {
+        "henri": "fr-FR-HenriNeural",
+        "denise": "fr-FR-DeniseNeural",
+        "eloise": "fr-FR-EloiseNeural",
+        "vivienne": "fr-FR-VivienneNeural",
+        "jerome": "fr-FR-JeromeNeural",
+    }
+
+    def resolve_edge_voice(self, voice: Optional[str], default: str = "fr-FR-HenriNeural") -> str:
+        """Accepte les noms courts ('henri', 'denise') ou complets ('fr-FR-HenriNeural')."""
+        if voice is None:
+            return default
+        return self.EDGE_SHORT_MAP.get(voice.lower(), voice)
+
+    def synthesize_best_ex(self, text: str, voice: str = None, speed: float = 1.0) -> Optional[Tuple[bytes, str]]:
+        """
+        Synthetise avec le meilleur moteur disponible : Edge-TTS → Piper → None.
+        Retourne (audio_bytes, format) où format vaut 'mp3' (Edge-TTS) ou 'wav' (Piper),
+        ou None si aucun moteur n'a réussi.
+        """
+        # 1. Edge-TTS (qualité quasi-humaine, gratuit)
+        if HAS_EDGE_TTS:
+            edge_voice = self.resolve_edge_voice(voice)
+            result = self.synthesize_bytes_edge(text, edge_voice, speed)
+            if result:
+                return result, "mp3"
+
+        # 2. Piper (local, open-source)
+        result = self.synthesize_bytes(text, speed)
+        if result:
+            return result, "wav"
+
+        return None
+
     def synthesize_best(self, text: str, output_path: str = None, voice: str = None, speed: float = 1.0) -> Optional[bytes]:
         """
         Synthetise avec le meilleur moteur disponible : Edge-TTS → Piper → None.
         Retourne les bytes audio (MP3 pour Edge-TTS, WAV pour Piper).
         Accepte les noms courts ('henri', 'denise') ou complets ('fr-FR-HenriNeural').
         """
-        # 1. Edge-TTS (qualité quasi-humaine, gratuit)
-        if HAS_EDGE_TTS:
-            # Mapper les noms courts vers les noms Edge-TTS complets
-            edge_voice = voice
-            short_map = {
-                "henri": "fr-FR-HenriNeural",
-                "denise": "fr-FR-DeniseNeural",
-                "eloise": "fr-FR-EloiseNeural",
-                "vivienne": "fr-FR-VivienneNeural",
-                "jerome": "fr-FR-JeromeNeural",
-            }
-            if voice and voice.lower() in short_map:
-                edge_voice = short_map[voice.lower()]
-            elif voice is None:
-                edge_voice = "fr-FR-HenriNeural"  # Voix par défaut
-
-            result = self.synthesize_bytes_edge(text, edge_voice, speed)
-            if result:
-                return result
-
-        # 2. Piper (local, open-source)
-        result = self.synthesize_bytes(text, speed)
-        if result:
-            return result
-
-        return None
+        res = self.synthesize_best_ex(text, voice=voice, speed=speed)
+        return res[0] if res else None
 
     # ═══ VAD (Voice Activity Detection) ═══
 

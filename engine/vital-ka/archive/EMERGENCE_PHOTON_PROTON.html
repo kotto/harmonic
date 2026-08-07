@@ -1,0 +1,79 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>💡 Photon → Proton — Émergence de la Matière</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#050508;color:#fafafa;font-family:Inter,system-ui,sans-serif;overflow:hidden;height:100vh}canvas{display:block}#info{position:absolute;top:20px;left:50%;transform:translateX(-50%);text-align:center;z-index:10;pointer-events:none}#title{font-size:22px;font-weight:700}#subtitle{font-size:13px;color:#a1a1aa;margin-top:4px}#ui{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:10}button{padding:8px 20px;border-radius:6px;border:1px solid #333;background:#111;color:#ccc;font-size:13px;cursor:pointer}button:hover{border-color:#f59e0b;background:#1a1a1a;color:#fff}button.active{background:#f59e0b;border-color:#f59e0b;color:#000}</style></head><body><div id="info"><div id="title">💡 Photon → Proton — Émergence de la Matière</div><div id="subtitle">E = mc² ondulatoire : quand l'onde-lumière devient onde-masse</div></div><canvas id="c"></canvas><div id="ui"><button id="btn-play" class="active">▶</button><button id="btn-pause">⏸</button><button id="btn-reset">↺</button></div><script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');let W,H,cx,cy,t=0,playing=!0;
+function resize(){W=c.width=innerWidth;H=c.height=innerHeight;cx=W/2;cy=H/2}resize();addEventListener('resize',resize);
+function draw(){
+  ctx.fillStyle='#050508';ctx.fillRect(0,0,W,H);
+  const T=t,totalCycle=18,phase=(T%totalCycle)/totalCycle;
+  // ═══ ACTE 1 : Le photon — pure énergie lumineuse (0-4s) ═══
+  if(phase<.22){
+    const p=phase/.22;
+    for(let i=0;i<5;i++){const lx=cx-300+i*150,ly=cy+Math.sin(T*3+i)*20;const alpha=p*(1-Math.abs(i-2)/3)*.6;
+      ctx.fillStyle=`rgba(245,200,80,${alpha})`;ctx.beginPath();ctx.arc(lx,ly,6,0,Math.PI*2);ctx.fill()}
+    // Wave packet
+    for(let x=0;x<W;x+=3){const wave=Math.sin(x*.04-T*3)*.5+.5;const env=Math.exp(-Math.pow((x-cx)/150,2));
+      const alpha=p*env*wave*.5;if(alpha<.01)continue;
+      ctx.fillStyle=`rgba(245,200,80,${alpha})`;ctx.fillRect(x,cy+Math.sin(x*.04-T*2)*30,3,3)}
+    ctx.fillStyle=`rgba(255,255,255,${p*.8})`;ctx.font='bold 13px Inter,sans-serif';ctx.textAlign='center';ctx.fillText('γ PHOTON — onde lumineuse pure (E = hν)',cx,cy+60);
+    document.getElementById('subtitle').textContent='① Le photon : énergie pure. Pas de masse. Juste l\'onde.';
+  }
+  // ═══ ACTE 2 : L'onde se concentre (4-8s) ═══
+  else if(phase<.44){
+    const p=(phase-.22)/.22;
+    const concR=120*(1-p*.7);const alpha=.3+p*.5;
+    for(let a=0;a<Math.PI*2;a+=.1){const r=concR+Math.sin(a*6+T*2)*10*p;const x=cx+r*Math.cos(a),y=cy+r*Math.sin(a);
+      ctx.fillStyle=`rgba(245,200,80,${alpha*.3})`;ctx.beginPath();ctx.arc(x,y,2,0,Math.PI*2);ctx.fill()}
+    // Energy concentrating
+    const grad=ctx.createRadialGradient(cx,cy,0,cx,cy,concR);grad.addColorStop(0,`rgba(255,255,255,${p*.7})`);grad.addColorStop(.5,`rgba(245,200,80,${p*.4})`);grad.addColorStop(1,'transparent');
+    ctx.fillStyle=grad;ctx.beginPath();ctx.arc(cx,cy,concR,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=`rgba(255,255,255,${p*.9})`;ctx.font='bold 13px Inter,sans-serif';ctx.textAlign='center';
+    ctx.fillText('L\'onde se CONCENTRE — seuil de création de matière',cx,cy+concR+40);
+    document.getElementById('subtitle').textContent='② E = mc² : l\'énergie lumineuse atteint le seuil de masse.';
+  }
+  // ═══ ACTE 3 : Création de paires — quark + antiquark (8-12s) ═══
+  else if(phase<.66){
+    const p=(phase-.44)/.22;
+    const sep=p*120;
+    const qx=cx-sep/2,qy=cy,aqx=cx+sep/2,aqy=cy;
+    // Flash de création
+    if(p<.15){const fa=(1-p/.15)*.8;const fg=ctx.createRadialGradient(cx,cy,0,cx,cy,60);fg.addColorStop(0,`rgba(255,255,255,${fa})`);fg.addColorStop(1,'transparent');ctx.fillStyle=fg;ctx.beginPath();ctx.arc(cx,cy,60,0,Math.PI*2);ctx.fill()}
+    // Quark (rouge)
+    const qg=ctx.createRadialGradient(qx,qy,3,qx,qy,18);qg.addColorStop(0,'rgba(255,255,255,.9)');qg.addColorStop(.3,'rgba(239,68,68,.6)');qg.addColorStop(1,'transparent');
+    ctx.fillStyle=qg;ctx.beginPath();ctx.arc(qx,qy,18,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(qx,qy,3,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ef4444';ctx.font='bold 10px Inter,sans-serif';ctx.textAlign='center';ctx.fillText('quark (q)',qx,qy-22);
+    // Antiquark (cyan)
+    const aqg=ctx.createRadialGradient(aqx,aqy,3,aqx,aqy,18);aqg.addColorStop(0,'rgba(255,255,255,.9)');aqg.addColorStop(.3,'rgba(34,211,238,.6)');aqg.addColorStop(1,'transparent');
+    ctx.fillStyle=aqg;ctx.beginPath();ctx.arc(aqx,aqy,18,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(aqx,aqy,3,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#22d3ee';ctx.fillText('antiquark (q̄)',aqx,aqy-22);
+    // Lien d'interférence
+    ctx.strokeStyle=`rgba(245,200,80,${p*.5})`;ctx.setLineDash([3,4]);ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(qx,qy);ctx.lineTo(aqx,aqy);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=`rgba(255,255,255,${p*.8})`;ctx.font='bold 12px Inter,sans-serif';ctx.fillText('PAIRE quark-antiquark — créée par l\'onde',cx,cy+50);
+    document.getElementById('subtitle').textContent='③ L\'onde se scinde : quark + antiquark (E → mc²).';
+  }
+  // ═══ ACTE 4 : 3 quarks → PROTON (12-18s) ═══
+  else {
+    const p=(phase-.66)/.34;
+    const r=80+20*Math.sin(T*.2);const qpos=[{x:cx,y:cy-r},{x:cx-r*.866,y:cy+r*.5},{x:cx+r*.866,y:cy+r*.5}];
+    const qNames=['u (up)','d (down)','u (up)'];const qColors=['#ef4444','#3b82f6','#ef4444'];
+    // Triangle
+    ctx.strokeStyle=`rgba(255,255,255,${p*.3})`;ctx.lineWidth=2;ctx.setLineDash([3,4]);
+    ctx.beginPath();ctx.moveTo(qpos[0].x,qpos[0].y);ctx.lineTo(qpos[1].x,qpos[1].y);ctx.lineTo(qpos[2].x,qpos[2].y);ctx.closePath();ctx.stroke();ctx.setLineDash([]);
+    // Quarks
+    for(let i=0;i<3;i++){
+      const qg=ctx.createRadialGradient(qpos[i].x,qpos[i].y,3,qpos[i].x,qpos[i].y,18);qg.addColorStop(0,'rgba(255,255,255,.9)');qg.addColorStop(.3,qColors[i]+'.6');qg.addColorStop(1,'transparent');
+      ctx.fillStyle=qg;ctx.beginPath();ctx.arc(qpos[i].x,qpos[i].y,18,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(qpos[i].x,qpos[i].y,3,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=qColors[i];ctx.font='bold 9px Inter,sans-serif';ctx.textAlign='center';ctx.fillText(qNames[i],qpos[i].x,qpos[i].y-22)
+    }
+    // Proton label
+    const glow=ctx.createRadialGradient(cx,cy,30,cx,cy,55);glow.addColorStop(0,'rgba(245,200,80,.2)');glow.addColorStop(1,'transparent');
+    ctx.fillStyle=glow;ctx.beginPath();ctx.arc(cx,cy,55,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=`rgba(255,255,255,${p*.9})`;ctx.font='bold 14px Inter,sans-serif';ctx.fillText('PROTON (uud) — stable',cx,cy+r+45);
+    ctx.fillText('3 quarks confinés par interférence = matière',cx,cy+r+65);
+    if(p>.7){ctx.fillStyle='rgba(245,200,80,.7)';ctx.fillText('φ a stabilisé le triangle',cx,cy+r+85)}
+    document.getElementById('subtitle').textContent=p<.5?'④ Trois quarks s\'assemblent — le TRIANGLE émerge.':'✅ PROTON : onde stationnaire à 3 quarks. Stable grâce à φ.';
+  }
+}
+function loop(){if(playing)t+=0.05;draw();requestAnimationFrame(loop)}
+document.getElementById('btn-play').onclick=()=>{playing=!0;document.getElementById('btn-play').classList.add('active');document.getElementById('btn-pause').classList.remove('active')};
+document.getElementById('btn-pause').onclick=()=>{playing=!1;document.getElementById('btn-pause').classList.add('active');document.getElementById('btn-play').classList.remove('active')};
+document.getElementById('btn-reset').onclick=()=>{t=0;playing=!0;document.getElementById('btn-play').classList.add('active');document.getElementById('btn-pause').classList.remove('active')};
+loop();</script></body></html>

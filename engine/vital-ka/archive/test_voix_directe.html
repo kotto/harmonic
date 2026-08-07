@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>KA Voice — Test Direct</title>
+<style>
+  body { background:#161411; color:#c4b698; font-family:sans-serif; padding:30px; text-align:center; }
+  button { padding:14px 28px; font-size:1rem; border-radius:24px; border:1px solid #c4b698; background:#1e1b17; color:#c4b698; cursor:pointer; margin:6px; }
+  #log { margin-top:16px; font-size:0.75rem; color:#8b7b60; text-align:left; max-width:500px; margin-left:auto; margin-right:auto; }
+  audio { margin-top:16px; width:300px; }
+</style>
+</head>
+<body>
+
+<h2>🔊 KA Voice — Test Direct</h2>
+
+<button onclick="fetchAndPlay()">▶️ Appeler API + Jouer</button>
+<button onclick="downloadWAV()">📥 Télécharger WAV</button>
+<button onclick="testTone()">🔔 Bip test</button>
+
+<audio id="player" controls style="display:none"></audio>
+<div id="log"></div>
+
+<script>
+let lastBlob = null;
+
+function log(msg) { document.getElementById('log').innerHTML += '<br>'+msg; }
+
+function testTone() {
+  const ctx = new (window.AudioContext||window.webkitAudioContext)();
+  const osc = ctx.createOscillator(); osc.type='sine'; osc.frequency.value=440;
+  const gain = ctx.createGain(); gain.gain.value=0.3;
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(); setTimeout(()=>osc.stop(),600);
+  log('🔔 Bip 440Hz — si tu entends ca, le navigateur fonctionne');
+}
+
+async function fetchAndPlay() {
+  log('⏳ Appel API...');
+  try {
+    const resp = await fetch('http://localhost:8765/api/voice/speak', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({text:'bonjour le monde', emotion:'warm'})
+    });
+    log('Statut: '+resp.status+' | Taille: '+resp.headers.get('Content-Length')+' bytes');
+    
+    const buffer = await resp.arrayBuffer();
+    log('Reçu: '+buffer.byteLength+' bytes');
+    
+    // Vérifier que c'est bien du WAV
+    const header = new Uint8Array(buffer.slice(0,4));
+    const headerStr = String.fromCharCode(...header);
+    log('Header: '+headerStr+' (doit être RIFF)');
+    
+    // Blob + Audio element
+    const blob = new Blob([buffer], {type:'audio/wav'});
+    lastBlob = blob;
+    const url = URL.createObjectURL(blob);
+    const player = document.getElementById('player');
+    player.style.display = 'block';
+    player.src = url;
+    player.onplay = ()=>log('▶️ Lecture démarrée');
+    player.onended = ()=>log('✅ Lecture terminée');
+    player.onerror = (e)=>log('❌ Erreur lecture: code '+player.error.code);
+    
+    // Jouer
+    await player.play();
+  } catch(e) {
+    log('❌ '+e.message);
+  }
+}
+
+function downloadWAV() {
+  if (!lastBlob) { log('Appelle l\'API d\'abord'); return; }
+  const a = document.createElement('a'); a.href=URL.createObjectURL(lastBlob);
+  a.download='ka_voice.wav'; a.click();
+  log('📥 Téléchargé — ouvre le fichier WAV dans VLC/Media Player');
+}
+</script>
+</body>
+</html>
