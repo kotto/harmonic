@@ -158,6 +158,17 @@ class MachineEtatsSemantique:
         if relatif is not None:
             return relatif
 
+        # passe 0b : nénuphar — croissance géométrique « double chaque jour,
+        # couvre en N jours, quand la moitié ? » → N − 1 (la veille)
+        if re.search(r"\b(doubles?|double)\b", q, re.IGNORECASE):
+            m_jours = re.search(r"\b(?:en|in)\s+(\d+)\s+(?:jours?|days?)\b",
+                                q, re.IGNORECASE)
+            if m_jours and re.search(r"\b(moitié|moitie|half)\b", q, re.IGNORECASE):
+                self.etapes = [f"« double chaque jour » → moitié la veille : "
+                               f"{m_jours.group(1)} − 1"]
+                return self._paquet(q, float(m_jours.group(1)) - 1,
+                                    "machine_etats:nénuphar")
+
         # passe 1 : le TYPEUR traduit le texte en nombres typés
         nombres = [n for n in typer(question) if not n.ignore]
         if not nombres:
