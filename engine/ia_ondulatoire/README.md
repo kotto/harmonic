@@ -114,6 +114,15 @@ POST /api/voice/stream {"text", "emotion": "warm", "voice"}  → WAV (contrat PW
 ```
 Hors ligne → 503 propre (« démarrez ka_voice_server.py »).
 
+### Benchmark GSM8K (complet, 1 319 problèmes)
+```bash
+python -c "from gsm8k import GSM8KOndulatoire; print(GSM8KOndulatoire().benchmark(n=1319))"
+```
+**Résultats de référence (07/08/2026) : 41/1319 = 3,11 % · 3,4 ms/résolution ·
+5,1 s au total · 0 LLM, déterministe.** Les problèmes à équations relationnelles
+(« twice as many as… », pourcentages imbriqués) restent un gap ouvert — les
+12 canoniques structurés (Janet, 5 familles, %) sont exacts.
+
 ### Benchmark éducatif
 ```bash
 python benchmark_educal.py   # F1@5 par discipline + contrôle tuteur → JSON
@@ -150,10 +159,10 @@ tuteur 25/25 vérifié par re-résolution ondulatoire.
 ## Limites v1 (documentées)
 
 - **HWAT PyTorch / FPGA / GPU** : hors périmètre (le moteur est 100 % NumPy CPU).
-- **GSM8K officiel** : le solveur 0-LLM heuristique plafonne (~8 % sur échantillon,
-  contre 0,5 % documentés pour l'ancien solveur wave pur) — les problèmes à
-  comparaisons relatives multi-étapes restent un **gap ouvert** ; les 5 familles
-  structurées + Janet + pourcentages sont exacts (12/12 canoniques).
+- **GSM8K officiel** : le solveur 0-LLM heuristique plafonne (3,11 % sur les
+  1 319 problèmes, contre 0,5 % documentés pour l'ancien solveur wave pur) — les
+  problèmes à équations relationnelles multi-étapes restent un **gap ouvert** ;
+  les 5 familles structurées + Janet + pourcentages sont exacts (12/12 canoniques).
 - **/api/chat multi-sources** : le multiplexeur complet de `ka_server.py` (logic,
   specializer, storage) n'est pas reproduit — les intentions ondulatoires le sont.
 - **Voix** : le pont requiert `ka_voice_server.py` (Piper) démarré sur :8420 ;
