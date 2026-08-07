@@ -36,7 +36,8 @@ python serveur.py        # API des 3 apps sur http://localhost:8767
 | `medical.py` | **Vital KA** : les 62 356 faits médicaux (`data/medical_holograms/*_facts.json`) encodés nativement, diagnostic par interférence (ENCODE → SUPERPOSE → RESONATE → EMERGE → DÉCODER) |
 | `entreprise.py` | **KA Enterprise** : un hologramme par département, ingest (texte → BIND_MANY → STORE), ask (QUERY → EMERGE → DÉCODER + sources), résumé (EMERGE), composition (INTERFERE), RBAC X-API-Key |
 | `educal.py` | **EDUCAL KA** : catalogue + leçons (contenu JSON existant), hologrammes disciplinaires natifs, correction quiz/exercices, diagnostic pédagogique par résonance, carnet de progression, tuteur 5 familles (0 LLM), **unité éducative transférable** (hologramme → download ψ polaires → injection H_connaissances → rappel) |
-| `gsm8k.py` | **GSM8K ondulatoire** : sélection d'opération par **résonance contre des prototypes d'ondes** (SUPERPOSE des mots-clés EN/FR → RESONATE → DÉCODER), nombres épelés (« three » → 3), pourcentages, règle de trois, machine à états multi-étapes — 0 LLM, ~3 ms/résolution |
+| `gsm8k.py` | **GSM8K ondulatoire** : **deux moteurs** — ① machine à états sémantique (compteurs d'objets, équations relatives « k fois plus que », densités « per/each », fractions « 3/4 of », conversion d'unité, momentum) ② pipeline par résonance contre des prototypes d'ondes (SUPERPOSE des mots-clés EN/FR → RESONATE → DÉCODER) en fallback — 0 LLM, ~10 ms/résolution |
+| `machine_etats.py` | La machine à états sémantique : objets comptés (EN/FR), actions de transition (avoir/manger/donner/acheter/partager/%), garde-fou de confiance (la machine ne répond que si elle comprend tous les nombres) |
 | `voix.py` | **KA Voice** : pont TTS vers `ka_voice_server` :8420 (Piper) — mêmes contrats `/api/voice/*`, dégradation 503 propre si hors ligne |
 | `benchmark_educal.py` | **Benchmark éducatif** : F1@5 par discipline (rappel par résonance des faits pertinents), contrôle du tuteur par re-résolution ondulatoire, rapport JSON |
 | `serveur.py` | **API Flask des 3 apps** (port 8767) + compatibilité OpenAI (`/v1/chat/completions`) |
@@ -118,10 +119,13 @@ Hors ligne → 503 propre (« démarrez ka_voice_server.py »).
 ```bash
 python -c "from gsm8k import GSM8KOndulatoire; print(GSM8KOndulatoire().benchmark(n=1319))"
 ```
-**Résultats de référence (07/08/2026) : 41/1319 = 3,11 % · 3,4 ms/résolution ·
-5,1 s au total · 0 LLM, déterministe.** Les problèmes à équations relationnelles
-(« twice as many as… », pourcentages imbriqués) restent un gap ouvert — les
-12 canoniques structurés (Janet, 5 familles, %) sont exacts.
+**Résultats de référence (07/08/2026) : 47/1319 = 3,56 % · ~10 ms/résolution ·
+0 LLM, déterministe** (base sans machine : 41 = 3,11 %). La machine à états
+sémantique comprend les problèmes structurés (Janet, 5 familles, équations
+relatives, densités, fractions, % — **12/12 canoniques**) et rend la main à la
+résonance sur les énoncés qu'elle ne comprend pas (garde-fou de confiance).
+Les problèmes à sémantique avancée (moyennes, demi-tours, pourcentages imbriqués)
+restent un gap ouvert.
 
 ### Benchmark éducatif
 ```bash
@@ -159,10 +163,11 @@ tuteur 25/25 vérifié par re-résolution ondulatoire.
 ## Limites v1 (documentées)
 
 - **HWAT PyTorch / FPGA / GPU** : hors périmètre (le moteur est 100 % NumPy CPU).
-- **GSM8K officiel** : le solveur 0-LLM heuristique plafonne (3,11 % sur les
-  1 319 problèmes, contre 0,5 % documentés pour l'ancien solveur wave pur) — les
-  problèmes à équations relationnelles multi-étapes restent un **gap ouvert** ;
-  les 5 familles structurées + Janet + pourcentages sont exacts (12/12 canoniques).
+- **GSM8K officiel** : le solveur 0-LLM heuristique plafonne (3,56 % sur les
+  1 319 problèmes) — les problèmes à sémantique avancée (moyennes, équations
+  relationnelles complexes, pourcentages imbriqués) restent un **gap ouvert** ;
+  les problèmes structurés sont exacts (12/12 canoniques : Janet, 5 familles,
+  équations relatives, densités, fractions, %).
 - **/api/chat multi-sources** : le multiplexeur complet de `ka_server.py` (logic,
   specializer, storage) n'est pas reproduit — les intentions ondulatoires le sont.
 - **Voix** : le pont requiert `ka_voice_server.py` (Piper) démarré sur :8420 ;

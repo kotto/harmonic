@@ -170,10 +170,22 @@ class GSM8KOndulatoire:
         return a + b
 
     def resoudre(self, question: str) -> Dict[str, Any]:
-        """Résout un énoncé : chaque nombre (chiffres ou épelé) est traité
+        """Résout un énoncé. Deux moteurs :
+        1. machine à états sémantique (compteurs d'objets, équations relatives)
+        2. pipeline par résonance (prototypes d'ondes) — fallback"""
+        t0 = time.time()
+        from machine_etats import MachineEtatsSemantique
+        r_sem = MachineEtatsSemantique().resoudre(question)
+        if r_sem is not None:
+            r_sem["temps_ms"] = int((time.time() - t0) * 1000)
+            r_sem["question"] = (question or "").strip()
+            return r_sem
+        return self._resoudre_resonance(question, t0)
+
+    def _resoudre_resonance(self, question: str, t0: float) -> Dict[str, Any]:
+        """Pipeline par résonance : chaque nombre (chiffres ou épelé) est traité
         séquentiellement avec sa fenêtre de contexte locale — l'onde du
         contexte désigne l'opération (résonance + motifs forts + momentum)."""
-        t0 = time.time()
         question = (question or "").strip()
         numerise = _numeriser(question)
         courant: Optional[float] = None
