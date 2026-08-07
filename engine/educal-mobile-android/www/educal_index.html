@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>EDU-KA — Éducation Harmonique</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  :root{
+    --bg1:#0d0a1f; --bg2:#1b1240; --card:rgba(255,255,255,.06);
+    --line:rgba(255,255,255,.12); --acc:#8b5cf6; --acc2:#22d3ee;
+    --ok:#34d399; --ko:#f87171; --txt:#e8e6f5; --sub:#a5a0c8;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  body{margin:0; font-family:'Segoe UI',system-ui,sans-serif; color:var(--txt);
+    background:linear-gradient(160deg,var(--bg1),var(--bg2) 60%,var(--bg1)); min-height:100vh}
+  #app{max-width:560px; margin:0 auto; padding:14px 14px 90px}
+  h1{font-size:1.35em; margin:6px 0 2px}
+  h2{font-size:1.05em; margin:14px 0 8px; color:var(--acc2)}
+  .sub{color:var(--sub); font-size:.85em}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:12px 14px; margin:10px 0}
+  .btn{display:block; width:100%; padding:12px; border:none; border-radius:12px;
+    background:linear-gradient(135deg,var(--acc),#6366f1); color:#fff; font-size:1em;
+    font-weight:600; cursor:pointer; margin:8px 0}
+  .btn.ghost{background:transparent; border:1px solid var(--line); color:var(--acc2)}
+  .btn:disabled{opacity:.5}
+  input,select{width:100%; padding:11px; border-radius:10px; border:1px solid var(--line);
+    background:rgba(0,0,0,.25); color:var(--txt); font-size:1em; margin:6px 0}
+  .chip{display:inline-block; padding:3px 10px; border-radius:99px; font-size:.75em;
+    background:rgba(139,92,246,.25); border:1px solid var(--acc); margin:2px}
+  .chip.ok{background:rgba(52,211,153,.15); border-color:var(--ok)}
+  .chip.ko{background:rgba(248,113,113,.15); border-color:var(--ko)}
+  .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .opt{padding:11px; border-radius:10px; border:1px solid var(--line); margin:6px 0;
+    background:rgba(0,0,0,.2); cursor:pointer}
+  .opt.sel{border-color:var(--acc); background:rgba(139,92,246,.18)}
+  .opt.ok{border-color:var(--ok)} .opt.ko{border-color:var(--ko)}
+  .step{background:rgba(0,0,0,.25); border-left:3px solid var(--acc2);
+    border-radius:6px; padding:6px 10px; margin:4px 0; font-size:.9em}
+  #tabs{position:fixed; bottom:0; left:0; right:0; display:flex; z-index:50;
+    background:rgba(13,10,31,.95); border-top:1px solid var(--line); backdrop-filter:blur(6px)}
+  #tabs button{flex:1; background:none; border:none; color:var(--sub); font-size:.62em;
+    padding:8px 2px 10px; cursor:pointer}
+  #tabs button.on{color:var(--acc2)}
+  #tabs .ic{font-size:1.35em; display:block}
+  .hidden{display:none!important}
+  .badge{background:var(--acc); border-radius:99px; padding:2px 8px; font-size:.7em}
+  .fade{animation:fade .25s}
+  @keyframes fade{from{opacity:0; transform:translateY(6px)} to{opacity:1}}
+  .loader{text-align:center; padding:30px; color:var(--sub)}
+  .wave{display:inline-block; animation:wave 1.2s infinite}
+  @keyframes wave{0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)}}
+</style>
+</head>
+<body>
+
+<!-- ══════════ ÉCRAN CONNEXION ══════════ -->
+<div id="screenConnect" class="hidden">
+  <div id="app" style="padding-top:12vh">
+    <div style="text-align:center">
+      <div style="font-size:3em">🌊🎓</div>
+      <h1>EDU-KA</h1>
+      <p class="sub">L'éducation numérique harmonique — leçons, quiz et tuteur ondulatoire</p>
+    </div>
+    <div class="card">
+      <h2>Connexion au serveur</h2>
+      <input id="apiUrl" placeholder="http://192.168.1.10:8767" inputmode="url">
+      <button class="btn" id="btnConnect">🌐 Se connecter</button>
+      <p id="connMsg" class="sub" style="text-align:center"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ APPLICATION ══════════ -->
+<div id="screenApp" class="hidden">
+  <div id="app">
+    <div class="row" style="justify-content:space-between">
+      <div>
+        <h1>🌊🎓 EDU-KA</h1>
+        <p class="sub" id="lblServer"></p>
+      </div>
+      <div class="row">
+        <button class="btn ghost" style="width:auto;padding:6px 10px;font-size:.8em" id="btnReconnect">🔄</button>
+      </div>
+    </div>
+
+    <!-- 📚 CATALOGUE -->
+    <section id="tab-catalog">
+      <h2>📚 Mes unités d'apprentissage</h2>
+      <select id="selDiscipline"></select>
+      <div id="unitList"></div>
+    </section>
+
+    <!-- 📖 LEÇON -->
+    <section id="tab-lesson" class="hidden">
+      <h2 id="lessonTitle">📖 Leçon</h2>
+      <p class="sub" id="lessonMeta"></p>
+      <div id="lessonObjectives"></div>
+      <div id="lessonBody"></div>
+      <button class="btn" id="btnToQuiz">✅ Passer le quiz</button>
+      <button class="btn ghost" id="btnTransfer">📦 Transférer l'unité (hologramme)</button>
+      <p id="transferMsg" class="sub"></p>
+    </section>
+
+    <!-- ✅ QUIZ -->
+    <section id="tab-quiz" class="hidden">
+      <h2>✅ Quiz — <span id="quizUnitName"></span></h2>
+      <div id="quizBody"></div>
+      <div id="quizResult" class="hidden">
+        <div class="card">
+          <div class="row" style="justify-content:space-between">
+            <b id="quizScore"></b><span id="quizSeuil"></span>
+          </div>
+          <div id="quizFeedback"></div>
+        </div>
+        <div class="card hidden" id="quizDiag">
+          <h2>🔬 Diagnostic pédagogique</h2>
+          <div id="quizDiagBody"></div>
+        </div>
+        <button class="btn" id="btnRetry">🔁 Réessayer</button>
+      </div>
+    </section>
+
+    <!-- 📈 PROGRESSION -->
+    <section id="tab-progress" class="hidden">
+      <h2>📈 Mon carnet d'apprentissage</h2>
+      <div id="progressBody"></div>
+    </section>
+
+    <!-- 🧮 TUTEUR -->
+    <section id="tab-tutor" class="hidden">
+      <h2>🧮 Tuteur de mathématiques</h2>
+      <p class="sub">Énoncés générés et résolus par le moteur ondulatoire — 0 LLM, 100 % déterministe</p>
+      <button class="btn" id="btnExercise">🌊 Générer un exercice</button>
+      <div id="tutorBody"></div>
+    </section>
+  </div>
+
+  <nav id="tabs">
+    <button data-tab="catalog" class="on"><span class="ic">📚</span>Catalogue</button>
+    <button data-tab="lesson"><span class="ic">📖</span>Leçon</button>
+    <button data-tab="quiz"><span class="ic">✅</span>Quiz</button>
+    <button data-tab="progress"><span class="ic">📈</span>Progression</button>
+    <button data-tab="tutor"><span class="ic">🧮</span>Tuteur</button>
+  </nav>
+</div>
+
+<script>
+'use strict';
+/* ═══════════ CONFIG ═══════════ */
+const API_KEY = 'ka_api_url', USER_KEY = 'ka_user_id';
+let API = localStorage.getItem(API_KEY) || '';
+let USER = localStorage.getItem(USER_KEY) || 'eleve_' + Math.random().toString(36).slice(2, 8);
+localStorage.setItem(USER_KEY, USER);
+let UNITS = [], CURRENT = null, QUIZ_STATE = null, EXO_STATE = null;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function api(path, opts = {}) {
+  const r = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json' }, ...opts });
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.status);
+  return r.json();
+}
+
+/* ═══════════ CONNEXION ═══════════ */
+$('btnConnect').onclick = async () => {
+  const url = $('apiUrl').value.trim();
+  if (!url) return;
+  const msg = $('connMsg');
+  msg.textContent = '🌐 Test de connexion…';
+  try {
+    const r = await fetch(url + '/api/health', { timeout: 4000 });
+    if (!r.ok) throw new Error();
+    API = url.replace(/\/$/, '');
+    localStorage.setItem(API_KEY, API);
+    msg.textContent = '✅ Connecté !';
+    setTimeout(enterApp, 400);
+  } catch (e) { msg.textContent = '❌ Serveur injoignable — vérifie l\'adresse'; }
+};
+$('btnReconnect').onclick = () => {
+  API = ''; localStorage.removeItem(API_KEY);
+  $('screenApp').classList.add('hidden');
+  $('screenConnect').classList.remove('hidden');
+};
+function enterApp() {
+  $('screenConnect').classList.add('hidden');
+  $('screenApp').classList.remove('hidden');
+  $('lblServer').textContent = '🔗 ' + API;
+  loadCatalog(); loadProgress();
+}
+
+/* ═══════════ ONGLETS ═══════════ */
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+  ['catalog','lesson','quiz','progress','tutor'].forEach(t =>
+    $('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+});
+
+/* ═══════════ CATALOGUE ═══════════ */
+async function loadCatalog() {
+  try {
+    const d = await api('/api/educal/units');
+    UNITS = d.units;
+    const disc = [...new Set(UNITS.map(u => u.discipline))];
+    $('selDiscipline').innerHTML = '<option value="">— toutes les disciplines —</option>' +
+      disc.map(x => `<option>${esc(x)}</option>`).join('');
+    renderUnits();
+  } catch (e) { $('unitList').innerHTML = `<p class="sub">❌ ${esc(e.message)}</p>`; }
+}
+$('selDiscipline').onchange = renderUnits;
+function renderUnits() {
+  const disc = $('selDiscipline').value;
+  const list = UNITS.filter(u => !disc || u.discipline === disc);
+  $('unitList').innerHTML = list.map(u => `
+    <div class="card fade" onclick="openUnit('${u.id}')" style="cursor:pointer">
+      <div class="row" style="justify-content:space-between">
+        <b>${esc(u.titre)}</b>
+        <span class="chip">${esc(u.niveau)}</span>
+      </div>
+      <p class="sub">${esc(u.discipline)} · ${u.nb_exercices} exos · ${u.nb_quiz} questions · ${u.nb_faits} faits</p>
+      <p class="sub">🎯 ${u.objectifs.slice(0, 2).map(esc).join(' · ')}</p>
+    </div>`).join('') || '<p class="sub">Aucune unité — lance `python educal_build_holograms.py` puis relance le serveur.</p>';
+}
+
+/* ═══════════ LEÇON ═══════════ */
+async function openUnit(id) {
+  const d = await api('/api/educal/unit/' + id);
+  CURRENT = d;
+  $('lessonTitle').textContent = '📖 ' + d.titre;
+  $('lessonMeta').textContent = `${d.discipline} · ${d.niveau} · ${d.duree_estimee_min} min`;
+  $('lessonObjectives').innerHTML = '<h2>🎯 Objectifs</h2>' +
+    d.objectifs.map(o => `<div class="step">${esc(o)}</div>`).join('');
+  $('lessonBody').innerHTML = d.lecon.sections.map(s => `
+    <h2>${esc(s.titre)}</h2>
+    <div class="card" style="line-height:1.6">${esc(s.contenu_md).replace(/\n/g, '<br>')}</div>`).join('');
+  $('transferMsg').textContent = '';
+  switchTab('lesson');
+}
+$('btnToQuiz').onclick = () => { startQuiz(); switchTab('quiz'); };
+$('btnTransfer').onclick = async () => {
+  if (!CURRENT) return;
+  $('transferMsg').textContent = '📦 Construction de l\'hologramme de l\'unité…';
+  try {
+    const d = await api('/api/educal/unit/' + CURRENT.id + '/hologram', { method: 'POST' });
+    const dl = await api('/api/store/download/' + d.holo_id);
+    await api('/api/store/load', { method: 'POST', body: JSON.stringify({ holo_id: d.holo_id }) });
+    $('transferMsg').textContent =
+      `✅ Unité transférée : ${dl.facts.length} faits ancrés dans le cerveau (${d.holo_id}) — réinterrogeable en langage naturel`;
+  } catch (e) { $('transferMsg').textContent = '❌ ' + e.message; }
+};
+
+/* ═══════════ QUIZ ═══════════ */
+function startQuiz() {
+  if (!CURRENT) return;
+  QUIZ_STATE = CURRENT.quiz.map(q => ({ ...q, sel: null }));
+  EXO_STATE = CURRENT.exercices.map((e, i) => ({ ...e, idx: i, rep: '' }));
+  $('quizUnitName').textContent = CURRENT.titre;
+  renderQuiz(); renderExercises();
+  $('quizResult').classList.add('hidden');
+  switchTab('quiz');
+}
+function renderQuiz() {
+  $('quizBody').innerHTML = '<h2>Questions</h2>' + QUIZ_STATE.map((q, i) => `
+    <div class="card">
+      <b>${i + 1}. ${esc(q.question)}</b>
+      ${q.choix.map((c, ci) => `<div class="opt ${q.sel === ci ? 'sel' : ''}"
+        onclick="pickQuiz(${i},${ci})">${esc(c)}</div>`).join('')}
+    </div>`).join('');
+}
+function pickQuiz(i, ci) { QUIZ_STATE[i].sel = ci; renderQuiz(); }
+function renderExercises() {
+  $('quizBody').insertAdjacentHTML('beforeend', '<h2>Exercices</h2>' + EXO_STATE.map((e, i) => `
+    <div class="card">
+      <b>✏️ ${esc(e.enonce)}</b>
+      <input id="exo${i}" placeholder="Ta réponse" value="${esc(e.rep)}">
+    </div>`).join(''));
+}
+async function submitQuiz() {
+  EXO_STATE.forEach((e, i) => e.rep = ($('exo' + i) || {}).value || '');
+  const answers = QUIZ_STATE.map((q, i) => ({ question: i, answer: q.sel }));
+  const exercises = EXO_STATE.map((e, i) => ({ exercice: i, reponse: e.rep }));
+  const btn = $('btnToQuiz'); btn.disabled = true; btn.textContent = '🌊 Correction harmonique…';
+  try {
+    const d = await api('/api/educal/quiz/submit', {
+      method: 'POST', body: JSON.stringify({ user_id: USER, unit_id: CURRENT.id, answers, exercises }) });
+    showResult(d);
+  } catch (e) { alert('❌ ' + e.message); }
+  btn.disabled = false; btn.textContent = '✅ Passer le quiz';
+}
+$('btnToQuiz').onclick = submitQuiz;
+$('btnRetry').onclick = startQuiz;
+function showResult(d) {
+  const q = d.quiz;
+  $('quizScore').textContent = `Score : ${q.correct}/${q.total} (${Math.round(q.score * 100)} %)`;
+  $('quizSeuil').textContent = `Seuil : ${Math.round(q.seuil_reussite * 100)} %`;
+  $('quizFeedback').innerHTML = `<div class="step">${esc(q.feedback)}</div>`;
+  const diag = d.diagnostic;
+  if (diag && diag.faits_a_revoir && diag.faits_a_revoir.length) {
+    $('quizDiag').classList.remove('hidden');
+    $('quizDiagBody').innerHTML = `<p class="sub">Lacunes : ${diag.lacunes.map(esc).join(' · ')}</p>` +
+      diag.faits_a_revoir.map(f => `<div class="step">🌊 ${esc(f.fait)} <span class="chip">${f.score}</span></div>`).join('');
+  } else $('quizDiag').classList.add('hidden');
+  $('quizResult').classList.remove('hidden');
+  loadProgress();
+}
+
+/* ═══════════ PROGRESSION ═══════════ */
+async function loadProgress() {
+  try {
+    const p = await api('/api/educal/progress/' + USER);
+    const skills = Object.entries(p.skills || {});
+    $('progressBody').innerHTML = `
+      <div class="card"><b>✅ Unités validées :</b>
+        ${Object.keys(p.unites_validees || {}).map(u => `<span class="chip ok">${esc(u)}</span>`).join('') || 'aucune'}
+      </div>
+      <div class="card"><b>🧠 Compétences :</b>
+        ${skills.map(([k, v]) => `<span class="chip ${v >= 1 ? 'ok' : 'ko'}">${esc(k)} (${v})</span>`).join('') || 'à venir'}
+      </div>
+      <div class="card"><b>📚 Suite suggérée :</b>
+        ${(p.next_units || []).map(u => `<span class="chip">${esc(u)}</span>`).join('') || 'termine une unité'}
+      </div>
+      <div class="card"><b>📜 Sessions :</b> ${(p.sessions || []).length}</div>`;
+  } catch (e) { $('progressBody').innerHTML = `<p class="sub">❌ ${esc(e.message)}</p>`; }
+}
+
+/* ═══════════ TUTEUR ═══════════ */
+$('btnExercise').onclick = async () => {
+  $('tutorBody').innerHTML = '<div class="loader"><span class="wave">🌊</span> Génération ondulatoire…</div>';
+  try {
+    const d = await api('/api/educal/exercise/generate', {
+      method: 'POST', body: JSON.stringify({ discipline: 'mathématiques', niveau: '6e' }) });
+    $('tutorBody').innerHTML = `
+      <div class="card fade"><b>${esc(d.question)}</b>
+        <div style="margin-top:8px">${(d.etapes || []).map(s => `<div class="step">${esc(s)}</div>`).join('')}</div>
+        <p class="sub">Méthode : ${esc(d.methode)} · ${esc(d.moteur)}</p>
+        <button class="btn ghost" onclick="revealAnswer(${JSON.stringify(d.reponse).replace(/"/g, '&quot;')})">🔍 Voir la réponse</button>
+        <div id="tutorAnswer"></div>
+      </div>`;
+  } catch (e) { $('tutorBody').innerHTML = `<p class="sub">❌ ${esc(e.message)}</p>`; }
+};
+function revealAnswer(r) {
+  $('tutorAnswer').innerHTML = `<div class="step ok" style="border-color:var(--ok)">✅ Réponse : ${esc(r)}</div>`;
+}
+
+/* ═══════════ NAV ═══════════ */
+function switchTab(name) {
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+  ['catalog','lesson','quiz','progress','tutor'].forEach(t =>
+    $('tab-' + t).classList.toggle('hidden', t !== name));
+}
+
+/* ═══════════ DÉMARRAGE ═══════════ */
+if (API) { $('screenConnect').classList.add('hidden'); $('screenApp').classList.remove('hidden'); enterApp(); }
+else $('screenConnect').classList.remove('hidden');
+</script>
+</body>
+</html>

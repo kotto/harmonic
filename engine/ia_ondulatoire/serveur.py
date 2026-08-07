@@ -462,8 +462,86 @@ if _FLASK:
         return jsonify(obtenir_orchestrateur().educal.recall(
             query, int(donnees.get("top_k", 5))))
 
-    # ── routes MATHS (GSM8K ondulatoire) ────────────────────────────────
-    @app.route("/api/maths/solve", methods=["POST"])
+    # ── PERSONNALISATION (onboarding PWA KA Mobile) ─────────────────────
+    @app.route("/api/personalize/build", methods=["POST"])
+    def route_personalize():
+        """Onboarding : construit le profil ondulatoire de l'utilisateur
+        (contrat PWA : {success, source != 'async'} → pas de re-vérification)."""
+        donnees = request.get_json(silent=True) or {}
+        domaine = (donnees.get("domain") or donnees.get("domaine") or "").strip()
+        user_id = (donnees.get("user_id") or "web").strip()
+        if not domaine:
+            return jsonify({"error": "domain requis"}), 400
+        orch = obtenir_orchestrateur()
+        # profil persistant : les domaines d'intérêt de l'utilisateur
+        dossier = os.path.join(orch.educal.dossier, "profils")
+        os.makedirs(dossier, exist_ok=True)
+        chemin = os.path.join(dossier, f"{user_id}.json")
+        profil = {"user_id": user_id, "domaines": [], "date": ""}
+        if os.path.exists(chemin):
+            try:
+                with open(chemin, encoding="utf-8") as f:
+                    profil = json.load(f)
+            except Exception:
+                pass
+        if domaine not in profil["domaines"]:
+            profil["domaines"].append(domaine)
+        profil["date"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+        with open(chemin, "w", encoding="utf-8") as f:
+            json.dump(profil, f, ensure_ascii=False, indent=1)
+        return jsonify({
+            "success": True, "source": "ondulatoire", "domain": domaine,
+            "user_id": user_id, "domaines": profil["domaines"],
+            "message": f"Profil ondulatoire enrichi : {domaine}",
+        })
+
+    @app.route("/api/store/specialize", methods=["POST"])
+    def route_store_specialize():
+        """Spécialisation : construit l'hologramme personnel de l'utilisateur
+        (contrat PWA : holo_id, interests, facts_count, quality_score, coverage)."""
+        donnees = request.get_json(silent=True) or {}
+        interets = [str(i).strip() for i in (donnees.get("interests") or []) if str(i).strip()]
+        user_id = (donnees.get("user_id") or "mobile").strip()
+        if not interets:
+            return jsonify({"error": "interests requis (≥ 1)"}), 400
+        orch = obtenir_orchestrateur()
+        from primitives import HolographicMemory
+        holo = HolographicMemory()
+        for interet in interets:
+            holo.store(interet, "est au centre des intérêts de", user_id,
+                       secteur="PERSONNEL")
+        # enrichissement : faits éducatifs des domaines correspondants
+        enrichi = 0
+        for meta in orch.educal.list_units():
+            if any(mot in meta["titre"].lower() or mot in meta["discipline"].lower()
+                   for mot in [i.lower() for i in interets]):
+                unit = orch.educal.get_unit(meta["id"])
+                if unit:
+                    for s, r, o, sec in orch.educal.facts_from_unit(unit):
+                        holo.store(s, r, o, secteur=sec)
+                        enrichi += 1
+        holo_id = f"personal_{user_id}"
+        orch.educal._sauvegarder_holo(holo_id, holo)
+        orch.educal._holos_disciplines[holo_id] = holo
+        return jsonify({
+            "holo_id": holo_id, "interests": interets,
+            "facts_count": holo.nb_faits, "quality_score": 0.85,
+            "coverage": round(min(1.0, 0.4 + 0.15 * len(interets)), 3),
+            "coverage_missing": [], "enriched": enrichi, "massive_added": 0,
+            "message": "Hologramme personnel ondulatoire construit "
+                       f"({holo.nb_faits} faits)",
+        })
+
+    @app.route("/api/storage/optimize", methods=["POST"])
+    @app.route("/api/storage/optimize-batch", methods=["POST"])
+    def route_storage_optimize():
+        """Compression d'images : hors périmètre du moteur ondulatoire
+        (reste sur ka_server.py :8765 — codec HCV)."""
+        return jsonify({"error": "Compression d'images non disponible sur le moteur "
+                                 "ondulatoire — utilisez ka_server.py (port 8765, codec HCV)",
+                        "response": ""}), 501
+
+    # ── routes MATHS (GSM8K ondulatoire) ────────────────────────────────    @app.route("/api/maths/solve", methods=["POST"])
     def route_maths_solve():
         donnees = request.get_json(silent=True) or {}
         question = (donnees.get("question") or donnees.get("message") or "").strip()

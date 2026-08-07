@@ -169,6 +169,26 @@ tuteur 25/25 vérifié par re-résolution ondulatoire.
   ~20 s de chargement ponctuel, ensuite en mémoire).
 - `data/educal_units/*.json` : contenu pédagogique existant, lu tel quel (lecture seule).
 
+## Branchement des PWA (KA Mobile · EDU-KA)
+
+Les 3 PWA pointent désormais vers le moteur ondulatoire (:8767) :
+- `ka_index.html` (racine) et `ka-mobile-android/www/ka_index.html` :
+  `API_URL = http://<hôte>:8767` (localStorage `ka_api_url` prioritaire)
+- `educal-mobile-android/www/educal_index.html` : URL par défaut `:8767`
+
+Contrats vérifiés bout en bout (smoke 07/08/2026) :
+- **KA Mobile** : `/api/health` · `/api/chat` (invitation à mémoriser si inconnu) ·
+  `/api/personalize/build` (profil par domaine, source synchrone) ·
+  `/api/store/specialize` (hologramme personnel `personal_<user>`, enrichi par
+  les unités éducatives) · `/api/store/list` · `/api/voice/stream` (WAV
+  décode par AudioContext ; fallback speechSynthesis si échec)
+- **EDU-KA** : catalogue 6 unités · leçon · quiz 4/4 réussi · tuteur 5 familles ·
+  transfert d'unité (hologram → download ψ polaires → load)
+- **Voix bout en bout** : PWA → `/api/voice/stream` → pont :8420 (Piper
+  fr_FR-siwis-medium) → WAV 22 kHz mono → lecture navigateur (~0,3 s)
+- Hors périmètre : `/api/storage/optimize` (compression HCV) → 501 propre
+  (reste sur ka_server.py :8765)
+
 ## Limites v1 (documentées)
 
 - **HWAT PyTorch / FPGA / GPU** : hors périmètre (le moteur est 100 % NumPy CPU).
