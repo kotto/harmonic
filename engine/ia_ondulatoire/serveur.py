@@ -30,7 +30,9 @@ except ImportError:
 from cerveau import IaOndulatoire
 from educal import EducalOndulatoire
 from entreprise import EntrepriseOndulatoire
+from gsm8k import GSM8KOndulatoire
 from medical import DiagnosticOndulatoire
+from voix import VoixOndulatoire
 
 PORT = 8767
 CLE_DEMO = os.environ.get("KA_ONDULATOIRE_CLE_DEMO", "cle-ondulatoire-demo")
@@ -62,6 +64,8 @@ class OrchestrateurApps:
         self.medecin = DiagnosticOndulatoire()
         self.entreprise = EntrepriseOndulatoire()
         self.educal = EducalOndulatoire(ia=self.ia)
+        self.maths = GSM8KOndulatoire()
+        self.voix = VoixOndulatoire()
         self.demarrage = time.time()
 
     # ── KA MOBILE ───────────────────────────────────────────────────────
@@ -115,6 +119,19 @@ class OrchestrateurApps:
         if info is None:
             return None
         return info
+
+    # ── MATHS (GSM8K ondulatoire) ───────────────────────────────────────
+    def resoudre_maths(self, question: str) -> dict:
+        r = self.maths.resoudre(question)
+        if r["reponse_num"] is None:
+            return {"response": "Je n'ai pas détecté de calcul dans cette question.",
+                    "confidence": 0.0, "latency_ms": r["temps_ms"]}
+        texte = ("Résolution ondulatoire : " + " → ".join(r["etapes"][-4:])
+                 + f" = {r['reponse']}. (sélection d'opération par résonance "
+                   f"contre les prototypes d'ondes, 0 LLM)")
+        return {"response": texte, "confidence": 0.9, "latency_ms": r["temps_ms"],
+                "etapes": r["etapes"], "reponse": r["reponse"],
+                "operations": r["operations"], "source": "ondulatoire-maths"}
 
     # ── EDUCAL KA ───────────────────────────────────────────────────────
     def quiz_submit(self, user_id: str, unit_id: str, answers: list,
@@ -441,6 +458,47 @@ if _FLASK:
             return jsonify({"error": "query requise"}), 400
         return jsonify(obtenir_orchestrateur().educal.recall(
             query, int(donnees.get("top_k", 5))))
+
+    # ── routes MATHS (GSM8K ondulatoire) ────────────────────────────────
+    @app.route("/api/maths/solve", methods=["POST"])
+    def route_maths_solve():
+        donnees = request.get_json(silent=True) or {}
+        question = (donnees.get("question") or donnees.get("message") or "").strip()
+        if not question:
+            return jsonify({"error": "question requise"}), 400
+        return jsonify(obtenir_orchestrateur().resoudre_maths(question))
+
+    # ── routes VOIX (pont vers ka_voice_server :8420) ───────────────────
+    @app.route("/api/voice/health", methods=["GET"])
+    def route_voice_health():
+        sante = obtenir_orchestrateur().voix.sante()
+        return jsonify(sante)
+
+    @app.route("/api/voice/offline/caps", methods=["GET"])
+    def route_voice_caps():
+        return jsonify(obtenir_orchestrateur().voix.capacites())
+
+    @app.route("/api/voice/stream", methods=["POST"])
+    @app.route("/api/voice/speak", methods=["POST"])
+    def route_voice_stream():
+        donnees = request.get_json(silent=True) or {}
+        texte = (donnees.get("text") or donnees.get("message") or "").strip()
+        if not texte:
+            return jsonify({"error": "texte vide"}), 400
+        resultat = obtenir_orchestrateur().voix.stream(
+            texte, donnees.get("emotion", "warm"), donnees.get("voice"))
+        if "error" in resultat:
+            return jsonify({"error": resultat["error"],
+                            "response": "Le serveur voix est hors ligne. "
+                                        "Démarrez ka_voice_server.py (port 8420)."}), 503
+        reponse = Response(resultat["wav"], mimetype=resultat["mimetype"])
+        reponse.headers["X-Length"] = str(resultat["octets"])
+        return reponse
+
+    @app.route("/api/voice/clone", methods=["POST"])
+    def route_voice_clone():
+        return jsonify({"error": "clonage vocal non disponible via le moteur "
+                                 "ondulatoire (serveur voix : synthèse Piper)"}), 501
 
     @app.route("/v1/models", methods=["GET"])
     def route_modeles():

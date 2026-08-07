@@ -346,6 +346,91 @@ def niveau5_educal() -> bool:
     return ok
 
 
+def niveau6_maths_voix_benchmark() -> bool:
+    """GSM8K ondulatoire · pont voix (conditionnel) · benchmark éducatif."""
+    print("═" * 62)
+    print("NIVEAU 6 — Maths ondulatoires · Voix · Benchmark éducatif")
+    print("═" * 62)
+    ok = True
+
+    # ── GSM8K ondulatoire ───────────────────────────────────────────────
+    from gsm8k import GSM8KOndulatoire, est_question_maths
+    s = GSM8KOndulatoire()
+    canoniques = [
+        ("Janet's ducks lay 16 eggs per day. She eats three for breakfast every morning "
+         "and bakes muffins for her friends every day with four. She sells the remainder "
+         "at the farmers' market daily for $2 per fresh duck egg. How much in dollars does "
+         "she make every day at the farmers' market?", 18),
+        ("A robe takes 2 bolts of blue fiber and half that much white fiber. "
+         "How many bolts in total does it take?", 3),
+        ("If there are 10 apples and we share them equally among 5 children, "
+         "how many apples does each child get?", 2),
+        ("Un cahier coûte 300 francs. Combien coûtent 4 cahiers ?", 1200),
+        ("Janet bakes 5 muffins. She gives 2 to her friends. "
+         "How many muffins does she have left?", 3),
+        ("John has 5 apples and buys 3 more. How many does he have in total?", 8),
+        ("There are 12 pencils in a box. A teacher buys five boxes. "
+         "How many pencils are there in total?", 60),
+        ("Sarah has twenty-five dollars. She spends nine on a book. "
+         "How much does she have left?", 16),
+        ("A car travels at 60 miles per hour for 3 hours. How far does it travel?", 180),
+        ("A shirt costs 40 dollars with a 25% discount. How much do you pay?", 30),
+        ("Sara invests 200 dollars and gains a 10% profit. How much does she have now?", 220),
+        ("What is 20% of 50?", 10),
+    ]
+    bons = 0
+    for q, attendu in canoniques:
+        r = s.resoudre(q)
+        if r["reponse_num"] is not None and abs(r["reponse_num"] - attendu) < 1e-6:
+            bons += 1
+    ok &= test("GSM8K : 12 problèmes canoniques (5 familles + Janet + % )",
+               bons == len(canoniques), f"{bons}/{len(canoniques)}")
+
+    r_maths = s.benchmark(n=50, sauver=False)
+    ok &= test("GSM8K : benchmark officiel exécuté (n=50, 0 LLM)",
+               r_maths.get("precision") is not None
+               and r_maths["latence_moyenne_ms"] < 1000,
+               f"précision {r_maths['precision'] * 100:.1f} % · "
+               f"latence {r_maths['latence_moyenne_ms']} ms (gap documenté)")
+
+    ok &= test("GSM8K : détection de questions de calcul",
+               est_question_maths("combien font 7+3 ?")
+               and not est_question_maths("Qu'est-ce que la lumière ?"))
+
+    from cerveau import IaOndulatoire
+    ia = IaOndulatoire(charger=False)
+    r_cerveau = ia.poser("combien font 7+3 ?")
+    ok &= test("KA Mobile : calcul routé vers le solveur ondulatoire",
+               r_cerveau.get("source") == "ondulatoire-maths"
+               and "10" in r_cerveau["response"],
+               r_cerveau["response"][:80])
+
+    # ── benchmark éducatif ──────────────────────────────────────────────
+    from benchmark_educal import EducalBenchmark
+    rb = EducalBenchmark().lancer(sauver=False)
+    ok &= test("EDUCAL : benchmark F1@5 par discipline exécuté",
+               rb["questions_teste"] > 0 and rb["f1_moyen_at_5"] > 0,
+               f"F1@5 {rb['f1_moyen_at_5']:.3f} · P@5 {rb['precision_moyenne_at_5']:.3f} "
+               f"· {rb['questions_teste']} questions")
+    ok &= test("EDUCAL : tuteur vérifié par résolution ondulatoire",
+               rb["tuteur"]["precision_tuteur"] >= 0.9,
+               f"{rb['tuteur']['corrects']}/{rb['tuteur']['exercices_verifies']}")
+
+    # ── pont voix (conditionnel : serveur Piper requis) ─────────────────
+    from voix import VoixOndulatoire
+    v = VoixOndulatoire()
+    sante = v.sante()
+    if sante.get("status") == "ok":
+        wav, erreur = v.synthetiser("Test de synthèse vocale harmonique.")
+        ok &= test("VOIX : synthèse WAV via le pont (Piper)",
+                   erreur is None and wav[:4] == b"RIFF",
+                   f"{len(wav)} octets")
+    else:
+        print("  ⏭️  voix : ka_voice_server hors ligne — test sauté")
+        RESULTATS.append(True)
+    return ok
+
+
 def principal() -> int:
     debut = time.time()
     ok = True
@@ -354,6 +439,7 @@ def principal() -> int:
     ok &= niveau3_intentions()
     ok &= niveau4_apps()
     ok &= niveau5_educal()
+    ok &= niveau6_maths_voix_benchmark()
 
     reussis = sum(1 for r in RESULTATS if r)
     total = len(RESULTATS)

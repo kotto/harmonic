@@ -403,27 +403,27 @@ class EducalOndulatoire:
                     "reponse": str(total)}
         if famille == "vitesse":
             d, t = rng.randint(3, 8) * 20, rng.randint(2, 5)
-            v = d // t
+            v = round(d / t, 2)
             return {"question": f"Une voiture parcourt {d} km en {t} heures. "
                                 f"Quelle est sa vitesse moyenne ?",
                     "etapes": [f"vitesse = distance ÷ temps = {d} ÷ {t}",
-                               f"→ {v} km/h"],
-                    "reponse": str(v)}
+                               f"→ {v:g} km/h"],
+                    "reponse": f"{v:g}"}
         if famille == "regle_de_trois":
             n, m, k = rng.randint(2, 6), rng.randint(4, 10) * 5, rng.randint(2, 9)
-            temps = m * k // n
+            temps = round(m * k / n, 2)
             return {"question": f"Pour fabriquer {n} objets, une machine met {m} minutes. "
                                 f"Combien de temps pour {k} objets ?",
                     "etapes": [f"règle de trois : {m} × {k} ÷ {n}",
-                               f"→ {temps} minutes"],
-                    "reponse": str(temps)}
+                               f"→ {temps:g} minutes"],
+                    "reponse": f"{temps:g}"}
         if famille == "partage":
             s, p = rng.randint(4, 10) * 100, rng.randint(2, 6)
-            part = s // p
+            part = round(s / p, 2)
             return {"question": f"On partage {s} francs équitablement entre {p} personnes. "
                                 f"Combien chacun reçoit-il ?",
-                    "etapes": [f"{s} ÷ {p} = {part}", f"→ {part} francs chacun"],
-                    "reponse": str(part)}
+                    "etapes": [f"{s} ÷ {p} = {part:g}", f"→ {part:g} francs chacun"],
+                    "reponse": f"{part:g}"}
         # reste
         s, a = rng.randint(6, 12) * 100, rng.randint(1, 4) * 100
         reste = s - a

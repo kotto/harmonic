@@ -36,6 +36,9 @@ python serveur.py        # API des 3 apps sur http://localhost:8767
 | `medical.py` | **Vital KA** : les 62 356 faits médicaux (`data/medical_holograms/*_facts.json`) encodés nativement, diagnostic par interférence (ENCODE → SUPERPOSE → RESONATE → EMERGE → DÉCODER) |
 | `entreprise.py` | **KA Enterprise** : un hologramme par département, ingest (texte → BIND_MANY → STORE), ask (QUERY → EMERGE → DÉCODER + sources), résumé (EMERGE), composition (INTERFERE), RBAC X-API-Key |
 | `educal.py` | **EDUCAL KA** : catalogue + leçons (contenu JSON existant), hologrammes disciplinaires natifs, correction quiz/exercices, diagnostic pédagogique par résonance, carnet de progression, tuteur 5 familles (0 LLM), **unité éducative transférable** (hologramme → download ψ polaires → injection H_connaissances → rappel) |
+| `gsm8k.py` | **GSM8K ondulatoire** : sélection d'opération par **résonance contre des prototypes d'ondes** (SUPERPOSE des mots-clés EN/FR → RESONATE → DÉCODER), nombres épelés (« three » → 3), pourcentages, règle de trois, machine à états multi-étapes — 0 LLM, ~3 ms/résolution |
+| `voix.py` | **KA Voice** : pont TTS vers `ka_voice_server` :8420 (Piper) — mêmes contrats `/api/voice/*`, dégradation 503 propre si hors ligne |
+| `benchmark_educal.py` | **Benchmark éducatif** : F1@5 par discipline (rappel par résonance des faits pertinents), contrôle du tuteur par re-résolution ondulatoire, rapport JSON |
 | `serveur.py` | **API Flask des 3 apps** (port 8767) + compatibilité OpenAI (`/v1/chat/completions`) |
 | `cli.py` | Dialogue interactif (affiche le programme ondulatoire généré avant chaque réponse) |
 | `validation.py` | **39 tests** : les 13 primitives vs table §10.1, roundtrip, programme canonique, 7 intentions, smoke des 3 apps |
@@ -92,6 +95,32 @@ POST /api/store/recall {"query":"répétition espacée"} → « répétition esp
                                                          le souvenir avant l'oubli »
 ```
 
+### MATHS — GSM8K ondulatoire (0 LLM)
+```bash
+POST /api/maths/solve  {"question": "Une voiture parcourt 140 km en 2 heures. …"}
+  → {response, reponse, etapes, operations, source: "ondulatoire-maths"}
+# intégré au chat : « combien font 7+3 ? » → résolution ondulatoire
+python gsm8k.py   # benchmark officiel (n configurable) → data/ia_ondulatoire/benchmark_gsm8k.json
+```
+La sélection d'opération est une expérience d'interférence : chaque famille
+(addition, soustraction, multiplication, division) est un **prototype d'onde** =
+SUPERPOSE des encodages de ses mots-clés ; l'onde de la phrase résonne avec
+chaque prototype et la plus constructive désigne l'opération (§5.2.6).
+
+### VOIX — pont TTS (ka_voice_server :8420 conservé)
+```bash
+GET  /api/voice/health · GET /api/voice/offline/caps
+POST /api/voice/stream {"text", "emotion": "warm", "voice"}  → WAV (contrat PWA)
+```
+Hors ligne → 503 propre (« démarrez ka_voice_server.py »).
+
+### Benchmark éducatif
+```bash
+python benchmark_educal.py   # F1@5 par discipline + contrôle tuteur → JSON
+```
+Résultats de référence (v1) : F1@5 0.50 · P@5 0.66 (43 questions, 6 unités) ·
+tuteur 25/25 vérifié par re-résolution ondulatoire.
+
 ## Le langage en action (exemple réel de la CLI)
 
 ```
@@ -120,20 +149,22 @@ POST /api/store/recall {"query":"répétition espacée"} → « répétition esp
 
 ## Limites v1 (documentées)
 
-- **Voix/TTS** : `ka_voice_server.py` (Piper, port 8420) inchangé — le nouveau
-  serveur ne le proxie pas encore.
 - **HWAT PyTorch / FPGA / GPU** : hors périmètre (le moteur est 100 % NumPy CPU).
+- **GSM8K officiel** : le solveur 0-LLM heuristique plafonne (~8 % sur échantillon,
+  contre 0,5 % documentés pour l'ancien solveur wave pur) — les problèmes à
+  comparaisons relatives multi-étapes restent un **gap ouvert** ; les 5 familles
+  structurées + Janet + pourcentages sont exacts (12/12 canoniques).
 - **/api/chat multi-sources** : le multiplexeur complet de `ka_server.py` (logic,
   specializer, storage) n'est pas reproduit — les intentions ondulatoires le sont.
-- **Maths GSM8K** : intention `reason` disponible ; les solveurs dédiés existants
-  (word_problem_state…) restent dans l'ancien écosystème.
-- **EDUCAL P5** (de l'existant) : QualityFilter 50K faits, benchmark F1 éducatif,
-  build APK — documentés dans `EDUCAL_KA_VALIDATION.md`, hors périmètre ici.
+- **Voix** : le pont requiert `ka_voice_server.py` (Piper) démarré sur :8420 ;
+  clonage vocal non reproduit (501).
+- **EDUCAL P5** (de l'existant) : QualityFilter 50K faits, build APK — documentés
+  dans `EDUCAL_KA_VALIDATION.md`, hors périmètre ici.
 
 ## Vérification
 
 ```bash
-python validation.py    # ✅ RELEASE VERTE — 50/50 (exit 0)
+python validation.py    # ✅ RELEASE VERTE — 57/57 (exit 0)
 ```
 Niveau 1 : les 13 primitives contre les valeurs de référence du doc (‖ψ‖=1, recovery
 unbind(bind) ≥ 0.7, rotate(π) → −1.0, interfere ε=0.15 → 0.99, phase_shift(π/2) → 0.0,
@@ -142,6 +173,8 @@ canonique §4.3 exécuté — niveau 3 : les 7 intentions génèrent des AST val
 niveau 4 : smoke des 3 applications (chat + apprentissage + rappel + créativité,
 diagnostic médical, ingest/ask/RBAC/resume/compose enterprise) — niveau 5 : EDUCAL KA
 (catalogue, leçon, quiz 4/4 réussite + 3/4 lacune, diagnostic par résonance, carnet,
-tuteur, unité transférable : hologram → download → load → recall).
+tuteur, unité transférable : hologram → download → load → recall) — niveau 6 : GSM8K
+(12 canoniques + benchmark officiel + détection), benchmark éducatif F1@5, tuteur 25/25,
+pont voix (conditionnel).
 
 *Univers-Holistique — Théorie Harmonique Universelle — 2026*

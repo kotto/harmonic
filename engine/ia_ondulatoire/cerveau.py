@@ -98,6 +98,22 @@ class IaOndulatoire:
         if q_bas in {"tes domaines", "que sais-tu faire", "tes capacités"}:
             return self._reponse(self._domaines(), 1.0, "identity_domains", debut)
 
+        # chemin mathématique : GSM8K ondulatoire (0 LLM, sélection d'opération
+        # par résonance contre les prototypes d'ondes)
+        from gsm8k import GSM8KOndulatoire, est_question_maths
+        if est_question_maths(question):
+            r = GSM8KOndulatoire(dim=self.dim).resoudre(question)
+            if r["reponse_num"] is not None:
+                texte = ("Résolution ondulatoire : " + " → ".join(r["etapes"][-4:])
+                         + f" = {r['reponse']}.")
+                resultat = self._reponse(texte, 0.9, "ondulatoire-maths", debut)
+                resultat.update({"intention": "reason",
+                                 "programme": "ENCODE question → RESONATE(prototypes) → "
+                                              "SUPERPOSE état → DÉCODER",
+                                 "faits": r["etapes"][-3:]})
+                self._enregistrer_conversation(question, texte, user_id, "maths")
+                return resultat
+
         # boucle fermée : génération → validation → exécution
         programme, intention = self.generateur.generer(question)
         erreurs = ir.valider(programme, hologrammes=["H_connaissances", "H_faits"])
