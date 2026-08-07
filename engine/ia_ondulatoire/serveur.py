@@ -466,7 +466,14 @@ if _FLASK:
         question = (donnees.get("question") or donnees.get("message") or "").strip()
         if not question:
             return jsonify({"error": "question requise"}), 400
-        return jsonify(obtenir_orchestrateur().resoudre_maths(question))
+        resultat = obtenir_orchestrateur().resoudre_maths(question)
+        # révision LLM optionnelle (DeepSeek via llm/router.py ; dégradation
+        # propre si aucun fournisseur n'est disponible)
+        if donnees.get("reviser") and resultat.get("reponse_num") is not None:
+            from revision import RevisionLLM
+            resultat = RevisionLLM().reviser(question, resultat)
+            resultat["source"] = "ondulatoire-maths+llm"
+        return jsonify(resultat)
 
     # ── routes VOIX (pont vers ka_voice_server :8420) ───────────────────
     @app.route("/api/voice/health", methods=["GET"])

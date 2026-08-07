@@ -171,25 +171,35 @@ class GSM8KOndulatoire:
             return a / b if b else a
         return a + b
 
-    def resoudre(self, question: str) -> Dict[str, Any]:
+    def resoudre(self, question: str, reviser: bool = False,
+                 revision=None) -> Dict[str, Any]:
         """Résout un énoncé. Trois moteurs en cascade, ordonnés par précision
         interne mesurée sur le benchmark complet (07/08/2026) :
         1. les 45 solveurs de patrons GSM8K (7,5 % — solution héritée de
            l'écosystème, wave_word_problems.py, chargée en défensif)
-        2. machine à états sémantique (4,0 % — compteurs d'objets, équations)
-        3. pipeline par résonance (3,4 % — prototypes d'ondes) — fallback"""
+        2. machine à états sémantique typée (4,0 % — compteurs, équations)
+        3. pipeline par résonance (3,4 % — prototypes d'ondes) — fallback
+        Si reviser=True : une révision LLM (revision.py) valide/corrige la
+        solution sur les cas où le solveur n'est pas confiant."""
         t0 = time.time()
         r_patrons = self._resoudre_patrons(question)
         if r_patrons is not None:
             r_patrons["temps_ms"] = int((time.time() - t0) * 1000)
-            return r_patrons
-        from machine_etats import MachineEtatsSemantique
-        r_sem = MachineEtatsSemantique().resoudre(question)
-        if r_sem is not None:
-            r_sem["temps_ms"] = int((time.time() - t0) * 1000)
-            r_sem["question"] = (question or "").strip()
-            return r_sem
-        return self._resoudre_resonance(question, t0)
+            resultat = r_patrons
+        else:
+            from machine_etats import MachineEtatsSemantique
+            r_sem = MachineEtatsSemantique().resoudre(question)
+            if r_sem is not None:
+                r_sem["temps_ms"] = int((time.time() - t0) * 1000)
+                r_sem["question"] = (question or "").strip()
+                resultat = r_sem
+            else:
+                resultat = self._resoudre_resonance(question, t0)
+        if reviser and resultat.get("reponse_num") is not None:
+            from revision import RevisionLLM
+            revision = revision or RevisionLLM()
+            resultat = revision.reviser(question, resultat)
+        return resultat
 
     def _resoudre_patrons(self, question: str) -> Optional[Dict[str, Any]]:
         """Les 45 solveurs de patrons hérités (WaveWordProblemEngine).

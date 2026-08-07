@@ -399,6 +399,31 @@ def niveau6_maths_voix_benchmark() -> bool:
                est_question_maths("combien font 7+3 ?")
                and not est_question_maths("Qu'est-ce que la lumière ?"))
 
+    # ── révision LLM (mécanisme testé avec un fournisseur injecté) ──────
+    from revision import RevisionLLM
+    rev = RevisionLLM(fournisseur=lambda prompt: "PLAN: (5+5*0.6)/2*16")
+    plan = rev._extraire_plan("Solution fausse. PLAN: 16*(5+5*0.6)/2")
+    val = rev._evaluer_plan(plan)
+    ok &= test("LLM : parsing du plan + évaluation sécurisée",
+               val is not None and abs(val - 64) < 1e-6 and
+               rev._evaluer_plan("__import__('os').system('dir')") is None,
+               f"PLAN: {plan} → {val}")
+
+    q_kylar = ("Kylar went to the store to buy glasses for his new apartment. "
+               "One glass costs $5, but every second glass costs only 60% of the "
+               "original. He buys 16 glasses. How much does he pay?")
+    r0 = s.resoudre(q_kylar)
+    r1 = s.resoudre(q_kylar, reviser=True, revision=rev)
+    ok &= test("LLM : révision corrige une erreur sémantique du solveur",
+               abs(r1["reponse_num"] - 64) < 1e-6 and r1.get("plan_llm"),
+               f"sans révision {r0['reponse']} → avec révision {r1['reponse']}")
+
+    # dégradation : sans clé API, la révision conserve la solution déterministe
+    rev_ko = RevisionLLM(fournisseur=lambda prompt: None)
+    r2 = s.resoudre(q_kylar, reviser=True, revision=rev_ko)
+    ok &= test("LLM : dégradation propre si le fournisseur est indisponible",
+               r2["reponse"] == r0["reponse"] and rev_ko.stats["echecs"] == 1)
+
     from cerveau import IaOndulatoire
     ia = IaOndulatoire(charger=False)
     r_cerveau = ia.poser("combien font 7+3 ?")

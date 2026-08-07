@@ -39,6 +39,7 @@ python serveur.py        # API des 3 apps sur http://localhost:8767
 | `gsm8k.py` | **GSM8K ondulatoire** : **trois moteurs fusionnés en cascade**, ordonnés par précision interne mesurée — ① les **45 solveurs de patrons GSM8K** hérités de l'écosystème (`wave_word_problems.py`, import défensif) ② machine à états sémantique **typée** ③ pipeline par résonance contre des prototypes d'ondes (SUPERPOSE → RESONATE → DÉCODER) — 0 LLM |
 | `machine_etats.py` | La machine à états sémantique : compteurs par objet, transitions dimension-aware (taux × durée, prix × quantité → montant, année ignorée, pièces converties), équations relatives, densités, fractions, distribution (« chaque élève reçoit 2 bâtons »), paquets (ceil), garde-fou de confiance strict |
 | `typeur.py` | **La couche de traduction** : chaque nombre est typé (dimension : monnaie/durée/longueur/objet/année/fraction + rôle : montant/taux/prix_unitaire/facteur/duree/année) avant tout calcul — c'est elle qui distingue « 6 heures » (durée) de « 2007 » (année ignorée), « 5 quarters » (1,25 $) de « 55 cents » (retrait) |
+| `revision.py` | **Révision sélective par LLM** : le solveur propose, le LLM valide/corrige la SÉMANTIQUE en fournissant un `PLAN: <expression>` évalué localement (calcul exact 0-erreur). Protocole strict, parseur sécurisé (ast), dégradation propre si le fournisseur est indisponible ; fournisseur injectable (tests sans clé) |
 | `voix.py` | **KA Voice** : pont TTS vers `ka_voice_server` :8420 (Piper) — mêmes contrats `/api/voice/*`, dégradation 503 propre si hors ligne |
 | `benchmark_educal.py` | **Benchmark éducatif** : F1@5 par discipline (rappel par résonance des faits pertinents), contrôle du tuteur par re-résolution ondulatoire, rapport JSON |
 | `serveur.py` | **API Flask des 3 apps** (port 8767) + compatibilité OpenAI (`/v1/chat/completions`) |
@@ -97,13 +98,22 @@ POST /api/store/recall {"query":"répétition espacée"} → « répétition esp
                                                          le souvenir avant l'oubli »
 ```
 
-### MATHS — GSM8K ondulatoire (0 LLM)
+### MATHS — GSM8K ondulatoire (0 LLM) + révision LLM optionnelle
 ```bash
-POST /api/maths/solve  {"question": "Une voiture parcourt 140 km en 2 heures. …"}
-  → {response, reponse, etapes, operations, source: "ondulatoire-maths"}
+POST /api/maths/solve  {"question": "…", "reviser": true}   # révision DeepSeek si activée
+  → {response, reponse, etapes, operations, plan_llm?, source: "ondulatoire-maths(+llm)"}
 # intégré au chat : « combien font 7+3 ? » → résolution ondulatoire
 python gsm8k.py   # benchmark officiel (n configurable) → data/ia_ondulatoire/benchmark_gsm8k.json
 ```
+**La révision LLM** (mode 1 : révision sélective) : le solveur 0-LLM propose
+(nombres typés + étapes), le LLM valide la sémantique et répond au format
+`PLAN: <expression>` (ex. « every second glass costs 60% » → `16*(5+5*0.6)/2`),
+évaluée localement par un parseur sécurisé — le calcul reste exact à 100 %.
+Démonstration validée : Kylar corrigé 80 → 64 ✅ (mock). **État des fournisseurs
+au 07/08/2026** : Anthropic crédits épuisés · OpenAI gpt-4o-mini 429 · pas de
+clé DeepSeek → la révision se dégrade proprement (solution déterministe
+conservée) tant qu'aucun fournisseur ne répond ; rebrancher via
+`llm/router.py` (clé DEEPSEEK_API_KEY).
 La sélection d'opération est une expérience d'interférence : chaque famille
 (addition, soustraction, multiplication, division) est un **prototype d'onde** =
 SUPERPOSE des encodages de ses mots-clés ; l'onde de la phrase résonne avec
