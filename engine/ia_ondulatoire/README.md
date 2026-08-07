@@ -128,11 +128,13 @@ Hors ligne → 503 propre (« démarrez ka_voice_server.py »).
 
 ### Benchmark GSM8K (complet, 1 319 problèmes)
 ```bash
-python benchmark_revision.py   # complet avec révision LLM (checkpoint/reprise)
+python benchmark_revision.py            # révision sélective (checkpoint/reprise)
+python benchmark_revision.py --tous     # révision TOUS les problèmes
 ```
 **Résultats officiels (07/08/2026) :**
 - **0 LLM déterministe : 59/1319 = 4,47 %** (typeur + machine à états + 45 patrons + résonance)
-- **Avec révision LLM sélective (DeepSeek) : 436/1319 = 33,06 %** — +379 gagnés, −2 corrompus, 454 appels LLM, 12,3 min (~0,30 $). Le consensus des patrons passe de 5,7 % à 84,1 % de précision (le solveur propose, DeepSeek valide la sémantique, le calcul reste exact). Les 713 problèmes « résonance » (aucun nombre détecté) ne sont pas révisés — piste ouverte (`reviser_tous`).
+- **Révision sélective (DeepSeek, moteurs faibles) : 436/1319 = 33,06 %** — +379/−2, 454 appels, 12,3 min
+- **Révision TOUS : 1128/1319 = 85,52 %** — +1 073/−4, 1 309 appels, 26,3 min (~1 $). Les trois moteurs homogénéisés à ~85 % : le solveur propose la structure typée, DeepSeek valide la sémantique, le calcul reste 100 % local et exact (0,3 % de réponses corrompues seulement).
 
 ### Benchmark éducatif
 ```bash

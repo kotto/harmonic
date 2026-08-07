@@ -34,6 +34,8 @@ DATASET = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                        "..", "data", "benchmarks", "gsm8k_test.jsonl")
 CHEMIN_CKPT = os.path.join(DOSSIER, "benchmark_revision_ckpt.json")
 CHEMIN_RAPPORT = os.path.join(DOSSIER, "benchmark_revision.json")
+CHEMIN_CKPT_TOUS = os.path.join(DOSSIER, "benchmark_revision_tous_ckpt.json")
+CHEMIN_RAPPORT_T0US = os.path.join(DOSSIER, "benchmark_revision_tous.json")
 
 
 def attendu(answer: str):
@@ -45,15 +47,17 @@ def _ok(valeur, a) -> bool:
     return valeur is not None and a is not None and abs(valeur - a) < 1e-6
 
 
-def lancer(sample: int = 0, reprendre: bool = True) -> dict:
+def lancer(sample: int = 0, reprendre: bool = True, tous: bool = False) -> dict:
     s = GSM8KOndulatoire()
     rev = RevisionLLM(timeout=90)
-    print(f"Réviseur disponible : {rev.disponible()}")
+    print(f"Réviseur disponible : {rev.disponible()} · mode {'TOUS' if tous else 'SÉLECTIF'}")
 
+    chemin_rapport = CHEMIN_RAPPORT_T0US if tous else CHEMIN_RAPPORT
+    chemin_ckpt = CHEMIN_CKPT_TOUS if tous else CHEMIN_CKPT
     resultats = []
-    if reprendre and os.path.exists(CHEMIN_CKPT):
+    if reprendre and os.path.exists(chemin_ckpt):
         try:
-            with open(CHEMIN_CKPT, encoding="utf-8") as f:
+            with open(chemin_ckpt, encoding="utf-8") as f:
                 resultats = json.load(f).get("resultats", [])
             print(f"Checkpoint repris : {len(resultats)} problèmes déjà traités")
         except Exception:
@@ -75,7 +79,8 @@ def lancer(sample: int = 0, reprendre: bool = True) -> dict:
                       "sans": r0["reponse_num"],
                       "moteur": str(r0.get("moteur") or "resonance"),
                       "ok_sans": _ok(r0["reponse_num"], a)}
-            r1 = s.resoudre(d["question"], reviser=True, revision=rev)
+            r1 = s.resoudre(d["question"], reviser=True, revision=rev,
+                            reviser_tous=tous)
             entree["avec"] = r1["reponse_num"]
             entree["ok_avec"] = _ok(r1["reponse_num"], a)
             entree["plan"] = r1.get("plan_llm")
@@ -86,7 +91,7 @@ def lancer(sample: int = 0, reprendre: bool = True) -> dict:
             if len(resultats) % 10 == 0:
                 ckpt = {"resultats": resultats,
                         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")}
-                with open(CHEMIN_CKPT, "w", encoding="utf-8") as fw:
+                with open(chemin_ckpt, "w", encoding="utf-8") as fw:
                     json.dump(ckpt, fw, ensure_ascii=False)
                 ok0 = sum(1 for r in resultats if r["ok_sans"])
                 ok1 = sum(1 for r in resultats if r["ok_avec"])
@@ -109,7 +114,9 @@ def lancer(sample: int = 0, reprendre: bool = True) -> dict:
             par_moteur[cle][1] += 1
 
     rapport = {
-        "benchmark": "gsm8k_test.jsonl (complet) + révision LLM sélective",
+        "benchmark": "gsm8k_test.jsonl (complet) + révision LLM "
+                     + ("TOUS" if tous else "sélective"),
+        "mode": "tous" if tous else "selectif",
         "echantillon": n,
         "correct_sans_revision": ok0,
         "precision_sans_revision": round(ok0 / n, 4) if n else 0,
@@ -118,17 +125,17 @@ def lancer(sample: int = 0, reprendre: bool = True) -> dict:
         "gagnes": gagnes, "perdus": perdus,
         "appels_llm": appels_llm,
         "duree_s": round(time.time() - debut, 1),
-        "moteur": "langage-ondulatoire-v1 + DeepSeek (révision sélective)",
+        "moteur": "langage-ondulatoire-v1 + DeepSeek",
         "par_moteur": {k: {"n": v[0], "bons": v[1]} for k, v in par_moteur.items()},
         "date": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }
     os.makedirs(DOSSIER, exist_ok=True)
-    with open(CHEMIN_RAPPORT, "w", encoding="utf-8") as f:
+    with open(chemin_rapport, "w", encoding="utf-8") as f:
         json.dump(rapport, f, ensure_ascii=False, indent=1)
-    if os.path.exists(CHEMIN_CKPT) and n >= (sample or 1319):
-        os.remove(CHEMIN_CKPT)          # benchmark terminé → checkpoint purgé
+    if os.path.exists(chemin_ckpt) and n >= (sample or 1319):
+        os.remove(chemin_ckpt)          # benchmark terminé → checkpoint purgé
     print("═" * 62)
-    print("BENCHMARK GSM8K + RÉVISION LLM SÉLECTIVE")
+    print(f"BENCHMARK GSM8K + RÉVISION LLM {'TOUS' if tous else 'SÉLECTIVE'}")
     print("═" * 62)
     print(f"Échantillon      : {n} problèmes")
     print(f"Sans révision    : {ok0}/{n} = {ok0/max(1,n)*100:.2f} %")
@@ -142,5 +149,7 @@ if __name__ == "__main__":
     analyseur = argparse.ArgumentParser()
     analyseur.add_argument("--sample", type=int, default=0)
     analyseur.add_argument("--reprendre", action="store_true", default=True)
+    analyseur.add_argument("--tous", action="store_true",
+                           help="réviser TOUS les problèmes (résonance incluse)")
     args = analyseur.parse_args()
-    lancer(sample=args.sample, reprendre=args.reprendre)
+    lancer(sample=args.sample, reprendre=args.reprendre, tous=args.tous)
