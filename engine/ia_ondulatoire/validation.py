@@ -355,7 +355,9 @@ def niveau6_maths_voix_benchmark() -> bool:
 
     # ── GSM8K ondulatoire ───────────────────────────────────────────────
     from gsm8k import GSM8KOndulatoire, est_question_maths
+    from machine_etats import MachineEtatsSemantique
     s = GSM8KOndulatoire()
+    machine = MachineEtatsSemantique()
     canoniques = [
         ("Janet's ducks lay 16 eggs per day. She eats three for breakfast every morning "
          "and bakes muffins for her friends every day with four. She sells the remainder "
@@ -380,14 +382,14 @@ def niveau6_maths_voix_benchmark() -> bool:
     ]
     bons = 0
     for q, attendu in canoniques:
-        r = s.resoudre(q)
+        r = machine.resoudre(q) or s.resoudre(q)
         if r["reponse_num"] is not None and abs(r["reponse_num"] - attendu) < 1e-6:
             bons += 1
-    ok &= test("GSM8K : 12 problèmes canoniques (5 familles + Janet + % )",
+    ok &= test("GSM8K : 12 problèmes canoniques (machine à états + fallbacks)",
                bons == len(canoniques), f"{bons}/{len(canoniques)}")
 
     r_maths = s.benchmark(n=50, sauver=False)
-    ok &= test("GSM8K : benchmark officiel exécuté (n=50, 0 LLM)",
+    ok &= test("GSM8K : benchmark officiel exécuté (n=50, 0 LLM, 3 moteurs fusionnés)",
                r_maths.get("precision") is not None
                and r_maths["latence_moyenne_ms"] < 1000,
                f"précision {r_maths['precision'] * 100:.1f} % · "

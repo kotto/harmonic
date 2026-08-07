@@ -123,6 +123,8 @@ class GSM8KOndulatoire:
         for op, mots in MOTS_CLEFS.items():
             ondes = [encode(m, dim) for m in mots]
             self.prototypes[op] = superpose(*ondes) if ondes else encode(op, dim)
+        self._patrons = None                      # WaveWordProblemEngine (lazy)
+        self._patrons_charge = False
 
     # ── 1. ENCODE → SUPERPOSE → RESONATE → DÉCODER (l'opération) ────────
     def detecter_operation(self, phrase: str) -> Tuple[str, float, bool]:
@@ -170,10 +172,17 @@ class GSM8KOndulatoire:
         return a + b
 
     def resoudre(self, question: str) -> Dict[str, Any]:
-        """Résout un énoncé. Deux moteurs :
-        1. machine à états sémantique (compteurs d'objets, équations relatives)
-        2. pipeline par résonance (prototypes d'ondes) — fallback"""
+        """Résout un énoncé. Trois moteurs en cascade, ordonnés par précision
+        interne mesurée sur le benchmark complet (07/08/2026) :
+        1. les 45 solveurs de patrons GSM8K (7,5 % — solution héritée de
+           l'écosystème, wave_word_problems.py, chargée en défensif)
+        2. machine à états sémantique (4,0 % — compteurs d'objets, équations)
+        3. pipeline par résonance (3,4 % — prototypes d'ondes) — fallback"""
         t0 = time.time()
+        r_patrons = self._resoudre_patrons(question)
+        if r_patrons is not None:
+            r_patrons["temps_ms"] = int((time.time() - t0) * 1000)
+            return r_patrons
         from machine_etats import MachineEtatsSemantique
         r_sem = MachineEtatsSemantique().resoudre(question)
         if r_sem is not None:
@@ -181,6 +190,41 @@ class GSM8KOndulatoire:
             r_sem["question"] = (question or "").strip()
             return r_sem
         return self._resoudre_resonance(question, t0)
+
+    def _resoudre_patrons(self, question: str) -> Optional[Dict[str, Any]]:
+        """Les 45 solveurs de patrons hérités (WaveWordProblemEngine).
+        Chargés depuis la racine de l'écosystème, en défensif : si la pile
+        historique est absente, le moteur continue sans cet étage."""
+        if not self._patrons_charge:
+            self._patrons_charge = True
+            try:
+                import os
+                import sys as _sys
+                racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                if racine not in _sys.path:
+                    _sys.path.insert(0, racine)
+                from wave_word_problems import WaveWordProblemEngine
+                self._patrons = WaveWordProblemEngine()
+            except Exception:
+                self._patrons = None
+        if self._patrons is None:
+            return None
+        try:
+            r = self._patrons.solve(question)
+        except Exception:
+            return None
+        if r is None:
+            return None
+        valeur = float(r.result)
+        affichage = f"{round(valeur):g}" if abs(valeur - round(valeur)) < 1e-9 \
+            else f"{round(valeur, 3):g}"
+        return {
+            "question": question, "reponse": affichage, "reponse_num": valeur,
+            "etapes": list(r.steps or []), "operations": [f"patron:{r.method}"],
+            "confiances": [0.5], "temps_ms": 0,
+            "modele": "langage-ondulatoire-v1 (0 LLM)",
+            "moteur": "patrons_gsm8k (45 structures héritées)",
+        }
 
     def _resoudre_resonance(self, question: str, t0: float) -> Dict[str, Any]:
         """Pipeline par résonance : chaque nombre (chiffres ou épelé) est traité
