@@ -316,7 +316,12 @@ def amplify(psi: Wave, composante: Wave, boost: float = 3.0) -> Wave:
 # ────────────────────────────────────────────────────────────────────────
 
 def _mittag_leffler(z: float, alpha: float, tolerance: float = 1e-10) -> float:
-    """E_α(z) = Σ z^k / Γ(αk + 1) — série directe.
+    """E_α(z) = Σ z^k / Γ(αk + 1) — série par récurrence EXACTE.
+
+    terme_k = terme_{k-1} · z · Γ(α(k−1)+1)/Γ(αk+1)
+    (CORRIGÉ 08/08/2026 : l'ancienne récurrence « terme *= z/Γ(αk+1) »
+    donnait z^k/(Γ(α+1)·Γ(2α+1)·…) au lieu de z^k/Γ(αk+1) — erreur
+    jusqu'à ~56 % à z=2, noyau de mémoire non monotone.)
 
     Les termes croissent jusqu'à k ≈ |z|^{1/α}/α avant de décroître : le nombre
     de termes est adaptatif (sinon la somme tronquée diverge, ex. t = 100)."""
@@ -327,7 +332,7 @@ def _mittag_leffler(z: float, alpha: float, tolerance: float = 1e-10) -> float:
     terme = 1.0
     total = terme
     for k in range(1, max_termes):
-        terme *= z / m.gamma(alpha * k + 1.0)
+        terme *= z * m.gamma(alpha * (k - 1) + 1.0) / m.gamma(alpha * k + 1.0)
         total += terme
         if abs(terme) < tolerance * max(1.0, abs(total)):
             break
