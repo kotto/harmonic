@@ -113,6 +113,16 @@ Test sur les **80 échecs étiquetés** (taxonomie, PLAN_FAUX) :
 |---|---|---|---|---|
 | v0.0 | 0 | 6 | 74 | refus correct, grammaire pauvre |
 | v0.1 (+achat multi, fractions « of that », for-$P total) | 0 | 4 | 76 | FAUX −33 % ; « for $80 » total ne devient plus une assertion |
+| v0.2 (taux×durée, inverse, cible, quantités, ratio ; clauses question traitées) | 4 | 2 | 74 | familles gagnées : perte (113), intérêt simple (187), problème inverse (548), taux composé+cible (555) — progression 0→1→3→4 |
+| v0.3 (correction virgule-milliers US : 14 réponses mal lues dans tout le benchmark) | — | — | — | extraction « #### 1,875 » = 1875 ; affecte 14/1319 items |
+
+Verdict de l'itération 2 :
+- ✅ 4 familles de relations résolues (perte, intérêt, inverse, taux+cible) —
+  la boucle grammaire → mesure → itération fonctionne (0 → 4 bons)
+- ❌ 2 FAUX restants : fractions chaînées avec entités (1009), ratio imbriqué
+  (1140) — les problèmes composites, prochaine famille
+- ✅ 74/80 refus corrects — jamais de réponse fausse confiante
+  (sauf 2, couverts par la prochaine itération)
 
 Verdict honnête de l'itération 1 :
 - ✅ L'architecture (embeddings → attention → grammaire → refus) fonctionne

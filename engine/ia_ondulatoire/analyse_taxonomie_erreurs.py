@@ -47,8 +47,16 @@ ETIQUETTES = os.path.join(DOSSIER, "taxonomie_etiquettes.json")
 
 
 def attendu_gsm8k(answer: str):
-    m = re.search(r"####\s*(-?\d+(?:[.,]\d+)?)", answer or "")
-    return float(m.group(1).replace(",", ".")) if m else None
+    m = re.search(r"####\s*(-?\d[\d,.]*)", answer or "")
+    if not m:
+        return None
+    s = m.group(1)
+    # virgule = milliers (US) si suivie de 3 chiffres exactement ou si ≥ 2 virgules
+    if re.search(r",\d{3}(?!\d)", s) or s.count(",") >= 2:
+        s = s.replace(",", "")
+    else:
+        s = s.replace(",", ".")
+    return float(s)
 
 
 def ok(valeur, a):

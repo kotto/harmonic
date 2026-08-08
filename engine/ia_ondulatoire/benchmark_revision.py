@@ -153,3 +153,16 @@ if __name__ == "__main__":
                            help="réviser TOUS les problèmes (résonance incluse)")
     args = analyseur.parse_args()
     lancer(sample=args.sample, reprendre=args.reprendre, tous=args.tous)
+
+
+def attendu_gsm8k(answer: str):
+    m = re.search(r"####\s*(-?\d[\d,.]*)", answer or "")
+    if not m:
+        return None
+    s = m.group(1)
+    # virgule = milliers (US) si suivie de 3 chiffres exactement ou si ≥ 2 virgules
+    if re.search(r",\d{3}(?!\d)", s) or s.count(",") >= 2:
+        s = s.replace(",", "")
+    else:
+        s = s.replace(",", ".")
+    return float(s)
