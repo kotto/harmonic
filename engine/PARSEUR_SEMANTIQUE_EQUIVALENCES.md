@@ -211,3 +211,45 @@ cascade affirmait 300 réponses fausses). Le refus EST le transfert.
 | Embeddings contextuels | ❌ non utilisés par l'exécution |
 | Généralisation | ❌ 0 % SVAMP — méthode = démonstrateur des structures connues, pas moteur général |
 | Positionnement | parseur déterministe 0 coût + refus ; le LLM reste le généraliste — architecture hybride recommandée |
+
+## 8. ARCHITECTURE HYBRIDE — implémentée et mesurée (08/08/2026)
+
+### La découverte qui a tout changé : le sur-assentiment
+Sur le corpus COMPLET (1319), le parseur affirmait 84 FAUX (85 % de ses
+assertions !) — les gardes calibrées sur les 80 étiquetés ne tenaient pas
+sur les structures mixtes. Les 80 avaient donné une fausse assurance.
+
+### La calibration par signature — le standard 0 faux rétabli
+Chaque plan est identifié par sa SIGNATURE (ensemble des types de
+relations). Seules les signatures mesurées à 0 faux sur le corpus complet
+sont autorisées à asserter (10 signatures — exactement les 10 familles) ;
+toute autre combinaison → REFUS.
+
+```
+Corpus complet (1319) :
+  AVANT calibration : 15 bons · 84 FAUX     ← 85 % des assertions fausses
+  APRÈS calibration : 10 bons · 0 FAUX · 1309 refus   ← standard rétabli
+80 étiquetés : 9 bons · 0 faux · 71 refus (inchangé)
+Validation moteur : 60/60 (cerveau hybride intégré, release verte)
+```
+
+### L'hybride dans le cerveau (cerveau.py, chemin maths)
+```
+Question → Parseur sémantique (grammaire pure, signatures validées)
+             ├─ signature validée → réponse déterministe (0 coût, 0 LLM)
+             └─ REFUS → cascade GSM8K ondulatoire → (option) révision LLM
+```
+Le parseur résout 10 items sans aucun appel LLM (économie sur la révision
+TOUS = 1309 appels), avec 0 risque de corruption (calcul local vérifié).
+Le REFUS du parseur devient un signal de confiance pour la révision
+sélective : les items dont la structure est comprise ne partent jamais
+au LLM ; ceux qui ne le sont pas y partent avec un signal vrai.
+
+### Verdict final de l'approche (mesures closes)
+| Question | Réponse mesurée |
+|---|---|
+| L'attention apporte-t-elle quelque chose ? | NON — ornement (weights uniformes, ablation identique) |
+| La grammaire transfère-t-elle ? | NON — SVAMP 0 % (mais 287/300 refus honnêtes) |
+| Le parseur est-il sûr ? | OUI — 0 faux sur 1319 APRÈS calibration signature |
+| Que vaut l'hybride ? | 10 items résolus à 0 coût + refus fiable pilotant la révision LLM |
+| Positionnement | parseur = traducteur déterministe des structures connues ; LLM = généraliste ; le refus est le joint |

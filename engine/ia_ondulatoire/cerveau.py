@@ -132,10 +132,26 @@ class IaOndulatoire:
                                                user_id, "physique")
                 return resultat
 
-        # chemin mathématique : GSM8K ondulatoire (0 LLM, sélection d'opération
-        # par résonance contre les prototypes d'ondes)
+        # chemin mathématique — HYBRIDE (08/08/2026) :
+        # ① parseur sémantique déterministe (0 coût, 0 hallucination — les
+        #    familles de relations connues sont résolues localement)
+        # ② REFUS → cascade GSM8K ondulatoire (0 LLM) en secours
+        from parseur_semantique import EmbeddingsContextuels, ParseurSemantique
         from gsm8k import GSM8KOndulatoire, est_question_maths
         if est_question_maths(question):
+            # grammaire pure : embeddings vides → attention uniforme
+            # (ornement documenté — l'exécution n'en dépend pas)
+            rp = ParseurSemantique(EmbeddingsContextuels()).decomposer(question)
+            if rp["courant"] is not None:
+                texte = ("Résolution parseur : " + " → ".join(rp["etapes"][-4:])
+                         + f" = {rp['courant']:g}.")
+                resultat = self._reponse(texte, 0.9, "ondulatoire-parseur", debut)
+                resultat.update({"intention": "reason",
+                                 "programme": "DÉCOMPOSER (grammaire relations) → "
+                                              "plan → exécuter → REFUS sinon",
+                                 "faits": rp["etapes"][-3:]})
+                self._enregistrer_conversation(question, texte, user_id, "maths")
+                return resultat
             r = GSM8KOndulatoire(dim=self.dim).resoudre(question)
             if r["reponse_num"] is not None:
                 texte = ("Résolution ondulatoire : " + " → ".join(r["etapes"][-4:])

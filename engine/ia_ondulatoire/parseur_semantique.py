@@ -148,6 +148,24 @@ def _norm(nom):
     return n
 
 
+# Signatures de relations VALIDÉES à 0 faux sur les 1319 items du test
+# (calibration 08/08/2026 — le parseur n'ASSERTE que sur ces signatures,
+# tout le reste → REFUS). À re-valider sur tout nouveau corpus.
+SIGNATURES_VALIDEES = {
+    frozenset({"futur", "ratio_colon", "total_ent"}),
+    frozenset({"duree", "perte", "taux"}),
+    frozenset({"ratio_ent", "total_ent"}),
+    frozenset({"base", "duree", "interet", "pct_iso"}),
+    frozenset({"duree", "perso_cible", "perso_periode", "perso_question",
+               "perso_ratio"}),
+    frozenset({"duree", "final", "taux"}),
+    frozenset({"cible", "heures_semaine", "perso_question", "taux"}),
+    frozenset({"duree", "initial", "periode_fixe", "taux", "total_annees"}),
+    frozenset({"base_ent", "frac_ent", "frac_of"}),
+    frozenset({"cmp", "quantite", "ratio_prend2"}),
+}
+
+
 class ParseurSemantique:
     def __init__(self, emb: EmbeddingsContextuels):
         self.emb = emb
@@ -484,6 +502,17 @@ class ParseurSemantique:
         # qualificatif total, pas une période à consommer)
         self._executer([r for r in rels_q if r[0] != "duree"],
                        self.nombres(question_txt), etat, ordre)
+        # CALIBRATION SIGNATURE : n'asserter que sur les combinaisons de
+        # familles validées à 0 faux sur le corpus mesuré — toute autre
+        # combinaison (structure semi-comprise) → REFUS
+        signature = set()
+        for rels, _n in corps_rels:
+            signature.update(r[0] for r in rels)
+        signature.update(r[0] for r in rels_q)
+        if frozenset(signature) not in SIGNATURES_VALIDEES:
+            etat["sig_invalide"] = True
+            etat["courant"] = None
+            etat["total"] = None
         # plan faible → REFUS : durée sans taux/intérêt, taux multiples sans
         # cible, % non traité, prix du corps non consommés
         if etat.get("faible_duree") or etat.get("faible") or (
@@ -565,6 +594,8 @@ class ParseurSemantique:
             reponse = etat["total"]
         if "remaining" in q or "left" in q:
             reponse = etat.get("courant")
+        if etat.get("sig_invalide"):
+            reponse = None
         return {"ok": bool(ordre), "etapes": ordre,
                 "couverture": couverture, "relations": nb_relations,
                 "courant": reponse}
