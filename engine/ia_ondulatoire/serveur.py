@@ -36,13 +36,22 @@ from voix import VoixOndulatoire
 
 PORT = 8767
 CLE_DEMO = os.environ.get("KA_ONDULATOIRE_CLE_DEMO", "cle-ondulatoire-demo")
+# Auth optionnelle sur /api/chat (P2.4, 08/08/2026) : si KA_API_KEY est
+# définie dans l'environnement, /api/chat exige X-API-Key. Vide = ouvert.
+CLE_CHAT = os.environ.get("KA_API_KEY", "")
+# CORS configurable : KA_CORS_ORIGINS = "https://a,https://b" (défaut *)
+_CORS_ORIGINS = os.environ.get("KA_CORS_ORIGINS", "*").split(",")
 
 if _FLASK:
     app = Flask(__name__)
 
     @app.after_request
     def _cors(resp):
-        resp.headers["Access-Control-Allow-Origin"] = "*"
+        origine = request.headers.get("Origin", "")
+        if _CORS_ORIGINS == ["*"] or origine in _CORS_ORIGINS:
+            resp.headers["Access-Control-Allow-Origin"] = (
+                "*" if _CORS_ORIGINS == ["*"] else origine)
+            resp.headers["Vary"] = "Origin"
         resp.headers["Access-Control-Allow-Headers"] = "Content-Type, X-API-Key"
         resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, DELETE"
         return resp
@@ -189,6 +198,10 @@ if _FLASK:
 
     @app.route("/api/chat", methods=["POST"])
     def route_chat():
+        # auth optionnelle (P2.4) : si KA_API_KEY est définie, X-API-Key requis
+        if CLE_CHAT and request.headers.get("X-API-Key", "") != CLE_CHAT:
+            return jsonify({"error": "X-API-Key requise (KA_API_KEY)",
+                            "response": ""}), 401
         donnees = request.get_json(silent=True) or {}
         message = (donnees.get("message") or donnees.get("prompt") or "").strip()
         if not message:
@@ -397,9 +410,15 @@ if _FLASK:
         unit_id = donnees.get("unit_id", "")
         if not unit_id:
             return jsonify({"error": "unit_id requis"}), 400
+        answers = donnees.get("answers", [])
+        exercises = donnees.get("exercises", [])
+        # robustesse (P2.4, 08/08/2026) : entrées mal formées → 400, pas 500
+        if not all(isinstance(a, dict) for a in answers) or \
+           not all(isinstance(e, dict) for e in exercises):
+            return jsonify({"error": "answers/exercises doivent être des "
+                                     "objets ({question, answer})"}), 400
         resultat = obtenir_orchestrateur().quiz_submit(
-            user_id, unit_id, donnees.get("answers", []),
-            donnees.get("exercises", []))
+            user_id, unit_id, answers, exercises)
         if "error" in resultat:
             return jsonify(resultat), 404
         return jsonify(resultat)
@@ -541,7 +560,8 @@ if _FLASK:
                                  "ondulatoire — utilisez ka_server.py (port 8765, codec HCV)",
                         "response": ""}), 501
 
-    # ── routes MATHS (GSM8K ondulatoire) ────────────────────────────────    @app.route("/api/maths/solve", methods=["POST"])
+    # ── routes MATHS (GSM8K ondulatoire) ────────────────────────────────
+    @app.route("/api/maths/solve", methods=["POST"])
     def route_maths_solve():
         donnees = request.get_json(silent=True) or {}
         question = (donnees.get("question") or donnees.get("message") or "").strip()

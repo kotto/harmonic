@@ -23,6 +23,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
+# Seuil de refus honnête (P1.2, 08/08/2026) : la boucle générique produit
+# des confiances ~0,5-0,6 avec une précision mesurée ~0 % hors-domaines —
+# toute réponse générique sous ce seuil devient un refus explicite +
+# proposition d'apprentissage. Refus par défaut : P2.1.
+REFUS_SEUIL = 0.65
+
 import ir
 from generateur import GenerateurOndulatoire, vocabulaire_de
 from moteur import MoteurOndulatoire, QueryResult
@@ -36,6 +42,15 @@ SALUTATIONS = {
     "bonjour": "Bonjour ! 🌊 Mon langage natal est le langage ondulatoire : ENCODE → MANIPULER → DÉCODER. Que veux-tu que je résonne aujourd'hui ?",
     "hello": "Hello ! 🌊 I think in waves — ℂ⁵¹². Ask me anything, or teach me with « remember that … ».",
     "coucou": "Coucou ! 🌊 Mes 13 primitives sont prêtes (encode, bind, superpose, interfere…). Quelle question fait vibrer ton esprit ?",
+    "bonsoir": "Bonsoir ! 🌊 Mes ondes sont prêtes — pose-moi ta question.",
+    "bonne nuit": "Bonne nuit ! 🌊 Que tes rêves restent en phase.",
+    "comment vas-tu": "Je vais bien, merci ! 🌊 Mes 512 dimensions vibrent en harmonie — et toi ?",
+    "ça va": "Ça va très bien ! 🌊 Toutes mes primitives sont cohérentes. Et toi ?",
+    "ça va ?": "Ça va très bien ! 🌊 Toutes mes primitives sont cohérentes. Et toi ?",
+    "tu vas bien": "Oui, très bien ! 🌊 Mes ondes sont parfaitement en phase.",
+    "salutations": "Salutations ! 🌊 L'IA ondulatoire te reçoit en pleine cohérence.",
+    "bonne journée": "Bonne journée à toi ! 🌊",
+    "bonjour toi": "Bonjour ! 🌊 Que veux-tu que je résonne aujourd'hui ?",
 }
 MERCI = ["merci", "merci beaucoup", "thanks", "thank you"]
 AU_REVOIR = ["au revoir", "bye", "adieu", "à bientot", "a bientot"]
@@ -149,13 +164,18 @@ class IaOndulatoire:
 
         reponse, confiance, faits = self._synthetiser(intention, env, question)
 
-        # apprentissage implicite : si l'IA ne sait pas, elle propose d'apprendre
-        if confiance < 0.18 and intention in ("query", "classify", "compare",
-                                              "analogize", "reason"):
+        # apprentissage implicite : l'IA ne sait pas → elle refuse et propose
+        # d'apprendre. Seuil de refus P1.2 (08/08/2026) : la boucle générique
+        # a une précision mesurée ~3 % à confiance 0,5 hors-domaines connus —
+        # le refus est le comportement honnête par défaut. Un refus porte une
+        # confiance d'assertion NULLE (0,0) — jamais la confiance périmée.
+        if confiance < REFUS_SEUIL and intention in ("query", "classify", "compare",
+                                                      "analogize", "reason"):
             entite = self._sujet(question)
             reponse = (f"Je ne connais pas encore « {entite} » dans ma mémoire ondulatoire. "
                        f"Dis-moi : « souviens-toi que {entite} est … » et je l'apprendrai. 🌊")
             source = "ondulatoire-invite"
+            confiance = 0.0
         else:
             source = "ondulatoire-v1"
 

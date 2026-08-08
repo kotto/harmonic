@@ -83,6 +83,21 @@ test("routage : 'calcule 3 + 5' → pas physique",
 test("routage : 'si x vaut 2, combien vaut x fois 3' → pas physique",
      not est_question_physique("si x vaut 2, combien vaut x fois 3"))
 
+# ── 6b. régressions P1.2 (08/08/2026) : pas de pollution de sous-chaînes ─
+for q in ("quelle est la vitesse de la lumière en miles",
+          "que signifie E=mc2",
+          "combien d'étoiles dans la Voie lactée",
+          "quelle est la plus grande île du monde",
+          "combien de chevaux a une Formule 1",
+          "qui a écrit les Misérables"):
+    test(f"régression : '{q[:38]}…' → pas physique",
+         not est_question_physique(q))
+test("régression : 'prédis l'île de stabilité pour Z=119' → physique",
+     est_question_physique("prédis l'île de stabilité pour Z=119"))
+r_ile = PH.repondre("prédis l'île de stabilité pour Z=119")
+test("régression : réponse île = prédiction ex-ante",
+     r_ile is not None and r_ile["type"] == "ile_stabilite")
+
 # ── 7. réponses françaises ─────────────────────────────────────────────
 r1 = PH.repondre("masse de l'uranium 238")
 test("réponse : masse U-238 structurée",

@@ -362,8 +362,11 @@ class PhysiqueHarmonique:
                               f"{v['gagut_ecart_relatif'] * 100:.4f} %) ; "
                               f"m_p = {v['m_p_u']:.6f} u."),
                     "details": v}
-        if any(m in q for m in ("île", "ile", "stabilité", "stabilite", "superlourd",
-                                "super-lourd", "119", "120", "121", "122")):
+        # île de stabilité : mots STRICTS (frontières de mots) — « miles »,
+        # « étoiles » ou « île du monde » ne doivent PAS déclencher.
+        if (any(re.search(rf"\b{m}\b", q) for m in
+                ("stabilité", "stabilite", "superlourd", "super-lourd"))
+                or re.search(r"\b(?:11[9]|12[0-6])\b", q)):
             il = self.ile_stabilite()
             zl = il["elements"][0]
             return {"type": "ile_stabilite",
@@ -434,7 +437,11 @@ MOTS_PHYSIQUE = ("masse", "énergie de liaison", "energie de liaison", "noyau",
 
 def est_question_physique(question: str) -> bool:
     """Détecteur : élément + contexte physique prime sur le chemin maths
-    (« combien vaut la masse du fer 56 » → physique)."""
+    (« combien vaut la masse du fer 56 » → physique). Les mots à risque
+    (« île », « lumière », « stabilité ») sont appariés par FRONTIÈRES DE
+    MOTS — « étoiles », « miles », « île du monde » ne déclenchent pas.
+    (Corrigé 08/08/2026 : règle élément+chiffre supprimée — « E=mc2 »,
+    « Formule 1 » ne doivent pas router vers la physique.)"""
     from gsm8k import est_question_maths
     q = question.lower()
     element = PhysiqueHarmonique._trouver_element(question)
@@ -443,11 +450,22 @@ def est_question_physique(question: str) -> bool:
             "masse", "liaison", "noyau", "nucl", "isotope", "énergie",
             "energie", "coquille", "périodique", "periodique")):
         return True
-    if any(m in q for m in MOTS_PHYSIQUE):
+    # mots physiques stricts (frontières) — le reste doit rester hors domaine
+    mots_phys = ("masse", "énergie de liaison", "energie de liaison", "noyau",
+                 "nucléaire", "nuclaire", "isotope", "élément", "element",
+                 "périodique", "periodique", "coquille", "constante", "alpha",
+                 "gagut", "stabilité", "stabilite", "superlourd", "super-lourd",
+                 "uranium", "plomb", "carbone", "hydrogène", "hydrogene",
+                 "hélium", "helium", "lithium", "bore", "sodium", "magnésium",
+                 "magnesium", "silicium", "oxygène", "oxygene", "azote", "soufre",
+                 "chlore", "argon", "potassium", "calcium", "titane", "chrome",
+                 "nickel", "cuivre", "zinc", "étain", "etain", "argent",
+                 "mercure", "thorium", "plutonium", "flérovium", "flerovium",
+                 "oganesson", "ununennium", "unbinilium", "unbihexium")
+    if any(re.search(rf"\b{m}\b", q) for m in mots_phys):
         return not est_question_maths(question)
-    # isotope seul (« Fe 56 », « u 238 »)
-    if element is not None and re.search(r"\d+", q):
-        return True
+    # isotope seul (« Fe 56 », « u 238 ») — déjà capté par _trouver_element
+    # (symbole capitalisé ou minuscule suivi d'un nombre)
     return False
 
 

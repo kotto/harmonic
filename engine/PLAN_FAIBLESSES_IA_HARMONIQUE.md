@@ -99,6 +99,33 @@ sont à retirer des communications (A3.3 devient : synthèse factuelle).
 - **Critère** : Brier < 0,25 et recalage par isotonic/platt si écart > 0,1.
 - Livrable : `validation_confiance.py` + recaleur intégré au cerveau.
 
+**→ RÉSULTAT (08/08/2026) : CALIBRÉ après corrections.**
+
+```
+200 questions (50 maths · 30 physique · 20 identité · 101 hors-domaine)
+AVANT corrections : ECE = 0,437 | bin [0,4-0,6[ : précision 3,3 % —
+   la boucle générique AFFIRMAIT à confiance ~0,5 sur l'inconnu.
+
+Corrections appliquées (cerveau.py + physique.py) :
+  · REFUS_SEUIL = 0,65 : le refus devient le comportement par défaut
+  · un refus porte confiance 0,0 (plus la confiance périmée)
+  · salutations complétées (chemin rapide)
+  · détection physique : frontières de mots + règle élément+chiffre supprimée
+    (« étoiles », « miles », « E=mc2 », « Formule 1 » ne déclenchent plus)
+  · 7 tests de régression ajoutés (validation_physique.py 28/28)
+
+APRÈS : ECE(assertions) = 0,056 (< 0,15) | Brier = 0,015
+        refus hors-domaine = 100 % (cible 100 %)
+        connus assertés = 98 % | précision comportementale = 99,5 %
+```
+
+**P1.3 — Benchmarks hors-échantillon**
+- GSM8K : split train/test (la révision LLM et les patrons doivent être évalués
+  sur le test seul) ; rapports avec intervalle (bootstrap).
+- Arena V2 : CV 5-fold sur les épreuves ; publication des logs.
+- **Critère** : chaque chiffre publié avec IC 95 % ; le 85,52 % re-mesuré
+  hors-échantillon.
+
 **P1.3 — Benchmarks hors-échantillon**
 - GSM8K : split train/test (la révision LLM et les patrons doivent être évalués
   sur le test seul) ; rapports avec intervalle (bootstrap).
@@ -132,6 +159,23 @@ sont à retirer des communications (A3.3 devient : synthèse factuelle).
 - Clé API optionnelle sur /api/chat (X-API-Key), CORS configurable.
 - `tests_e2e.py` : les ~25 routes avec asserts (réponses 200/400/422 attendues).
 - **Critère** : 25/25 routes testées, échec → exit non nul.
+
+**→ RÉSULTAT (08/08/2026) : 37/37 routes OK + auth vérifiée.**
+
+```
+· KA_API_KEY (env) : /api/chat exige X-API-Key → 401 sans/mauvaise clé
+  (vérifié 401/401/200 sur port frais)
+· KA_CORS_ORIGINS (env) : origines configurables (défaut *)
+· BUG TROUVÉ PAR LES TESTS : la route /api/maths/solve n'était JAMAIS
+  enregistrée (décorateur collé dans un commentaire, ligne 557) — restaurée
+· BUG TROUVÉ : /api/educal/quiz/submit → 500 sur entrées mal formées
+  (robustesse : validation → 400)
+· tests_e2e.py blindé : port aléatoire (évite les serveurs périmés qui
+  traînent — double bind Windows détecté et nettoyé)
+· Bilan : 37/37 routes (chat, memorise, creative, reason, mémoire,
+  physique ×7, vital, enterprise ×6, educal ×4, maths ×2, voix ×2,
+  store, personalize, 404)
+```
 
 ### PHASE 3 — Validation externe (le monde)
 
