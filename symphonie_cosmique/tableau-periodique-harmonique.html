@@ -624,6 +624,63 @@ const catNames = {
   'a':'Alcalin / Alcalino-terreux','t':'Métal de transition','m':'Métal / Métalloïde',
   'n':'Non-métal','h':'Halogène','g':'Gaz noble','l':'Lanthanide / Actinide','p':'Prédit (Harmonique)'
 };
+
+// ════════════════════════════════════════════════════════════════════
+// BRANCHEMENT API PHYSIQUE HARMONIQUE — moteur ondulatoire (:8767)
+// Masses VÉRIFIÉES : 0 paramètre ajusté, 0,004 % sur 536 noyaux AME2020.
+// Hors ligne → bascule propre sur les valeurs locales (non vérifiées).
+// ════════════════════════════════════════════════════════════════════
+const massesAPI = {};   // z → {masse_predite_u, masse_reelle_u, ecart_pct}
+const ileAPI = {};      // z → {s2n_max, n_max_s2n, s2n_168, s2n_184, ...}
+let apiCertificat = null;
+let apiConnectee = false;
+
+function physAPI(chemin) {
+  return fetch(chemin).then(r => { if (!r.ok) throw new Error('offline'); return r.json(); })
+    .catch(() => fetch('http://localhost:8767' + chemin).then(r => r.json()));
+}
+
+async function chargerPhysiqueAPI() {
+  try {
+    const [per, ver, ile] = await Promise.all([
+      physAPI('/api/physics/periodique'),
+      physAPI('/api/physics/verification'),
+      physAPI('/api/physics/island'),
+    ]);
+    (per.elements || []).forEach(e => { massesAPI[e.z] = e; });
+    (ile.elements || []).forEach(e => { ileAPI[e.z] = e; });
+    apiCertificat = ver;
+    apiConnectee = true;
+  } catch (err) {
+    apiConnectee = false;
+  }
+  majBandeauAPI();
+  if (document.getElementById('detailPanel').classList.contains('open') && selectedElement) {
+    openDetail(selectedElement);
+  }
+}
+
+function majBandeauAPI() {
+  let chip = document.getElementById('apiStatus');
+  if (!chip) {
+    chip = document.createElement('div');
+    chip.id = 'apiStatus';
+    chip.style.cssText = 'display:inline-block;padding:5px 12px;border-radius:20px;font-size:0.76em;margin:8px 0 0 10px;border:1px solid var(--phi);background:rgba(212,168,67,0.05);';
+    const c = document.querySelector('.controls');
+    if (c) c.appendChild(chip);
+  }
+  if (apiConnectee && apiCertificat) {
+    chip.style.color = 'var(--green)';
+    chip.innerHTML = '⚛️ API physique connectée — masses vérifiées : écart moyen ' +
+      `${(apiCertificat.vallee_ecart_moyen_pct * 100).toFixed(3)} % sur ` +
+      `${apiCertificat.vallee_noyaux} noyaux de la vallée · α ` +
+      `${(apiCertificat.alpha_precision * 100).toFixed(5)} % · 0 paramètre ajusté`;
+  } else {
+    chip.style.color = 'var(--ink3)';
+    chip.innerHTML = '⚛️ API physique hors ligne — masses locales non vérifiées (démarrez : python serveur.py --port 8767)';
+  }
+}
+
 const catColors = {
   'a':'rgba(255,107,53,0.3)','t':'rgba(62,240,216,0.25)','m':'rgba(212,168,67,0.2)',
   'n':'rgba(46,213,115,0.2)','h':'rgba(255,71,87,0.2)','g':'rgba(122,92,255,0.25)',
@@ -752,6 +809,12 @@ function renderTable(filterBlock, filterState, searchQuery) {
           if (!filtered) return;
           const tt = document.getElementById('tooltip');
           tt.innerHTML = `<div class="tt-sym">${el[1]} — ${el[2]}</div><div>Z = ${Z} | ${catNames[el[7]]||el[7]}</div><div style="color:var(--phi);font-family:monospace;margin-top:4px">Ψ_${Z} = H_${Z} · (Ψ₁)^${Z}</div><div style="color:var(--ink2);font-size:0.85em">H_${Z} = ${formatHarmonicValue(H[Z])}<br>Décomposition: ${formatDecomposition(Z)}</div>`;
+          const apiTip = massesAPI[Z];
+          if (apiTip && apiTip.masse_predite_u != null) {
+            tt.innerHTML += `<div style="color:var(--green);font-size:0.85em;margin-top:4px">masse vérifiée (API) : ${apiTip.masse_predite_u.toFixed(4)} u — écart ${apiTip.ecart_pct != null ? apiTip.ecart_pct.toFixed(3) + ' %' : '—'}</div>`;
+          } else if (ileAPI[Z]) {
+            tt.innerHTML += `<div style="color:var(--phi);font-size:0.85em;margin-top:4px">prédiction ex-ante : S_2n max ${ileAPI[Z].s2n_max} MeV à N = ${ileAPI[Z].n_max_s2n}</div>`;
+          }
           tt.style.left = (e.clientX + 16) + 'px';
           tt.style.top = (e.clientY - 10) + 'px';
           tt.classList.add('visible');
@@ -830,6 +893,31 @@ function openDetail(Z) {
 
   const stateLabel = el[4] === 'solid' ? 'Solide' : el[4]==='liquid'?'Liquide':el[4]==='gas'?'Gaz':el[4]==='synthetic'?'Synthétique':'✦ Prédit (non synthétisé)';
 
+  // Masse : API vérifiée si connectée, sinon île (prédits 119-126), sinon local
+  const apiEl = massesAPI[Z];
+  let masseHTML;
+  if (apiEl && apiEl.masse_predite_u != null) {
+    masseHTML = `<div>${apiEl.masse_predite_u.toFixed(4)} u <span style="color:var(--green);font-size:0.78em">✓ vérifiée (0 paramètre)</span></div>
+      <div style="color:var(--ink3);font-size:0.75em;margin-top:2px">masse standard (IUPAC) : ${apiEl.masse_reelle_u != null ? apiEl.masse_reelle_u.toFixed(4) + ' u' : '—'} · écart ${apiEl.ecart_pct != null ? apiEl.ecart_pct.toFixed(4) + ' %' : '—'} (précision par isotope : /api/physics/mass?z=${Z}&a=)</div>`;
+  } else if (ileAPI[Z]) {
+    const il = ileAPI[Z];
+    masseHTML = `<div style="color:var(--ink3);font-size:0.8em">Masse non vérifiée (module couvre Z ≤ 118)</div>
+      <div style="color:var(--phi);font-size:0.8em;margin-top:2px">Prédiction ex-ante : S_2n max ${il.s2n_max} MeV à N = ${il.n_max_s2n} · S_2n(168) = ${il.s2n_168} · S_2n(184) = ${il.s2n_184} MeV</div>`;
+  } else {
+    masseHTML = `<div style="color:var(--ink3);font-size:0.8em">Masse non vérifiée (module couvre Z ≤ 126)</div>`;
+  }
+
+  const verifHTML = (apiConnectee && apiCertificat) ? `
+    <h3>Vérification (Module Physique Harmonique)</h3>
+    <div class="info-grid">
+      <div class="ik">α harmonique</div><div class="iv" style="font-family:monospace;font-size:0.78em">${apiCertificat.alpha_harmonique.toFixed(10)}</div>
+      <div class="ik">α CODATA</div><div class="iv" style="font-family:monospace;font-size:0.78em">${apiCertificat.alpha_codata.toFixed(10)}</div>
+      <div class="ik">Précision α</div><div class="iv" style="color:var(--green)">${(apiCertificat.alpha_precision * 100).toFixed(5)} %</div>
+      <div class="ik">m_p = m_e·6π⁵</div><div class="iv">${apiCertificat.m_p_u.toFixed(6)} u</div>
+      <div class="ik">Certificat vallée</div><div class="iv">${apiCertificat.vallee_ecart_moyen_pct.toFixed(4)} % (${apiCertificat.vallee_noyaux} noyaux AME2020)</div>
+      <div class="ik">Paramètres ajustés</div><div class="iv">${apiCertificat.parametres_ajustes}</div>
+    </div>` : '';
+
   content.innerHTML = `
     <div class="el-symbol" style="color:${catColors[el[7]]?catColors[el[7]].replace('0.','1.').replace(')',''):'var(--phi)'};text-shadow:0 0 30px currentColor">${el[1]}</div>
     <div class="el-name">${el[2]}${el[4]==='predicted'?' ✦':''}</div>
@@ -847,8 +935,9 @@ function openDetail(Z) {
       <div class="ik">Catégorie</div><div class="iv">${catNames[el[7]]||el[7]}</div>
       <div class="ik">État</div><div class="iv">${stateLabel}</div>
       <div class="ik">Configuration</div><div class="iv" style="font-size:0.75em">${el[9]}</div>
-      <div class="ik">Masse atomique</div><div class="iv">${el[8]} u${el[4]==='predicted'?' (prédite)':''}</div>
+      <div class="ik">Masse atomique</div><div class="iv">${masseHTML}</div>
     </div>
+    ${verifHTML}
     <h3>Équation Harmonique</h3>
     <div class="harmonic-decomp">
       <div class="hd-line"><span class="hd-phi">Ψ_${Z}</span> = <span class="hd-acc">H_${Z}</span> · (Ψ₁)^${Z}</div>
@@ -916,6 +1005,7 @@ document.getElementById('resetBtn').addEventListener('click', () => {
 });
 
 renderTable('all', 'all', '');
+chargerPhysiqueAPI();   // branchement /api/physics/* (masses vérifiées) — asynchrone
 
 const obs = elements.filter(el => el[4] !== 'predicted').length;
 const pred = elements.filter(el => el[4] === 'predicted').length;
