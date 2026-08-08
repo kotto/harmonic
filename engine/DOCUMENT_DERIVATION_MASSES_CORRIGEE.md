@@ -80,3 +80,62 @@ A (−0,54) → significativité confondue, signal non physique dans cette forme
    table atomique complète (hors vallée) — passage publication.
 2. Affiner l'amplitude pour A<40 (région où la SEMF elle-même n'est pas valide).
 3. Mettre à jour le DOCUMENT_FONDATEUR avec ce statut vérifié/réfuté.
+
+---
+
+## 6. TEST AME2020 COMPLET — Résultats (08/08/2026)
+
+Source : https://www-nds.iaea.org/amdc/ame2020/mass_1.mas20.txt (3262 noyaux,
+dont 744 extrapolés). Script : `test_ame2020_ondulatoire.py`.
+
+### Protocole A — coefficients de littérature (0 paramètre ajusté)
+
+| Fenêtre | n | SEMF litt. | + coquille HO (0 param) | Gain |
+|---|---|---|---|---|
+| TOUS | 3262 | 7,97 MeV | 7,23 MeV | −9,3 % |
+| A≥16 | 3207 | 7,85 | 6,62 | −15,6 % |
+| A≥40 | 2999 | 8,00 | 6,28 | −21,4 % |
+| A≥40 expér. | 2293 | 7,56 | 5,79 | −23,5 % |
+| A≥56 expér. | 2152 | 7,73 | 5,82 | −24,7 % |
+| Vallée \|N−Z\|≤8 (A≥40) | 536 | 4,51 | 2,32 | −48,5 % |
+| N≥90 (déformés) | 1014 | 8,78 | 6,45 | −26,6 % |
+
+La coquille HO améliore la SEMF de littérature **dans toutes les régions**.
+
+### Protocole B — SEMF ré-ajustée (CV 5-fold, avec et sans coquille)
+
+| Fenêtre | SEMF(fit) | + coquille HO | Verdict |
+|---|---|---|---|
+| A≥40 expér. (2293) | 3,08 MeV | 3,10 MeV | gain nul (P=36 %) |
+| TOUS expér. | 3,30 | 3,92 | dégradation (P=0 %) |
+| **Vallée A≥40 expér. (536)** | **2,76** | **2,44** | **gain réel : IC [0,16–0,48], P=100 %** |
+
+### Le modèle 0-paramètre complet vs la SEMF optimale
+
+| Fenêtre | 0 param (litt + coquille) | SEMF ajustée (5 params) | Écart |
+|---|---|---|---|
+| Vallée A≥40 exp. | 3,22 MeV | 2,74 MeV | ×1,18 |
+| A≥40 exp. | 6,28 | 3,23 | ×1,94 |
+
+**Masses (vallée A≥40, 536 noyaux, 0 paramètre)** : écart moyen **0,00398 %**
+(max 0,0245 %, 499/536 < 0,01 %) — 1,8× mieux que la SEMF de littérature seule
+(0,0071 %).
+
+### Verdict du test AME2020 — trois étages
+
+1. **La coquille HO est réelle sur la vallée** : gain significatif même au-delà
+   d'une SEMF ré-ajustée (2,76 → 2,44 MeV, P=100 %). C'est le seul ingrédient
+   théorique qui ajoute de l'information mesurable.
+2. **La coquille HO est neutre sur la table entière** (P=36 %) : hors vallée,
+   les coefficients ajustés absorbent son signal — elle n'est pas une découverte
+   indépendante au niveau global.
+3. **Le modèle 0-paramètre est à ×1,18 de la SEMF optimale à 5 paramètres sur
+   la vallée** — remarquable pour zéro paramètre, et la base de la revendication
+   publiable : « 0,004 % sur les masses de la vallée de stabilité, 0 paramètre ».
+
+### Limites documentées
+- Noyaux légers (A<40) : l'amplitude ħω/2 est trop forte (dégradation mesurée) ;
+  la SEMF elle-même n'y est pas valide — fenêtre standard A≥40.
+- Le −35 % initial sur 86 noyaux était gonflé par le mauvais conditionnement du
+  fit sur la vallée seule (colinéarité) — corrigé par le test complet.
+- Noyaux extrapolés AME ('#') : exclus des chiffres « expérimentaux ».
