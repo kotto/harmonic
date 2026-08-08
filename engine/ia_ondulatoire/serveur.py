@@ -557,6 +557,78 @@ if _FLASK:
             resultat["source"] = "ondulatoire-maths+llm"
         return jsonify(resultat)
 
+    # ── routes PHYSIQUE (Module Physique Harmonique — résultats VÉRIFIÉS) ─
+    from physique import PhysiqueHarmonique
+
+    _PHYSIQUE = PhysiqueHarmonique()
+
+    @app.route("/api/physics/verification", methods=["GET"])
+    def route_physique_verification():
+        """Le certificat : constantes vérifiées, masses vallée, limites."""
+        return jsonify(_PHYSIQUE.verification())
+
+    @app.route("/api/physics/constants", methods=["GET"])
+    def route_physique_constantes():
+        v = _PHYSIQUE.verification()
+        return jsonify({
+            "alpha_harmonique": v["alpha_harmonique"],
+            "alpha_codata": v["alpha_codata"],
+            "alpha_precision_pct": v["alpha_precision"] * 100,
+            "m_p_m_e_gagut": v["m_p_m_e_gagut"],
+            "m_p_m_e_codata": v["m_p_m_e_codata"],
+            "gagut_ecart_relatif": v["gagut_ecart_relatif"],
+            "m_p_u": v["m_p_u"],
+            "m_p_codata": v["m_p_codata"],
+        })
+
+    @app.route("/api/physics/mass", methods=["GET"])
+    def route_physique_masse():
+        try:
+            z = int(request.args.get("z", ""))
+            a = int(request.args.get("a", ""))
+        except (TypeError, ValueError):
+            return jsonify({"error": "z et a (entiers) requis"}), 400
+        if z < 1 or a < z + 1:
+            return jsonify({"error": f"A={a} invalide pour Z={z}"}), 400
+        n = a - z
+        from physique import masse_atomique, energie_liaison, s2n, q_alpha, coquille_ho
+        m_pred = masse_atomique(z, a)
+        m_reel = _PHYSIQUE.masses_ames.get((z, a))
+        return jsonify({
+            "z": z, "a": a, "n": n,
+            "symbole": _PHYSIQUE.periodique()[z - 1]["symbole"] if z <= 118 else None,
+            "masse_predite_u": m_pred,
+            "masse_reelle_u": m_reel,
+            "ecart_pct": abs(m_pred - m_reel) / m_reel * 100 if m_reel else None,
+            "energie_liaison_mev": energie_liaison(z, a),
+            "s2n_mev": s2n(z, n),
+            "q_alpha_mev": q_alpha(z, n),
+            "coquille_ho_mev": coquille_ho(n, z, a),
+            "modele": "m = Z.(m_p+m_e) + N.m_n - [SEMF_litterature + coquille_HO]",
+            "parametres_ajustes": 0,
+        })
+
+    @app.route("/api/physics/island", methods=["GET"])
+    def route_physique_ile():
+        return jsonify(_PHYSIQUE.ile_stabilite())
+
+    @app.route("/api/physics/periodique", methods=["GET"])
+    def route_physique_periodique():
+        return jsonify({"elements": _PHYSIQUE.periodique()})
+
+    @app.route("/api/physics/chat", methods=["POST"])
+    def route_physique_chat():
+        """Réponse en français via le cerveau ondulatoire (chemin physique)."""
+        donnees = request.get_json(silent=True) or {}
+        question = (donnees.get("question") or donnees.get("message") or "").strip()
+        if not question:
+            return jsonify({"error": "question requise"}), 400
+        r = _PHYSIQUE.repondre(question)
+        if not r:
+            return jsonify({"error": "question non physique",
+                            "response": ""}), 422
+        return jsonify(r)
+
     # ── routes VOIX (pont vers ka_voice_server :8420) ───────────────────
     @app.route("/api/voice/health", methods=["GET"])
     def route_voice_health():

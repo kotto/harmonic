@@ -98,6 +98,25 @@ class IaOndulatoire:
         if q_bas in {"tes domaines", "que sais-tu faire", "tes capacités"}:
             return self._reponse(self._domaines(), 1.0, "identity_domains", debut)
 
+        # chemin physique : module Physique Harmonique (résultats VÉRIFIÉS —
+        # α 99,99998 %, m_p = m_e·6π⁵, masses 0,004 % vallée, coquille HO,
+        # île de stabilité ex-ante). Prioritaire sur maths quand un élément
+        # + une intention physique sont présents.
+        from physique import PhysiqueHarmonique, est_question_physique
+        if est_question_physique(question):
+            r_phys = PhysiqueHarmonique().repondre(question)
+            if r_phys and r_phys.get("texte"):
+                resultat = self._reponse(r_phys["texte"], 0.95,
+                                         "ondulatoire-physique", debut)
+                resultat.update({"intention": "query",
+                                 "programme": "ENCODE noyau → RÉSONANCE Hₙ → "
+                                              "SEMF+coquille → DÉCODER",
+                                 "faits": [r_phys["texte"]],
+                                 "physique": r_phys.get("details")})
+                self._enregistrer_conversation(question, r_phys["texte"],
+                                               user_id, "physique")
+                return resultat
+
         # chemin mathématique : GSM8K ondulatoire (0 LLM, sélection d'opération
         # par résonance contre les prototypes d'ondes)
         from gsm8k import GSM8KOndulatoire, est_question_maths
