@@ -239,3 +239,53 @@ Rapport de protocole : `ia_ondulatoire/test_masses_118.py`.
 6. Strutinsky, Nucl. Phys. A95, 420 (1967) : énergie de coquille.
 7. Univers-Holistique, DOCUMENT_FONDATEUR_LANGAGE_ONDULATOIRE.md (2025) ;
    DOCUMENT_DERIVATION_MASSES_CORRIGEE.md (2026).
+
+---
+
+## Annexe A — P-valeur anti-numérologie de α et GAGUT (08/08/2026)
+
+Script : `analyse_pvalue_harmonique.py`. Méthode : treillis des produits
+φ^a·π^b·e^c·(√2)^d·(√3)^e·(√5)^f ; **calibration** : 2000 cibles aléatoires
+log-uniformes dans le domaine du treillis — p = fraction dont la meilleure
+approximation par le treillis est aussi bonne que celle observée.
+
+### Espace A (10 793 860 expressions, exposants ≤ 8/6)
+
+| Cible | Écart observé | p (calibration) | k/N (décompte) |
+|---|---|---|---|
+| α (formule, poids 19) | 2,355e-7 | **0,0785** | 1 / 10,8 M |
+| m_p/m_e (GAGUT = 6π⁵, poids 9) | 1,882e-5 | **0,6975** | 16 / 10,8 M |
+
+Deux faits décisifs :
+1. **Le treillis contient une expression de poids 15 qui approxime α encore
+   mieux** (1,641e-7) que la formule revendiquée (poids 19) — α n'est pas
+   un point exceptionnel du treillis, c'est un « coup de chance » typique
+   de sa densité locale (~8 % des cibles aléatoires font aussi bien).
+2. Pour m_p/m_e, la meilleure approximation du treillis vaut 9,1e-7 —
+   **20× mieux que 6π⁵** : la forme « GAGUT » n'est pas même la meilleure
+   dans sa catégorie.
+
+### Espace B (273 052 formes simples, poids ≤ 12)
+Aucune forme simple n'atteint α à 8 chiffres (meilleure : 1,55e-5, soit
+5 chiffres). La correspondance à 8 chiffres exige une forme de poids ≥ 15.
+
+### Correction de comparaisons multiples
+Le document fondateur revendique ~30 observables. Si α a été *cherché*
+parmi ~30 cibles (post-hoc), la p-valeur effective est
+1 − (1 − 0,0785)³⁰ ≈ **0,91** — indistinguable du hasard. Seuil de
+Bonferroni pour 30 essais : p < 0,0017 (non atteint).
+
+### Verdict de l'annexe A
+- **GAGUT = 6π⁵ : coïncidence statistiquement banale** (p = 0,25-0,70
+  selon l'espace ; une meilleure approximation existe dans le treillis).
+- **α : signal faible (p = 0,0785), non significatif au seuil de 5 %,
+  et compatible avec le hasard après correction pour ~30 essais
+  (p_eff ≈ 0,91)** — sauf si la formule a été dérivée *avant* la mesure
+  (pré-enregistrée) : ce point historique ne peut pas être tranché par
+  le calcul.
+- **Ce qui résiste à l'analyse anti-numérologie, c'est le travail
+  structurel** (coquille HO, 0,004 % masses) : ces résultats ont été
+  validés par test prédictif hors-échantillon (CV, bootstrap), pas par
+  proximité numérique avec des constantes connues. La distinction est
+  fondamentale : une coïncidence numérique non pré-enregistrée n'est pas
+  une preuve ; une prédiction confirmée hors-échantillon l'est.
