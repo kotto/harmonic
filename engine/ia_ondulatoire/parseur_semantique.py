@@ -96,6 +96,8 @@ def attention(emb, question, clauses, tetes=4):
     Têtes multiples : ROTATE(q, θ_h)."""
     q = emb.emb(question)
     ks = [emb.emb(c) for c in clauses]
+    if not ks:
+        return np.ones(1), emb.emb(question)   # question seule : pas d'attention
     scores = np.array([resonate(q, k) for k in ks])
     w = np.exp(scores - scores.max())
     w = w / w.sum()
@@ -125,6 +127,14 @@ FRACTIONS = {
 }
 
 
+def _nb(s):
+    """float() tolérant la virgule-milliers US : « 9,300 » → 9300."""
+    try:
+        return float(str(s).replace(",", "").replace(" ", ""))
+    except (TypeError, ValueError):
+        return float(s) if s is not None else None
+
+
 def _norm(nom):
     """Normalise un nom d'entité : « baby bees » → « baby », « babies » → « baby »."""
     n = nom.strip().lower()
@@ -145,7 +155,12 @@ class ParseurSemantique:
     def clauses(self, texte):
         # découpe sur [.?!;] ET virgule suivie d'un non-chiffre
         # (« old, and one-fourth… » ; « 1,000 » reste intact)
-        return [c.strip() for c in re.split(r"[.?!;]|,\s+(?![0-9])", texte)
+        # coupe sur virgule SAUF si un groupe de 3 chiffres suit (« 1,000 »)
+        # point qui n'est PAS un décimal (« 1.50 » intact), virgule sauf
+        # groupe de 3 chiffres (« 1,000 » intact)
+        return [c.strip() for c in re.split(r"(?<!\d)\.(?!\d)|[?!;]|"
+                                            r",\s+(?!\d{3}(?!\d))",
+                                            texte)
                 if c.strip()]
 
     def nombres(self, clause):
@@ -160,27 +175,27 @@ class ParseurSemantique:
         # ── pourcentage : « X% of N » / « X% more/less than N »
         m = re.search(r"(\d+(?:[.,]\d+)?)%\s*(more|less)?\s*than\s+(\d+(?:[.,]\d+)?)", c)
         if m:
-            p, sens, n = float(m.group(1)), m.group(2), float(m.group(3))
+            p, sens, n = _nb(m.group(1)), m.group(2), _nb(m.group(3))
             rels.append(("pct_compare", n, p, 1 + p / 100 if sens == "more"
                          else 1 - p / 100))
         m = re.search(r"(\d+(?:[.,]\d+)?)%\s*of\s+(\d+(?:[.,]\d+)?)", c)
         if m:
-            rels.append(("pct_of", float(m.group(2)), float(m.group(1)), None))
+            rels.append(("pct_of", _nb(m.group(2)), _nb(m.group(1)), None))
         # ── fraction : « one-third of N », « 2/3 of N », « 2/3 of that »
         m = re.search(r"(\d+)\s*/\s*(\d+)\s*of\s+(\d+(?:[.,]\d+)?)", c)
         if m:
-            rels.append(("frac_of", float(m.group(3)),
-                         float(m.group(1)) / float(m.group(2)), None))
+            rels.append(("frac_of", _nb(m.group(3)),
+                         _nb(m.group(1)) / _nb(m.group(2)), None))
         m = re.search(r"(\d+)\s*/\s*(\d+)(?:rd|th|nd|st)?\s+of\s+"
                       r"(?:that|the\s+[a-z]+)", c)
         if m:
             rels.append(("frac_of", None,
-                         float(m.group(1)) / float(m.group(2)), None))
+                         _nb(m.group(1)) / _nb(m.group(2)), None))
         a_frac_ent = any(r[0] == "frac_ent" for r in rels)
         for mot, (num, den) in FRACTIONS.items():
             m = re.search(rf"{re.escape(mot)}\s+of\s+(\d+(?:[.,]\d+)?)", c)
             if m:
-                rels.append(("frac_of", float(m.group(1)), num / den, None))
+                rels.append(("frac_of", _nb(m.group(1)), num / den, None))
                 break
             if not a_frac_ent:
                 m = re.search(rf"{re.escape(mot)}\s+of\s+(?:that|the\s+[a-z]+)", c)
@@ -194,38 +209,41 @@ class ParseurSemantique:
                       r"\s+([a-z]+(?:\s+[a-z]+)*?)\s+as\s+(?:the\s+)?"
                       r"([a-z]+(?:\s+[a-z]+)*?)(?=[.,]|$)", c)
         if m:
-            k = 2.0 if m.group(1) == "twice" else float(m.group(2))
+            k = 2.0 if m.group(1) == "twice" else _nb(m.group(2))
             rels.append(("ratio_ent", k, _norm(m.group(4)), _norm(m.group(5))))
         # ── total d'entités : « There are 700 bees in a hive »
         m = re.search(r"(?:there are|there were)\s+(\d+(?:[.,]\d+)?)\s+"
                       r"([a-z]+)\s+(?:in|at)", c)
         if m:
-            rels.append(("total_ent", float(m.group(1)), m.group(2), None))
+            rels.append(("total_ent", _nb(m.group(1)), m.group(2), None))
+        m = re.search(r"total\s+\w+\s+(?:now\s+)?is\s+(\d+(?:[.,]\d+)?)", c)
+        if m:
+            rels.append(("total_ent", _nb(m.group(1)), "total", None))
         # ── période fixe : « gets 5 games for Christmas each year for 3 years »
         m = re.search(r"(\d+(?:[.,]\d+)?)\s+[a-z]+\s+for\s+\w+\s+each\s+year"
                       r"\s+for\s+(\d+)\s+years?", c)
         if m:
-            rels.append(("periode_fixe", float(m.group(1)), float(m.group(2)), None))
+            rels.append(("periode_fixe", _nb(m.group(1)), _nb(m.group(2)), None))
         # ── initial : « started with 5 games », « along with 5 games »
         m = re.search(r"(?:started with|starts with|already has|along with)\s+"
                       r"(\d+)", c_net)
         if m:
-            rels.append(("initial", float(m.group(1)), None, None))
+            rels.append(("initial", _nb(m.group(1)), None, None))
             c_net = c_net.replace(m.group(0), " ")
         # ── perso : « Joey loses 8 pounds in 4 weeks » (STRIP immédiat :
         # la durée « in 4 weeks » ne doit pas consommer la file de taux)
         m = re.search(r"(\w+)\s+loses\s+(\d+(?:[.,]\d+)?)\s+pounds?\s+in\s+"
                       r"(\d+)\s+weeks?", c_net)
         if m:
-            rels.append(("perso_periode", m.group(1), float(m.group(2)),
-                         float(m.group(3))))
+            rels.append(("perso_periode", m.group(1), _nb(m.group(2)),
+                         _nb(m.group(3))))
             c_net = c_net.replace("in " + m.group(3) + " weeks", "")
         # ── perso ratio : « needs 4 weeks to lose the same amount that X loses
         # in a single week » → taux_sandy = taux_X / 4
         m = re.search(r"needs\s+(\d+)\s+weeks?\s+to\s+lose\s+the\s+same\s+"
                       r"amount(?:\s+of\s+\w+)?\s+that\s+(\w+)\s+loses", c)
         if m:
-            rels.append(("perso_ratio", m.group(2), float(m.group(1)), None))
+            rels.append(("perso_ratio", m.group(2), _nb(m.group(1)), None))
         # ── perso cible : « as much weight as Joey does »
         m = re.search(r"as\s+much\s+weight\s+as\s+(\w+)\s+does", c)
         if m:
@@ -238,25 +256,26 @@ class ParseurSemantique:
         m = re.search(r"(twice|(\d+(?:[.,]\d+)?)\s*(?:times)?)\s+as\s+(many|much)"
                       r"\s+as\s+(?:the\s+)?([a-z]+)", c)
         if m:
-            k = 2.0 if m.group(1) == "twice" else float(m.group(2))
+            k = 2.0 if m.group(1) == "twice" else _nb(m.group(2))
             rels.append(("ratio", m.group(4), k, None))
         # ── comparaison : « X more than N » / « X less than N »
         m = re.search(r"(\d+(?:[.,]\d+)?)\s+(more|less|fewer)\s+than\s+"
                       r"(\d+(?:[.,]\d+)?)", c)
         if m:
-            x, sens, n = float(m.group(1)), m.group(2), float(m.group(3))
+            x, sens, n = _nb(m.group(1)), m.group(2), _nb(m.group(3))
             rels.append(("cmp", n, x, sens))
         # ── ACHAT : « N objets for/at $P each/per » — quantité et prix
         # appariés par proximité (plusieurs achats possibles). « for $P »
         # SANS each/per est un TOTAL (pas un prix unitaire) → non traité
         # ici (REFUS plutôt qu'une mauvaise assertion).
         for m in re.finditer(
-                r"(\d+(?:[.,]\d+)?)\s+[a-z]+(?:\s+[a-z]+)*\s+(?:for|at)\s+\$?\s*"
+                r"(\d+(?:[.,]\d+)?)\s+[a-z]+(?:\s+[a-z]+)*\s+(?:for|at|costs?|costing)\s+\$?\s*"
                 r"(\d+(?:[.,]\d+)?)\s*(?:each|per\s+[a-z]+|apiece)", c):
-            rels.append(("achat", float(m.group(2)), float(m.group(1)), None))
+            rels.append(("achat", _nb(m.group(2)), _nb(m.group(1)), None))
         m = re.search(r"\$?\s*(\d+(?:[.,]\d+)?)\s*(?:each|apiece)", c)
-        if m:
-            rels.append(("prix_unitaire", float(m.group(1)), None, None))
+        if m and not any(r[0] == "achat" and abs(r[1] - _nb(m.group(1))) < 1e-9
+                         for r in rels):
+            rels.append(("prix_unitaire", _nb(m.group(1)), None, None))
         # ── coût total / change
         if "change" in c or "left" in c or "remainder" in c:
             rels.append(("solde", None, None, None))
@@ -268,28 +287,28 @@ class ParseurSemantique:
         m = re.search(r"(\d+(?:[.,]\d+)?)\s+hours\s+a\s+day\s+(?:for|and)\s+"
                       r"(\d+(?:[.,]\d+)?)\s+days\s+a\s+week", c)
         if m:
-            rels.append(("heures_semaine", float(m.group(1)), float(m.group(2)), None))
+            rels.append(("heures_semaine", _nb(m.group(1)), _nb(m.group(2)), None))
             c_net = c[:m.start()] + " " + c[m.end():]
         # « $2 per hour » (direct) OU « 10 pounds per month » (mots interposés)
         m = re.search(r"(\d+(?:[.,]\d+)?)(?:\s+[a-z]+(?:\s+[a-z]+)*)?\s+"
                       r"(?:per|a|an)\s+(day|week|month|year|hour|minute)", c_net)
         if m:
-            rels.append(("taux", float(m.group(1)), m.group(2), None))
+            rels.append(("taux", _nb(m.group(1)), m.group(2), None))
         # ── dette/base : « owes $N » → point de départ
         m = re.search(r"owes\s+.*?\$?(\d+(?:[.,]\d+)?)", c)
         if m:
-            rels.append(("base", float(m.group(1)), None, None))
+            rels.append(("base", _nb(m.group(1)), None, None))
         # ── intérêt simple : « monthly interest of X% »
         m = re.search(r"interest\s+of\s+(\d+(?:[.,]\d+)?)%", c)
         if m:
-            rels.append(("interet", float(m.group(1)), None, None))
+            rels.append(("interet", _nb(m.group(1)), None, None))
         # ── durée : « in N days/weeks/months », « for N days » (clause nette ;
         # « over 16 years old » n'est PAS une durée)
         c_sans_age = re.sub(r"\d+\s+years?\s+old", " ", c_net)
         m = re.search(r"(?:in|for|after|over)\s+(\d+)\s+(day|days|week|weeks|"
                       r"month|months|year|years)", c_sans_age)
         if m:
-            rels.append(("duree", float(m.group(1)), m.group(2), None))
+            rels.append(("duree", _nb(m.group(1)), m.group(2), None))
         # durées implicites d'une année : « for a year », « for the third
         # year », « the following year » → 12 mois
         m = re.search(r"(?:for\s+a|for\s+the\s+\w+|the\s+following|"
@@ -318,31 +337,42 @@ class ParseurSemantique:
         m = re.search(r"(\d+(?:[.,]\d+)?)\s+[a-z]+\s+for\s+\w+\s+every\s+"
                       r"year", c)
         if m and not any(r[0] == "periode_fixe" for r in rels):
-            rels.append(("periode_fixe", float(m.group(1)), None, None))
+            rels.append(("periode_fixe", _nb(m.group(1)), None, None))
         # durée totale : « after 3 years » (qualificatif de la question)
         m = re.search(r"(?:after|in)\s+(\d+)\s+years", c)
         if m:
-            rels.append(("total_annees", float(m.group(1)), None, None))
+            rels.append(("total_annees", _nb(m.group(1)), None, None))
+        # ── futur : « in 10 years » / « 10 years from now »
+        m = re.search(r"(?:in\s+)?(\d+)\s+years\s+from\s+now", c)
+        if m:
+            rels.append(("futur", _nb(m.group(1)), None, None))
+        m = re.search(r"in\s+(\d+)\s+years", c)
+        if m:
+            rels.append(("futur", _nb(m.group(1)), None, None))
         # ── cible : « wants to save $N » / « needs to earn $N »
         m = re.search(r"(?:wants|needs|plans?)\s+to\s+(?:save|earn|make)\s+"
                       r"\$?\s*(\d+(?:[.,]\d+)?)", c)
         if m:
-            rels.append(("cible", float(m.group(1)), None, None))
+            rels.append(("cible", _nb(m.group(1)), None, None))
         # ── final : « final N was X » (problèmes inverses)
         m = re.search(r"final\s+\w+\s+(?:was|is)\s+(\d+(?:[.,]\d+)?)", c)
         if m:
-            rels.append(("final", float(m.group(1)), None, None))
+            rels.append(("final", _nb(m.group(1)), None, None))
         # ── quantité construite : « 5 less than 23 scoops »
         m = re.search(r"(\d+(?:[.,]\d+)?)\s+(less|more)\s+than\s+"
                       r"(\d+(?:[.,]\d+)?)\s+([a-z]+)", c)
         if m:
-            rels.append(("quantite", float(m.group(3)), float(m.group(1)),
+            rels.append(("quantite", _nb(m.group(3)), _nb(m.group(1)),
                          m.group(2), m.group(4)))
-        # ── base entité : « enrolls 3000 students » → entites["students"]
+                # ── ratio à deux points : « ages are in the ratio of 7:11 »
+        m = re.search(r"ratio\s+of\s+(\d+):(\d+)", c)
+        if m:
+            rels.append(("ratio_colon", _nb(m.group(1)), _nb(m.group(2)), None))
+# ── base entité : « enrolls 3000 students » → entites["students"]
         m = re.search(r"(?:enrolls|contains)\s+(\d+(?:[.,]\d+)?)\s+"
                       r"([a-z]+)", c)
         if m:
-            rels.append(("base_ent", float(m.group(1)), m.group(2), None))
+            rels.append(("base_ent", _nb(m.group(1)), m.group(2), None))
         # ── fraction avec référence d'entité : « half of these students are
         # over 16 years old », « one-fourth of the students over 16 are male »
         for mot, (num, den) in FRACTIONS.items():
@@ -358,7 +388,7 @@ class ParseurSemantique:
                       r"those\s+)?([a-z0-9]+(?:\s+[a-z0-9]+)*?)\s+are\s+"
                       r"([a-z0-9]+(?:\s+[a-z0-9]+)*?)(?=[.,]|$)", c)
         if m:
-            rels.append(("frac_ent", float(m.group(1)) / float(m.group(2)),
+            rels.append(("frac_ent", _nb(m.group(1)) / _nb(m.group(2)),
                          m.group(3).strip(), m.group(4).strip()))
         # ── ratio IMBRIQUÉ : « it takes 3 less than 6 potatoes to make
         # 1 less than 3 scoops » — traité AVANT quantite, portée retirée
@@ -366,25 +396,30 @@ class ParseurSemantique:
                       r"([a-z]+)\s+to make\s+(\d+)\s+(less|more)\s+than\s+"
                       r"(\d+)\s+([a-z]+)", c)
         if m:
-            a = float(m.group(3)) - float(m.group(1)) if m.group(2) == "less"                 else float(m.group(3)) + float(m.group(1))
-            b = float(m.group(7)) - float(m.group(5)) if m.group(6) == "less"                 else float(m.group(7)) + float(m.group(5))
+            a = _nb(m.group(3)) - _nb(m.group(1)) if m.group(2) == "less"                 else _nb(m.group(3)) + _nb(m.group(1))
+            b = _nb(m.group(7)) - _nb(m.group(5)) if m.group(6) == "less"                 else _nb(m.group(7)) + _nb(m.group(5))
             rels.append(("ratio_prend2", a, b, m.group(4), m.group(8)))
             c = c[:m.start()] + " " + c[m.end():]
         # ── perte : « N did not grow », « N died », « lost N »
         m = re.search(r"(\d+(?:[.,]\d+)?)\s+(?:did not grow|did not survive|"
                       r"died|were eaten)", c)
         if m:
-            rels.append(("perte", float(m.group(1)), None, None))
+            rels.append(("perte", _nb(m.group(1)), None, None))
         # ── ratio : « it takes A X to make B Y » (forme simple)
         m = re.search(r"it takes (\d+(?:[.,]\d+)?)\s+([a-z]+)\s+to make "
                       r"(\d+(?:[.,]\d+)?)\s+([a-z]+)", c)
         if m:
-            rels.append(("ratio_prend", float(m.group(1)), float(m.group(3)),
+            rels.append(("ratio_prend", _nb(m.group(1)), _nb(m.group(3)),
                          m.group(2)))
-        # ── pourcentage isolé « X% » avec sujet implicite
+                # ── pourcentage d'entité : « 20% of the students »
+        m = re.search(r"(\d+(?:[.,]\d+)?)%\s+of\s+(?:the\s+)?"
+                      r"([a-z]+(?:\s+[a-z]+)*)(?=[.,]|$)", c)
+        if m:
+            rels.append(("pct_ent", _nb(m.group(1)) / 100.0, m.group(2), None))
+# ── pourcentage isolé « X% » avec sujet implicite
         m = re.search(r"(\d+(?:[.,]\d+)?)%", c)
         if m and not any(r[0] in ("pct_of", "pct_compare") for r in rels):
-            rels.append(("pct_iso", float(m.group(1)), None, None))
+            rels.append(("pct_iso", _nb(m.group(1)), None, None))
         return rels
 
     def decomposer(self, question):
@@ -415,6 +450,9 @@ class ParseurSemantique:
             nb_relations += len(rels)
             if rels:
                 couv += 1
+            if not any(r[0] in ("base", "base_ent", "interet") for r in rels):
+                etat["nb_prix_corps"] = etat.get("nb_prix_corps", 0) +                     len(re.findall(r"\$", c))
+            etat["nb_achats"] = etat.get("nb_achats", 0) +                 sum(1 for r in rels if r[0] in ("achat", "prix_unitaire"))
             corps_rels.append((rels, nums))
         rels_q = self.relations(question_txt)
         nb_relations += len(rels_q)
@@ -438,13 +476,15 @@ class ParseurSemantique:
         # qualificatif total, pas une période à consommer)
         self._executer([r for r in rels_q if r[0] != "duree"],
                        self.nombres(question_txt), etat, ordre)
-        # plan faible → REFUS : durée sans taux/intérêt, ou taux multiples
-        # sans cible/final (périodes écrasées — pas de réponse confiante)
-        if etat.get("faible_duree") or (
+        # plan faible → REFUS : durée sans taux/intérêt, taux multiples sans
+        # cible, % non traité, prix du corps non consommés
+        if etat.get("faible_duree") or etat.get("faible") or (
+                etat.get("nb_prix_corps", 0) > etat.get("nb_achats", 0)) or (
                 etat.get("nb_taux", 0) > 1
                 and etat.get("cible") is None and etat.get("final") is None
                 and etat.get("total") is None):
             etat["courant"] = None
+            etat["total"] = None
         couverture = couv / max(1, len(corps))
         # la réponse : total si la question parle d'argent/total/coût,
         # sinon courant ; problèmes inverses et cibles en priorité
@@ -473,6 +513,14 @@ class ParseurSemantique:
             s = etat["perso"]["sandy"]
             if s.get("cible") and s.get("taux"):
                 reponse = s["cible"] / s["taux"]
+        elif etat.get("colons") and etat.get("total_ent"):
+            a, b = etat["colons"][-1]
+            total, _u = etat["total_ent"]
+            reponse = total / (a + b) * b
+            etat["courant"] = reponse
+            if etat.get("futur"):
+                reponse = reponse + etat["futur"]
+            ordre.append(f"parts : {total:g}/({a:g}+{b:g})×{b:g} = {reponse:g}")
         elif etat.get("ratios") and etat.get("total_ent"):
             # système linéaire : W = 2×B, B = 2×Q, total 700 → 7Q = 700
             gauche = {x for x, _k, _y in etat["ratios"]}
@@ -536,7 +584,8 @@ class ParseurSemantique:
                 etat["courant"] = base * arg2
                 ordre.append(f"{arg2:g} × {base:g} = {etat['courant']:g}")
             elif typ == "ratio":
-                etat["courant"] = etat.get("courant", 0) * arg2
+                base = etat.get("courant") or 0
+                etat["courant"] = base * arg2
                 ordre.append(f"ratio ×{arg2:g} = {etat['courant']:g}")
             elif typ == "cmp":
                 if arg3 == "more":
@@ -658,6 +707,26 @@ class ParseurSemantique:
                 etat["ratio_unite"] = ua
                 etat["ratio_base_unite"] = ub
                 ordre.append(f"ratio {a:g}/{b:g} ({ua}/{ub}) = {a / b:g}")
+            elif typ == "ratio_colon":
+                a, b = arg1, arg2
+                etat.setdefault("colons", []).append((a, b))
+                ordre.append(f"ratio {a:g}:{b:g}")
+            elif typ == "futur":
+                etat["futur"] = arg1
+                ordre.append(f"futur +{arg1:g}")
+            elif typ == "pct_ent":
+                f, ref = arg1, arg2
+                if ref in ("remaining", "rest"):
+                    base = etat.get("courant")
+                else:
+                    base = etat.get("entites", {}).get(ref, etat.get("courant"))
+                if base is None:
+                    continue
+                sub = base * f
+                etat.setdefault("entites", {})[ref] = base - sub
+                etat["courant"] = sub
+                ordre.append(f"{f * 100:g}% de {base:g} = {sub:g} "
+                             f"(reste {ref}: {base - sub:g})")
             elif typ == "base_ent":
                 etat["entites"][r[2]] = r[1]
                 if etat.get("base") is None:

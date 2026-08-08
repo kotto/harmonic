@@ -118,7 +118,21 @@ Test sur les **80 échecs étiquetés** (taxonomie, PLAN_FAUX) :
 | v0.4 (fractions chaînées + références d'entités) | 6 | **0** | 74 | familles : perte, intérêt simple, problème inverse, taux+cible, **fractions chaînées (1009 : 1875 ✓)**, **ratio imbriqué (1140 : 27 ✓)** — ZÉRO faux : tout plan inexact devient refus |
 | v0.5 (multi-périodes, taux inverses, systèmes de ratios) | 9 | **0** | 71 | familles : **multi-périodes (601 : 104 ✓)**, **taux inverses (307 : 16 ✓)**, **systèmes de ratios (141 : 400 ✓)** — registre de personnes, file de taux, solveur linéaire, durées en lettres |
 
-Verdict de l'itération 4 :
+| v0.6 (achats étendus, ratios colon, % d'entités, robustesse) | 9 | **0** | 71 | 9 bons maintenus + 30 (ratio colon + futur) résolu hors-échantillon ; 3 bugs structurels corrigés (point décimal coupait les clauses, gardes d'incomplétude, compteur $) |
+
+Verdict de l'itération 5 :
+- ✅ Nouvelles familles en place : achats étendus (« that costs $3 each »,
+  quantités en lettres, quantité implicite 1), ratios à deux points
+  (« ratio of 7:11, total 162, in 10 years » → 109), pourcentages
+  d'entités chaînés (« 20% of the students », « 25% of the remaining »)
+- ✅ BUGS STRUCTURELS corrigés : le point décimal (« $1.50 ») coupait les
+  clauses en deux (split « [.?!;] ») ; plans incomplets → REFUS (prix non
+  consommés, % non traité) ; 187 restauré (compteur $ ignorant les bases)
+- ⚠️ LIMITE MESURÉE : les 80 étiquetés ne contiennent PAS ces familles —
+  le score 9/80 est un plancher ; les nouvelles règles s'évaluent sur le
+  corpus complet (à étiqueter en itération 6)
+- ❌ Prochaines familles : équations à inconnue (25), multi-objets
+  composés, réciproques
 - ✅ **9 familles résolues, 0 réponse fausse confiante** (71/80 refus corrects) —
   les trois dernières familles du corpus étiqueté sont passées :
   · multi-périodes : file de taux (chaque durée consomme son taux),
