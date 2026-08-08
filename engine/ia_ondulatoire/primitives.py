@@ -316,12 +316,13 @@ def amplify(psi: Wave, composante: Wave, boost: float = 3.0) -> Wave:
 # ────────────────────────────────────────────────────────────────────────
 
 def _mittag_leffler(z: float, alpha: float, tolerance: float = 1e-10) -> float:
-    """E_α(z) = Σ z^k / Γ(αk + 1) — série par récurrence EXACTE.
+    """E_α(z) = Σ z^k / Γ(αk + 1) — série en ESPACE LOGARITHMIQUE.
 
-    terme_k = terme_{k-1} · z · Γ(α(k−1)+1)/Γ(αk+1)
-    (CORRIGÉ 08/08/2026 : l'ancienne récurrence « terme *= z/Γ(αk+1) »
-    donnait z^k/(Γ(α+1)·Γ(2α+1)·…) au lieu de z^k/Γ(αk+1) — erreur
-    jusqu'à ~56 % à z=2, noyau de mémoire non monotone.)
+    ln|terme_k| = k·ln|z| − lgamma(αk+1), signe alterné pour z < 0.
+    (CORRIGÉ 08/08/2026 : récurrence exacte en Γ — puis robustesse
+    log-space : pour |z| ≳ 10, Γ(αk+1) déborde en float64 avant que
+    l'arrêt précoce ne déclenche (ex. z = −20, t = 60 dans le noyau
+    ABC) — le ratio Γ est fini, le gamma intermédiaire non.)
 
     Les termes croissent jusqu'à k ≈ |z|^{1/α}/α avant de décroître : le nombre
     de termes est adaptatif (sinon la somme tronquée diverge, ex. t = 100)."""
@@ -329,12 +330,16 @@ def _mittag_leffler(z: float, alpha: float, tolerance: float = 1e-10) -> float:
     if abs(z) < 1e-12:
         return 1.0
     max_termes = min(int(2.0 * (abs(z) ** (1.0 / alpha)) / alpha) + 300, 4000)
-    terme = 1.0
-    total = terme
+    lz = m.log(abs(z))
+    neg = z < 0.0
+    total = 1.0
     for k in range(1, max_termes):
-        terme *= z * m.gamma(alpha * (k - 1) + 1.0) / m.gamma(alpha * k + 1.0)
-        total += terme
-        if abs(terme) < tolerance * max(1.0, abs(total)):
+        ln_t = k * lz - m.lgamma(alpha * k + 1.0)
+        t = m.exp(ln_t) if ln_t > -745.0 else 0.0
+        if neg and k % 2 == 1:
+            t = -t
+        total += t
+        if abs(t) < tolerance * max(1.0, abs(total)):
             break
     return total
 

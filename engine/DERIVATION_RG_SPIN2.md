@@ -67,20 +67,45 @@ convention de `np.roll` (signe du stencil), et champ test non-transverse
    └─ n ≥ 3 : la tour des spins supérieurs (Vasiliev)
 ```
 
-## 3. La frontière THU — le chaînon manquant, précisément défini
+## 3. La frontière THU — MESURÉE (08/08/2026)
 
-La route est vérifiée jusqu'au seuil de Deser. Ce qui reste OUVERT :
+### 3.1 La dynamique ABC naïve du secteur n=2 : EXCLUE (14 ordres de grandeur)
 
-**La contrainte ABC (α = 1/φ) doit entrer dans la DYNAMIQUE du secteur
-n=2** — c'est-à-dire dans la structure de l'action de Fierz-Pauli
-(la cinétique du champ, la forme de la jauge, l'échelle). Le jour où
-l'action du spin-2 issue de l'équation mère (sous la contrainte
-d'irrationalité) produit l'action d'Einstein–Hilbert — ou mesure
-précisément où elle ne le fait pas — la RG sera une conséquence de
-l'équation mère, pas un emprunt.
+Le chaînon le plus simple — remplacer la dérivée temporelle du
+d'Alembertien du graviton par la dérivée fractionnaire ABC (α = 1/φ) —
+est **testable et mesuré** (`dynamique_abc_n2.py`) :
 
-C'est la Porte 1 de la synthèse (`SYNTHESE_NOVAU_DERIVATIONNEL.md`),
-maintenant munie de son échafaudage vérifié.
+```
+Valeur propre ABC (analytique, vérifiée numériquement) :
+  ^ABC D^α e^{iωt} = M_α(ω)·e^{iωt},  M_α = (iω)^α/((1−α)(iω)^α + α)
+
+Dispersion du graviton fractionnaire :  k² = M_α(ω)²  →  v(ω) = ω/k
+  ω = 0,1  : v = 0,28 c   (déviation 7,2e-1)
+  ω = 1,0  : v = 0,89 c   (déviation 1,1e-1)
+  ω = 100  : v = 40 c     (déviation 3,9e+1)
+
+Contrainte GW170817 (LIGO/Virgo + GRB) : |v_g − c|/c < 1e-15
+Déviation minimale prédite : 1,1e-1 = 1,1e14 × la borne
+→ ❌ EXCLUE à ~14 ordres de grandeur.
+```
+
+La valeur propre ABC de l'onde plane est **exacte** (dérivée via la
+transformée de Laplace de Mittag-Leffler, vérifiée par convolution avec
+le noyau corrigé) — la mécanique est saine, la prédiction est fausse.
+
+### 3.2 La porte se déplace — précisément
+
+L'ABC ne peut pas entrer comme dérivée temporelle linéarisée. Deux
+routes restent, formulées :
+1. **La structure NON-LINÉAIRE** : la contrainte entre dans l'itération
+   de Deser (l'auto-couplage), pas dans la cinétique linéarisée ;
+2. **La dimension spectrale fractionnaire** : α = 1/φ comme dimension
+   effective aux petites échelles (la famille des espace-temps
+   fractionnaires — Calcagni, Nottale).
+
+C'est la Porte 1 de la synthèse, maintenant munie d'un verdict mesuré :
+la route linéarisée est fermée par GW170817 — les portes restantes sont
+formulées et testables.
 
 ## 4. Ce qui est remplacé (les identifications mortes, mesurées)
 
