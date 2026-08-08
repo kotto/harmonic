@@ -155,6 +155,46 @@ dans le chemin maths + mesure systématique en transfert avant toute
 revendication.
 ```
 
+### P1.3bis — TAXONOMIE DES 1260 ÉCHECS : la décomposition est la cause (08/08/2026)
+
+Hypothèse de l'utilisateur testée : « si nous ne décomposons pas
+correctement le problème, tout le reste sera faux » — **PROUVÉE**.
+
+```
+Classification AUTO (n=1260 échecs 0-LLM) :
+  PLAN_FAUX   : 1127 (89,4 %) — plan arithmétique complet, FIDÈLEMENT
+                 exécuté, mais sémantiquement faux
+  AUCUN_PLAN  :  118 ( 9,4 %) — aucune décomposition produite
+  EXECUTION   :   15 ( 1,2 %) — seule vraie erreur de calcul
+
+→ 98,8 % des échecs viennent de la COUCHE DE DÉCOMPOSITION SÉMANTIQUE.
+  Le moteur d'arithmétique est sain (15 erreurs sur 1319 items).
+
+Étiquetage manuel de 80 échecs PLAN_FAUX (avec IC bootstrap 5000) :
+  R  RELATION  : 81,2 %  IC95 [72,5 ; 88,8] — nombres présents mais
+                 opération/relation FAUSSE (fractions « 2/3 » lues
+                 comme « 2 », pourcentages mal appliqués, « twice as
+                 many » ignoré, dimensions temporelles confondues,
+                 division inversée…)
+  E  EXTRACTION: 17,4 %  IC95 [ 8,8 ; 26,2] — nombres/objets manquants
+                 ou inventés (jamais présents dans la question)
+  M  MIXTE     :  1,3 %  IC95 [ 0,0 ;  3,8]
+  X  EXÉCUTION :  0,0 %  IC95 [ 0,0 ;  0,0]
+
+Projection : ~916 échecs de relation (72,7 %) + ~197 d'extraction (15,7 %)
+             sur le corpus — le reste de la chaîne est innocent.
+
+CONSÉQUENCE (feuille de route du parseur sémantique) :
+  1. La priorité #1 est la TRADUCTION DES RELATIONS : fractions, ratios,
+     pourcentages, comparaisons (« de plus que », « deux fois »),
+     dimensions (heures/jours/mois) — pas les 45e et 46e patrons.
+  2. Un refus à basse confiance doit éviter 1258 réponses fausses
+     confiantes (la décomposition faible doit produire un refus).
+  3. Représentation intermédiaire typée : entités, quantités, relations,
+     opérations — le « plan » que produit la révision LLM, produit
+     localement par une grammaire.
+```
+
 **P1.4 — Audit des données**
 - Script qui liste placeholders/valeurs arrondies/JSON invalides dans
   data/benchmarks, data/hologram_store, completion_queue.
