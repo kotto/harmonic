@@ -422,8 +422,10 @@ class ParseurSemantique:
             rels.append(("pct_iso", _nb(m.group(1)), None, None))
         return rels
 
-    def decomposer(self, question):
-        """Retourne {ok, etapes, couverture, relations}."""
+    def decomposer(self, question, seuil_attention=0.0):
+        """Retourne {ok, etapes, couverture, relations}.
+        seuil_attention > 0 : les clauses dont le poids d'attention est
+        < seuil × max sont EXCLUES de l'exécution (ablation mesurable)."""
         cls = self.clauses(question)
         if not cls:
             return {"ok": False, "etapes": [], "couverture": 0.0, "relations": []}
@@ -431,6 +433,10 @@ class ParseurSemantique:
         corps = cls[:-1]
         # attention : poids des clauses vs la question (multi-têtes)
         wm, _ = attention(self.emb, question_txt, corps)
+        if seuil_attention > 0 and len(wm):
+            garde = wm >= seuil_attention * wm.max()
+        else:
+            garde = np.ones(len(wm), bool)
         # exécution : état à DEUX variables — courant (dernière valeur) et
         # total (accumulateur) ; la question détermine laquelle répondre
         etat = {"courant": None, "total": None, "entites": {}}
@@ -444,7 +450,9 @@ class ParseurSemantique:
         # les passes portent sur TOUTES les clauses du CORPS (la question,
         # souvent sans relation, ne doit pas « voler » la dernière clause)
         corps_rels = []
-        for c, w in zip(corps, wm):
+        for c, w, g in zip(corps, wm, garde):
+            if not g:
+                continue
             rels = self.relations(c)
             nums = self.nombres(c)
             nb_relations += len(rels)

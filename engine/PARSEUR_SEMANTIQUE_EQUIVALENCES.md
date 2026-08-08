@@ -174,3 +174,40 @@ Verdict honnête de l'itération 1 :
 - ➡️ Le chantier est la GRAMMAIRE, famille par famille, avec le test des
   80 comme porte de sortie mesurable à chaque itération (critère final :
   ≥ 40 % de plans corrects sur les 80 + refus sur le reste).
+
+## 7. ÉVALUATION DE L'APPROCHE — les deux tests décisifs (08/08/2026)
+
+`evaluation_parseur.py` — verdicts mesurés :
+
+### TEST B — Ablation de l'attention : ORNEMENT (aucun effet mesurable)
+```
+B0 attention calculée, non utilisée : 9 bons · 0 faux · 71 refus (IC95 [5,0 ; 18,8])
+B1 attention supprimée               : 9 bons · 0 faux · 71 refus (identique)
+B2 attention UTILISÉE (filtre 0,3)   : 9 bons · 0 faux · 71 refus (identique)
+B2 attention UTILISÉE (filtre 0,6)   : 9 bons · 0 faux · 71 refus (identique)
+```
+Cause racine : les poids sont UNIFORMES — les embeddings de co-occurrence
+ne discriminent rien (conséquence directe de P1.1 : l'encode ne porte pas
+de sémantique → resonate ≈ 0 partout → softmax ≈ uniforme). L'équivalent
+QKV est un ornement tant que ses entrées sont sémantiquement vides.
+DÉCISION : l'attention est retirée des revendications (code conservé,
+statut documenté : ornement).
+
+### TEST A — Transfert SVAMP : 0 % — la grammaire est un artefact in-sample
+```
+SVAMP (300 items anglais) : 0 bons · 13 faux · 287 REFUS (0,0 %)
+```
+La grammaire ne transfère PAS — comme l'ancienne cascade. MAIS la
+différence est comportementale : 287/300 refus honnêtes (l'ancienne
+cascade affirmait 300 réponses fausses). Le refus EST le transfert.
+
+### Bilan final de l'approche
+| Composant | Verdict mesuré |
+|---|---|
+| Refus honnête intégré (gardes) | ✅ contribution RÉELLE (287/300 sur inconnu, 0 faux sur les 80) |
+| 9 familles de relations | ✅ réelles sur les structures connues |
+| Architecture 5 étages + registre d'entités | ✅ extensible, mesurable |
+| Attention (QKV ondulatoire) | ❌ ornement — zéro effet (entrées sémantiquement vides) |
+| Embeddings contextuels | ❌ non utilisés par l'exécution |
+| Généralisation | ❌ 0 % SVAMP — méthode = démonstrateur des structures connues, pas moteur général |
+| Positionnement | parseur déterministe 0 coût + refus ; le LLM reste le généraliste — architecture hybride recommandée |
