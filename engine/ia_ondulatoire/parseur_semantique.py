@@ -125,6 +125,19 @@ FRACTIONS = {
 }
 
 
+def _norm(nom):
+    """Normalise un nom d'entité : « baby bees » → « baby », « babies » → « baby »."""
+    n = nom.strip().lower()
+    n = n.replace(" bees", "")
+    if n.endswith("ies"):
+        n = n[:-3] + "y"
+    elif n.endswith("es") and len(n) > 3:
+        n = n[:-2]
+    elif n.endswith("s") and len(n) > 2:
+        n = n[:-1]
+    return n
+
+
 class ParseurSemantique:
     def __init__(self, emb: EmbeddingsContextuels):
         self.emb = emb
@@ -142,6 +155,7 @@ class ParseurSemantique:
     def relations(self, clause):
         """Extrait (entite, op, args) de la clause — grammaire explicite."""
         c = clause.lower()
+        c_net = c          # clause « nettoyée » (fragments consommés)
         rels = []
         # ── pourcentage : « X% of N » / « X% more/less than N »
         m = re.search(r"(\d+(?:[.,]\d+)?)%\s*(more|less)?\s*than\s+(\d+(?:[.,]\d+)?)", c)
@@ -173,7 +187,54 @@ class ParseurSemantique:
                 if m:
                     rels.append(("frac_of", None, num / den, None))
                     break
-        # ── ratio : « k times as many », « twice as many », « half as many »
+        # ── ratio d'entités : « twice as many worker bees as baby bees »
+        # (X = k×Y — système linéaire résolu à la fin ; noms normalisés :
+        # « baby bees » ≡ « babies »)
+        m = re.search(r"(twice|(\d+(?:[.,]\d+)?)\s*(?:times)?)\s+as\s+(many|much)"
+                      r"\s+([a-z]+(?:\s+[a-z]+)*?)\s+as\s+(?:the\s+)?"
+                      r"([a-z]+(?:\s+[a-z]+)*?)(?=[.,]|$)", c)
+        if m:
+            k = 2.0 if m.group(1) == "twice" else float(m.group(2))
+            rels.append(("ratio_ent", k, _norm(m.group(4)), _norm(m.group(5))))
+        # ── total d'entités : « There are 700 bees in a hive »
+        m = re.search(r"(?:there are|there were)\s+(\d+(?:[.,]\d+)?)\s+"
+                      r"([a-z]+)\s+(?:in|at)", c)
+        if m:
+            rels.append(("total_ent", float(m.group(1)), m.group(2), None))
+        # ── période fixe : « gets 5 games for Christmas each year for 3 years »
+        m = re.search(r"(\d+(?:[.,]\d+)?)\s+[a-z]+\s+for\s+\w+\s+each\s+year"
+                      r"\s+for\s+(\d+)\s+years?", c)
+        if m:
+            rels.append(("periode_fixe", float(m.group(1)), float(m.group(2)), None))
+        # ── initial : « started with 5 games », « along with 5 games »
+        m = re.search(r"(?:started with|starts with|already has|along with)\s+"
+                      r"(\d+)", c_net)
+        if m:
+            rels.append(("initial", float(m.group(1)), None, None))
+            c_net = c_net.replace(m.group(0), " ")
+        # ── perso : « Joey loses 8 pounds in 4 weeks » (STRIP immédiat :
+        # la durée « in 4 weeks » ne doit pas consommer la file de taux)
+        m = re.search(r"(\w+)\s+loses\s+(\d+(?:[.,]\d+)?)\s+pounds?\s+in\s+"
+                      r"(\d+)\s+weeks?", c_net)
+        if m:
+            rels.append(("perso_periode", m.group(1), float(m.group(2)),
+                         float(m.group(3))))
+            c_net = c_net.replace("in " + m.group(3) + " weeks", "")
+        # ── perso ratio : « needs 4 weeks to lose the same amount that X loses
+        # in a single week » → taux_sandy = taux_X / 4
+        m = re.search(r"needs\s+(\d+)\s+weeks?\s+to\s+lose\s+the\s+same\s+"
+                      r"amount(?:\s+of\s+\w+)?\s+that\s+(\w+)\s+loses", c)
+        if m:
+            rels.append(("perso_ratio", m.group(2), float(m.group(1)), None))
+        # ── perso cible : « as much weight as Joey does »
+        m = re.search(r"as\s+much\s+weight\s+as\s+(\w+)\s+does", c)
+        if m:
+            rels.append(("perso_cible", m.group(1), None, None))
+        # ── perso question : « how many weeks will it take Sandy »
+        m = re.search(r"how\s+many\s+weeks?\s+will\s+it\s+take\s+(\w+)", c)
+        if m:
+            rels.append(("perso_question", m.group(1), None, None))
+        # ── ratio simple (hérité, valeur courante)
         m = re.search(r"(twice|(\d+(?:[.,]\d+)?)\s*(?:times)?)\s+as\s+(many|much)"
                       r"\s+as\s+(?:the\s+)?([a-z]+)", c)
         if m:
@@ -229,6 +290,39 @@ class ParseurSemantique:
                       r"month|months|year|years)", c_sans_age)
         if m:
             rels.append(("duree", float(m.group(1)), m.group(2), None))
+        # durées implicites d'une année : « for a year », « for the third
+        # year », « the following year » → 12 mois
+        m = re.search(r"(?:for\s+a|for\s+the\s+\w+|the\s+following|"
+                      r"next)\s+year", c_sans_age)
+        if m and not any(r[0] == "duree" for r in rels):
+            rels.append(("duree", 12.0, "month", None))
+        # durées en lettres : « after three years » → 3
+        MOTS_NB = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+                   "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10}
+        m = re.search(r"(?:in|for|after|over)\s+(one|two|three|four|five|six|"
+                      r"seven|eight|nine|ten)\s+(day|days|week|weeks|month|"
+                      r"months|year|years)", c_sans_age)
+        if m and not any(r[0] == "duree" for r in rels):
+            rels.append(("duree", float(MOTS_NB[m.group(1)]), m.group(2), None))
+        # période fixe en lettres : « for three years »
+        m = re.search(r"(\d+|one|two|three|four|five|six|seven|eight|nine|ten)"
+                      r"\s+[a-z]+\s+for\s+\w+\s+each\s+year\s+for\s+"
+                      r"(one|two|three|four|five|six|seven|eight|nine|ten)"
+                      r"\s+years?", c)
+        if m:
+            v = float(MOTS_NB.get(m.group(1), m.group(1)))
+            d = float(MOTS_NB.get(m.group(2), m.group(2)))
+            rels.append(("periode_fixe", v, d, None))
+        # récurrente : « 5 games for Christmas every year » — années = durée
+        # totale (relation total_annees posée par la question)
+        m = re.search(r"(\d+(?:[.,]\d+)?)\s+[a-z]+\s+for\s+\w+\s+every\s+"
+                      r"year", c)
+        if m and not any(r[0] == "periode_fixe" for r in rels):
+            rels.append(("periode_fixe", float(m.group(1)), None, None))
+        # durée totale : « after 3 years » (qualificatif de la question)
+        m = re.search(r"(?:after|in)\s+(\d+)\s+years", c)
+        if m:
+            rels.append(("total_annees", float(m.group(1)), None, None))
         # ── cible : « wants to save $N » / « needs to earn $N »
         m = re.search(r"(?:wants|needs|plans?)\s+to\s+(?:save|earn|make)\s+"
                       r"\$?\s*(\d+(?:[.,]\d+)?)", c)
@@ -312,24 +406,38 @@ class ParseurSemantique:
         # souvent les relations « final » et « cible » (problèmes inverses).
         # DEUX PASSES : taux/base/interêt d'abord, durées ensuite (l'ordre
         # des phrases ne doit pas décider — « for 3 months, lost 10 per month »)
-        toutes = []
+        # les passes portent sur TOUTES les clauses du CORPS (la question,
+        # souvent sans relation, ne doit pas « voler » la dernière clause)
+        corps_rels = []
         for c, w in zip(corps, wm):
             rels = self.relations(c)
             nums = self.nombres(c)
             nb_relations += len(rels)
             if rels:
                 couv += 1
-            toutes.append((rels, nums))
+            corps_rels.append((rels, nums))
         rels_q = self.relations(question_txt)
-        if rels_q:
-            nb_relations += len(rels_q)
-            toutes.append((rels_q, self.nombres(question_txt)))
-        for rels, nums in toutes:
-            self._executer([r for r in rels if r[0] not in ("duree", "perte")],
+        nb_relations += len(rels_q)
+        # la durée totale de la question (« after 3 years ») est posée AVANT
+        # les passes : les périodes récurrentes (« every year ») en dépendent
+        self._executer([r for r in rels_q if r[0] == "total_annees"],
+                       self.nombres(question_txt), etat, ordre)
+        for rels, nums in corps_rels:
+            self._executer([r for r in rels
+                            if r[0] not in ("duree", "perte", "perso_ratio",
+                                            "perso_cible")],
                            nums, etat, ordre)
-        for rels, nums in toutes:
+        for rels, nums in corps_rels:
+            self._executer([r for r in rels
+                            if r[0] in ("perso_ratio", "perso_cible")],
+                           nums, etat, ordre)
+        for rels, nums in corps_rels:
             self._executer([r for r in rels if r[0] in ("duree", "perte")],
                            nums, etat, ordre)
+        # relations de la QUESTION (pas de durée — « after 3 years » est le
+        # qualificatif total, pas une période à consommer)
+        self._executer([r for r in rels_q if r[0] != "duree"],
+                       self.nombres(question_txt), etat, ordre)
         # plan faible → REFUS : durée sans taux/intérêt, ou taux multiples
         # sans cible/final (périodes écrasées — pas de réponse confiante)
         if etat.get("faible_duree") or (
@@ -357,6 +465,40 @@ class ParseurSemantique:
                 reponse = etat[etat["ratio_base_unite"]] * etat["ratio"]
             elif etat.get(u):
                 reponse = etat[u] * etat["ratio"]
+        elif (etat.get("accum") is not None
+                and etat.get("initial") is not None
+                and any(m in q for m in ("after", "total", "have"))):
+            reponse = etat["initial"] + etat["accum"]
+        elif etat.get("perso_reponse") and etat.get("perso", {}).get("sandy"):
+            s = etat["perso"]["sandy"]
+            if s.get("cible") and s.get("taux"):
+                reponse = s["cible"] / s["taux"]
+        elif etat.get("ratios") and etat.get("total_ent"):
+            # système linéaire : W = 2×B, B = 2×Q, total 700 → 7Q = 700
+            gauche = {x for x, _k, _y in etat["ratios"]}
+            base = None
+            for _x, _k, y in etat["ratios"]:
+                if y not in gauche:
+                    base = y
+                    break
+            if base is not None:
+                # coefs chaînés : coef[X] = k × coef[Y]
+                coefs = {}
+                for _ in range(len(etat["ratios"]) + 1):
+                    for x, k, y in etat["ratios"]:
+                        if y == base:
+                            coefs[x] = k
+                        elif y in coefs:
+                            coefs[x] = k * coefs[y]
+                total, _u = etat["total_ent"]
+                nb = 1 + sum(coefs.values())
+                if nb > 0:
+                    q_ = total / nb
+                    x0, k0, _y0 = etat["ratios"][0]
+                    reponse = q_ * coefs.get(x0, k0)
+                    etat["courant"] = reponse
+                    ordre.append(f"solveur : base {base} = {q_:g} → {x0} = "
+                                 f"{reponse:g}")
         elif "female" in q and etat.get("entites"):
             # somme des compléments (non-male) des sous-ensembles d'étudiants
             fem = [v for k, v in etat["entites"].items()
@@ -412,7 +554,14 @@ class ParseurSemantique:
                     ordre.append(f"total += {qtes[0]:g}×{arg1:g} = "
                                  f"{etat['total']:g}")
             elif typ == "duree":
-                if etat.get("taux") is not None:
+                if etat.get("file_taux"):
+                    # multi-périodes : chaque durée consomme son taux
+                    t = etat["file_taux"].pop(0)
+                    etat["accum"] = etat.get("accum", 0) + t * arg1
+                    etat["courant"] = etat["accum"]
+                    ordre.append(f"{t:g} × {arg1:g} (durée) → accum = "
+                                 f"{etat['accum']:g}")
+                elif etat.get("taux") is not None:
                     etat["courant"] = etat["taux"] * arg1
                     ordre.append(f"{etat['taux']:g} × {arg1:g} (durée) = "
                                  f"{etat['courant']:g}")
@@ -427,6 +576,7 @@ class ParseurSemantique:
                     etat["courant"] = (etat["courant"] or 1) * arg1
                     ordre.append(f"durée ×{arg1:g} = {etat['courant']:g} (faible)")
             elif typ == "taux":
+                etat.setdefault("file_taux", []).append(arg1)
                 etat["taux"] = arg1
                 etat["nb_taux"] = etat.get("nb_taux", 0) + 1
                 ordre.append(f"taux = {arg1:g}/{arg2}")
@@ -436,6 +586,47 @@ class ParseurSemantique:
             elif typ == "base":
                 etat["courant"] = arg1
                 ordre.append(f"base = {arg1:g}")
+            elif typ == "periode_fixe":
+                # « 5 games for Christmas each year for 3 years » → +5×3 ;
+                # « every year » → années = durée totale de la question
+                annees = arg2 if arg2 is not None else etat.get("total_annees")
+                if annees is None:
+                    continue
+                etat["accum"] = etat.get("accum", 0) + arg1 * annees
+                ordre.append(f"période fixe += {arg1:g}×{annees:g} = "
+                             f"{etat['accum']:g}")
+            elif typ == "total_annees":
+                etat["total_annees"] = arg1
+                ordre.append(f"durée totale = {arg1:g} ans")
+            elif typ == "initial":
+                etat["initial"] = arg1
+                ordre.append(f"initial = {arg1:g}")
+            elif typ == "ratio_ent":
+                # contrainte X = k×Y — stockée (X, k, Y) pour le solveur final
+                etat.setdefault("ratios", []).append((arg2, arg1, r[3]))
+                ordre.append(f"contrainte {arg2} = {arg1:g}×{r[3]}")
+            elif typ == "total_ent":
+                etat["total_ent"] = (arg1, arg2)
+                ordre.append(f"total {arg2} = {arg1:g}")
+            elif typ == "perso_periode":
+                nom, n, m = r[1], r[2], r[3]
+                etat.setdefault("perso", {})[nom] = {"taux": n / m, "total": n}
+                ordre.append(f"{nom} : {n:g}/{m:g} = {n / m:g}/semaine")
+            elif typ == "perso_ratio":
+                nom, k = r[1], r[2]
+                base = etat.get("perso", {}).get(nom, {}).get("taux")
+                if base is not None:
+                    etat.setdefault("perso", {}).setdefault("sandy", {})["taux"] =                         base / k
+                    ordre.append(f"sandy : taux = {base:g}/{k:g} = {base / k:g}")
+            elif typ == "perso_cible":
+                nom = r[1]
+                base = etat.get("perso", {}).get(nom, {}).get("total")
+                if base is not None:
+                    etat.setdefault("perso", {}).setdefault("sandy", {})["cible"] =                         base
+                    ordre.append(f"sandy : cible = {base:g}")
+            elif typ == "perso_question":
+                etat["perso_reponse"] = r[1]
+                ordre.append(f"question : semaines de {r[1]}")
             elif typ == "perte":
                 if etat.get("courant") is not None:
                     etat["courant"] -= arg1

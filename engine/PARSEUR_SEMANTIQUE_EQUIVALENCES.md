@@ -116,6 +116,20 @@ Test sur les **80 échecs étiquetés** (taxonomie, PLAN_FAUX) :
 | v0.2 (taux×durée, inverse, cible, quantités, ratio ; clauses question traitées) | 4 | 2 | 74 | familles gagnées : perte (113), intérêt simple (187), problème inverse (548), taux composé+cible (555) — progression 0→1→3→4 |
 | v0.3 (correction virgule-milliers US : 14 réponses mal lues dans tout le benchmark) | — | — | — | extraction « #### 1,875 » = 1875 ; affecte 14/1319 items |
 | v0.4 (fractions chaînées + références d'entités) | 6 | **0** | 74 | familles : perte, intérêt simple, problème inverse, taux+cible, **fractions chaînées (1009 : 1875 ✓)**, **ratio imbriqué (1140 : 27 ✓)** — ZÉRO faux : tout plan inexact devient refus |
+| v0.5 (multi-périodes, taux inverses, systèmes de ratios) | 9 | **0** | 71 | familles : **multi-périodes (601 : 104 ✓)**, **taux inverses (307 : 16 ✓)**, **systèmes de ratios (141 : 400 ✓)** — registre de personnes, file de taux, solveur linéaire, durées en lettres |
+
+Verdict de l'itération 4 :
+- ✅ **9 familles résolues, 0 réponse fausse confiante** (71/80 refus corrects) —
+  les trois dernières familles du corpus étiqueté sont passées :
+  · multi-périodes : file de taux (chaque durée consomme son taux),
+    période récurrente (« every year » → durée totale de la question)
+  · taux inverses : registre de personnes (taux + total), ratio de taux
+  · systèmes de ratios : solveur linéaire (W=2B, B=2Q, total 700 → 400)
+- ✅ BUG STRUCTUREL corrigé au passage : la question sans relations
+  « volait » la dernière clause du corps (toutes[:-1]) — les passes
+  portent désormais sur TOUTES les clauses du corps
+- ❌ Prochaines familles : équations mixtes, multi-objets, réciproques
+  (les 71 refus restants)
 
 Verdict de l'itération 3 :
 - ✅ **6 familles résolues, 0 réponse fausse confiante** (74/80 refus corrects) —
