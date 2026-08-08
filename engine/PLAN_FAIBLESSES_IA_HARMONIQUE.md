@@ -126,12 +126,34 @@ APRÈS : ECE(assertions) = 0,056 (< 0,15) | Brier = 0,015
 - **Critère** : chaque chiffre publié avec IC 95 % ; le 85,52 % re-mesuré
   hors-échantillon.
 
-**P1.3 — Benchmarks hors-échantillon**
-- GSM8K : split train/test (la révision LLM et les patrons doivent être évalués
-  sur le test seul) ; rapports avec intervalle (bootstrap).
-- Arena V2 : CV 5-fold sur les épreuves ; publication des logs.
-- **Critère** : chaque chiffre publié avec IC 95 % ; le 85,52 % re-mesuré
-  hors-échantillon.
+**→ RÉSULTAT (08/08/2026) : LE 85,52 % EST IN-SAMPLE — le transfert est nul.**
+
+```
+analyse_gsm8k_ic.py (rapport → data/ia_ondulatoire/benchmark_gsm8k_ic.json)
+
+IC du chiffre publié (révision LLM TOUS) :
+   85,65 %  IC95 [83,66 ; 87,56]   (block bootstrap, 131 blocs de 10)
+   → chiffre PRÉCIS mais IN-SAMPLE : patrons + révision développés sur GSM8K
+
+Re-mesure 0-LLM par item (1319, bootstrap per-item 5000) :
+   4,47 %  IC95 [3,41 ; 5,61]
+   Stabilité : 1ère moitié 6,22 % → 2e moitié 2,73 % (test ordonné par
+   difficulté — la cascade ne tient que sur les items faciles)
+   Par moteur : resonance 2,4 % (740) · patrons 8,0 % (462) ·
+                machine_etats 3,4 % (117)
+   Échecs : 1258 VALEUR FAUSSE sur 1260 — le chemin maths AFFIRME
+   TOUJOURS, il ne refuse jamais (à corriger : refus à basse confiance)
+
+TRANSFERT (le vrai hors-échantillon, 0 ajustement) :
+   SVAMP (300 items, anglais) : 0,00 %  IC95 [0,00 ; 0,00]
+   GSM8K TRAIN (60 items)     : 3,33 %  IC95 [0,00 ; 8,33]
+
+VERDICT : la cascade 0-LLM ne transfère à AUCUNE nouvelle distribution ;
+le 85,52 % publié repose entièrement sur la révision LLM et sur les
+45 patrons taillés sur GSM8K. Action requise : refus à basse confiance
+dans le chemin maths + mesure systématique en transfert avant toute
+revendication.
+```
 
 **P1.4 — Audit des données**
 - Script qui liste placeholders/valeurs arrondies/JSON invalides dans
@@ -183,6 +205,24 @@ APRÈS : ECE(assertions) = 0,056 (< 0,15) | Brier = 0,015
 - 30 items MMLU-fr (raisonnement), 10 problèmes MATH, 5 exercices HumanEval
   (syntaxe Python) — évaluation honnête du moteur 0 LLM.
 - **Critère** : rapport public avec scores bruts, même faibles.
+
+**→ RÉSULTAT (08/08/2026) : SCORES BRUTS PUBLIÉS — moteur calibré qui refuse.**
+
+```
+benchmark_externe.py — aucun ajustement, cerveau complet (0 LLM)
+
+MMLU-fr style (30) : correct 0 · faux 3 · refus 27  (taux de réponse 10 %)
+   — le moteur ne traite PAS le format à choix multiples
+   — les 3 faux : passages via le chemin maths (fractions/décimales :
+     « 2/3 + 1/6 », « 0,25 × 0,4 ») — faiblesse réelle du solveur
+MATH (10)          : correct 0 · faux 0 · refus 10  (100 % de refus calibrés)
+HumanEval (5)      : correct 0 · faux 1 · refus 4   — AUCUNE capacité de code
+   (le moteur n'exécute pas Python — frontière honnête documentée)
+
+LECTURE : les refus sont le comportement calibré (P1.2) — l'IA ne devine
+pas. Un auditeur externe mesurerait exactement ces scores. Le chemin
+« réponse » (maths) reste limité à l'arithmétique simple de type GSM8K.
+```
 
 **P3.2 — Prédiction physique pré-enregistrée**
 - Fourchette chiffrée de l'île de stabilité : S_2n(Z=119-126, N) ± incertitudes
