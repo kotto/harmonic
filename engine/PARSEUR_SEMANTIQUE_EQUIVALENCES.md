@@ -115,6 +115,18 @@ Test sur les **80 échecs étiquetés** (taxonomie, PLAN_FAUX) :
 | v0.1 (+achat multi, fractions « of that », for-$P total) | 0 | 4 | 76 | FAUX −33 % ; « for $80 » total ne devient plus une assertion |
 | v0.2 (taux×durée, inverse, cible, quantités, ratio ; clauses question traitées) | 4 | 2 | 74 | familles gagnées : perte (113), intérêt simple (187), problème inverse (548), taux composé+cible (555) — progression 0→1→3→4 |
 | v0.3 (correction virgule-milliers US : 14 réponses mal lues dans tout le benchmark) | — | — | — | extraction « #### 1,875 » = 1875 ; affecte 14/1319 items |
+| v0.4 (fractions chaînées + références d'entités) | 6 | **0** | 74 | familles : perte, intérêt simple, problème inverse, taux+cible, **fractions chaînées (1009 : 1875 ✓)**, **ratio imbriqué (1140 : 27 ✓)** — ZÉRO faux : tout plan inexact devient refus |
+
+Verdict de l'itération 3 :
+- ✅ **6 familles résolues, 0 réponse fausse confiante** (74/80 refus corrects) —
+  le registre d'entités (références « the students over 16 », compléments,
+  base originale) et l'exécution en deux passes (taux avant durées) ont
+  réglé les deux derniers faux ET les régressions d'ordre
+- ✅ Les mécanismes clés : découpage par virgules (sauf milliers US),
+  « over 16 years old » ≠ durée, perte après durées, intérêt avant le
+  piège taux-None
+- ❌ Familles restantes (prochaines itérations) : multi-périodes (601),
+  taux inverses (307), systèmes de ratios (141)
 
 Verdict de l'itération 2 :
 - ✅ 4 familles de relations résolues (perte, intérêt, inverse, taux+cible) —

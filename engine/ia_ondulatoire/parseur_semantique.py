@@ -130,7 +130,10 @@ class ParseurSemantique:
         self.emb = emb
 
     def clauses(self, texte):
-        return [c.strip() for c in re.split(r"[.?!;]", texte) if c.strip()]
+        # découpe sur [.?!;] ET virgule suivie d'un non-chiffre
+        # (« old, and one-fourth… » ; « 1,000 » reste intact)
+        return [c.strip() for c in re.split(r"[.?!;]|,\s+(?![0-9])", texte)
+                if c.strip()]
 
     def nombres(self, clause):
         return [float(n.replace(",", "")) for n in
@@ -159,15 +162,17 @@ class ParseurSemantique:
         if m:
             rels.append(("frac_of", None,
                          float(m.group(1)) / float(m.group(2)), None))
+        a_frac_ent = any(r[0] == "frac_ent" for r in rels)
         for mot, (num, den) in FRACTIONS.items():
             m = re.search(rf"{re.escape(mot)}\s+of\s+(\d+(?:[.,]\d+)?)", c)
             if m:
                 rels.append(("frac_of", float(m.group(1)), num / den, None))
                 break
-            m = re.search(rf"{re.escape(mot)}\s+of\s+(?:that|the\s+[a-z]+)", c)
-            if m:
-                rels.append(("frac_of", None, num / den, None))
-                break
+            if not a_frac_ent:
+                m = re.search(rf"{re.escape(mot)}\s+of\s+(?:that|the\s+[a-z]+)", c)
+                if m:
+                    rels.append(("frac_of", None, num / den, None))
+                    break
         # ── ratio : « k times as many », « twice as many », « half as many »
         m = re.search(r"(twice|(\d+(?:[.,]\d+)?)\s*(?:times)?)\s+as\s+(many|much)"
                       r"\s+as\s+(?:the\s+)?([a-z]+)", c)
@@ -217,9 +222,11 @@ class ParseurSemantique:
         m = re.search(r"interest\s+of\s+(\d+(?:[.,]\d+)?)%", c)
         if m:
             rels.append(("interet", float(m.group(1)), None, None))
-        # ── durée : « in N days/weeks/months », « for N days » (clause nette)
+        # ── durée : « in N days/weeks/months », « for N days » (clause nette ;
+        # « over 16 years old » n'est PAS une durée)
+        c_sans_age = re.sub(r"\d+\s+years?\s+old", " ", c_net)
         m = re.search(r"(?:in|for|after|over)\s+(\d+)\s+(day|days|week|weeks|"
-                      r"month|months|year|years)", c_net)
+                      r"month|months|year|years)", c_sans_age)
         if m:
             rels.append(("duree", float(m.group(1)), m.group(2), None))
         # ── cible : « wants to save $N » / « needs to earn $N »
@@ -237,12 +244,44 @@ class ParseurSemantique:
         if m:
             rels.append(("quantite", float(m.group(3)), float(m.group(1)),
                          m.group(2), m.group(4)))
+        # ── base entité : « enrolls 3000 students » → entites["students"]
+        m = re.search(r"(?:enrolls|contains)\s+(\d+(?:[.,]\d+)?)\s+"
+                      r"([a-z]+)", c)
+        if m:
+            rels.append(("base_ent", float(m.group(1)), m.group(2), None))
+        # ── fraction avec référence d'entité : « half of these students are
+        # over 16 years old », « one-fourth of the students over 16 are male »
+        for mot, (num, den) in FRACTIONS.items():
+            m = re.search(rf"{re.escape(mot)}\s+of\s+(?:the\s+|these\s+|"
+                          rf"those\s+)?([a-z0-9]+(?:\s+[a-z0-9]+)*?)\s+are\s+"
+                          rf"([a-z0-9]+(?:\s+[a-z0-9]+)*?)(?=[.,]|$)", c)
+            if m:
+                ref = m.group(1).replace(" years old", "").replace(" year old", "")
+                attr = m.group(2).replace(" years old", "").replace(" year old", "")
+                rels.append(("frac_ent", num / den, ref.strip(), attr.strip()))
+                break
+        m = re.search(r"(\d+)\s*/\s*(\d+)\s+of\s+(?:the\s+|these\s+|"
+                      r"those\s+)?([a-z0-9]+(?:\s+[a-z0-9]+)*?)\s+are\s+"
+                      r"([a-z0-9]+(?:\s+[a-z0-9]+)*?)(?=[.,]|$)", c)
+        if m:
+            rels.append(("frac_ent", float(m.group(1)) / float(m.group(2)),
+                         m.group(3).strip(), m.group(4).strip()))
+        # ── ratio IMBRIQUÉ : « it takes 3 less than 6 potatoes to make
+        # 1 less than 3 scoops » — traité AVANT quantite, portée retirée
+        m = re.search(r"it takes (\d+)\s+(less|more)\s+than\s+(\d+)\s+"
+                      r"([a-z]+)\s+to make\s+(\d+)\s+(less|more)\s+than\s+"
+                      r"(\d+)\s+([a-z]+)", c)
+        if m:
+            a = float(m.group(3)) - float(m.group(1)) if m.group(2) == "less"                 else float(m.group(3)) + float(m.group(1))
+            b = float(m.group(7)) - float(m.group(5)) if m.group(6) == "less"                 else float(m.group(7)) + float(m.group(5))
+            rels.append(("ratio_prend2", a, b, m.group(4), m.group(8)))
+            c = c[:m.start()] + " " + c[m.end():]
         # ── perte : « N did not grow », « N died », « lost N »
         m = re.search(r"(\d+(?:[.,]\d+)?)\s+(?:did not grow|did not survive|"
                       r"died|were eaten)", c)
         if m:
             rels.append(("perte", float(m.group(1)), None, None))
-        # ── ratio : « it takes A X to make B Y »
+        # ── ratio : « it takes A X to make B Y » (forme simple)
         m = re.search(r"it takes (\d+(?:[.,]\d+)?)\s+([a-z]+)\s+to make "
                       r"(\d+(?:[.,]\d+)?)\s+([a-z]+)", c)
         if m:
@@ -265,23 +304,39 @@ class ParseurSemantique:
         wm, _ = attention(self.emb, question_txt, corps)
         # exécution : état à DEUX variables — courant (dernière valeur) et
         # total (accumulateur) ; la question détermine laquelle répondre
-        etat = {"courant": None, "total": None}
+        etat = {"courant": None, "total": None, "entites": {}}
         ordre = []
         couv = 0.0
         nb_relations = 0
         # TOUTES les clauses sont traitées — y compris la question, qui porte
-        # souvent les relations « final » et « cible » (problèmes inverses)
+        # souvent les relations « final » et « cible » (problèmes inverses).
+        # DEUX PASSES : taux/base/interêt d'abord, durées ensuite (l'ordre
+        # des phrases ne doit pas décider — « for 3 months, lost 10 per month »)
+        toutes = []
         for c, w in zip(corps, wm):
             rels = self.relations(c)
             nums = self.nombres(c)
             nb_relations += len(rels)
             if rels:
                 couv += 1
-            self._executer(rels, nums, etat, ordre)
+            toutes.append((rels, nums))
         rels_q = self.relations(question_txt)
         if rels_q:
             nb_relations += len(rels_q)
-            self._executer(rels_q, self.nombres(question_txt), etat, ordre)
+            toutes.append((rels_q, self.nombres(question_txt)))
+        for rels, nums in toutes:
+            self._executer([r for r in rels if r[0] not in ("duree", "perte")],
+                           nums, etat, ordre)
+        for rels, nums in toutes:
+            self._executer([r for r in rels if r[0] in ("duree", "perte")],
+                           nums, etat, ordre)
+        # plan faible → REFUS : durée sans taux/intérêt, ou taux multiples
+        # sans cible/final (périodes écrasées — pas de réponse confiante)
+        if etat.get("faible_duree") or (
+                etat.get("nb_taux", 0) > 1
+                and etat.get("cible") is None and etat.get("final") is None
+                and etat.get("total") is None):
+            etat["courant"] = None
         couverture = couv / max(1, len(corps))
         # la réponse : total si la question parle d'argent/total/coût,
         # sinon courant ; problèmes inverses et cibles en priorité
@@ -298,8 +353,16 @@ class ParseurSemantique:
                 reponse = etat["cible"] / per
         elif etat.get("ratio") is not None and etat.get("ratio_unite"):
             u = etat["ratio_unite"]
-            if etat.get(u):
+            if etat.get("ratio_base_unite") and etat.get(etat["ratio_base_unite"]):
+                reponse = etat[etat["ratio_base_unite"]] * etat["ratio"]
+            elif etat.get(u):
                 reponse = etat[u] * etat["ratio"]
+        elif "female" in q and etat.get("entites"):
+            # somme des compléments (non-male) des sous-ensembles d'étudiants
+            fem = [v for k, v in etat["entites"].items()
+                   if "students" in k and "male" not in k and k != "students"]
+            if fem:
+                reponse = sum(fem)
         if reponse is None and etat["total"] is not None:
             reponse = etat["total"]
         if "remaining" in q or "left" in q:
@@ -353,16 +416,19 @@ class ParseurSemantique:
                     etat["courant"] = etat["taux"] * arg1
                     ordre.append(f"{etat['taux']:g} × {arg1:g} (durée) = "
                                  f"{etat['courant']:g}")
-                elif etat.get("interet") is not None and etat.get("courant") is not None:
+                elif (etat.get("interet") is not None
+                        and etat.get("courant") is not None):
                     # intérêt simple : base × (1 + pct/100 × durée)
                     pct = etat["interet"]
                     etat["courant"] = etat["courant"] * (1 + pct / 100 * arg1)
                     ordre.append(f"intérêt {pct}% × {arg1:g} = {etat['courant']:g}")
                 else:
+                    etat["faible_duree"] = True
                     etat["courant"] = (etat["courant"] or 1) * arg1
-                    ordre.append(f"durée ×{arg1:g} = {etat['courant']:g}")
+                    ordre.append(f"durée ×{arg1:g} = {etat['courant']:g} (faible)")
             elif typ == "taux":
                 etat["taux"] = arg1
+                etat["nb_taux"] = etat.get("nb_taux", 0) + 1
                 ordre.append(f"taux = {arg1:g}/{arg2}")
             elif typ == "interet":
                 etat["interet"] = arg1
@@ -394,6 +460,37 @@ class ParseurSemantique:
                 etat["ratio"] = a / b
                 etat["ratio_unite"] = ua
                 ordre.append(f"ratio {a:g}/{b:g} = {a / b:g}")
+            elif typ == "ratio_prend2":
+                # « it takes A X to make B Y » — imbriqué, quantités calculées
+                a, b, ua, ub = r[1], r[2], r[3], r[4]
+                etat["ratio"] = a / b
+                etat["ratio_unite"] = ua
+                etat["ratio_base_unite"] = ub
+                ordre.append(f"ratio {a:g}/{b:g} ({ua}/{ub}) = {a / b:g}")
+            elif typ == "base_ent":
+                etat["entites"][r[2]] = r[1]
+                if etat.get("base") is None:
+                    etat["base"] = r[1]
+                etat["courant"] = r[1]
+                ordre.append(f"entité {r[2]} = {r[1]:g}")
+            elif typ == "frac_ent":
+                # « X of <ref> are <attr> » : sous-ensemble stocké sous
+                # « ref attr » (la référence des clauses suivantes), le
+                # COMPLÉMENT reste dans ref. Pour « students », la base est
+                # la valeur ORIGINALE (etat["base"]), pas le complément.
+                f, ref, attr = r[1], r[2], r[3]
+                if ref == "students" and etat.get("base") is not None:
+                    base = etat["base"]
+                else:
+                    base = etat["entites"].get(ref)
+                if base is None:
+                    continue
+                sub = base * f
+                etat["entites"][f"{ref} {attr}"] = sub
+                etat["entites"][ref] = base - sub
+                etat["courant"] = sub
+                ordre.append(f"{attr} = {f:g}×{base:g} = {sub:g} "
+                             f"(reste {ref}: {base - sub:g})")
             elif typ == "solde":
                 etat["total"] = (etat["total"] or 0) - (etat["courant"] or 0)
                 ordre.append(f"solde : total − courant = {etat['total']:g}")
