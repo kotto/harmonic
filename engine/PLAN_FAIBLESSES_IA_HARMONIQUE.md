@@ -70,6 +70,29 @@ priorisé, avec critères de succès mesurables pour chaque action.
   les modules métier (physique, maths, médical) qui, eux, sont validés.
 - Livrable : `validation_encodage.py` + rapport.
 
+**→ RÉSULTAT (08/08/2026) : RÉFUTÉ — AUCUN SIGNAL.**
+
+```
+75 synonymes · 72 antonymes · 120 neutres (français, 302 mots)
+ONDULATOIRE  : cos syn +0.0013 | ant −0.0001 | neu +0.0041
+               AUC(syn vs non-syn) = 0.4985  ← le hasard pur
+HASH ALÉATOIRE : AUC = 0.5586 (bruit équivalent)
+N-GRAMMES    : AUC = 0.4387 (aucune discrimination orthographique)
+
+Permutation (5000) : p(AUC_ond > 0,5) = 0,523 — indistinguable du hasard
+                     ΔAUC(ond − hash) = −0,060 ; p = 0,847
+```
+
+L'encode FNV-1a × φ-spacing ne porte **aucune information sémantique** :
+deux mots différents sont quasi-orthogonaux (cos ≈ 0), quelle que soit leur
+relation. Le squelette φ-espacé (Three-Gap) arrange des phases aléatoires —
+il ne crée pas de similarité entre concepts. **Conséquence** : la valeur du
+projet repose sur les modules validés par protocole (physique 0,004 %,
+GSM8K 85,52 %, coquille HO, Arena 60/60) et sur la mécanique HRR
+(bind/superpose/exact-match decode — Plate 1995), pas sur une sémantique
+de l'encodage. Les revendications « les concepts qui vibrent ensemble »
+sont à retirer des communications (A3.3 devient : synthèse factuelle).
+
 **P1.2 — Calibration de la confiance**
 - Protocole : 200 questions échantillonnées (identité, maths, physique, domaines),
   précision réelle vs confiance annoncée ; courbe de calibration + Brier score.
