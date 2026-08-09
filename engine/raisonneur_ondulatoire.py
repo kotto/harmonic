@@ -456,13 +456,16 @@ def solve_gsm8k(question: str, reasoner: OndulatoireReasoner = None) -> Optional
                 last_entity, last_obj = entity, obj
                 continue
         elif rate_mode:
-            # "earns $20 per hour, works 8 hours" → rate × time
-            # On init la rate, puis on multiplie par la durée
             if len(nums) >= 2:
-                # Créer un fait "rate" = nums[0]
+                rate_entity = entity or 'someone'
+                rate_obj = obj or 'money'
+                r = reasoner.log.multiply(float(nums[0]), float(nums[1]))
+                total = r[0] if r and r[0] is not None else nums[0] * nums[1]
+                reasoner.apply_action(rate_entity, rate_obj, 'init', float(total))
+                last_entity, last_obj = rate_entity, rate_obj
+                continue
+            elif len(nums) >= 1:
                 reasoner.apply_action(entity or 'someone', obj or 'money', 'init', nums[0])
-                # Puis multiplier par le temps (nums[1])
-                reasoner.apply_action(entity or 'someone', obj or 'money', 'mult', nums[1])
                 last_entity, last_obj = entity, obj
                 continue
         else:
