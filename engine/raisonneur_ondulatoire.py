@@ -306,8 +306,8 @@ def _best_object_from_sentence(sentence: str, reasoner: OndulatoireReasoner,
     entity = reasoner.resolve_entity(sentence)
     # Objet : résonance + fallback
     obj = reasoner.resolve_object(sentence)
+    # Fallback nominal (dernier mot non-stop, non-verbe)
     if obj is None and words:
-        # Fallback : le dernier mot nominal qui n'est PAS un verbe d'action
         action_verbs = {v for vals in MOTS_ACTION.values() for v in vals}
         for w in reversed(words):
             if w not in _STOP and w not in action_verbs and len(w) > 2:
@@ -316,35 +316,66 @@ def _best_object_from_sentence(sentence: str, reasoner: OndulatoireReasoner,
     return entity, obj
 
 
-def solve_gsm8k(question: str, reasoner: OndulatoireReasoner = None) -> Optional[float]:
-    """
-    Résout un problème GSM8K avec le raisonneur ondulatoire pur.
+def _detect_mult_div(sentence: str) -> Optional[str]:
+    """Détecte la multiplication ou division implicite (patterns anglais)."""
+    s = sentence.lower()
+    # Multiplication
+    if re.search(r'\b(each|every|per|apiece|a\s+piece|times\s+as\s+(many|much)|twice|double|triple|'
+                 r'how\s+much\s+does\s+.*\s+cost|price)\b', s):
+        return 'mult'
+    # Taux horaire / journalier
+    if re.search(r'\b(earns?\s+\d+\s+(dollars?\s+)?per|makes?\s+\d+\s+(dollars?\s+)?per|'
+                 r'per\s+(hour|day|week|month))\b', s):
+        return 'mult'
+    # Division
+    if re.search(r'\b(among|split|shared\s+equally|divided\s+equally|'
+                 r'each\s+(of|person|child|student|receives|gets)|per\s+person)\b', s):
+        return 'div'
+    return None
 
-    Pipeline :
-      1. Parser l'énoncé en phrases
-      2. Pour chaque phrase déclarative :
-         a. Extraire les nombres (seule regex autorisée)
-         b. Résoudre l'entité par résonance
-         c. Résoudre l'objet par résonance
-         d. Déterminer l'action par résonance
-         e. Appliquer : query → compute → update
-      3. La phrase-interrogation → query(target_entity, target_obj)
+
+def _detect_comparison(sentence: str, nums: List[float]) -> Optional[Tuple[str, float]]:
     """
+    Détecte les relations comparatives : 'N more/less than', 'N times as many'.
+    Retourne (op, value) ou None.
+    """
+    s = sentence.lower()
+    # "N more than" / "N less/fewer than"
+    m = re.search(r'(\d+(?:\.\d+)?)\s+(more|less|fewer)\s+than', s)
+    if m:
+        val = float(m.group(1))
+        op = 'add' if m.group(2) == 'more' else 'sub'
+        return (op, val)
+    # "N times as many/much as"
+    m = re.search(r'(\d+(?:\.\d+)?)\s+times\s+as\s+(many|much)\s+as', s)
+    if m:
+        return ('mult', float(m.group(1)))
+    # "twice as many/much" / "double"
+    if re.search(r'\b(twice|double)\s+as\s+(many|much)\b', s):
+        return ('mult', 2.0)
+    # "half as many/much"
+    if re.search(r'\bhalf\s+as\s+(many|much)\b', s):
+        return ('mult', 0.5)
+    # "three/four times as many"
+    m = re.search(r'(three|four|five|six|seven|eight|nine|ten)\s+times\s+as\s+(many|much)', s)
+    wmap = {'three': 3, 'four': 4, 'five': 5, 'six': 6, 'seven': 7,
+            'eight': 8, 'nine': 9, 'ten': 10}
+    if m:
+        return ('mult', float(wmap.get(m.group(1), 3)))
+    return None
+
+
+def solve_gsm8k(question: str, reasoner: OndulatoireReasoner = None) -> Optional[float]:
     if reasoner is None:
         reasoner = OndulatoireReasoner()
 
-    # Nettoyer l'énoncé
     q = question.strip()
     q = re.sub(r'\s+', ' ', q)
-
-    # Tokeniser en phrases (., ;, !, ?)
     sentences = re.split(r'(?<=[.;!?])\s+', q)
     sentences = [s.strip() for s in sentences if s.strip()]
 
-    # Étape 1 : Apprentissage des faits depuis les phrases déclaratives
     last_entity, last_obj = None, None
     for sent in sentences:
-        # Est-ce une question ?
         is_question = bool(re.search(r'\b(how many|how much|what is|what are|'
                                       r'how far|how long|how old)\b', sent.lower()))
         if is_question:
@@ -356,38 +387,85 @@ def solve_gsm8k(question: str, reasoner: OndulatoireReasoner = None) -> Optional
 
         entity, obj = _best_object_from_sentence(sent, reasoner)
         entity = entity or last_entity
+        # Si l'objet retourné n'est pas un objet connu du raisonneur
+        # (ex: "friend" au lieu de "stickers"), utiliser last_obj
+        if obj is not None and last_obj is not None:
+            if obj not in reasoner.object_names:
+                obj = last_obj
         if obj is None and last_obj:
             obj = last_obj
 
-        # Première phrase : initialisation
-        if not reasoner._registry or len(reasoner._registry) == 0:
+        # ── Détection d'action enrichie ──────────────────────────────────
+        implicit_op = _detect_mult_div(sent)
+        comparison = _detect_comparison(sent, nums)
+        rate_mode = bool(re.search(r'\b(per\s+(hour|day|week|month)|'
+                                    r'a\s+(day|week|month))\b', sent.lower()))
+
+        # Première phrase ou "has/had/have" explicite → init
+        is_init = (not reasoner._registry or len(reasoner._registry) == 0 or
+                   bool(re.search(r'\b(?:^|\s)(?:has|had|have|there\s+are|there\s+were|'
+                                  r'owns?|bought|collected|found|bakes?|makes?|'
+                                  r'produces?)\s+\d+', sent.lower())))
+
+        if is_init:
             action = 'init'
-            for e_name in reasoner.entity_names:
-                if e_name in sent.lower():
-                    entity = e_name
-            if entity is None and len(nums) >= 1 and len(reasoner._objects) == 0:
-                # Créer une entité implicite "someone"
+            # Essayer de trouver un nom propre (entité) dans la phrase
+            if entity is None:
+                # Chercher un mot capitalisé (hors début de phrase)
+                caps = re.findall(r'\b([A-Z][a-z]{2,})\b', sent)
+                if caps and reasoner._registry:
+                    entity = caps[0].lower()
+                elif caps:
+                    entity = caps[0].lower()
+            if entity is None and len(nums) >= 1 and not reasoner._registry:
                 entity = 'someone'
             if obj is None and len(words := [w for w in re.findall(r'[a-z]{3,}', sent.lower())
                                               if w not in _STOP]) > 0:
-                obj = words[-1] if len(words) >= 1 else words[0]
+                obj = words[-1]
+
+        elif comparison:
+            action, comp_val = comparison
+            # Appliquer au dernier fait connu
+            if entity and obj:
+                reasoner.apply_action(entity, obj, action, comp_val)
+                last_entity, last_obj = entity, obj
+                continue
+            # Sinon, on init puis on applique
+            action = 'init'
+
+        elif implicit_op:
+            action = implicit_op
+            if action == 'mult' and len(nums) >= 2:
+                # "each box has 5 pencils" → multiplier le fait existant par 5
+                # S'il y a un fait (entity, obj) existant → on multiplie
+                key = (entity.lower(), obj.lower()) if entity and obj else None
+                if key and key in reasoner._registry:
+                    reasoner.apply_action(entity, obj, 'mult', nums[0] if len(nums) == 1 else nums[1])
+                    last_entity, last_obj = entity, obj
+                    continue
+            if action == 'div' and entity and obj and len(nums) >= 2:
+                reasoner.apply_action(entity, obj, 'div', nums[0] if len(nums) == 1 else nums[1])
+                last_entity, last_obj = entity, obj
+                continue
+        elif rate_mode:
+            # "earns $20 per hour, works 8 hours" → rate × time
+            # On init la rate, puis on multiplie par la durée
+            if len(nums) >= 2:
+                # Créer un fait "rate" = nums[0]
+                reasoner.apply_action(entity or 'someone', obj or 'money', 'init', nums[0])
+                # Puis multiplier par le temps (nums[1])
+                reasoner.apply_action(entity or 'someone', obj or 'money', 'mult', nums[1])
+                last_entity, last_obj = entity, obj
+                continue
         else:
             action = reasoner.resolve_action(sent) or 'add'
 
         if entity and obj and nums:
             val = nums[0]
-            # Pour "init" avec plusieurs nombres : le premier est la quantité
-            # Pour "add/sub" : la quantité ajoutée/retirée
-            if action in ('mult', 'div') and len(nums) >= 2:
-                val = nums[1] if action == 'mult' else nums[1]
-            elif action == 'init' and len(nums) >= 2:
-                # "John has 5 apples and 3 oranges" — nombres multiples
-                val = nums[0]
-
             reasoner.apply_action(entity, obj, action, val)
             last_entity, last_obj = entity, obj
 
-    # Étape 2 : Répondre à la question
+    # ── Répondre à la question ───────────────────────────────────────────
     target_entity, target_obj = last_entity, last_obj
     question_sent = sentences[-1] if sentences else ''
     if '?' in question_sent or 'how many' in question_sent.lower():
@@ -398,9 +476,8 @@ def solve_gsm8k(question: str, reasoner: OndulatoireReasoner = None) -> Optional
     if target_entity and target_obj:
         return reasoner.query(target_entity, target_obj)
 
-    # Fallback : donner la valeur du dernier fait
     if reasoner._registry:
-        return list(reasoner._registry.values())[-1][0]
+        return list(reasoner._registry.values())[-1]
 
     return None
 
