@@ -3,21 +3,21 @@
 compilateur_thu.py — Compilateur Humain → Langage Ondulatoire (13 primitives)
 ================================================================================
 
-Pipeline THU complet, bidirectionnel :
+Pipeline THU complet, bidirectionnel, avec GATE V2 (noyau ABC, α=1/φ) :
 
-  ANALYSE  →  ALGÈBRE  →  ARITHMÉTIQUE  →  GÉOMÉTRIE
-  (texte)     (éq.)       (Phase/Log)       (ψ_state)
-                                                │
-  RÉPONSE  ←  ALGÈBRE  ←  ARITHMÉTIQUE  ←──────┘
+  GATE V2  →  ANALYSE  →  ALGÈBRE  →  ARITHMÉTIQUE  →  GÉOMÉTRIE
+  (filtre)    (texte)      (éq.)       (Phase/Log)       (ψ_state)
+                                                              │
+  RÉPONSE  ←  ALGÈBRE  ←  ARITHMÉTIQUE  ←────────────────────┘
   (nombre)    (vérif)     (extraction)
 
-CIBLE : les 13 primitives du langage ondulatoire standard
-  encode, decode, bind, unbind, superpose, resonate,
-  rotate, normalize, interfere, diffract, filter,
-  phase_shift, emerge
+GATE V2 : le filtre dynamique (noyau ABC, α=1/φ) élimine les phrases
+sans contenu mathématique AVANT la compilation. Seules les phrases
+qui passent le GATE sont compilées en programme ondulatoire.
 
-PRINCIPE : l'univers ne comprend pas "John has 5 apples".
-Il comprend bind(bind(encode("john"), encode("apples")), encode("5")).
+PRINCIPE THU V2 : 'Filtrer est la seule opération qui n'a pas besoin
+d'intention.' Le GATE ne choisit pas — il applique la dynamique et
+ce qui survit EST mathématique.
 """
 
 import sys, os, re, json, time, math
@@ -261,16 +261,41 @@ class CompilateurTHU:
     Compilateur THU : texte humain → programme ondulatoire (13 primitives).
 
     Niveaux THU :
+      GATE V2   : filtre dynamique (noyau ABC, α=1/φ) — élimine le bruit
       ANALYSE   : segmentation en phrases, reconnaissance de patterns
       ALGÈBRE   : construction d'équations avec dépendances
       ARITHMÉTIQUE : PhaseEncoder (+,−) + LogEncoder (×,÷)
       GÉOMÉTRIE : état ondulatoire ψ_state (la réponse y émerge)
     """
 
+    # GATE V2 partagé (initialisé une seule fois pour toutes les instances)
+    _gate_instance = None
+
+    @classmethod
+    def _get_gate(cls):
+        """GATE V2 statique — chargé une seule fois."""
+        if cls._gate_instance is None:
+            from filtre_dynamique import DynamicHarmonicFilter
+            cls._gate_instance = DynamicHarmonicFilter()
+        return cls._gate_instance
+
     def __init__(self):
         self.memoire = MemoireHolographique()
         self._last_entity: Optional[str] = None
         self._last_object: Optional[str] = None
+
+    def _passe_gate(self, sent: str) -> bool:
+        """
+        GATE V2 : une phrase passe le filtre si elle contient
+        du contenu mathématique.
+
+        Optimisation : les phrases contenant un nombre passent directement.
+        """
+        if re.search(r'\d', sent):
+            return True
+        gate = CompilateurTHU._get_gate()
+        result = gate.filter_iteratively(sent)
+        return any(w >= 0.5 for _, w in result['survivors'])
 
     # ── ANALYSE : reconnaissance de patterns ─────────────────────────────
 
@@ -435,7 +460,9 @@ class CompilateurTHU:
     def compiler_et_executer(self, probleme: str) -> Optional[float]:
         """
         Pipeline THU complet :
-          ANALYSE → ALGÈBRE → ARITHMÉTIQUE → GÉOMÉTRIE → réponse
+          GATE V2 → ANALYSE → ALGÈBRE → ARITHMÉTIQUE → GÉOMÉTRIE → réponse
+
+        Le GATE V2 (noyau ABC, α=1/φ) filtre les phrases avant compilation.
         """
         q = probleme.strip()
         q = re.sub(r'\s+', ' ', q)
@@ -445,6 +472,10 @@ class CompilateurTHU:
         question_info = None
 
         for sent in sentences:
+            # ── GATE V2 : ne compiler que les phrases mathématiques ──
+            if not self._passe_gate(sent):
+                continue
+
             compiled = self.compiler_phrase(sent)
             if compiled is None:
                 continue
