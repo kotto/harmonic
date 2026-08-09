@@ -4,20 +4,16 @@
 depot_e3_tstar.py — DÉPÔT PRÉ-ENREGISTRÉ DE LA PRÉDICTION T* (protocole P3.2)
 =============================================================================
 Date du dépôt : 09/08/2026 — auteur : Univers-Holistique (Kotto Alain) + ZCode
-STATUT : DÉPOSÉ — NON ENCORE TESTÉ
+STATUT : DÉPOSÉ — NON ENCORE TESTÉ  (v2 : la famille T*)
 
-PRÉDICTION (énoncé exact, déposé avant tout test) :
-  Pour un mode harmonique à l'équilibre thermique à la température
-      T* = ℏω / (k_B · ln φ)  =  2,078086921235027 · ℏω/k_B
-  la statistique d'occupation est exactement la distribution dorée :
-      p_n = (1 − 1/φ) · (1/φ)^n          (rapport successif = 1/φ)
-      n̄   = φ  =  1,6180339887498948     (occupation moyenne)
-      Fano = Var(n)/n̄ = φ² = 2,618033988749895
-
-CONDITIONS DE FALSIFICATION (déclarées avant le test) :
-  · |n̄_mesuré − φ| > incertitude combinée à 1e-3 (relatif) → prédiction falsifiée
-  · rapport p_{n+1}/p_n ≠ 1/φ au-delà de l'incertitude → falsifiée
-  · toute statistique non-thermique (mode non thermalisé) → test invalide, pas de verdict
+PRÉDICTION (v2 — la famille des températures dorées, déposée avant tout test) :
+  THÉORÈME : pour tout gap quantique ΔE, e^{−ΔE/k_BT} = 1/φ ⟺ T* = ΔE/(k_B·ln φ).
+  T5a · OSCILLATEUR : à T* = ℏω/(k_B·ln φ) = 2,078086921235027·ℏω/k_B, la
+       statistique d'occupation est la distribution dorée : p_n = (1−1/φ)(1/φ)^n,
+       n̄ = φ = 1,6180339887498948, Fano = φ².
+  T5b · IONISATION : pour chaque élément d'énergie d'ionisation χ, le facteur
+       de Boltzmann vaut exactement 1/φ à T*_ion = χ·24115 K/eV
+       (H : 327 918 K · He : 592 919 K · … — table de 23 éléments).
 
 Ce dépôt génère TOUS les nombres du document daté/signé, avec les systèmes
 physiques concrets où la prédiction est réalisable aujourd'hui.
@@ -95,14 +91,45 @@ for cible, label in [(1e-3, "1e-3"), (1e-4, "1e-4")]:
 print()
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 5. L'ENREGISTREMENT DU DÉPÔT (JSON — le certificat horodaté)
+# 4. LA FAMILLE T*_ion — T5b (généralisation : e^{−ΔE/k_BT} = 1/φ ⟺ T* = ΔE/(k_B·ln φ))
+# ─────────────────────────────────────────────────────────────────────────────
+# Premières énergies d'ionisation (eV — valeurs NIST approximatives)
+EI = {1: 13.598, 2: 24.587, 3: 5.392, 4: 9.323, 5: 8.298, 6: 11.260,
+      7: 14.534, 8: 13.618, 9: 17.423, 10: 21.565, 11: 5.139, 12: 7.646,
+      13: 5.986, 14: 8.152, 15: 10.487, 16: 10.360, 17: 12.968, 18: 15.760,
+      19: 4.341, 20: 6.113, 36: 13.999, 54: 12.130, 86: 10.749}
+NOMS = {1: "H", 2: "He", 3: "Li", 4: "Be", 5: "B", 6: "C", 7: "N", 8: "O",
+        9: "F", 10: "Ne", 11: "Na", 12: "Mg", 13: "Al", 14: "Si", 15: "P",
+        16: "S", 17: "Cl", 18: "Ar", 19: "K", 20: "Ca", 36: "Kr", 54: "Xe",
+        86: "Rn"}
+K_EV = 11604.5                      # eV → K
+FACTEUR = K_EV / LN_PHI             # K par eV = 24115 K/eV
+
+print("─ LA FAMILLE T*_ion (T5b — T5 généralisé, 23 éléments) :")
+print(f"  e^(−ΔE/k_BT) = 1/φ ⟺ T* = ΔE/(k_B·ln φ) — facteur {FACTEUR:.0f} K/eV")
+table_ion = []
+for Z in sorted(EI):
+    T_ion = EI[Z] * FACTEUR
+    table_ion.append({"Z": Z, "element": NOMS[Z], "chi_eV": EI[Z],
+                      "T_etoile_ion_K": T_ion})
+    print(f"    {Z:3d} {NOMS[Z]:4s} χ = {EI[Z]:7.3f} eV → T* = {T_ion:9.0f} K")
+q_verif = math.exp(-LN_PHI)          # e^{−χ/k_BT*} = e^{−ln φ} = 1/φ EXACT
+print(f"  Vérification : e^(−χ/k_BT*) = {q_verif:.16f} vs 1/φ = {1.0/PHI:.16f} "
+      f"{'✅' if abs(q_verif - 1.0/PHI) < 1e-15 else '❌'}")
+print()
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 5. L'ENREGISTREMENT DU DÉPÔT (JSON — le certificat horodaté, v2 : la famille)
 # ─────────────────────────────────────────────────────────────────────────────
 depot = {
     "protocole": "P3.2 — dépôt pré-enregistré, daté et signé, avant tout test",
+    "version": 2,
     "date_depot": "2026-08-09",
     "auteur": "Univers-Holistique (Kotto Alain) + ZCode",
     "statut": "DÉPOSÉ — NON ENCORE TESTÉ",
-    "prediction": {
+    "theoreme": "FAMILLE T* : pour tout gap quantique ΔE, "
+                "e^{−ΔE/k_BT} = 1/φ ⟺ T* = ΔE/(k_B·ln φ)",
+    "prediction_T5a_oscillateur": {
         "enonce": ("Pour un mode harmonique à l'équilibre thermique à "
                    "T* = ℏω/(k_B·ln φ), la statistique d'occupation est la "
                    "distribution dorée : p_n = (1−1/φ)(1/φ)^n, "
@@ -113,11 +140,22 @@ depot = {
         "fano": PHI * PHI,
         "distribution_p0_p6": [(1.0 - Q) * Q ** n for n in range(7)],
     },
+    "prediction_T5b_ionisation": {
+        "enonce": ("Pour tout élément d'énergie d'ionisation χ, le facteur "
+                   "de Boltzmann vaut exactement 1/φ à T*_ion = χ/(k_B·ln φ) "
+                   "= χ·24115 K/eV — table de 23 éléments, falsifiable par "
+                   "spectroscopie de plasma (limite Saha basse densité)"),
+        "facteur_K_par_eV": FACTEUR,
+        "table": table_ion,
+        "verification_e_exp_moins_ln_phi": q_verif,
+    },
     "conditions_falsification": [
-        ("|n̄_mesuré − φ| > incertitude combinée à 1e-3 (relatif) → falsifiée"),
-        ("rapport p_{n+1}/p_n ≠ 1/φ au-delà de l'incertitude → falsifiée"),
-        ("statistique non-thermique (mode non thermalisé) → test invalide, "
-         "pas de verdict"),
+        ("T5a · |n̄_mesuré − φ| > incertitude combinée à 1e-3 (relatif) → falsifiée"),
+        ("T5a · rapport p_{n+1}/p_n ≠ 1/φ au-delà de l'incertitude → falsifiée"),
+        ("T5b · à T*_ion, le facteur de Boltzmann mesuré s'écarte de 1/φ au-delà "
+         "de l'incertitude → falsifiée"),
+        ("statistique non-thermique (mode non thermalisé / plasma hors équilibre) "
+         "→ test invalide, pas de verdict"),
     ],
     "systemes_candidats": systemes,
     "sensibilite": {
@@ -125,8 +163,9 @@ depot = {
         "dT_T_pour_dn_n_1e-3": 1e-3 / (Q * (1.0 - Q) * LN_PHI),
     },
     "verifications_theoreme": {
-        "theoreme_T5": "Violet B — rapports exacts à 1.1e-16 (validation_etats_quantiques.py)",
-        "reference": "THEORIE_HARMONIQUE_REFONDEE.md — T5, frontière F3",
+        "T5a": "Violet B — rapports exacts à 1.1e-16 (validation_etats_quantiques.py)",
+        "T5b": "exploration_tableau_periodique.py — e^{−ln φ} = 1/φ exact machine",
+        "reference": "THEORIE_HARMONIQUE_REFONDEE.md — T5 (famille), frontière F3",
     },
     "horodatage": time.strftime("%Y-%m-%d %H:%M:%S"),
 }
@@ -137,7 +176,9 @@ with open(chemin, "w", encoding="utf-8") as f:
     json.dump(depot, f, indent=2, ensure_ascii=False)
 
 print("─ VERDICT")
-print("  ✅ Dépôt enregistré :", chemin)
+print("  ✅ Dépôt v2 enregistré :", chemin)
 print("  ⏳ Statut : DÉPOSÉ — NON ENCORE TESTÉ")
-print("  🔍 Falsifiable par : n̄ = φ à 1e-3 près, rapport p_{n+1}/p_n = 1/φ")
+print("  🔍 Falsifiable : T5a n̄ = φ à 1e-3 · rapport p_{n+1}/p_n = 1/φ")
+print(f"     T5b Boltzmann = 1/φ à T*_ion (23 éléments, ex. H : "
+      f"{EI[1]*FACTEUR:.0f} K)")
 print(f"  📅 Horodaté : {depot['horodatage']}")

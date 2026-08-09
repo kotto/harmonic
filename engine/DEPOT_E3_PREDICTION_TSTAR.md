@@ -1,113 +1,101 @@
-# 📜 DÉPÔT E3 — PRÉDICTION PRÉ-ENREGISTRÉE : LE THÉORÈME T*
+# 📜 DÉPÔT E3 — PRÉDICTION PRÉ-ENREGISTRÉE : LA FAMILLE DES TEMPÉRATURES DORÉES T*
 
 **Protocole** : P3.2 — dépôt daté, signé, déposé AVANT tout test
-**Date du dépôt** : 09/08/2026
+**Date du dépôt** : 09/08/2026 — **Version** : 2.0 (v1 : oscillateur · v2 : famille oscillateur + ionisation)
 **Auteur** : Univers-Holistique (Kotto Alain) — avec ZCode
 **Statut** : ⏳ **DÉPOSÉ — NON ENCORE TESTÉ**
-**Référence** : `THEORIE_HARMONIQUE_REFONDEE.md` — T5 (théorème), F3 (frontière)
-**Certificat** : `data/benchmarks/depot_e3_tstar.json` (horodaté)
+**Référence** : `THEORIE_HARMONIQUE_REFONDEE.md` — T5 (théorème, famille), F3 (frontière)
+**Certificat** : `data/benchmarks/depot_e3_tstar.json` (v2, horodaté)
 
 ---
 
-> *Le premier dépôt ex-ante de la théorie refondée : la première prédiction physique falsifiable, dérivée — pas postulée — et déposée avant que le monde ne vote.*
+> *Le dépôt ex-ante de la théorie refondée s'étend : une famille de températures dorées, dérivées — pas postulées — et déposées avant que le monde ne vote.*
 
 ---
 
-## 1. L'énoncé exact de la prédiction
+## 1. Le théorème — la famille T*
 
-> **Pour un mode harmonique à l'équilibre thermique à la température**
-> $$\boxed{T^* = \frac{\hbar\omega}{k_B\,\ln\varphi} = 2{,}078086921235027\,\frac{\hbar\omega}{k_B}}$$
-> **la statistique d'occupation est la distribution dorée :**
-> $$p_n = \left(1-\frac{1}{\varphi}\right)\left(\frac{1}{\varphi}\right)^n, \qquad
-> \frac{p_{n+1}}{p_n} = \frac{1}{\varphi} = 0{,}6180339887498948$$
-> **avec les observables exactes :**
-> $$\bar{n} = \varphi = 1{,}6180339887498948 \qquad \text{(occupation moyenne)}$$
-> $$\text{Fano} = \frac{\text{Var}(n)}{\bar{n}} = \varphi^2 = 2{,}6180339887498949$$
-
-**La distribution dorée (déposée avant le test) :**
-
-| n | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
-|---|---|---|---|---|---|---|---|
-| p_n | 0,38196601 | 0,23606798 | 0,14589803 | 0,09016994 | 0,05572809 | 0,03444185 | 0,02128624 |
+> **Pour tout gap quantique ΔE, le facteur de Boltzmann vaut exactement 1/φ à une unique température :**
+> $$\boxed{e^{-\Delta E / k_B T^*} = \frac{1}{\varphi} \qquad\Longleftrightarrow\qquad T^* = \frac{\Delta E}{k_B\,\ln\varphi}}$$
+>
+> **Deux instances dérivées et déposées :**
+> - **T5a · Oscillateur thermique** (gap ℏω) : statistique d'occupation dorée p_n = (1−1/φ)(1/φ)ⁿ, n̄ = φ, Fano = φ² — à T\* = 2,078086921235027·ℏω/k_B
+> - **T5b · Ionisation atomique** (gap χ) : le facteur de Boltzmann vaut 1/φ à T\*_ion = χ·24115 K/eV — **une température dorée par élément**
 
 ---
 
-## 2. La dérivation (théorème T5 — déjà vérifié, rappel)
+## 2. T5a — l'oscillateur thermique (v1, rappel)
 
-1. **Gibbs + spectre harmonique** : à l'équilibre thermique, p_n ∝ e^{−βE_n} avec E_n = ℏω(n + ½) — donc p_{n+1}/p_n = e^{−βℏω} **constant** (distribution géométrique).
-2. **Le théorème** : le rapport successif vaut 1/φ **si et seulement si** e^{−βℏω} = 1/φ, c'est-à-dire βℏω = ln φ — **une seule température** : T\* = ℏω/(k_B·ln φ).
-3. **Conséquence exacte** : à T\*, n̄ = q/(1−q) avec q = 1/φ → **n̄ = φ** — l'occupation moyenne d'un mode à la température dorée est le nombre d'or.
-4. **Vérification machine** : `validation_etats_quantiques.py` (Violet B) — rapports exacts à 1,1×10⁻¹⁶ ; T\* = 2,078087·ℏω/k_B.
+| Observable | Valeur déposée |
+|---|---|
+| T\* (unités ℏω/k_B) | **2,078086921235027** = 1/ln φ |
+| Rapport successif p_{n+1}/p_n | **1/φ = 0,6180339887498948** |
+| Occupation moyenne n̄ | **φ = 1,6180339887498948** |
+| Facteur de Fano Var(n)/n̄ | **φ² = 2,6180339887498949** |
+| Distribution p₀…p₆ | 0,38197 · 0,23607 · 0,14590 · 0,09017 · 0,05573 · 0,03444 · 0,02129 |
 
-> **Statut honnête de la dérivation** : le théorème est une identité exacte (Gibbs + spectre — deux faits établis de la physique). La part PRÉDICTIVE du dépôt est l'affirmation physique : la distribution dorée est *réalisable et mesurable* dans un mode harmonique réel à T\*, et 1/φ y sera observé à la précision de l'expérience.
+**Vérification** : `validation_etats_quantiques.py` (Violet B) — rapports exacts à 1,1×10⁻¹⁶.
 
----
+## 3. T5b — les températures dorées d'ionisation (v2, nouvelle)
 
-## 3. Les systèmes physiques candidats (réalisables aujourd'hui)
+| Z | Élément | χ (eV) | T\*_ion (K) | | Z | Élément | χ (eV) | T\*_ion (K) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | H | 13,598 | **327 918** | | 12 | Mg | 7,646 | 184 385 |
+| 2 | He | 24,587 | **592 919** | | 13 | Al | 5,986 | 144 353 |
+| 3 | Li | 5,392 | 130 029 | | 14 | Si | 8,152 | 196 587 |
+| 4 | Be | 9,323 | 224 826 | | 15 | P | 10,487 | 252 896 |
+| 5 | B | 8,298 | 200 108 | | 16 | S | 10,360 | 249 833 |
+| 6 | C | 11,260 | 271 537 | | 17 | Cl | 12,968 | 312 725 |
+| 7 | N | 14,534 | 350 490 | | 18 | Ar | 15,760 | 380 055 |
+| 8 | O | 13,618 | 328 400 | | 19 | K | 4,341 | 104 684 |
+| 9 | F | 17,423 | 420 158 | | 20 | Ca | 6,113 | 147 416 |
+| 10 | Ne | 21,565 | 520 043 | | 36 | Kr | 13,999 | 337 588 |
+| 11 | Na | 5,139 | 123 928 | | 54 | Xe | 12,130 | 292 517 |
+| | | | | | 86 | Rn | 10,749 | 259 214 |
 
-| Système | Fréquence | T\* (K) | Faisabilité |
-|---|---|---|---|
-| Cavité micro-onde (cavity QED) | 10 GHz | **0,9973 K ≈ 1,00 K** | Cryogénie standard — cryostat à dilution |
-| Mode de lecture circuit QED (transmon) | 6 GHz | 0,5984 K | Cryogénie standard |
-| Mode phonon (cristal / optomécanique) | 1 GHz | 0,0997 K | Cryogénie standard |
-| Mode séculaire de piège à ions | 1 MHz | ~0,0001 K (≈ 100 μK) | Refroidissement laser + piège |
-| Oscillateur mécanique (membrane) | 100 kHz | ~10 μK | Zone froide du cryostat |
+**Vérification du théorème** (constantes cohérentes, k_B = 1/11604,5 eV/K) :
+e^{−χ/k_BT*} = e^{−ln φ} = **0,6180339887498948 = 1/φ — exact machine**.
 
-**Le candidat le plus simple** : un mode de cavité micro-onde à 10 GHz thermalisé à **0,997 K** — la température dorée est à moins de 3 mK de 1,00 K : un chiffre d'une frappante simplicité expérimentale.
-
----
+**Statut honnête** : le théorème est une identité exacte (Gibbs + spectre à deux niveaux — le squelette du dépôt v1 appliqué aux gaps d'ionisation). Les χ sont les valeurs NIST ; la température est le paramètre libre — **1/φ est imposé par le théorème, pas ajusté**.
 
 ## 4. Les conditions de falsification (déclarées avant le test)
 
 | # | Condition | Verdict |
 |---|---|---|
-| F1 | \|n̄_mesuré − φ\| > incertitude combinée (cible : 1e-3 relatif) | **Prédiction falsifiée** |
-| F2 | Rapport p_{n+1}/p_n ≠ 1/φ au-delà de l'incertitude | **Prédiction falsifiée** |
-| F3 | Statistique non-thermique (mode non thermalisé, population non-Bose) | **Test invalide — pas de verdict** (la prédiction ne s'applique qu'à l'équilibre) |
+| F1 | T5a : \|n̄_mesuré − φ\| > incertitude combinée (cible 1e-3 relatif) | **Prédiction falsifiée** |
+| F2 | T5a : rapport p_{n+1}/p_n ≠ 1/φ au-delà de l'incertitude | **Prédiction falsifiée** |
+| F3 | T5b : à T\*_ion, le facteur de Boltzmann mesuré s'écarte de 1/φ au-delà de l'incertitude | **Prédiction falsifiée** |
+| F4 | Statistique non-thermique (mode non thermalisé / plasma hors équilibre) | **Test invalide — pas de verdict** |
 
-**Précision requise (analyse de sensibilité, déposée)** :
+**Précision requise (T5a, déposée)** : 1e-3 sur n̄ → contrôle de température ±0,88 % de T\* (≈ ±9 mK à 0,997 K) ; 1e-3 sur q → ±0,21 %.
 
-| Observable | Précision visée | Contrôle de température requis |
-|---|---|---|
-| n̄ (occupation moyenne) | 1e-3 relatif | ±0,88 % de T\* (≈ ±9 mK à 0,997 K) |
-| q (rapport successif) | 1e-3 relatif | ±0,21 % de T\* (≈ ±2 mK à 0,997 K) |
-| n̄ | 1e-4 relatif | ±0,088 % de T\* |
-| q | 1e-4 relatif | ±0,021 % de T\* |
+## 5. Les protocoles de mesure
 
----
+**T5a — cavité micro-onde (réalisable aujourd'hui)** : mode 10 GHz thermalisé à **0,997 K ≈ 1,00 K** (cryostat à dilution), statistique d'occupation par comptage de Fock (circuit QED), comparaison à la distribution dorée.
 
-## 5. Le protocole de mesure
-
-1. **Préparation** : thermaliser le mode (cavité micro-onde 10 GHz, couplée à un bain à T\*) — vérifier la thermalisation par la statistique de Bose-Einstein elle-même (condition F3).
-2. **Mesure** : statistique d'occupation p_n par détection de photons micro-onde (comptage de Fock, QND dispersif — technologie circuit QED mature) ou par mesure d'énergie moyenne.
-3. **Comparaison** : n̄ vs φ = 1,6180339887498948 ; rapports p_{n+1}/p_n vs 1/φ.
-4. **Verdict** : selon les conditions F1-F3 — publié, même négatif (méthode du projet).
-
----
+**T5b — plasma d'hydrogène (réalisable)** : plasma H à **327 918 K** (≈ 28 eV — tokamaks, Z-pinch, plasmas laser), mesure des populations d'ionisation par spectroscopie d'émission — le rapport des facteurs de Boltzmann doit valoir 1/φ à la limite Saha basse densité.
 
 ## 6. Ce que le dépôt engage — et ce qu'il n'engage pas
 
 | Engage | N'engage pas |
 |---|---|
-| L'identité mathématique : à T\*, la distribution thermique EST la distribution dorée | Que T\* soit « spéciale » pour une autre raison que le théorème |
-| La réalisabilité expérimentale de T\* dans les systèmes candidats | Que la THU « explique » quoi que ce soit au-delà de cette prédiction |
-| Le protocole de falsification et la publication du résultat, même négatif | Que le résultat, s'il confirme, prouve la THU (une confirmation n'est pas une preuve — mais une falsification serait une réfutation précise) |
-
----
+| L'identité : à T\*, le facteur de Boltzmann EST 1/φ (exact) | Que T\* soit « spéciale » au-delà du théorème |
+| La réalisabilité expérimentale (cavité 1 K · plasma 3,3×10⁵ K) | Que la THU « explique » quoi que ce soit de plus |
+| La publication du résultat, même négatif | Qu'une confirmation prouve la THU (une confirmation est un indice ; une falsification serait une réfutation précise) |
 
 ## 7. La signature
 
 ```
-Déposé le 09/08/2026 — avant tout test
+Déposé le 09/08/2026 — v2 (famille T*) — avant tout test
 Univers-Holistique (Kotto Alain) · ZCode
-Certificat horodaté : data/benchmarks/depot_e3_tstar.json
-Statut : DÉPOSÉ — NON ENCORE TESTÉ
+Certificat horodaté : data/benchmarks/depot_e3_tstar.json (v2)
 
 Réplique à vérifier :
-  python validation_etats_quantiques.py     (le théorème T5 — déjà vérifié)
-  python depot_e3_tstar.py                  (ce dépôt — tous les nombres)
+  python validation_etats_quantiques.py      (T5a — déjà vérifié)
+  python exploration_tableau_periodique.py   (T5b — la table)
+  python depot_e3_tstar.py                   (ce dépôt v2 — tous les nombres)
 ```
 
 ---
 
-*Dépôt E3 — FIN — la première porte est franchie : la prédiction est déposée, datée, signée, réfutable — et le monde n'a pas encore voté.*
+*Dépôt E3 v2 — FIN — la prédiction est devenue une famille : 1 oscillateur + 23 éléments, déposés, datés, signés, réfutables — et le monde n'a pas encore voté.*

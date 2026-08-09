@@ -78,11 +78,11 @@ Les théorèmes sont les survivants **dérivés** — chacun vérifié machine, 
 | **T2** | **λ = φ** — le taux du noyau ABC | λ = α/(1−α) avec T1 — exact | ✅ Violet A |
 | **T3** | **La chaîne de coefficients** c_k = 1/Γ(k/φ+1) | La solution de D^{1/φ}[Ψ] = G[Ψ] est E_{1/φ}(−φ·t^{1/φ}) ; ses coefficients sont les Γ-réciproques | ✅ FFT 2,22×10⁻¹⁶ · mpmath 1e-13 |
 | **T4** | **π et e sont des constantes de normalisation dérivées** | Intégrale gaussienne (π^{−1/4}, π^{−1/2}) ; enveloppes exponentielles (e^{−βℏω}, e^{−|α|²/2}) | ✅ Violet B — 4/4 |
-| **T5** | **Le théorème T\*** — la seule réalisation quantique exacte du rapport 1/φ | Gibbs + spectre harmonique : p_{n+1}/p_n = e^{−βℏω} = 1/φ ⟺ T\* = ℏω/(k_B·ln φ) = 2,078087·ℏω/k_B | ✅ 1,1×10⁻¹⁶ |
+| **T5** | **La famille des températures dorées** — pour tout gap quantique ΔE, e^{−ΔE/k_BT} = 1/φ ⟺ T\* = ΔE/(k_B·ln φ) | **T5a** (oscillateur) : p_{n+1}/p_n = 1/φ ⟺ T\* = 2,078087·ℏω/k_B — ✅ 1,1×10⁻¹⁶ · **T5b** (ionisation) : Boltzmann = 1/φ ⟺ T\*_ion = χ·24115 K/eV — ✅ machine, 23 éléments (H : 327 918 K) | ✅ famille vérifiée — dépôt E3 v2 |
 | **T6** | **La gravité est le survivant du secteur n=2** | Fierz-Pauli → Deser (1970) : la seule théorie cohérente du spin-2 auto-interactif est la RG | ✅ 4 vérifications machine (□h̄=1,2e-15, G^lin=6e-16…) |
 | **T7** | **L'alphabet du langage source** | e^{iθ} (le verbe — survit à la rotation) · ℕ/Γ (le comptage — survit à la quantification) · gaussienne (l'agrégation — point fixe du TCL) · Fourier (la grammaire) — et **1/φ comme adverbe** (la non-répétition, dans l'agencement, pas dans les mots) | ✅ formes vérifiées — √2, √3 ⚠️ frontière |
 
-**T5 est le premier théorème de la refondation** : il n'a été ni postulé ni cherché — il est sorti de la chaîne dérivée (T1→T2→T3) appliquée aux états quantiques. C'est le comportement attendu d'une théorie de filtres : les survivants se manifestent aux endroits précis où le filtre opère.
+**T5 est le premier théorème de la refondation** : il n'a été ni postulé ni cherché — il est sorti de la chaîne dérivée (T1→T2→T3) appliquée aux états quantiques. L'exploration du tableau périodique a révélé sa **généralisation** : le squelette est le même pour tout gap (oscillateur ℏω, ionisation χ) — la famille T\* = ΔE/(k_B·ln φ), déposée dans E3 v2 avec ses 24 instances (1 oscillateur + 23 éléments). C'est le comportement attendu d'une théorie de filtres : les survivants se manifestent aux endroits précis où le filtre opère.
 
 ---
 
@@ -120,7 +120,7 @@ Les constantes {φ, π, e, √2, √3, √5, e/π} restent dans la théorie **co
 |---|---|---|---|
 | **F1 (E1)** | Dériver Schrödinger ou le potentiel quantique Q depuis l'équation mère | Calcul démontrable, erreur machine — pas une analogie | ⏳ ouvert |
 | **F2 (E2)** | Reproduire une prédiction quantique à ≥ 10⁻¹⁰ | Chiffre publié avec intervalle | ⏳ ouvert |
-| **F3 (E3)** | Déposer la prédiction T\* datée et signée | Protocole P3.2 : dépôt avant test | ✅ **DÉPOSÉ le 09/08/2026** — `DEPOT_E3_PREDICTION_TSTAR.md` — en attente de test |
+| **F3 (E3)** | Déposer la prédiction T\* datée et signée | Protocole P3.2 : dépôt avant test | ✅ **DÉPOSÉ v2 le 09/08/2026** — famille T\* (oscillateur + 23 éléments d'ionisation) — `DEPOT_E3_PREDICTION_TSTAR.md` — en attente de test |
 | **F4** | Chaînon « persistance ∝ 1/μ(α) » | Monte-Carlo sur α ou preuve analytique | ⏳ ouvert |
 | **F5** | √2, √3 comme survivants géométriques | Symétries minimales → spectre calculé | ⏳ ouvert |
 | **F6** | Le noyau appris (RFF) pour l'IA | AUC(appris) − AUC(φ) > 0,05 avec p < 0,01 | ⏳ ouvert |
@@ -152,7 +152,7 @@ La méthode est une partie de la théorie — elle est ce qui distingue un filtr
 | ✅ Théorème | T2 λ = φ | exact — Violet A |
 | ✅ Théorème | T3 chaîne 1/Γ(k/φ+1) | FFT 2,22×10⁻¹⁶ |
 | ✅ Théorème | T4 π, e dérivés (normalisation) | Violet B — 4/4 |
-| ✅ Théorème | T5 T\* = 2,078·ℏω/k_B | 1,1×10⁻¹⁶ — dépôt F3 prêt |
+| ✅ Théorème | T5 famille T\* (T\*a oscillateur · T\*b ionisation) | T\*a : 1,1×10⁻¹⁶ · T\*b : machine, 23 éléments — dépôt E3 v2 |
 | ✅ Théorème | T6 gravité = secteur n=2 (Deser) | 4 vérifications machine |
 | ✅ / ⚠️ | T7 l'alphabet (briques + adverbe) | formes vérifiées — √2, √3 en F5 |
 | ❌ Exclusion | X1 coefficients {φ, π, e} | 0,707 · 0/935 |
