@@ -20,7 +20,7 @@ d'intention.' Le GATE ne choisit pas — il applique la dynamique et
 ce qui survit EST mathématique.
 """
 
-import sys, os, re, json, time, math
+import sys, os, re, json, time, math, pickle
 import numpy as np
 from typing import Dict, List, Tuple, Optional, Any
 
@@ -258,6 +258,50 @@ REGLES = [
 
 # Règles extraites (chargées paresseusement depuis le data mining)
 _extracted_rules_cache = None
+
+def _classify_minilm(sent: str):
+    """MiniLM classifieur : phrase → (opération, confiance)."""
+    global _minilm_classifier
+    if _minilm_classifier is None:
+        try:
+            path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               'minilm_operations.pkl')
+            with open(path, 'rb') as f:
+                data = pickle.load(f)
+            _minilm_classifier = {
+                'clf': data['classifier'],
+                'scaler': data['scaler'],
+                'model': _get_minilm_model(),
+            }
+        except Exception:
+            _minilm_classifier = False
+            return None, 0.0
+
+    if _minilm_classifier is False:
+        return None, 0.0
+
+    try:
+        emb = _minilm_classifier['model'].encode([sent])[0]
+        emb_scaled = _minilm_classifier['scaler'].transform([emb])
+        probs = _minilm_classifier['clf'].predict_proba(emb_scaled)[0]
+        idx = np.argmax(probs)
+        op = _minilm_classifier['clf'].classes_[idx]
+        return op, float(probs[idx])
+    except Exception:
+        return None, 0.0
+
+
+def _get_minilm_model():
+    """Charge MiniLM paresseusement."""
+    global _minilm_model
+    if _minilm_model is None:
+        from sentence_transformers import SentenceTransformer
+        _minilm_model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+    return _minilm_model
+
+
+_minilm_classifier = None
+_minilm_model = None
 
 
 def _get_extracted_rules():
