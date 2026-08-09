@@ -489,6 +489,117 @@ def solve_gsm8k(question: str, reasoner: OndulatoireReasoner = None) -> Optional
     return None
 
 
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 5. PIPELINE HYBRIDE : classifieur entraîné + fallback regex
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_WAVE_CLF = None
+
+
+def _get_classifier():
+    global _WAVE_CLF
+    if _WAVE_CLF is None:
+        try:
+            from gsm8k_classifier import WaveClassifier
+            import os as _os
+            path = _os.path.join(_os.path.dirname(__file__), 'gsm8k_wave_classifier.pkl')
+            if _os.path.exists(path):
+                _WAVE_CLF = WaveClassifier.load(path)
+        except Exception:
+            pass
+    return _WAVE_CLF
+
+
+def _hybrid_action(sentence: str, reasoner) -> str:
+    """Classifieur entraîné avec fallback regex."""
+    clf = _get_classifier()
+    if clf is not None:
+        op, conf = clf.predict_op_with_confidence(sentence)
+        if conf > 0.55:
+            return op
+    # Fallback regex
+    return reasoner.resolve_action(sentence) or 'add'
+
+
+def solve_gsm8k_hybrid(question: str, reasoner=None) -> Optional[float]:
+    """Résout GSM8K avec classifieur entraîné + fallback."""
+    if reasoner is None:
+        reasoner = OndulatoireReasoner()
+
+    q = question.strip()
+    q = re.sub(r'\s+', ' ', q)
+    sentences = re.split(r'(?<=[.;!?])\s+', q)
+    sentences = [s.strip() for s in sentences if s.strip()]
+
+    last_entity, last_obj = None, None
+    for sent in sentences:
+        is_question = bool(re.search(r'(how many|how much|what is|what are|'
+                                      r'how far|how long|how old)', sent.lower()))
+        if is_question:
+            break
+
+        nums = _extract_numbers(sent)
+        if not nums:
+            continue
+
+        entity, obj = _best_object_from_sentence(sent, reasoner)
+        entity = entity or last_entity
+        if obj is not None and last_obj is not None:
+            if obj not in reasoner.object_names:
+                obj = last_obj
+        if obj is None and last_obj:
+            obj = last_obj
+
+        implicit_op = _detect_mult_div(sent)
+        comparison = _detect_comparison(sent, nums)
+        is_init = (not reasoner._registry or
+                   bool(re.search(r'(?:^|\s)(?:has|had|have|there\s+are|there\s+were|'
+                                  r'owns?|bought|collected|found|bakes?|makes?|'
+                                  r'produces?)\s+\d+', sent.lower())))
+
+        if is_init:
+            action = 'init'
+            if entity is None:
+                caps = re.findall(r'([A-Z][a-z]{2,})', sent)
+                entity = caps[0].lower() if caps else ('someone' if not reasoner._registry else None)
+            if obj is None:
+                words = [w for w in re.findall(r'[a-z]{3,}', sent.lower()) if w not in _STOP]
+                obj = words[-1] if words else None
+        elif comparison:
+            action, comp_val = comparison
+            if entity and obj:
+                reasoner.apply_action(entity, obj, action, comp_val)
+                last_entity, last_obj = entity, obj
+                continue
+        elif implicit_op:
+            action = implicit_op
+        else:
+            # ⚡ HYBRIDE : classifieur entraîné + fallback regex
+            action = _hybrid_action(sent, reasoner)
+
+        if entity and obj and nums:
+            val = nums[0]
+            reasoner.apply_action(entity, obj, action, val)
+            last_entity, last_obj = entity, obj
+
+    target_entity, target_obj = last_entity, last_obj
+    question_sent = sentences[-1] if sentences else ''
+    if '?' in question_sent or 'how many' in question_sent.lower():
+        q_entity, q_obj = _best_object_from_sentence(question_sent, reasoner)
+        target_entity = q_entity or target_entity
+        target_obj = q_obj or target_obj
+
+    if target_entity and target_obj:
+        return reasoner.query(target_entity, target_obj)
+    if reasoner._registry:
+        return list(reasoner._registry.values())[-1]
+    return None
+
+# Remplacer le solve_gsm8k par défaut par la version hybride
+solve_gsm8k = solve_gsm8k_hybrid
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # 4. TESTS + BENCHMARK
 # ═══════════════════════════════════════════════════════════════════════════════
