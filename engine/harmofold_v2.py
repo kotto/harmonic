@@ -41,14 +41,13 @@ for alpha,label in [(1.0,"Standard MC"),(A,f"THU (1/φ={A:.3f})"),(0.3,"Persista
 # ══════════════════════════════════════════════════════════════════════
 # 3. T*fold — la température dorée de repliement
 # ══════════════════════════════════════════════════════════════════════
-print(f"\n─ T*_fold : température dorée de repliement")
-# ΔG typique de repliement : 20-60 kJ/mol ≈ 5-15 kcal/mol
-for dG_kcal in [5,10,20,60]:  # kcal/mol
-    dG_J=dG_kcal*4184/6.022e23  # J par molécule
-    Tstar=dG_J/(1.38e-23*math.log(PHI))
-    print(f"  ΔG = {dG_kcal:2d} kcal/mol → T*_fold = {Tstar:.0f} K ({Tstar-273:.0f}°C)")
-print(f"  → Pour une protéine typique (ΔG ~ 10 kcal/mol), T*_fold ~ 340 K (67°C)")
-print(f"  → Proche de la température de DÉNATURATION thermique !")
+print(f"\n─ T*_fold : NON applicable directement (ΔG libre ≠ gap quantique)")
+print("  Le T* = ΔE/(k_B·ln φ) s'applique aux GAPS QUANTIQUES (électroniques,")
+print("  vibrationnels, ionisation). Le ΔG de repliement est une énergie LIBRE.")
+print("  → La contribution V2 au repliement est ailleurs :")
+print("    1. L'élimination (A1) — le paysage énergétique COMME filtre")
+print("    2. Le Monte Carlo doré — K(t) comme noyau de transition optimal")
+print("    3. La fractalité — même mécanisme aux échelles fs→ms→s")
 
 # ══════════════════════════════════════════════════════════════════════
 # 4. LE PAYSAGE ÉNERGÉTIQUE COMME FILTRE
