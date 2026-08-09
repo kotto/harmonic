@@ -57,24 +57,19 @@ def main():
     print("  THU V2   : le noyau fractal modifie le potentiel")
     print()
     
-    # Déviations du potentiel de Coulomb
-    print("─ DÉVIATION DU POTENTIEL DE COULOMB (r₀ = 1 fm)")
-    for r in [1e-18, 1e-15, 1e-12, 1e-10, 1e-8]:
-        dev = deviation(r)
-        barre = "⚠️ MESURABLE" if dev > 1e-6 else ("⚡ trace" if dev > 1e-12 else "— indétectable")
-        print(f"  r = {r:.0e} m : ΔV/V = {dev:.2e}  {barre}")
-    print()
-    
-    # Conséquences testables
-    print("─ PRÉDICTIONS TESTABLES")
-    print("  P1 · Diffusion e-p à basse énergie : écart au Coulomb standard")
-    print("       à r ∼ 1 fm (10⁻¹⁵ m) → ΔV/V ∼ 10⁻⁶ (limite actuelle)")
-    print("  P2 · g−2 du muon : correction fractionnaire au propagateur")
-    print("       photonique. Suppression ∼ (m_μ/M_P)^{0,618} ∼ 10⁻¹²")
-    print("       → trop faible pour expliquer l'anomalie actuelle (σ ∼ 10⁻⁹)")
-    print("  P3 · Queue de mémoire EM : après une impulsion laser ultra-courte,")
-    print("       le champ résiduel décroît en t^{−0,618} — testable en")
-    print("       optique ultra-rapide (attoseconde).")
+    # Déviations du potentiel de Coulomb (correction HONNÊTE)
+    print("─ DÉVIATION DU POTENTIEL DE COULOMB (r_mem = c·t_U/φ ≈ 2,6 Mpc)")
+    print("  La queue fractionnaire modifie le potentiel à LONGUE portée :")
+    print("  V(r) ∝ 1/r · (1 + (r/r_mem)^{1/φ}) — à courte distance, négligeable.")
+    for r in [1e-10, 1e6, 1e15, 1e20, 1e25]:
+        corr = (r/8e25)**A
+        barre = "⚠️ MESURABLE" if corr > 1e-6 else ("⚡ trace" if corr > 1e-12 else "— indétectable")
+        print(f"  r = {r:.0e} m : correction ∼ {corr:.2e}  {barre}")
+    print("  → À l'échelle atomique (10⁻¹⁰ m) : CORRECTION NULLE.")
+    print("  → La queue EM n'est visible qu'aux échelles galactiques/cosmologiques.")
+    print("  → Le photon « ordinaire » est le photon standard — la mémoire d'or")
+    print("     ne modifie PAS la QED de précision (g−2, Lamb).")
+    print("  → COHÉRENT avec le succès expérimental de QED (10⁻¹²).")
     print()
     
     # L'auto-similarité fractale
