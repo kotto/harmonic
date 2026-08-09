@@ -496,6 +496,40 @@ def solve_gsm8k(question: str, reasoner: OndulatoireReasoner = None) -> Optional
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _WAVE_CLF = None
+_MINILM_CLF = None
+_MINILM_MODEL = None
+
+def _get_minilm_classifier():
+    global _MINILM_CLF, _MINILM_MODEL
+    if _MINILM_CLF is None:
+        try:
+            import pickle, os, numpy as np
+            path = os.path.join(os.path.dirname(__file__), 'gsm8k_minilm_classifier.pkl')
+            if os.path.exists(path):
+                with open(path, 'rb') as f:
+                    data = pickle.load(f)
+                _MINILM_CLF = data['clf']
+                try:
+                    from sentence_transformers import SentenceTransformer
+                    _MINILM_MODEL = SentenceTransformer(data['model_name'])
+                except Exception:
+                    pass
+        except Exception:
+            pass
+    return _MINILM_CLF, _MINILM_MODEL
+
+
+def _minilm_predict(sentence: str) -> tuple:
+    """Prédit l'opération via MiniLM. Retourne (op, confiance) ou (None, 0)."""
+    clf, model = _get_minilm_classifier()
+    if clf is None or model is None:
+        return None, 0.0
+    import numpy as np
+    x = model.encode([sentence])[0]
+    probs = clf.predict_proba(x.reshape(1, -1))[0]
+    idx = int(np.argmax(probs))
+    return ['+', '-', '*', '/'][idx], float(probs[idx])
+
 
 
 def _get_classifier():
@@ -513,11 +547,16 @@ def _get_classifier():
 
 
 def _hybrid_action(sentence: str, reasoner) -> str:
-    """Classifieur entraîné avec fallback regex."""
+    """Classifieurs entraînés (ondes + MiniLM) avec fallback regex."""
+    # Essayer MiniLM d'abord (embeddings sémantiques)
+    op_ml, conf_ml = _minilm_predict(sentence)
+    if op_ml and conf_ml > 0.55:
+        return op_ml
+    # Essayer le classifieur ondes
     clf = _get_classifier()
     if clf is not None:
         op, conf = clf.predict_op_with_confidence(sentence)
-        if conf > 0.55:
+        if conf > 0.50:
             return op
     # Fallback regex
     return reasoner.resolve_action(sentence) or 'add'
