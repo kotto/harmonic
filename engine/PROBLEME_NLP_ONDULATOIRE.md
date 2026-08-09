@@ -1,103 +1,106 @@
-# Problème : Traduction Langage Naturel → Programme Ondulatoire pour le Raisonnement Mathématique
+# Problem: Extracting Structured Operations from Math Word Problems
 
-## Contexte
+## Task
 
-Nous construisons un système de raisonnement mathématique basé sur la **Théorie Harmonique Universelle (THU)**, où toute computation est exprimée comme des opérations sur des ondes dans ℂ⁵¹².
+Given a math word problem in natural language, extract a sequence of structured operations that can be executed to compute the answer.
 
-L'architecture est **bicouche** :
-
-### Couche 1 : Noyau Mathématique Ondulatoire (PROUVÉ)
-- **PhaseEncoder** : addition/soustraction par rotation de phase. 4000/4000 opérations exactes vérifiées.
-- **LogEncoder** : multiplication/division sur grille logarithmique 16384 points. Couvre [e⁻⁵⁰, e⁵⁰].
-- **HRR** (Holographic Reduced Representations) : `bind(ψ_a, ψ_b)` = convolution circulaire (réversible), `unbind(ψ_bound, ψ_key)` ≈ ψ_value, `superpose(ψ₁, ψ₂, ...)` = mémoire holographique.
-- **AlgebriqueReasoner** : équations avec dépendances et évaluation lazy. Résout correctement cross-multiplication et rate×time.
-- **Filtre Dynamique** : noyau ABC K(t) = B(α)·E_α(-αt^α/(1-α)) avec α = 1/φ ≈ 0.618. Zéro paramètre libre (α est une constante fondamentale). Agit comme GATE : élimine le bruit narratif, ne garde que le contenu mathématique.
-
-Ce noyau est **vérifié et stable**.
-
-### Couche 2 : Traducteur NLP Langage Naturel → Opérations Ondulatoires (BLOQUÉ)
-Ce module doit convertir un problème en langage naturel (ex: "John has 5 apples. Mary has 3 times as many.") en une séquence d'opérations ondulatoires exécutables :
+**Input example:**
 ```
-HAS("john", "apples", 5)
-TIMES_AS_MANY("mary", 3)  → résolu en : mary.apples = john.apples × 3
-QUERY("mary", "apples")   → 15
+"John has 5 apples. Mary has 3 times as many. How many apples does Mary have?"
 ```
 
-## Le Plafond
-
-Sur le benchmark GSM8K (problèmes mathématiques de niveau primaire/collège, 200 problèmes de test) :
-
-| Approche NLP testée | Accuracy |
-|---------------------|----------|
-| Règles regex manuelles (15 règles) | 1.0% |
-| Filtre harmonique statique (multi-filtres) | 0.5% |
-| Filtre dynamique ABC (α=1/φ) | 0.5% |
-| k-NN structurel (recherche par similarité d'ondes) | 0.5% |
-| Data mining grammatical (721 règles extraites) | 2.5% |
-| MiniLM (22M params) + Régression Logistique | 2.5% |
-| T5-small fine-tuné (LoRA, 344K params entraînables) | 3.6% |
-
-**Plafond : ~2-3%.** Sur 15 exemples « jouets » soigneusement choisis, toutes les approches atteignent 100%. L'écart 100% → 2.5% révèle que les exemples jouets ne sont pas représentatifs du vrai GSM8K.
-
-## Diagnostic
-
-Le goulot d'étranglement n'est pas la **détection d'opération** (MiniLM classifie correctement le TYPE d'opération : HAS, GAIN, LOSE, MULT, DIV, TIMES_AS_MANY, CROSS_MULT à 58% sur 4037 phrases d'entraînement). Le goulot est l'**extraction des paramètres** :
-
-Pour exécuter `HAS(entity, object, value)`, il faut extraire DE LA PHRASE :
-- **entity** : qui possède ? ("John", "Mary", "the bakery")  
-- **object** : quoi ? ("apples", "cookies", "dollars")
-- **value** : combien ? (5, 10, 3)
-
-La résolution actuelle est purement heuristique :
-- Entité : premier mot capitalisé → "John" ✅, mais "A bakery" → entité = None ❌
-- Objet : dernier nom commun avant le nombre → "apples" dans "has 5 apples" ✅, mais "pencils" dans "each box has 5 pencils" → objet = "box" ❌ (devrait être "pencils")
-- Valeur : premier nombre dans la phrase → 5 ✅, mais "3 times as many" → valeur = 3, or ce 3 est un MULTIPLICATEUR, pas une valeur absolue ❌
-- Coréférence : "He buys 3 more" → He = John ✅ (via last_entity), mais "They sell 9 loaves" → They = bakery ❌ (le filtre à pronoms bloque "They")
-
-Ces heuristiques fonctionnent pour les 15 exemples jouets (100%) mais s'effondrent sur les vrais problèmes GSM8K où :
-- Les entités sont implicites ("A bakery", "There are 6 boxes")
-- Les objets changent entre les phrases ("loaves" → "bread")
-- Les nombres ont des rôles différents (valeur absolue vs multiplicateur vs taux)
-- La coréférence traverse 3+ phrases
-
-## Contrainte Architecturale
-
-Le traducteur NLP doit produire des **opérations ondulatoires**, pas des calculs directs. La sortie doit être :
+**Expected output (structured operations):**
 ```
-HAS(entity="john", object="apples", value=5)
-GAIN(entity="john", value=3)  -- l'objet est implicite (last_object)
-TIMES_AS_MANY(entity="mary", multiplier=3)  -- la référence est implicite (autre entité avec même objet)
+INIT(entity="john", object="apples", value=5)
+MULTIPLY(entity="mary", object="apples", multiplier=3, reference_entity="john")
+QUERY(entity="mary", object="apples") → 15
 ```
 
-Ces opérations sont ensuite exécutées par la machine ondulatoire :
-```python
-ψ_state = superpose(
-    bind(bind(encode("john"), encode("apples")), encode("5")),
-    bind(bind(encode("mary"), encode("apples")), encode("15")),
-)
-answer = unbind(ψ_state, bind(encode("mary"), encode("apples")))  # → 15
+## What We Have
+
+### 1. A working arithmetic engine
+The backend can execute structured operations and produce correct answers. It handles chained operations, cross-references between entities, and algebraic dependencies (e.g., `mary.apples = john.apples × 3`). This component is verified and stable — given correct structured input, it always produces the correct output.
+
+### 2. Training data
+1101 annotated math word problems (GSM8K training split), each with a chain-of-thought answer containing explicit operation annotations:
+
 ```
+Problem: "Janet's ducks lay 16 eggs per day. She eats 3 for breakfast and bakes 4 for friends. She sells the remainder at $2 each. How much does she make?"
+Answer: "... 16 - 3 - 4 = <<16-3-4=9>>9 eggs. She makes 9 * 2 = $<<9*2=18>>18 per day. #### 18"
+```
+
+Each `<<a op b = c>>` annotation reveals the exact operation sequence. We can align these operations with the problem sentences that triggered them, yielding ~4000 labeled (sentence → operation) pairs.
+
+### 3. Operation types to extract
+From the problem text, we need to identify for each sentence:
+
+| Operation | Example sentence | Parameters needed |
+|-----------|-----------------|-------------------|
+| INIT | "John has 5 apples." | entity, object, value |
+| ADD | "He buys 3 more." | entity, value (object = last_object) |
+| SUBTRACT | "She ate 4." | entity, value (object = last_object) |
+| MULTIPLY | "Mary has 3 times as many." | entity, multiplier, reference_entity |
+| CROSS_MULT | "Each box has 5 pencils." | container_count, per_unit, product |
+| RATE | "James earns $20 per hour." | entity, rate |
+| DIVIDE | "Split into 4 equal groups." | value, divisor |
+
+## What We've Tried
+
+All approaches perform at **100% on 15 hand-picked simple examples** but drop to **~2-3% on 200 randomly sampled real GSM8K problems**. The gap reveals that simple examples are not representative.
+
+| Approach | Accuracy (200 real problems) | Notes |
+|----------|------------------------------|-------|
+| Hand-crafted regex rules (15 rules) | 1.0% | Fragile, doesn't generalize |
+| Data-mined regex rules (721 rules) | 2.5% | Better coverage but over-normalized |
+| k-NN retrieval (cosine similarity on embeddings) | 0.5% | Surface similarity ≠ structural similarity |
+| Logistic regression on sentence embeddings (MiniLM, 384-dim) | 2.5% | Good at operation type detection (58%), but parameter extraction still heuristic |
+| T5-small fine-tuned (LoRA, 344K trainable) | 3.6% | Generates plausible but mathematically wrong operations (e.g., "5 × 3 = 20") |
+
+## Root Cause: Parameter Extraction
+
+**Operation type detection is not the main bottleneck.** A classifier trained on 4000 examples achieves 58% accuracy at identifying the correct operation type for a sentence.
+
+**The bottleneck is extracting the correct parameters** (entity, object, value) and mapping them to their roles in the operation. Current heuristics:
+
+- **Entity detection**: find the first capitalized word → works for "John", "Mary", fails for "A bakery", "There are 6 boxes"
+- **Object detection**: find the last noun before a number → works for "has 5 apples", fails for "each box has 5 pencils" (returns "box" instead of "pencils")
+- **Value extraction**: take the first number → works for simple values, fails when numbers play different roles (3 in "3 times" is a multiplier, not a value)
+- **Coreference**: reuse the last entity → works for adjacent sentences, fails across 3+ sentence chains and for impersonal referents ("They sell..." → who is "they"?)
+
+These heuristics cover the 15 simple examples perfectly but break on real problems where entities are implicit, objects shift between sentences, and numbers have context-dependent semantics.
+
+## Constraints
+
+1. **Lightweight**: the extraction module should be efficient (< 100ms per problem). The arithmetic engine handles complex computation; the NLP is a compiler, not a reasoner.
+
+2. **Modular**: the extraction module is an interchangeable front-end. It outputs structured operations consumed by the arithmetic back-end.
+
+3. **Training data**: we have 1101 problems with ~4000 annotated (sentence → operation) pairs. No external APIs or massive pre-trained models required, though small models (MiniLM, T5-small) are available.
+
+4. **Output format**: the extraction must produce structured operations with explicit entity, object, and value parameters — not just a final numeric answer. The arithmetic back-end needs to track state across multiple sentences.
 
 ## Question
 
-Comment extraire de manière robuste les paramètres (entity, object, value, role) d'une phrase de problème mathématique pour les traduire en opérations ondulatoires, sachant que :
+How can we build a robust parameter extractor for math word problems that maps each sentence to `(operation_type, entity, object, value, role)` with sufficient accuracy to significantly exceed the current ~3% ceiling on real GSM8K problems?
 
-1. Le module doit rester **léger** (le noyau ondulatoire fait le calcul lourd, le NLP est un compilateur)
-2. On dispose de **1101 problèmes d'entraînement** annotés avec leurs chaînes d'opérations `<<a+b=c>>`
-3. L'extraction par motifs (regex, règles) plafonne à ~2.5%
-4. L'extraction par similarité (k-NN, MiniLM cosine) plafonne aussi à ~2.5%
-5. La piste « entraîner un T5-small » donne 3.6% mais le modèle génère des opérations syntaxiquement correctes et mathématiquement fausses (5×3=20)
+Specifically: given a sentence like "Each box has 5 pencils" preceded by "There are 6 boxes", how do we extract that:
+- The operation is CROSS_MULT (multiply container count by per-unit quantity)
+- The container is "boxes" (count = 6, from previous sentence)
+- The per-unit quantity is 5
+- The product is "pencils"
+- The result should be stored as `total_pencils = 6 × 5`
 
-L'approche doit être compatible avec l'architecture modulaire : le NLP est un **compilateur** (langage humain → langage ondulatoire) interchangeable sans toucher au noyau mathématique.
+And for "Mary has 3 times as many apples as John", how do we extract:
+- The operation is MULTIPLY
+- The entity is "Mary"
+- The object is "apples" (implicit from context)
+- The multiplier is 3
+- The reference entity is "John" (connected via "as many as", not directly present in the sentence)
 
-## Fichiers Clés (dans le workspace)
+## Key Files
 
-- `engine/compilateur_thu.py` — compilateur THU complet (GATE + grammaire + MiniLM + exécution)
-- `engine/raisonneur_ondulatoire.py` — HRR reasoner + pipeline algébrique
-- `engine/wave_lang.py` — 13 primitives ondulatoires (encode, bind, unbind, superpose, resonate...)
-- `engine/encodage_phase.py` — PhaseEncoder (addition/soustraction par rotation de phase)
-- `engine/encodage_logarithmique.py` — LogEncoder (multiplication/division)
-- `engine/filtre_dynamique.py` — Filtre ABC (noyau de Mittag-Leffler, α=1/φ)
-- `engine/train_minilm_operations.py` — Entraînement MiniLM pour classification d'opérations
-- `engine/extraire_grammaire.py` — Data mining grammatical (721 règles extraites)
-- `engine/data/benchmarks/gsm8k_test.jsonl` — 1319 problèmes GSM8K avec annotations `<<...>>`
+- `engine/compilateur_thu.py` — current compiler (grammar rules + MiniLM classifier + execution)
+- `engine/train_minilm_operations.py` — training script for operation type classifier
+- `engine/extraire_grammaire.py` — grammar rule mining from training data
+- `engine/data/benchmarks/gsm8k_test.jsonl` — 1319 annotated problems
+- `engine/raisonneur_ondulatoire.py` — arithmetic back-end (entity/object tracking + algebraic solver)
