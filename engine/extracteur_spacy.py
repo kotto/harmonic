@@ -93,6 +93,78 @@ VERB_LEXICON = {
     'cost': 'RATE', 'costs': 'RATE',
 }
 
+# Lexique appris automatiquement des 1101 problèmes d'entraînement
+# (verbes avec confiance >50% et ≥2 occurrences)
+VERB_LEXICON_LEARNED = {
+    'leave': 'SUBTRACT',  # ×43, 51%
+    'work': 'DURATION',  # ×23 — corrigé manuellement (was MULTIPLY)
+    'count': 'INIT',  # ×20
+    'add': 'ADD',  # ×16
+    'divide': 'DIVIDE',  # ×9 — corrigé
+    'ride': 'MULTIPLY',  # ×9
+    'rent': 'MULTIPLY',  # ×7
+    'smash': 'INIT',  # ×7
+    'know': 'MULTIPLY',  # ×7
+    'arrive': 'ADD',  # ×6
+    'build': 'MULTIPLY',  # ×6
+    'drop': 'SUBTRACT',  # ×5
+    'remain': 'SUBTRACT',  # ×5
+    'answer': 'MULTIPLY',  # ×5
+    'call': 'MULTIPLY',  # ×5
+    'agree': 'MULTIPLY',  # ×5
+    'hike': 'RATE',  # ×5
+    'edit': 'MULTIPLY',  # ×5
+    'live': 'MULTIPLY',  # ×5
+    'purchase': 'CROSS_MULT',  # ×4
+    'mow': 'DIVIDE',  # ×4
+    'measure': 'MULTIPLY',  # ×4
+    'subscribe': 'DIVIDE',  # ×3
+    'depreciate': 'SUBTRACT',  # ×3
+    'carry': 'SUBTRACT',  # ×3
+    'practice': 'MULTIPLY',  # ×3
+    'process': 'MULTIPLY',  # ×3
+    'change': 'MULTIPLY',  # ×3
+    'record': 'MULTIPLY',  # ×3
+    'notice': 'INIT',  # ×3
+    'stand': 'INIT',  # ×3
+    'owe': 'MULTIPLY',  # ×3
+    'test': 'MULTIPLY',  # ×3
+    'bike': 'RATE',  # ×3
+    'slow': 'MULTIPLY',  # ×3
+    'consist': 'MULTIPLY',  # ×3
+    'manufacture': 'MULTIPLY',  # ×3
+    'pop': 'MULTIPLY',  # ×3
+    'download': 'MULTIPLY',  # ×3
+    'force': 'MULTIPLY',  # ×3
+    'harvest': 'MULTIPLY',  # ×3
+    'love': 'DIVIDE',  # ×3
+    'split': 'DIVIDE',  # ×3 — corrigé
+    'replace': 'ADD',  # ×2
+    'manage': 'ADD',  # ×2
+    'descend': 'MULTIPLY',  # ×2
+    'suppose': 'CROSS_MULT',  # ×2
+    'fit': 'DIVIDE',  # ×2
+    'draw': 'RATE',  # ×2
+    'row': 'ADD',  # ×2
+    'flood': 'DIVIDE',  # ×2
+    'knit': 'ADD',  # ×2
+    'steal': 'SUBTRACT',  # ×2
+    'consume': 'SUBTRACT',  # ×2 — corrigé
+    'help': 'MULTIPLY',  # ×2
+    'remember': 'INIT',  # ×2
+    'lift': 'MULTIPLY',  # ×2
+    'gulp': 'MULTIPLY',  # ×2
+    'create': 'MULTIPLY',  # ×2
+    'sit': 'MULTIPLY',  # ×2
+    'publish': 'MULTIPLY',  # ×2
+    'tap': 'MULTIPLY',  # ×2
+    'rain': 'MULTIPLY',  # ×2
+    'begin': 'MULTIPLY',  # ×2
+    'peel': 'DIVIDE',  # ×2
+    'haul': 'SUBTRACT',  # ×2
+    'juggle': 'DIVIDE',  # ×2
+}
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 2. PARSER spaCy + EXTRACTEUR DE PARAMÈTRES
@@ -259,9 +331,13 @@ def classify_operation(parsed: ParsedSentence, discourse_state: dict) -> str:
     if parsed.root_verb == 'be' and 'there' in parsed.text.lower():
         return 'INIT'
 
-    # 2. Verbe principal
+    # 2. Verbe principal (lexique main)
     if parsed.root_verb:
         verb_op = VERB_LEXICON.get(parsed.root_verb)
+        if verb_op:
+            return verb_op
+        # Lexique appris (couverture)
+        verb_op = VERB_LEXICON_LEARNED.get(parsed.root_verb)
         if verb_op:
             return verb_op
 
