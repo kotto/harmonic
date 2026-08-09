@@ -756,6 +756,10 @@ def solve_gsm8k_algebrique(question: str, reasoner=None) -> Optional[float]:
         # Fallback nom propre (capitalisé) si pas d'entité connue
         if entity is None:
             caps = re.findall(r'\b([A-Z][a-z]{2,})\b', sent)
+            # Filtrer les pronoms et mots interrogatifs (faux positifs)
+            _pronouns = {'she', 'he', 'they', 'his', 'her', 'their', 'its',
+                         'who', 'how', 'what', 'when', 'where', 'there', 'each', 'every'}
+            caps = [c for c in caps if c.lower() not in _pronouns]
             if caps: entity = caps[0].lower()
             elif not r_hrr._registry: entity = 'someone'
         if obj is not None and last_obj is not None and obj not in r_hrr.object_names:
