@@ -67,11 +67,15 @@ def main():
     print()
     
     # Dépendance en âge
-    print("─ PRÉDICTION : dépendance en ÂGE de la galaxie")
-    print("  Les galaxies plus VIEILLES (formées tôt) ont un r_mem PLUS GRAND")
-    print("  → plus de « matière noire » apparente à masse baryonique égale.")
-    print("  → testable : comparer les courbes de rotation de galaxies")
-    print("  de même masse mais d'âges différents (archéologie galactique).")
+    print("─ VERDICT HONNÊTE")
+    print(f"  a₀_THU = φ·c·H₀ = {A0_THU:.2e} m/s² (proche de a₀_MOND = {A0_MOND:.2e})")
+    print(f"  MAIS à l'échelle galactique (10 kpc), le terme mémoire (r/r_mem)^{1-1/φ:.3f}")
+    print(f"  est ~{(10*KPC/r_mem)**(1-1/PHI):.1e} — NÉGLIGEABLE.")
+    print(f"  → La mémoire au temps cosmologique explique Λ (facteur 3,6) mais")
+    print(f"  ne suffit PAS pour les courbes de rotation galactiques.")
+    print(f"  → PISTE TRACÉE, PAS FERMÉE. L'effet nécessite soit une échelle")
+    print(f"  mémoire plus courte (dynamique galactique), soit une contribution")
+    print(f"  de la toile cosmique (filaments).")
     print(f"  Durée : {time.time()-t0:.1f}s")
 
     dep = {
