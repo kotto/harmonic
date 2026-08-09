@@ -76,8 +76,8 @@ MOTS_ACTION = {
     'add':  ['buys', 'gains', 'gets', 'receives', 'earns', 'adds', 'more', 'and',
              'again', 'additional', 'also', 'another', 'next', 'then', 'picks',
              'collects', 'obtains', 'wins'],
-    'sub':  ['sells', 'gives away', 'gives', 'loses', 'spends', 'eats', 'ate',
-             'removes', 'takes away', 'dropped', 'uses', 'throws away',
+    'sub':  ['sells', 'sold', 'gives away', 'gives', 'loses', 'lost', 'spends', 'spent', 'eats', 'ate',
+             'removes', 'takes away', 'dropped', 'uses', 'throws away', 'took',
              'left', 'remainder', 'remaining', 'after spending', 'less', 'fewer',
              'gave', 'donated', 'burned', 'consumed', 'drank'],
     'mult': ['times', 'twice', 'double', 'triple', 'per', 'each', 'every',
@@ -425,11 +425,18 @@ def solve_gsm8k(question: str, reasoner: OndulatoireReasoner = None) -> Optional
 
         elif comparison:
             action, comp_val = comparison
-            # Appliquer au dernier fait connu
+            # Appliquer au dernier fait connu (ex: "3 times as many apples as John" → multiplier les pommes de Mary)
             if entity and obj:
                 reasoner.apply_action(entity, obj, action, comp_val)
                 last_entity, last_obj = entity, obj
                 continue
+            # Si pas d'entité explicite, chercher l'autre entité dans le registre
+            if obj and action == 'mult':
+                for (k_e, k_o), k_q in list(reasoner._registry.items()):
+                    if k_o == obj:
+                        reasoner.apply_action(k_e, k_o, 'mult', comp_val)
+                        last_entity, last_obj = k_e, k_o
+                        continue
             # Sinon, on init puis on applique
             action = 'init'
 
