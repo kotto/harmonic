@@ -25,6 +25,18 @@ La refondation peut-elle « générer » le tableau périodique ? Réponse en tr
 
 **Lecture de la refondation** : le tableau périodique EST le spectre d'entiers de l'alphabet, filtré par la stabilité — les configurations qui ne minimisent pas l'énergie sont *éliminées*, les couches fermées (gaz nobles) *survivent*. Aucun paramètre libre : les 2n² sont des entiers.
 
+## 2bis — LA GÉNÉRATION COMPLÈTE (118 éléments — `generation_tableau_periodique.py`)
+
+Le tableau périodique est **généré** à partir du spectre d'entiers (n, l, capacité 2(2l+1)) et du filtre de Madelung (ordre (n+l, n)) — zéro paramètre :
+
+| Vérification | Résultat |
+|---|---|
+| **V1 · Périodes générées = réelles** | **118/118 ✅** |
+| **V2 · Groupes générés = réels** | **90/118** — les 28 écarts sont TOUS dans le bloc f (La–Yb, Ac–No) |
+| **V3 · Gaz nobles** (couches fermées) | **{2, 10, 18, 36, 54, 86, 118} ✅** |
+
+**Le résultat le plus intéressant — la lecture des 28 écarts** : Madelung naïf remplit 4f/5f avant 5d/6d (généré : groupe 2, configuration 6s²4fⁿ) ; le tableau réel place une sous-couche **d¹** (5d¹6s² → groupe 3). Les configurations qui survivent ne sont pas les plus « simples » — **ce sont les plus stables** : l'élimination, visible à l'intérieur même du tableau. Les ~20 anomalies connues des blocs d (Cr, Cu, Ag, Au…) ne déplacent aucun groupe : elles ne font que réorganiser s/d à valence constante — les survivants ajustent la configuration, pas la position.
+
 ## 3. Partie B — le test ex-ante : φ apparaît-il dans les ratios ?
 
 26 ratios (longueurs de périodes 8/2, 18/8, 32/18, 50/32 ; énergies d'ionisation successives Z=1..20) contre les 11 cibles des Violets A/B, seuil 10⁻³.
@@ -77,6 +89,10 @@ C · Famille T*_ion = χ·24115 K — T5 généralisé, vérifié    ✅ machine
 python exploration_tableau_periodique.py
 # → data/benchmarks/tableau_periodique_report.json
 # Dépendances : numpy (χ : valeurs NIST approximatives, documentées dans le script)
+
+# LA GÉNÉRATION COMPLÈTE (118 éléments — périodes, groupes, gaz nobles)
+python generation_tableau_periodique.py
+# → data/benchmarks/generation_tableau_periodique_report.json
 ```
 
 ---
