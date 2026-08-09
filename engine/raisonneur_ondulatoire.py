@@ -550,14 +550,54 @@ def _get_classifier():
     global _WAVE_CLF
     if _WAVE_CLF is None:
         try:
-            from gsm8k_classifier import WaveClassifier
-            import os as _os
-            path = _os.path.join(_os.path.dirname(__file__), 'gsm8k_wave_classifier.pkl')
-            if _os.path.exists(path):
-                _WAVE_CLF = WaveClassifier.load(path)
+            import pickle, os as _os, numpy as _np, re as _re
+            # Essayer v4 d'abord (meilleur : 44.1%)
+            path_v4 = _os.path.join(_os.path.dirname(__file__), 'gsm8k_wave_classifier_v4.pkl')
+            path_v1 = _os.path.join(_os.path.dirname(__file__), 'gsm8k_wave_classifier.pkl')
+            for path in [path_v4, path_v1]:
+                if _os.path.exists(path):
+                    with open(path, 'rb') as f:
+                        data = pickle.load(f)
+                    _WAVE_CLF = data
+                    break
         except Exception:
             pass
     return _WAVE_CLF
+
+
+def _predict_v4(sentence: str) -> tuple:
+    """Prédit l'opération avec le classifieur v4 (features enrichies)."""
+    clf_data = _get_classifier()
+    if clf_data is None:
+        return None, 0.0
+    model = clf_data.get('model')
+    dim = clf_data.get('dim', DEFAULT_DIM)
+    n_features = clf_data.get('n_features', dim * 4 + 5)
+    if model is None:
+        return None, 0.0
+    
+    import numpy as _np, re as _re
+    words = [_w for _w in _re.findall(r'[a-zà-ÿ]+', sentence.lower()) if len(_w) > 1]
+    # Features v4
+    psi_s = superpose(*[encode(w, dim=dim) for w in words]) if words else encode("_", dim=dim); psi_s = psi_s / (np.linalg.norm(psi_s) + 1e-9)
+    x = _np.zeros(n_features, dtype=_np.float64)
+    x[:dim] = _np.real(psi_s)
+    x[dim:2*dim] = _np.imag(psi_s)
+    # Bigrammes
+    psi_b = _np.zeros(dim, dtype=_np.complex128); nb = 0
+    for j in range(len(words) - 1):
+        try:
+            psi_b += _bind(encode(words[j], dim=dim), encode(words[j+1], dim=dim))
+            nb += 1
+        except: pass
+    if nb > 0: psi_b /= (_np.linalg.norm(psi_b) + 1e-9)
+    x[2*dim:3*dim] = _np.real(psi_b)
+    x[3*dim:4*dim] = _np.imag(psi_b)
+    x[4*dim+3] = len(words) / 30.0
+    
+    probs = model.predict_proba(x.reshape(1, -1))[0]
+    idx = int(_np.argmax(probs))
+    return ['+', '-', '*', '/'][idx], float(probs[idx])
 
 
 def _hybrid_action(sentence: str, reasoner) -> str:
@@ -568,12 +608,10 @@ def _hybrid_action(sentence: str, reasoner) -> str:
     op_ml, conf_ml = _minilm_predict(sentence)
     if op_ml and conf_ml > 0.55:
         return _SYM_TO_ACTION.get(op_ml, op_ml)
-    # Essayer le classifieur ondes
-    clf = _get_classifier()
-    if clf is not None:
-        op, conf = clf.predict_op_with_confidence(sentence)
-        if conf > 0.50:
-            return _SYM_TO_ACTION.get(op, op)
+    # Essayer le classifieur ondes v4 (44.1%)
+    op, conf = _predict_v4(sentence)
+    if op and conf > 0.45:
+        return _SYM_TO_ACTION.get(op, op)
     # Fallback regex
     return _SYM_TO_ACTION.get(reasoner.resolve_action(sentence), 'add')
 
@@ -694,10 +732,6 @@ def solve_gsm8k_algebrique(question: str, reasoner=None) -> Optional[float]:
       → eq2: mary_apples = 3 × john_apples  (DÉPENDANCE)
       → solve('mary_apples') = 15
     """
-    from raisonneur_ondulatoire import (
-        _extract_numbers, _best_object_from_sentence, _detect_mult_div,
-        _detect_comparison, _hybrid_action, _STOP, OndulatoireReasoner
-    )
     r_alg = AlgebriqueReasoner()
     r_hrr = OndulatoireReasoner()  # pour la résolution d'entité/objet (résonance)
 
@@ -708,8 +742,8 @@ def solve_gsm8k_algebrique(question: str, reasoner=None) -> Optional[float]:
 
     last_entity, last_obj = None, None
     for sent in sentences:
-        is_question = bool(re.search(r'(how many|how much|what is|what are|'
-                                      r'how far|how long|how old)', sent.lower()))
+        is_question = bool(re.search(r'\b(how many|how much|what is|what are|'
+                                      r'how far|how long|how old)\b', sent.lower()))
         if is_question:
             break
 
@@ -721,7 +755,7 @@ def solve_gsm8k_algebrique(question: str, reasoner=None) -> Optional[float]:
         entity = entity or last_entity
         # Fallback nom propre (capitalisé) si pas d'entité connue
         if entity is None:
-            caps = re.findall(r'([A-Z][a-z]{2,})', sent)
+            caps = re.findall(r'\b([A-Z][a-z]{2,})\b', sent)
             if caps: entity = caps[0].lower()
             elif not r_hrr._registry: entity = 'someone'
         if obj is not None and last_obj is not None and obj not in r_hrr.object_names:
@@ -733,98 +767,255 @@ def solve_gsm8k_algebrique(question: str, reasoner=None) -> Optional[float]:
             words = [w for w in re.findall(r'[a-z]{3,}', sent.lower()) if w not in _STOP]
             if words: obj = words[-1]
 
-        # Détection d'action
-        rate_mode = bool(re.search(r'(per\s+(hour|day|week|month)|a\s+(day|week|month)|'
-                                    r'earns?\s+\d+\s+(dollars?\s+)?per)', sent.lower()))
-        implicit_op = _detect_mult_div(sent)
+        # ═══════════════════════════════════════════════════════════════════════
+        # Détection d'action (ORDRE CRITIQUE : du plus spécifique au plus général)
+        # ═══════════════════════════════════════════════════════════════════════
         comparison = _detect_comparison(sent, nums)
-        is_init = (not r_hrr._registry or
-                   bool(re.search(r'has\s+\d+|had\s+\d+|have\s+\d+|there\s+are\s+\d+',
-                                  sent.lower())))
+        implicit_op = _detect_mult_div(sent)
+        rate_mode = bool(re.search(r'\b(per\s+(hour|day|week|month)|a\s+(day|week|month)|'
+                                    r'earns?\s+\d+\s+(dollars?\s+)?per)\b', sent.lower()))
+        # is_init : détecté MAIS désactivé si la phrase contient une comparaison
+        # ou un opérateur implicite (chaque/each/...) qui devrait primer
+        has_init_pattern = bool(re.search(
+            r'\b(?:has|had|have|there\s+are|there\s+were|owns?|bought|collected|found|'
+            r'bakes?|makes?|produces?)\s+\d+', sent.lower()))
+        is_init = (not r_hrr._registry or has_init_pattern)
+        # Désactiver is_init si un pattern plus spécifique est présent
+        if is_init and (comparison or implicit_op):
+            is_init = False
 
-        # Résoudre l'action
+        # ═══════════════════════════════════════════════════════════════════════
+        # Résolution de l'action (priorité décroissante)
+        # ═══════════════════════════════════════════════════════════════════════
+
+        # ── PRIORITÉ 1 : Comparaison (ex: "3 times as many") ──────────────────
         if comparison:
             action, comp_val = comparison
-            # Équation de dépendance : target = comp_val × reference
-            # ex: "Mary has 3 times as many apples as John" → mary_apples = 3 × john_apples
             if entity and obj:
-                # Trouver TOUTES les entités mentionnées dans la phrase
-                all_entities = set()
-                for e_name in list(r_hrr.entity_names) + list(r_hrr._entities.keys()):
+                # Trouver l'entité de RÉFÉRENCE (celle qui n'est PAS entity)
+                # Stratégie 1 : chercher dans la phrase
+                all_entities_in_sent = set()
+                for e_name in list(r_hrr.entity_names):
                     if e_name in sent.lower():
-                        all_entities.add(e_name)
-                # L'autre entité = celle qui n'est pas entity
-                other = (all_entities - {entity}).pop() if len(all_entities - {entity}) > 0 else None
+                        all_entities_in_sent.add(e_name)
+                other = (all_entities_in_sent - {entity}).pop() if len(all_entities_in_sent - {entity}) > 0 else None
+                # Stratégie 2 : chercher dans le registre (autre entité avec même objet)
+                if other is None:
+                    for (k_e, k_o), k_q in list(r_hrr._registry.items()):
+                        if k_o == obj and k_e != entity:
+                            other = k_e
+                            break
                 if other:
                     ref_var = f"{other}_{obj}"
                     var_name = f"{entity}_{obj}"
-                    # Définir la base si pas déjà fait
+                    # Définir la base si pas déjà dans le registre algébrique
                     if ref_var not in r_alg._equations:
-                        # Chercher la valeur de base dans le registre HRR
                         base_val = r_hrr.query(other, obj)
                         if base_val is not None:
                             r_alg.define(ref_var, base_val)
                     r_alg.define(var_name, (action, ref_var, comp_val))
-                    # Aussi mettre à jour le HRR
+                    # Mettre à jour le HRR
                     if ref_var in r_alg._equations:
                         base = r_alg.eval(ref_var)
                         if base is not None:
                             r_hrr.learn_fact(entity, obj, base * comp_val)
                     last_entity, last_obj = entity, obj
                     continue
-            # Fallback: appliquer comme opération simple
-            if entity and obj:
+                # Fallback : appliquer comme opération simple sur l'entité
                 r_hrr.apply_action(entity, obj, action, comp_val)
                 r_alg.update(f"{entity}_{obj}", action, comp_val)
                 last_entity, last_obj = entity, obj
                 continue
+            continue  # pas d'entité/objet → on skip
 
-        if is_init or (not r_alg._equations and not comparison):
-            action = 'init'
-        elif rate_mode:
-            # Taux : on stocke la rate comme variable, puis on multiplie
+        # ── PRIORITÉ 2 : Opérateur implicite (each/every/per/split/...) ─────
+        if implicit_op:
+            action = implicit_op
+            # Cas spécial : "each X has M Y" → cross-multiplication
+            #   S'il existe un fait (autre_entité, X) → créer dépendance Y = M × X
+            if action == 'mult' and entity and obj and len(nums) >= 1:
+                # Vérifier si l'objet de la phrase (ex: "box") est un autre objet connu
+                # dont la valeur est déjà dans le registre
+                key = (entity.lower(), obj.lower()) if entity and obj else None
+                if key and key in r_hrr._registry:
+                    # L'entité a déjà cet objet → on multiplie le fait existant
+                    r_hrr.apply_action(entity, obj, 'mult', nums[0] if len(nums) == 1 else nums[1])
+                    r_alg.update(f"{entity}_{obj}", 'mult', nums[0] if len(nums) == 1 else nums[1])
+                    last_entity, last_obj = entity, obj
+                    continue
+                # Sinon, chercher si un AUTRE fait dans le registre a un objet
+                # qui correspond au sujet de "each X" (ex: "box" → registre a "someone_boxes")
+                sentence_words = set(re.findall(r'[a-z]{3,}', sent.lower()))
+                for (k_e, k_o), k_q in list(r_hrr._registry.items()):
+                    if k_o in sentence_words and k_e != entity:
+                        # "each box" → boxes est dans le registre → créer dépendance
+                        ref_var = f"{k_e}_{k_o}"
+                        var_name = f"{entity}_{obj}"
+                        if ref_var not in r_alg._equations:
+                            r_alg.define(ref_var, k_q)
+                        mult_val = nums[0] if len(nums) == 1 else nums[1]
+                        # Le deuxième nombre (ex: 5 dans "each box has 5 pencils")
+                        # pourrait être le multiplicateur
+                        r_alg.define(var_name, ('mult', ref_var, mult_val))
+                        r_hrr.learn_fact(entity, obj, float(k_q) * mult_val)
+                        last_entity, last_obj = entity, obj
+                        break
+                else:
+                    # Pas de cross-mult détecté → init simple
+                    if entity and obj:
+                        r_alg.define(f"{entity}_{obj}", float(nums[0]))
+                        r_hrr.learn_fact(entity, obj, float(nums[0]))
+                        last_entity, last_obj = entity, obj
+                    continue
+                continue
+
+            if action == 'div':
+                if entity and obj and len(nums) >= 2:
+                    # "60 students split into 4 groups" avec les 2 nombres dans la même phrase
+                    r_alg.define(f"{entity}_{obj}", ('div', float(nums[0]), float(nums[1])))
+                    r_hrr.learn_fact(entity, obj, float(nums[0]) / float(nums[1]) if float(nums[1]) != 0 else 0.0)
+                    last_entity, last_obj = entity, obj
+                    continue
+                elif entity and obj and len(nums) == 1:
+                    # "split into 4 groups" — 1 seul nombre, l'autre est dans le registre
+                    key = (entity.lower(), obj.lower())
+                    if key in r_hrr._registry:
+                        # Diviser la valeur existante
+                        r_alg.update(f"{entity}_{obj}", 'div', float(nums[0]))
+                        r_hrr.apply_action(entity, obj, 'div', float(nums[0]))
+                        last_entity, last_obj = entity, obj
+                        continue
+                    else:
+                        # Nouveau fait : init (peu probable pour une division)
+                        r_alg.define(f"{entity}_{obj}", float(nums[0]))
+                        r_hrr.learn_fact(entity, obj, float(nums[0]))
+                        last_entity, last_obj = entity, obj
+                        continue
+                continue
+            # Fallback : init avec l'opération implicite (mult sans cross-mult détecté)
+            if entity and obj and nums:
+                var_name = f"{entity}_{obj}"
+                r_alg.define(var_name, float(nums[0]))
+                r_hrr.learn_fact(entity, obj, float(nums[0]))
+                last_entity, last_obj = entity, obj
+                continue
+            continue
+
+        # ── PRIORITÉ 3 : Taux (rate × time) ──────────────────────────────────
+        if rate_mode:
             if len(nums) >= 2:
+                # "earns $20 per hour, works 8 hours"
                 r_alg.define(f"{entity or 'someone'}_rate", nums[0])
                 r_alg.define(f"{entity or 'someone'}_{obj or 'money'}",
                             ('mult', f"{entity or 'someone'}_rate", nums[1]))
+                r_hrr.learn_fact(entity or 'someone', obj or 'money', nums[0] * nums[1])
                 last_entity, last_obj = entity, obj
                 continue
             else:
+                # Juste le taux : init
                 action = 'init'
-        elif implicit_op:
-            action = implicit_op
-        else:
-            action = _hybrid_action(sent, r_hrr)
+                if entity and obj:
+                    r_alg.define(f"{entity}_{obj}", float(nums[0]))
+                    r_hrr.learn_fact(entity, obj, float(nums[0]))
+                    last_entity, last_obj = entity, obj
+                continue
 
+        # ── PRIORITÉ 4 : Durée après taux ("works N hours" après "earns $X/h") ─
+        dur_match = re.search(r'(\d+(?:\.\d+)?)\s+(hours?|days?|weeks?)', sent.lower())
+        if dur_match and r_hrr._registry:
+            dur_val = float(dur_match.group(1))
+            # Chercher un taux dans le registre
+            found_rate = False
+            for (k_e, k_o), k_q in list(r_hrr._registry.items()):
+                # Détecter si un fait du registre est un taux (objet = unité de temps ou money)
+                is_rate_obj = k_o in ('money', 'dollars', 'salary', 'wages', 'rate', 'hour', 'hours', 'day', 'days', 'week', 'weeks')
+                if is_rate_obj:
+                    # Multiplier le taux par la durée
+                    total = float(k_q) * dur_val
+                    rate_var = f"{k_e}_{k_o}"
+                    # La variable de gains est TOUJOURS distincte du taux (évite le cycle)
+                    earnings_var = f"{entity or k_e}_money"
+                    # S'assurer que le taux est défini dans le registre algébrique
+                    if rate_var not in r_alg._equations:
+                        r_alg.define(rate_var, float(k_q))
+                    # Définir earnings = rate × time (variable DISTINCTE)
+                    if earnings_var != rate_var:
+                        r_alg.define(earnings_var, ('mult', rate_var, dur_val))
+                    else:
+                        # Cas improbable : le taux ET les gains ont le même nom → renommer le taux
+                        base_rate_var = f"_rate_{k_e}_{k_o}"
+                        r_alg.define(base_rate_var, float(k_q))
+                        r_alg.define(earnings_var, ('mult', base_rate_var, dur_val))
+                    r_hrr.learn_fact(entity or k_e, 'money', total)
+                    last_entity, last_obj = entity or k_e, 'money'
+                    found_rate = True
+                    break
+            if found_rate:
+                continue
+            # Sinon, tomber dans is_init ou classifier
+
+        # ── PRIORITÉ 5 : Initialisation (nouveau fait) ──────────────────────
+        if is_init:
+            action = 'init'
+            if entity and obj:
+                var_name = f"{entity}_{obj}"
+                r_alg.define(var_name, float(nums[0]))
+                r_hrr.learn_fact(entity, obj, float(nums[0]))
+                last_entity, last_obj = entity, obj
+                continue
+            continue
+
+        # ── PRIORITÉ 6 : Classifieur hybride (fallback) ────────────────────
+        action = _hybrid_action(sent, r_hrr)
         if entity and obj and nums:
             var_name = f"{entity}_{obj}"
             op_map = {'add': 'add', 'sub': 'sub', 'mult': 'mult', 'div': 'div',
                       '+': 'add', '-': 'sub', '*': 'mult', '/': 'div'}
             op = op_map.get(action, 'add')
-
-            # Mettre à jour le registre HRR (pour la résolution d'entité/objet)
-            if action == 'init' or not r_hrr._registry:
-                r_hrr.learn_fact(entity, obj, float(nums[0]))
-            else:
-                r_hrr.apply_action(entity, obj, op, float(nums[0]))
-
-            # Stocker l'équation algébrique
             if action == 'init' or not r_alg._equations:
                 r_alg.define(var_name, float(nums[0]))
             else:
                 r_alg.update(var_name, op, float(nums[0]))
+            if action == 'init' or not r_hrr._registry:
+                r_hrr.learn_fact(entity, obj, float(nums[0]))
+            else:
+                r_hrr.apply_action(entity, obj, op, float(nums[0]))
             last_entity, last_obj = entity, obj
 
-    # Résoudre la cible
+    # ═══════════════════════════════════════════════════════════════════════
+    # Résoudre la cible (question)
+    # ═══════════════════════════════════════════════════════════════════════
     target_entity, target_obj = last_entity, last_obj
     question_sent = sentences[-1] if sentences else ''
     if '?' in question_sent or 'how many' in question_sent.lower():
         q_entity, q_obj = _best_object_from_sentence(question_sent, r_hrr)
         target_entity = q_entity or target_entity
-        target_obj = q_obj or target_obj
+        # Ne pas écraser target_obj si le q_obj est un verbe (ex: "earn" au lieu de "money")
+        if q_obj:
+            # Vérifier que q_obj n'est pas un verbe d'action
+            action_verbs_flat = {v for vals in MOTS_ACTION.values() for v in vals}
+            # Ajouter les formes de base courantes
+            extra_verbs = {'earn', 'work', 'make', 'get', 'give', 'take', 'use', 'pay', 'cost'}
+            if q_obj.lower() not in action_verbs_flat and q_obj.lower() not in extra_verbs:
+                target_obj = q_obj
+        # else: garder last_obj
 
     if target_entity and target_obj:
-        return r_alg.solve(f"{target_entity}_{target_obj}")
+        target_var = f"{target_entity}_{target_obj}"
+        result = r_alg.solve(target_var)
+        if result is not None:
+            return result
+        # FIX #3 : l'objet de la question peut différer de l'objet des équations
+        # (ex: "loaves" vs "bread"). Chercher une variable avec la même entité.
+        # Préférer la DERNIÈRE variable définie (la plus récente = la plus pertinente)
+        best_var, best_result = None, None
+        for var_name in r_alg._equations:
+            if var_name.startswith(f"{target_entity}_"):
+                val = r_alg.solve(var_name)
+                if val is not None:
+                    best_var, best_result = var_name, val
+        if best_result is not None:
+            return best_result
 
     # Fallback : dernière variable définie
     if r_alg._equations:
