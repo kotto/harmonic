@@ -127,6 +127,25 @@ def create_app(config_override: dict = None) -> Flask:
         """Console d'administration KA Enterprise (PC-first)."""
         return send_from_directory(_SITES_DIR, 'enterprise.html')
     
+    # ── Téléchargement (distribution sans store) ──
+    @app.route('/download')
+    def site_download():
+        """Page de téléchargement KA Mobile & Vital Ka (PWA + APK)."""
+        return send_from_directory(_SITES_DIR, 'download.html')
+    
+    _APK_PATH = Path(__file__).resolve().parent.parent / 'ka-mobile-android' / 'android' / 'app' / 'build' / 'outputs' / 'apk' / 'debug' / 'app-debug.apk'
+    
+    @app.route('/apk')
+    def serve_apk():
+        """Téléchargement direct de l'APK Android (dernier build)."""
+        if not _APK_PATH.exists():
+            return {'error': 'APK non disponible — relancer le build'}, 503
+        return send_from_directory(
+            str(_APK_PATH.parent), _APK_PATH.name,
+            mimetype='application/vnd.android.package-archive',
+            as_attachment=True, download_name='ka-mobile.apk'
+        )
+    
     log.info("=" * 55)
     log.info(f"  KA Server v{__version__} — {(_KA_CONFIG.name if _KA_CONFIG else 'KA')}")
     log.info(f"  Produit: {(_KA_CONFIG.product if _KA_CONFIG else 'mobile')}")
