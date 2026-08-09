@@ -371,19 +371,23 @@ class DiscourseState:
         ent = params.get('entity')
         obj = params.get('object')
 
+        # Ne pas stocker les signal words comme objets
+        _signal_objs = {'more', 'many', 'much', 'fewer', 'less', 'times',
+                       'each', 'every', 'all', 'some', 'several'}
+
         if ent and ent not in self.entities:
             self.entities.append(ent)
         if ent:
             self.last_entity = ent
-        if obj:
+        if obj and obj.lower() not in _signal_objs:
             self.last_object = obj
             val = params.get('value') or params.get('per_unit')
             if val is not None:
-                self.objects[obj] = float(val)
+                self.objects[obj.lower()] = float(val)
 
         self.has_init = True
 
-        # Si l'opération est THERE_ARE ou CROSS_MULT, stocker le compte du conteneur
+        # Si l'opération est CROSS_MULT, stocker le compte du conteneur
         if params['type'] in ('INIT', 'CROSS_MULT'):
             container = params.get('container')
             if container:
@@ -445,7 +449,7 @@ class SpacyExtractor:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# 7. MESURE PAR TUPLE (accuracy sur paires phrase→opération)
+# 7. MESURE PAR TUPLE
 # ═══════════════════════════════════════════════════════════════════════════
 
 def mesurer_accuracy_par_tuple(test_problems: List[dict]) -> dict:
@@ -601,15 +605,223 @@ def demo():
         print()
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# 9. SOLVEUR COMPLET : Extraction spaCy + Arithmétique THU
+# ═══════════════════════════════════════════════════════════════════════════
+
+class SpacySolver:
+    """
+    Solveur complet : extraction spaCy → opérations → arithmétique THU.
+
+    Le pont extraction→exécution gère :
+    - Coréférence (He/She → last_entity)
+    - Objets implicites (last_object quand dobj est absent)
+    - Cross-multiplication (container_count × per_unit)
+    - Rate × time (rate stocké, multiplié par duration)
+    - Comparaison multiplicative (cherche entité de référence)
+    """
+
+    def __init__(self):
+        from compilateur_thu import MemoireHolographique
+        self.extractor = SpacyExtractor()
+        self.m = MemoireHolographique()
+        self._rate_entity = None  # entité qui a un taux horaire
+
+    def solve(self, question: str) -> Optional[float]:
+        q = question.strip()
+        q = re.sub(r'\s+', ' ', q)
+        sentences = re.split(r'(?<=[.;!?])\s+', q)
+        sentences = [s.strip() for s in sentences if s.strip()]
+
+        m = self.m
+        self.extractor.reset()
+        question_ent, question_obj = None, None
+
+        for sent in sentences:
+            # Détecter la question
+            if re.search(r'\b(how many|how much|what is|what are|'
+                        r'how far|how long|how old)\b', sent.lower()):
+                parsed = parse_sentence(sent)
+                question_ent = (parsed.nsubj or '').lower()
+                # Objet de la question
+                q_words = re.findall(r'[a-z]{3,}', sent.lower())
+                stop = {'how','many','much','what','does','are','there',
+                       'have','has','had','left','remain','per','group','earn'}
+                q_objs = [w for w in q_words if w not in stop and not w.isdigit()]
+                question_obj = q_objs[-1] if q_objs else None
+                continue
+
+            # Extraire avec spaCy
+            params = self.extractor.extract(sent)
+            if params is None:
+                continue
+
+            op = params['type']
+            ent = params.get('entity')
+            obj = params.get('object')
+            val = (params.get('value') or params.get('multiplier') or
+                   params.get('per_unit') or params.get('rate') or
+                   params.get('duration') or params.get('divisor'))
+
+            if val is None:
+                continue
+
+            # ═══════════════════════════════════════════════════════════
+            # PONT EXTRACTION → EXÉCUTION
+            # ═══════════════════════════════════════════════════════════
+
+            # Résoudre l'objet effectif (filtrer les signal words)
+            _signal_objs = {'more', 'many', 'much', 'fewer', 'less', 'times',
+                           'each', 'every', 'all', 'some', 'several'}
+            effective_obj = obj
+            if obj and obj.lower() in _signal_objs:
+                effective_obj = None
+            if effective_obj is None:
+                effective_obj = self.extractor.discourse.last_object
+
+            if op in ('INIT', 'HAS'):
+                # "John has 5 apples." → stocker (john, apples, 5)
+                if ent and effective_obj:
+                    m.apprendre(ent, obj, val)
+
+            elif op in ('ADD', 'GAIN'):
+                # "He buys 3 more." → ent.apples += 3
+                if ent:
+                    target_obj = effective_obj
+                    if target_obj:
+                        existing = m.interroger(ent, target_obj)
+                        if existing is not None:
+                            m.mettre_a_jour(ent, target_obj, 'ADD', val)
+                        else:
+                            m.apprendre(ent, target_obj, val)
+
+            elif op in ('SUBTRACT', 'LOSE'):
+                # "She ate 4." → ent.cookies -= 4
+                if ent:
+                    target_obj = effective_obj
+                    if target_obj:
+                        existing = m.interroger(ent, target_obj)
+                        if existing is not None:
+                            m.mettre_a_jour(ent, target_obj, 'SUB', val)
+                        else:
+                            # Chercher si une autre entité a cet objet (ex: "_slices")
+                            for k, v in list(m._values.items()):
+                                parts = k.split('|', 1)
+                                if len(parts) == 2 and parts[1] == target_obj:
+                                    m.mettre_a_jour(parts[0], target_obj, 'SUB', val)
+                                    break
+                            else:
+                                m.apprendre(ent, target_obj, val)
+
+            elif op in ('MULTIPLY', 'MULT'):
+                # "Mary has 3 times as many." → mary.obj = ref.obj × 3
+                if ent:
+                    target_obj = effective_obj
+                    if target_obj:
+                        # Chercher l'entité de référence (autre entité avec même objet)
+                        ref_ent = self.extractor.discourse.get_other_entity(
+                            target_obj, ent)
+                        if ref_ent:
+                            ref_val = m.interroger(ref_ent, target_obj)
+                            if ref_val is not None:
+                                m.apprendre(ent, target_obj, float(ref_val) * val)
+                        else:
+                            # Multiplier la valeur existante
+                            existing = m.interroger(ent, target_obj)
+                            if existing is not None:
+                                m.mettre_a_jour(ent, target_obj, 'MULT', val)
+                            else:
+                                m.apprendre(ent, target_obj, val)
+
+            elif op == 'CROSS_MULT':
+                # "Each box has 5 pencils." → total = count × per_unit
+                container = params.get('container')
+                per_unit = params.get('per_unit')
+                product = params.get('product')
+                if container and per_unit and product:
+                    # Chercher le compte du conteneur
+                    count = m.interroger('_', container)
+                    if count is None:
+                        for suffix in ['', 's', 'es']:
+                            base = container.rstrip('s')
+                            count = m.interroger('_', base + suffix)
+                            if count is not None:
+                                break
+                    if count is not None:
+                        m.apprendre('_', product, count * per_unit)
+                    else:
+                        # Pas de compte → initialiser le produit
+                        m.apprendre('_', product, per_unit)
+
+            elif op == 'RATE':
+                # "James earns $20/h." → stocker le taux
+                if ent:
+                    m.apprendre(ent, 'rate', val)
+                    self._rate_entity = ent
+
+            elif op == 'DURATION':
+                # "He works 8h." → earnings = rate × duration
+                rate_ent = ent or self._rate_entity
+                if rate_ent:
+                    rate = m.interroger(rate_ent, 'rate')
+                    if rate is not None:
+                        m.apprendre(rate_ent, 'money', rate * val)
+
+            elif op in ('DIVIDE', 'DIV'):
+                # "split into 4 groups." → value / groups
+                target_ent = ent or self.extractor.discourse.last_entity or '_'
+                target_obj = effective_obj
+                if target_obj:
+                    existing = m.interroger(target_ent, target_obj)
+                    if existing is not None:
+                        m.mettre_a_jour(target_ent, target_obj, 'DIV', val)
+                    else:
+                        # Chercher n'importe quelle entité avec cet objet
+                        for k, v in list(m._values.items()):
+                            parts = k.split('|', 1)
+                            if len(parts) == 2 and parts[1] == target_obj:
+                                m.mettre_a_jour(parts[0], target_obj, 'DIV', val)
+                                break
+
+        # ═══════════════════════════════════════════════════════════
+        # RÉSOLUTION
+        # ═══════════════════════════════════════════════════════════
+        ent = question_ent or self.extractor.discourse.last_entity or ''
+        obj = question_obj or self.extractor.discourse.last_object or ''
+
+        if ent and obj:
+            result = m.interroger(ent, obj)
+            if result is not None:
+                return result
+
+        # Fallback : chercher par objet seulement
+        if obj:
+            for k, v in m._values.items():
+                parts = k.split('|', 1)
+                if len(parts) == 2 and parts[1] == obj:
+                    return float(v)
+
+        # Dernière valeur
+        if m._values:
+            return float(list(m._values.values())[-1])
+
+        return None
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 10. MAIN
+# ═══════════════════════════════════════════════════════════════════════════
+
 if __name__ == '__main__':
     import argparse
     p = argparse.ArgumentParser()
     p.add_argument('--demo', action='store_true')
-    p.add_argument('--measure', action='store_true',
-                   help='Mesurer accuracy par tuple sur le test set')
+    p.add_argument('--measure', action='store_true')
+    p.add_argument('--test', action='store_true')
+    p.add_argument('--benchmark', type=int, default=0)
     args = p.parse_args()
 
-    if args.demo or not args.measure:
+    if args.demo and not args.test:
         demo()
 
     if args.measure:
@@ -618,3 +830,58 @@ if __name__ == '__main__':
         sr = StructuredRetrieval()
         sr.split_and_index()
         mesurer_accuracy_par_tuple(sr._test_problems)
+
+    if args.test or (not args.demo and not args.measure and not args.benchmark):
+        _SAMPLES = [
+            ("John has 5 apples. He buys 3 more. How many apples does he have?", 8.0),
+            ("Mary had 10 cookies. She ate 4. How many cookies does she have left?", 6.0),
+            ("Tom has 12 dollars. He spends 4 dollars. How many dollars does he have left?", 8.0),
+            ("There are 6 boxes. Each box has 5 pencils. How many pencils are there in total?", 30.0),
+            ("Sue has 10 stickers. She gives 3 to her friend. How many stickers does Sue have left?", 7.0),
+            ("John has 5 apples. Mary has 3 times as many. How many apples does Mary have?", 15.0),
+            ("A bakery bakes 24 loaves of bread. They sell 9 loaves. How many loaves are left?", 15.0),
+            ("There are 4 cars. Each car has 4 wheels. How many wheels are there?", 16.0),
+            ("Sam had 30 dollars. He spent 12 dollars. How many dollars does Sam have left?", 18.0),
+            ("Lucy has 8 books. John has 3 times as many. How many books does John have?", 24.0),
+            ("A store has 100 items. 45 are sold. How many remain?", 55.0),
+            ("John has 5 apples. Mary gave him 3 more apples. How many apples does John have?", 8.0),
+            ("James earns 20 dollars per hour. He works 8 hours. How much does he earn?", 160.0),
+            ("There are 60 students. They are split into 4 equal groups. How many students per group?", 15.0),
+            ("A pizza is cut into 8 slices. John eats 3 slices. How many slices are left?", 5.0),
+        ]
+        print("═══ TEST SOLVEUR spaCy + THU ═══")
+        ok = 0
+        for q, expected in _SAMPLES:
+            solver = SpacySolver()
+            result = solver.solve(q)
+            good = result is not None and abs(result - expected) < 1e-6
+            ok += good
+            print(f"  {'✅' if good else '❌'} {q[:52]:<54} → {result} ({expected})")
+        print(f"\n  SCORE : {ok}/{len(_SAMPLES)} ({100*ok/len(_SAMPLES):.1f}%)")
+
+    if args.benchmark:
+        from structure_retrieval import StructuredRetrieval
+        sr = StructuredRetrieval()
+        sr.split_and_index()
+        test = sr._test_problems[:args.benchmark]
+        correct, no_sol, total = 0, 0, len(test)
+        times = []
+        print(f"═══ BENCHMARK SPAÇY+THU ({total} problèmes) ═══")
+        for i, p in enumerate(test):
+            q = p['question']
+            m = re.search(r'####\s*(-?\d+(?:\.\d+)?)', p['answer'])
+            expected = float(m.group(1)) if m else None
+            solver = SpacySolver()
+            t0 = time.time()
+            result = solver.solve(q)
+            dt = (time.time()-t0)*1000
+            times.append(dt)
+            if result is None: no_sol += 1
+            elif expected and abs(result-expected) < 1e-6: correct += 1
+            if (i+1) % 50 == 0:
+                print(f"  {i+1:>4d}/{total} — {correct}/{i+1} ({100*correct/(i+1):.1f}%)")
+        acc = 100*correct/total if total > 0 else 0
+        print(f"\n═══ RÉSULTATS ═══")
+        print(f"  Accuracy : {acc:.1f}% ({correct}/{total})")
+        print(f"  Sans sol.: {no_sol}")
+        print(f"  Temps    : {np.mean(times):.1f} ms")
