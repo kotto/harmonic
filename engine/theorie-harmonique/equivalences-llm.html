@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>36 équivalences LLM → Ondulatoire — Théorie Harmonique Universelle</title>
+  <meta name="description" content="Les 36 correspondances entre les capacités des LLM classiques et les opérations ondulatoires : attention = résonance, KV-cache = hologramme, RLHF = boucle phase-amplitude…" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="nav" id="nav">
+    <a class="nav__brand" href="index.html">
+      <span class="nav__sigil" aria-hidden="true">Ψ</span>
+      <span class="nav__title">Théorie Harmonique</span>
+    </a>
+    <nav class="nav__links" aria-label="Navigation">
+      <a href="index.html">← Retour au site</a>
+      <a href="langage.html">Langage</a>
+      <a href="bibliotheque.html">Bibliothèque</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <!-- En-tête -->
+    <section class="page__hero">
+      <span class="badge reveal">Innovation majeure — 36/36 équivalences vérifiées</span>
+      <p class="section-kicker reveal">La table de correspondance</p>
+      <h1 class="page__title reveal">LLM classique → Ondulatoire</h1>
+      <p class="page__lede reveal">
+        Trente-six capacités d'un grand modèle de langage, traduites une à une en opérations ondulatoires.
+        Chaque équivalence est implémentée et vérifiée dans le dépôt.
+      </p>
+      <div class="eq-stats reveal">
+        <div class="eq-stat"><span class="eq-stat__v">36/36</span><span class="eq-stat__l">équivalences</span></div>
+        <div class="eq-stat"><span class="eq-stat__v">28</span><span class="eq-stat__l">adaptateurs wave-bridge</span></div>
+        <div class="eq-stat"><span class="eq-stat__v">0</span><span class="eq-stat__l">paramètre entraîné</span></div>
+        <div class="eq-stat"><span class="eq-stat__v">100 %</span><span class="eq-stat__l">déterminisme</span></div>
+      </div>
+    </section>
+
+    <!-- Table complète -->
+    <section class="section section--alt">
+      <div class="section__head">
+        <p class="section-kicker reveal">Le tableau complet</p>
+        <h2 class="section__title reveal">Attention = résonance. KV-cache = hologramme.</h2>
+        <label class="eq-search reveal">
+          <span class="eq-search__label">Rechercher</span>
+          <input type="search" id="eqFilter" placeholder="ex. attention, sampling, mémoire…" />
+          <span class="eq-search__count" id="eqCount"></span>
+        </label>
+      </div>
+      <div class="table-wrap reveal">
+        <table class="deriv-table eq-table">
+          <thead>
+            <tr><th>#</th><th>Capacité LLM</th><th>Équivalent ondulatoire</th><th>Module</th></tr>
+          </thead>
+          <tbody id="eqBody"></tbody>
+        </table>
+      </div>
+      <div class="lib-cta reveal">
+        <a class="btn btn--gold" href="bibliotheque.html?doc=TRADUCTION_ONDULATOIRE_LLM.md">Lire le document complet</a>
+        <a class="btn btn--ghost" href="langage.html">Découvrir le langage</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer__inner">
+      <span class="footer__sigil" aria-hidden="true">Ψ</span>
+      <p class="footer__eq">Ψ = Σ<sub>n=1</sub><sup>∞</sup> Hₙ·(Ψ₁)ⁿ</p>
+      <p class="footer__note"><a class="footer__back" href="index.html">Retour au site</a> · 36 équivalences LLM → ondulatoire · 2026</p>
+    </div>
+  </footer>
+
+  <script src="data.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      var D = window.THU_DATA;
+      var body = document.getElementById("eqBody");
+      var filter = document.getElementById("eqFilter");
+      var count = document.getElementById("eqCount");
+
+      function render(q) {
+        q = (q || "").toLowerCase().trim();
+        var rows = D.equivalences.filter(function (e) {
+          if (!q) return true;
+          return (e.llm + " " + e.wave + " " + e.file).toLowerCase().indexOf(q) !== -1;
+        });
+        count.textContent = rows.length + " / " + D.equivalences.length;
+        body.innerHTML = rows.map(function (e) {
+          return (
+            "<tr>" +
+              "<td>" + e.n + "</td>" +
+              "<td class='eq-llm'>" + e.llm + "</td>" +
+              "<td class='eq-wave'>" + e.wave + "</td>" +
+              "<td class='eq-file'>" + e.file + "</td>" +
+            "</tr>"
+          );
+        }).join("");
+      }
+
+      filter.addEventListener("input", function () { render(filter.value); });
+      render("");
+
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add("is-visible"); io.unobserve(e.target); }
+        });
+      }, { threshold: 0.1 });
+      document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+</body>
+</html>
