@@ -408,6 +408,9 @@ def solve_gsm8k(question: str, reasoner: OndulatoireReasoner = None) -> Optional
                                   r'owns?|bought|collected|found|bakes?|makes?|'
                                   r'produces?)\s+\d+', sent.lower())))
 
+        # rate_mode prioritaire sur is_init quand le registre est vide
+        if rate_mode and not reasoner._registry:
+            is_init = False
         if is_init:
             action = 'init'
             # Essayer de trouver un nom propre (entité) dans la phrase
@@ -424,9 +427,18 @@ def solve_gsm8k(question: str, reasoner: OndulatoireReasoner = None) -> Optional
                                               if w not in _STOP]) > 0:
                 obj = words[-1]
 
+        elif rate_mode:
+            # "earns $20 per hour, works 8 hours" — init rate with correct obj
+            if not obj or obj in ('hour', 'hours', 'day', 'days', 'week', 'weeks'):
+                obj = 'money'
+            if entity is None: entity = 'someone'
+            if len(nums) >= 1:
+                reasoner.apply_action(entity, obj, 'init', nums[0])
+                last_entity, last_obj = entity, obj
+                continue
         elif comparison:
             action, comp_val = comparison
-            # Appliquer au dernier fait connu (ex: "3 times as many apples as John" → multiplier les pommes de Mary)
+            # Appliquer au dernier fait connu
             if entity and obj:
                 reasoner.apply_action(entity, obj, action, comp_val)
                 last_entity, last_obj = entity, obj
@@ -596,11 +608,16 @@ def solve_gsm8k_hybrid(question: str, reasoner=None) -> Optional[float]:
 
         implicit_op = _detect_mult_div(sent)
         comparison = _detect_comparison(sent, nums)
+        rate_mode = bool(re.search(r'\b(per\s+(hour|day|week|month)|a\s+(day|week|month)|'
+                                    r'earns?\s+\d+\s+(dollars?\s+)?per)\b', sent.lower()))
         is_init = (not reasoner._registry or
                    bool(re.search(r'(?:^|\s)(?:has|had|have|there\s+are|there\s+were|'
                                   r'owns?|bought|collected|found|bakes?|makes?|'
                                   r'produces?)\s+\d+', sent.lower())))
 
+        # rate_mode prioritaire sur is_init quand le registre est vide
+        if rate_mode and not reasoner._registry:
+            is_init = False
         if is_init:
             action = 'init'
             if entity is None:
@@ -618,20 +635,19 @@ def solve_gsm8k_hybrid(question: str, reasoner=None) -> Optional[float]:
         elif implicit_op:
             action = implicit_op
         else:
-            # Détection durée après taux (rate × time)
-            dur_match = re.search(r'(\d+(?:\.\d+)?)\s+(hours?|days?|weeks?|months?)', sent.lower())
+            # Détection durée après taux (works N hours → × rate)
+            dur_match = re.search(r'(\d+(?:\.\d+)?)\s+(hours?|days?|weeks?)', sent.lower())
             if dur_match and reasoner._registry:
                 dur_val = float(dur_match.group(1))
-                # Chercher un fait 'money' ou 'salary' à multiplier
                 for (k_e, k_o), k_q in list(reasoner._registry.items()):
                     if k_o in ('money', 'dollars', 'salary', 'wages'):
-                        r_mult = reasoner.log.multiply(float(k_q), dur_val)
-                        total = r_mult[0] if r_mult and r_mult[0] is not None else k_q * dur_val
-                        reasoner.apply_action(k_e, k_o, 'init', float(total))
+                        total = float(k_q) * dur_val
+                        reasoner.apply_action(k_e, k_o, 'init', total)
                         last_entity, last_obj = k_e, k_o
                         break
                 else:
-                    action = 'init'  # fallback
+                    # fallback: init
+                    action = 'init'
                 continue
             # ⚡ HYBRIDE : classifieur entraîné + fallback regex
             action = _hybrid_action(sent, reasoner)
