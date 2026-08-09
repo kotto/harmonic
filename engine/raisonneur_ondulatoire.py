@@ -522,7 +522,7 @@ def _get_minilm_classifier():
 def _minilm_predict(sentence: str) -> tuple:
     """Prédit l'opération via MiniLM. Retourne (op, confiance) ou (None, 0)."""
     clf, model = _get_minilm_classifier()
-    if clf is None or model is None:
+    if clf is None or model is None or not model:
         return None, 0.0
     import numpy as np
     x = model.encode([sentence])[0]
@@ -548,18 +548,20 @@ def _get_classifier():
 
 def _hybrid_action(sentence: str, reasoner) -> str:
     """Classifieurs entraînés (ondes + MiniLM) avec fallback regex."""
+    # Mapping symbole → nom d'action pour apply_action
+    _SYM_TO_ACTION = {'+': 'add', '-': 'sub', '*': 'mult', '/': 'div', 'add': 'add', 'sub': 'sub', 'mult': 'mult', 'div': 'div', 'init': 'init'}
     # Essayer MiniLM d'abord (embeddings sémantiques)
     op_ml, conf_ml = _minilm_predict(sentence)
     if op_ml and conf_ml > 0.55:
-        return op_ml
+        return _SYM_TO_ACTION.get(op_ml, op_ml)
     # Essayer le classifieur ondes
     clf = _get_classifier()
     if clf is not None:
         op, conf = clf.predict_op_with_confidence(sentence)
         if conf > 0.50:
-            return op
+            return _SYM_TO_ACTION.get(op, op)
     # Fallback regex
-    return reasoner.resolve_action(sentence) or 'add'
+    return _SYM_TO_ACTION.get(reasoner.resolve_action(sentence), 'add')
 
 
 def solve_gsm8k_hybrid(question: str, reasoner=None) -> Optional[float]:
