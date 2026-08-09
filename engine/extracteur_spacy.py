@@ -120,6 +120,7 @@ class ParsedSentence:
     root_verb: Optional[str] = None         # lemme du verbe principal
     nsubj: Optional[str] = None              # sujet (entité)
     dobj: Optional[str] = None               # objet direct
+    iobj: Optional[str] = None               # objet indirect (dative)
     pobj: Optional[str] = None               # objet prépositionnel
     nummods: List[Tuple[str, str]] = field(default_factory=list)  # (nombre, nom_parent)
     numbers: List[float] = field(default_factory=list)
@@ -150,6 +151,10 @@ def parse_sentence(sent: str) -> ParsedSentence:
         # Objet direct
         if token.dep_ == 'dobj':
             result.dobj = token.text.lower()
+
+        # Objet indirect (dative : "gave HIM apples")
+        if token.dep_ == 'iobj' or token.dep_ == 'dative':
+            result.iobj = token.text.lower()
 
         # Objet prépositionnel (pour "to X", "as X", "than X")
         if token.dep_ == 'pobj':
@@ -227,13 +232,28 @@ def classify_operation(parsed: ParsedSentence, discourse_state: dict) -> str:
     if 'split' in sw or 'divided' in sw or 'shared' in sw or 'among' in sw:
         return 'DIVIDE'
     if 'cut' in sw:
-        return 'INIT'  # "cut into N slices" → initialisation
+        return 'INIT'
     if 'sold' in sw:
         return 'SUBTRACT'
     if 'left' in sw or 'remain' in sw:
         return 'SUBTRACT'
     if 'more' in sw or 'additional' in sw or 'also' in sw or 'another' in sw:
+        # "more" seul → ADD, sauf si c'est "gives N to" (donneur perd)
+        if parsed.root_verb in ('give', 'gives', 'gave'):
+            if ' to ' in parsed.text.lower():
+                return 'SUBTRACT'
         return 'ADD'
+
+    # 1b. Signal words du texte brut (expressions)
+    sent_lower = parsed.text.lower()
+    if 'gave' in sent_lower and ' to ' in sent_lower:
+        return 'SUBTRACT'
+    if 'gives' in sent_lower and ' to ' in sent_lower:
+        return 'SUBTRACT'
+    if 'give' in sent_lower and ' to ' in sent_lower:
+        return 'SUBTRACT'
+    if 'split into' in sent_lower or 'divided into' in sent_lower:
+        return 'DIVIDE'
 
     # 2. Construction existentielle
     if parsed.root_verb == 'be' and 'there' in parsed.text.lower():
@@ -268,42 +288,58 @@ def extract_params(parsed: ParsedSentence, op_type: str,
 
     # ── Résolution d'entité ──
     entity = None
-    # 1. Sujet syntaxique (nsubj) — sauf si c'est un nombre (passif : "45 are sold")
-    if parsed.nsubj:
+    # Pour "gave HIM apples", l'entité effective est le destinataire (iobj)
+    if parsed.root_verb in ('give', 'gives', 'gave') and parsed.iobj:
+        ent = parsed.iobj.lower()
+        if ent in ('him', 'her', 'them', 'me', 'us'):
+            entity = discourse.get('last_entity')
+        else:
+            entity = ent
+    # 1. Sujet syntaxique (nsubj)
+    elif parsed.nsubj:
         ent = parsed.nsubj.lower()
-        # Filtrer les pronoms → utiliser l'entité du discours
         if ent in ('he', 'she', 'they', 'it', 'i', 'we', 'him', 'her', 'them'):
             entity = discourse.get('last_entity')
-        # Si le sujet est un nombre, c'est un passif → utiliser last_entity
         elif re.match(r'^\d+(\.\d+)?$', ent):
             entity = discourse.get('last_entity')
         else:
             entity = ent
-    # 2. Construction existentielle ("There are N X") → utiliser last_entity
+    # 2. Construction existentielle ("There are N X") → utiliser '_'
     if entity is None and 'there' in parsed.text.lower():
-        entity = discourse.get('last_entity', 'someone')
+        entity = '_'
     # 3. Fallback
     if entity is None:
-        entity = discourse.get('last_entity', 'someone')
+        entity = discourse.get('last_entity', '_')
 
     params['entity'] = entity
 
     # ── Résolution d'objet ──
     obj = None
-    # 1. Objet direct (dobj) — sauf si c'est un signal word ("more", "many"...)
-    if parsed.dobj:
-        if parsed.dobj.lower() not in ('more', 'many', 'much', 'fewer', 'less',
-                                        'times', 'each', 'every', 'all', 'some'):
-            obj = parsed.dobj
-    # 2. Premier nummod → le nom modifié est probablement l'objet
-    if obj is None and parsed.nummods:
-        obj = parsed.nummods[0][1]
-    # 3. Objet prépositionnel (pobj) — ex: "split into groups"
-    if obj is None and parsed.pobj:
-        if parsed.pobj.lower() not in ('hour', 'hours', 'day', 'days', 'week', 'weeks',
-                                        'month', 'months', 'year', 'years'):
-            obj = parsed.pobj
-    # 4. Fallback : dernier objet du discours
+    _signal_objs = {'more', 'many', 'much', 'fewer', 'less',
+                    'times', 'each', 'every', 'all', 'some', 'several'}
+
+    # Pour les verbes de transfert (give/gave), l'objet est implicite
+    # → utiliser le discours, pas le pobj qui est le destinataire
+    if parsed.root_verb in ('give', 'gives', 'gave'):
+        obj = discourse.get('last_object')
+    else:
+        # 1. Objet direct (dobj) — sauf si c'est un nombre ou un signal word
+        if parsed.dobj:
+            d = parsed.dobj.lower()
+            if not re.match(r'^\d+(\.\d+)?$', d) and d not in _signal_objs:
+                obj = d
+        # 2. Premier nummod → le nom modifié
+        if obj is None and parsed.nummods:
+            head = parsed.nummods[0][1]
+            if not re.match(r'^\d+(\.\d+)?$', head) and head.lower() not in _signal_objs:
+                obj = head
+        # 3. Objet prépositionnel (pobj)
+        if obj is None and parsed.pobj:
+            p = parsed.pobj.lower()
+            if p not in ('hour', 'hours', 'day', 'days', 'week', 'weeks',
+                         'month', 'months', 'year', 'years') and p not in _signal_objs:
+                obj = p
+    # 4. Fallback
     if obj is None:
         obj = discourse.get('last_object')
 
@@ -324,10 +360,10 @@ def extract_params(parsed: ParsedSentence, op_type: str,
         # Premier nombre = valeur à soustraire
         params['value'] = numbers[0] if numbers else None
 
-    elif op_type == 'MULTIPLY':
-        # Premier nombre = multiplicateur (ex: "3 times as many")
+    elif op_type in ('MULTIPLY', 'MULT', 'TIMES_AS_MANY'):
+        # Premier nombre = multiplicateur
         params['multiplier'] = numbers[0] if numbers else None
-        # Chercher l'entité de référence (autre entité avec même objet)
+        # L'entité de référence est celle qui a le MÊME OBJET (via discours)
         params['reference_entity'] = discourse.get('other_entity')
 
     elif op_type == 'CROSS_MULT':
@@ -768,20 +804,14 @@ class SpacySolver:
                         m.apprendre(rate_ent, 'money', rate * val)
 
             elif op in ('DIVIDE', 'DIV'):
-                # "split into 4 groups." → value / groups
-                target_ent = ent or self.extractor.discourse.last_entity or '_'
-                target_obj = effective_obj
-                if target_obj:
-                    existing = m.interroger(target_ent, target_obj)
-                    if existing is not None:
-                        m.mettre_a_jour(target_ent, target_obj, 'DIV', val)
-                    else:
-                        # Chercher n'importe quelle entité avec cet objet
-                        for k, v in list(m._values.items()):
-                            parts = k.split('|', 1)
-                            if len(parts) == 2 and parts[1] == target_obj:
-                                m.mettre_a_jour(parts[0], target_obj, 'DIV', val)
-                                break
+                # "split into 4 groups." → diviser le PREMIER objet du registre
+                # (celui qui a été stocké avant la division)
+                if m._values:
+                    first_key = list(m._values.keys())[0]
+                    parts = first_key.split('|', 1)
+                    if len(parts) == 2:
+                        old_obj = parts[1]
+                        m.mettre_a_jour(parts[0], old_obj, 'DIV', val)
 
         # ═══════════════════════════════════════════════════════════
         # RÉSOLUTION
