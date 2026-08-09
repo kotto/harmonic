@@ -25,10 +25,11 @@ def generer(Z_max=200):
         np_=sum(rempli[i] for i,(n,l,_) in enumerate(sous) if n==periode and l==1)
         nd=sum(rempli[i] for i,(n,l,_) in enumerate(sous) if n==periode-1 and l==2)
         nf=sum(rempli[i] for i,(n,l,_) in enumerate(sous) if n==periode-2 and l==3)
+        ng=sum(rempli[i] for i,(n,l,_) in enumerate(sous) if l==4)
         if periode==1 and ns==2:groupe=18
         elif np_>0:groupe=10+ns+np_
         elif nd>0:groupe=ns+nd
-        elif nf>0:groupe=3  # f-block → groupe 3
+        elif nf>0 or ng>0:groupe=3  # f-block et g-block → groupe 3
         else:groupe=ns
         elements.append({"Z":Z,"periode":periode,"groupe":groupe,"config":config[-40:]})
     return elements
