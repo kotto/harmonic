@@ -256,6 +256,47 @@ REGLES = [
 # 3. COMPILATEUR THU
 # ═══════════════════════════════════════════════════════════════════════════
 
+# Règles extraites (chargées paresseusement depuis le data mining)
+_extracted_rules_cache = None
+
+
+def _get_extracted_rules():
+    """Charge les règles extraites (721 motifs) paresseusement."""
+    global _extracted_rules_cache
+    if _extracted_rules_cache is not None:
+        return _extracted_rules_cache
+
+    import json as _json
+    here = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(here, 'grammaire_extraite.json')
+    try:
+        with open(path, encoding='utf-8') as f:
+            raw = _json.load(f)
+
+        rules = []
+        seen = set()
+        for op_type, regles in raw.items():
+            for r in regles:
+                pattern = r['pattern']
+                if pattern in seen:
+                    continue
+                seen.add(pattern)
+
+                # Convertir le motif normalisé en regex
+                escaped = re.escape(pattern)
+                escaped = escaped.replace(r'<\ N\ >', r'\\d+(?:\\.\\d+)?')
+                escaped = escaped.replace(r'<\ ENT\ >', r'[A-Z][a-z]{2,}')
+                escaped = escaped.replace(r'<\ OBJ\ >', r'\\w+')
+
+                rules.append((escaped, op_type, ['val']))
+
+        _extracted_rules_cache = rules
+        return rules
+    except Exception:
+        _extracted_rules_cache = []
+        return []
+
+
 class CompilateurTHU:
     """
     Compilateur THU : texte humain → programme ondulatoire (13 primitives).
@@ -322,6 +363,7 @@ class CompilateurTHU:
 
     def compiler_phrase(self, sent: str) -> Optional[Dict]:
         """ANALYSE : reconnaît le pattern grammatical."""
+        # 1. Règles manuelles (précises)
         for pattern, op, slots in REGLES:
             m = re.search(pattern, sent, re.IGNORECASE)
             if m:
@@ -332,6 +374,31 @@ class CompilateurTHU:
                     except IndexError:
                         params[slot] = None
                 return {"op": op, "params": params, "sent": sent}
+
+        # 2. Règles extraites (couverture) — chargées paresseusement
+        extracted = _get_extracted_rules()
+        for pattern, op, slots in extracted:
+            try:
+                m = re.search(pattern, sent, re.IGNORECASE)
+                if m:
+                    params = {}
+                    # Extraire les slots nommés ou le premier nombre
+                    for slot in slots:
+                        try:
+                            val = m.group(slot)
+                            if val is not None:
+                                params[slot] = val
+                        except (IndexError, AttributeError):
+                            pass
+                    # Si pas de valeur extraite, prendre le premier nombre du match
+                    if 'val' in slots and 'val' not in params:
+                        nums = re.findall(r'\d+(?:\.\d+)?', m.group(0))
+                        if nums:
+                            params['val'] = nums[0]
+                    if params:
+                        return {"op": op, "params": params, "sent": sent}
+            except re.error:
+                continue
 
         # Fallback : phrase avec nombres mais sans règle → RAW_NUMBERS
         nums = self._extraire_nombres(sent)
@@ -349,38 +416,46 @@ class CompilateurTHU:
         sent = compiled["sent"]
         m = self.memoire
 
+        # Safeguard : si val est absent, extraire le premier nombre de la phrase
+        def _val(key='val', default=None):
+            v = p.get(key)
+            if v is not None:
+                return float(v)
+            nums = self._extraire_nombres(sent)
+            return float(nums[0]) if nums else default
+
         if op == "HAS":
             ent = self._resoudre_entite(sent, p.get("ent"))
             obj = self._resoudre_objet(sent, p.get("obj"))
-            val = float(p["val"])
-            if ent and obj:
+            val = _val()
+            if ent and obj and val:
                 m.apprendre(ent, obj, val)
                 self._last_entity = ent
                 self._last_object = obj
 
         elif op == "GAIN":
             ent = self._resoudre_entite(sent, p.get("ent"))
-            val = float(p["val"])
-            if ent and self._last_object:
+            val = _val()
+            if ent and self._last_object and val:
                 m.mettre_a_jour(ent, self._last_object, "ADD", val)
 
         elif op == "LOSE":
             ent = self._resoudre_entite(sent, p.get("ent"))
-            val = float(p["val"])
-            if ent and self._last_object:
+            val = _val()
+            if ent and self._last_object and val:
                 m.mettre_a_jour(ent, self._last_object, "SUB", val)
 
         elif op == "GAVE_TO":
             receiver_raw = p.get("ent", "")
             receiver = self._resoudre_entite(sent, receiver_raw)
-            val = float(p["val"])
+            val = _val()
             obj = self._resoudre_objet(sent, p.get("obj"))
-            if receiver and obj:
+            if receiver and obj and val:
                 m.mettre_a_jour(receiver, obj, "ADD", val)
 
         elif op == "TIMES_AS_MANY":
             ent = self._resoudre_entite(sent, p.get("ent"))
-            mult = float(p["mult"])
+            mult = _val('mult')
             if ent and self._last_object:
                 obj = self._last_object
                 for k, v in list(m._values.items()):
@@ -391,7 +466,7 @@ class CompilateurTHU:
                         break
 
         elif op == "THERE_ARE":
-            count = float(p["count"])
+            count = _val('count')
             container = p.get("container", "").lower()
             if container:
                 m.apprendre("_", container, count)
@@ -399,7 +474,7 @@ class CompilateurTHU:
 
         elif op == "CROSS_MULT":
             container = p.get("container", "").lower()
-            per_unit = float(p["per_unit"])
+            per_unit = _val('per_unit')
             product = p.get("product", "").lower()
             count = m.interroger("_", container)
             if count is None:
@@ -410,7 +485,7 @@ class CompilateurTHU:
                 m.apprendre("_", product, count * per_unit)
 
         elif op == "PARTITION":
-            groups = float(p["groups"])
+            groups = _val('groups')
             # Utiliser _last_object (défini par THERE_ARE)
             obj = self._last_object
             if obj:
@@ -419,13 +494,13 @@ class CompilateurTHU:
 
         elif op == "RATE":
             ent = self._resoudre_entite(sent, p.get("ent"))
-            rate = float(p["rate"])
+            rate = _val('rate')
             if ent:
                 m.apprendre(ent, "rate", rate)
                 self._last_entity = ent
 
         elif op == "DURATION":
-            dur = float(p["dur"])
+            dur = _val('dur')
             ent = self._last_entity
             if ent:
                 rate = m.interroger(ent, "rate")
@@ -434,16 +509,34 @@ class CompilateurTHU:
                     self._last_object = "money"
 
         elif op == "ARE_SOLD":
-            val = float(p["val"])
+            val = _val()
             if self._last_entity and self._last_object:
                 m.mettre_a_jour(self._last_entity, self._last_object, "SUB", val)
 
         elif op == "CUT_INTO":
-            val = float(p["val"])
+            val = _val()
             obj = self._resoudre_objet(sent, p.get("obj"))
             if obj:
                 m.apprendre("_", obj, val)
                 self._last_object = obj
+
+        elif op in ("MULT", "COMPARE"):
+            # Règles extraites : multiplication générique
+            val = p.get("val")
+            if val is None:
+                val = p.get("val1", 0)
+            if val is not None:
+                val = float(val)
+                if val > 0 and self._last_entity and self._last_object:
+                    m.mettre_a_jour(self._last_entity, self._last_object, "MULT", val)
+
+        elif op == "DIV":
+            # Règles extraites : division générique
+            val = p.get("val")
+            if val is not None:
+                val = float(val)
+                if val > 0 and self._last_entity and self._last_object:
+                    m.mettre_a_jour(self._last_entity, self._last_object, "DIV", val)
 
         elif op == "RAW_NUMBERS":
             # Fallback conservateur : initialiser seulement si registre vide
