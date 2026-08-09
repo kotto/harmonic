@@ -54,6 +54,7 @@ from wave_lang import (
 )
 from encodage_phase import PhaseEncoder
 from encodage_logarithmique import LogWaveEncoder
+from raisonneur_algebrique import AlgebriqueReasoner
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 1. ENCODAGE DES QUANTITÉS : onde complète (hash), pas de composante réservée
@@ -672,6 +673,166 @@ def solve_gsm8k_hybrid(question: str, reasoner=None) -> Optional[float]:
 
 # Remplacer le solve_gsm8k par défaut par la version hybride
 solve_gsm8k = solve_gsm8k_hybrid
+
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 5b. PIPELINE ALGÉBRIQUE (THU niveau 3 : équations + dépendances)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def solve_gsm8k_algebrique(question: str, reasoner=None) -> Optional[float]:
+    """
+    Résout GSM8K avec le RAISONNEUR ALGÉBRIQUE (équations + dépendances).
+
+    Au lieu d'exécuter séquentiellement, on construit un SYSTÈME D'ÉQUATIONS :
+      • Chaque fait devient une équation (var = valeur | var = op(base, val))
+      • Les dépendances sont résolues par évaluation LAZY
+      • L'arithmétique émergente (PhaseEncoder/LogEncoder) fait les calculs
+
+    Ex: "John has 5 apples. Mary has 3 times as many."
+      → eq1: john_apples = 5
+      → eq2: mary_apples = 3 × john_apples  (DÉPENDANCE)
+      → solve('mary_apples') = 15
+    """
+    from raisonneur_ondulatoire import (
+        _extract_numbers, _best_object_from_sentence, _detect_mult_div,
+        _detect_comparison, _hybrid_action, _STOP, OndulatoireReasoner
+    )
+    r_alg = AlgebriqueReasoner()
+    r_hrr = OndulatoireReasoner()  # pour la résolution d'entité/objet (résonance)
+
+    q = question.strip()
+    q = re.sub(r'\s+', ' ', q)
+    sentences = re.split(r'(?<=[.;!?])\s+', q)
+    sentences = [s.strip() for s in sentences if s.strip()]
+
+    last_entity, last_obj = None, None
+    for sent in sentences:
+        is_question = bool(re.search(r'(how many|how much|what is|what are|'
+                                      r'how far|how long|how old)', sent.lower()))
+        if is_question:
+            break
+
+        nums = _extract_numbers(sent)
+        if not nums:
+            continue
+
+        entity, obj = _best_object_from_sentence(sent, r_hrr)
+        entity = entity or last_entity
+        # Fallback nom propre (capitalisé) si pas d'entité connue
+        if entity is None:
+            caps = re.findall(r'([A-Z][a-z]{2,})', sent)
+            if caps: entity = caps[0].lower()
+            elif not r_hrr._registry: entity = 'someone'
+        if obj is not None and last_obj is not None and obj not in r_hrr.object_names:
+            obj = last_obj
+        if obj is None and last_obj:
+            obj = last_obj
+        # Fallback objet si pas trouvé
+        if obj is None:
+            words = [w for w in re.findall(r'[a-z]{3,}', sent.lower()) if w not in _STOP]
+            if words: obj = words[-1]
+
+        # Détection d'action
+        rate_mode = bool(re.search(r'(per\s+(hour|day|week|month)|a\s+(day|week|month)|'
+                                    r'earns?\s+\d+\s+(dollars?\s+)?per)', sent.lower()))
+        implicit_op = _detect_mult_div(sent)
+        comparison = _detect_comparison(sent, nums)
+        is_init = (not r_hrr._registry or
+                   bool(re.search(r'has\s+\d+|had\s+\d+|have\s+\d+|there\s+are\s+\d+',
+                                  sent.lower())))
+
+        # Résoudre l'action
+        if comparison:
+            action, comp_val = comparison
+            # Équation de dépendance : target = comp_val × reference
+            # ex: "Mary has 3 times as many apples as John" → mary_apples = 3 × john_apples
+            if entity and obj:
+                # Trouver TOUTES les entités mentionnées dans la phrase
+                all_entities = set()
+                for e_name in list(r_hrr.entity_names) + list(r_hrr._entities.keys()):
+                    if e_name in sent.lower():
+                        all_entities.add(e_name)
+                # L'autre entité = celle qui n'est pas entity
+                other = (all_entities - {entity}).pop() if len(all_entities - {entity}) > 0 else None
+                if other:
+                    ref_var = f"{other}_{obj}"
+                    var_name = f"{entity}_{obj}"
+                    # Définir la base si pas déjà fait
+                    if ref_var not in r_alg._equations:
+                        # Chercher la valeur de base dans le registre HRR
+                        base_val = r_hrr.query(other, obj)
+                        if base_val is not None:
+                            r_alg.define(ref_var, base_val)
+                    r_alg.define(var_name, (action, ref_var, comp_val))
+                    # Aussi mettre à jour le HRR
+                    if ref_var in r_alg._equations:
+                        base = r_alg.eval(ref_var)
+                        if base is not None:
+                            r_hrr.learn_fact(entity, obj, base * comp_val)
+                    last_entity, last_obj = entity, obj
+                    continue
+            # Fallback: appliquer comme opération simple
+            if entity and obj:
+                r_hrr.apply_action(entity, obj, action, comp_val)
+                r_alg.update(f"{entity}_{obj}", action, comp_val)
+                last_entity, last_obj = entity, obj
+                continue
+
+        if is_init or (not r_alg._equations and not comparison):
+            action = 'init'
+        elif rate_mode:
+            # Taux : on stocke la rate comme variable, puis on multiplie
+            if len(nums) >= 2:
+                r_alg.define(f"{entity or 'someone'}_rate", nums[0])
+                r_alg.define(f"{entity or 'someone'}_{obj or 'money'}",
+                            ('mult', f"{entity or 'someone'}_rate", nums[1]))
+                last_entity, last_obj = entity, obj
+                continue
+            else:
+                action = 'init'
+        elif implicit_op:
+            action = implicit_op
+        else:
+            action = _hybrid_action(sent, r_hrr)
+
+        if entity and obj and nums:
+            var_name = f"{entity}_{obj}"
+            op_map = {'add': 'add', 'sub': 'sub', 'mult': 'mult', 'div': 'div',
+                      '+': 'add', '-': 'sub', '*': 'mult', '/': 'div'}
+            op = op_map.get(action, 'add')
+
+            # Mettre à jour le registre HRR (pour la résolution d'entité/objet)
+            if action == 'init' or not r_hrr._registry:
+                r_hrr.learn_fact(entity, obj, float(nums[0]))
+            else:
+                r_hrr.apply_action(entity, obj, op, float(nums[0]))
+
+            # Stocker l'équation algébrique
+            if action == 'init' or not r_alg._equations:
+                r_alg.define(var_name, float(nums[0]))
+            else:
+                r_alg.update(var_name, op, float(nums[0]))
+            last_entity, last_obj = entity, obj
+
+    # Résoudre la cible
+    target_entity, target_obj = last_entity, last_obj
+    question_sent = sentences[-1] if sentences else ''
+    if '?' in question_sent or 'how many' in question_sent.lower():
+        q_entity, q_obj = _best_object_from_sentence(question_sent, r_hrr)
+        target_entity = q_entity or target_entity
+        target_obj = q_obj or target_obj
+
+    if target_entity and target_obj:
+        return r_alg.solve(f"{target_entity}_{target_obj}")
+
+    # Fallback : dernière variable définie
+    if r_alg._equations:
+        return r_alg.solve(list(r_alg._equations.keys())[-1])
+    return None
+
+# Remplacer le solve_gsm8k par défaut par la version algébrique
+solve_gsm8k = solve_gsm8k_algebrique
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 4. TESTS + BENCHMARK
