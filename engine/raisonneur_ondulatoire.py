@@ -76,7 +76,7 @@ MOTS_ACTION = {
     'add':  ['buys', 'gains', 'gets', 'receives', 'earns', 'adds', 'more', 'and',
              'again', 'additional', 'also', 'another', 'next', 'then', 'picks',
              'collects', 'obtains', 'wins'],
-    'sub':  ['sells', 'sold', 'gives away', 'gives', 'loses', 'lost', 'spends', 'spent', 'eats', 'ate',
+    'sub':  ['sells', 'sell', 'sold', 'gives away', 'give', 'gives', 'loses', 'lose', 'lost', 'spends', 'spend', 'spent', 'eats', 'eat', 'ate',
              'removes', 'takes away', 'dropped', 'uses', 'throws away', 'took',
              'left', 'remainder', 'remaining', 'after spending', 'less', 'fewer',
              'gave', 'donated', 'burned', 'consumed', 'drank'],
@@ -237,17 +237,18 @@ class OndulatoireReasoner:
         return best if best_score > 0.05 else None
 
     def resolve_action(self, sentence: str) -> Optional[str]:
+        """Résonance mot à mot (max) — robuste pour phrases courtes."""
         words = [w for w in re.findall(r'[a-zà-ÿ]+', sentence.lower()) if len(w) > 1]
         if not words:
             return None
         psi_s = superpose(*[encode(w, dim=self.dim) for w in words])
         psi_s = psi_s / (np.linalg.norm(psi_s) + 1e-9)
         best, best_score = None, -1.0
-        for action, proto in self._action_protos.items():
-            sc = float(resonate(psi_s, proto))
+        for action, mots in MOTS_ACTION.items():
+            sc = max(float(resonate(psi_s, encode(m, dim=self.dim))) for m in mots)
             if sc > best_score:
                 best_score, best = sc, action
-        return best if best_score > 0.05 else None
+        return best if best_score > 0.15 else None
 
     def resolve_object(self, sentence: str) -> Optional[str]:
         words = [w for w in re.findall(r'[a-zà-ÿ]+', sentence.lower()) if len(w) > 1]
