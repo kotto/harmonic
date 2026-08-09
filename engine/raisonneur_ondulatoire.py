@@ -456,16 +456,13 @@ def solve_gsm8k(question: str, reasoner: OndulatoireReasoner = None) -> Optional
                 last_entity, last_obj = entity, obj
                 continue
         elif rate_mode:
+            # "earns $20 per hour, works 8 hours" → rate × time
+            # On init la rate, puis on multiplie par la durée
             if len(nums) >= 2:
-                rate_entity = entity or 'someone'
-                rate_obj = obj or 'money'
-                r = reasoner.log.multiply(float(nums[0]), float(nums[1]))
-                total = r[0] if r and r[0] is not None else nums[0] * nums[1]
-                reasoner.apply_action(rate_entity, rate_obj, 'init', float(total))
-                last_entity, last_obj = rate_entity, rate_obj
-                continue
-            elif len(nums) >= 1:
+                # Créer un fait "rate" = nums[0]
                 reasoner.apply_action(entity or 'someone', obj or 'money', 'init', nums[0])
+                # Puis multiplier par le temps (nums[1])
+                reasoner.apply_action(entity or 'someone', obj or 'money', 'mult', nums[1])
                 last_entity, last_obj = entity, obj
                 continue
         else:
@@ -621,6 +618,21 @@ def solve_gsm8k_hybrid(question: str, reasoner=None) -> Optional[float]:
         elif implicit_op:
             action = implicit_op
         else:
+            # Détection durée après taux (rate × time)
+            dur_match = re.search(r'(\d+(?:\.\d+)?)\s+(hours?|days?|weeks?|months?)', sent.lower())
+            if dur_match and reasoner._registry:
+                dur_val = float(dur_match.group(1))
+                # Chercher un fait 'money' ou 'salary' à multiplier
+                for (k_e, k_o), k_q in list(reasoner._registry.items()):
+                    if k_o in ('money', 'dollars', 'salary', 'wages'):
+                        r_mult = reasoner.log.multiply(float(k_q), dur_val)
+                        total = r_mult[0] if r_mult and r_mult[0] is not None else k_q * dur_val
+                        reasoner.apply_action(k_e, k_o, 'init', float(total))
+                        last_entity, last_obj = k_e, k_o
+                        break
+                else:
+                    action = 'init'  # fallback
+                continue
             # ⚡ HYBRIDE : classifieur entraîné + fallback regex
             action = _hybrid_action(sent, reasoner)
 
