@@ -901,7 +901,189 @@ class HologramStore:
                 scored.append((score, (s, r, o, sec)))
         scored.sort(key=lambda x: x[0], reverse=True)
         return [(s, r, o, sec, float(score)) for score, (s, r, o, sec) in scored[:top_k]]
-    
+
+    # ═══ RE-RANKING THU V2 — MESURÉ, RÉFUTÉ DANS L'ARCHITECTURE PAR HOLOGRAMME ═══
+    # Mesure comparative complète (10/08/2026, 88 questions des faits v2) :
+    #   • M4 par hologramme (architecture actuelle)   : F1 0,409
+    #   • THU par hologramme (re-ranking naïf)        : F1 0,394  → RÉFUTÉ
+    #   • THU GLOBALE (244 faits mélangés)            : F1 0,503  → gain +0,094
+    #
+    # LEÇON : le gain THU n'existe que dans un classement GLOBAL (tous les
+    # faits du domaine mélangés — l'architecture du prototype THU V2). Dans
+    # l'architecture KA par hologramme (chaque hologramme = domaine homogène),
+    # le classement interne THU est moins discriminant que le M4 — aucune
+    # fusion (max, produit, somme) ne bat le M4 seul.
+    #
+    # `recall_thu` est conservé comme VOIE EXPÉRIMENTALE documentée : il ne
+    # remplace PAS recall() (le M4 reste le chemin par défaut). Le vrai
+    # branchage THU serait un classement global par-dessus tous les faits.
+
+    def _thu_espace_global(self):
+        """Espace THU GLOBAL : cooccurrence sur TOUS les faits des hologrammes
+        v2 (format résonant) → PPMI → attraction pure. Retourne (vocab, w2i,
+        kx, ky, sigma, faits_indexés) — les faits de CHAQUE hologramme y sont
+        rattachés par holo_id."""
+        cache = getattr(self, '_thu_espace_global_cache', None)
+        if cache is not None:
+            return cache
+
+        import re as _re
+        def _mots(t):
+            return _re.findall(r"[a-zàâäéèêëîïôöùûüçœ]+", t.lower())
+
+        # Collecter TOUS les faits des hologrammes v2 (résonants)
+        faits_par_holo = {}   # holo_id -> [(s, r, o)]
+        count = {}
+        for h in self.list_holograms():
+            hid = h['id']
+            try:
+                facts, psi = self.download(hid)
+            except Exception:
+                continue
+            if not facts or 'hologram_memory' not in psi:
+                continue  # v1 : non résonant, exclu
+            faits_par_holo[hid] = [(s, r, o) for s, r, o, _ in facts]
+            for s, r, o in faits_par_holo[hid]:
+                for w in _mots(f"{s} {r} {o}"):
+                    if len(w) > 2:
+                        count[w] = count.get(w, 0) + 1
+
+        if not faits_par_holo:
+            self._thu_espace_global_cache = None
+            return None
+
+        vocab = ["<BOS>", "<EOS>", "<UNK>", "<PAD>"] + \
+                [w for w, c in sorted(count.items(), key=lambda x: -x[1]) if c >= 2]
+        if len(vocab) < 8:
+            self._thu_espace_global_cache = None
+            return None
+        w2i = {w: i for i, w in enumerate(vocab)}
+        V = len(vocab)
+
+        # Tokenizer (fréquences initiales spirale)
+        import importlib.util as _iu
+        _SAAS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        spec = _iu.spec_from_file_location(
+            "hrg_thu", os.path.join(_SAAS, "harmonic_training", "model",
+                                    "harmonic_resonance_generator.py"))
+        hrg = _iu.module_from_spec(spec)
+        spec.loader.exec_module(hrg)
+        tok = hrg.TokeniseurOndes(vocab, use_pi_over_6=True)
+
+        # Cooccurrence (fait entier = fenêtre) → PPMI
+        cooc = np.zeros((V, V), dtype=np.float64)
+        tokens_par_holo = {}
+        for hid, faits in faits_par_holo.items():
+            toks_list = []
+            for s, r, o in faits:
+                toks = [w2i[w] for w in _mots(f"{s} {r} {o}") if w in w2i]
+                toks_list.append(toks)
+                for i in range(len(toks)):
+                    for j in range(len(toks)):
+                        if i != j:
+                            cooc[toks[i], toks[j]] += 1.0
+            tokens_par_holo[hid] = toks_list
+        total = cooc.sum()
+        if total <= 0:
+            self._thu_espace_global_cache = None
+            return None
+        marginal = cooc.sum(axis=1, keepdims=True) + 1e-10
+        expected = (marginal @ cooc.sum(axis=0, keepdims=True)) / total
+        pmi = np.log((cooc + 1e-10) / (expected + 1e-10))
+        ppmi = np.clip(np.maximum(0.0, pmi), 0, 10)
+
+        # Attraction pure (120 itérations, lr 0.005 — méthode validée)
+        kx = tok._kx[:V].copy().astype(np.float64)
+        ky = tok._ky[:V].copy().astype(np.float64)
+        sim_pos = ppmi > 0.01
+        ii, jj = np.where(sim_pos)
+        sv = ppmi[ii, jj]
+        for _ in range(120):
+            gkx = np.zeros(V); gky = np.zeros(V)
+            for idx in range(len(ii)):
+                i, j = ii[idx], jj[idx]
+                if i == j:
+                    continue
+                g = 2.0 * float(sv[idx])
+                gkx[i] += g * (kx[i] - kx[j])
+                gky[i] += g * (ky[i] - ky[j])
+            kx -= 0.005 * gkx; ky -= 0.005 * gky
+            r = np.sqrt(kx**2 + ky**2)
+            m = r > 6.0
+            kx[m] *= 6.0 / (r[m] + 1e-10); ky[m] *= 6.0 / (r[m] + 1e-10)
+            kx -= kx.mean(); ky -= ky.mean()
+
+        # Sigma adaptatif : médiane des distances entre tokens distincts
+        sample = min(V, 200)
+        rng = np.random.RandomState(0)
+        idx = rng.choice(V, sample, replace=False)
+        dm = np.sqrt((kx[idx, None] - kx[None, idx])**2
+                     + (ky[idx, None] - ky[None, idx])**2)
+        off = dm[np.triu_indices(sample, 1)]
+        off = off[off > 1e-9]
+        sigma = float(np.median(off)) if len(off) else 0.2
+
+        cache = {"vocab": vocab, "w2i": w2i, "kx": kx, "ky": ky,
+                 "sigma": sigma, "tokens_par_holo": tokens_par_holo}
+        self._thu_espace_global_cache = cache
+        return cache
+
+    def recall_thu(self, holo_id: str, query: str, top_k: int = 10,
+                   n_candidats: int = 20) -> List[Tuple[str, str, str, str, float]]:
+        """
+        Rappel avec RE-RANKING THU V2 : les faits de l'hologramme sont
+        classés par résonance gaussienne sur l'espace PPMI global.
+
+        ⚠️ MESURÉ (10/08/2026) : RÉFUTÉ dans l'architecture par hologramme —
+        F1 0,394 vs 0,409 pour recall() (le M4 reste supérieur). Le gain THU
+        n'existe qu'en classement GLOBAL (F1 0,503). Conservé comme voie
+        expérimentale documentée — PAS le chemin par défaut.
+
+        Returns:
+            top_k faits (s, r, o, secteur, score) triés par score THU.
+            Si l'espace THU est indisponible → repli sur recall() (intact).
+        """
+        thu = self._thu_espace_global()
+        if thu is None or holo_id not in thu["tokens_par_holo"]:
+            return self.recall(holo_id, query, top_k=top_k)
+
+        vocab, w2i, kx, ky, sigma, tokens_par_holo = (
+            thu["vocab"], thu["w2i"], thu["kx"], thu["ky"],
+            thu["sigma"], thu["tokens_par_holo"])
+        toks_list = tokens_par_holo[holo_id]
+        facts, _ = self.download(holo_id)
+        if not facts:
+            return self.recall(holo_id, query, top_k=top_k)
+
+        import re as _re
+        def _mots(t):
+            return _re.findall(r"[a-zàâäéèêëîïôöùûüçœ]+", t.lower())
+        _STOP = set(("que", "quelle", "quelles", "quel", "quels", "est", "a",
+                     "le", "la", "les", "de", "des", "du", "pour", "une",
+                     "un", "et", "en", "au", "aux", "dans", "sur", "qui"))
+        ancres = [w2i[w] for w in _mots(query) if w in w2i and w not in _STOP]
+        if not ancres:
+            return self.recall(holo_id, query, top_k=top_k)
+
+        # Résonance gaussienne de tous les tokens avec les ancres
+        from resonance_semantique import scores_resonance
+        kx_q = np.asarray([kx[t] for t in ancres])
+        ky_q = np.asarray([ky[t] for t in ancres])
+        amp_q = np.ones(len(ancres))
+        kx_t = np.asarray(kx); ky_t = np.asarray(ky)
+        scores, _, _, _ = scores_resonance(kx_q, ky_q, amp_q, kx_t, ky_t,
+                                           sigma, mode="max")
+
+        # Classer TOUS les faits de l'hologramme par résonance THU (max)
+        rerank = []
+        for (s, r, o, sec), toks in zip(facts, toks_list):
+            sc_thu = float(np.max(scores[toks])) if toks else 0.0
+            if sc_thu > 0.0:
+                rerank.append((sc_thu, s, r, o, sec))
+        rerank.sort(key=lambda x: -x[0])
+        return [(s, r, o, sec, float(sc))
+                for sc, s, r, o, sec in rerank[:top_k]]
+
     # ═══ PUBLICATION COMMUNAUTAIRE (AVEC VALIDATION) ═══
     
     def publish(self, domain: str, facts: List[Tuple[str, str, str, str]],
