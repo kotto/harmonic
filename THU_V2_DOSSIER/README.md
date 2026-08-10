@@ -56,6 +56,8 @@
 
 | `DEMONTRER_EMERGENCE_CONSTANTES.md` | Le protocole en 6 étapes pour démontrer l'émergence des constantes (dérivation zéro paramètre, vérification à précision déclarée, falsification) — l'état : λ, cₙ démontrées · H, T*, α conditionnelles · Λ approchée · α=1/137 et masses en frontière ; le test anti-déguisement X1 ; la hiérarchie algébrique/numérique/expérimentale (page site : `theorie-harmonique/demontrer-emergence.html`) |
 
+| `QUELLE_CONSTANTE_DERIVER.md` | Le classement des dérivations : λ, cₙ déjà dérivées · Λ la plus proche (×1,39 → ×1,13 avec la correction principiée B(α), testée) · chaînon Hurwitz · α=1/137 la plus dure — avec l'avertissement anti-numérologie et la route en 4 étapes |
+
 ### 🌐 Transversalité
 
 | Fichier | Description |
