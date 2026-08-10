@@ -50,6 +50,8 @@
 
 | `IDENTITE_MATHEMATIQUE_COEFS.md` | L'identité mathématique des coefficients : les coefficients de Taylor de E_{1/φ} — la fonction entière d'ORDRE DE CROISSANCE ρ = 1/α = φ (Gorenflo-Mainardi, vérifié) ; la famille (α=1 e^z, α=1/2 diffusion) ; rapports Stirling n^{−1/φ} ; E(1)≈4,14 ; liens (lois stables Feller, relaxation fractionnaire) ; les fausses pistes écartées (page site : `theorie-harmonique/identite-mathematique-coefs.html`) |
 
+| `LES_30_OBSERVABLES.md` | La table complète des 30 observables dérivées de la chaîne — 6 niveaux (maths 4, labo 5, cosmo 3, grav 2, matière 7, calcul 4, QM 5) ; 23 vérifiées · 2 frontières · 3 testables · 2 prédites ; les non-dérivables déclarées (α=1/137, masses) (page site : `theorie-harmonique/30-observables.html`) |
+
 ### 🌐 Transversalité
 
 | Fichier | Description |
