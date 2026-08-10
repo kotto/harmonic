@@ -732,7 +732,7 @@ class HologramStore:
         Les hologrammes v1 (psies 64D, sans mémoire holographique) ne peuvent
         pas faire de rappel ondulatoire — lecture paresseuse (mmap), ~ms.
         """
-        path = STORE_DIR / f'{holo_id}.npz'
+        path = self.store_dir / f'{holo_id}.npz'
         if not path.exists():
             return False
         try:
@@ -743,6 +743,88 @@ class HologramStore:
                         and 'psi_objects' in data)
         except Exception:
             return False
+
+    def ensure_v2(self, holo_id: str, force: bool = False) -> dict:
+        """
+        Conversion v1 → v2 À LA DEMANDE (mesurée 10/08/2026) :
+        quand un utilisateur demande un hologramme v1 (dormant), le
+        processus du cahier des charges le convertit (diagnostic → tri →
+        assainissement → validation → benchmark, module convertir_domaine_v2)
+        puis le NPZ est REBUILDÉ au format wave v2 (ψ redérivé des faits).
+
+        - ACCEPTÉ  → NPZ rebuildé v2 → has_wave_format(holo_id) devient Vrai
+                    → le chat l'active automatiquement (_holographic_consensus_recall)
+        - REFUSÉ   → rapport sauvegardé en cache, NPZ laissé en l'état
+                    (domaine sûr : 0 contradiction, gate 0 FAUX — mais sous
+                    le seuil de densité/volume : complétion requise)
+        - no_config / inconnu → aucune modification
+
+        Args:
+            holo_id: id de l'hologramme (ex. "official_geographie")
+            force: reconvertir même si le NPZ est déjà v2
+        Returns:
+            {status, holo_id, rebuilt, facts_count, rapport?, ...}
+        """
+        if self.has_wave_format(holo_id) and not force:
+            return {"status": "v2", "holo_id": holo_id, "rebuilt": False,
+                    "facts_count": self._registry.get(holo_id).facts_count
+                    if self._registry.get(holo_id) else None}
+        try:
+            from convertir_domaine_v2 import charger_config
+            cfg = charger_config().get(holo_id)
+        except Exception:
+            cfg = None
+        if cfg is None:
+            facts, _ = self.download(holo_id)
+            if not facts:
+                return {"status": "inconnu", "holo_id": holo_id,
+                        "rebuilt": False}
+            return {"status": "no_config", "holo_id": holo_id,
+                    "rebuilt": False,
+                    "message": "Pas de table de conversion (voir "
+                               "data/corrections_domaines.json)"}
+
+        from convertir_domaine_v2 import convertir as convertir_v2
+        statut, rapport, out_dir = convertir_v2(self, holo_id, cfg,
+                                                force=force)
+        rebuilt = False
+        facts_v2 = []
+        if statut.startswith("ACCEPTÉ"):
+            chemin = os.path.join(out_dir, "faits.json")
+            if os.path.exists(chemin):
+                with open(chemin, encoding="utf-8") as f:
+                    data = json.load(f)
+                facts_v2 = [(d["sujet"], d["relation"], d["objet"],
+                             d["secteur"]) for d in data["faits"]]
+            if facts_v2:
+                domain_id = (holo_id[len("official_"):]
+                             if holo_id.startswith("official_")
+                             else holo_id)
+                domain_info = {
+                    "name": holo_id, "icon": "🌀",
+                    "sectors": [""],  # permissif : '' matche tout secteur
+                    "keywords": [],   # aucun filtre mots-clés
+                    "description": "Conversion v1→v2 (processus cahier des "
+                                   "charges, 10/08/2026)",
+                    "benchmark_questions": [],
+                }
+                self._build_one_hologram(domain_id, domain_info, facts_v2,
+                                         kb_hash="converted_v2")
+                self._save_registry()
+                rebuilt = True
+                log.info(f"🌀 {holo_id}: NPZ rebuildé au format v2 "
+                         f"({len(facts_v2):,} faits, ψ redérivé)")
+        return {
+            "status": statut, "holo_id": holo_id, "rebuilt": rebuilt,
+            "facts_count": len(facts_v2) or rapport.get("n_faits_v2", 0),
+            "validation": rapport.get("validation", {}),
+            "secteurs_ok": rapport.get("secteurs_ok", 0),
+            "secteurs_total": rapport.get("secteurs_total", 0),
+            "gate_refus": rapport.get("gate_refus", 0),
+            "gate_total": rapport.get("gate_total", 0),
+            "temps_total_s": rapport.get("temps_total_s", 0),
+            "rapport_path": os.path.join(out_dir, "rapport_conversion.json"),
+        }
     
     def load_into_brain(self, holo_id: str, brain) -> bool:
         """

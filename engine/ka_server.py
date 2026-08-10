@@ -3866,6 +3866,51 @@ def store_download(holo_id):
         })
 
 
+@app.route('/api/store/convert/<holo_id>', methods=['POST'])
+def store_convert(holo_id):
+    """
+    Conversion v1 → v2 À LA DEMANDE (mesurée 10/08/2026).
+    Quand un utilisateur demande un hologramme v1 (dormant), le processus
+    du cahier des charges le convertit ; s'il est ACCEPTÉ, le NPZ est
+    rebuildé au format wave v2 et le domaine devient actif dans le chat.
+
+    Body: { "force": false }
+    """
+    if not _hologram_store:
+        return jsonify({'error': 'Store non disponible'}), 503
+
+    force = bool((request.get_json(force=True, silent=True) or {})
+                 .get('force', False))
+    try:
+        res = _hologram_store.ensure_v2(holo_id, force=force)
+    except Exception as e:
+        log.error(f"Conversion {holo_id} échouée: {e}")
+        return jsonify({'error': f'Conversion échouée: {e}'}), 500
+
+    if res['status'] == 'inconnu':
+        return jsonify({'error': f'Hologramme {holo_id} introuvable ou vide'}), 404
+    if res['status'] == 'no_config':
+        return jsonify({'error': res.get('message',
+                                         f'Pas de table de conversion pour {holo_id}')}), 422
+
+    return jsonify({
+        'holo_id': holo_id,
+        'status': res['status'],
+        'rebuilt': res.get('rebuilt', False),
+        'facts_count': res.get('facts_count', 0),
+        'validation': res.get('validation', {}),
+        'secteurs_ok': res.get('secteurs_ok', 0),
+        'secteurs_total': res.get('secteurs_total', 0),
+        'gate_refus': res.get('gate_refus', 0),
+        'gate_total': res.get('gate_total', 0),
+        'rapport_path': res.get('rapport_path'),
+        'message': ('✅ Hologramme converti au format v2 et actif dans le chat'
+                    if res.get('rebuilt') else
+                    'ℹ️ Domaine déjà au format v2 (ou conversion REFUSÉE : '
+                    'rapport disponible pour complétion)'),
+    })
+
+
 @app.route('/api/store/load', methods=['POST'])
 def store_load():
     """
