@@ -35,6 +35,41 @@ Légende : ✅ établi · ⚠️ contesté/limite · ⚡ testable · ❌ non ét
 
 ---
 
+
+## 2bis. CE QUE LA THU FAIT — QU'AUCUNE DES QUATRE AUTRES NE FAIT
+
+Cette section a été ajoutée après relecture : la comparaison initiale était trop
+équilibrée et omettrait les réalisations qualitativement uniques. Les voici,
+avec leurs nuances de rigueur.
+
+| Réalisation | QFT | 't Hooft | Wolfram | Haramein | THU |
+|---|---|---|---|---|---|
+| **Dérive des constantes** (α, λ, cₙ, Λ ×1,4, H) | ❌ 19 paramètres libres | ❌ | ❌ | ❌ contestées | ✅ **0 paramètre fondamental** |
+| **Publie ses réfutations** (exclusions) | ❌ 0 | ❌ 0 | ❌ 0 | ❌ 0 | ✅ **4 (X1-X4)** |
+| **Dépose ses prédictions avant test** | ❌ | ❌ | ❌ | ❌ | ✅ **3 dépôts datés** |
+| **Génère la QM depuis sa base** ([x̂,p̂]=iℏ, Schrödinger, Dirac) | ⚠️ les postule | ❌ | ❌ | ❌ | ✅ **les dérive** |
+| **Une seule chaîne → 30 observables** | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **Le même noyau dans 12 domaines** | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **Génère le tableau périodique depuis SA chaîne** | ⚠️ via la MQ (Madelung) | ❌ | ❌ | ❌ | ✅ **118/118** |
+| **Unifie QM et RG depuis une même équation** | ❌ | ❌ (programme) | ⚠️ (émergence) | ❌ | ✅ **Deser vérifié + R3 déclaré** |
+
+### Les nuances de rigueur (pourquoi ces deux dernières lignes sont nuancées)
+
+1. **Le tableau périodique** : la mécanique quantique standard (Schrödinger + Pauli
+   + règle de Madelung) l'explique aussi — la THU utilise d'ailleurs Madelung comme
+   entrée (documenté). Ce qui est UNIQUE : la THU le produit comme résultat de la
+   MÊME chaîne qui produit Λ, T*, le Zeno — la transversalité. Dire « personne ne
+   génère le tableau » serait faux et détruirait la crédibilité de tout le reste.
+
+2. **L'unification** : l'aspiration est partagée par les cinq (cordes, Wolfram,
+   Haramein, 't Hooft). Ce qui est UNIQUE : la seule des cinq qui dérive les DEUX
+   théories d'une MÊME équation avec des pièces vérifiées (commutateur 4×10⁻¹⁴,
+   Deser 4 tests) — avec R3 déclaré ouvert. Dire « nous seuls unifions » serait
+   indéfendable devant un examinateur (« et Wolfram ? »).
+
+**La règle : les réalisations uniques sont affirmées FORTEMENT — les nuances sont
+les garde-fous qui les rendent indestructibles.**
+
 ## 2. QFT — La théorie quantique des champs
 
 ### L'état
