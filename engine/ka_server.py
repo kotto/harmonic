@@ -1344,6 +1344,58 @@ def chat():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# 🔌 PONT D'AUDIT HYBRIDE — noyau harmonique + Phraseur (Ollama optionnel)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_PONT_HYBRIDE = None
+
+def _get_pont_hybride():
+    """Instance unique du pont hybride (paresseuse)."""
+    global _PONT_HYBRIDE
+    if _PONT_HYBRIDE is None:
+        try:
+            from pont_hybride import PontHybride
+            _PONT_HYBRIDE = PontHybride()
+        except Exception as e:
+            log.warning(f"Pont hybride indisponible : {e}")
+            _PONT_HYBRIDE = False
+    return _PONT_HYBRIDE if _PONT_HYBRIDE else None
+
+
+@app.route('/api/hybrid', methods=['POST'])
+def api_hybrid():
+    """
+    Le pont d'audit : noyau harmonique (calcul exact, résonance, REFUS)
+    + Phraseur (Ollama local, optionnel) + audit + fallback noyau.
+
+    Body: { "message": "7 × 8" }
+    Returns: { "response": "...", "type": "CALC|FAIT|REFUS",
+               "audit": true, "latence_ms": 123 }
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    message = (data.get('message') or '').strip()
+    if not message:
+        return jsonify({'error': 'Message requis'}), 400
+
+    pont = _get_pont_hybride()
+    if pont is None:
+        return jsonify({'error': 'Pont hybride indisponible'}), 503
+
+    try:
+        r = pont.traiter(message)
+        return jsonify({
+            'response': r['response'],
+            'type': r['type'],
+            'audit': r['audit'],
+            'latence_ms': r['latence_ms'],
+            'etapes': r['etapes'],
+        })
+    except Exception as e:
+        log.error(f"Pont hybride erreur : {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # 🎯 SPÉCIALISATION DYNAMIQUE
 # ═══════════════════════════════════════════════════════════════════════════════
 
