@@ -109,8 +109,15 @@ def _sans_article(maladie):
 
 
 def _normaliser(texte):
-    """Normalise : apostrophes et tirets → espaces ('qu'est-ce que' == 'qu est ce que')."""
-    return texte.lower().replace("'", " ").replace("-", " ")
+    """Normalise : apostrophes, tirets et ACCENTS → forme simple.
+    ('qu'est-ce que' == 'qu est ce que' · 'épilepsie' == 'epilepsie')"""
+    t = texte.lower().replace("'", " ").replace("-", " ")
+    for acc, sans in [("é", "e"), ("è", "e"), ("ê", "e"), ("ë", "e"),
+                      ("à", "a"), ("â", "a"), ("ä", "a"),
+                      ("î", "i"), ("ï", "i"), ("ô", "o"), ("ö", "o"),
+                      ("ù", "u"), ("û", "u"), ("ü", "u"), ("ç", "c"), ("œ", "oe")]:
+        t = t.replace(acc, sans)
+    return t
 
 
 def _est_question_medicale(question):

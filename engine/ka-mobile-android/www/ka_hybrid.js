@@ -141,19 +141,56 @@
     return false;
   }
 
+  var SEUIL_RESONANCE_FAIT = 0.60; // seuil ÉLEVÉ : seuls les concepts quasi-exacts passent
+
+  function motsDe(question) {
+    // tokenisation simple : mots de 3+ lettres, sans accents
+    var q = question.toLowerCase().replace(/[éèêë]/g, 'e').replace(/[àâä]/g, 'a')
+      .replace(/[îï]/g, 'i').replace(/[ôö]/g, 'o').replace(/[ùûü]/g, 'u').replace(/ç/g, 'c');
+    return q.match(/[a-zœ]{3,}/g) || [];
+  }
+
+  function sansAccents(s) {
+    return s.toLowerCase().replace(/[éèêë]/g, 'e').replace(/[àâä]/g, 'a')
+      .replace(/[îï]/g, 'i').replace(/[ôö]/g, 'o').replace(/[ùûü]/g, 'u').replace(/ç/g, 'c');
+  }
+
+  var conceptsNorm = null; // {nomNormalisé: nomOriginal}
+  function conceptsNormalises() {
+    if (conceptsNorm) return conceptsNorm;
+    conceptsNorm = {};
+    for (var nom in concepts) conceptsNorm[sansAccents(nom)] = nom;
+    return conceptsNorm;
+  }
+
+  function conceptPresent(question) {
+    // détection par présence du mot-concept (accents ignorés)
+    var mots = motsDe(question);
+    var table = conceptsNormalises();
+    for (var cle in table) {
+      for (var i = 0; i < mots.length; i++)
+        if (mots[i].indexOf(cle) >= 0 || cle.indexOf(mots[i]) >= 0) return table[cle];
+    }
+    return null;
+  }
+
   function repondre(question) {
     if (estIdentite(question)) return { type: 'IDENTITE' };
     var maladie = estQuestionMedicale(question);
     if (maladie) return { type: 'MEDICAL', concept: maladie, valeur: FAITS_MEDICAUX[maladie] };
     var r = calculer(question);
     if (r !== null) return { type: 'CALC', valeur: r };
+    // 1. présence du mot-concept (déterministe et fiable)
+    var trouve = conceptPresent(question);
+    if (trouve) return { type: 'FAIT', concept: trouve, score: 1.0 };
+    // 2. résonance avec seuil ÉLEVÉ (complément sémantique, très exigeant)
     var qpsi = encode(question);
     var meilleur = null, score = 0;
     for (var nom in concepts) {
       var s = resonate(qpsi, concepts[nom]);
       if (s > score) { score = s; meilleur = nom; }
     }
-    if (score >= SEUIL_RESONANCE) return { type: 'FAIT', concept: meilleur, score: score };
+    if (score >= SEUIL_RESONANCE_FAIT) return { type: 'FAIT', concept: meilleur, score: score };
     return { type: 'REFUS', score: score };
   }
 
