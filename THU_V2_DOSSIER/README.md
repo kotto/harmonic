@@ -22,6 +22,12 @@
 | `BREVET_V2_HPU_CALCUL_ELIMINATION.md` | 18 | Système de calcul harmonique à 3 couches — élimination, mémoire dorée, résonance, H-Bit |
 | `BREVET_LIAISON_V1_V2.md` | — | Document de stratégie : priorité V1 revendiquée, éléments abandonnés, matière nouvelle |
 
+### ⚛️ La génération de la physique quantique
+
+| Fichier | Description |
+|---|---|
+| `PHYSIQUE_QUANTIQUE_HARMONIQUE.md` | La QP générée par le formalisme harmonique — espace des états, [x̂,p̂]=iℏ, Schrödinger, Heisenberg, Fock, Dirac : 8 vérifications machine ; Zeno fractionnaire, Λ, T* comme prédictions (script : `engine/generation_physique_quantique.py` — page site : `theorie-harmonique/physique-quantique-harmonique.html`) |
+
 ### 🌐 Transversalité
 
 | Fichier | Description |
