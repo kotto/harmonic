@@ -46,6 +46,8 @@
 
 | `PEUT_ON_DERIVER_ALPHA.md` | Test négatif documenté : peut-on dériver α ? — les 3 fonctionnels naturels (équilibre mémoire, Laplace, queue) n'ont PAS 1/φ comme extremum (testé) ; Hurwitz rigoureux, chaînon conjecturé, dérivation = programme ouvert |
 
+| `IDENTITE_MATHEMATIQUE_COEFS.md` | L'identité mathématique des coefficients : les coefficients de Taylor de E_{1/φ} — la fonction entière d'ORDRE DE CROISSANCE ρ = 1/α = φ (Gorenflo-Mainardi, vérifié) ; la famille (α=1 e^z, α=1/2 diffusion) ; rapports Stirling n^{−1/φ} ; E(1)≈4,14 ; liens (lois stables Feller, relaxation fractionnaire) ; les fausses pistes écartées (page site : `theorie-harmonique/identite-mathematique-coefs.html`) |
+
 ### 🌐 Transversalité
 
 | Fichier | Description |
