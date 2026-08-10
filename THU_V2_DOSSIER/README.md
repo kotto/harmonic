@@ -54,6 +54,8 @@
 
 | `LES_30_OBSERVABLES.md` | La table complète des 30 observables dérivées de la chaîne — 6 niveaux (maths 4, labo 5, cosmo 3, grav 2, matière 7, calcul 4, QM 5) ; 23 vérifiées · 2 frontières · 3 testables · 2 prédites ; les non-dérivables déclarées (α=1/137, masses) (page site : `theorie-harmonique/30-observables.html`) |
 
+| `DEMONTRER_EMERGENCE_CONSTANTES.md` | Le protocole en 6 étapes pour démontrer l'émergence des constantes (dérivation zéro paramètre, vérification à précision déclarée, falsification) — l'état : λ, cₙ démontrées · H, T*, α conditionnelles · Λ approchée · α=1/137 et masses en frontière ; le test anti-déguisement X1 ; la hiérarchie algébrique/numérique/expérimentale (page site : `theorie-harmonique/demontrer-emergence.html`) |
+
 ### 🌐 Transversalité
 
 | Fichier | Description |
