@@ -33,24 +33,34 @@ print("PHASE 1 · LA BASE (axiome A2) — la décomposition modale")
 print("═" * 72)
 print("""
   Le postulat quantique « l'état est un vecteur de l'espace de Hilbert »
-  n'est pas postulé ici : c'est la décomposition modale de l'équation mère.
-  Tout état ψ(x) = Σ cₙ·(Ψ₁)ⁿ = Σ cₙ·e^{inx} — c'est exactement la base
-  de Fourier, vérifiée à l'exactitude machine (1,78×10⁻¹⁵, session 988987f).
-  L'espace de Hilbert EST l'espace des superpositions de modes.
+  n'est pas postulé ici : il est un CAS PARTICULIER de la décomposition
+  modale de l'équation mère.
+
+  L'ÉQUATION MÈRE (générale) :  Ψ = Σ Hₙ·(Ψ₁)ⁿ   — Ψ₁ = toute onde,
+  coefficients Hₙ déterminés par la dynamique (filtre A1).
+
+  CAS PARTICULIER α=1 :  Ψ₁ = e^{iθ}  → la fonction d'onde quantique
+  standard ψ(x) = Σ cₙ·e^{inx}, avec cₙ calculés par transformée de Fourier.
+
+  → La transformée de Fourier est l'OUTIL du cas particulier — pas la
+    source. La fonction d'onde est un cas de l'équation mère : celui où
+    l'onde fondamentale est l'onde circulaire e^{iθ} (sans mémoire).
+  → L'espace de Hilbert EST l'espace des superpositions de modes — dans
+    le cas particulier, les modes sont e^{inx} et les coefficients la FFT.
 """)
 
-# Vérification : décomposition d'une gaussienne en modes (Ψ₁)ⁿ
+# Vérification : décomposition d'une gaussienne en modes (Ψ₁)ⁿ — cas α=1
 N = 256
 x = np.linspace(-8, 8, N)
 psi = np.exp(-x**2 / 2)  # paquet gaussien
-c = np.fft.fftshift(np.fft.fft(np.fft.ifftshift(psi))) / np.sqrt(N)  # coefficients cₙ
+c = np.fft.fftshift(np.fft.fft(np.fft.ifftshift(psi))) / np.sqrt(N)  # coefficients cₙ (cas α=1)
 recon = np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(c))) * np.sqrt(N)
 err = np.max(np.abs(recon - psi))
-print(f"  DÉCOMPOSITION d'un état gaussien en modes (Ψ₁)ⁿ :")
+print(f"  DÉCOMPOSITION d'un état gaussien en modes (Ψ₁)ⁿ — cas particulier α=1 :")
 print(f"  |ψ − Σ cₙ(Ψ₁)ⁿ| = {err:.2e}  {'✅ exact' if err < 1e-13 else '❌'}")
-print(f"  → Le paquet d'ondes EST une superposition de modes — rien d'autre.")
-print(f"  → La 'fonction d'onde' n'est pas un nouvel objet : c'est l'équation mère,")
-print(f"    avec des coefficients cₙ = transformée de Fourier.")
+print(f"  → Le paquet d'ondes EST une superposition de modes — le cas e^{{iθ}}.")
+print(f"  → La 'fonction d'onde' est un CAS PARTICULIER de l'équation mère :")
+print(f"    celui où l'onde fondamentale est e^{{iθ}} (base de Fourier, α=1).")
 
 # ══════════════════════════════════════════════════════════════════
 # PHASE 2 · LA QUANTIFICATION — opérateurs et commutateur

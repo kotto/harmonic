@@ -16,15 +16,25 @@ Script de référence : `generation_physique_quantique.py` — 8 vérifications,
 
 ---
 
-## 1. La thèse : la QP est la décomposition modale
+## 1. La thèse : la QP est un cas particulier de la décomposition modale
 
-Le postulat fondateur de la mécanique quantique est : « l'état d'un système est un vecteur d'un espace de Hilbert ». La THU ne postule pas cela — elle le **dérive** de l'axiome A2 :
+Le postulat fondateur de la mécanique quantique est : « l'état d'un système est un vecteur d'un espace de Hilbert ». La THU ne postule pas cela — elle montre qu'il s'agit d'un **cas particulier** de l'équation mère :
 
-> **A2 — La forme :** toute réalité physique se décompose en modes. L'équation mère Ψ = Σ Hₙ·(Ψ₁)ⁿ est la forme générale de cette décomposition.
+```
+ÉQUATION MÈRE (générale) :  Ψ = Σ Hₙ·(Ψ₁)ⁿ
+   · Ψ₁ = toute onde fondamentale
+   · Hₙ = coefficients déterminés par la dynamique (filtre A1)
 
-Un état ψ(x) est une superposition de modes (Ψ₁)ⁿ = e^{inx}. L'espace de Hilbert **est** l'espace de ces superpositions. La « fonction d'onde » n'est pas un objet nouveau : c'est l'équation mère avec des coefficients cₙ = transformée de Fourier.
+CAS PARTICULIER α=1 :  Ψ₁ = e^{iθ}  → la fonction d'onde quantique standard
+   · ψ(x) = Σ cₙ·e^{inx}
+   · cₙ = coefficients calculés par transformée de Fourier
+```
 
-**Vérifié :** décomposition d'un paquet gaussien en modes — erreur 2,22×10⁻¹⁶ (exactitude machine).
+> **La transformée de Fourier est l'outil du cas particulier — pas la source. La fonction d'onde est un cas de l'équation mère : celui où l'onde fondamentale est l'onde circulaire e^{iθ} (le cas sans mémoire, α=1).**
+
+L'espace de Hilbert **est** l'espace des superpositions de modes — dans le cas particulier, les modes sont e^{inx} et les coefficients sont la transformée de Fourier.
+
+**Vérifié :** décomposition d'un paquet gaussien en modes (Ψ₁)ⁿ (cas α=1) — erreur 2,22×10⁻¹⁶ (exactitude machine).
 
 ---
 
