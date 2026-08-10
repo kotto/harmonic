@@ -52,6 +52,8 @@
 
 | `IMPLICATIONS_PHILOSOPHIQUES.md` | Les implications philosophiques — déterminisme sans fatalisme, temps à mémoire, fin de l'anthropique, observateur déchu, épistémologie darwinienne, éthique du refus calibré, sens gagné par persistance, limites dites (page site : `theorie-harmonique/implications-philosophiques.html`) |
 
+| `PARADOXES_QUANTIQUES_HARMONIQUES.md` | Les 9 paradoxes quantiques sous l'angle harmonique — 3 clés (onde réelle A2, mesure = résonance A1, temps à mémoire A3) : 2 vérifiés, 5 cadres, 1 testable (Zeno t^{0,618}), 1 frontière (trous noirs) (page site : `theorie-harmonique/paradoxes-quantiques.html`) |
+
 ### 📢 Communication
 
 | Fichier | Description |
