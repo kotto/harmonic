@@ -32,6 +32,8 @@
 
 | `D_1_PHI_G_DERIVE.md` | La clarification rigoureuse : D^{1/φ}[Ψ]=G[Ψ] n'est PAS dérivé — la RG dérive le □ (ordre 2, α=1, Fierz-Pauli vérifié) ; la dérivée fractionnaire brise Lorentz ; la version linéarisée est EXCLUE par GW170817 (9×10¹⁴×) ; R3 reste tracé non clos (page site : `theorie-harmonique/d-1-phi-g.html`) |
 
+| `PRESENTER_D_1_PHI_G.md` | Le guide de cadrage : comment présenter D^{1/φ}[Ψ]=G[Ψ] — hypothèse de travail (boîte de statut : motivation A3, contrainte X2/GW170817, voie R3, 3 prédictions), 3 niveaux de revendication, l'analogie inflation/supersymétrie, la formulation en une phrase (page site : `theorie-harmonique/presenter-d-1-phi-g.html`) |
+
 ### 🌌 L'unification
 
 | Fichier | Description |
