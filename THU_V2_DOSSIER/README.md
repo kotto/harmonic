@@ -38,6 +38,8 @@
 
 | `COMPARAISON_THEORIES.md` | L'état des théories comparé sur 7 axes : QFT (précision 10⁻¹², 19 paramètres), 't Hooft (déterminisme sans prédiction confirmée), Wolfram (émergence sans nombre), Haramein (intuition sans exclusions), THU (zéro paramètre, sans validation) — avec l'asymétrie d'exigence : la THU jugée plus sévèrement (page site : `theorie-harmonique/comparaison-theories.html`) |
 
+| `DERIVATION_LAMBDA.md` | La dérivation de Λ par le filtre du vide — cadre établi (Λ = F(α)/(c·t_U)², F requis = 1,8803), 6 candidats principiés testés, meilleur : φ^{2−1/φ} = 1,9445 (×1,034 — 3,4 %, la limite de Stirling des coefficients) ; frontière déclarée : fermeture mécaniste à écrire, test décisif Λ(t) ∝ 1/t² (script : `engine/derivation_lambda.py`) |
+
 ### 🌌 L'unification
 
 | Fichier | Description |
