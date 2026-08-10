@@ -4,7 +4,9 @@
 
 ---
 
-> Ψ = Σ Hₙ · (Ψ₁)ⁿ  —  la forme générale (vérifiée comme série de Fourier à 1,78×10⁻¹⁵)
+> Ψ = Σ Hₙ · (Ψ₁)ⁿ  —  la généralisation fractionnaire de la série de Fourier
+> Fourier est le cas α = 1 (sans mémoire). L'équation mère est le cas α = 1/φ (mémoire dorée).
+> E₁(z) = e^z → Fourier. E_{1/φ}(z) → équation mère. α = 1/φ dérivé de Hurwitz.
 > Ψ₁ = A₁·e^{i(ω₀t + φ₁)}  —  l'onde primordiale
 
 ---
