@@ -22,6 +22,12 @@
 | `BREVET_V2_HPU_CALCUL_ELIMINATION.md` | 18 | Système de calcul harmonique à 3 couches — élimination, mémoire dorée, résonance, H-Bit |
 | `BREVET_LIAISON_V1_V2.md` | — | Document de stratégie : priorité V1 revendiquée, éléments abandonnés, matière nouvelle |
 
+### 🌐 Transversalité
+
+| Fichier | Description |
+|---|---|
+| `TRANSVERSALITE_EQUATION_MERE.md` | Un même noyau, douze domaines — 22 résultats cartographiés (cosmologie, gravitation, quantique, nucléaire, chimie, biologie, IA, informatique, mathématiques), rasoir d'Occam quantifié, réponse à l'objection « numérologie » |
+
 ### 📢 Communication
 
 | Fichier | Description |
