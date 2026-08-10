@@ -60,6 +60,8 @@
 
 | `QUELLE_CONSTANTE_DERIVER.md` | Le classement des dérivations : λ, cₙ déjà dérivées · Λ la plus proche (×1,39 → ×1,13 avec la correction principiée B(α), testée) · chaînon Hurwitz · α=1/137 la plus dure — avec l'avertissement anti-numérologie et la route en 4 étapes |
 
+| `REALISATIONS_LANGAGE.md` | Ce que le langage ondulatoire réalise — la démo en 5 actes (encode → apprendre 3 expositions → raisonner HRR → refuser 0 % hallucination → créer ε=0,15), la carte des capacités, les 6 règles THU V2 (script : `engine/demo_langage_ondulatoire.py` — vérifié) |
+
 ### 🌐 Transversalité
 
 | Fichier | Description |
