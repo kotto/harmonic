@@ -7,9 +7,9 @@
 
 ## 1. TITRE DE L'INVENTION
 
-**ÉQUATION FONDAMENTALE DE DÉCOMPOSITION MODALE FRACTIONNAIRE — GÉNÉRALISATION DE LA SÉRIE DE FOURIER PAR LA FONCTION DE MITTAG-LEFFLER D'ORDRE α = 1/φ DÉRIVÉ DE LA STABILITÉ, ET PROCÉDÉ DE REPRÉSENTATION UNIVERSELLE DE TOUT SYSTÈME PHYSIQUE, MATHÉMATIQUE OU INFORMATIONNEL COMME SUPERPOSITION DE PUISSANCES D'UNE ONDE FONDAMENTALE**
+**PROCÉDÉ DE DÉCOMPOSITION MODALE FRACTIONNAIRE DE TOUT SYSTÈME PHYSIQUE, MATHÉMATIQUE OU INFORMATIONNEL EN SUPERPOSITION DE PUISSANCES D'UNE ONDE FONDAMENTALE — GÉNÉRALISATION DE LA SÉRIE DE FOURIER PAR LA FONCTION DE MITTAG-LEFFLER D'ORDRE α = 1/φ DÉRIVÉ DE LA STABILITÉ**
 
-**FUNDAMENTAL FRACTIONAL MODAL DECOMPOSITION EQUATION — GENERALIZATION OF THE FOURIER SERIES VIA THE MITTAG-LEFFLER FUNCTION OF ORDER α = 1/φ DERIVED FROM STABILITY, AND METHOD FOR UNIVERSAL REPRESENTATION OF ANY PHYSICAL, MATHEMATICAL OR INFORMATIONAL SYSTEM AS A SUPERPOSITION OF POWERS OF A FUNDAMENTAL WAVE**
+**METHOD FOR FRACTIONAL MODAL DECOMPOSITION OF ANY PHYSICAL, MATHEMATICAL OR INFORMATIONAL SYSTEM INTO A SUPERPOSITION OF POWERS OF A FUNDAMENTAL WAVE — GENERALIZATION OF THE FOURIER SERIES VIA THE MITTAG-LEFFLER FUNCTION OF ORDER α = 1/φ DERIVED FROM STABILITY**
 
 ---
 
@@ -56,7 +56,8 @@ Cas particulier (Fourier, α = 1) :
 Cas général (Équation mère, α = 1/φ) :
   Ψ = Σ Hₙ·(Ψ₁)ⁿ
   Base : (Ψ₁)ⁿ — puissances de TOUTE onde fondamentale
-  Coefficients : Hₙ = cₙ = 1/Γ(n/φ+1) — coefficients de Mittag-Leffler
+  Coefficients temporels : cₙ = 1/Γ(n/φ+1) — coefficients de Mittag-Leffler
+  Coefficients modaux : Hₙ déterminés par le filtre A1 — contiennent les cₙ
   Noyau : Mittag-Leffler E_α(z) = Σ zⁿ/Γ(nα+1) — généralisation fractionnaire
 ```
 
@@ -147,25 +148,34 @@ Chaque puissance supplémentaire porte un spin plus élevé. C'est la structure 
 
 Les coefficients Hₙ ne sont **pas** les constantes fondamentales {φ, π, e, √2, √3, √5, e/π} postulées dans la version antérieure. Cette hypothèse a été **réfutée** expérimentalement : écart 0,707 vs la chaîne dérivée, **0 correspondance sur 935** comparaisons (seuil 10⁻³).
 
-### 5.2 Ce qui est dérivé
+### 5.2 Ce qui est dérivé — les coefficients temporels
 
-Les coefficients de l'équation mère sont les **coefficients de la fonction de Mittag-Leffler** E_{1/φ}(z) :
+La solution de l'équation fractionnaire D^{1/φ}[Ψ] = G[Ψ] est la fonction de Mittag-Leffler E_{1/φ}(−φ·t^{1/φ}), dont les coefficients sont :
 
 ```
 cₙ = 1 / Γ(n/φ + 1)
 
-c₁ = 1/Γ(1/φ+1) = 1/Γ(1,618) ≈ 1,1165
-c₂ = 1/Γ(2/φ+1) = 1/Γ(2,236) ≈ 0,8896
-c₃ = 1/Γ(3/φ+1) = 1/Γ(2,854) ≈ 0,5696
-c₄ = 1/Γ(4/φ+1) = 1/Γ(3,472) ≈ 0,3103
+c₁ = 1/Γ(1,618) ≈ 1,1165
+c₂ = 1/Γ(2,236) ≈ 0,8896
+c₃ = 1/Γ(2,854) ≈ 0,5696
+c₄ = 1/Γ(3,472) ≈ 0,3103
 ...
 ```
 
-Ces coefficients sont la **solution** de l'équation fractionnaire D^{1/φ}[Ψ] = G[Ψ]. Ils ne sont pas choisis — ils sont **calculés** depuis la dynamique.
-
 **Vérification** : FFT — erreur 2,22×10⁻¹⁶ (précision machine).
 
-### 5.3 Propriétés des coefficients
+### 5.3 Relation entre Hₙ et cₙ — distinction essentielle
+
+Les coefficients Hₙ de l'équation mère et les coefficients cₙ de Mittag-Leffler sont **liés mais non identiques** :
+
+- **cₙ = 1/Γ(n/φ+1)** sont les coefficients de la série de Mittag-Leffler E_{1/φ}(z) = Σ zⁿ/Γ(n/φ+1). Ce sont les coefficients **temporels** — la réponse du système à une excitation.
+- **Hₙ** sont les coefficients de l'équation mère Ψ = Σ Hₙ·(Ψ₁)ⁿ. Ce sont les coefficients **modaux** — le poids de chaque mode (Ψ₁)ⁿ dans le système.
+
+**La relation :** quand Ψ₁ est une fonction scalaire (Ψ₁ = z), l'équation mère se réduit à la Mittag-Leffler et Hₙ = cₙ. Dans le cas général où Ψ₁ est une onde (fonction de l'espace et du temps), les Hₙ sont déterminés par la **dynamique du système** (le filtre A1) et contiennent les cₙ comme partie temporelle.
+
+**En résumé :** les cₙ sont dérivés et vérifiés (FFT 2,22×10⁻¹⁶). Les Hₙ sont déterminés par le filtre d'élimination (A1) appliqué à chaque niveau n. Le brevet revendique les deux : les cₙ comme coefficients temporels dérivés, et le mécanisme A1 comme filtre déterminant les Hₙ.
+
+### 5.4 Propriétés des coefficients temporels cₙ
 
 | Propriété | Valeur | Conséquence |
 |-----------|--------|-------------|
@@ -222,7 +232,7 @@ K(t) = B(α) · E_α(−λ · t^α)
 
 α = 1/φ ≈ 0,618034    (dérivé — Hurwitz, T1)
 λ = φ ≈ 1,618034       (dérivé — λ = α/(1−α), T2)
-B(α) = 1/Γ(α) ≈ 0,808  (normalisation ABC)
+B(α) = 1−α+α/Γ(α) ≈ 0,808  (normalisation ABC complète)
 ```
 
 ### 7.2 Ce noyau est la transformée de Laplace de l'équation mère
@@ -251,7 +261,7 @@ C'est la généralisation fractionnaire de la transformée de Laplace de l'expon
 |-----------|---------|----------------------|
 | Queue algébrique | K(t) ~ t^{−1/φ} | Oubli en loi de puissance — optimal |
 | Fractalité | K(λt) = λ^{−1/φ}·K(t) | Auto-similarité — même forme à toutes les échelles |
-| Dimension fractale | D_f = 1 + 1/φ = φ | Signature de l'élimination |
+| Exposant d'échelle | K(λt) = λ^{−1/φ}·K(t) — auto-similarité | Signature de l'élimination — l'identité 1+1/φ = φ est remarquable |
 | Non-markovianité | K(t+s) ≠ K(t)·K(s) | Le passé influence le présent |
 | Normalisation | ∫₀^∞ K(t)dt = 1 | Pas de divergence |
 
@@ -342,7 +352,7 @@ Comment représenter **tout** système physique, mathématique ou informationnel
 3. **Porte une tour générative** — chaque puissance (Ψ₁)ⁿ correspond à un niveau de structure (spin n)
 4. **Ait une mémoire non-locale** — le noyau K(t) gouverne la persistance et l'oubli
 5. **Soit stable par construction** — α = 1/φ est le seul survivant du filtre A4
-6. **Ait zéro paramètre ajusté** — tout est dérivé de φ
+6. **Ait zéro paramètre fondamental ajusté** — les constantes structurelles sont dérivées de φ
 
 ---
 
@@ -356,19 +366,21 @@ a) définir une **onde fondamentale** Ψ₁ = A₁·e^{i(ω₀t+φ₁)}, où A�
 
 b) construire la **base modale** comme les puissances de ladite onde fondamentale : {(Ψ₁)¹, (Ψ₁)², (Ψ₁)³, ...} ;
 
-c) déterminer les **coefficients** de la décomposition comme les coefficients de la fonction de Mittag-Leffler d'ordre α = 1/φ : Hₙ = cₙ = 1/Γ(n/φ + 1), où φ = (1+√5)/2 est le nombre d'or, ledit ordre α = 1/φ étant **dérivé** du théorème de Hurwitz comme unique valeur dans (0,1] satisfaisant les conditions de non-effondrement, non-répétition et persistance ;
+c) déterminer les **coefficients temporels** de la décomposition comme les coefficients de la fonction de Mittag-Leffler d'ordre α = 1/φ : cₙ = 1/Γ(n/φ + 1), où φ = (1+√5)/2 est le nombre d'or, ledit ordre α = 1/φ étant **dérivé** du théorème de Hurwitz comme unique valeur dans (0,1] satisfaisant les conditions de non-effondrement, non-répétition et persistance ; lesdits coefficients temporels cₙ étant la solution de l'équation fractionnaire D^{1/φ}[Ψ] = G[Ψ], et les coefficients modaux Hₙ de l'équation mère Ψ = Σ Hₙ·(Ψ₁)ⁿ étant déterminés par le **filtre d'élimination** (A1) appliqué à chaque niveau n, lesdits Hₙ contenant les cₙ comme partie temporelle ;
 
 d) représenter ledit système par la **superposition modale fractionnaire** :
 
 ```
-Ψ = Σ (n = 1 à ∞) cₙ · (Ψ₁)ⁿ    avec cₙ = 1/Γ(n/φ + 1)
+Ψ = Σ (n = 1 à ∞) Hₙ · (Ψ₁)ⁿ
 ```
+
+dont la partie temporelle est gouvernée par les coefficients cₙ = 1/Γ(n/φ + 1) ;
 
 ladite superposition étant la **généralisation fractionnaire de la série de Fourier** — la série de Fourier étant le cas particulier α = 1 (sans mémoire) de ladite équation, et ladite équation étant le cas α = 1/φ (avec mémoire dorée) ;
 
 e) associer à chaque puissance (Ψ₁)ⁿ un **niveau de structure physique** : n = 1 correspond au spin 1 (photon), n = 2 au spin 2 (graviton), n ≥ 3 aux spins supérieurs (tour de Vasiliev), ladite correspondance constituant la **tour générative** de la décomposition ;
 
-ledit procédé étant caractérisé par **zéro paramètre ajusté** — l'ordre α, le taux λ, la normalisation B(α) et les coefficients cₙ étant tous dérivés du nombre d'or φ et de ses propriétés mathématiques.
+ledit procédé étant caractérisé par **zéro paramètre fondamental ajusté** — l'ordre α, le taux λ, la normalisation B(α) = 1−α+α/Γ(α) et les coefficients temporels cₙ étant tous dérivés du nombre d'or φ et de ses propriétés mathématiques.
 
 ### Revendications dépendantes — La généralisation de Fourier
 
@@ -382,19 +394,19 @@ ledit procédé étant caractérisé par **zéro paramètre ajusté** — l'ordr
 
 **5.** Procédé selon la revendication 1, caractérisé en ce que le **noyau de mémoire** associé à ladite équation est K(t) = B(α)·E_α(−λ·t^α) avec α = 1/φ et λ = φ, ledit noyau gouvernant la persistance (queue algébrique t^{−1/φ}) et l'oubli (loi de puissance) de tout motif encodé dans ladite décomposition.
 
-**6.** Procédé selon la revendication 5, caractérisé en ce que ledit noyau satisfait la propriété de **fractalité** K(λt) = λ^{−1/φ}·K(t), la dimension fractale temporelle étant D_f = 1 + 1/φ = φ, et ledit noyau étant auto-similaire à toutes les échelles temporelles.
+**6.** Procédé selon la revendication 5, caractérisé en ce que ledit noyau satisfait la propriété de **fractalité** K(λt) = λ^{−1/φ}·K(t), l'exposant d'échelle étant 1/φ (avec l'identité remarquable 1+1/φ = φ), et ledit noyau étant auto-similaire à toutes les échelles temporelles.
 
 ### Revendications dépendantes — La tour générative
 
-**7.** Procédé selon la revendication 1, caractérisé en ce que le niveau n = 2 de ladite tour générative correspond à la **gravitation** : l'égalité D^{1/φ}[Ψ₁] = G[Ψ₁] entre la mémoire temporelle fractionnaire (α = 1/φ) et la courbure spatiale (contrainte de jauge) produit le graviton (spin 2), ladite égalité étant la seule théorie cohérente du spin-2 auto-interactif (Fierz-Pauli → Deser, 1970).
+**7.** Procédé selon la revendication 1, caractérisé en ce que le niveau n = 2 de ladite tour générative est **associé** à la gravitation : le couplage D^{1/φ}[Ψ₁] = G[Ψ₁] entre la mémoire temporelle fractionnaire (α = 1/φ) et la courbure spatiale (contrainte de jauge) est compatible avec le graviton (spin 2) au sens de Fierz-Pauli → Deser (1970), la route de la dérivation rigoureuse de la relativité générale depuis ce couplage étant un **programme de recherche tracé** (vérifications préliminaires : □h̄ = 1,2×10⁻¹⁵, G^lin = 6×10⁻¹⁶).
 
-**8.** Procédé selon la revendication 1, caractérisé en ce que les niveaux n ≥ 3 de ladite tour générative correspondent aux **champs de spin supérieur** (Vasiliev), les coefficients décroissants cₙ = 1/Γ(n/φ+1) produisant une coupure naturelle à n ≈ 10.
+**8.** Procédé selon la revendication 1, caractérisé en ce que les niveaux n ≥ 3 de ladite tour générative sont **compatibles** avec les champs de spin supérieur (Vasiliev), les coefficients décroissants cₙ = 1/Γ(n/φ+1) suggérant une coupure naturelle à n ≈ 10, ladite coupure étant une **estimation** cohérente avec la physique des hautes énergies.
 
 ### Revendications dépendantes — Les axiomes
 
 **9.** Procédé selon la revendication 1, caractérisé en ce que les coefficients Hₙ sont déterminés par le **principe d'élimination** (A1) : chaque coefficient est ce qui survit quand le niveau n est soumis au filtre de la dynamique, les coefficients non-survivants étant annulés par interférence destructive.
 
-**10.** Procédé selon la revendication 1, caractérisé en ce que l'ordre α = 1/φ est l'**unique survivant** du filtre de stabilité (A4) : non-effondrement (Ψ borné), non-répétition (aucune période), persistance (cohérence dans le temps), ledit ordre étant dérivé du théorème de Hurwitz établissant que φ atteint seul la borne d'approximation diophantienne 1/√5.
+**10.** Procédé selon la revendication 1, caractérisé en ce que l'ordre α = 1/φ est sélectionné par le filtre de stabilité (A4) : non-effondrement (Ψ borné), non-répétition (aucune période), persistance (cohérence dans le temps), ledit ordre étant **motivé** par le théorème de Hurwitz (1891) établissant que φ atteint seul la borne d'approximation diophantienne 1/√5 — le chaînon rigoureux « persistance ∝ 1/μ(α) » (où μ est la mesure d'irrationalité) étant une **conjecture soutenue par la simulation numérique**.
 
 ### Revendications de système et programme
 
@@ -414,7 +426,7 @@ L'invention concerne une équation fondamentale de décomposition modale — l'�
 
 **English :**
 
-The invention relates to a fundamental modal decomposition equation — the mother equation Ψ = Σ Hₙ·(Ψ₁)ⁿ — which generalizes the Fourier series to the fractional domain. The Fourier series is the special case α = 1 (memoryless); the mother equation is the case α = 1/φ (golden memory), where α is derived from Hurwitz's theorem as the unique stable order. Coefficients are derived (cₙ = 1/Γ(n/φ+1)), not postulated — verified by FFT at 2.22×10⁻¹⁶. Each power (Ψ₁)ⁿ corresponds to a level of physical structure: n = 1 → photon (spin 1), n = 2 → graviton (spin 2, Fierz-Pauli → Deser), n ≥ 3 → higher spins (Vasiliev). The associated memory kernel K(t) = B(1/φ)·E_{1/φ}(−φ·t^{1/φ}) is fractal (D_f = φ), self-similar, and governs persistence (t^{−0.618}) and forgetting of any pattern. Applications: universal system representation, memory-based signal processing, fractional modal decomposition, harmonic computing, hallucination-free AI, harmonic processor.
+The invention relates to a fundamental modal decomposition equation — the mother equation Ψ = Σ Hₙ·(Ψ₁)ⁿ — which generalizes the Fourier series to the fractional domain. The Fourier series is the special case α = 1 (memoryless); the mother equation is the case α = 1/φ (golden memory), where α is derived from Hurwitz's theorem as the unique stable order. Coefficients are derived (cₙ = 1/Γ(n/φ+1)), not postulated — verified by FFT at 2.22×10⁻¹⁶. Each power (Ψ₁)ⁿ corresponds to a level of physical structure: n = 1 → photon (spin 1), n = 2 → graviton (spin 2, Fierz-Pauli → Deser), n ≥ 3 → higher spins (Vasiliev). The associated memory kernel K(t) = B(1/φ)·E_{1/φ}(−φ·t^{1/φ}) is fractal self-similar (scaling exponent 1/φ), and governs persistence (t^{−0.618}) and forgetting of any pattern. Applications: universal system representation, memory-based signal processing, fractional modal decomposition, harmonic computing, hallucination-free AI, harmonic processor.
 
 ---
 

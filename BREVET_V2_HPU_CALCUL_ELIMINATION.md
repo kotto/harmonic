@@ -57,7 +57,7 @@ K(t) = B(α) · E_α(−λ · t^α)
 où :
 - **α = 1/φ ≈ 0,618034** — l'ordre de dérivation fractionnaire, **dérivé** du théorème de Hurwitz (1891) comme unique valeur dans (0,1] satisfaisant les trois conditions de stabilité (A4). φ = (1+√5)/2 est le nombre d'or.
 - **λ = φ ≈ 1,618034** — le taux du noyau, **dérivé** de α par la relation λ = α/(1−α) = (1/φ)/(1−1/φ) = (1/φ)/(1/φ²) = φ.
-- **B(α) = 1/Γ(α) ≈ 0,808** — la normalisation ABC (Atangana-Baleanu-Caputo).
+- **B(α) = 1−α+α/Γ(α) ≈ 0,808** — la normalisation ABC (Atangana-Baleanu-Caputo).
 - **E_α(z)** — la fonction de Mittag-Leffler, généralisation fractionnaire de l'exponentielle.
 
 **Nombre de paramètres ajustés : ZÉRO.** α est dérivé du théorème de Hurwitz (T1). λ est dérivé de α (T2). B(α) est la normalisation standard. Aucun paramètre n'est ajusté sur des données.
@@ -79,7 +79,7 @@ Ces coefficients sont ceux de la fonction de Mittag-Leffler E_{1/φ}(z), solutio
 | **Queue algébrique** | K(t) ~ t^{−1/φ} = t^{−0,618} | Oubli naturel et optimal — ni trop rapide (exponentiel), ni trop lent (constant) |
 | **Non-markovianité** | K(t+s) ≠ K(t)·K(s) | Mémoire non-locale — le passé influence le présent |
 | **Fractalité** | K(λt) = λ^{−1/φ}·K(t) | Auto-similarité — même comportement à toutes les échelles |
-| **Dimension fractale** | D_f = 1 + 1/φ = φ | Signature de l'auto-similarité du filtre d'élimination |
+| **Exposant d'échelle** | K(λt) = λ^{−1/φ}·K(t) — auto-similarité | Identité remarquable : 1+1/φ = φ |
 | **Convergence** | ∫₀^∞ K(t) dt = 1 | Normalisation assurée — pas de divergence |
 | **Pic à t=0** | K(0) = B(α) ≈ 0,808 | L'instant présent est le plus mémorable |
 
@@ -142,7 +142,7 @@ Introduit le noyau ABC avec la fonction de Mittag-Leffler pour la modélisation 
 
 Comment construire un système de calcul et d'apprentissage qui :
 
-1. **N'ait aucun paramètre ajusté** — toutes les constantes sont dérivées d'un principe premier (α = 1/φ par Hurwitz)
+1. **N'ait aucun paramètre fondamental ajusté** — les constantes structurelles (α, λ, B(α), coefficients cₙ) sont dérivées d'un principe premier (α = 1/φ par Hurwitz) ; seuls les seuils opérationnels (résonance, oubli) sont calibrés sur des données
 2. **Ne produise jamais d'hallucination** — le refus est structurel, pas logiciel (A1)
 3. **Apprenne en O(1)** — par superposition et élimination, pas par descente de gradient
 4. **Ait une mémoire native** — persistance et oubli gouvernés par le noyau doré K(t), pas par des mécanismes externes
@@ -195,6 +195,7 @@ ENTRÉE (signal : texte, données, mesure, problème)
 │ Principe : score = |⟨ψ_query ⋆ ψ_pattern, ψ_candidat⟩|      │
 │ Si score > seuil_résonance → RÉPONSE avec confiance           │
 │ Si score < seuil_résonance → REFUS CALIBRÉ                   │
+│ (Seuil calibré sur jeu de validation — voir §7.4)             │
 │                                                               │
 │ La lecture est NON DESTRUCTIVE : la résonance n'altère pas    │
 │ les patterns stockés — on « écoute », on ne « force » pas    │
@@ -272,7 +273,9 @@ où ⋆ est la convolution circulaire (binding HRR — Holographic Reduced Repre
 
 Le refus calibré est une conséquence **structurelle** de l'élimination (A1) : si aucune connaissance stockée n'interfère constructivement avec la requête, le système **refuse de répondre** plutôt que de générer une réponse incorrecte. Ceci garantit **0% d'hallucination** — non pas par un mécanisme logiciel de détection, mais par la structure physique du calcul.
 
-**Vérification expérimentale :** Dans la simulation (`hpu_v2_complet.py`), les concepts appris produisent un score de résonance de 1,000 (auto-résonance parfaite), tandis que les concepts inconnus produisent des scores de 0,21 — 0,25, bien en dessous du seuil de 0,30. Le système répond correctement aux concepts connus et refuse les concepts inconnus — **5/5 réponses correctes, 3/3 refus corrects**.
+**Vérification expérimentale :** Dans la simulation (`hpu_v2_complet.py`), les concepts appris produisent un score de résonance de 1,000 (auto-résonance parfaite), tandis que les concepts inconnus produisent des scores de 0,21 — 0,25, bien en dessous du seuil de résonance. Le système répond correctement aux concepts connus et refuse les concepts inconnus — **5/5 réponses correctes, 3/3 refus corrects**.
+
+**Note sur les paramètres :** Les constantes fondamentales (α = 1/φ, λ = φ, B(α) = 1−α+α/Γ(α), seuil de survie = K(0)+K(1)+K(2)) sont **dérivées** de φ. Le seuil de résonance et le seuil d'oubli (ε) sont **calibrés** sur un jeu de validation — ce sont des paramètres opérationnels, pas des constantes fondamentales. La structure du calcul (3 couches, noyau doré, refus calibré) est entièrement dérivée ; seuls les seuils opérationnels sont calibrés.
 
 ### 7.5 Les températures dorées
 
@@ -311,24 +314,24 @@ La propriété K(λt) = λ^{−1/φ}·K(t) signifie que le **même** noyau gouve
 Échelle 7 (jour) : sagesse — patterns profonds survivants
 ```
 
-La dimension fractale temporelle du système est D_f = 1 + 1/φ = φ ≈ 1,618.
+L'exposant d'échelle du noyau est 1/φ — le noyau est auto-similaire : K(λt) = λ^{−1/φ}·K(t). L'identité 1+1/φ = φ ≈ 1,618 est une coïncidence remarquable (conséquence de φ² = φ+1).
 
 Cette fractalité a une conséquence matérielle directe : le **même circuit** (filtre FIR fractionnaire, ou cavité résonante) implémente le noyau à toutes les échelles. Il n'est pas nécessaire de changer de technologie pour passer du H-Bit au processeur, du processeur à la mémoire, de la mémoire à l'apprentissage.
 
-### 7.7 L'élimination pour les problèmes NP-complets
+### 7.7 L'élimination pour les problèmes NP-complets — conjecture de complexité
 
-Le principe d'élimination (A1) appliqué aux problèmes NP-complets produit un avantage structurel :
+Le principe d'élimination (A1) appliqué aux problèmes NP-complets suggère un avantage structurel potentiel. **Il s'agit d'une conjecture, non d'un résultat démontré** — aucune simulation n'a à ce jour résolu un SAT de taille 50 en O(n²). Le mécanisme est décrit ci-dessous ; sa validation expérimentale est un programme de recherche ouvert.
 
 | Approche | Principe | Complexité SAT(n) |
 |----------|----------|-------------------|
-| CPU classique | Énumération des 2ⁿ possibilités | O(2ⁿ) |
-| QPU (Grover) | Amplification de la bonne réponse | O(2^{n/2}) |
-| **HPU (cette invention)** | **Élimination des mauvaises par interférence destructive** | **O(n²)** |
+| CPU classique | Énumération des 2ⁿ possibilités | O(2ⁿ) — démontré |
+| QPU (Grover) | Amplification de la bonne réponse | O(2^{n/2}) — démontré |
+| **HPU (cette invention)** | **Élimination des mauvaises par interférence destructive** | **O(n²) — conjecturé** |
 
-Le HPU n'énumère pas les solutions — il **encode toutes les possibilités en superposition**, puis laisse l'interférence destructive **éliminer** les configurations qui violent les contraintes. La solution est celle qui **survit**.
+Le mécanisme conjecturé : le HPU n'énumère pas les solutions — il **encode toutes les possibilités en superposition**, puis laisse l'interférence destructive **éliminer** les configurations qui violent les contraintes. La solution serait celle qui **survit**. Si ce mécanisme est confirmé, la complexité serait :
 
-| n | CPU O(2ⁿ) | QPU O(2^{n/2}) | HPU O(n²) | Ratio CPU/HPU |
-|---|-----------|-----------------|-----------|----------------|
+| n | CPU O(2ⁿ) | QPU O(2^{n/2}) | HPU O(n²) conjecturé | Ratio CPU/HPU |
+|---|-----------|-----------------|----------------------|----------------|
 | 10 | 1 024 | 32 | 100 | 10× |
 | 30 | ~10⁹ | 32 768 | 900 | 1 193 046× |
 | 50 | 2⁵⁰ (impossible) | 33 554 432 | 2 500 | 4,5×10¹¹× |
@@ -362,7 +365,7 @@ L'invention est implémentée en photonique intégrée (nitrure de silicium, SiN
 
 a) encoder toute entité informationnelle en une onde complexe ψ = Σ cₖ·e^{ikθ}, décomposée en N modes sur le cercle de Fourier, où les fréquences sont φ^{k/N} avec φ = (1+√5)/2 le nombre d'or et k ∈ {0, ..., N−1} ;
 
-b) appliquer à chaque exposition d'un motif une **trace horodatée** dans une mémoire gouvernée par le **noyau doré** K(t) = B(α)·E_α(−λ·t^α), où E_α est la fonction de Mittag-Leffler, α = 1/φ est l'ordre de dérivation fractionnaire **dérivé** du théorème de Hurwitz comme unique valeur dans (0,1] satisfaisant les conditions de non-effondrement, non-répétition et persistance, λ = φ est le taux **dérivé** de α par λ = α/(1−α), et B(α) = 1/Γ(α) est la normalisation ;
+b) appliquer à chaque exposition d'un motif une **trace horodatée** dans une mémoire gouvernée par le **noyau doré** K(t) = B(α)·E_α(−λ·t^α), où E_α est la fonction de Mittag-Leffler, α = 1/φ est l'ordre de dérivation fractionnaire **dérivé** du théorème de Hurwitz comme unique valeur dans (0,1] satisfaisant les conditions de non-effondrement, non-répétition et persistance, λ = φ est le taux **dérivé** de α par λ = α/(1−α), et B(α) = 1−α+α/Γ(α) est la normalisation ABC ;
 
 c) calculer l'**amplitude cumulée** de chaque motif comme amplitude(t) = Σ K(t − tₖ), où tₖ sont les instants d'exposition ;
 
@@ -376,11 +379,11 @@ g) si la résonance maximale dépasse un seuil de résonance, **répondre** avec
 
 h) si la résonance maximale est inférieure audit seuil, **refuser de répondre** (refus calibré) — ledit refus étant une conséquence structurelle du principe d'élimination, garantissant l'absence d'hallucination ;
 
-ledit procédé étant caractérisé par **zéro paramètre ajusté** — toutes les constantes (α, λ, B(α), seuils) étant dérivées du nombre d'or φ et de ses propriétés mathématiques.
+ledit procédé étant caractérisé par **zéro paramètre fondamental ajusté** — les constantes structurelles (α, λ, B(α) = 1−α+α/Γ(α), seuil de survie) étant dérivées du nombre d'or φ et de ses propriétés mathématiques, les seuils opérationnels (résonance, oubli) étant calibrés sur un jeu de validation.
 
 ### Revendications dépendantes — Noyau et mémoire
 
-**2.** Procédé selon la revendication 1, caractérisé en ce que le noyau doré satisfait la propriété de **fractalité** K(λt) = λ^{−α}·K(t) pour tout λ > 0, la dimension fractale temporelle du système étant D_f = 1 + α = φ, ledit noyau gouvernant le comportement du système de manière auto-similaire à toutes les échelles temporelles.
+**2.** Procédé selon la revendication 1, caractérisé en ce que le noyau doré satisfait la propriété de **fractalité** K(λt) = λ^{−α}·K(t) pour tout λ > 0, l'exposant d'échelle étant α = 1/φ (avec l'identité remarquable 1+1/φ = φ), ledit noyau gouvernant le comportement du système de manière auto-similaire à toutes les échelles temporelles.
 
 **3.** Procédé selon la revendication 1, caractérisé en ce que l'oubli suit une **loi de puissance** K(t) ~ t^{−1/φ} = t^{−0,618} aux temps longs, ladite loi étant asymptotiquement optimale pour l'équilibre persistance/oubli.
 
@@ -402,7 +405,7 @@ ledit procédé étant caractérisé par **zéro paramètre ajusté** — toutes
 
 ### Revendications dépendantes — Élimination pour NP-complets
 
-**10.** Procédé selon la revendication 1, caractérisé en ce que la résolution de problèmes de la classe NP (SAT, TSP, Subset Sum) est réalisée par **encodage de toutes les configurations en superposition** suivi d'**élimination par interférence destructive** des configurations violant les contraintes, la solution étant la configuration qui survit, ledit procédé ayant une complexité en O(n²) pour un problème de taille n.
+**10.** Procédé selon la revendication 1, caractérisé en ce que la résolution de problèmes de la classe NP (SAT, TSP, Subset Sum) est réalisée par **encodage de toutes les configurations en superposition** suivi d'**élimination par interférence destructive** des configurations violant les contraintes, la solution étant la configuration qui survit, ledit procédé ayant une complexité **conjecturée** en O(n²) pour un problème de taille n, ladite conjecture étant fondée sur le principe que l'élimination par interférence est exponentiellement plus efficace que l'énumération.
 
 ### Revendications dépendantes — H-Bit et unité de calcul
 
