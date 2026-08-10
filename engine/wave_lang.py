@@ -74,8 +74,9 @@ _FNV_OFFSET = 0xCBF29CE484222325
 _FNV_PRIME = 0x100000001B3
 
 # Constante ABC
-_B_1_PHI = 0.8506508083
-"""B(α) — normalisation du noyau ABC discret."""
+_B_1_PHI = 1.0 - ALPHA + ALPHA / math.gamma(ALPHA)
+"""B(α) = 1−α+α/Γ(α) — normalisation ABC (V2, corrigée le 09/08/2026).
+Ancienne valeur 0.8506508083 = 1/Γ(α) — FAUSSE (écart 5,2 %)."""
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -894,10 +895,14 @@ def abc_kernel(t: float) -> float:
                 break
         return _B_1_PHI * ml_sum
     else:
-        # Approximation asymptotique : K(t) ~ 1/t^(α+1)
+        # Approximation asymptotique (corrigée 09/08/2026) :
+        # E_α(−λt^α) ~ 1/(λ·t^α·Γ(1−α)) pour t grand → K(t) ~ t^{−α} = t^{−0,618}
+        # (l'ancienne version t^{−(α+1)} = t^{−1,618} oubliait 100× trop vite
+        #  et ne raccordait pas la série à t=2 — audit THU V2)
         gamma_1_minus_alpha = math.gamma(1.0 - ALPHA)
-        C_asymp = 1.0 / gamma_1_minus_alpha
-        return _B_1_PHI * C_asymp / (t ** (ALPHA + 1.0))
+        lam = ALPHA / (1.0 - ALPHA)          # λ = φ
+        C_asymp = 1.0 / (lam * gamma_1_minus_alpha)
+        return _B_1_PHI * C_asymp / (t ** ALPHA)
 
 
 def abc_forget(memory: np.ndarray, t: float, learning_rate: float = 0.1) -> np.ndarray:
