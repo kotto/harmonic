@@ -48,6 +48,8 @@
 
 | `LETTRE_POSTHUME_A_EINSTEIN.md` | La lettre posthume de remerciements à Einstein pour avoir continué malgré les moqueries — le déterminisme (A1), la MQ incomplète (cas α=1), les deux étages de la tour (photon 1905, graviton 1915), Λ réhabilitée à ×1,4 (page site : `theorie-harmonique/lettre-a-einstein.html`) |
 
+| `IMPLICATIONS_PHILOSOPHIQUES.md` | Les implications philosophiques — déterminisme sans fatalisme, temps à mémoire, fin de l'anthropique, observateur déchu, épistémologie darwinienne, éthique du refus calibré, sens gagné par persistance, limites dites (page site : `theorie-harmonique/implications-philosophiques.html`) |
+
 ### 📢 Communication
 
 | Fichier | Description |
