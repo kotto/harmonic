@@ -54,6 +54,12 @@
 
 | `PARADOXES_QUANTIQUES_HARMONIQUES.md` | Les 9 paradoxes quantiques sous l'angle harmonique — 3 clés (onde réelle A2, mesure = résonance A1, temps à mémoire A3) : 2 vérifiés, 5 cadres, 1 testable (Zeno t^{0,618}), 1 frontière (trous noirs) (page site : `theorie-harmonique/paradoxes-quantiques.html`) |
 
+### 🙏 Les précurseurs
+
+| Fichier | Description |
+|---|---|
+| `OYIBO_PRECURSEUR.md` | La reconnaissance du GAGUT (Gabriel Oyibo, 1990) — antériorité de l'exposant 1/φ comme invariant d'échelle, corrélation Oyibo-ABC vérifiée, ce que la THU ajoute (mécanisme, dérivation, vérification), la frontière honnête |
+
 ### 📢 Communication
 
 | Fichier | Description |
