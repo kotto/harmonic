@@ -28,6 +28,12 @@
 |---|---|
 | `PHYSIQUE_QUANTIQUE_HARMONIQUE.md` | La QP générée par le formalisme harmonique — espace des états, [x̂,p̂]=iℏ, Schrödinger, Heisenberg, Fock, Dirac : 8 vérifications machine ; Zeno fractionnaire, Λ, T* comme prédictions (script : `engine/generation_physique_quantique.py` — page site : `theorie-harmonique/physique-quantique-harmonique.html`) |
 
+### 🌌 L'unification
+
+| Fichier | Description |
+|---|---|
+| `UNIFICATION_QUANTIQUE_RELATIVISTE.md` | QM = cas α=1 de la tour, RG = secteur n=2 (Deser), jonction = mémoire d'or α=1/φ : Λ ×1,4 (vs 10¹²⁰), Zeno t^{0,618}, queue GW mémoire E_{1/φ} — 3 maillons vérifiés, frontières R3 déclarées (script : `engine/unification_qm_rg.py` — page site : `theorie-harmonique/unification-qm-rg.html`) |
+
 ### 🌐 Transversalité
 
 | Fichier | Description |
