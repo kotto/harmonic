@@ -35,6 +35,7 @@
 | `COMMUNIQUE_PRESSE_THU_V2.md` | Communiqué de presse grand public — diffusion libre |
 | `FAITS_PROUVES_POUR_TOUS.md` | Les faits prouvés, expliqués simplement — chaîne dérivationnelle, tableau 118/118, Hurwitz, réfutations (page site associée : `theorie-harmonique/faits-prouves.html`) |
 | `CHAINE_DERIVATIONNELLE_POUR_TOUS.md` | Vulgarisation des coefficients 1,1165·0,8896·0,5696… et de la précision machine 2,22×10⁻¹⁶ — la factorielle étendue (Γ), deux chemins de vérification indépendants, honnêteté sur les limites (page site associée : `theorie-harmonique/chaine-derivationnelle.html`) |
+| `TABLEAU_PERIODIQUE_POUR_TOUS.md` | Vulgarisation du processus de remplissage du tableau périodique — l'immeuble à électrons, capacités s=2/p=6/d=10/f=14, file de Madelung, périodes 2-8-8-18-18-32-32, gaz nobles = étages pleins, les 28 écarts expliqués (convention lanthanides/actinides), bloc g prédit Z=121-138 (page site associée : `theorie-harmonique/tableau-periodique-pour-tous.html`) |
 
 ---
 
