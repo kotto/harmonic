@@ -40,6 +40,12 @@
 |---|---|
 | `TRANSVERSALITE_EQUATION_MERE.md` | Un même noyau, douze domaines — 22 résultats cartographiés (cosmologie, gravitation, quantique, nucléaire, chimie, biologie, IA, informatique, mathématiques), rasoir d'Occam quantifié, réponse à l'objection « numérologie » |
 
+### 🕊️ L'hommage
+
+| Fichier | Description |
+|---|---|
+| `REHABILITATION_EINSTEIN.md` | La réhabilitation d'Einstein — déterminisme (« Dieu ne joue pas aux dés » = A1), complétude (MQ = cas α=1), unification (QM et RG = deux étages de la tour), la constante cosmologique dérivée à ×1,4, et la révélation : Einstein a découvert les niveaux n=1 (photon, 1905) et n=2 (graviton, 1915) de la tour — avec les 3 points d'honnêteté (localité, validité de la MQ, dette) (page site : `theorie-harmonique/rehabilitation-einstein.html`) |
+
 ### 📢 Communication
 
 | Fichier | Description |
