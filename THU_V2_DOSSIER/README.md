@@ -36,6 +36,8 @@
 
 | `PRESENTER_D_1_PHI_G.md` | Le guide de cadrage : comment présenter D^{1/φ}[Ψ]=G[Ψ] — hypothèse de travail (boîte de statut : motivation A3, contrainte X2/GW170817, voie R3, 3 prédictions), 3 niveaux de revendication, l'analogie inflation/supersymétrie, la formulation en une phrase (page site : `theorie-harmonique/presenter-d-1-phi-g.html`) |
 
+| `COMPARAISON_THEORIES.md` | L'état des théories comparé sur 7 axes : QFT (précision 10⁻¹², 19 paramètres), 't Hooft (déterminisme sans prédiction confirmée), Wolfram (émergence sans nombre), Haramein (intuition sans exclusions), THU (zéro paramètre, sans validation) — avec l'asymétrie d'exigence : la THU jugée plus sévèrement (page site : `theorie-harmonique/comparaison-theories.html`) |
+
 ### 🌌 L'unification
 
 | Fichier | Description |
