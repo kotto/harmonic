@@ -168,7 +168,8 @@ RELATIONS_NUMERIQUES = {
 RELATIONS_LOCALISATION = {
     "est situe en", "est situe a", "est situe sur le continent",
     "partage une frontiere avec", "a son siege a", "est originaire de",
-    "est localise dans",
+    "est localise dans", "fait partie de", "appartient a",
+    "se trouve en", "se situe en", "est situe dans",
 }
 
 PAYS_MONDE = {
@@ -188,6 +189,49 @@ PAYS_MONDE = {
     "ghana", "angola", "mozambique", "zimbabwe", "zambie", "botswana",
     "namibie", "madagascar", "oceanie", "europe", "asie", "afrique",
     "amerique", "antarctique",
+    # Complément (mesure 10/08/2026 — « guinee equatoriale » manquait :
+    # « theoreme de castigliano est mathématicien guinee equatoriale » FAUX)
+    "guinee", "guinee equatoriale", "guinee-bissau", "togo", "benin",
+    "burkina faso", "rwanda", "burundi", "ouganda", "tanzanie", "malawi",
+    "lesotho", "eswatini", "mauritanie", "eritree", "djibouti", "somalie",
+    "liberia", "sierra leone", "gambie", "guinee-bissao", "cap-vert",
+    "comores", "maurice", "seychelles", "sao tome et principe",
+    "yemen", "oman", "emirats arabes unis", "arabie saoudite", "koweit",
+    "qatar", "bahrein", "jordanie", "liban", "israel", "georgie", "armenie",
+    "azerbaidjan", "kazakhstan", "ouzbekistan", "turkmenistan",
+    "kirghizistan", "tadjikistan", "mongolie", "taiwan", "thailande",
+    "vietnam", "laos", "cambodge", "malaisie", "singapour", "indonesie",
+    "philippines", "sri lanka", "maldives", "fidji", "vanuatu", "tonga",
+    "micronisie", "marshall", "belize", "guatemala", "honduras",
+    "salvador", "nicaragua", "costa rica", "panama", "haiti",
+    "republique dominicaine", "cuba", "jamaique", "trinite et tobago",
+    "guyana", "suriname", "paraguay", "bolivie", "equateur", "venezuela",
+    "albanie", "serbie", "croatie", "bosnie-herzegovine", "macedoine",
+    "montenegro", "kosovo", "slovenie", "lituanie", "lettonie", "estonie",
+    "moldavie", "bielorussie", "islande", "malte", "chypre", "monaco",
+    "andorre", "saint-marin", "liechtenstein", "vatican",
+}
+
+# Mots anglais pour la détection de contamination bilingue (relations et
+# objets anglais dans les faits français — KB source bilingue, mesuré
+# 10/08/2026 : « cte | allows | modular query construction with with clause »).
+MOTS_ANGLAIS = {
+    "the", "of", "and", "for", "is", "are", "with", "that", "this", "from",
+    "was", "were", "has", "have", "its", "not", "but", "than", "into",
+    "over", "under", "between", "during", "after", "before", "through",
+    "against", "without", "within", "allows", "handles", "includes",
+    "produces", "consists", "refers", "provides", "uses", "based", "known",
+    "called", "considered", "constitutes", "states", "follows", "describes",
+    "occurs", "contains", "supports", "allows", "enables", "balances",
+    "functions", "connects", "represents", "operates", "runs", "stores",
+    "non", "public", "institution", "classified", "wind", "speed",
+    "exceed", "can", "modular", "query", "construction", "within",
+    "excel", "triggers", "helps", "builds", "loads", "deploys", "manages",
+    "monitors", "streams", "optimizes", "optimize", "processing",
+    "language", "tasks", "natural", "automates", "simplifies", "schedules",
+    "coordinates", "facilitates", "enforces", "validates", "compresses",
+    "indexes", "caches", "routes", "queues", "parses", "compiles",
+    "interprets", "executes", "evaluates", "returns", "renders", "use", "uses", "example", "regex", "is", "of", "at", "by", "in", "on", "to", "as", "be", "it", "if", "an", "or", "so", "up", "no", "do", "we", "he", "she", "they", "my", "your", "his", "her", "our", "their"
 }
 
 # =============================================================================
@@ -259,6 +303,24 @@ def assainir(faits, cfg):
         if r2 in parasites:
             écartés.append({"fait": (s, r, o), "secteur": sec,
                             "raison": f"relation hors-thème « {r} » (contamination inter-domaines)"})
+            continue
+        # Relation ANGLAISE : contamination bilingue du KB source
+        # (« cte | allows | modular query construction with with clause »).
+        # Mesure 10/08/2026 : ≥ 1 mot anglais dans la relation → écartée
+        # (les relations françaises n'en contiennent pas ; « handles »,
+        # « enables », « is a » sont des relations anglaises).
+        mots_rel = re.findall(r"[a-zà-ÿ]{2,}", r2)
+        if sum(1 for w in mots_rel if w in MOTS_ANGLAIS) >= 1:
+            écartés.append({"fait": (s, r, o), "secteur": sec,
+                            "raison": f"relation anglaise « {r} » (contamination bilingue du KB)"})
+            continue
+        # Objet ANGLAIS sur relation française (contamination bilingue)
+        mots_obj = re.findall(r"[a-zà-ÿ]{2,}", o2)
+        if (sum(1 for w in mots_obj if w in MOTS_ANGLAIS) >= 3
+                and r2 not in RELATIONS_LOCALISATION):
+            écartés.append({"fait": (s, r, o), "secteur": sec,
+                            "raison": f"objet anglais « {str(o)[:40]}... » "
+                                      f"(contamination bilingue du KB)"})
             continue
         if r2 in controles and o2 not in controles[r2]:
             écartés.append({"fait": (s, r, o), "secteur": sec,
