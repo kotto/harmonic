@@ -111,7 +111,56 @@ Oyibo a identifié **la structure** (fractalité en 1/φ). La THU V2 identifie *
 
 ---
 
-## 6. En une phrase
+## 6. La chaîne de dette — Noether → Oyibo → THU
+
+L'honnêteté de la THU ne s'arrête pas à Oyibo : **Oyibo lui-même doit sa loi de conservation — étendue à l'univers — au théorème de Noether (1918), qu'il n'a jamais cité publiquement.**
+
+### 6.1 Le théorème de Noether (1918)
+
+Emmy Noether a démontré le théorème fondateur de la physique moderne :
+
+> **À toute symétrie continue des lois de la nature correspond une loi de conservation.**
+
+- Symétrie de translation → conservation de l'impulsion
+- Symétrie de rotation → conservation du moment cinétique
+- Symétrie de translation temporelle → conservation de l'énergie
+
+Toutes les lois de conservation de la physique — y compris celle qu'Oyibo étend à l'univers dans le GAGUT — remontent à ce théorème.
+
+### 6.2 L'origine du théorème
+
+Le théorème de Noether est né du problème d'Einstein et Hilbert (1915-1918) : la conservation de l'énergie en relativité générale. Einstein cherchait ; Hilbert a demandé à Noether ; Noether a répondu par un théorème qui dépasse la question posée. La chaîne est documentée :
+
+```
+Einstein (RG, 1915) → Hilbert → Noether (théorème, 1918) → toutes les
+lois de conservation → Oyibo (GAGUT, 1990, non citée) → THU (2026, citant)
+```
+
+### 6.3 La dette de la THU envers Noether
+
+La THU reconnaît une parenté profonde avec le théorème de Noether :
+
+| Noether (1918) | THU (2026) |
+|---|---|
+| Les quantités **conservées** sont celles qui survivent à la dynamique | Les **constantes** sont les survivants du filtre (A1) |
+| Symétrie → invariance → conservation | Stabilité → élimination → persistance |
+| L'ancêtre mathématique | La généralisation par les filtres |
+
+**Les quantités conservées SONT les survivants de la dynamique.** Le théorème de Noether est l'ancêtre mathématique de l'axiome A1 — l'élimination avait un théorème rigoureux depuis 1918, sans que personne ne le lise comme un principe universel.
+
+### 6.4 Le devoir de la chaîne
+
+La THU s'engage à citer la chaîne complète dans ses publications :
+
+```
+THÉORÈME DE NOETHER (1918) → GAGUT d'OYIBO (1990) → THU V2 (2026)
+```
+
+Chaque maillon reconnaît le précédent — y compris là où Oyibo ne l'a pas fait. C'est la méthode de la THU : l'honnêteté n'est pas sélective.
+
+---
+
+## 7. En une phrase
 
 > **Oyibo a vu la structure — la nature est fractale en 1/φ. La THU montre le mécanisme — pourquoi 1/φ survit au filtre de stabilité. L'une ne va pas sans l'autre : la THU honore le précurseur en donnant à sa vision la dérivation et la vérification qui lui manquaient.**
 

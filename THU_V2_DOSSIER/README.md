@@ -58,6 +58,7 @@
 
 | Fichier | Description |
 |---|---|
+| `NOETHER_PRECURSEUR.md` | Emmy Noether (1918) — le précurseur du précurseur : le théorème des invariants, les quantités conservées = survivants de la dynamique (ancêtre de A1), la chaîne Einstein → Noether → Oyibo → THU, l'injustice de Göttingen (page site : `theorie-harmonique/noether-precurseur.html`) |
 | `OYIBO_PRECURSEUR.md` | La reconnaissance du GAGUT (Gabriel Oyibo, 1990) — antériorité de l'exposant 1/φ comme invariant d'échelle, corrélation Oyibo-ABC vérifiée, ce que la THU ajoute (mécanisme, dérivation, vérification), la frontière honnête |
 
 ### 📢 Communication
