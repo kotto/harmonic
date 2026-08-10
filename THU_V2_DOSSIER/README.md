@@ -28,6 +28,8 @@
 |---|---|
 | `PHYSIQUE_QUANTIQUE_HARMONIQUE.md` | La QP générée par le formalisme harmonique — espace des états, [x̂,p̂]=iℏ, Schrödinger, Heisenberg, Fock, Dirac : 8 vérifications machine ; Zeno fractionnaire, Λ, T* comme prédictions (script : `engine/generation_physique_quantique.py` — page site : `theorie-harmonique/physique-quantique-harmonique.html`) |
 
+| `ESPACE_TEMPS_N2_EINSTEIN.md` | L'émergence de l'espace-temps à n=2 rapprochée d'Einstein simplement — les 3 ponts (dynamique→émergent, géométrie→auto-interaction Deser, géodésiques→survivants), l'immeuble à 3 étages, l'analogie de l'eau, vérifié vs tracé (R3) (page site : `theorie-harmonique/espace-temps-n2.html`) |
+
 ### 🌌 L'unification
 
 | Fichier | Description |
