@@ -151,8 +151,18 @@ def _norm_rel(r):
 
 RELATIONS_NUMERIQUES = {
     "a une population de", "a une superficie de", "a pour coordonnées",
-    "a pour nombre de membres", "a été fondé en", "a été découvert en",
-    "date de",
+    "a pour nombre de membres",
+    # Relations TEMPORELLES : les années (« est mort en 1579 ») sont des
+    # faits légitimes — sans elles, 52 643 dates du secteur HISTOIRE
+    # étaient écartées à tort (mesure 10/08/2026)
+    "a été fondé en", "a été découvert en", "a été découverte en",
+    "a été construit en", "a été construite en", "a été signé en",
+    "a été créé en", "a été créée en", "a été inauguré en",
+    "a pris fin en", "a eu lieu en", "a commencé en",
+    "a déclaré l'indépendance en", "a régné de", "a été élu en",
+    "a été couronné en", "a été publié en", "a été écrit en",
+    "a été composé en", "a été peint en", "a été inventé en",
+    "est mort en", "est née en", "est né en", "date de",
 }
 
 RELATIONS_LOCALISATION = {
@@ -216,6 +226,7 @@ def assainir(faits, cfg):
                  for a in cfg.get("artefacts", [])}
     multi = {_norm_rel(m) for m in cfg.get("relations_multi", [])}
     parasites = {_norm_rel(p) for p in cfg.get("relations_parasites", [])}
+    numeriques = {_norm_rel(r) for r in RELATIONS_NUMERIQUES}
     controles = {_norm_rel(r): {_norm_entite(o) for o in objets}
                  for r, objets in cfg.get("objets_autorises", {}).items()}
     objets_parasites = {_norm_entite(o)
@@ -234,8 +245,13 @@ def assainir(faits, cfg):
             écartés.append({"fait": (s, r, o), "secteur": sec,
                             "raison": artefacts[cle]})
             continue
-        if re.search(r"Point\(|ville\d|^-\d{2}-\d{2}T", str(o)) or \
-           (r2 not in RELATIONS_NUMERIQUES
+        # Artefact générique (parsing cassé) — y compris les entités
+        # suffixées par un chiffre collé (« Los Angeles6 », « Paris05 »,
+        # « Suisse18 ») : ≥ 3 lettres + chiffre en fin de token, pour ne
+        # pas écarter les unités (« km2 ») ni les formules (« CO2 »).
+        if re.search(r"Point\(|ville\d|^-\d{2}-\d{2}T"
+                     r"|[A-Za-zÀ-ÿœ]{3,}[0-9]+$", str(o)) or \
+           (r2 not in numeriques
                 and re.fullmatch(r"\d+([.,]\d+)?", str(o))):
             écartés.append({"fait": (s, r, o), "secteur": sec,
                             "raison": "artefact de parsing (Point( / entité chiffrée / date tronquée)"})
@@ -366,23 +382,28 @@ def rappel_secteur(faits, questions, mode="exact"):
 
 
 HORS_SUJET_DEFAUT = [
-    "qui a marque le but de la finale du championnat",
+    "comment fonctionne un moteur diesel",
     "quelle est la recette du couscous traditionnel",
     "qui a ecrit les miserables",
-    "quel est le meilleur buteur de l histoire du football",
+    "quelle est la densite du mercure liquide",
     "combien de buts a marque lionel messi cette saison",
     "quel est le menu du restaurant ce soir",
-    "quelle est la planete la plus proche du soleil",
+    "qui a remporte le tournoi de wimbledon en 2023",
     "comment preparer une pate a crepe",
     "quel est le dernier album de cet artiste",
-    "quelle est la formule chimique de l eau",
+    "combien de buts a encaisse le gardien cette saison",
 ]
 
 
 def benchmarker(faits, cfg, seed=2026, n_questions=20):
     """Rappel@5 par secteur (exact pour fonctionnel, vrai pour relationnel)
-    + gate 0 FAUX (couverture ≥ 2 ancres réelles)."""
+    + gate 0 FAUX : couverture ≥ 2 ancres réelles ET confirmation de
+    résonance ≥ 1.0 (mesure 10/08/2026 — la couverture seule échoue sur
+    les domaines étendus : le vocabulaire du KB couvre presque tout ;
+    la confirmation sépare les questions dans-corpus (≥ 1.0) des vraies
+    hors-sujet (~0-0,6 en moyenne))."""
     import random
+    from resonance_semantique import scores_resonance
     multi = {_norm_rel(m) for m in cfg.get("relations_multi", [])}
     par_relation = {}
     for s, r, o, sec in faits:
@@ -401,12 +422,26 @@ def benchmarker(faits, cfg, seed=2026, n_questions=20):
                          "metrique": metrique, "rappel_at_5": round(score, 3),
                          "rappel_exact": round(exact, 3), "rappel_vrai": round(vrai, 3),
                          "critere": score >= 0.50})
+    # Gate 0 FAUX : couverture ≥ 2 ancres + confirmation ≥ 1.0
     faits3 = [(s, r, o) for s, r, o, sec in faits]
     esp_global = construire_espace(faits3)
     w2i = esp_global["w2i"] if esp_global else {}
+    kx_t = np.asarray(esp_global["kx"]) if esp_global else None
+    ky_t = np.asarray(esp_global["ky"]) if esp_global else None
+    sigma = esp_global["sigma"] if esp_global else 1.0
     hors_sujet = cfg.get("hors_sujet", HORS_SUJET_DEFAUT)
-    n_refus = sum(1 for q in hors_sujet
-                  if len([w for w in _mots_nb(q) if w in w2i and w not in STOP]) < 2)
+    n_refus = 0
+    for q in hors_sujet:
+        ancres = [w2i[w] for w in _mots_nb(q) if w in w2i and w not in STOP]
+        if len(ancres) < 2:
+            n_refus += 1
+            continue
+        kx_q = np.asarray([esp_global["kx"][t] for t in ancres])
+        ky_q = np.asarray([esp_global["ky"][t] for t in ancres])
+        _, _, _, conf = scores_resonance(kx_q, ky_q, np.ones(len(ancres)),
+                                         kx_t, ky_t, sigma, mode="max")
+        if float(conf) < 1.0:
+            n_refus += 1
     return secteurs, n_refus, len(hors_sujet)
 
 

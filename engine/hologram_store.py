@@ -808,6 +808,13 @@ class HologramStore:
                                    "charges, 10/08/2026)",
                     "benchmark_questions": [],
                 }
+                # Le dédoublonnage cross-domaine est une optimisation des
+                # builds officiels du KB ; pour une conversion individuelle,
+                # chaque domaine doit être FIDÈLE à son cache (mesure
+                # 10/08/2026 : sans remise à zéro, nature perdait 176 faits
+                # partagés avec sciences, selon l'ordre des rebuilds).
+                _GLOBAL_DEDUP._canonical_facts.clear()
+                _GLOBAL_DEDUP._ref_count.clear()
                 self._build_one_hologram(domain_id, domain_info, facts_v2,
                                          kb_hash="converted_v2")
                 self._save_registry()
