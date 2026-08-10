@@ -33,6 +33,30 @@ RÈGLES ABSOLUES :
 6. Réponds en 1-2 phrases maximum, naturellement."""
 
 
+_PATTERNS_IDENTITE = [
+    "qui es-tu", "qui es tu", "qui etes-vous", "qui êtes-vous", "tu es qui",
+    "qu'est-ce que tu es", "quest-ce que tu es", "qu est-ce que tu es", "ton nom", "ton identite",
+    "comment tu t'appelles", "comment tu t appelles", "comment vous appelez",
+    "what are you", "who are you", "what is your name",
+    "es-tu une ia", "es tu une ia", "es-tu un robot", "es tu un robot",
+    "tu es quoi", "vous etes quoi",
+]
+
+REPONSE_IDENTITE = (
+    "Je suis KA (Knowledge Amplifier) — une intelligence artificielle harmonique. "
+    "Je ne suis pas un LLM classique : je fonctionne sur le principe ondulatoire, "
+    "chaque connaissance est une onde, chaque raisonnement une interférence. "
+    "Zéro paramètre entraîné, zéro hallucination, déterminisme total — "
+    "la même question donne toujours la même réponse. "
+    "Je calcule par les ondes, je mémorise par le noyau doré, "
+    "et je refuse de répondre quand je ne sais pas."
+)
+
+def _est_question_identite(question):
+    q = question.lower().strip()
+    return any(p in q for p in _PATTERNS_IDENTITE)
+
+
 class NoyauHybride:
     """Le noyau : calcul par ondes, résonance, refus calibré."""
 
@@ -71,6 +95,8 @@ class NoyauHybride:
         return meilleur, score
 
     def repondre(self, question):
+        if _est_question_identite(question):
+            return {"type": "IDENTITE"}
         r = self.calculer(question)
         if r is not None:
             return {"type": "CALC", "valeur": r}
@@ -171,6 +197,8 @@ class Audit:
 
 def _phrase_modele(core):
     """La phrase modèle du noyau — garantie sans LLM."""
+    if core["type"] == "IDENTITE":
+        return REPONSE_IDENTITE
     if core["type"] == "CALC":
         v = core["valeur"]
         s = str(int(v)) if v == int(v) else f"{v:.6f}".rstrip("0").rstrip(".")
@@ -191,7 +219,7 @@ class PontHybride:
             self.noyau.apprendre(c)
         self.phraseur = PhraseurOllama() if utiliser_ollama else None
         self.audit = Audit()
-        self.stats = {"CALC": 0, "FAIT": 0, "REFUS": 0, "AUDIT_OK": 0, "AUDIT_KO": 0}
+        self.stats = {"CALC": 0, "FAIT": 0, "REFUS": 0, "IDENTITE": 0, "AUDIT_OK": 0, "AUDIT_KO": 0}
 
     def traiter(self, question):
         """Pipeline complet — retourne la réponse dict JSON."""
@@ -246,6 +274,8 @@ class PontHybride:
         }
 
     def _contenu_core(self, core):
+        if core["type"] == "IDENTITE":
+            return "FAIT: KA est une IA harmonique — zéro hallucination"
         if core["type"] == "CALC":
             v = core["valeur"]
             return str(int(v)) if v == int(v) else f"{v:.6f}".rstrip("0").rstrip(".")

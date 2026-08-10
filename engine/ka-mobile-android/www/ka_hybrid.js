@@ -77,7 +77,30 @@
     return null;
   }
 
+  // ── Identité : « qui es-tu ? » → KA se présente (avant tout routage)
+  var PATTERNS_IDENTITE = ['qui es-tu', 'qui es tu', 'qui etes-vous', 'qui êtes-vous',
+    'tu es qui', "qu'est-ce que tu es", 'quest-ce que tu es', 'qu est-ce que tu es',
+    'ton nom', 'ton identite', "comment tu t'appelles", 'comment tu t appelles',
+    'what are you', 'who are you', 'what is your name', 'es-tu une ia',
+    'es tu une ia', 'es-tu un robot', 'tu es quoi', 'vous etes quoi'];
+
+  var REPONSE_IDENTITE = 'Je suis KA (Knowledge Amplifier) — une intelligence artificielle harmonique. ' +
+    'Je ne suis pas un LLM classique : je fonctionne sur le principe ondulatoire, ' +
+    'chaque connaissance est une onde, chaque raisonnement une interférence. ' +
+    'Zéro paramètre entraîné, zéro hallucination, déterminisme total — ' +
+    'la même question donne toujours la même réponse. ' +
+    'Je calcule par les ondes, je mémorise par le noyau doré, ' +
+    'et je refuse de répondre quand je ne sais pas.';
+
+  function estIdentite(question) {
+    var q = question.toLowerCase();
+    for (var i = 0; i < PATTERNS_IDENTITE.length; i++)
+      if (q.indexOf(PATTERNS_IDENTITE[i]) >= 0) return true;
+    return false;
+  }
+
   function repondre(question) {
+    if (estIdentite(question)) return { type: 'IDENTITE' };
     var r = calculer(question);
     if (r !== null) return { type: 'CALC', valeur: r };
     var qpsi = encode(question);
@@ -91,6 +114,7 @@
   }
 
   function phraseModele(core) {
+    if (core.type === 'IDENTITE') return REPONSE_IDENTITE;
     if (core.type === 'CALC') {
       var v = core.valeur;
       var s = (v === Math.floor(v)) ? String(v) : v.toFixed(6).replace(/0+$/, '').replace(/\.$/, '');
