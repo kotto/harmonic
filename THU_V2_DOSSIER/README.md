@@ -30,6 +30,8 @@
 
 | `ESPACE_TEMPS_N2_EINSTEIN.md` | L'émergence de l'espace-temps à n=2 rapprochée d'Einstein simplement — les 3 ponts (dynamique→émergent, géométrie→auto-interaction Deser, géodésiques→survivants), l'immeuble à 3 étages, l'analogie de l'eau, vérifié vs tracé (R3) (page site : `theorie-harmonique/espace-temps-n2.html`) |
 
+| `D_1_PHI_G_DERIVE.md` | La clarification rigoureuse : D^{1/φ}[Ψ]=G[Ψ] n'est PAS dérivé — la RG dérive le □ (ordre 2, α=1, Fierz-Pauli vérifié) ; la dérivée fractionnaire brise Lorentz ; la version linéarisée est EXCLUE par GW170817 (9×10¹⁴×) ; R3 reste tracé non clos (page site : `theorie-harmonique/d-1-phi-g.html`) |
+
 ### 🌌 L'unification
 
 | Fichier | Description |
