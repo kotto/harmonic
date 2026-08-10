@@ -1,8 +1,8 @@
 # Golden Fractional Memory as a Generalization of the Fourier Series: a Zero-Parameter Modal Decomposition with Applications to the Periodic Table, Quantum Temperatures, and Computing
 
-**A. Kotto¹**
+**Alain Kotto¹**
 
-¹ Univers-Holistique, Paris, France
+¹ Univers-Holistique, Paris, France — *Théorie de l'Univers Harmonique*
 
 **Corresponding author:** [email to be added]
 
@@ -335,12 +335,6 @@ Every claim in this paper is accompanied by a reproducible Python script. All sc
 ## 10. Conclusion
 
 We have presented a modal decomposition method that generalizes the Fourier series to the fractional domain via the Mittag-Leffler function of order α = 1/φ. The golden ratio is not chosen for its aesthetic appeal — it is the unique order that maximizes persistence under non-repetition constraints (Hurwitz theorem, with the chainon persistance∝1/μ(α) as a flagged conjecture). The decomposition is verified to machine precision (FFT 2.22×10⁻¹⁶), produces zero-parameter predictions across four domains (periodic table, quantum temperatures, computing, cosmology), and publishes its own refutations. The framework is falsifiable, self-correcting, and complementary to quantum field theory.
-
----
-
-## Acknowledgments
-
-The author thanks ZCode (AI assistant) for computational verification and document preparation.
 
 ---
 

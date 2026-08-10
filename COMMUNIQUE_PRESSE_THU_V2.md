@@ -6,7 +6,7 @@
 
 ## Une théorie française dérive le tableau périodique, les températures quantiques et la constante cosmologique — à partir d'un seul nombre : le nombre d'or
 
-**Paris, 9 août 2026** — Alain Kotto, chercheur indépendant fondateur d'Univers-Holistique, annonce aujourd'hui la publication d'un cadre théorique qui relie la décomposition de Fourier — l'un des piliers des mathématiques modernes — à une généralisation fractionnaire fondée sur le nombre d'or φ. Cette généralisation, appelée « équation mère », produit sans aucun paramètre ajusté : le tableau périodique complet des 118 éléments, une famille de 24 températures quantiques, une architecture de calcul sans hallucination, et une valeur de la constante cosmologique proche de l'observation.
+**Paris, 9 août 2026** — Alain Kotto, chercheur indépendant fondateur d'Univers-Holistique, annonce aujourd'hui la publication de la **Théorie de l'Univers Harmonique**, un cadre théorique qui relie la décomposition de Fourier — l'un des piliers des mathématiques modernes — à une généralisation fractionnaire fondée sur le nombre d'or φ. Cette généralisation, appelée « équation mère », produit sans aucun paramètre ajusté : le tableau périodique complet des 118 éléments, une famille de 24 températures quantiques, une architecture de calcul sans hallucination, et une valeur de la constante cosmologique proche de l'observation.
 
 ---
 
