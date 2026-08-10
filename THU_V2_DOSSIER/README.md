@@ -34,6 +34,8 @@
 |---|---|
 | `UNIFICATION_QUANTIQUE_RELATIVISTE.md` | QM = cas α=1 de la tour, RG = secteur n=2 (Deser), jonction = mémoire d'or α=1/φ : Λ ×1,4 (vs 10¹²⁰), Zeno t^{0,618}, queue GW mémoire E_{1/φ} — 3 maillons vérifiés, frontières R3 déclarées (script : `engine/unification_qm_rg.py` — page site : `theorie-harmonique/unification-qm-rg.html`) |
 
+| `DERIVATION_OBSERVABLES.md` | La chaîne de dérivation des 15 observables — stabilité → α → λ → cₙ → K(t) ; T* (24), Zeno t^{0,618}, Hurst H=1−1/(2φ)=0,691 NOUVELLEMENT dérivé, Λ ×1,4 (corrigé), tableau 118/118, pic de fer, queue GW (script : `engine/derivation_observables.py` — page site : `theorie-harmonique/derivation-observables.html`) |
+
 ### 🌐 Transversalité
 
 | Fichier | Description |
