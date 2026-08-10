@@ -42,6 +42,8 @@
 
 | `DERIVATION_OBSERVABLES.md` | La chaîne de dérivation des 15 observables — stabilité → α → λ → cₙ → K(t) ; T* (24), Zeno t^{0,618}, Hurst H=1−1/(2φ)=0,691 NOUVELLEMENT dérivé, Λ ×1,4 (corrigé), tableau 118/118, pic de fer, queue GW (script : `engine/derivation_observables.py` — page site : `theorie-harmonique/derivation-observables.html`) |
 
+| `LE_ROLE_DE_ALPHA.md` | Le rôle exact de α — l'ordre de la mémoire (A3) et ses 10 lectures : queue t^{−0,618}, indice ML, Hurst 0,691, déviation Zeno t^{2α}=1,236 (précision nouvelle mesurée), T*, RG, fractalité, R3, coefficients ; ce que α n'est PAS (V1, X1, X2, chaînon) ; correction de formulation Zeno (page site : `theorie-harmonique/role-de-alpha.html`) |
+
 ### 🌐 Transversalité
 
 | Fichier | Description |
