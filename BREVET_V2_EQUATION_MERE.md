@@ -146,7 +146,7 @@ Chaque puissance supplémentaire porte un spin plus élevé. C'est la structure 
 
 ### 5.1 Ce qui est réfuté
 
-Les coefficients Hₙ ne sont **pas** les constantes fondamentales {φ, π, e, √2, √3, √5, e/π} postulées dans la version antérieure. Cette hypothèse a été **réfutée** expérimentalement : écart 0,707 vs la chaîne dérivée, **0 correspondance sur 935** comparaisons (seuil 10⁻³).
+Les coefficients Hₙ ne sont **pas** les constantes fondamentales {φ, π, e, √2, √3, √5, e/π} postulées dans la version antérieure. Cette hypothèse a été **réfutée** expérimentalement : écart 0,707 vs la chaîne dérivée, **0 correspondance spontanée sur 935** comparaisons (les 20 exactes sont toutes expliquées par T* ou par construction) (seuil 10⁻³).
 
 ### 5.2 Ce qui est dérivé — les coefficients temporels
 
@@ -456,7 +456,7 @@ The invention relates to a fundamental modal decomposition equation — the moth
 | Fractalité K(λt) vs λ^{−1/φ}K(t) | ✅ | < 5,4 % (asymptotique) |
 | Tour générative — coupure n ≈ 10 | ✅ Cohérent Vasiliev | Structurel |
 | Graviton (n=2) — Fierz-Pauli → Deser | ✅ 4 tests | 10⁻¹⁵ |
-| Exclusions publiées | X1 (0/935), X2 (10¹⁴×), X3 (AUC 0,4985) | ✅ Réfuté |
+| Exclusions publiées | X1 (0 match spontané/935 — les 20 matchs exacts sont tous expliqués par T* ou par construction), X2 (9×10¹⁴×), X3 (AUC 0,4985) | ✅ Réfuté |
 
 ---
 

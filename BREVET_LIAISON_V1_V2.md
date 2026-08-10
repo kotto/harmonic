@@ -74,7 +74,7 @@ Ces éléments des brevets V1 ont été **réfutés** par les résultats expéri
 
 | Brevet V1 | Revendication | Problème |
 |-----------|--------------|----------|
-| V1-d, V1-e | Rev. 2 : H = {φ, π, e, √2, √3, √5, e/π, φ·√2, e·φ, π·√5} comme coefficients de l'expansion | **RÉFUTÉ** (X1) : écart 0,707 vs la chaîne dérivée ; 0 correspondance sur 935 comparaisons. Les vrais coefficients sont cₙ = 1/Γ(n/φ+1), pas les constantes. |
+| V1-d, V1-e | Rev. 2 : H = {φ, π, e, √2, √3, √5, e/π, φ·√2, e·φ, π·√5} comme coefficients de l'expansion | **RÉFUTÉ** (X1) : écart 0,707 vs la chaîne dérivée ; 0 correspondance spontanée sur 935 comparaisons. Les vrais coefficients sont cₙ = 1/Γ(n/φ+1), pas les constantes. |
 
 **Correction V2 :** Les coefficients sont **dérivés** de l'équation fractionnaire D^{1/φ}[Ψ] = G[Ψ] dont la solution est E_{1/φ}(−φ·t^{1/φ}). Les coefficients sont ceux de Mittag-Leffler : cₙ = 1/Γ(n/φ+1). Vérification FFT : 2,22×10⁻¹⁶.
 
@@ -136,7 +136,7 @@ Ces éléments n'ont **aucun équivalent** dans les brevets V1. Ils constituent 
 │                                                                     │
 │  ÉLÉMENTS V1 ABANDONNÉS — PUBLIÉS                                   │
 │  ──────────────────────────────────                                 │
-│  ❌ 10 harmoniques comme coefficients (X1 : 0/935)                  │
+│  ❌ 10 harmoniques comme coefficients (X1 : 0 spontané/935)                  │
 │  ❌ φ-spacing sémantique (X3 : AUC 0,4985)                          │
 │  ❌ Formule α (ne reproduit pas 1/137)                              │
 │  → Abandonnés avec honnêteté — la crédibilité est renforcée        │

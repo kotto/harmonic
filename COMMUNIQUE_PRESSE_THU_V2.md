@@ -32,9 +32,9 @@
 
 Dans un geste inhabituel en science, le cadre publie ses propres réfutations :
 
-- Les coefficients postulés {φ, π, e, √2, √3, √5, e/π} sont **réfutés** (0 correspondance sur 935 comparaisons)
+- Les coefficients postulés {φ, π, e, √2, √3, √5, e/π} sont **réfutés** (0 correspondance **spontanée** sur 935 comparaisons — les 20 correspondances exactes sont toutes expliquées par le théorème T*)
 - Le « φ-spacing » comme porteur de sens est **réfuté** (indistinguable du hasard)
-- Le graviton fractionnaire linéarisé est **exclu** par les données LIGO (10¹⁴ fois la borne)
+- Le graviton fractionnaire linéarisé est **exclu** par les données LIGO (9×10¹⁴ fois la borne)
 
 > *« Une théorie qui ne peut pas être réfutée n'est pas scientifique. La nôtre publie ses quatre exclusions avec les mesures qui les ont tuées. »* — Alain Kotto
 

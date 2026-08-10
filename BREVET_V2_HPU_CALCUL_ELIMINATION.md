@@ -425,7 +425,7 @@ b) un **module de mémoire dorée** configuré pour stocker des traces horodaté
 
 c) un **module de résonance** configuré pour mesurer l'interférence entre une onde-requête et les patterns stockés, et pour répondre ou refuser selon les étapes (f) à (h) de la revendication 1 ;
 
-ledit système étant caractérisé par **zéro paramètre ajusté** et par l'absence de réseau de neurones artificiels, de descente de gradient, et de mécanisme d'échantillonnage probabiliste.
+ledit système étant caractérisé par **zéro paramètre fondamental ajusté** (les seuils opérationnels étant calibrés) et par l'absence de réseau de neurones artificiels, de descente de gradient, et de mécanisme d'échantillonnage probabiliste.
 
 **14.** Système selon la revendication 13, caractérisé en ce qu'il est implémenté sur un **FPGA**, chaque H-Bit étant un bloc DSP, le noyau K(t) étant implémenté comme filtre FIR fractionnaire avec les coefficients de Mittag-Leffler en LUT, et la convolution circulaire étant implémentée en FFT matérielle.
 
@@ -445,7 +445,7 @@ ledit système étant caractérisé par **zéro paramètre ajusté** et par l'ab
 
 **Français :**
 
-L'invention concerne un procédé et un système de calcul harmonique fondé sur le principe d'élimination : les erreurs s'annulent par interférence destructive, sans correction. L'architecture comprend trois couches : (1) l'interférence — décomposition de tout signal en modes de Fourier ; (2) la mémoire dorée — persistance et oubli gouvernés par le noyau K(t) = B(1/φ)·E_{1/φ}(−φ·t^{1/φ}), où α = 1/φ est dérivé du théorème de Hurwitz (zéro paramètre ajusté) ; (3) la résonance — lecture non destructive avec refus calibré (0% hallucination). L'unité de calcul est le H-Bit (7 modes, log₂(7) ≈ 2,807 bits). L'apprentissage est réalisé en 3-5 expositions par répétition-élimination (pas de gradient). Les problèmes NP-complets sont résolus en O(n²) par élimination. La température de fonctionnement est T* = hf/(k_B·ln φ) ≈ 1 K à 10 GHz. Applications : IA sans hallucination, calcul NP-complet, mémoire persistante, processeur harmonique (FPGA, ASIC, photonique).
+L'invention concerne un procédé et un système de calcul harmonique fondé sur le principe d'élimination : les erreurs s'annulent par interférence destructive, sans correction. L'architecture comprend trois couches : (1) l'interférence — décomposition de tout signal en modes de Fourier ; (2) la mémoire dorée — persistance et oubli gouvernés par le noyau K(t) = B(1/φ)·E_{1/φ}(−φ·t^{1/φ}), où α = 1/φ est dérivé du théorème de Hurwitz (zéro paramètre fondamental ajusté) ; (3) la résonance — lecture non destructive avec refus calibré (0% hallucination). L'unité de calcul est le H-Bit (7 modes, log₂(7) ≈ 2,807 bits). L'apprentissage est réalisé en 3-5 expositions par répétition-élimination (pas de gradient). Les problèmes NP-complets sont résolus en O(n²) par élimination. La température de fonctionnement est T* = hf/(k_B·ln φ) ≈ 1 K à 10 GHz. Applications : IA sans hallucination, calcul NP-complet, mémoire persistante, processeur harmonique (FPGA, ASIC, photonique).
 
 **English :**
 

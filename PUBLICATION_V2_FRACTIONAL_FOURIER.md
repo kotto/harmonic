@@ -10,7 +10,7 @@
 
 ## Abstract
 
-We present a modal decomposition method that generalizes the Fourier series to the fractional domain. The method is based on the Mittag-Leffler function E_α(z) with α = 1/φ, where φ = (1+√5)/2 is the golden ratio. We show that the Fourier series is the special case α = 1 (memoryless), while the proposed decomposition at α = 1/φ introduces a non-local temporal memory governed by the golden kernel K(t) = B(α)·E_α(−λt^α) with λ = φ and B(α) = 1−α+α/Γ(α). The order α = 1/φ is not fitted but motivated by Hurwitz's theorem (1891) on Diophantine approximation, which identifies φ as the most irrational number — the unique value maximizing persistence under non-repetition constraints. All structural constants are derived from φ; only operational thresholds are calibrated on validation data. The decomposition produces Mittag-Leffler coefficients cₙ = 1/Γ(n/φ+1), verified against FFT to 2.22×10⁻¹⁶. Applications include: (i) generation of the periodic table (118/118 periods, 7/7 noble gases) from integer spectra and the Madelung rule; (ii) a family of golden temperatures T* = ΔE/(k_B·ln φ) with 24 verified instances; (iii) a three-layer computing architecture (interference, golden memory, resonance) achieving 0% hallucination by structural refusal; (iv) a derived cosmological constant Λ = φ²/(c·t_U)² within a factor 1.4 of observation. Four exclusions are published, including the refutation of previously postulated coefficients {φ, π, e} (0 matches out of 935 comparisons). Every claim is accompanied by a reproducible script.
+We present a modal decomposition method that generalizes the Fourier series to the fractional domain. The method is based on the Mittag-Leffler function E_α(z) with α = 1/φ, where φ = (1+√5)/2 is the golden ratio. We show that the Fourier series is the special case α = 1 (memoryless), while the proposed decomposition at α = 1/φ introduces a non-local temporal memory governed by the golden kernel K(t) = B(α)·E_α(−λt^α) with λ = φ and B(α) = 1−α+α/Γ(α). The order α = 1/φ is not fitted but motivated by Hurwitz's theorem (1891) on Diophantine approximation, which identifies φ as the most irrational number — the unique value maximizing persistence under non-repetition constraints. All structural constants are derived from φ; only operational thresholds are calibrated on validation data. The decomposition produces Mittag-Leffler coefficients cₙ = 1/Γ(n/φ+1), verified against FFT to 2.22×10⁻¹⁶. Applications include: (i) generation of the periodic table (118/118 periods, 7/7 noble gases) from integer spectra and the Madelung rule; (ii) a family of golden temperatures T* = ΔE/(k_B·ln φ) with 24 verified instances; (iii) a three-layer computing architecture (interference, golden memory, resonance) achieving 0% hallucination by structural refusal; (iv) a derived cosmological constant Λ = φ²/(c·t_U)² within a factor 1.4 of observation. Four exclusions are published, including the refutation of previously postulated coefficients {φ, π, e} (0 spontaneous matches out of 935 comparisons). Every claim is accompanied by a reproducible script.
 
 **Keywords:** fractional calculus, Mittag-Leffler function, golden ratio, Fourier series generalization, modal decomposition, memory kernel, periodic table, zero-parameter model, elimination principle, harmonic computing
 
@@ -167,11 +167,12 @@ The periodic table is generated from the integer spectrum of the elimination fil
 | Total periods | 7 | 7 | ✅ |
 | Elements per period | 2, 8, 8, 18, 18, 32, 32 | Same | ✅ 118/118 |
 | Noble gases | He, Ne, Ar, Kr, Xe, Rn, Og | Same | ✅ 7/7 |
-| f-block position | After Ba/La | After Ba/La | ✅ |
+| Group assignment | 90/118 exact | — | ⚠️ 28 discrepancies, all in the f-block |
+| f-block position | After Ba/La | After Ba/La | ✅ (position correct, internal ordering imperfect) |
 | g-block prediction | Z = 121–138 | Unknown | 🔬 Predicted |
 | Island of stability | Z = 120–126, N ≈ 184 | N ≈ 184 (predicted) | 🔬 Predicted |
 
-The periodic table is generated without any fitted parameter — only integers (quantum numbers) and the Madelung rule (a consequence of orbital energetics). The f-block position is derived as a stability correction, not inserted by hand.
+The periodic table is generated without any fitted parameter — only integers (quantum numbers) and the Madelung rule (a consequence of orbital energetics). The f-block position is derived as a stability correction, not inserted by hand. **Honesty note:** the periods (118/118) and noble gases (7/7) are exact; the group assignment is exact for 90/118 elements, with 28 discrepancies concentrated in the f-block — the internal ordering of the f-block is an open problem in this framework.
 
 ### 4.3 Element masses
 
@@ -278,8 +279,8 @@ Scientific honesty requires publishing not only what the theory predicts but als
 
 | # | Exclusion | Measurement | Structural lesson |
 |---|-----------|-------------|-------------------|
-| **X1** | Coefficients {φ, π, e, √2, √3, √5, e/π} as Hₙ | RMS error 0.707; **0/935 matches** | φ is not in the words — it is in their arrangement (the order, not the values) |
-| **X2** | Linearized ABC graviton | GW170817: dispersion predicted 11% → 40c vs LIGO bound 10⁻¹⁵ — **excluded at ~10¹⁴× the bound** | The linearized version is eliminated; the non-linear version (Deser) survives |
+| **X1** | Coefficients {φ, π, e, √2, √3, √5, e/π} as Hₙ | RMS error 0.707; **0 spontaneous matches out of 935** — the 20 exact matches are all explained by the T* theorem or by construction | φ is not in the words — it is in their arrangement (the order, not the values) |
+| **X2** | Linearized ABC graviton | GW170817: dispersion predicted 11% → 40c vs LIGO bound 10⁻¹⁵ — **excluded at ~9×10¹⁴× the bound** | The linearized version is eliminated; the non-linear version (Deser) survives |
 | **X3** | φ-spacing as semantic carrier | AUC = 0.4985 — indistinguishable from chance | A collision-avoidance filter without survivors is not a language — the spectrum is learned, not postulated |
 | **X4** | Δφ operations as computational primitives | Refuted with validated control | Golden-ratio phase operations do not compute |
 
