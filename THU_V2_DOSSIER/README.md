@@ -44,6 +44,8 @@
 
 | `LE_ROLE_DE_ALPHA.md` | Le rôle exact de α — l'ordre de la mémoire (A3) et ses 10 lectures : queue t^{−0,618}, indice ML, Hurst 0,691, déviation Zeno t^{2α}=1,236 (précision nouvelle mesurée), T*, RG, fractalité, R3, coefficients ; ce que α n'est PAS (V1, X1, X2, chaînon) ; correction de formulation Zeno (page site : `theorie-harmonique/role-de-alpha.html`) |
 
+| `PEUT_ON_DERIVER_ALPHA.md` | Test négatif documenté : peut-on dériver α ? — les 3 fonctionnels naturels (équilibre mémoire, Laplace, queue) n'ont PAS 1/φ comme extremum (testé) ; Hurwitz rigoureux, chaînon conjecturé, dérivation = programme ouvert |
+
 ### 🌐 Transversalité
 
 | Fichier | Description |
