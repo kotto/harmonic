@@ -34,6 +34,7 @@
 |---|---|
 | `COMMUNIQUE_PRESSE_THU_V2.md` | Communiqué de presse grand public — diffusion libre |
 | `FAITS_PROUVES_POUR_TOUS.md` | Les faits prouvés, expliqués simplement — chaîne dérivationnelle, tableau 118/118, Hurwitz, réfutations (page site associée : `theorie-harmonique/faits-prouves.html`) |
+| `CHAINE_DERIVATIONNELLE_POUR_TOUS.md` | Vulgarisation des coefficients 1,1165·0,8896·0,5696… et de la précision machine 2,22×10⁻¹⁶ — la factorielle étendue (Γ), deux chemins de vérification indépendants, honnêteté sur les limites (page site associée : `theorie-harmonique/chaine-derivationnelle.html`) |
 
 ---
 
