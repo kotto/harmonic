@@ -87,6 +87,7 @@
 | `NOETHER_PRECURSEUR.md` | Emmy Noether (1918) — le précurseur du précurseur : le théorème des invariants, les quantités conservées = survivants de la dynamique (ancêtre de A1), la chaîne Einstein → Noether → Oyibo → THU, l'injustice de Göttingen (page site : `theorie-harmonique/noether-precurseur.html`) |
 | `OYIBO_PRECURSEUR.md` | La reconnaissance du GAGUT (Gabriel Oyibo, 1990) — antériorité de l'exposant 1/φ comme invariant d'échelle, corrélation Oyibo-ABC vérifiée, ce que la THU ajoute (mécanisme, dérivation, vérification), la frontière honnête |
 
+| `EXPLORATION_PHRASEUR_2.md` | Épisode 2 — vocabulaire français mesuré (mots 6,3 car., é = 73 % des accents, tokenizer +30 % compacité), distillation <CORE> (52 M tokens, ~1 000 €), le simulateur vérifié (`phraseur_simulateur.py` : 3 calculs exacts, 20/20 refus, 0 % hallucination, virgule décimale corrigée), évaluation (conversation 10 min), déploiement (1,3 Go, < 2 s), feuille de route 6 étapes |
 | `CONCEPTION_PHRASEUR.md` | Le design du Phraseur — le LLM minimal qui tient dans un téléphone et ne fournit QUE la fluence manquante au noyau : 1,5-3 Md params, entraîné sur la conversation seule (style > connaissance), tokens <CORE>, 3 chemins de réalisation (prompt → QLoRA → from scratch), pipeline téléphone complet, critères de satisfaction |
 
 ### 📢 Communication
