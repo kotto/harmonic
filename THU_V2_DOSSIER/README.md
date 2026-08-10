@@ -8,6 +8,8 @@
 
 ## Contenu du dossier
 
+| `EQUATION_MERE_ANNEXE_ALPHA.md` | L'équation mère Ψ = Σ cₙ(α)(Ψ₁)ⁿ avec l'annexe des coefficients en rapport avec α — table 15 termes (précision 10 décimales, ratios, comparaison Fourier), famille cₙ(α) pour 4 valeurs, sommes E(1)=4,1375 / E(−1)=0,4108, vérification FFT 2,22×10⁻¹⁶ (page site : `theorie-harmonique/equation-mere-annexe-alpha.html`) |
+
 ### 📄 Publication scientifique
 
 | Fichier | Description |
