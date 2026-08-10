@@ -398,5 +398,6 @@
     return { concepts: Object.keys(concepts), seuil: SEUIL_RESONANCE, stats: stats };
   }
 
-  global.KAHybrid = { traiter: traiter, etat: etat, calculer: calculer, repondre: repondre };
+  global.KAHybrid = { traiter: traiter, etat: etat, calculer: calculer,
+                      repondre: repondre, phraseModele: phraseModele };
 })(window);

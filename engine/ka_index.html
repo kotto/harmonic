@@ -237,6 +237,7 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
 <body>
 <script src="ka_native.js"></script>
 <script src="harmonic_v3.js"></script>
+<script src="ka_hybrid.js"></script>  <!-- 🧠 noyau hybride : calcul exact, corpus médical, refus calibré -->
 <script src="vital_ka_module.js"></script>
 <div class="dv">
   <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
@@ -945,7 +946,9 @@ const K={txt:'',shift:false,lock:false,ts:0,alt:false,voice:false,vt:null,emo:fa
 const KR=[[['1','~'],['2','@'],['3','#'],['4','$'],['5','%'],['6','^'],['7','&'],['8','*'],['9','('],['0',')']],[['a','à'],['z','æ'],['e','€'],['r','®'],['t','™'],['y','¥'],['u','ù'],['i','ï'],['o','œ'],['p','°']],[['q',''],['s','ß'],['d',''],['f',''],['g',''],['h',''],['j',''],['k',''],['l',''],['m','µ']],[['w',''],['x',''],['c','ç'],['v',''],['b',''],['n','ñ']]];
 const EM=['😊','😂','❤️','🔥','✨','🙏','👍','🎉','😄','😍','🤔','😎','🥰','💪','🙌','👋','🎶','🌟','💡','🚀','🌍','🍕','☕','🎯','💬','✅','😘','🫶','🤩','😅','🫠','🤝','🌸','⭐','🎵'];
 const SD={'':['Sophie','Appeler','Réunion','Oui','Super','Merci','Demain'],'so':['Sophie','Soirée','Souvenir'],'ap':['Appeler','Appelle','Après'],'me':['Merci','Message','Même'],'ou':['Oui','Ouvert','Ouais'],'to':['Tokyo','Toi','Toujours'],'de':['Demain','Décision','Depuis'],'re':['Réunion','Rendez-vous','Retrouve'],'su':['Super','Sur','Surtout'],'bi':['Bientôt','Bien','Bises'],'bo':['Bonjour','Bonsoir','Bon'],'co':['Comment','Comme','Contact'],'pr':['Prépare','Prendre','Prochain'],'pa':['Paris','Parfait','Partager'],'ma':['Maintenant','Matin','Mais'],'vo':['Voici','Voilà','Voyage'],'sa':['Salut','Samedi','Sans'],'tr':['Très','Travail','Trouver']};
-	const RP=['Je suis KA, votre assistant personnel intelligent. Posez-moi une question !','Que voulez-vous savoir ? Je suis là pour vous aider.','Bonjour ! Je suis KA. Que puis-je faire pour vous ?'];
+	// ═══ PONT D'AUDIT HYBRIDE — noyau local (garanti) + cerveau de connaissances ═══
+	// Plus de phrases aléatoires : hors-ligne, KA répond par le noyau
+	// (calcul exact, corpus médical, conduites, refus calibré) ou se tait.
 	// Note : RP n'est utilisé qu'en mode déconnecté temporaire
 	
 		// === CONNEXION À L'IA HARMONIC ===
@@ -972,7 +975,23 @@ const SD={'':['Sophie','Appeler','Réunion','Oui','Super','Merci','Demain'],'so'
 		})();
 	
 		async function askKA(message) {
-		  if (!API_ONLINE) return RP[Math.floor(Math.random() * RP.length)];
+		  // ═══ LE NOYAU HYBRIDE — réponse immédiate, garantie, hors-ligne ═══
+		  // Calcul exact par les ondes · corpus médical · conduites d'urgence ·
+		  // identité · concepts appris · refus calibré (« je préfère me taire »).
+		  // ⚠️ Le refus du noyau est FINAL : l'escalade vers /api/chat a été testée
+		  // et retirée — le cerveau répond parfois hors-sujet (« météo à Paris » →
+		  // « Art nouveau… ») ; on refuse plutôt que d'inventer.
+		  if (window.KAHybrid) {
+		    const core = KAHybrid.repondre(message);
+		    return KAHybrid.phraseModele(core);
+		  }
+		  // Secours (noyau absent) : ancien chemin cerveau, refus honnête si hors-ligne
+		  if (!API_ONLINE) return 'Je ne peux pas répondre à ça — ce n'est pas dans ce que je connais.';
+		  const rep = await repondreCerveau(message);
+		  return rep || 'Je ne peux pas répondre à ça — ce n'est pas dans ce que je connais.';
+		}
+
+		async function repondreCerveau(message) {
 		  try {
 		    // Récupérer/générer un user_id persistant
 		    let uid = localStorage.getItem('ka_user_id');
@@ -1005,11 +1024,10 @@ const SD={'':['Sophie','Appeler','Réunion','Oui','Super','Merci','Demain'],'so'
 		        }
 		      }, 500);
 		    }
-		    
-		    return data.response || RP[Math.floor(Math.random() * RP.length)];
+		    return data.response || '';
 		  } catch(e) {
 		    API_ONLINE = false;
-		    return RP[Math.floor(Math.random() * RP.length)];
+		    return '';
 		  }
 		}
 
