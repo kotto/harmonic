@@ -92,6 +92,48 @@
     'Je calcule par les ondes, je mémorise par le noyau doré, ' +
     'et je refuse de répondre quand je ne sais pas.';
 
+  // 🩺 Connaissances médicales essentielles (dérivées du corpus — comme le serveur)
+  var FAITS_MEDICAUX = {
+    'diabète': 'Le diabète de type 2 se définit par une glycémie à jeun ≥ 1,26 g/L ' +
+      '(7,0 mmol/L) à 2 reprises, OU une HbA1c ≥ 6,5 %, OU une glycémie aléatoire ≥ 2 g/L avec symptômes.',
+    'hypertension': 'L\'hypertension artérielle se définit par une pression ≥ 140/90 mmHg ' +
+      'à 2 consultations séparées. Objectif : < 140/90 (< 130/80 si diabète ou insuffisance rénale chronique).',
+    'asthme': 'L\'asthme chronique est une inflammation chronique des voies aériennes ' +
+      'avec bronchoconstriction réversible. Il se distingue de la crise aiguë, qui nécessite un traitement immédiat.',
+    'epilepsie': 'L\'épilepsie est une affection neurologique caractérisée par des crises ' +
+      'récidivantes non provoquées. Prévalence élevée en Afrique (cysticercose, paludisme, traumatismes).',
+    'drepanocytose': 'La drépanocytose est une maladie génétique de l\'hémoglobine (HbS). ' +
+      'La forme homozygote SS est la forme majeure. Fréquente en Afrique (1/4 porteurs sains dans certaines régions).',
+    'insuffisance cardiaque': 'L\'insuffisance cardiaque est l\'incapacité du cœur à assurer ' +
+      'un débit suffisant. Causes : HTA, cardiopathie ischémique, valvulopathie, cardiomyopathie.',
+    'paludisme': 'Le paludisme est une maladie parasitaire transmise par la piqûre du ' +
+      'moustique anophèle. La prévention repose sur la moustiquaire imprégnée, ' +
+      'le traitement préventif et le diagnostic précoce.'
+  };
+
+  var MOTS_MEDICAUX = [
+    { noms: ['diabete', 'diabète'], cle: 'diabète' },
+    { noms: ['hypertension'], cle: 'hypertension' },
+    { noms: ['asthme'], cle: 'asthme' },
+    { noms: ['epilepsie', 'épilepsie'], cle: 'epilepsie' },
+    { noms: ['drepanocytose', 'drépanocytose'], cle: 'drepanocytose' },
+    { noms: ['insuffisance cardiaque'], cle: 'insuffisance cardiaque' },
+    { noms: ['paludisme'], cle: 'paludisme' }
+  ];
+
+  function estQuestionMedicale(question) {
+    var q = question.toLowerCase().replace(/'/g, ' ').replace(/-/g, ' ');
+    var estDef = q.indexOf('c est quoi') >= 0 || q.indexOf('qu est ce que') >= 0 ||
+                 q.indexOf('quoi') >= 0 || q.indexOf('explique') >= 0 || q.indexOf('definir') >= 0;
+    if (!estDef) return null;
+    for (var i = 0; i < MOTS_MEDICAUX.length; i++) {
+      var item = MOTS_MEDICAUX[i];
+      for (var j = 0; j < item.noms.length; j++)
+        if (q.indexOf(item.noms[j]) >= 0) return item.cle;
+    }
+    return null;
+  }
+
   function estIdentite(question) {
     var q = question.toLowerCase();
     for (var i = 0; i < PATTERNS_IDENTITE.length; i++)
@@ -101,6 +143,8 @@
 
   function repondre(question) {
     if (estIdentite(question)) return { type: 'IDENTITE' };
+    var maladie = estQuestionMedicale(question);
+    if (maladie) return { type: 'MEDICAL', concept: maladie, valeur: FAITS_MEDICAUX[maladie] };
     var r = calculer(question);
     if (r !== null) return { type: 'CALC', valeur: r };
     var qpsi = encode(question);
@@ -115,6 +159,7 @@
 
   function phraseModele(core) {
     if (core.type === 'IDENTITE') return REPONSE_IDENTITE;
+    if (core.type === 'MEDICAL') return core.valeur;
     if (core.type === 'CALC') {
       var v = core.valeur;
       var s = (v === Math.floor(v)) ? String(v) : v.toFixed(6).replace(/0+$/, '').replace(/\.$/, '');

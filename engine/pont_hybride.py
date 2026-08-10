@@ -52,6 +52,82 @@ REPONSE_IDENTITE = (
     "et je refuse de répondre quand je ne sais pas."
 )
 
+# 🩺 CONNAISSANCES MÉDICALES ESSENTIELLES (dérivées du corpus médical)
+# « c'est quoi le diabète ? » → définition du corpus, pas une génération LLM
+FAITS_MEDICAUX = {
+    "diabète": ("Le diabète de type 2 se définit par une glycémie à jeun ≥ 1,26 g/L "
+                "(7,0 mmol/L) à 2 reprises, OU une HbA1c ≥ 6,5 %, OU une glycémie "
+                "aléatoire ≥ 2 g/L avec symptômes."),
+    "diabete": ("Le diabète de type 2 se définit par une glycémie à jeun ≥ 1,26 g/L "
+                "(7,0 mmol/L) à 2 reprises, OU une HbA1c ≥ 6,5 %, OU une glycémie "
+                "aléatoire ≥ 2 g/L avec symptômes."),
+    "hypertension": ("L'hypertension artérielle se définit par une pression ≥ 140/90 mmHg "
+                     "à 2 consultations séparées. Objectif : < 140/90 (< 130/80 si diabète "
+                     "ou insuffisance rénale chronique)."),
+    "asthme": ("L'asthme chronique est une inflammation chronique des voies aériennes "
+               "avec bronchoconstriction réversible. Il se distingue de la crise aiguë, "
+               "qui nécessite un traitement immédiat."),
+    "epilepsie": ("L'épilepsie est une affection neurologique caractérisée par des crises "
+                  "récidivantes non provoquées. Prévalence élevée en Afrique (cysticercose, "
+                  "paludisme, traumatismes)."),
+    "drepanocytose": ("La drépanocytose est une maladie génétique de l'hémoglobine (HbS). "
+                      "La forme homozygote SS est la forme majeure. Fréquente en Afrique "
+                      "(1/4 porteurs sains dans certaines régions)."),
+    "insuffisance cardiaque": ("L'insuffisance cardiaque est l'incapacité du cœur à assurer "
+                               "un débit suffisant. Causes : HTA, cardiopathie ischémique, "
+                               "valvulopathie, cardiomyopathie."),
+    "paludisme": ("Le paludisme est une maladie parasitaire transmise par la piqûre du "
+                  "moustique anophèle. La prévention repose sur la moustiquaire imprégnée, "
+                  "le traitement préventif et le diagnostic précoce."),
+}
+
+_PATTERNS_MEDICAUX = [
+    ("c'est quoi", "diabète"), ("c est quoi", "diabète"), ("qu'est-ce que", "diabète"),
+    ("quest ce que", "diabète"), ("c'est quoi", "hypertension"), ("c est quoi", "hypertension"),
+    ("c'est quoi", "asthme"), ("c est quoi", "asthme"), ("c'est quoi", "epilepsie"),
+    ("c est quoi", "epilepsie"), ("qu'est-ce que", "epilepsie"), ("quest ce que", "epilepsie"),
+    ("c'est quoi", "drepanocytose"), ("c est quoi", "drepanocytose"),
+    ("qu'est-ce que", "drepanocytose"), ("quest ce que", "drepanocytose"),
+    ("c'est quoi", "insuffisance cardiaque"), ("c est quoi", "insuffisance cardiaque"),
+    ("qu'est-ce que", "insuffisance cardiaque"), ("quest ce que", "insuffisance cardiaque"),
+    ("qu'est-ce que", "l'hypertension"), ("quest ce que", "l'hypertension"),
+    ("qu'est-ce que", "l'asthme"), ("quest ce que", "l'asthme"),
+    ("c'est quoi", "paludisme"), ("c est quoi", "paludisme"),
+    ("qu'est-ce que", "le paludisme"), ("quest ce que", "le paludisme"),
+    ("c'est quoi", "le diabete"), ("c est quoi", "le diabete"),
+    ("c'est quoi", "le paludisme"), ("c est quoi", "le paludisme"),
+    ("qu'est-ce que", "le diabete"), ("quest ce que", "le diabete"),
+]
+
+
+def _sans_article(maladie):
+    """Retire les articles : 'l'hypertension' → 'hypertension'."""
+    for art in ("l'", "le ", "la ", "les "):
+        if maladie.lower().startswith(art):
+            return maladie[len(art):]
+    return maladie
+
+
+def _normaliser(texte):
+    """Normalise : apostrophes et tirets → espaces ('qu'est-ce que' == 'qu est ce que')."""
+    return texte.lower().replace("'", " ").replace("-", " ")
+
+
+def _est_question_medicale(question):
+    q = _normaliser(question)
+    for prefixe, maladie in _PATTERNS_MEDICAUX:
+        p = _normaliser(prefixe)
+        m = _normaliser(maladie)
+        if p in q and m in q:
+            return _sans_article(maladie)
+    # questions directes : « le diabète ? » « diabete c'est quoi »
+    for maladie in FAITS_MEDICAUX:
+        m = _normaliser(maladie)
+        if m in q and any(p in q for p in ("quoi", "c est", "quest ce", "definir", "explique")):
+            return maladie
+    return None
+
+
 def _est_question_identite(question):
     q = question.lower().strip()
     return any(p in q for p in _PATTERNS_IDENTITE)
@@ -97,6 +173,10 @@ class NoyauHybride:
     def repondre(self, question):
         if _est_question_identite(question):
             return {"type": "IDENTITE"}
+        maladie = _est_question_medicale(question)
+        if maladie:
+            return {"type": "MEDICAL", "concept": maladie,
+                    "valeur": FAITS_MEDICAUX[maladie]}
         r = self.calculer(question)
         if r is not None:
             return {"type": "CALC", "valeur": r}
@@ -199,6 +279,8 @@ def _phrase_modele(core):
     """La phrase modèle du noyau — garantie sans LLM."""
     if core["type"] == "IDENTITE":
         return REPONSE_IDENTITE
+    if core["type"] == "MEDICAL":
+        return core["valeur"]
     if core["type"] == "CALC":
         v = core["valeur"]
         s = str(int(v)) if v == int(v) else f"{v:.6f}".rstrip("0").rstrip(".")
@@ -219,7 +301,7 @@ class PontHybride:
             self.noyau.apprendre(c)
         self.phraseur = PhraseurOllama() if utiliser_ollama else None
         self.audit = Audit()
-        self.stats = {"CALC": 0, "FAIT": 0, "REFUS": 0, "IDENTITE": 0, "AUDIT_OK": 0, "AUDIT_KO": 0}
+        self.stats = {"CALC": 0, "FAIT": 0, "REFUS": 0, "IDENTITE": 0, "MEDICAL": 0, "AUDIT_OK": 0, "AUDIT_KO": 0}
 
     def traiter(self, question):
         """Pipeline complet — retourne la réponse dict JSON."""
@@ -276,6 +358,8 @@ class PontHybride:
     def _contenu_core(self, core):
         if core["type"] == "IDENTITE":
             return "FAIT: KA est une IA harmonique — zéro hallucination"
+        if core["type"] == "MEDICAL":
+            return "FAIT: " + core["valeur"]
         if core["type"] == "CALC":
             v = core["valeur"]
             return str(int(v)) if v == int(v) else f"{v:.6f}".rstrip("0").rstrip(".")
