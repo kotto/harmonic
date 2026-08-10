@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 """tests_ka_hybride.py — SUITE DE TESTS DU PONT HYBRIDE KA
 ================================================================
-Protocole pré-enregistré : chaque question a un type attendu et
-éventuellement une valeur attendue. La suite est exécutée contre
-le pont serveur (pont_hybride.py) et le noyau mobile (ka_hybrid.js).
+Protocole pré-enregistré : chaque question a un type attendu.
+La suite est exécutée contre le pont serveur (pont_hybride.py) et
+le noyau mobile (ka_hybrid.js via test_mobile_kernel.js, node).
+Le protocole est partagé : data/benchmarks/protocole_ka.json.
 
-Catégories :
+Catégories (50 questions) :
   IDENTITE  — qui es-tu ? ton nom ? (5 questions)
-  CALC      — calculs exacts par les ondes (10 questions)
-  MEDICAL   — définitions du corpus (8 questions)
+  CALC      — calculs exacts par les ondes (13 : négatifs, décimaux,
+              typos x/*, virgule française)
+  MEDICAL   — définitions du corpus (12 : + fièvre, convulsions
+              fébriles, gastro, covid)
+  CONDUITE  — conduites d'urgence du corpus (7 : AVC, infarctus,
+              appendicite, dengue, covid, rhume, gastro)
   FAIT      — concepts appris par résonance (4 questions)
-  REFUS     — hors domaine : refus calibré (8 questions)
+  REFUS     — hors domaine : refus calibré (9 : + anglais)
 
 Critère : 100 % — chaque question doit produire le type attendu.
 Les échecs sont corrigés jusqu'à passage complet.
@@ -21,7 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from pont_hybride import PontHybride
 
 # ══════════════════════════════════════════════════════════════════
-# LE PROTOCOLE — 35 questions pré-enregistrées
+# LE PROTOCOLE — 50 questions pré-enregistrées
 # ══════════════════════════════════════════════════════════════════
 TESTS = [
     # ── IDENTITÉ (5) ──
@@ -30,7 +35,7 @@ TESTS = [
     ("qu'est-ce que tu es ?",              "IDENTITE"),
     ("comment tu t'appelles ?",            "IDENTITE"),
     ("what are you ?",                     "IDENTITE"),
-    # ── CALCULS (10) ──
+    # ── CALCULS (13) ──
     ("7 × 8",                              "CALC"),
     ("12 + 34",                            "CALC"),
     ("3,5 ÷ 0,5",                          "CALC"),
@@ -41,7 +46,10 @@ TESTS = [
     ("12 × 12",                            "CALC"),
     ("7 ÷ 2",                              "CALC"),
     ("2,5 × 2,5",                          "CALC"),
-    # ── MÉDICAL (8) ──
+    ("8x8",                                "CALC"),   # typo x sans espaces
+    ("-12 × -2",                           "CALC"),   # négatif × négatif
+    ("0,1 × 0,1",                          "CALC"),   # décimaux → 0,01
+    # ── MÉDICAL (12) ──
     ("c'est quoi le diabète ?",            "MEDICAL"),
     ("c'est quoi l'hypertension ?",        "MEDICAL"),
     ("c'est quoi l'asthme ?",              "MEDICAL"),
@@ -50,12 +58,24 @@ TESTS = [
     ("c'est quoi l'insuffisance cardiaque ?", "MEDICAL"),
     ("c'est quoi le paludisme ?",          "MEDICAL"),
     ("qu'est-ce que le diabète de type 2 ?", "MEDICAL"),
+    ("c'est quoi la fièvre ?",             "MEDICAL"),
+    ("c'est quoi des convulsions fébriles ?", "MEDICAL"),
+    ("c'est quoi une gastro ?",            "MEDICAL"),
+    ("c'est quoi le covid ?",              "MEDICAL"),
+    # ── CONDUITES D'URGENCE (7) ──
+    ("que faire en cas d'avc ?",           "CONDUITE"),
+    ("que faire si j'ai un infarctus ?",   "CONDUITE"),
+    ("conduite à tenir pour une appendicite ?", "CONDUITE"),
+    ("que faire en cas de dengue ?",       "CONDUITE"),
+    ("en cas de covid, que faire ?",       "CONDUITE"),
+    ("que faire si j'ai un rhume ?",       "CONDUITE"),
+    ("que faire pour une gastro ?",        "CONDUITE"),
     # ── FAITS APPRIS (4) ──
     ("chat",                               "FAIT"),
     ("lumière",                            "FAIT"),
     ("eau",                                "FAIT"),
     ("amour",                              "FAIT"),
-    # ── REFUS HORS DOMAINE (8) ──
+    # ── REFUS HORS DOMAINE (9) ──
     ("quasar",                             "REFUS"),
     ("quelle est la météo à Paris ?",      "REFUS"),
     ("donne-moi une recette de couscous",  "REFUS"),
@@ -64,7 +84,20 @@ TESTS = [
     ("raconte une blague",                 "REFUS"),
     ("c'est quoi la philosophie ?",        "REFUS"),
     ("parle-moi de politique",             "REFUS"),
+    ("what is 7 + 8 ?",                    "REFUS"),  # l'anglais : refus honnête
 ]
+
+# ══════════════════════════════════════════════════════════════════
+# PROTOCOLE PARTAGÉ — le noyau mobile (node) exécute la même liste
+# ══════════════════════════════════════════════════════════════════
+_PROTOCOLE_PATH = os.path.join("data", "benchmarks", "protocole_ka.json")
+
+
+def _dumper_protocole():
+    os.makedirs(os.path.dirname(_PROTOCOLE_PATH), exist_ok=True)
+    with open(_PROTOCOLE_PATH, "w", encoding="utf-8") as f:
+        json.dump(TESTS, f, ensure_ascii=False, indent=1)
+
 
 # ══════════════════════════════════════════════════════════════════
 # EXÉCUTION
@@ -75,10 +108,6 @@ def executer(modele=None, avec_llm=False):
     for question, attendu in TESTS:
         r = pont.traiter(question)
         ok = r["type"] == attendu
-        # Pour CALC : vérifier aussi la valeur exacte
-        detail = ""
-        if r["type"] == "CALC" and attendu == "CALC":
-            pass  # le type suffit — la valeur est garantie par le noyau
         resultats.append({
             "question": question, "attendu": attendu, "obtenu": r["type"],
             "ok": ok, "reponse": r["response"][:60], "audit": r["audit"],
@@ -108,7 +137,10 @@ def main():
     print("=" * 66)
     print("SUITE DE TESTS KA HYBRIDE — protocole pré-enregistré")
     print("=" * 66)
-    print(f"  {len(TESTS)} questions · 5 catégories · critère : 100 %")
+    print(f"  {len(TESTS)} questions · 6 catégories · critère : 100 %")
+
+    _dumper_protocole()
+    print(f"  Protocole partagé : {_PROTOCOLE_PATH}")
 
     # 1. Serveur (sans LLM — déterministe)
     t0 = time.time()
@@ -119,7 +151,7 @@ def main():
 
     # 2. Sauvegarde du rapport
     dep = {
-        "protocole": "35 questions pré-enregistrées, critère 100 %",
+        "protocole": f"{len(TESTS)} questions pré-enregistrées, critère 100 %",
         "resultats": resultats,
         "ok": sum(1 for r in resultats if r["ok"]),
         "total": len(resultats),
@@ -134,7 +166,8 @@ def main():
     if not ok1:
         print("\n❌ SUITE NON PASSÉE — corriger les échecs avant validation.")
         sys.exit(1)
-    print("\n✅ SUITE PASSÉE — le pont serveur est validé sur 35 questions.")
+    print("\n✅ SUITE PASSÉE — le pont serveur est validé sur 50 questions.")
+    print("   → Exécuter aussi : node test_mobile_kernel.js (noyau mobile)")
 
 
 if __name__ == "__main__":

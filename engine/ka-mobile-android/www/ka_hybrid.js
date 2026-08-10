@@ -108,7 +108,52 @@
       'un débit suffisant. Causes : HTA, cardiopathie ischémique, valvulopathie, cardiomyopathie.',
     'paludisme': 'Le paludisme est une maladie parasitaire transmise par la piqûre du ' +
       'moustique anophèle. La prévention repose sur la moustiquaire imprégnée, ' +
-      'le traitement préventif et le diagnostic précoce.'
+      'le traitement préventif et le diagnostic précoce.',
+    'fièvre': 'La fièvre se définit par une température axillaire ≥ 37,5 °C ou rectale ' +
+      '≥ 38 °C. Toute fièvre chez un enfant de moins de 3 mois est une urgence.',
+    'fièvre jaune': 'La fièvre jaune est une maladie virale : fièvre brutale, frissons, ' +
+      'ictère et hémorragies possibles. URGENCE VITALE — Hospitalisation. ' +
+      'Pas de traitement spécifique. Vaccination préventive.',
+    'convulsions fébriles': 'Convulsion généralisée associée à la fièvre chez l\'enfant ' +
+      'de 6 mois à 5 ans, sans infection du système nerveux central et sans antécédent ' +
+      'épileptique. Conduite : position latérale, ne rien mettre en bouche.',
+    'gastro': 'La gastro-entérite associe diarrhée, vomissements, nausées et douleurs ' +
+      'abdominales, avec fièvre modérée possible. Gravité modérée. Conduite : ' +
+      'réhydratation (soluté oral), repas légers.',
+    'covid': 'La COVID-19 associe fièvre, toux sèche, fatigue, perte d\'odorat (anosmie) ' +
+      'et de goût (agueusie), essoufflement possible. Gravité élevée. Conduite : ' +
+      'isolement immédiat, test PCR.'
+  };
+
+  // 🚨 Conduites d'urgence (dérivées du corpus — gravité + conduite_à_tenir + symptômes)
+  var CONDUITES_URGENCE = {
+    'avc': '⚠️ URGENCE VITALE — Appeler le 15 IMMÉDIATEMENT. Chaque minute compte. ' +
+      'Signes : paralysie du visage, faiblesse d\'un bras, trouble de la parole.',
+    'infarctus': '⚠️ URGENCE VITALE — Appeler le 15 (SAMU) IMMÉDIATEMENT. ' +
+      'Ne pas conduire. Rester au repos. Signes : douleur thoracique, essoufflement, sueurs froides.',
+    'appendicite': '⚠️ URGENCE VITALE — Appeler le 15. Ne pas manger ni boire. ' +
+      'Risque de péritonite. Signes : douleur abdominale droite, fièvre modérée.',
+    'dengue': 'Consultation. Paracétamol uniquement — pas d\'aspirine ni d\'ibuprofène. ' +
+      'Hydratation. Signes d\'alarme : douleurs abdominales, vomissements, saignements → urgence.',
+    'covid': 'Isolement immédiat. Test PCR. Consultation si essoufflement.',
+    'rhume': 'Repos, hydratation, lavage de nez. Pas d\'antibiotiques — c\'est viral.',
+    'gastro': 'Réhydratation (soluté oral). Repas légers. ' +
+      'Consultation si signes de déshydratation (48 h si pas d\'amélioration).',
+    'fièvre': 'Rechercher paludisme (TDR), infection urinaire, méningite selon les signes. ' +
+      'Paracétamol 10-15 mg/kg si fièvre élevée. Fièvre chez un enfant < 3 mois = urgence.',
+    'convulsions fébriles': 'Position latérale de sécurité. Ne rien mettre en bouche. ' +
+      'Si la crise dure plus de 5 minutes : diazépam IR 0,5 mg/kg. Évoquer la méningite ' +
+      'si 1re crise, signes méningés ou récupération lente.'
+  };
+
+  var ALIASES_CONDUITE = {
+    'crise cardiaque': 'infarctus',
+    'attaque cerebrale': 'avc',
+    'coronavirus': 'covid',
+    'covid 19': 'covid',
+    'covid19': 'covid',
+    'convulsions': 'convulsions fébriles',
+    'gastro enterite': 'gastro'
   };
 
   var MOTS_MEDICAUX = [
@@ -118,8 +163,29 @@
     { noms: ['epilepsie', 'épilepsie'], cle: 'epilepsie' },
     { noms: ['drepanocytose', 'drépanocytose'], cle: 'drepanocytose' },
     { noms: ['insuffisance cardiaque'], cle: 'insuffisance cardiaque' },
-    { noms: ['paludisme'], cle: 'paludisme' }
+    { noms: ['paludisme'], cle: 'paludisme' },
+    // ⚠️ fièvre jaune AVANT fièvre (ordre = priorité de correspondance)
+    { noms: ['fievre jaune', 'fièvre jaune'], cle: 'fièvre jaune' },
+    { noms: ['fievre', 'fièvre'], cle: 'fièvre' },
+    { noms: ['convulsions febrile', 'convulsions fébriles'], cle: 'convulsions fébriles' },
+    { noms: ['gastro'], cle: 'gastro' },
+    { noms: ['covid'], cle: 'covid' }
   ];
+
+  function estQuestionConduite(question) {
+    // « que faire en cas d'AVC ? » → la conduite du corpus, pas une invention
+    var q = sansAccents(question).replace(/'/g, ' ').replace(/-/g, ' ');
+    var marqueurs = ['que faire', 'en cas', 'conduite', 'que dois', 'comment reagir'];
+    var marque = false;
+    for (var i = 0; i < marqueurs.length; i++)
+      if (q.indexOf(marqueurs[i]) >= 0) { marque = true; break; }
+    if (!marque) return null;
+    for (var cle in CONDUITES_URGENCE)
+      if (q.indexOf(sansAccents(cle)) >= 0) return cle;
+    for (var alias in ALIASES_CONDUITE)
+      if (q.indexOf(alias) >= 0) return ALIASES_CONDUITE[alias];
+    return null;
+  }
 
   function estQuestionMedicale(question) {
     var q = question.toLowerCase().replace(/'/g, ' ').replace(/-/g, ' ');
@@ -176,6 +242,8 @@
 
   function repondre(question) {
     if (estIdentite(question)) return { type: 'IDENTITE' };
+    var conduite = estQuestionConduite(question);
+    if (conduite) return { type: 'CONDUITE', concept: conduite, valeur: CONDUITES_URGENCE[conduite] };
     var maladie = estQuestionMedicale(question);
     if (maladie) return { type: 'MEDICAL', concept: maladie, valeur: FAITS_MEDICAUX[maladie] };
     var r = calculer(question);
@@ -197,6 +265,7 @@
   function phraseModele(core) {
     if (core.type === 'IDENTITE') return REPONSE_IDENTITE;
     if (core.type === 'MEDICAL') return core.valeur;
+    if (core.type === 'CONDUITE') return core.valeur;
     if (core.type === 'CALC') {
       var v = core.valeur;
       var s = (v === Math.floor(v)) ? String(v) : v.toFixed(6).replace(/0+$/, '').replace(/\.$/, '');
@@ -212,6 +281,26 @@
                     'peux pas', 'ne suis pas', 'ne veux pas', 'capable', 'envie',
                     'du genre', 'désolé', 'ne peux pas', 'peut pas', 'pas capable'];
 
+  // Nombres en lettres françaises — port exact de _en_lettres (pont_hybride.py)
+  var UNITES_LETTRES = ['', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept',
+    'huit', 'neuf', 'dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze',
+    'seize', 'dix-sept', 'dix-huit', 'dix-neuf'];
+  var DIZAINES_LETTRES = ['', 'dix', 'vingt', 'trente', 'quarante', 'cinquante',
+    'soixante', 'soixante-dix', 'quatre-vingt', 'quatre-vingt-dix'];
+
+  function enLettres(n) {
+    if (n === 0) return 'zéro';
+    if (n < 20) return UNITES_LETTRES[n];
+    if (n < 100) {
+      var d = Math.floor(n / 10), u = n % 10;
+      if (d === 7) return u ? 'soixante-' + UNITES_LETTRES[10 + u] : 'soixante-dix';
+      if (d === 9) return u ? 'quatre-vingt-' + UNITES_LETTRES[10 + u] : 'quatre-vingt';
+      return DIZAINES_LETTRES[d] + (u ? '-' + UNITES_LETTRES[u] : '');
+    }
+    var c = Math.floor(n / 100), r = n % 100;
+    return 'cent' + (r ? ' ' + enLettres(r) : '');
+  }
+
   function auditer(core, phrase) {
     phrase = phrase.toLowerCase();
     if (core.type === 'REFUS') {
@@ -223,16 +312,22 @@
       var v = core.valeur;
       var s = (v === Math.floor(v)) ? String(v) : v.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
       if (phrase.replace(/,/g, '.').indexOf(s) >= 0) return true;
-      // nombres en lettres : on vérifie les mots-clés (cinq, quarante…)
-      var lettres = ['un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf',
-                     'dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize',
-                     'vingt', 'trente', 'quarante', 'cinquante', 'soixante',
-                     'quatre-vingt'];
-      for (var j = 0; j < lettres.length; j++)
-        if (phrase.indexOf(lettres[j]) >= 0) return true;
+      // nombres en lettres : vérification exacte (première + dernière partie)
+      if (v === Math.floor(v) && v >= 0 && v < 1000) {
+        var parties = enLettres(v).split('-');
+        if (phrase.indexOf(parties[0]) >= 0 &&
+            phrase.indexOf(parties[parties.length - 1]) >= 0) return true;
+      }
       return false;
     }
     if (core.type === 'FAIT') return phrase.indexOf(core.concept.toLowerCase()) >= 0;
+    if (core.type === 'MEDICAL' || core.type === 'CONDUITE') {
+      // empreinte du contenu : premiers mots significatifs (comme le serveur)
+      var mots = (sansAccents(core.valeur || '').match(/[a-z]{5,}/g) || []).slice(0, 3);
+      for (var k = 0; k < mots.length; k++)
+        if (phrase.indexOf(mots[k]) >= 0) return true;
+      return false;
+    }
     return false;
   }
 

@@ -79,6 +79,56 @@ FAITS_MEDICAUX = {
     "paludisme": ("Le paludisme est une maladie parasitaire transmise par la piqûre du "
                   "moustique anophèle. La prévention repose sur la moustiquaire imprégnée, "
                   "le traitement préventif et le diagnostic précoce."),
+    "fièvre": ("La fièvre se définit par une température axillaire ≥ 37,5 °C ou rectale "
+               "≥ 38 °C. Toute fièvre chez un enfant de moins de 3 mois est une urgence."),
+    "fièvre jaune": ("La fièvre jaune est une maladie virale : fièvre brutale, frissons, "
+                     "ictère et hémorragies possibles. URGENCE VITALE — Hospitalisation. "
+                     "Pas de traitement spécifique. Vaccination préventive."),
+    "convulsions fébriles": ("Convulsion généralisée associée à la fièvre chez l'enfant "
+                             "de 6 mois à 5 ans, sans infection du système nerveux central "
+                             "et sans antécédent épileptique. Conduite : position latérale, "
+                             "ne rien mettre en bouche."),
+    "gastro": ("La gastro-entérite associe diarrhée, vomissements, nausées et douleurs "
+               "abdominales, avec fièvre modérée possible. Gravité modérée. Conduite : "
+               "réhydratation (soluté oral), repas légers."),
+    "covid": ("La COVID-19 associe fièvre, toux sèche, fatigue, perte d'odorat (anosmie) "
+              "et de goût (agueusie), essoufflement possible. Gravité élevée. Conduite : "
+              "isolement immédiat, test PCR."),
+}
+
+# 🚨 CONDUITES D'URGENCE (dérivées du corpus : gravité + conduite_à_tenir + symptômes)
+CONDUITES_URGENCE = {
+    "avc": ("⚠️ URGENCE VITALE — Appeler le 15 IMMÉDIATEMENT. Chaque minute compte. "
+            "Signes : paralysie du visage, faiblesse d'un bras, trouble de la parole."),
+    "infarctus": ("⚠️ URGENCE VITALE — Appeler le 15 (SAMU) IMMÉDIATEMENT. "
+                  "Ne pas conduire. Rester au repos. "
+                  "Signes : douleur thoracique, essoufflement, sueurs froides."),
+    "appendicite": ("⚠️ URGENCE VITALE — Appeler le 15. Ne pas manger ni boire. "
+                    "Risque de péritonite. Signes : douleur abdominale droite, fièvre modérée."),
+    "dengue": ("Consultation. Paracétamol uniquement — pas d'aspirine ni d'ibuprofène. "
+               "Hydratation. Signes d'alarme : douleurs abdominales, vomissements, "
+               "saignements → urgence."),
+    "covid": ("Isolement immédiat. Test PCR. Consultation si essoufflement."),
+    "rhume": ("Repos, hydratation, lavage de nez. Pas d'antibiotiques — c'est viral."),
+    "gastro": ("Réhydratation (soluté oral). Repas légers. "
+               "Consultation si signes de déshydratation (48 h si pas d'amélioration)."),
+    "fièvre": ("Rechercher paludisme (TDR), infection urinaire, méningite selon les signes. "
+               "Paracétamol 10-15 mg/kg si fièvre élevée. "
+               "Fièvre chez un enfant < 3 mois = urgence."),
+    "convulsions fébriles": ("Position latérale de sécurité. Ne rien mettre en bouche. "
+                             "Si la crise dure plus de 5 minutes : diazépam IR 0,5 mg/kg. "
+                             "Évoquer la méningite si 1re crise, signes méningés "
+                             "ou récupération lente."),
+}
+
+_ALIASES_CONDUITE = {
+    "crise cardiaque": "infarctus",
+    "attaque cerebrale": "avc",
+    "coronavirus": "covid",
+    "covid 19": "covid",
+    "covid19": "covid",
+    "convulsions": "convulsions fébriles",
+    "gastro enterite": "gastro",
 }
 
 _PATTERNS_MEDICAUX = [
@@ -97,6 +147,15 @@ _PATTERNS_MEDICAUX = [
     ("c'est quoi", "le diabete"), ("c est quoi", "le diabete"),
     ("c'est quoi", "le paludisme"), ("c est quoi", "le paludisme"),
     ("qu'est-ce que", "le diabete"), ("quest ce que", "le diabete"),
+    # ⚠️ fièvre jaune AVANT fièvre (ordre = priorité de correspondance)
+    ("c'est quoi", "fièvre jaune"), ("c est quoi", "fièvre jaune"),
+    ("qu'est-ce que", "fièvre jaune"), ("quest ce que", "fièvre jaune"),
+    ("c'est quoi", "la fièvre"), ("c est quoi", "la fièvre"),
+    ("qu'est-ce que", "la fièvre"), ("quest ce que", "la fièvre"),
+    ("c'est quoi", "convulsions fébriles"), ("c est quoi", "convulsions fébriles"),
+    ("c'est quoi", "gastro"), ("c est quoi", "gastro"),
+    ("c'est quoi", "covid"), ("c est quoi", "covid"),
+    ("qu'est-ce que", "covid"), ("quest ce que", "covid"),
 ]
 
 
@@ -131,6 +190,21 @@ def _est_question_medicale(question):
     for maladie in FAITS_MEDICAUX:
         m = _normaliser(maladie)
         if m in q and any(p in q for p in ("quoi", "c est", "quest ce", "definir", "explique")):
+            return maladie
+    return None
+
+
+def _est_question_conduite(question):
+    """« que faire en cas d'AVC ? » → la conduite du corpus, pas une invention."""
+    q = _normaliser(question)
+    if not any(m in q for m in ("que faire", "en cas", "conduite",
+                                "que dois", "comment reagir")):
+        return None
+    for maladie in CONDUITES_URGENCE:
+        if _normaliser(maladie) in q:
+            return maladie
+    for alias, maladie in _ALIASES_CONDUITE.items():
+        if alias in q:
             return maladie
     return None
 
@@ -180,6 +254,10 @@ class NoyauHybride:
     def repondre(self, question):
         if _est_question_identite(question):
             return {"type": "IDENTITE"}
+        conduite = _est_question_conduite(question)
+        if conduite:
+            return {"type": "CONDUITE", "concept": conduite,
+                    "valeur": CONDUITES_URGENCE[conduite]}
         maladie = _est_question_medicale(question)
         if maladie:
             return {"type": "MEDICAL", "concept": maladie,
@@ -262,11 +340,16 @@ class Audit:
         s = str(int(v)) if v == int(v) else f"{v:.4f}".rstrip("0").rstrip(".")
         if s in phrase.replace(",", "."):
             return True
-        if v == int(v):
+        if v == int(v) and 0 <= v < 1000:
             lettres = _en_lettres(int(v))
             parties = lettres.split("-")
             return parties[0] in phrase.lower() and parties[-1] in phrase.lower()
         return False
+
+    @classmethod
+    def _mots_distinctifs(cls, texte):
+        """Les premiers mots significatifs d'un texte — empreinte de l'audit."""
+        return [m for m in _normaliser(texte).split() if len(m) >= 5][:3]
 
     @classmethod
     def verifier(cls, core, phrase):
@@ -279,6 +362,10 @@ class Audit:
         if core["type"] == "FAIT":
             ok = core["concept"] in phrase.lower()
             return ok, "concept présent" if ok else "concept absent"
+        if core["type"] in ("MEDICAL", "CONDUITE"):
+            mots = cls._mots_distinctifs(core["valeur"])
+            ok = any(m in _normaliser(phrase) for m in mots)
+            return ok, "contenu présent" if ok else "contenu absent"
         return False, "inconnu"
 
 
@@ -287,6 +374,8 @@ def _phrase_modele(core):
     if core["type"] == "IDENTITE":
         return REPONSE_IDENTITE
     if core["type"] == "MEDICAL":
+        return core["valeur"]
+    if core["type"] == "CONDUITE":
         return core["valeur"]
     if core["type"] == "CALC":
         v = core["valeur"]
@@ -308,7 +397,8 @@ class PontHybride:
             self.noyau.apprendre(c)
         self.phraseur = PhraseurOllama() if utiliser_ollama else None
         self.audit = Audit()
-        self.stats = {"CALC": 0, "FAIT": 0, "REFUS": 0, "IDENTITE": 0, "MEDICAL": 0, "AUDIT_OK": 0, "AUDIT_KO": 0}
+        self.stats = {"CALC": 0, "FAIT": 0, "REFUS": 0, "IDENTITE": 0,
+                      "MEDICAL": 0, "CONDUITE": 0, "AUDIT_OK": 0, "AUDIT_KO": 0}
 
     def traiter(self, question):
         """Pipeline complet — retourne la réponse dict JSON."""
@@ -317,15 +407,21 @@ class PontHybride:
         self.stats[core["type"]] += 1
         contenu = self._contenu_core(core)
         etapes = []
+        phrase, ok = None, False
 
-        # 1. Phraseur réel (si disponible)
-        phrase = None
-        if self.phraseur and self.phraseur.disponible():
+        # 1. Le contenu médical ne passe JAMAIS par le LLM : texte exact du corpus.
+        #    (une conduite hallucinée peut tuer — on ne génère pas, on cite)
+        if core["type"] in ("MEDICAL", "CONDUITE"):
+            phrase = _phrase_modele(core)
+            etapes.append("corpus → phrase exacte (pas de LLM)")
+            ok = True
+        # 2. Phraseur réel (si disponible)
+        elif self.phraseur and self.phraseur.disponible():
             try:
                 phrase = self.phraseur.generer(contenu, question)
                 ok, detail = self.audit.verifier(core, phrase)
                 etapes.append(f"LLM: {detail}")
-                # 2. Régénération stricte si l'audit échoue sur un calcul
+                # 3. Régénération stricte si l'audit échoue sur un calcul
                 if not ok and core["type"] == "CALC":
                     phrase2 = self.phraseur.generer(contenu, question, strict=True)
                     ok2, detail2 = self.audit.verifier(core, phrase2)
@@ -334,13 +430,18 @@ class PontHybride:
                         phrase, ok, detail = phrase2, True, detail2
                     else:
                         phrase = None
+                # 4. Tout autre échec d'audit (FAIT…) :
+                #    on ne garde JAMAIS une phrase non vérifiée → fallback noyau
+                elif not ok:
+                    etapes.append("audit refusé → phrase modèle")
+                    phrase = None
             except Exception as e:
                 etapes.append(f"LLM erreur: {e}")
                 phrase = None
         else:
             etapes.append("LLM indisponible → phrase modèle")
 
-        # 3. Fallback : la phrase modèle du noyau (garantie)
+        # 5. Fallback : la phrase modèle du noyau (garantie)
         if phrase is None:
             phrase = _phrase_modele(core)
             etapes.append("fallback noyau")
