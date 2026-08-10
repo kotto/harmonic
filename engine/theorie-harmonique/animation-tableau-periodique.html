@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Animation — Le remplissage du tableau périodique — Théorie de l'Univers Harmonique</title>
+<meta name="description" content="Animation interactive du remplissage du tableau périodique : les 118 éléments se placent un par un selon la file d'attente de Madelung, les étages (périodes) se remplissent, les gaz nobles s'allument en or. Zéro paramètre ajusté."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="styles.css"/>
+<style>
+.reveal{opacity:1!important;transform:none!important}
+:root{--bg:#07090f;--bg-2:#0b0e17;--panel:#0d1120;--gold:#f5c96b;--gold-dim:#b8964a;--text:#e8e4d8;--muted:#8b8a84;--s:#e0a83c;--p:#d9764e;--d:#4e8fd9;--f:#8f6fd9}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace}
+.wrap{max-width:1100px;margin:0 auto;padding:2rem 1.5rem 4rem}
+h1{font-family:'Fraunces',serif;font-weight:700;font-size:1.9rem;color:var(--gold);margin:.4rem 0}
+.kicker{color:var(--gold-dim);font-size:.8rem;letter-spacing:.12em;text-transform:uppercase}
+.lede{color:var(--muted);max-width:70ch;line-height:1.6;font-size:.9rem}
+/* ══ CONTROLES ══ */
+.controls{display:flex;flex-wrap:wrap;gap:.8rem;align-items:center;margin:1.2rem 0;background:var(--panel);border:1px solid var(--gold-line);border-radius:10px;padding:.9rem 1.1rem}
+.controls button{background:transparent;border:1px solid var(--gold-line-strong);color:var(--gold);border-radius:6px;padding:.45rem 1rem;cursor:pointer;font-family:inherit;font-size:.85rem;transition:background .15s}
+.controls button:hover{background:rgba(245,201,107,.12)}
+.controls label{color:var(--muted);font-size:.75rem;display:flex;align-items:center;gap:.4rem}
+.controls input[type=range]{accent-color:var(--gold);width:110px}
+.controls input[type=number]{background:var(--bg-2);border:1px solid var(--gold-line);color:var(--gold);border-radius:6px;padding:.3rem .5rem;width:64px;font-family:inherit}
+#btnPlay{min-width:74px}
+/* ══ PANNEAU INFO ══ */
+.info{display:grid;grid-template-columns:auto 1fr;gap:1.2rem;align-items:center;background:var(--panel);border:1px solid var(--gold-line);border-radius:12px;padding:1.1rem 1.4rem;margin-bottom:1.2rem}
+#bigZ{font-family:'Fraunces',serif;font-size:3rem;color:var(--gold);line-height:1}
+#bigSym{font-size:2.4rem;color:var(--text);letter-spacing:.05em}
+#bigName{color:var(--muted);font-size:.85rem;margin-top:.2rem}
+#cfg{color:var(--text);font-size:.95rem;margin-top:.5rem;line-height:1.7}
+#cfg .new{color:var(--gold);font-weight:600}
+#meta{color:var(--muted);font-size:.78rem;margin-top:.3rem}
+#msg{color:var(--gold);font-size:.85rem;margin-top:.5rem;min-height:1.2em;font-weight:600}
+/* ══ FILE MADELUNG ══ */
+.queue{display:flex;flex-wrap:wrap;gap:.3rem;margin:1rem 0 .6rem}
+.q{font-size:.66rem;padding:.22rem .45rem;border:1px solid var(--gold-line);border-radius:5px;color:var(--muted);background:var(--bg-2)}
+.q.done{color:var(--gold-dim);border-color:var(--gold-line)}
+.q.active{color:#0a0c12;background:var(--gold);border-color:var(--gold);font-weight:700}
+/* ══ TABLEAU ══ */
+.grid{display:grid;grid-template-columns:repeat(18,1fr);gap:3px;margin-top:.6rem}
+.cell{aspect-ratio:1.15;border-radius:4px;border:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.62rem;color:var(--muted);background:var(--bg-2);cursor:default;transition:all .18s;position:relative;min-height:34px}
+.cell .z{font-size:.5rem;opacity:.55}
+.cell .sy{font-weight:600;font-size:.7rem;color:var(--text);margin-top:1px}
+.cell.s{background:rgba(224,168,60,.14);border-color:rgba(224,168,60,.3)}
+.cell.p{background:rgba(217,118,78,.14);border-color:rgba(217,118,78,.3)}
+.cell.d{background:rgba(78,143,217,.13);border-color:rgba(78,143,217,.3)}
+.cell.f{background:rgba(143,111,217,.14);border-color:rgba(143,111,217,.3)}
+.cell.filled{color:var(--text);border-color:rgba(255,255,255,.22)}
+.cell.cur{outline:2px solid var(--gold);outline-offset:1px;z-index:2;transform:scale(1.06)}
+.cell.flash{animation:goldflash .9s ease}
+@keyframes goldflash{0%{box-shadow:0 0 0 0 rgba(245,201,107,.9)}70%{box-shadow:0 0 0 12px rgba(245,201,107,0)}100%{box-shadow:0 0 0 0 rgba(245,201,107,0)}}
+.cell.ghost{border-style:dashed;border-color:var(--gold-line-strong);background:transparent;color:var(--gold-dim)}
+.cell.ghost .sy{color:var(--gold-dim)}
+.cell.gfired{border-color:var(--gold);color:var(--gold);background:rgba(245,201,107,.06)}
+.cell.f-star::after{content:"*";position:absolute;top:1px;right:3px;color:var(--gold-dim);font-size:.5rem}
+.floorLabel{grid-column:1/-1;color:var(--gold-dim);font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;margin-top:.6rem;text-align:center}
+.legend{display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem;color:var(--muted);font-size:.68rem}
+.legend span{display:flex;align-items:center;gap:.35rem}
+.dot{width:10px;height:10px;border-radius:2px;display:inline-block}
+/* ══ BARRE ══ */
+.pbar{height:6px;background:var(--bg-2);border-radius:3px;margin-top:1rem;overflow:hidden}
+.pfill{height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));width:0%;transition:width .2s}
+.stats{display:flex;gap:1.4rem;margin-top:.6rem;color:var(--muted);font-size:.72rem}
+.stats b{color:var(--gold)}
+/* ══ NOTE ══ */
+.note{margin-top:1.4rem;color:var(--muted);font-size:.72rem;line-height:1.7;border-top:1px solid var(--gold-line);padding-top:1rem}
+.note b{color:var(--gold-dim)}
+</style></head>
+<body><div class="grain" aria-hidden="true"></div>
+<header class="nav"><a class="nav__brand" href="index.html"><span class="nav__sigil">Ψ</span><span class="nav__title">Théorie Harmonique</span></a>
+<nav class="nav__links"><a href="tableau-periodique-pour-tous.html">← Le tableau expliqué</a><a href="faits-prouves.html">Les faits prouvés</a></nav></header>
+<main class="wrap">
+
+<p class="kicker reveal">Animation · La file d'attente de Madelung · zéro paramètre ajusté</p>
+<h1 class="reveal">Le remplissage du tableau périodique</h1>
+<p class="lede reveal">Chaque nouvel électron prend la première pièce libre dans l'ordre de Madelung (étage + forme, puis étage le plus bas). Regardez les 118 éléments se placer un par un — les étages se remplissent, et les gaz nobles s'allument en or quand un étage est complet.</p>
+
+<div class="controls reveal">
+  <button id="btnPlay">▶ Lancer</button>
+  <button id="btnReset">↺ Z=1</button>
+  <label>Vitesse <input type="range" id="speed" min="1" max="60" value="6"></label>
+  <label>Aller à Z <input type="number" id="jump" min="1" max="118" value="1"></label>
+  <label style="margin-left:auto" id="posLabel">Z = 1 / 118</label>
+</div>
+
+<div class="info reveal">
+  <div style="text-align:center;min-width:110px">
+    <div id="bigZ">1</div>
+    <div id="bigSym">H</div>
+    <div id="bigName">Hydrogène</div>
+  </div>
+  <div>
+    <div id="cfg">1s<sup>1</sup></div>
+    <div id="meta">Étage (période) 1 · Colonne (groupe) 1 · Bloc s</div>
+    <div id="msg"></div>
+  </div>
+</div>
+
+<div class="reveal">
+  <div style="color:var(--muted);font-size:.7rem;margin-bottom:.3rem">FILE D'ATTENTE DE MADELUNG — rempli par (étage+forme, étage) :</div>
+  <div class="queue" id="queue"></div>
+</div>
+
+<div class="grid reveal" id="grid"></div>
+
+<div class="legend">
+  <span><i class="dot" style="background:var(--s)"></i> bloc s</span>
+  <span><i class="dot" style="background:var(--p)"></i> bloc p</span>
+  <span><i class="dot" style="background:var(--d)"></i> bloc d</span>
+  <span><i class="dot" style="background:var(--f)"></i> bloc f</span>
+  <span><i class="dot" style="background:transparent;border:1px dashed var(--gold-dim)"></i> bloc g prédit</span>
+  <span style="color:var(--gold)">★ = lanthanides/actinides (convention groupe 3)</span>
+</div>
+
+<div class="pbar"><div class="pfill" id="pfill"></div></div>
+<div class="stats">
+  <span>Éléments : <b id="stZ">0</b>/118</span>
+  <span>Étages remplis : <b id="stPer">0</b>/7</span>
+  <span>Gaz nobles (étages pleins) : <b id="stNob">0</b>/7</span>
+  <span>Bloc g prédit : <b id="stG">18 éléments</b> (Z = 121–138)</span>
+</div>
+
+<div class="note">
+<b>Lecture THU :</b> les gaz nobles sont les <b>survivants des couches fermées</b> — une fois l'étage complet (s²p⁶), l'immeuble est « fini » : l'élimination (A1) a laissé survivre la configuration stable. Les tailles des étages — 2, 8, 8, 18, 18, 32, 32 — sortent des capacités des sous-couches (2 × (2l+1)) : uniquement des entiers. Après Z=120, la même règle prédit la pièce <b>5g</b> (18 places) : le bloc g, Z = 121 à 138, jamais observé.
+</div>
+
+</main>
+
+<script>
+(function(){
+  /* ═══════════ DONNÉES ═══════════ */
+  var SYMB = "H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og".split(" ");
+  var NAMES = ["Hydrogène","Hélium","Lithium","Béryllium","Bore","Carbone","Azote","Oxygène","Fluor","Néon","Sodium","Magnésium","Aluminium","Silicium","Phosphore","Soufre","Chlore","Argon","Potassium","Calcium","Scandium","Titane","Vanadium","Chrome","Manganèse","Fer","Cobalt","Nickel","Cuivre","Zinc","Gallium","Germanium","Arsenic","Sélénium","Brome","Krypton","Rubidium","Strontium","Yttrium","Zirconium","Niobium","Molybdène","Technétium","Ruthénium","Rhodium","Palladium","Argent","Cadmium","Indium","Étain","Antimoine","Tellure","Iode","Xénon","Césium","Baryum","Lanthane","Cérium","Praséodyme","Néodyme","Prométhium","Samarium","Europium","Gadolinium","Terbium","Dysprosium","Holmium","Erbium","Thulium","Ytterbium","Lutécium","Hafnium","Tantale","Tungstène","Rhénium","Osmium","Iridium","Platine","Or","Mercure","Thallium","Plomb","Bismuth","Polonium","Astate","Radon","Francium","Radium","Actinium","Thorium","Protactinium","Uranium","Neptunium","Plutonium","Américium","Curium","Berkélium","Californium","Einsteinium","Fermium","Mendélévium","Nobélium","Lawrencium","Rutherfordium","Dubnium","Seaborgium","Bohrium","Hassium","Meitnérium","Darmstadtium","Roentgenium","Copernicium","Nihonium","Flérovium","Moscovium","Livermorium","Tennesse","Oganesson"];
+
+  /* positions (colonne, rangée) — rangée 9/10 = bloc f */
+  function posOf(z){
+    if(z<=2) return [z===1?1:18,1];
+    if(z<=10) return [[1,2,13,14,15,16,17,18][z-3],2];
+    if(z<=18) return [[1,2,13,14,15,16,17,18][z-11],3];
+    if(z<=36) return [[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18][z-19],4];
+    if(z<=54) return [[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18][z-37],5];
+    if(z<=56) return [[1,2][z-55],6];
+    if(z===57) return [3,6];                 /* La — groupe 3 (convention) */
+    if(z<=71) return [z-55,9];               /* lanthanides : 3..16 */
+    if(z<=86) return [[4,5,6,7,8,9,10,11,12,13,14,15,16,17,18][z-72],6];
+    if(z<=88) return [[1,2][z-87],7];
+    if(z===89) return [3,7];                 /* Ac — groupe 3 (convention) */
+    if(z<=103) return [z-87,10];             /* actinides : 3..16 */
+    return [[4,5,6,7,8,9,10,11,12,13,14,15,16,17,18][z-104],7];
+  }
+  /* sous-couches dans l'ordre de Madelung */
+  var SUBS=[]; var LETTERS="spdf";
+  for(var n=1;n<=7;n++) for(var l=0;l<Math.min(4,n);l++) SUBS.push({n:n,l:l,cap:2*(2*l+1)});
+  SUBS.sort(function(a,b){ return (a.n+a.l)-(b.n+b.l) || a.n-b.n; });
+  var NOBLES={2:1,10:1,18:1,36:1,54:1,86:1,118:1};
+  function blockOf(l){ return l===0?"s":l===1?"p":l===2?"d":"f"; }
+  /* configuration cumulée */
+  function configOf(Z){
+    var fill=[]; for(var i=0;i<SUBS.length;i++) fill.push(0);
+    var last=0;
+    for(var e=1;e<=Z;e++){ for(var i=0;i<SUBS.length;i++){ if(fill[i]<SUBS[i].cap){ fill[i]++; last=i; break; } } }
+    var parts=[];
+    for(var i=0;i<SUBS.length;i++) if(fill[i]>0) parts.push(SUBS[i].n+LETTERS[SUBS[i].l]+fill[i]);
+    return {str:parts.join(" "), last:last, fill:fill};
+  }
+
+  /* ═══════════ CONSTRUCTION GRID ═══════════ */
+  var grid=document.getElementById("grid");
+  var cells={};
+  var NB_ROWS=11;
+  for(var r=1;r<=NB_ROWS;r++){
+    if(r===8) continue; /* ligne de séparation f */
+    if(r===11){ /* bloc g prédit */
+      var lab=document.createElement("div"); lab.className="floorLabel"; lab.textContent="BLOC g PRÉDIT — Z = 121 à 138 (pièce 5g, 18 places) — jamais observé";
+      lab.style.gridColumn="1/-1"; grid.appendChild(lab);
+      for(var c=3;c<=18;c++){ var g=document.createElement("div"); g.className="cell ghost"; g.style.gridColumn=c; g.style.gridRow=r;
+        var zz=document.createElement("div"); zz.className="z"; zz.textContent=121+(c-3);
+        var sy=document.createElement("div"); sy.className="sy"; sy.textContent="g";
+        g.appendChild(zz); g.appendChild(sy); g.dataset.ghost=(c-3); grid.appendChild(g); }
+      continue;
+    }
+    if(r===9||r===10){ /* bloc f : la ligne pleine */
+      for(var c=1;c<=18;c++){ if(c<3||c>16){ var sp=document.createElement("div"); sp.style.gridColumn=c; sp.style.gridRow=r; sp.style.minHeight="34px"; grid.appendChild(sp); continue; }
+        var z= r===9 ? 58+(c-3) : 90+(c-3);
+        var cell=document.createElement("div"); cell.className="cell f"; cell.style.gridColumn=c; cell.style.gridRow=r;
+        var zz=document.createElement("div"); zz.className="z"; zz.textContent=z;
+        var sy=document.createElement("div"); sy.className="sy"; sy.textContent=SYMB[z-1];
+        cell.appendChild(zz); cell.appendChild(sy); cells[z]=cell; grid.appendChild(cell); }
+      continue;
+    }
+    for(var c=1;c<=18;c++){ var cell=document.createElement("div"); cell.className="cell"; cell.style.gridColumn=c; cell.style.gridRow=r;
+      var zz=document.createElement("div"); zz.className="z"; zz.textContent="";
+      var sy=document.createElement("div"); sy.className="sy"; sy.textContent="";
+      cell.appendChild(zz); cell.appendChild(sy); grid.appendChild(cell); }
+  }
+  /* placer les 118 éléments connus */
+  for(var z=1;z<=118;z++){ var p=posOf(z); var cell=cells[z];
+    if(!cell){ /* créer la cellule (elle a peut-être été créée comme placeholder) */ }
+    cell=document.querySelector('.grid .cell[data-z="'+z+'"]')||cell;
+    if(!cell){ /* find by scanning : on reconstruit par position */
+      var found=false;
+      var all=grid.children;
+      for(var i=0;i<all.length;i++){ var el=all[i];
+        if(el.classList.contains("cell") && parseInt(el.style.gridColumn)===p[0] && parseInt(el.style.gridRow)===p[1]){ cell=el; found=true; break; } }
+      if(!found){ continue; }
+    }
+    cells[z]=cell; cell.dataset.z=z;
+    cell.querySelector(".z").textContent=z;
+    cell.querySelector(".sy").textContent=SYMB[z-1];
+    var cfg=configOf(z);
+    cell.classList.add(blockOf(SUBS[cfg.last].l));
+    if(z===57||z===89) cell.classList.add("f-star");
+  }
+  /* cases vides des lignes f : aucune action */
+
+  /* ═══════════ FILE MADELUNG ═══════════ */
+  var queue=document.getElementById("queue");
+  var qEls=[];
+  SUBS.forEach(function(s,i){ var el=document.createElement("div"); el.className="q";
+    el.textContent=s.n+LETTERS[s.l]+" ("+s.cap+")"; queue.appendChild(el); qEls.push(el); });
+
+  /* ═══════════ MOTEUR ═══════════ */
+  var Z=1, playing=false, acc=0, speed=6, timer=null;
+  var elPos=document.getElementById("posLabel"), elBigZ=document.getElementById("bigZ"),
+      elBigSym=document.getElementById("bigSym"), elBigName=document.getElementById("bigName"),
+      elCfg=document.getElementById("cfg"), elMeta=document.getElementById("meta"),
+      elMsg=document.getElementById("msg"), elFill=document.getElementById("pfill"),
+      stZ=document.getElementById("stZ"), stPer=document.getElementById("stPer"),
+      stNob=document.getElementById("stNob"), elPlay=document.getElementById("btnPlay");
+
+  function display(){
+    var cfg=configOf(Z);
+    elBigZ.textContent=Z; elBigSym.textContent=SYMB[Z-1]; elBigName.textContent=NAMES[Z-1];
+    elPos.textContent="Z = "+Z+" / 118";
+    /* configuration : tout en normal, la sous-couche en cours de remplissage en or */
+    var fill=[]; for(var i=0;i<SUBS.length;i++) fill.push(0);
+    var lastIdx=-1;
+    for(var e=1;e<=Z;e++){ for(var i=0;i<SUBS.length;i++){ if(fill[i]<SUBS[i].cap){ fill[i]++; lastIdx=i; break; } } }
+    var out="";
+    for(var i=0;i<SUBS.length;i++){ if(fill[i]>0){
+      var s=SUBS[i].n+LETTERS[SUBS[i].l]+"<sup>"+fill[i]+"</sup>";
+      out+= (i===lastIdx?"<span class='new'>"+s+"</span> ":s+" "); }}
+    elCfg.innerHTML=out;
+    /* meta */
+    elMeta.textContent="Étage (période) "+SUBS[lastIdx].n+" · Colonne (groupe) "+(NOBLES[Z]?18:groupeOf(Z))+" · Bloc "+blockOf(SUBS[lastIdx].l);
+    /* file Madelung */
+    for(var i=0;i<qEls.length;i++){ qEls[i].classList.remove("active"); qEls[i].classList.toggle("done", i<lastIdx); }
+    qEls[lastIdx].classList.add("active");
+    /* barre + stats */
+    elFill.style.width=(Z/118*100)+"%";
+    stZ.textContent=Z;
+    var nobles=0, periods=0;
+    for(var nz=1;nz<=Z;nz++){ if(NOBLES[nz]) nobles++; }
+    for(var pr=1;pr<=7;pr++){ var maxP=[2,10,18,36,54,86,118][pr-1]; if(Z>=maxP) periods++; }
+    stNob.textContent=nobles; stPer.textContent=periods;
+    /* cellule courante */
+    for(var zz=1;zz<=118;zz++){ var cl=cells[zz]; if(cl) cl.classList.remove("cur","flash"); }
+    if(cells[Z]){ cells[Z].classList.add("cur"); }
+    if(NOBLES[Z]){ cells[Z].classList.add("flash");
+      elMsg.textContent="⚡ ÉTAGE COMPLET — gaz noble : "+NAMES[Z-1]+" — le survivant de la couche fermée !";
+      if(Z===118){ setTimeout(function(){ elMsg.textContent="🎉 118/118 — les 7 étages sont pleins. La règle prédit ensuite : bloc g (Z = 121-138)."; },500); }
+    } else { elMsg.textContent=""; }
+  }
+  function groupeOf(z){
+    /* Convention : lanthanides (58-71) et actinides (90-103) = groupe 3 ; La/Ac = groupe 3 */
+    if(z===57||z===89||(z>=58&&z<=71)||(z>=90&&z<=103)) return 3;
+    return posOf(z)[0];
+  }
+  function step(){
+    if(Z<118){ Z++; display(); }
+    else { playing=false; elPlay.textContent="▶ Lancer"; }
+  }
+  function tick(dt){
+    if(!playing) return;
+    acc+=dt*speed;
+    while(acc>=1){ acc-=1; step(); if(!playing) return; }
+  }
+  var last=null;
+  function loop(ts){
+    if(last===null) last=ts;
+    var dt=Math.min(.1,(ts-last)/1000); last=ts;
+    tick(dt);
+    requestAnimationFrame(loop);
+  }
+  elPlay.addEventListener("click",function(){
+    playing=!playing; elPlay.textContent=playing?"⏸ Pause":"▶ Lancer";
+    if(Z>=118 && playing){ Z=1; display(); }
+  });
+  document.getElementById("btnReset").addEventListener("click",function(){ Z=1; display(); });
+  document.getElementById("speed").addEventListener("input",function(){ speed=parseInt(this.value,10); });
+  document.getElementById("jump").addEventListener("keydown",function(e){
+    if(e.key==="Enter"){ var v=parseInt(this.value,10); if(v>=1&&v<=118){ Z=v; display(); } }
+  });
+  display();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body></html>
