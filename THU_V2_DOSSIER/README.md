@@ -46,6 +46,8 @@
 |---|---|
 | `REHABILITATION_EINSTEIN.md` | La réhabilitation d'Einstein — déterminisme (« Dieu ne joue pas aux dés » = A1), complétude (MQ = cas α=1), unification (QM et RG = deux étages de la tour), la constante cosmologique dérivée à ×1,4, et la révélation : Einstein a découvert les niveaux n=1 (photon, 1905) et n=2 (graviton, 1915) de la tour — avec les 3 points d'honnêteté (localité, validité de la MQ, dette) (page site : `theorie-harmonique/rehabilitation-einstein.html`) |
 
+| `LETTRE_POSTHUME_A_EINSTEIN.md` | La lettre posthume de remerciements à Einstein pour avoir continué malgré les moqueries — le déterminisme (A1), la MQ incomplète (cas α=1), les deux étages de la tour (photon 1905, graviton 1915), Λ réhabilitée à ×1,4 (page site : `theorie-harmonique/lettre-a-einstein.html`) |
+
 ### 📢 Communication
 
 | Fichier | Description |
