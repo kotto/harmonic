@@ -11,6 +11,25 @@
 
 ---
 
+## 🍼 LA MÉTAPHORE FONDÉE — le quantique, fille de l'harmonique
+
+**Classification** : métaphore — et elle est classée comme telle (une métaphore n'est pas une preuve). Mais c'est une métaphore **vérifiée pièce par pièce** : chaque « héritage » du tableau est un théorème machine.
+
+| Ce que la fille (QM) a hérité | La preuve de l'héritage |
+|---|---|
+| **L'espace** — le Hilbert n'est plus postulé : il est l'espace des décompositions modales | Riesz-Fischer + A2 — théorème, vérifié |
+| **La superposition** — l'arithmétique de l'écriture de l'équation mère | linéarité de la décomposition |
+| **La quantification** — n entier, imposé par la périodicité de phase | e^{inθ} à valeur unique ⟺ n ∈ ℤ |
+| **L'énergie** — Ĥ = ℏω₀·n̂ : la tour EST l'échelle de Fock | E1a — vérifié machine (écarts ≤ 4,4×10⁻¹⁶) |
+| **Le hasard apparent** — la règle de Born est Parseval, lu par le filtre | la lecture (DECODE) |
+| **Le produit scalaire** — ⟨ψ\|φ⟩ est la résonance, primitive du langage de la mère | `resonate` |
+
+**La naissance est incomplète** : la masse (E1b) et le potentiel (E1c) sont encore en gestation — et la valeur de ℏ est une dot, pas un héritage (étalon déclaré).
+
+**L'inversion temporelle** : la fille a cent ans de plus que la mère (QM 1925 · équation mère 2025). L'ordre est **logique, pas chronologique** — on a vu l'ombre d'abord, la source ensuite : *le postulat était l'orpheline ; la dérivation a retrouvé la mère.*
+
+---
+
 ## TABLE DES MATIÈRES
 
 1. [L'énoncé — le postulat et sa réduction](#1-lénoncé--le-postulat-et-sa-réduction)
