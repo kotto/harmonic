@@ -113,8 +113,11 @@ def test_action_call_recognized(seeded):
 
 
 def test_action_compress_recognized(seeded):
+    """« compresse le dossier photos » → la compression HCV (la phare)."""
     r = seeded.post('/api/memory-first/ask', json={'query': 'compresse le dossier photos'})
-    assert r.get_json()['suggested_action'] == 'compress'
+    body = r.get_json()
+    assert body['suggested_action'] == 'hcv_compress'
+    assert 'HCV' in body['provenance'][0]['source']  # la provenance cite le codec
 
 
 def test_action_battery_recognized(seeded):

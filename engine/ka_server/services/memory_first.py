@@ -148,22 +148,35 @@ ACTIONS = [
     {'mot': 'appelle', 'action': 'call', 'relation': 'call'},
     {'mot': 'sms', 'action': 'sms', 'relation': 'sms'},
     {'mot': 'envoie un message', 'action': 'sms', 'relation': 'sms'},
-    {'mot': 'compresse', 'action': 'compress', 'relation': 'compress'},
-    {'mot': 'compresser', 'action': 'compress', 'relation': 'compress'},
+    # ⚡ HCV — la compression phare de KA (serveur hcv_codec : wasm/serveur/fallback)
+    {'mot': 'compresse', 'action': 'hcv_compress', 'relation': 'hcv_compress'},
+    {'mot': 'compresser', 'action': 'hcv_compress', 'relation': 'hcv_compress'},
+    {'mot': 'compression', 'action': 'hcv_compress', 'relation': 'hcv_compress'},
+    {'mot': 'optimise', 'action': 'hcv_compress', 'relation': 'hcv_compress'},
+    {'mot': 'optimiser', 'action': 'hcv_compress', 'relation': 'hcv_compress'},
+    {'mot': 'stockage', 'action': 'hcv_compress', 'relation': 'hcv_compress'},
     {'mot': 'espace disque', 'action': 'diskSpace', 'relation': 'diskSpace'},
     {'mot': 'batterie', 'action': 'battery', 'relation': 'battery'},
     {'mot': 'ouvre', 'action': 'openApp', 'relation': 'openApp'},
     {'mot': 'wifi', 'action': 'wifiInfo', 'relation': 'wifiInfo'},
 ]
 
+HCV_SOURCE = ('HCV Codec — compression harmonique : photos ~30×, '
+              'vidéos ~30×, fichiers ~3× (hcv_codec.py, hybride '
+              'wasm/serveur/fallback)')
+
 
 def detect_action(query: str) -> dict | None:
     """Reconnaît une commande agentique (lexical, déterministe — X3).
-    Retourne {action, relation} ou None."""
+    Retourne {action, relation, source} ou None. La compression → HCV,
+    la fonction phare de KA."""
     q = _normalize(query)
     for entry in ACTIONS:
         if _normalize(entry['mot']) in q:
-            return {'action': entry['action'], 'relation': entry['relation']}
+            action = entry['action']
+            return {'action': action, 'relation': entry['relation'],
+                    'source': HCV_SOURCE if action == 'hcv_compress'
+                    else 'KA Actions — plugin natif du téléphone'}
     return None
 
 
@@ -180,13 +193,13 @@ def ask(query: str, threshold: float | None = None, top_k: int = 3) -> dict:
     thr = DEFAULT_REFUSAL_THRESHOLD if threshold is None else threshold
     mem = _get_memory()
 
-    # ⚡ PONT AGENTIQUE : une commande du téléphone (appeler, SMS, compresser…)
+    # ⚡ PONT AGENTIQUE : une commande du téléphone (appeler, SMS, HCV…)
     action = detect_action(query)
     if action is not None:
         return {'answer': f"Commande reconnue : {action['action']}.",
                 'provenance': [{'sujet': action['relation'], 'relation': 'action',
                                 'objet': action['action'],
-                                'source': 'KA Actions — plugin natif du téléphone'}],
+                                'source': action['source']}],
                 'confidence': 1.0, 'refused': False, 'reason': None,
                 'suggested_action': action['action']}
 
