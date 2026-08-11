@@ -43,8 +43,8 @@ def _predict(series, weights):
 
 def _pack(payloads):
     data = bytearray()
-    for mask, idx, q, phases, max_mag, mass, m in payloads:
-        data += mask.tobytes() + idx.tobytes() + q.tobytes() + phases.tobytes()
+    for mask, idx, q, mags, phases, max_mag, mass, m in payloads:
+        data += mask.tobytes() + idx.tobytes() + mags.tobytes() + phases.tobytes()
         data += np.float64(max_mag).tobytes()
     return zlib.compress(bytes(data), 9)
 
@@ -59,10 +59,11 @@ def _unpack(blob, h, w):
         mask = np.frombuffer(raw[off:off + (m + 7) // 8], np.uint8); off += (m + 7) // 8
         n_keep = int(np.count_nonzero(np.unpackbits(mask)[:m]))
         idx = np.frombuffer(raw[off:off + n_keep * 4], np.uint32); off += n_keep * 4
-        q = np.frombuffer(raw[off:off + n_keep], np.uint8); off += n_keep
-        phases = np.frombuffer(raw[off:off + n_keep * 2], np.float16); off += n_keep * 2
+        mags = np.frombuffer(raw[off:off + n_keep * 4], np.float32); off += n_keep * 4
+        phases = np.frombuffer(raw[off:off + n_keep * 4], np.float32); off += n_keep * 4
         max_mag = float(np.frombuffer(raw[off:off + 8], np.float64)[0]); off += 8
-        payloads.append((mask, idx, q, phases, max_mag, 0.0, m))
+        payloads.append((mask, idx, np.zeros(0, np.uint8), mags, phases,
+                        max_mag, 0.0, m))
     return payloads
 
 
