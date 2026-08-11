@@ -69,6 +69,25 @@ def register_chat_routes(app, services):
                     }), 200
             except Exception as e:
                 log.debug(f"Arithmetic emergence failed: {e}")
+
+            # 🧠 MEMORY-FIRST — la mémoire répond AVANT le LLM
+            # « Le LLM ne sait rien : il formule ce que la mémoire certifie,
+            #    et se tait quand elle se tait. » — la réponse vient du fait
+            #    stocké (avec provenance), jamais d'une fabrication.
+            try:
+                from ka_server.services.memory_first import ask as memory_first_ask
+                mf = memory_first_ask(message)
+                if not mf['refused']:
+                    return jsonify({
+                        'response': mf['answer'],
+                        'provenance': mf['provenance'],
+                        'confidence': mf['confidence'],
+                        'method': 'memory-first — le fait stocké, pas le LLM',
+                        'engine': 'memory_first',
+                        'code': 'MEMORY_FIRST_ANSWER',
+                    }), 200
+            except Exception as e:
+                log.debug(f"Memory-first failed: {e}")
             
             # Détection intention spécialisation
             if _is_specialize_intent(message):

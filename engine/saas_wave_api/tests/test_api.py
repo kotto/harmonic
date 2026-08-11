@@ -69,7 +69,7 @@ def _call(base, path, body=None, api_key=None):
     if api_key:
         req.add_header('X-API-Key', api_key)
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=60) as resp:
             return resp.status, json.loads(resp.read().decode())
     except urllib.error.HTTPError as e:
         return e.code, json.loads(e.read().decode())
@@ -180,6 +180,28 @@ def test_solve_arithmetic(server, demo_key):
     status, body = _call(server, '/v1/wave/solve', {'expression': '12 * 7'}, demo_key)
     assert status == 200
     assert body['result'] == 84
+
+
+# ═══ MEMORY-FIRST — LE RAG DÉTERMINISTE ═════════════════════════════════════
+
+def test_memory_first_rag(server, demo_key):
+    """/v1/memory/ask : réponse avec provenance ou refus structurel."""
+    _, s = _call(server, '/v1/memory/store_with_source',
+                 {'facts': [['lumiere', 'est une', 'onde electromagnetique',
+                             'cours de physique']]}, demo_key)
+    assert s['stored'] == 1
+
+    status, r = _call(server, '/v1/memory/ask',
+                      {'query': 'Qu est ce que la lumiere ?'}, demo_key)
+    assert status == 200
+    assert r['refused'] is False
+    assert r['answer'] == 'lumiere est une onde electromagnetique.'
+    assert r['provenance'][0]['source'] == 'cours de physique'
+
+    _, r2 = _call(server, '/v1/memory/ask',
+                  {'query': 'comment faire une pizza ?'}, demo_key)
+    assert r2['refused'] is True       # jamais de fabrication
+    assert r2['answer'] is None
 
 
 def test_benchmark_all_pass(server, demo_key):

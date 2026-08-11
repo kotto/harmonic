@@ -16,6 +16,7 @@ from .specialize import register_specialize_routes
 from .system import register_system_routes
 from .harmonic import register_harmonic_routes
 from .wave import register_wave_routes
+from .memory_first import register_memory_first_routes
 
 
 def register_routes(app, services):
@@ -47,6 +48,9 @@ def register_routes(app, services):
     # Routes Wave Compute — SaaS de calcul harmonique (clé API + quota)
     register_wave_routes(app, services)
     
+    # Routes Memory-First — l'architecture memory-first (provenance + refus)
+    register_memory_first_routes(app, services)
+    
     # Routes Agent (peuvent nécessiter auth selon config)
     register_agent_routes(app, services)
     
@@ -71,4 +75,5 @@ __all__ = [
     'register_system_routes',
     'register_harmonic_routes',
     'register_wave_routes',
+    'register_memory_first_routes',
 ]
