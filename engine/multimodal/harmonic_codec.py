@@ -1268,19 +1268,29 @@ class HarmonicCodec:
             # Distance L2 vectorisée: ||sigs[i] - q[j]||² pour tous i,j
             # = |sigs|²_row + |q|²_col - 2·sigs·q^T
             s = sigs.astype(np.float32)           # (M, D)
-            q = all_sigs.astype(np.float32)       # (N, D)
+            q_all = all_sigs.astype(np.float32)   # (N, D)
             s_norm = np.sum(s**2, axis=1)         # (M,)
-            q_norm = np.sum(q**2, axis=1)         # (N,)
-            cross = s @ q.T                        # (M, N)
-            dists = (s_norm[:, None] + q_norm[None, :] - 2.0 * cross)  # (M, N)
-            
-            min_idx = np.argmin(dists, axis=0)    # (N,)
-            min_dist = dists[min_idx, np.arange(all_sigs.shape[0])]  # (N,)
-            
-            better = min_dist < best_dist
-            best_dist[better] = min_dist[better]
-            best_shard[better] = shard_idx
-            best_idx[better] = min_idx[better]
+            q_norm = np.sum(q_all**2, axis=1)     # (N,)
+
+            # Retrieval PAR BLOCS de requêtes : les matrices (M, N) complètes
+            # explosent en mémoire (640 Mo par shard en 4K → 1,3 Go pour 2
+            # shards). Un bloc (M, B=1024) = ~160 Mo, borné quelle que soit
+            # la résolution (le goulot de l'encode 4K : 457 s pour 8 frames).
+            BLOCK_Q = 1024
+            for start in range(0, total_patches, BLOCK_Q):
+                end = min(start + BLOCK_Q, total_patches)
+                qb = q_all[start:end]                        # (B, D)
+                cross = s @ qb.T                             # (M, B)
+                dists = (s_norm[:, None] + q_norm[start:end][None, :]
+                         - 2.0 * cross)                      # (M, B)
+
+                min_idx_b = np.argmin(dists, axis=0)         # (B,)
+                min_dist_b = dists[min_idx_b, np.arange(end - start)]  # (B,)
+
+                better = min_dist_b < best_dist[start:end]
+                best_dist[start:end][better] = min_dist_b[better]
+                best_shard[start:end][better] = shard_idx
+                best_idx[start:end][better] = min_idx_b[better]
 
         # Charger les pixels des meilleurs matchs (batch par shard)
         for sid in set(best_shard[best_shard >= 0]):

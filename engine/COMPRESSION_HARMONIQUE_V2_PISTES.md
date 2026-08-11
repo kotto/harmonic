@@ -108,7 +108,9 @@ L'audit (`RAPPORT_AUDIT_HCV.md`) a publié l'écart : les codecs réels sont Ope
 | **4** | **6,0×** | **56,9 dB** | 28,6 | 41,6 |
 | 8 | 5,5× | 47,3 dB | 26,1 | 41,6 |
 
-**gop=4 est le réglage de référence** : −19 % de ratio pour **+17,8 dB de PSNR moyen** — la référence se rafraîchit, la dérive des frames lointaines est bornée. **4K native (test_4k_video.mp4, 3840×2160, 8 frames, dict sur 4, gop=4) : 4× @ 55,1 dB** (min 34,8 ; 190 Mo → 49,7 Mo) — premier test 4K du projet. Limite publiée : l'encode 4K est lent (457 s pour 8 frames — les matrices de distances du retrieval V2, ~1,3 Go/frame) → l'optimisation à venir : retrieval par blocs.
+**gop=4 est le réglage de référence** : −19 % de ratio pour **+17,8 dB de PSNR moyen** — la référence se rafraîchit, la dérive des frames lointaines est bornée. **4K native (test_4k_video.mp4, 3840×2160, 8 frames, dict sur 4, gop=4) : 4× @ 55,1 dB** (min 34,8 ; 190 Mo → 49,7 Mo) — premier test 4K du projet.
+
+**Le retrieval par blocs (étape j)** : les matrices de distances (M, N) complètes du V2 (`s @ q.T` + `dists`) explosaient en mémoire (640 Mo par shard en 4K) — `encode_v2` requête désormais par blocs de 1024 requêtes ((M, 1024) ≈ 160 Mo, borné quelle que soit la résolution). **Équivalence vérifiée** (B3 natif : 6,0× @ 56,9 dB identique) ; **4K : 49 s/frame (vs 57)** — le goulot était le calcul (produits matriciels), pas les allocations ; le crash mémoire des grandes résolutions est éliminé.
 
 **Le sélecteur 3 modes (étape g — le codec modal P1 comme 3e candidat)** : `encode_select(image, min_psnr)` — V2 DICT / FULL (bit-exact) + **MODAL** (troncature dorée, `hcv2_modal_codec`, magic `HCVM`) candidat **seulement si son PSNR mesuré ≥ min_psnr** — le plus petit gagne. `decode_select` route par magic. **Frontière mesurée (LOO ps=32, 8 images SDI)** :
 
@@ -178,7 +180,7 @@ Le pipeline assemble les briques vérifiées : **la prédiction (P3) + le résid
 | 4 | 📋 L'entropie dorée (P5) | le codeur arithmétique à la distribution pₙ |
 | 5 | 📋 P2 (holographique) · P4 (grain princié) | les pistes restantes |
 | 6 | 🔬 P6 : la vidéo à mémoire dans le domaine doré | le test naturel suivant |
-| 7 | ✅ **P7 : le dictionnaire partagé — complet** : trouvé (4e3830d), réparé (3 bugs), BEST + bit-exact + ps=32 : **213,2× LOO, 8/8 bit-exact (∞)** ; seuil inerte ; transfert doré = échec publié ; vidéo : **MC_RESIDUAL (plancher 22,5 → 26,2 dB) · GOP : 6,0× @ 56,9 dB (B3 natif) · 4K native 4× @ 55,1 dB · I-frame MODAL = échec publié** ; **sélecteur 3 modes : 372,9× @ 64,1 dB (min=20), 72,3× externes** ; 2 bugs de grille corrigés | le retrieval par blocs (l'encode 4K = 457 s — les matrices de distances) — le dernier chantier ouvert |
+| 7 | ✅ **P7 : le dictionnaire partagé — complet** : trouvé (4e3830d), réparé (3 bugs), BEST + bit-exact + ps=32 : **213,2× LOO, 8/8 bit-exact (∞)** ; seuil inerte ; transfert doré = échec publié ; vidéo : **MC_RESIDUAL · GOP 6,0× @ 56,9 dB (B3 natif) · 4K 4× @ 55,1 dB · I-frame MODAL = échec publié** ; **sélecteur 3 modes : 372,9× @ 64,1 dB (min=20), 72,3× externes** ; retrieval par blocs (mémoire bornée) ; 2 bugs de grille corrigés | le chantier P7 est clos — les suites possibles : le MC search optimisé (le temps 4K restant), le codec modal sur les P-frames à la résolution native, ou le chantier HHD3 (entropie) |
 
 ## 7. En une phrase
 
