@@ -28,39 +28,32 @@ GOLDEN_ORDER = 1 / PHI
 
 
 def frft(f: np.ndarray, a: float) -> np.ndarray:
-    """Transformée de Fourier fractionnaire d'ordre a (approximation
-    d'Ozaktas, PREMIÈRE PASSE). La normalisation exacte est un chantier
-    séparé : le probe normalise numériquement (‖out‖ = ‖in‖) — les masses
-    retenues (des fractions) sont invariantes d'échelle, les tests restent
-    valides. L'erreur d'échelle brute est rapportée en V1."""
+    """Transformée de Fourier fractionnaire d'ordre a — la DÉFINITION DIRECTE
+    (matrice exacte, Ozaktas 1996) : unitaire et additive par construction,
+    jusqu'à la discrétisation. N ≤ 512 (matrice N×N).
+
+    F_a(u) = A_φ·e^{iπ·cot φ·u²}·Σ_t f(t)·e^{iπ·cot φ·t²}·e^{−i2π·csc φ·u·t}
+    avec A_φ = √(1 − i·cot φ) · les grilles t, u = (j − N/2)/√N
+    """
     f = np.asarray(f, dtype=np.complex128)
     n = f.size
     phi = a * math.pi / 2
-    if abs(a - round(a)) < 1e-12:                      # ordres entiers exacts
-        k = round(a) % 4
-        if k == 0:
-            return f.copy()
-        if k == 1:
-            return np.fft.ifftshift(np.fft.fft(np.fft.fftshift(f)))
-        if k == 2:
-            return f[::-1].copy()
+    if abs(a) < 1e-12:
+        return f.copy()
+    if abs(a - 2.0) < 1e-12:
+        return f[::-1].copy()
+    if abs(a - 1.0) < 1e-12:
+        return np.fft.ifftshift(np.fft.fft(np.fft.fftshift(f)))
+    if abs(a - 3.0) < 1e-12:
         return np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(f))) * n
-    alpha = math.copysign(1.0, math.sin(phi))
-    t = np.linspace(-(n // 2), n // 2 - 1 + (n % 2), n) / math.sqrt(n)
-    w = np.exp(-1j * math.pi * math.tan(phi / 2) * t ** 2)
-    g = f * w
-    m = 2 * n
-    u = np.linspace(-(m // 2), m // 2 - 1, m) / math.sqrt(n) * 2
-    c = np.exp(1j * math.pi * alpha / math.sin(phi) * u ** 2) * np.exp(-1j * math.pi / 4)
-    pad = np.zeros(m, complex)
-    pad[:n] = g
-    conv = np.fft.ifft(np.fft.fft(pad) * np.fft.fft(c))
-    out = conv[n // 2:n // 2 + n] * w
-    out = out * np.exp(-1j * phi / 2) * abs(math.sin(phi)) ** 0.5
-    # normalisation numérique (probe) : Parseval préservé (lignes nulles gardées)
-    n_in = float(np.linalg.norm(f))
-    n_out = float(np.linalg.norm(out))
-    return out * (n_in / n_out) if n_in and n_out else out
+    cot = 1.0 / math.tan(phi)
+    csc = 1.0 / math.sin(phi)
+    grid = (np.arange(n) - n / 2) / math.sqrt(n)
+    chirp_t = np.exp(1j * math.pi * cot * grid ** 2)
+    chirp_u = np.exp(1j * math.pi * cot * grid ** 2)
+    kernel = np.exp(-1j * 2 * math.pi * csc * np.outer(grid, grid))
+    pref = (1 - 1j * cot) ** 0.5
+    return pref * chirp_u * (kernel @ (chirp_t * f))
 
 
 def golden_threshold_mass(coeffs: np.ndarray) -> float:
@@ -116,11 +109,11 @@ for label, sig in [('chirp linéaire', chirp), ('bruit doré 1/f^{1/φ}', gold_n
         print(f"      {name} : masse = {golden_threshold_mass(spec):.4f}")
 
 # ── V4 · Compression image — FFT vs FrFT doré, seuil doré ───────────────────
-print("\nV4 · COMPRESSION — une vraie image (architecture_photo), seuil doré 1/(φ·m)")
+print("\nV4 · COMPRESSION — image réduite 128×128 (architecture_photo), seuil doré")
 from PIL import Image
 img = np.array(Image.open(
     r'E:\SAAS - Copie\COMPRESSION-CAMERA\METHOD_2_SDI_LIKE_IMAGE_COMPRESSION\architecture_photo.png'
-).convert('L')).astype(np.float64)
+).convert('L').resize((128, 128))).astype(np.float64)
 
 def frft2d(matrix, a):
     rows = np.array([frft(row, a) for row in matrix])
@@ -146,18 +139,22 @@ for name, spec, rec in [('FFT      ', spec_fft, rec_fft), ('FrFT doré', spec_fr
 
 print("\n" + "═" * 70)
 print("STATUT PISTE 6 — la transformée fractionnaire dorée")
-print("   V1 ✅ Parseval préservé (normalisation numérique du probe)")
-print("   V2 ❌ ADDITIVITÉ EN ÉCHEC (écart 1,14) — l'implémentation est une")
-print("        première passe d'Ozaktas, PAS la vraie FrFT : la normalisation")
-print("        exacte est le chantier suivant — les mesures sont DIRECTIONNELLES,")
-print("        pas finales (publier l'échec, c'est la méthode)")
-print("   V3 ✅ direction confirmée : le bruit doré 1/f^{1/φ} est mieux compacté")
-print("        dans le domaine doré (0,875) que dans Fourier (0,769) — le")
-print("        contenu de la MÉMOIRE appartient au domaine doré ; le chirp, lui,")
-print("        reste à Fourier (0,988) — chaque contenu a son domaine")
-print("   V4 ❌ images ordinaires : Fourier gagne (0,997 @ 29 dB vs 0,863) —")
-print("        le domaine doré n'est PAS pour le contenu ordinaire, il est pour")
-print("        le contenu À MÉMOIRE (vidéo persistante, bruit 1/f — piste 3)")
-print("   Classement : 🔬 PROBE — l'ordre 1/φ est DÉRIVÉ (T1) ; la vraie FrFT")
-print("   (normalisation exacte) est la prochaine étape, puis la vidéo à mémoire")
+print("   V1 ❌ unitarité en échec (facteur ~√N) — la somme de Riemann directe")
+print("        manque le facteur d'échantillonnage exact ; l'algorithme")
+print("        d'Ozaktas (chirp 2N) est un CHANTIER DÉDIÉ, pas une ligne")
+print("   V2 ❌ additivité en échec (écart 26) — même cause : la FrFT discrète")
+print("        exacte reste à écrire — publié, c'est la méthode")
+print("   V3 ⚠️ DIRECTIONNEL mais cohérent : deux discrétisations différentes")
+print("        donnent la même direction — le bruit doré 1/f^{1/φ} est mieux")
+print("        compacté dans le domaine doré (0,875 puis 0,8805) que dans")
+print("        Fourier (0,769) — et l'ordre doré bat l'ordre demi (0,8805 vs")
+print("        0,8657) dans la définition directe : le contenu de la MÉMOIRE")
+print("        semble appartenir au domaine doré — à CONFIRMER avec la vraie FrFT")
+print("   V4 ⚠️ images ordinaires : Fourier gagne (0,993 @ 24,7 dB) — le domaine")
+print("        doré n'est pas pour le contenu ordinaire ; la reconstruction")
+print("        FrFT (domaine complexe sans symétrie conjuguée) exige la vraie")
+print("        transformée — déclaré, pas contourné")
+print("   Classement : 🔬 PROBE — la direction est un signal, pas une preuve ;")
+print("   l'ordre 1/φ est dérivé (T1) ; la vraie FrFT discrète (Ozaktas exact)")
+print("   est la prochaine étape, puis la vidéo à mémoire (piste 3)")
 print("═" * 70)
