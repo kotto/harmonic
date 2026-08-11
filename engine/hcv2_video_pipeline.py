@@ -85,6 +85,20 @@ def _unpack(blob, h, w):
     return payloads
 
 
+def _golden_grain(h: int, w: int, sigma: float, seed: int) -> np.ndarray:
+    """Le GRAIN DORÉ : le bruit à la pente spectrale 1/f^{1/(2φ)} — la
+    statistique de la mémoire (piste 6 — le contenu 1/f^{1/φ} appartient
+    au domaine doré) — la « sigma_curve » de la base, princiée par T1."""
+    rng = np.random.default_rng(int(seed))
+    fy = np.fft.fftfreq(h)[:, None]
+    fx = np.fft.fftfreq(w)[None, :]
+    f = np.hypot(fy, fx)
+    f = np.where(f == 0, 1.0, f)
+    phases = rng.uniform(0, 2 * math.pi, (h, w))
+    n = np.fft.ifft2(np.abs(f) ** (-1 / (2 * PHI)) * np.exp(1j * phases)).real
+    return n / (n.std() + 1e-12) * sigma
+
+
 def _grain_seed(t: int) -> int:
     """La graine dorée : int((t+1)·φ·2²⁴) — déterministe, dérivée (T1)."""
     return int((t + 1) * PHI * (1 << 24)) % (1 << 32)
@@ -159,8 +173,7 @@ def decode_video(enc):
             if enc.get('grain'):
                 # ✨ le grain RÉGÉNÉRÉ (déterministe, sa statistique stockée)
                 sigma, seed = grain_params[i * 3 + c]
-                rng = np.random.default_rng(int(seed))
-                ycbcr[t, :, :, c] = pred + rng.normal(0, sigma, (H, W))
+                ycbcr[t, :, :, c] = pred + _golden_grain(H, W, sigma, seed)
             else:
                 resid = _decode_channel(tail[i], (H, W))
                 ycbcr[t, :, :, c] = pred + resid
