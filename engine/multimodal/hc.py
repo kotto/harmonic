@@ -118,17 +118,20 @@ def cmd_decompress(args):
     # Détecter le format
     magic = data[:4]
     is_v2 = (magic == b'HHD2')
-    
+    is_modal = (magic == b'HCVM')
+
     # Charger le dictionnaire si fourni (requis pour V2)
     db = None
     if args.dict:
         db = HarmonicDatabase()
         db.load(args.dict)
-    
+
     hc = HarmonicCodec(db or HarmonicDatabase(patch_size=16, K=8), use_hcv=False)
-    
+
     t0 = time.perf_counter()
-    if is_v2:
+    if is_modal:
+        result = hc.decode_select(data, database=db)
+    elif is_v2:
         result = hc.decode_v2(data, database=db)
     else:
         result = hc.decode_full(data)
@@ -143,7 +146,7 @@ def cmd_decompress(args):
     save_image(img, output)
     
     print(f"📤 Décompressé: {img.shape[1]}×{img.shape[0]}  {decode_ms:.0f}ms")
-    print(f"   Format: {'HHD2' if is_v2 else 'HHDC'}  Mode: {meta.get('shared_dict', False)}")
+    print(f"   Format: {'HCVM' if is_modal else ('HHD2' if is_v2 else 'HHDC')}  Mode: {meta.get('shared_dict', False)}")
     print(f"✅ Sauvegardé: {output}")
 
 
@@ -252,6 +255,8 @@ def main():
     p.add_argument('-o', '--output', help='Fichier de sortie (.hhc)')
     p.add_argument('-d', '--dict', help='Dictionnaire entraîné (.hdb)')
     p.add_argument('--v2', action='store_true', help='Mode dictionnaire partagé (HHD2)')
+    p.add_argument('--min-psnr', type=float, default=None,
+                   help='Sélecteur 3 modes : le MODAL (troncature dorée) n est candidat que si PSNR ≥ ce seuil (défaut : exact uniquement)')
     p.add_argument('--hcv', action='store_true', help='Utiliser HCV Pro pour le résidu')
     p.add_argument('--quality', type=int, default=100, help='Qualité 0-100')
     p.add_argument('--zstd-level', type=int, default=11, help='Niveau zstd 1-22')

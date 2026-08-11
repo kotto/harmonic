@@ -561,11 +561,14 @@ class HarmonicCodec:
     # Motion compensation flags (bitstream)
     MC_SKIP = 0x02   # motion-compensated skip (copy from reference at offset)
     MC_DICT = 0x03   # motion-compensated dict match (dict ID + offset)
+    MC_RESIDUAL = 0x04  # motion-compensated + résidu (exact — supprime le plancher d'erreur du MC-SKIP)
 
     def encode_video(self, frames: list, concept: str = 'default',
                      skip_threshold: float = 5.0,
                      motion_invariant: bool = False,
-                     motion_search_range: int = 8) -> bytes:
+                     motion_search_range: int = 8,
+                     iframe_min_psnr: float = None,
+                     gop_size: int = 0) -> bytes:
         """
         Encode une séquence vidéo en I/P frames.
         
@@ -593,11 +596,13 @@ class HarmonicCodec:
         for frame_idx, frame in enumerate(frames):
             img = np.asarray(frame, dtype=np.uint8)
 
-            if frame_idx == 0:
-                # 🆕 I-frame : le sélecteur BEST (dictionnaire V2 ou FULL) —
-                # la même image fait ~200× en V2 DICT vs ~8× en DCT brut
+            if frame_idx == 0 or (gop_size and frame_idx % gop_size == 0):
+                # 🆕 I-frame (ou GOP : réinsérée tous les gop_size frames —
+                # la référence se rafraîchit, la dérive des frames lointaines
+                # est bornée ; l'I-frame coûte peu : ~246× exacte)
+                # Sélecteur (V2 DICT / FULL / MODAL si iframe_min_psnr fixé)
                 if self.use_hcv and len(self.db._shards) > 0:
-                    iframe_data, _ = self.encode_best(img)
+                    iframe_data, _ = self.encode_select(img, min_psnr=iframe_min_psnr)
                     header = struct.pack('<HHI', H, W, len(iframe_data))
                     chunks.append(bytes([self.FRAME_I_BEST]) + header + iframe_data)
                 elif self.use_hcv and self._hcv is not None:
@@ -609,8 +614,11 @@ class HarmonicCodec:
             else:
                 # P-frame vs la frame précédente RECONSTRUITE (encode-décode) —
                 # la référence exacte que le décodeur aura : comparer à
-                # l'originale divergeait (erreurs de skip recopiées → accumulation)
-                ref_prev = self._reconstruct_frame(frames[frame_idx - 1])
+                # l'originale divergeait (erreurs de skip recopiées → accumulation).
+                # Le MÊME sélecteur que l'I-frame (sinon l'encodeur comparerait
+                # à l'exacte et le décodeur aurait la lossy)
+                ref_prev = self._reconstruct_frame(frames[frame_idx - 1],
+                                                   iframe_min_psnr)
                 pframe_data = self._encode_pframe(img, ref_prev, n_h, n_w,
                                                    skip_threshold, motion_invariant,
                                                    motion_search_range)
@@ -623,14 +631,20 @@ class HarmonicCodec:
         self.last_ratio = raw_bytes / len(bitstream) if len(bitstream) > 0 else 0
         return bitstream
 
-    def _reconstruct_frame(self, img: np.ndarray) -> np.ndarray:
+    def _reconstruct_frame(self, img: np.ndarray,
+                           iframe_min_psnr: float = None) -> np.ndarray:
         """Encode-décode une image → la référence que le décodeur aura
-        (encode_best + décodage selon le magic, recadrage aux dimensions
-        originales). Utilisée comme référence des P-frames : sans cela, le
-        décodeur reconstruit depuis la frame décodée (différente de
-        l'originale) et les erreurs de skip s'accumulent."""
-        data, _ = self.encode_best(img)
-        if data[:4] == self.V2_MAGIC:
+        (encode_select + décodage par magic, recadrage aux dimensions
+        originales). Utilisée comme référence des P-frames : le MÊME
+        sélecteur que l'I-frame (min_psnr) pour que l'encodeur compare à
+        ce que le décodeur reconstruira — sinon, avec une I-frame MODAL
+        (lossy), l'encodeur comparerait à l'exacte et les erreurs de
+        l'I-frame se propageraient via les skips."""
+        data, _ = self.encode_select(img, min_psnr=iframe_min_psnr)
+        if data[:4] == self.MODAL_MAGIC:
+            m = self._modal_helpers()
+            rec = m.decode(data[4:])
+        elif data[:4] == self.V2_MAGIC:
             rec, _ = self.decode_v2(data, database=self.db)
         else:
             rec, _ = self.decode_full(data)
@@ -702,6 +716,7 @@ class HarmonicCodec:
         n_dict = 0
         n_exact = 0
         n_mc_skip = 0
+        n_mc_res = 0
         n_total = 0
         n_skip_static = 0
         
@@ -782,6 +797,26 @@ class HarmonicCodec:
                         n_changed += 1
                         continue
                 
+                # ── MC avec résidu (exact) ──
+                # La compensation est bonne sans être parfaite
+                # (threshold ≤ diff < 1,5·threshold) : patch déplacé + résidu —
+                # supprime le plancher d'erreur du MC-SKIP. Plage volontairement
+                # étroite : au-delà, le dict matche mieux (résidu ~0)
+                if (best_dx != 0 or best_dy != 0) and best_diff < threshold * 2.0:
+                    dx_byte = max(-128, min(127, best_dx))
+                    dy_byte = max(-128, min(127, best_dy))
+                    ref_patch = prev[y0 + best_dy:y0 + best_dy + ps,
+                                     x0 + best_dx:x0 + best_dx + ps]
+                    residual = curr.astype(np.int16) - ref_patch.astype(np.int16)
+                    residual_data = self._compress_residual(residual)
+                    pkt = struct.pack('<IBbbI', grid_idx, self.MC_RESIDUAL,
+                                      dx_byte, dy_byte, len(residual_data))
+                    pkt += residual_data
+                    parts.append(pkt)
+                    n_mc_res += 1
+                    n_changed += 1
+                    continue
+
                 # ── No good motion match → dictionary or raw ──
                 id_result = self.db.retrieve_with_id('default', curr)
 
@@ -814,6 +849,7 @@ class HarmonicCodec:
         self._last_video_match_rate = (n_dict + n_exact) / max(n_total, 1)
         self._last_video_skip_rate = (n_skip_static + n_mc_skip) / max(n_total, 1)
         self._last_video_mc_rate = n_mc_skip / max(n_total, 1)
+        self._last_video_mc_res_rate = n_mc_res / max(n_total, 1)
 
         parts.append(struct.pack('<I', self.END_MARKER))
         return b''.join(parts)
@@ -949,7 +985,10 @@ class HarmonicCodec:
                 offset += 8
                 best_data = data[offset:offset + best_len]
                 offset += best_len
-                if best_data[:4] == self.V2_MAGIC:
+                if best_data[:4] == self.MODAL_MAGIC:
+                    m = self._modal_helpers()
+                    image = m.decode(best_data[4:])
+                elif best_data[:4] == self.V2_MAGIC:
                     image, _ = self.decode_v2(best_data, database=self.db)
                 else:
                     image, _ = self.decode_full(best_data)
@@ -1097,6 +1136,28 @@ class HarmonicCodec:
                         rx1 = min(ref_x0 + ps, W_ref)
                         patch[:ry1-ref_y0, :rx1-ref_x0] = iframe_reference[ref_y0:ry1, ref_x0:rx1]
                     
+                    elif flags == 0x04:
+                        # MC-RESIDUAL: patch = référence déplacée + résidu (exact)
+                        if offset + 6 > len(data):
+                            break
+                        dx, dy = struct.unpack('<bb', data[offset:offset + 2])
+                        offset += 2
+                        residual_len = struct.unpack('<I', data[offset:offset + 4])[0]
+                        offset += 4
+                        # Clamp comme le MC-SKIP (dy → y, dx → x)
+                        ref_y0 = max(0, min(H_ref - ps, y0 + dy))
+                        ref_x0 = max(0, min(W_ref - ps, x0 + dx))
+                        ref_patch = np.zeros((ps, ps, 3), dtype=np.uint8)
+                        ry1 = min(ref_y0 + ps, H_ref)
+                        rx1 = min(ref_x0 + ps, W_ref)
+                        ref_patch[:ry1 - ref_y0, :rx1 - ref_x0] = \
+                            iframe_reference[ref_y0:ry1, ref_x0:rx1]
+                        residual = self._decompress_residual(
+                            data[offset:offset + residual_len], ps, dctx)
+                        offset += residual_len
+                        patch = np.clip(ref_patch.astype(np.int16) + residual,
+                                        0, 255).astype(np.uint8)
+
                     elif flags == 0x03:
                         # MC-DICT: motion-compensated dict match (not yet implemented)
                         # Fall through to raw
@@ -1293,6 +1354,44 @@ class HarmonicCodec:
         if len(data_v2) <= len(data_full):
             return data_v2, 'V2_DICT'
         return data_full, 'FULL'
+
+    def encode_select(self, image: np.ndarray, min_psnr: float = None,
+                      concept: str = 'default') -> Tuple[bytes, str]:
+        """
+        Sélecteur à 3 modes : V2 DICT / FULL (bit-exact, PSNR ∞) + MODAL
+        (troncature dorée P1, `hcv2_modal_codec`) — le MODAL n'est candidat
+        que si son PSNR mesuré ≥ min_psnr (curseur de qualité ; None → exact
+        uniquement, comportement d'encode_best). Le plus petit gagne.
+
+        Returns:
+            (bitstream, mode) — mode ∈ {'V2_DICT', 'FULL', 'MODAL'}
+        """
+        data_v2 = self.encode_v2(image, concept)
+        data_full = self.encode_full(image, concept)
+        best, mode = (data_v2, 'V2_DICT') if len(data_v2) <= len(data_full) \
+            else (data_full, 'FULL')
+        if min_psnr is not None:
+            m = self._modal_helpers()
+            try:
+                blob = m.encode(image)['blob']
+                rec = m.decode(blob)
+                if m.psnr(image, rec) >= min_psnr and len(blob) + 4 < len(best):
+                    return self.MODAL_MAGIC + blob, 'MODAL'
+            except Exception:
+                pass  # échec modal → exact (publié, jamais bloquant)
+        return best, mode
+
+    def decode_select(self, data: bytes, database=None) -> Tuple[np.ndarray, dict]:
+        """Décode un bitstream du sélecteur (routage par magic :
+        HCVM → modal, HHD2 → V2, sinon FULL)."""
+        if data[:4] == self.MODAL_MAGIC:
+            m = self._modal_helpers()
+            return m.decode(data[4:]), {}
+        if data[:4] == self.V2_MAGIC:
+            return self.decode_v2(data, database=database)
+        return self.decode_full(data)
+
+    MODAL_MAGIC = b'HCVM'  # préfixe du mode MODAL (troncature dorée, P1)
 
     def decode_v2(self, data: bytes, database=None) -> Tuple[np.ndarray, dict]:
         """

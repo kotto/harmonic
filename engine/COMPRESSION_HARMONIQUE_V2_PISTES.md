@@ -94,7 +94,32 @@ L'audit (`RAPPORT_AUDIT_HCV.md`) a publié l'écart : les codecs réels sont Ope
 
 **Les P-frames (étape e — comparaison à la frame précédente)** : **4,9 → 8,4× (+71 %)** — le mouvement cumulé vs frame 0 écrasait le ratio. Deux découvertes publiées :
 1. **Pas de divergence encode/décode possible** : le codec est bit-exact → la référence reconstruite (encode-décode) est identique à l'originale → l'accumulation apparente venait du skip, pas d'une divergence de référence.
-2. **Le `skip_threshold` est le curseur ratio/qualité** (scan mesuré, même B3) : 1,0 → 2,8× @ 49,6 dB · 2,0 → 4,1× @ 43,5 dB · 3,5 → 6,2× @ 40,2 dB · 5,0 → 8,4× @ 38,9 dB (défaut) · 8,0 → 16,9× @ 36,5 dB. Le plancher ~22 dB (tous réglages) vient du **MC-SKIP** (patches déplacés copiés sans résidu — mouvement > 8 px mal compensé) — la prochaine amélioration vidéo.
+2. **Le `skip_threshold` est le curseur ratio/qualité** (scan mesuré, même B3) : 1,0 → 2,8× @ 49,6 dB · 2,0 → 4,1× @ 43,5 dB · 3,5 → 6,2× @ 40,2 dB · 5,0 → 8,4× @ 38,9 dB (défaut) · 8,0 → 16,9× @ 36,5 dB.
+
+**Le MC avec résidu (étape f — MC_RESIDUAL, flag 0x04)** : les patches dont la compensation est bonne sans être parfaite (threshold ≤ diff < 2·threshold) sont encodés patch déplacé + résidu exact — **le plancher d'erreur du MC-SKIP est relevé** : à skip=5, min PSNR **22,5 → 26,2 dB** (moyen 38,9 → 39,4 dB) au prix de −23 % de ratio (8,4 → 6,5× — le dict matche mieux que le MC sur les différences moyennes ; plage 1,5× mesurée : 6,9× @ 38,2 dB, min 24,8 — le 2× est le meilleur compromis qualité). 2 bugs réels corrigés dans le décodage 0x04 (dx/dy inversés, clamp absent — le bloc 0x02 clamp, le mien non). Nouveau curseur skip : 2,8× @ 48,7 → 13,8× @ 37,5 dB.
+
+**L'I-frame vidéo MODAL (étape h) — ÉCHEC PUBLIÉ, contre-productif** : `encode_video(iframe_min_psnr=...)` autorise le MODAL sur l'I-frame (`_reconstruct_frame` aligné sur le même sélecteur — cohérence encodeur/décodeur garantie). Mesuré (B3, 10 frames, skip=5, MC_RES 2×) : **I-frame exacte 6,5× @ 39,4 dB (min 26,2) · I-frame MODAL 20-25 dB → 2,5× @ 39,2** — le ratio CHUTE : la référence lossy (25-35 dB) dégrade la prédiction des P-frames (plus de patches « modifiés » vs la référence bruitée) et noie le gain de l'I-frame (~1 Ko sur ~1000 Ko). **La vidéo exige une référence exacte — le lossy appartient aux P-frames (skip/motion), pas à l'I-frame.** `iframe_min_psnr` reste disponible (défaut None = exact, le comportement retenu).
+
+**Le GOP (étape i — vidéo native) — la dérive est bornée** : `encode_video(gop_size=...)` réinsère une I-frame (exacte, ~246×) tous les `gop_size` frames. **B3 NATIF (478×850, 10 frames, dict ps=32, skip=5, MC_RES 2×)** :
+
+| gop | Ratio | PSNR moyen | min | dernière frame |
+|---|---|---|---|---|
+| 0 (1 I-frame) | 7,4× | 39,1 dB | 26,1 | 29,4 (dérive) |
+| **4** | **6,0×** | **56,9 dB** | 28,6 | 41,6 |
+| 8 | 5,5× | 47,3 dB | 26,1 | 41,6 |
+
+**gop=4 est le réglage de référence** : −19 % de ratio pour **+17,8 dB de PSNR moyen** — la référence se rafraîchit, la dérive des frames lointaines est bornée. **4K native (test_4k_video.mp4, 3840×2160, 8 frames, dict sur 4, gop=4) : 4× @ 55,1 dB** (min 34,8 ; 190 Mo → 49,7 Mo) — premier test 4K du projet. Limite publiée : l'encode 4K est lent (457 s pour 8 frames — les matrices de distances du retrieval V2, ~1,3 Go/frame) → l'optimisation à venir : retrieval par blocs.
+
+**Le sélecteur 3 modes (étape g — le codec modal P1 comme 3e candidat)** : `encode_select(image, min_psnr)` — V2 DICT / FULL (bit-exact) + **MODAL** (troncature dorée, `hcv2_modal_codec`, magic `HCVM`) candidat **seulement si son PSNR mesuré ≥ min_psnr** — le plus petit gagne. `decode_select` route par magic. **Frontière mesurée (LOO ps=32, 8 images SDI)** :
+
+| min_psnr | Ratio moyen | PSNR moyen | Exactes |
+|---|---|---|---|
+| None (BEST exact) | 213,2× | 100,0 dB | 8/8 |
+| 15-20 | **372,9×** | 64,1 dB | 4/8 |
+| 25 | 279,8× | 73,9 dB | 5/8 |
+| 30 | 259,2× | 91,9 dB | 7/8 |
+
+Chaque +5 dB de contrainte retire ~50-90× et rend une image exacte — le curseur fonctionne. **Sur les externes** (dict SDI, images jamais vues) : 2,5× → **72,3× moyenne @ 25,8-33,7 dB** (JWST 22,2× · 02_original 193,1×) — le modal récupère le terrain inconnu — **et le critère protège** : `evolution_gen` (incompressible) reste FULL exact 1,6×. Le MODAL à 22-36 dB est du lossy fort assumé : le curseur min_psnr est le contrat (CLI `--min-psnr`, défaut None = exact).
 
 **Ce que cela signifie pour le protocole HCV2** : le dictionnaire est la **Piste 7** — implémentée (héritée de 4e3830d), réparée (3 bugs), et maintenant mesurée. **Le sélecteur optimal `encode_best` + le résidu bit-exact sont en place** (`multimodal/harmonic_codec.py`, CLI `hc.py`) : pour chaque image, le plus petit de V2 DICT / FULL est choisi, le décodeur détecte le format par magic — **44,4× moyenne LOO, 8/8 images bit-exact (PSNR ∞)**. Prochaines étapes : le match_threshold et le patch_size (l'échelle du gain dépend du seuil), puis les briques THU dans le résidu (troncature dorée, chaîne cₙ) au lieu du Delta-H/zstd.
 
@@ -153,7 +178,7 @@ Le pipeline assemble les briques vérifiées : **la prédiction (P3) + le résid
 | 4 | 📋 L'entropie dorée (P5) | le codeur arithmétique à la distribution pₙ |
 | 5 | 📋 P2 (holographique) · P4 (grain princié) | les pistes restantes |
 | 6 | 🔬 P6 : la vidéo à mémoire dans le domaine doré | le test naturel suivant |
-| 7 | ✅ **P7 : le dictionnaire partagé — complet** : trouvé (4e3830d), réparé (3 bugs), BEST + bit-exact + ps=32 : **213,2× LOO, 8/8 bit-exact (∞)** sur collection homogène (2,5× externe, BEST protège) ; seuil inerte ; transfert doré = échec publié ; vidéo : **I-frame 246× exacte · P-frames vs précédente 8,4× @ 38,9 dB (curseur skip 2,8×@49,6 → 16,9×@36,5)** ; 2 bugs de grille corrigés | le MC-SKIP avec résidu (plancher ~22 dB du mouvement), puis le codec modal (P1) comme 3e mode du sélecteur |
+| 7 | ✅ **P7 : le dictionnaire partagé — complet** : trouvé (4e3830d), réparé (3 bugs), BEST + bit-exact + ps=32 : **213,2× LOO, 8/8 bit-exact (∞)** ; seuil inerte ; transfert doré = échec publié ; vidéo : **MC_RESIDUAL (plancher 22,5 → 26,2 dB) · GOP : 6,0× @ 56,9 dB (B3 natif) · 4K native 4× @ 55,1 dB · I-frame MODAL = échec publié** ; **sélecteur 3 modes : 372,9× @ 64,1 dB (min=20), 72,3× externes** ; 2 bugs de grille corrigés | le retrieval par blocs (l'encode 4K = 457 s — les matrices de distances) — le dernier chantier ouvert |
 
 ## 7. En une phrase
 
