@@ -52,6 +52,18 @@ python scripts/check_sync.py   # → « 0 divergence »
 
 **Le serveur confirme** : `HCV Codec: WASM=True, Server=True (android=True, upscaler=True, pro=True)` — la chaîne complète : mémoire → commande (`hcv_compress`) → serveur (codec complet) → client (`ka_hcv.js`) → `.hcv` téléchargé. Il ne reste que le binaire WASM natif (projet HCV) pour le décodage hors formats standard.
 
+### Le verdict sur le binaire WASM (vérifié le 11/08/2026)
+
+**Le binaire n'existe pas — et c'est documenté, pas caché** :
+
+| Fait vérifié | Détail |
+|---|---|
+| `HCV-Compression-Engine/wasm/delta_h.wasm` (557 o) | ❌ **placeholder texte** — « This file will be replaced with the actual compiled WASM binary » (magic ASCII `// Place…`, pas un WASM) |
+| `wasm/delta_h.js` (4 Ko) | ✅ glue JS réel — chargeur structuré qui attend le binaire à `/wasm/delta_h.wasm` |
+| Les codecs (`codecs/hcv_*.py`) | ✅ **Python** — pas de source C/C++/Rust à compiler : la chaîne WASM n'a jamais été construite |
+
+**Conséquence honnête** : la chaîne fonctionne **sans le binaire** — le serveur exécute les vrais codecs Python (`hcv_codec.py` — WASM=True, Server=True), le client (`ka_hcv.js`) décode les formats standard (JPEG/PNG/WebP/GIF par sniff) et **déclare** l'état WASM (`absent`). Le portage du codec en C/Rust + compilation emscripten → `hcv_wasm.wasm` est une **optimisation future** (décodage natif hors-ligne), pas un prérequis : il faut porter le Python en natif d'abord — un choix de projet, pas une livraison.
+
 ## 5. Les fichiers du projet (inventaire)
 
 | Fichier | Rôle |
