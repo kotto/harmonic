@@ -43,12 +43,14 @@ cp -r www/. ios/App/App/public/
 python scripts/check_sync.py   # → « 0 divergence »
 ```
 
-## 4. Les pièces manquantes identifiées (à livrer)
+## 4. Les pièces manquantes — ÉTAT (les deux livrées le 11/08/2026)
 
-| Pièce | Où | Pourquoi |
+| Pièce | Où | État |
 |---|---|---|
-| `www/ka_hcv.js` | **dans `www/`** (la source — puis sync) | Le chargeur WASM du codec HCV — `sw.js` le référence déjà dans son cache ; la compression serveur fonctionne, le décodage client manque |
-| Le 2ᵉ chemin d'entrée | `ka_server` route `/` | Avec `server.url: http://10.0.2.2:8765`, la WebView peut charger depuis le serveur — vérifier ce que la route `/` sert (l'app ou le site) |
+| `www/ka_hcv.js` | ✅ **livrée dans `www/`** (la source — puis sync) | Le codec client : chargeur WASM honnête (état déclaré tant que `hcv_wasm.wasm` n'est pas livré par le projet HCV), décodage standard par sniff des signatures (JPEG/PNG/WebP/GIF), délégation serveur pour la compression — propagée aux copies Android/iOS, `check_sync` = 0 |
+| Le 2ᵉ chemin d'entrée | ✅ **implémenté** — `ka_server/app.py` | La route `/` sert le shell de l'app (`www/ka_index.html`) avec repli JSON de santé ; la route `/<path:filename>` sert les assets de l'app (repli 404 → les routes du site restent intactes) — vérifié : `/` → app · `/ka_hcv.js` → codec · `/api/health` et `/corporation` intacts |
+
+**Le serveur confirme** : `HCV Codec: WASM=True, Server=True (android=True, upscaler=True, pro=True)` — la chaîne complète : mémoire → commande (`hcv_compress`) → serveur (codec complet) → client (`ka_hcv.js`) → `.hcv` téléchargé. Il ne reste que le binaire WASM natif (projet HCV) pour le décodage hors formats standard.
 
 ## 5. Les fichiers du projet (inventaire)
 

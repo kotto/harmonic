@@ -90,9 +90,16 @@ def create_app(config_override: dict = None) -> Flask:
     from ka_server.routes import register_routes
     register_routes(app, services)
     
-    # ── Health check racine ─────────────────────────────────────────────────
+    # ── Health check racine / point d'entrée de l'app mobile ────────────────
     @app.route('/')
     def index():
+        """Le point d'entrée de l'app KA Mobile (server.url: http://10.0.2.2:8765).
+        L'app vit dans ka-mobile-android/www/ (webDir Capacitor) — la source.
+        Repli : le JSON de santé si le shell est absent."""
+        _WWW_DIR = Path(__file__).resolve().parent.parent / 'ka-mobile-android' / 'www'
+        if (_WWW_DIR / 'ka_index.html').exists():
+            from flask import send_from_directory
+            return send_from_directory(str(_WWW_DIR), 'ka_index.html')
         return {
             'name': _KA_CONFIG.name if _KA_CONFIG else 'KA Server',
             'version': _KA_CONFIG.version if _KA_CONFIG else '4.0.0',
@@ -100,6 +107,20 @@ def create_app(config_override: dict = None) -> Flask:
             'status': 'running',
             'endpoints': '/api/health pour health check'
         }
+
+    # ── Assets de l'app mobile (www/) — repli vers les routes du site ──
+    @app.route('/<path:filename>')
+    def app_asset(filename):
+        """Sert les assets de l'app (www/ka_*.js, sw.js, icons…) — si le
+        fichier n'existe pas dans www/, repli 404 → les routes du site
+        (corporation, fondation…) continuent de fonctionner."""
+        _WWW_DIR = Path(__file__).resolve().parent.parent / 'ka-mobile-android' / 'www'
+        from flask import abort
+        target = _WWW_DIR / filename
+        if target.is_file():
+            from flask import send_from_directory
+            return send_from_directory(str(_WWW_DIR), filename)
+        abort(404)
     
     # ── Sites publics (KA Corporation & KA Fondation) ───────────────────────
     from flask import send_from_directory
