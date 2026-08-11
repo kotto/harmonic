@@ -320,8 +320,9 @@ class HarmonicDatabase:
             if concept not in self._patches:
                 self._patches[concept] = []
             from multimodal.harmonic_database import HarmonicPatch
-            hp = HarmonicPatch(pixels=patch.copy(), concept=concept)
-            hp.signature = self._compute_signature(patch)
+            hp = HarmonicPatch(pixels=patch.copy(),
+                               signature=self._compute_signature(patch),
+                               concept=concept)
             self._patches[concept].append(hp)
             self._dirty_trees = True
             return
@@ -1559,6 +1560,17 @@ class HarmonicDatabase:
 
         # Reconstruire les KD-trees
         self._build_trees()
+
+        # Mode V3 : découvrir les shards voisins (dossier '<path>.shards'
+        # créé par build_dictionary) — répare la persistance du dictionnaire
+        # shardé : sans cela, un dict chargé depuis le disque a 0 shards et
+        # le codec retombe en mode FULL.
+        if not self._shard_dir:
+            shards_path = path.parent / (path.name + '.shards')
+            if shards_path.exists():
+                self._shard_dir = shards_path
+        if not self._shards:
+            self._discover_shards()
 
         # Reconstruire les index de similarité hexagonale
         if self._sim_features and HAS_KDTREE:

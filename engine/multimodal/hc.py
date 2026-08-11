@@ -87,6 +87,10 @@ def cmd_compress(args):
     if args.v2 and db and len(db._shards) > 0:
         data = hc.encode_v2(img)
         mode = 'V2 (dictionnaire partagé)'
+    elif db and len(db._shards) > 0:
+        # Sélecteur optimal : le plus petit de V2 DICT / FULL (zéro perte)
+        data, mode = hc.encode_best(img)
+        mode = f'BEST ({mode})'
     else:
         data = hc.encode_full(img)
         mode = 'FULL (autonome)'
@@ -251,7 +255,7 @@ def main():
     p.add_argument('--hcv', action='store_true', help='Utiliser HCV Pro pour le résidu')
     p.add_argument('--quality', type=int, default=100, help='Qualité 0-100')
     p.add_argument('--zstd-level', type=int, default=11, help='Niveau zstd 1-22')
-    p.add_argument('--patch-size', type=int, default=16)
+    p.add_argument('--patch-size', type=int, default=32)
     p.add_argument('--K', type=int, default=4)
     
     # decompress
@@ -269,7 +273,7 @@ def main():
     p = sub.add_parser('build-dict', help='Construire un dictionnaire')
     p.add_argument('--corpus', required=True, help='Dossier d\'images d\'entraînement')
     p.add_argument('-o', '--output', default='harmonic_dict.hdb')
-    p.add_argument('--patch-size', type=int, default=16)
+    p.add_argument('--patch-size', type=int, default=32)
     p.add_argument('--K', type=int, default=8)
     p.add_argument('--stride', type=int, default=None)
     p.add_argument('--quality', choices=['fast', 'balanced', 'deep'], default='balanced')
@@ -279,7 +283,7 @@ def main():
     p = sub.add_parser('video', help='Compresser une séquence vidéo')
     p.add_argument('input', help='Dossier de frames')
     p.add_argument('-o', '--output')
-    p.add_argument('--patch-size', type=int, default=16)
+    p.add_argument('--patch-size', type=int, default=32)
     p.add_argument('--K', type=int, default=4)
     p.add_argument('--quality', type=int, default=100)
     p.add_argument('--skip-threshold', type=float, default=5.0)

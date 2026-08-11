@@ -141,11 +141,15 @@ def build_dictionary(
             # Extraire le concept du nom du fichier/dossier
             concept = img_path.parent.name if img_path.parent.name != corpus_dir else 'default'
             
-            # Ingérer les patches
+            # Ingérer les patches (grille ceil + padding zéro — identique à
+            # l'encode : les patches de bord doivent exister dans le dict,
+            # sinon ils coûtent ~2 Ko chacun au lieu de 10 o)
             n_patches = 0
-            for y in range(0, H - ps + 1, st):
-                for x in range(0, W - ps + 1, st):
-                    patch = img[y:y+ps, x:x+ps].copy()
+            for y in range(0, H, st):
+                for x in range(0, W, st):
+                    ph, pw = min(ps, H - y), min(ps, W - x)
+                    patch = np.zeros((ps, ps, 3), dtype=np.uint8)
+                    patch[:ph, :pw] = img[y:y + ph, x:x + pw]
                     db.ingest(patch, concept=concept)
                     n_patches += 1
             

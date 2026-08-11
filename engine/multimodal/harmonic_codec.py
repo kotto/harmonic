@@ -83,6 +83,10 @@ class HarmonicCodec:
         # Seuil de distance pour le retrieval (au-delà → pas de bon match)
         self.match_threshold = 0.3  # L2 en espace des signatures (float32 normalisé)
 
+        # Mode de résidu doré (P1 — la troncature 1/(φ·m)) : remplace la DCT
+        # lossy par la diffract + seuil doré du codec modal HCV2 (zéro paramètre).
+        self.golden_residual = False
+
         # Stats
         self.encode_time = 0.0
         self.decode_time = 0.0
@@ -154,8 +158,8 @@ class HarmonicCodec:
         ps = self.ps
         st = stride if stride is not None else ps
 
-        n_h = max(1, (H - ps) // st + 1)
-        n_w = max(1, (W - ps) // st + 1)
+        n_h = max(1, (H + st - 1) // st)
+        n_w = max(1, (W + st - 1) // st)
 
         # Header
         header = struct.pack(
@@ -375,8 +379,8 @@ class HarmonicCodec:
         ps = self.ps
         st = ps
 
-        n_h = max(1, (H - ps) // st + 1)
-        n_w = max(1, (W - ps) // st + 1)
+        n_h = max(1, (H + st - 1) // st)
+        n_w = max(1, (W + st - 1) // st)
 
         header = struct.pack(
             '<4sBHHHBB3s',
@@ -551,6 +555,7 @@ class HarmonicCodec:
     FRAME_I = 0x01  # I-frame (tous les patches, encodage DCT+zstd)
     FRAME_P = 0x02  # P-frame (seulement les patches modifiés)
     FRAME_I_HCV = 0x03  # 🆕 I-frame encodée avec HCV Pro (mode hybride)
+    FRAME_I_BEST = 0x04  # I-frame encodée par encode_best (V2 DICT / FULL)
     END_MARKER = 0xFFFFFFFF
     
     # Motion compensation flags (bitstream)
@@ -589,15 +594,24 @@ class HarmonicCodec:
             img = np.asarray(frame, dtype=np.uint8)
 
             if frame_idx == 0:
-                # 🆕 Mode hybride: HCV Pro pour l'I-frame si disponible
-                if self.use_hcv and self._hcv is not None:
+                # 🆕 I-frame : le sélecteur BEST (dictionnaire V2 ou FULL) —
+                # la même image fait ~200× en V2 DICT vs ~8× en DCT brut
+                if self.use_hcv and len(self.db._shards) > 0:
+                    iframe_data, _ = self.encode_best(img)
+                    header = struct.pack('<HHI', H, W, len(iframe_data))
+                    chunks.append(bytes([self.FRAME_I_BEST]) + header + iframe_data)
+                elif self.use_hcv and self._hcv is not None:
                     iframe_data = self._encode_iframe_hcv(img)
                     chunks.append(bytes([self.FRAME_I_HCV]) + iframe_data)
                 else:
                     iframe_data = self._encode_iframe(img, n_h, n_w)
                     chunks.append(bytes([self.FRAME_I]) + iframe_data)
             else:
-                pframe_data = self._encode_pframe(img, reference, n_h, n_w,
+                # P-frame vs la frame précédente RECONSTRUITE (encode-décode) —
+                # la référence exacte que le décodeur aura : comparer à
+                # l'originale divergeait (erreurs de skip recopiées → accumulation)
+                ref_prev = self._reconstruct_frame(frames[frame_idx - 1])
+                pframe_data = self._encode_pframe(img, ref_prev, n_h, n_w,
                                                    skip_threshold, motion_invariant,
                                                    motion_search_range)
                 chunks.append(bytes([self.FRAME_P]) + pframe_data)
@@ -608,6 +622,19 @@ class HarmonicCodec:
         raw_bytes = sum(f.shape[0] * f.shape[1] * 3 for f in frames)
         self.last_ratio = raw_bytes / len(bitstream) if len(bitstream) > 0 else 0
         return bitstream
+
+    def _reconstruct_frame(self, img: np.ndarray) -> np.ndarray:
+        """Encode-décode une image → la référence que le décodeur aura
+        (encode_best + décodage selon le magic, recadrage aux dimensions
+        originales). Utilisée comme référence des P-frames : sans cela, le
+        décodeur reconstruit depuis la frame décodée (différente de
+        l'originale) et les erreurs de skip s'accumulent."""
+        data, _ = self.encode_best(img)
+        if data[:4] == self.V2_MAGIC:
+            rec, _ = self.decode_v2(data, database=self.db)
+        else:
+            rec, _ = self.decode_full(data)
+        return rec[:img.shape[0], :img.shape[1]]
 
     def _encode_iframe_hcv(self, img: np.ndarray) -> bytes:
         """Encode une I-frame avec HCV Pro (mode hybride).
@@ -914,6 +941,27 @@ class HarmonicCodec:
             offset += 1
 
             # Lire les dimensions de la grille (sauf pour HCV I-frame qui a son propre header)
+            if frame_type == self.FRAME_I_BEST:
+                # 🆕 I-frame encodée par encode_best (HHD2 ou HHDC)
+                n_iframes += 1
+                H_orig, W_orig, best_len = struct.unpack(
+                    '<HHI', data[offset:offset + 8])
+                offset += 8
+                best_data = data[offset:offset + best_len]
+                offset += best_len
+                if best_data[:4] == self.V2_MAGIC:
+                    image, _ = self.decode_v2(best_data, database=self.db)
+                else:
+                    image, _ = self.decode_full(best_data)
+                image = image[:H_orig, :W_orig]
+                final_h, final_w = image.shape[:2]
+                n_h = max(1, final_h // self.ps)
+                n_w = max(1, final_w // self.ps)
+                total_patches += n_h * n_w
+                frames.append(image.astype(np.uint8))
+                iframe_reference = image.astype(np.uint8).copy()
+                continue
+
             if frame_type == self.FRAME_I_HCV:
                 # 🆕 Mode hybride: I-frame HCV Pro
                 n_iframes += 1
@@ -969,7 +1017,10 @@ class HarmonicCodec:
             elif frame_type == self.FRAME_P:
                 n_pframes += 1
                 frame_patches = 0
-                # Toujours repartir de l'I-frame
+                # Repartir de la frame PRÉCÉDENTE décodée (mise à jour après
+                # chaque frame — cohérent avec l'encodeur, qui compare à la
+                # frame précédente : le mouvement cumulé vs frame 0 écrasait
+                # le ratio)
                 if iframe_reference is not None:
                     H_ref, W_ref = iframe_reference.shape[:2]
                     # 🆕 Utiliser les dimensions réelles de la référence
@@ -1084,8 +1135,8 @@ class HarmonicCodec:
             image = np.clip(image, 0, 255).astype(np.uint8)
             frames.append(image)
             current_frame = image
-            if frame_type == self.FRAME_I:
-                iframe_reference = image.copy()  # référence zéro pour P-frames
+            # Référence des P-frames suivantes : la frame PRÉCÉDENTE décodée
+            iframe_reference = image.copy()
 
         self.decode_time = time.perf_counter() - t0
 
@@ -1117,8 +1168,8 @@ class HarmonicCodec:
         ps = self.ps
         st = ps
 
-        n_h = max(1, (H - ps) // st + 1)
-        n_w = max(1, (W - ps) // st + 1)
+        n_h = max(1, (H + st - 1) // st)
+        n_w = max(1, (W + st - 1) // st)
         total_patches = n_h * n_w
 
         # Extraire tous les patches
@@ -1223,6 +1274,25 @@ class HarmonicCodec:
         self.last_ratio = raw_bytes / len(bitstream) if len(bitstream) > 0 else 0
         self._last_match_rate = n_matched / max(total_patches, 1)
         return bitstream
+
+    def encode_best(self, image: np.ndarray, concept: str = 'default',
+                    measure: bool = True) -> Tuple[bytes, str]:
+        """
+        Sélecteur optimal par image : encode en V2 DICT et en FULL, garde
+        le bitstream le plus petit (le mode le meilleur gagne, zéro perte).
+
+        Le décodeur existant détecte le format par magic (HHD2 vs HHDC) —
+        aucun changement de format, le bitstream choisi se décode tel quel
+        avec decode_v2 / decode_full.
+
+        Returns:
+            (bitstream, mode) — mode ∈ {'V2_DICT', 'FULL'}
+        """
+        data_v2 = self.encode_v2(image, concept)
+        data_full = self.encode_full(image, concept)
+        if len(data_v2) <= len(data_full):
+            return data_v2, 'V2_DICT'
+        return data_full, 'FULL'
 
     def decode_v2(self, data: bytes, database=None) -> Tuple[np.ndarray, dict]:
         """
@@ -1389,36 +1459,45 @@ class HarmonicCodec:
         return indices
 
     def _compress_residual(self, residual: np.ndarray) -> bytes:
-        """Compresse un residual (ps, ps, 3) int16 avec DCT 2D + quantification + RLE + zstd.
-        
-        Étapes:
-        1. DCT 2D par canal
-        2. Quantification uniforme (step = _quant_step si <100, sinon 1)
-        3. Zigzag → run-length encoding des zéros
-        4. Pack int16 → zstd final
+        """Compresse un residual (ps, ps, 3) int16.
+
+        Deux chemins, distingués par le premier octet du payload :
+          mode 0x01 (quality ≥ 92 → _quant_step == 0) : Delta-H int32 + zstd
+                 — EXACT (bit-à-bit, pas de DCT arrondie) ;
+          mode 0x00 : DCT 2D + quantification + zigzag + RLE + zstd
+                 — lossy (les arrondis de la DCT float64→int16 perdent ~1 LSB) ;
+          mode 0x02 (golden_residual=True) : diffract + troncature dorée
+                 1/(φ·m) + float16 + varint + zstd — lossy, zéro paramètre (P1).
+
+        Format payload : [mode:1B] + 3 chunks [len:4B][zstd] (par canal).
         """
+        if self._quant_step == 0:
+            return self._encode_residual_exact(residual)
+        if self.golden_residual:
+            return self._encode_residual_golden(residual)
+
         cctx = self._zstd_cctx
         ps = residual.shape[0]
         N = ps
-        
+
         # Quantification step
         # Pour residuals: step plus petit que pour les patches (le résidu est déjà petit)
         q = self._quant_step if self._quant_step > 0 else 1
-        
+
         # Zigzag order
         zigzag = self._zigzag_indices(N)
-        
+
         all_coeffs = []  # liste de int16 pour chaque canal
-        
+
         for c in range(3):
             channel = residual[:, :, c].astype(np.float64)
-            
+
             # DCT 2D
             dct_coeffs = self._dct_2d(channel)
-            
+
             # Quantification
             dct_q = np.round(dct_coeffs / q).astype(np.int32)
-            
+
             # Zigzag → supprimer les zéros avec RLE
             symbols = []  # (run_length, value)
             run = 0
@@ -1430,7 +1509,7 @@ class HarmonicCodec:
                     symbols.append((run, val))
                     run = 0
             # End-of-block implicite: les derniers zéros sont omis
-            
+
             # Encoder les symboles en bytes
             # Format: [n_symbols:2B][sym0_run:1B][sym0_val:2B signed]...
             buf = bytearray()
@@ -1445,15 +1524,142 @@ class HarmonicCodec:
                 while extra_runs > 0:
                     buf.extend(struct.pack('<Bh', min(extra_runs, 255), 0))
                     extra_runs -= 255
-            
+
             # Compresser le buffer avec zstd
             compressed = cctx.compress(bytes(buf))
             all_coeffs.append(struct.pack('<I', len(compressed)) + compressed)
-        
-        return b''.join(all_coeffs)
+
+        return b'\x00' + b''.join(all_coeffs)
+
+    def _encode_residual_exact(self, residual: np.ndarray) -> bytes:
+        """Encode un residual SANS perte : Delta-H (différences horizontales)
+        int32 + zstd par canal — bit-à-bit exact (aucune DCT arrondie).
+
+        Format : [mode:1B = 0x01] + 3 chunks [len:4B][zstd].
+        """
+        cctx = self._zstd_cctx
+        parts = [b'\x01']
+        for c in range(3):
+            channel = residual[:, :, c].astype(np.int32)
+            delta = channel.copy()
+            delta[:, 1:] -= channel[:, :-1]
+            compressed = cctx.compress(delta.tobytes())
+            parts.append(struct.pack('<I', len(compressed)) + compressed)
+        return b''.join(parts)
+
+    def _decode_residual_exact(self, data: bytes, ps: int, dctx) -> np.ndarray:
+        """Décode un residual exact (mode 0x01) → (ps, ps, 3) int16."""
+        residual = np.zeros((ps, ps, 3), dtype=np.int16)
+        poff = 0
+        for c in range(3):
+            if poff + 4 > len(data):
+                break
+            chunk_len = struct.unpack('<I', data[poff:poff + 4])[0]
+            poff += 4
+            raw = dctx.decompress(data[poff:poff + chunk_len])
+            poff += chunk_len
+            delta = np.frombuffer(raw, dtype=np.int32).reshape(ps, ps).copy()
+            np.cumsum(delta, axis=1, out=delta)  # Delta-H inverse (cumsum inplace)
+            residual[:, :, c] = delta.astype(np.int16)
+        return residual
+
+    # ── helpers du codec modal HCV2 (P1 — réutilisés, pas réimplémentés) ──
+    @staticmethod
+    def _modal_helpers():
+        """Import paresseux du codec modal (troncature dorée + varint)."""
+        import sys as _sys
+        from pathlib import Path as _Path
+        _p = _Path(__file__).resolve().parent.parent / 'vital-ka' / 'core' / 'python'
+        if str(_p) not in _sys.path:
+            _sys.path.insert(0, str(_p))
+        import hcv2_modal_codec as _m
+        return _m
+
+    def _encode_residual_golden(self, residual: np.ndarray) -> bytes:
+        """Mode 0x02 — la troncature dorée (P1) sur le résidu du dictionnaire :
+        diffract (FFT 2D) → poids de Parseval → seuil doré p > 1/(φ·m) →
+        amplitudes float16 normalisées + phases float16 + varint (deltas
+        d'index) → zstd. Lossy par construction (masse retenue ~0,87 —
+        le théorème, zéro paramètre)."""
+        m = self._modal_helpers()
+        PHI = m.PHI
+        parts = [b'\x02']
+        for c in range(3):
+            ch = residual[:, :, c].astype(np.float64)
+            energy = float(np.sum(ch ** 2))
+            if energy == 0.0:
+                # Résidu nul (match exact) → chunk vide (le décodeur met 0)
+                parts.append(struct.pack('<I', 0))
+                continue
+            Hf = np.fft.fft2(ch)
+            mm = Hf.size
+            p = np.abs(Hf) ** 2
+            pn = p / p.sum()
+            keep = pn > 1.0 / (PHI * mm)          # ← LE SEUIL DORÉ
+            idx = np.nonzero(keep.ravel())[0]
+            vals = Hf.ravel()[idx]
+            mag = np.abs(vals)
+            max_mag = float(mag.max()) if mag.size else 0.0
+            blob = bytearray()
+            blob += np.packbits(keep.ravel()).tobytes()
+            if idx.size:
+                deltas = np.diff(np.concatenate(([idx[0]], idx))).astype(np.uint32)
+                blob += m._varint_encode(deltas)
+            if mag.size:
+                blob += (mag / max_mag).astype(np.float16).tobytes()
+                blob += np.angle(vals).astype(np.float16).tobytes()
+            blob += np.float64(max_mag).tobytes()
+            comp = self._zstd_cctx.compress(bytes(blob))
+            parts.append(struct.pack('<I', len(comp)) + comp)
+        return b''.join(parts)
+
+    def _decode_residual_golden(self, data: bytes, ps: int, dctx) -> np.ndarray:
+        """Décode un residual doré (mode 0x02) → (ps, ps, 3) int16."""
+        m = self._modal_helpers()
+        residual = np.zeros((ps, ps, 3), dtype=np.int16)
+        poff = 0
+        for c in range(3):
+            if poff + 4 > len(data):
+                break
+            chunk_len = struct.unpack('<I', data[poff:poff + 4])[0]
+            poff += 4
+            if chunk_len == 0:
+                continue  # résidu nul (match exact) — canal à zéro
+            raw = dctx.decompress(data[poff:poff + chunk_len])
+            poff += chunk_len
+            n = ps * ps
+            mask = np.frombuffer(raw[:(n + 7) // 8], np.uint8)
+            off = (n + 7) // 8
+            n_keep = np.count_nonzero(np.unpackbits(mask)[:n])
+            idx = np.zeros(0, np.uint32)
+            if n_keep:
+                deltas, used = m._varint_decode(raw[off:], n_keep)
+                off += used
+                idx = np.cumsum(deltas).astype(np.uint32)
+            mags = np.frombuffer(raw[off:off + n_keep * 2], np.float16); off += n_keep * 2
+            phases = np.frombuffer(raw[off:off + n_keep * 2], np.float16); off += n_keep * 2
+            max_mag = float(np.frombuffer(raw[off:off + 8], np.float64)[0])
+            H = np.zeros(n, complex)
+            if n_keep:
+                H[idx] = (mags.astype(np.float64) * max_mag) * \
+                         np.exp(1j * phases.astype(np.float64))
+            ch = np.fft.ifft2(H.reshape(ps, ps)).real
+            residual[:, :, c] = np.clip(ch, -32768, 32767).astype(np.int16)
+        return residual
     
     def _decompress_residual(self, data: bytes, ps: int, dctx) -> np.ndarray:
-        """Décompresse un residual → (ps, ps, 3) int16 (DCT + IQ + IDCT)."""
+        """Décompresse un residual → (ps, ps, 3) int16.
+
+        Le premier octet du payload indique le mode (voir _compress_residual) :
+        0x01 → Delta-H exact (bit-à-bit), 0x02 → troncature dorée (P1),
+        0x00 → DCT lossy.
+        """
+        if data and data[0] == 0x01:
+            return self._decode_residual_exact(data[1:], ps, dctx)
+        if data and data[0] == 0x02:
+            return self._decode_residual_golden(data[1:], ps, dctx)
+        data = data[1:] if data else data
+
         N = ps
         q = self._quant_step if self._quant_step > 0 else 1
         zigzag = self._zigzag_indices(N)

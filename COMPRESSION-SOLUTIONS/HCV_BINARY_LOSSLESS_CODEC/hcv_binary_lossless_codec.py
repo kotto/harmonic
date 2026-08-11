@@ -25,8 +25,9 @@ Garantie: Reconstruction 100% fidèle (bit-exact)
 
 import os
 import hashlib
+import math
 import struct
-import zstd
+import zstandard as zstd
 from pathlib import Path
 from typing import Dict, Tuple, Optional, BinaryIO
 from dataclasses import dataclass
@@ -86,7 +87,7 @@ class HCVBinaryLossless:
         for count in freq.values():
             p = count / data_len
             if p > 0:
-                entropy -= p * (p.bit_length() - 1)
+                entropy -= p * math.log2(p)
         
         return min(entropy, 8.0)
 
