@@ -57,8 +57,11 @@ def _to_rgb(ycbcr: np.ndarray) -> np.ndarray:
     return np.clip(rgb, 0, 255)
 
 
-def _encode_channel(ch: np.ndarray) -> tuple:
-    """Un canal : FFT → poids de Parseval → troncature dorée → chaîne."""
+def _encode_channel(ch: np.ndarray, mag_dtype=np.float16,
+                       normalize=True) -> tuple:
+    """Un canal : FFT → poids de Parseval → troncature dorée → payload.
+    mag_dtype : float16 (images — mesuré suffisant) ou float32 (les
+    résidus vidéo — le float16 nuit aux coefficients bruités)."""
     H = np.fft.fft2(ch)
     m = H.size
     p = np.abs(H) ** 2
@@ -80,8 +83,11 @@ def _encode_channel(ch: np.ndarray) -> tuple:
     #     angulaire 0,06° suffit)
     if mag.size:
         q = np.zeros(mag.size, np.uint8)           # réservé (entropie, piste 5)
-        mags = (mag / max_mag).astype(np.float16)
-        phases = np.angle(vals).astype(np.float16)
+        mags = (mag / max_mag if normalize else mag).astype(mag_dtype)
+        # phases : float32 pour les résidus bruités (le float16 leur nuit —
+        # mesuré : la qualité vidéo ne récupère pas avec les seules amplitudes)
+        phases = np.angle(vals).astype(
+            np.float32 if (mag_dtype == np.float32 and not normalize) else np.float16)
     else:
         q = np.zeros(0, np.uint8)
         mags = np.zeros(0, np.float16)

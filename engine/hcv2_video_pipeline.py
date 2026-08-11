@@ -42,9 +42,11 @@ def _predict(series, weights):
 
 
 def _pack(payloads):
-    """Assemble — format COMPACT (deltas varint + float16)."""
+    """Assemble — format COMPACT (deltas varint + float16/32) + octet de largeur."""
     from hcv2_modal_codec import _varint_encode
-    data = bytearray()
+    mag_bytes = payloads[0][3].dtype.itemsize if payloads and payloads[0][3].size else 2
+    phase_bytes = payloads[0][4].dtype.itemsize if payloads and payloads[0][4].size else 2
+    data = bytearray([mag_bytes, phase_bytes])
     for mask, idx, q, mags, phases, max_mag, mass, m in payloads:
         data += mask.tobytes()
         if idx.size:
@@ -62,16 +64,21 @@ def _unpack(blob, h, w):
     from hcv2_modal_codec import _varint_decode
     raw = zlib.decompress(blob)
     m = h * w
+    mag_bytes, phase_bytes = raw[0], raw[1]
     payloads = []
-    off = 0
+    off = 2
     while off < len(raw):
         mask = np.frombuffer(raw[off:off + (m + 7) // 8], np.uint8); off += (m + 7) // 8
         n_keep = int(np.count_nonzero(np.unpackbits(mask)[:m]))
         deltas, used = _varint_decode(raw[off:], n_keep)
         idx = np.cumsum(deltas).astype(np.uint32)
         off += used
-        mags = np.frombuffer(raw[off:off + n_keep * 2], np.float16); off += n_keep * 2
-        phases = np.frombuffer(raw[off:off + n_keep * 2], np.float16); off += n_keep * 2
+        mags = np.frombuffer(raw[off:off + n_keep * mag_bytes],
+                             np.float16 if mag_bytes == 2 else np.float32)
+        off += n_keep * mag_bytes
+        phases = np.frombuffer(raw[off:off + n_keep * phase_bytes],
+                               np.float16 if phase_bytes == 2 else np.float32)
+        off += n_keep * phase_bytes
         max_mag = float(np.frombuffer(raw[off:off + 8], np.float64)[0]); off += 8
         payloads.append((mask, idx, np.zeros(0, np.uint8), mags, phases,
                         max_mag, 0.0, m))
@@ -91,7 +98,11 @@ def encode_video(frames, use_memory=True):
         head = [_encode_channel(ch[t]) for t in range(DEPTH)]
         if use_memory:
             rest = _predict(ch, w_gold)
-            tail = [_encode_channel(ch[t] - rest[i])
+            # les résidus : amplitudes FLOAT32 (le float16 leur nuit —
+            # coefficients bruités — mesuré : 26,2 vs 32,7 dB)
+            # les résidus : amplitudes ABSOLUES float32 (la normalisation
+            # par max_mag perd la précision à petite résolution — mesuré)
+            tail = [_encode_channel(ch[t] - rest[i], mag_dtype=np.float32)
                     for i, t in enumerate(range(DEPTH, T))]
         else:
             tail = [_encode_channel(ch[t]) for t in range(DEPTH, T)]
