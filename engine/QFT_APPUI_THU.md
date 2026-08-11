@@ -2,6 +2,7 @@
 
 **Date** : 09/08/2026 — **Auteur** : Univers-Holistique (Kotto Alain)
 **Statut** : Document vivant — chaque ligne du tableau de statut est une commande reproductible
+**Mise à jour** : 11/08/2026 — après la dérivation du postulat de Hilbert : le secteur spectral de E2 est **atteint** (les spectres se calculent comme Schrödinger, sur la base modale dérivée — le problème spectral est cinématique) ; **E1a est déposé** — le Hamiltonien de la tour Ĥ = ℏω₀·n̂, vérifié machine (le photon : E = ℏω sans masse) ; restent E1b (l'origine de la masse) et E1c (le potentiel) — voir `ETAT_E1_E2_APRES_SPECTRES.md`
 
 ---
 
@@ -155,6 +156,9 @@ Les 20 « matchs exacts » sont tous expliqués : **18 = théorème T\*** (tous 
 | λ = φ dans le noyau ABC (dérivé) | ✅ trivial (λ = α/(1−α)) | ✅ **dérivé, pas postulé** |
 | 1/φ dans les coefficients quantiques à T\* = 2,078·ℏω/k_B | ✅ théorème exact | ✅ **nouveau résultat vérifié (prédiction ⏳)** |
 | π et e dans les coefficients quantiques | ✅ dérivés (normalisation gaussienne, Boltzmann) | ✅ **dérivés, pas postulés** |
+| **E2 — secteur spectral : les spectres se calculent comme Schrödinger** (oscillateur Eₙ = ℏω(n+½) · hydrogène 1s, π^{−1/2} · ionisation T\*_ion, 23 éléments) | ✅ **atteint** — diagonalisation sur la base modale dérivée : le problème spectral Ĥ\|ψ⟩ = E\|ψ⟩ EST cinématique | ✅ oscillateur écart <1e-8 · 1s exact · 23 éléments machine (E3 v2) |
+| **E1a — l'énergie : Ĥ = ℏω₀·n̂, le Hamiltonien de la tour** | ✅ **dérivé — théorème vérifié** (le photon : m=0, E=ℏω — l'énergie est la fréquence, pas la masse) | `verif_hamiltonien_tour.py` — écarts ≤ 4,4e-16 · Eₙ = n+½ (7,1e-15) ; la valeur de ℏ reste un étalon déclaré |
+| **E1b — la masse (la dispersion) · E1c — le potentiel** | ⏳ ouvertes | la masse = courbure de dispersion (piste : mémoire D^{1/φ}, propagateur 1/(ω^{1/φ}−k²), R3) — le potentiel (Coulomb) reste donné |
 | L'onde a un support matériel (éther) | ❌ exclu | ❌ à ne jamais affirmer |
 | Tout est onde locale | ❌ exclu (Bell) | ❌ |
 | Gravité quantique ondulatoire complète | ⏳ ouvert (Planck, cordes non confirmées) | ⏳ ouvert |
@@ -167,6 +171,7 @@ Les 20 « matchs exacts » sont tous expliqués : **18 = théorème T\*** (tous 
 1. **T\* = 2,078·ℏω/k_B** : la seule apparition exacte et dérivable de 1/φ dans des coefficients quantiques. Une prédiction **pré-enregistrable** au sens P3.2 : « la distribution de Gibbs dont les probabilités décroissent en 1/φ est celle de l'oscillateur à T\* ». À dater, signer, réfuter.
 2. **Le chaînon manquant de `DERIVATION_1_PHI.md`** : prouver « persistance ∝ 1/μ(α) » (lien entre mesure d'irrationalité et décroissance de E_α) — analytiquement ou par Monte-Carlo sur α.
 3. **Le noyau appris** : remplacer le φ postulé de l'encode par une densité spectrale apprise (RFF), puis re-tester l'AUC de P1.1 — le test qui tranchera définitivement la voie sémantique.
+4. **E1a déposé — le Hamiltonien de la tour** (mise à jour 11/08/2026) : Ĥ = ℏω₀·n̂ est dérivé et vérifié machine (`verif_hamiltonien_tour.py`, écarts ≤ 4,4e-16 — le photon prouve E = ℏω sans masse) ; restent **E1b** (l'origine de la masse — la courbure de dispersion, piste : la mémoire D^{1/φ}) et **E1c** (le potentiel) — voir `ETAT_E1_E2_APRES_SPECTRES.md`.
 
 ---
 
@@ -189,6 +194,8 @@ Dépendances : Python 3.11+, numpy, mpmath (référence haute précision).
 ## 9. En une phrase
 
 > **La QFT est l'appui scientifique le plus solide de la THU : elle établit que la théorie la plus précise de la physique est une théorie d'ondes/champs — mais elle réfute (à 0,707 près et à 0 match spontané sur 935 comparaisons) que {φ, π, e} soient les coefficients de l'expansion ; elle confirme au contraire que π et e y entrent par dérivation (normalisation), que φ y entre par dérivation comme ordre α, comme taux λ, et — pour la première fois — comme rapport thermique exact à la température T\* = 2,078·ℏω/k_B.**
+>
+> **Mise à jour 11/08/2026** : la dérivation du postulat de Hilbert (état = décomposition modale) porte le **secteur spectral de E2 à « atteint »** — les spectres (oscillateur, hydrogène 1s, ionisation de 23 éléments) se calculent comme Schrödinger, par diagonalisation sur la base modale dérivée, car le problème spectral Ĥ|ψ⟩ = E|ψ⟩ est un problème cinématique. Et **E1a est déposé** : le Hamiltonien de la tour Ĥ = ℏω₀·n̂ est dérivé et vérifié machine — le photon (n=1, m=0) prouve que l'énergie est la fréquence, pas la masse. E1 ne demande plus « comment calculer » ni « d'où vient l'énergie » : il demande l'origine de la **masse** (E1b) et du **potentiel** (E1c).
 
 ---
 

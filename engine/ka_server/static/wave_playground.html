@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Harmonic Compute — Playground du calcul harmonique (quantum-like)</title>
+<style>
+:root{--bg:#07090f;--bg-2:#0b0e17;--panel:#10141f;--panel-2:#141927;--gold:#f5c96b;--gold-dim:#b8964a;--gold-line:rgba(245,201,107,.16);--wave:#8fd6e8;--ivory:#e8e6df;--muted:#9aa0b4;--ok:#7fe0a0;--err:#ff7a7a;--maxw:1180px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ivory);font-family:'Fraunces',Georgia,serif;line-height:1.6}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+header{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;justify-content:space-between;padding:1.2rem 2rem;border-bottom:1px solid var(--gold-line);position:sticky;top:0;background:rgba(7,9,15,.92);backdrop-filter:blur(6px);z-index:5}
+.brand{display:flex;align-items:center;gap:.6rem;color:var(--gold);text-decoration:none;font-size:1.1rem}
+.sigil{font-size:1.5rem}
+.badge{font-family:'IBM Plex Mono',monospace;font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;color:var(--gold-dim);border:1px solid var(--gold-line);padding:.35rem .7rem}
+main{max-width:var(--maxw);margin:0 auto;padding:3rem 2rem}
+h1{font-weight:300;font-size:clamp(1.8rem,4vw,2.8rem);letter-spacing:.01em}
+.lede{color:var(--muted);max-width:46rem;margin-top:1rem;font-size:1.05rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1.2rem;margin-top:2rem}
+.card{background:var(--panel);border:1px solid var(--gold-line);padding:1.4rem}
+.card h3{font-weight:400;font-size:1.05rem;color:var(--gold);margin-bottom:.4rem}
+.card p{color:var(--muted);font-size:.9rem;margin-bottom:.8rem}
+button{font-family:'IBM Plex Mono',monospace;font-size:.8rem;letter-spacing:.05em;background:var(--panel-2);color:var(--ivory);border:1px solid var(--gold-line);padding:.55rem 1rem;cursor:pointer;transition:border-color .2s,color .2s;margin:.2rem .3rem .2rem 0}
+button:hover{border-color:var(--gold);color:var(--gold)}
+button.primary{background:var(--gold);color:#1a1206;border-color:var(--gold)}
+button.primary:hover{filter:brightness(1.1);color:#1a1206}
+input[type=text]{font-family:'IBM Plex Mono',monospace;font-size:.85rem;background:var(--bg-2);color:var(--ivory);border:1px solid var(--gold-line);padding:.55rem .7rem;width:100%;margin:.3rem 0}
+label{font-family:'IBM Plex Mono',monospace;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+#console{background:#05070b;border:1px solid var(--gold-line);font-family:'IBM Plex Mono',monospace;font-size:.8rem;padding:1.2rem;margin-top:2rem;min-height:9rem;max-height:22rem;overflow:auto;white-space:pre-wrap;word-break:break-word}
+#console .ok{color:var(--ok)}#console .err{color:var(--err)}#console .dim{color:var(--muted)}
+.kicker{font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:.6rem}
+.note{color:var(--muted);font-size:.8rem;border-left:2px solid var(--gold-dim);padding-left:.8rem;margin-top:1.4rem}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:.75rem;padding:.3rem .6rem;border:1px solid var(--gold-line);color:var(--muted)}
+.chip.ok{color:var(--ok);border-color:rgba(127,224,160,.3)}
+.statusbar{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin-top:1rem}
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="/"><span class="sigil">Ψ</span> Harmonic Compute</a>
+  <span class="badge">SaaS · calcul harmonique · quantum-like déterministe</span>
+</header>
+<main>
+  <p class="kicker">Machine de Hilbert déterministe — ℂ⁵¹² · ‖ψ‖ = 1</p>
+  <h1>Le calcul harmonique, en direct</h1>
+  <p class="lede">Les 13 primitives du langage ondulatoire : superposition, binding, résonance, interférence — les mêmes opérations que la cinématique quantique, sans le hasard. Chaque appel est déterministe, traçable, reproductible.</p>
+
+  <div class="statusbar">
+    <label for="apikey">Clé API (X-API-Key)</label>
+    <input type="text" id="apikey" placeholder="hwu_..." style="max-width:22rem;margin:0"/>
+    <span class="chip" id="statusChip">—</span>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>① Le noyau</h3>
+      <p>État du moteur : espace, normalisation, déterminisme, mémoire.</p>
+      <button class="primary" onclick="run('status')">État du moteur</button>
+      <button onclick="run('benchmark')">Benchmark en direct</button>
+    </div>
+    <div class="card">
+      <h3>② Encoder / résonner</h3>
+      <p>Le monde devient onde — déterministe. La résonance mesure ⟨ψ|φ⟩.</p>
+      <input type="text" id="ent1" value="lumiere"/>
+      <input type="text" id="ent2" value="onde electromagnetique"/>
+      <button class="primary" onclick="run('encode')">Encoder</button>
+      <button onclick="run('resonate')">Résonance</button>
+    </div>
+    <div class="card">
+      <h3>③ Lier / délier</h3>
+      <p>bind(a,b) lie deux concepts (HRR). unbind retrouve a — récupération ≥ 0,7.</p>
+      <input type="text" id="bindA" value="alpha"/>
+      <input type="text" id="bindB" value="beta"/>
+      <button class="primary" onclick="run('bind')">bind + unbind</button>
+      <button onclick="run('superpose')">Superposer 3 concepts</button>
+    </div>
+    <div class="card">
+      <h3>④ Mémoire holographique</h3>
+      <p>H = Σ ψ_fait — superposition, pas d'écrasement. Stocker puis interroger.</p>
+      <button class="primary" onclick="run('mem_store')">Stocker 3 faits</button>
+      <button onclick="run('mem_query')">Interroger</button>
+      <input type="text" id="query" value="Qu'est-ce que la lumiere ?"/>
+    </div>
+    <div class="card">
+      <h3>⑤ Arithmétique émergente</h3>
+      <p>Ψ_a·Ψ_b = Ψ_{a+b} — l'addition émerge, rien n'est stocké.</p>
+      <input type="text" id="expr" value="12 * 7"/>
+      <button class="primary" onclick="run('solve')">Résoudre par résonance</button>
+    </div>
+    <div class="card">
+      <h3>⑥ Créativité contrôlée</h3>
+      <p>interfere(a, b, ε) — mélange contrôlé. emerge — cohérence pondérée.</p>
+      <button class="primary" onclick="run('interfere')">interfere (ε=0,15)</button>
+      <button onclick="run('emerge')">emerge 3 concepts</button>
+    </div>
+  </div>
+
+  <div id="console"><span class="dim">// console — chaque résultat est une réponse JSON du moteur.</span></div>
+  <p class="note">Honnêteté : ce service est un <b>émulateur harmonique</b> — mêmes opérations que la cinématique quantique (superposition, unitaires, résonance), 100 % déterministe. Ce n'est pas un ordinateur quantique matériel, et la dérivation complète (E1) reste une porte ouverte.</p>
+</main>
+
+<script>
+const LS_KEY = 'hwu_api_key';
+const inputKey = document.getElementById('apikey');
+inputKey.value = localStorage.getItem(LS_KEY) || '';
+inputKey.addEventListener('change', () => localStorage.setItem(LS_KEY, inputKey.value.trim()));
+
+const consoleEl = document.getElementById('console');
+function log(text, cls) {
+  consoleEl.innerHTML += (cls ? `<span class="${cls}">` : '') + text + (cls ? '</span>' : '') + '\n';
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+function key() { return inputKey.value.trim(); }
+
+async function call(path, body) {
+  const r = await fetch('/api/wave/' + path, {
+    method: body ? 'POST' : 'GET',
+    headers: {'Content-Type': 'application/json', 'X-API-Key': key()},
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error((data.error || 'HTTP ' + r.status) + ' [' + (data.code || '') + ']');
+  return data;
+}
+
+const demos = {
+  async status() {
+    const d = await call('status');
+    log('▶ /api/wave/status');
+    log(`  moteur : ${d.engine}`);
+    log(`  espace : ${d.space} · normalisation : ${d.normalization}`);
+    log(`  mémoire : ${d.memory.facts} faits · plans : ${Object.keys(d.plans).join(', ')}`);
+    document.getElementById('statusChip').textContent = '✅ ' + d.status + ' · ℂ⁵¹² · ' + d.memory.facts + ' faits';
+    document.getElementById('statusChip').classList.add('ok');
+  },
+  async benchmark() {
+    const d = await call('benchmark');
+    log('▶ /api/wave/benchmark — ' + d.elapsed_ms + ' ms');
+    for (const [k, v] of Object.entries(d.results)) {
+      log(`  ${v.pass ? '✅' : '❌'} ${k} = ${v.value}`);
+    }
+  },
+  async encode() {
+    const ent = document.getElementById('ent1').value.trim();
+    const d = await call('encode', {entity: ent});
+    log(`▶ encode("${ent}") → dim ${d.wave.dim} · norme ${d.wave.norm.toFixed(6)} · énergie ${d.wave.energy.toFixed(6)}`);
+  },
+  async resonate() {
+    const a = document.getElementById('ent1').value.trim();
+    const b = document.getElementById('ent2').value.trim();
+    const d = await call('resonate', {a, b});
+    log(`▶ resonate("${a}", "${b}") → ⟨ψ|φ⟩ = ${d.resonance} (${d.interpretation})`);
+  },
+  async bind() {
+    const a = document.getElementById('bindA').value.trim();
+    const b = document.getElementById('bindB').value.trim();
+    const c = await call('bind', {a, b});
+    const rec = await call('unbind', {c: c.wave, b});
+    const r = await call('resonate', {a, b: rec.wave});
+    log(`▶ bind("${a}", "${b}") puis unbind → récupération ⟨a|unbind(bind(a,b),b)⟩ = ${r.resonance}`);
+    log(`  ${r.resonance >= 0.7 ? '✅' : '❌'} seuil de récupération ≥ 0,7 (valeur de référence)`);
+  },
+  async superpose() {
+    const items = ['chat', 'chien', 'oiseau'];
+    const d = await call('superpose', {items});
+    log(`▶ superpose([${items.join(', ')}]) → norme ${d.summary.norm.toFixed(6)} (‖ψ‖ = 1 ✅)`);
+  },
+  async mem_store() {
+    const facts = [['lumiere', 'est une', 'onde electromagnetique'],
+                   ['chat', 'aime', 'poisson'],
+                   ['phi', 'est', 'nombre d or']];
+    const d = await call('memory/store', {facts});
+    log(`▶ memory/store — ${d.stored} faits stockés · total ${d.total_facts} · énergie ${d.energy}`);
+  },
+  async mem_query() {
+    const q = document.getElementById('query').value.trim();
+    const d = await call('memory/query', {query: q, top_k: 5});
+    log(`▶ memory/query("${q}")`);
+    for (const r of d.results) log(`  fait #${r.fact_index} → résonance ${r.resonance}`);
+  },
+  async solve() {
+    const expr = document.getElementById('expr').value.trim();
+    const d = await call('solve', {expression: expr});
+    log(`▶ solve("${expr}") → ${d.result} (${d.method})`);
+  },
+  async interfere() {
+    const d = await call('interfere', {a: 'poesie', b: 'science', epsilon: 0.15});
+    log(`▶ interfere("poesie", "science", ε=0,15) → norme ${d.summary.norm.toFixed(6)}`);
+  },
+  async emerge() {
+    const d = await call('emerge', {items: ['harmonie', 'univers', 'calcul'], temperature: 0.5});
+    log(`▶ emerge([harmonie, univers, calcul]) → norme ${d.summary.norm.toFixed(6)}`);
+  },
+};
+
+async function run(name) {
+  if (!key()) { log('❌ Clé API requise — collez une clé (python -m ka_server.tools.wave_keys create vous@exemple.com)', 'err'); return; }
+  try { await demos[name](); }
+  catch (e) { log('❌ ' + e.message, 'err'); }
+}
+
+run('status').catch(() => {});
+</script>
+</body>
+</html>

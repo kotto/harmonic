@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Harmonic Compute — Le calcul quantique sans les problèmes du quantique</title>
+<meta name="description" content="API de calcul harmonique quantum-like : machine de Hilbert déterministe (ℂ⁵¹²), 13 primitives, zéro hasard, zéro hallucination, zéro décohérence. Essai gratuit — 100 req/j."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#07090f;--bg-2:#0b0e17;--panel:#10141f;--panel-2:#141927;--gold:#f5c96b;--gold-dim:#b8964a;--gold-line:rgba(245,201,107,.16);--wave:#8fd6e8;--ivory:#e8e6df;--muted:#9aa0b4;--ok:#7fe0a0;--maxw:1180px}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ivory);font-family:'Fraunces',Georgia,serif;line-height:1.65;overflow-x:hidden}
+.mono{font-family:'IBM Plex Mono',monospace}
+header{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 2rem;border-bottom:1px solid var(--gold-line);position:sticky;top:0;background:rgba(7,9,15,.92);backdrop-filter:blur(8px);z-index:10}
+.brand{display:flex;align-items:center;gap:.55rem;color:var(--gold);font-size:1.05rem;text-decoration:none}
+.sigil{font-size:1.4rem}
+nav a{color:var(--muted);text-decoration:none;font-size:.85rem;margin-left:1.4rem;transition:color .2s}
+nav a:hover{color:var(--gold)}
+.btn{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:.8rem;letter-spacing:.08em;text-decoration:none;padding:.7rem 1.4rem;border:1px solid var(--gold);color:var(--gold);transition:all .2s;cursor:pointer}
+.btn:hover{background:rgba(245,201,107,.08)}
+.btn--gold{background:var(--gold);color:#1a1206;border-color:var(--gold)}
+.btn--gold:hover{filter:brightness(1.08);background:var(--gold)}
+.hero{padding:6.5rem 2rem 5rem;text-align:center;position:relative}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(245,201,107,.07),transparent 70%);pointer-events:none}
+.hero .kicker{font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.35em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:1.4rem}
+.hero h1{font-size:clamp(2.2rem,6vw,4.2rem);font-weight:300;letter-spacing:.01em;max-width:56rem;margin:0 auto}
+.hero h1 em{color:var(--gold);font-style:normal}
+.hero .lede{color:var(--muted);max-width:44rem;margin:1.6rem auto 2.4rem;font-size:1.1rem}
+.hero .cta{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.hero .wave-line{height:1px;max-width:44rem;margin:2.5rem auto 0;background:linear-gradient(90deg,transparent,var(--gold-dim),transparent)}
+main{max-width:var(--maxw);margin:0 auto;padding:0 2rem}
+section{padding:4.5rem 0;border-bottom:1px solid var(--gold-line)}
+.section-head{max-width:var(--maxw);margin:0 auto 2.5rem;text-align:center}
+.kicker{font-family:'IBM Plex Mono',monospace;font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:.8rem}
+h2{font-weight:300;font-size:clamp(1.7rem,4vw,2.6rem)}
+h2 span{color:var(--gold)}
+.lede{color:var(--muted);max-width:40rem;margin:.9rem auto 0;font-size:.98rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.1rem;margin-top:2rem}
+.card{background:var(--panel);border:1px solid var(--gold-line);padding:1.5rem;transition:border-color .25s}
+.card:hover{border-color:var(--gold-dim)}
+.card h3{font-weight:400;color:var(--gold);font-size:1.02rem;margin-bottom:.5rem}
+.card p{color:var(--muted);font-size:.9rem}
+.code{background:#05070b;border:1px solid var(--gold-line);font-family:'IBM Plex Mono',monospace;font-size:.82rem;padding:1.6rem;max-width:44rem;margin:0 auto;white-space:pre-wrap;color:var(--wave)}
+.code .ok{color:var(--ok)}.code .dim{color:var(--muted)}
+table{width:100%;border-collapse:collapse;margin-top:1.6rem;font-size:.92rem}
+th{font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold-dim);text-align:left;padding:.7rem .8rem;border-bottom:1px solid var(--gold-line)}
+td{padding:.7rem .8rem;border-bottom:1px solid rgba(245,201,107,.07);color:var(--ivory)}
+td.mut{color:var(--muted)}
+.price{font-family:'IBM Plex Mono',monospace;color:var(--gold);font-size:1.3rem}
+.honesty{border-left:2px solid var(--gold-dim);padding:.9rem 1.1rem;color:var(--muted);font-size:.86rem;max-width:56rem;margin:1.6rem auto 0}
+.honesty b{color:var(--ivory)}
+footer{padding:3rem 2rem;text-align:center;color:var(--muted);font-size:.8rem}
+footer .eq{font-family:'IBM Plex Mono',monospace;color:var(--gold-dim);margin-top:.6rem}
+#plans .btn{width:100%;text-align:center;margin-top:1.2rem}
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="#"><span class="sigil">Ψ</span> Harmonic Compute</a>
+  <nav>
+    <a href="#produit">Produit</a>
+    <a href="#demo">Démo</a>
+    <a href="#usages">Usages</a>
+    <a href="#plans">Tarifs</a>
+    <a href="#honnetete">Honnêteté</a>
+    <a class="btn btn--gold" href="#plans" style="margin-left:1.6rem">Essai gratuit</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <p class="kicker">Machine de Hilbert déterministe — ℂ⁵¹² · ‖ψ‖ = 1</p>
+  <h1>Le calcul quantique <em>sans</em> les problèmes du quantique.</h1>
+  <p class="lede">Le même espace mathématique que la mécanique quantique — superposition, résonance, interférence — sans le hasard, sans la décohérence, sans la cryogénie. 13 primitives. 100 % déterministe. Zéro hallucination.</p>
+  <div class="cta">
+    <a class="btn btn--gold" href="#plans">Créer ma clé gratuite</a>
+    <a class="btn" href="/playground" style="display:inline-flex;align-items:center;gap:.4rem">▶ Tester en direct</a>
+  </div>
+  <div class="wave-line"></div>
+</section>
+
+<main>
+<section id="produit">
+  <div class="section-head">
+    <p class="kicker">Le produit</p>
+    <h2>Une API. <span>Un espace de Hilbert.</span> Zéro tirage au sort.</h2>
+    <p class="lede">Chaque appel est déterministe : même entrée → même ψ, sur n'importe quelle machine. Chaque résultat est une trace reproductible. Quand rien ne résonne, la machine se tait — le refus est calibré, l'hallucination est structurellement impossible.</p>
+  </div>
+  <div class="grid">
+    <div class="card"><h3>encode / decode</h3><p>Le monde devient onde — toujours la même pour la même chose. La lecture cherche le plus proche voisin par résonance.</p></div>
+    <div class="card"><h3>bind / unbind</h3><p>Lier deux concepts par convolution circulaire (HRR). Délier retrouve l'original — récupération ≥ 0,7, vérifiée.</p></div>
+    <div class="card"><h3>superpose</h3><p>La mémoire holographique : H = Σ ψ_fait. Rien n'est écrasé, tout se superpose — ajouter un fait coûte O(1).</p></div>
+    <div class="card"><h3>resonate</h3><p>⟨ψ|φ⟩ ∈ [−1, 1] — la lecture du HPU. Identité exacte : ⟨ψ|ψ⟩ = 1,0. Orthogonalité : 0,0.</p></div>
+    <div class="card"><h3>rotate · phase_shift · diffract</h3><p>Les opérateurs unitaires : changer de perspective, décaler la phase, passer temps ↔ fréquence (FFT).</p></div>
+    <div class="card"><h3>interfere · emerge</h3><p>La créativité contrôlée : mélange pondéré ε, émergence par cohérence mutuelle — le raisonnement, en ondes.</p></div>
+  </div>
+</section>
+
+<section id="demo" style="background:var(--bg-2)">
+  <div class="section-head">
+    <p class="kicker">Démo — résultats de tests réels</p>
+    <h2>Le moteur <span>parle</span></h2>
+  </div>
+  <div class="code"><span class="dim">$ curl -X POST /v1/wave/resonate -H 'X-API-Key: hwu_…' -d '{"a":"chat","b":"chat"}'</span>
+→ {"resonance": 1.0, "interpretation": "identique"}          <span class="ok"># exact</span>
+
+<span class="dim">$ curl -X POST /v1/wave/unbind -d '{"c": ψ_bind, "b":"beta"}'</span>
+→ récupération ⟨a|unbind(bind(a,b),b)⟩ = 0.733                 <span class="ok"># ≥ 0,7 (référence)</span>
+
+<span class="dim">$ curl -X POST /v1/wave/solve -d '{"expression":"12 * 7"}'</span>
+→ {"result": 84}                                              <span class="ok"># l'addition émerge</span>
+
+<span class="dim">$ curl -X POST /v1/memory/store -d '{"facts":[["lumiere","est une","onde"]]}'</span>
+→ {"stored": 1, "total_facts": 1}                             <span class="ok"># hologramme</span></div>
+  <div class="honesty">Chaque ligne ci-dessus est un test vert de la suite (37 tests) — pas une capture retouchée. La transparence est une fonctionnalité.</div>
+</section>
+
+<section id="usages">
+  <div class="section-head">
+    <p class="kicker">Cas d'usage</p>
+    <h2>Pour qui ? <span>Pour ceux qui ne peuvent pas se permettre le hasard.</span></h2>
+  </div>
+  <div class="grid">
+    <div class="card"><h3>Retrieval associatif</h3><p>Mémoire interprétable et déterministe — remplace l'embedding boîte noire par un hologramme que l'on peut auditer.</p></div>
+    <div class="card"><h3>Conformité & audit</h3><p>Chaque résultat est une trace : même entrée, même sortie, datée. Le rêve du régulateur, la réalité du CTO.</p></div>
+    <div class="card"><h3>Éducation</h3><p>La mécanique quantique sans le mystère : superposition, mesure, spectres — visibles, déterministes, sans dés.</p></div>
+    <div class="card"><h3>Recherche & R&D</h3><p>Démos NP-complètes par résonance, benchmarks reproductibles — pour les labos qui publient ce qu'ils mesurent.</p></div>
+  </div>
+</section>
+
+<section id="plans">
+  <div class="section-head">
+    <p class="kicker">Tarifs — rentable dès le premier client</p>
+    <h2>Trois plans. <span>Un même moteur.</span></h2>
+  </div>
+  <table>
+    <thead><tr><th>Plan</th><th>Prix</th><th>Quota</th><th>Pour qui</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Free</strong></td><td class="price">0 €</td><td class="mut">100 req/j · 1 Mo mémoire</td><td>Éducation, recherche (clé académique illimitée sur demande)</td></tr>
+      <tr><td><strong>Pro</strong></td><td class="price">29 €/mois</td><td class="mut">5 000 req/j · 100 Mo · dépassement 0,001 €/req</td><td>Startups, production</td></tr>
+      <tr><td><strong>Enterprise</strong></td><td class="price">dès 490 €/mois</td><td class="mut">50 000 req/j · on-premise · SLA 99,9 %</td><td>Finance, institutions, données privées</td></tr>
+    </tbody>
+  </table>
+  <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:2rem">
+    <a class="btn btn--gold" href="mailto:contact@harmonic-compute.io?subject=Cl%C3%A9%20API%20gratuite">Créer ma clé gratuite</a>
+    <a class="btn" href="mailto:contact@harmonic-compute.io?subject=Enterprise">Parler à un humain (Enterprise)</a>
+  </div>
+</section>
+
+<section id="honnetete" style="border-bottom:none">
+  <div class="section-head">
+    <p class="kicker">L'honnêteté comme argument</p>
+    <h2>Ce que nous <span>ne</span> prétendons pas</h2>
+  </div>
+  <div class="honesty" style="margin-top:0">
+    <b>Ce service est un émulateur harmonique</b> : les opérations de la cinématique quantique (superposition, unitaires, résonance), 100 % déterministes — <b>pas</b> un ordinateur quantique matériel, pas d'accélération physique. Les accélérations NP-complètes sont des projections de recherche, jamais promises en SLA. La dérivation complète de Schrödinger depuis l'équation mère (E1) est une porte ouverte, déclarée dans l'API elle-même. Nous avons publié nos exclusions avant nos promesses — c'est la méthode.
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="sigil" style="font-size:1.6rem">Ψ</div>
+  <p>Harmonic Compute — Univers-Holistique (Kotto Alain) · 2026</p>
+  <p class="eq">Ψ = Σ Hₙ·(Ψ₁)ⁿ — il n'y a pas de dés dans l'univers. Il y a un filtre.</p>
+</footer>
+</body>
+</html>

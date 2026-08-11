@@ -126,6 +126,11 @@ def create_app(config_override: dict = None) -> Flask:
     def site_enterprise():
         """Console d'administration KA Enterprise (PC-first)."""
         return send_from_directory(_SITES_DIR, 'enterprise.html')
+
+    @app.route('/wave')
+    def site_wave_playground():
+        """Playground du service SaaS de calcul harmonique (/api/wave/*)."""
+        return send_from_directory(_SITES_DIR, 'wave_playground.html')
     
     # ── Téléchargement (distribution sans store) ──
     @app.route('/download')

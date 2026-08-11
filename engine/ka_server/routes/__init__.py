@@ -15,6 +15,7 @@ from .code import register_code_routes
 from .specialize import register_specialize_routes
 from .system import register_system_routes
 from .harmonic import register_harmonic_routes
+from .wave import register_wave_routes
 
 
 def register_routes(app, services):
@@ -43,6 +44,9 @@ def register_routes(app, services):
     # Routes Harmonic AI v3 (intelligence ondulatoire unifiée)
     register_harmonic_routes(app, services)
     
+    # Routes Wave Compute — SaaS de calcul harmonique (clé API + quota)
+    register_wave_routes(app, services)
+    
     # Routes Agent (peuvent nécessiter auth selon config)
     register_agent_routes(app, services)
     
@@ -66,4 +70,5 @@ __all__ = [
     'register_specialize_routes',
     'register_system_routes',
     'register_harmonic_routes',
+    'register_wave_routes',
 ]
