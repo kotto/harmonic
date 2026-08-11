@@ -70,21 +70,52 @@ def _encode_channel(ch: np.ndarray) -> tuple:
     vals = H.ravel()[idx]
     mag = np.abs(vals)
     max_mag = float(mag.max()) if mag.size else 0.0
-    # AMPLITUDES FLOAT32 (le facteur limitant mesuré : la chaîne cₙ est
-    # dense près de 0 mais grossière près de 1,0 — mauvaise grille pour
-    # les grandes amplitudes ; la chaîne est repositionnée à l'étage
-    # d'entropie, piste 5)
+    # LE PAYLOAD COMPACT (chantier de la compacité) :
+    #   · idx → deltas (varint à la lecture du blob — les coefficients
+    #     gardés sont ordonnés et groupés : deltas courts)
+    #   · amplitudes : float16 NORMALISÉES par max_mag (précision relative
+    #     ~0,001 — l'ancienne grille de la chaîne était ~0,2 près de 1,0 :
+    #     float16 est 200× plus fin, pour 2 o au lieu de 4)
+    #   · phases : float16 (mesuré : float32 n'apporte rien — la précision
+    #     angulaire 0,06° suffit)
     if mag.size:
         q = np.zeros(mag.size, np.uint8)           # réservé (entropie, piste 5)
-        phases = np.angle(vals).astype(np.float32)
-        mags = mag.astype(np.float32)
+        mags = (mag / max_mag).astype(np.float16)
+        phases = np.angle(vals).astype(np.float16)
     else:
         q = np.zeros(0, np.uint8)
-        phases = np.zeros(0, np.float32)
-        mags = np.zeros(0, np.float32)
+        mags = np.zeros(0, np.float16)
+        phases = np.zeros(0, np.float16)
     mask = np.packbits(keep.ravel())
     return (mask, idx.astype(np.uint32), q, mags, phases,
             max_mag, mass, m)
+
+
+def _varint_encode(values) -> bytes:
+    """Les deltas en varint (1-4 o par delta, au lieu de 4 o uint32)."""
+    out = bytearray()
+    for v in values:
+        while v >= 0x80:
+            out.append((v & 0x7F) | 0x80)
+            v >>= 7
+        out.append(v)
+    return bytes(out)
+
+
+def _varint_decode(data: bytes, count: int) -> tuple:
+    out = np.zeros(count, np.uint32)
+    pos = 0
+    for i in range(count):
+        shift = 0
+        v = 0
+        while True:
+            b = data[pos]; pos += 1
+            v |= (b & 0x7F) << shift
+            if not (b & 0x80):
+                break
+            shift += 7
+        out[i] = v
+    return out, pos
 
 
 def _decode_channel(payload: tuple, shape: tuple) -> np.ndarray:
@@ -92,7 +123,8 @@ def _decode_channel(payload: tuple, shape: tuple) -> np.ndarray:
     keep = np.unpackbits(mask)[:m].astype(bool).reshape(shape)
     H = np.zeros(m, complex)
     if idx.size:
-        H[idx] = mags.astype(np.float64) * np.exp(1j * phases.astype(np.float64))
+        H[idx] = (mags.astype(np.float64) * max_mag) * \
+                 np.exp(1j * phases.astype(np.float64))
     return np.fft.ifft2(H.reshape(shape)).real
 
 
@@ -125,7 +157,9 @@ def encode(img: np.ndarray) -> dict:
     for mask, idx, q, mags, phases, max_mag, mass, m in payloads:
         masses.append(mass)
         data += mask.tobytes()
-        data += idx.tobytes()
+        if idx.size:
+            deltas = np.diff(np.concatenate(([idx[0]], idx))).astype(np.uint32)
+            data += _varint_encode(deltas)
         data += mags.tobytes()
         data += phases.tobytes()
         data += np.float64(max_mag).tobytes()
@@ -151,9 +185,11 @@ def decode(payload: dict | bytes, h: int = None, w: int = None) -> np.ndarray:
         ch_w = w if c == 0 else (w + 1) // 2
         mask = np.frombuffer(raw[off:off + (ch_h * ch_w + 7) // 8], np.uint8); off += (ch_h * ch_w + 7) // 8
         n_keep = np.count_nonzero(np.unpackbits(mask)[:ch_h * ch_w])
-        idx = np.frombuffer(raw[off:off + n_keep * 4], np.uint32); off += n_keep * 4
-        mags = np.frombuffer(raw[off:off + n_keep * 4], np.float32); off += n_keep * 4
-        phases = np.frombuffer(raw[off:off + n_keep * 4], np.float32); off += n_keep * 4
+        deltas, used = _varint_decode(raw[off:], n_keep)
+        idx = np.cumsum(deltas).astype(np.uint32)
+        off += used
+        mags = np.frombuffer(raw[off:off + n_keep * 2], np.float16); off += n_keep * 2
+        phases = np.frombuffer(raw[off:off + n_keep * 2], np.float16); off += n_keep * 2
         max_mag = float(np.frombuffer(raw[off:off + 8], np.float64)[0]); off += 8
         ch = _decode_channel((mask, idx, np.zeros(0, np.uint8), mags, phases,
                               max_mag, 0, ch_h * ch_w), (ch_h, ch_w))

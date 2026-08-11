@@ -42,15 +42,24 @@ def _predict(series, weights):
 
 
 def _pack(payloads):
+    """Assemble — format COMPACT (deltas varint + float16)."""
+    from hcv2_modal_codec import _varint_encode
     data = bytearray()
     for mask, idx, q, mags, phases, max_mag, mass, m in payloads:
-        data += mask.tobytes() + idx.tobytes() + mags.tobytes() + phases.tobytes()
+        data += mask.tobytes()
+        if idx.size:
+            deltas = np.diff(np.concatenate(([idx[0]], idx))).astype(np.uint32)
+            data += _varint_encode(deltas)
+        data += mags.tobytes()
+        data += phases.tobytes()
         data += np.float64(max_mag).tobytes()
     return zlib.compress(bytes(data), 9)
 
 
 def _unpack(blob, h, w):
-    """Lit TOUS les payloads du blob (3 canaux par frame, séquentiels)."""
+    """Lit TOUS les payloads du blob — format COMPACT (deltas varint +
+    float16) — 3 canaux par frame, séquentiels."""
+    from hcv2_modal_codec import _varint_decode
     raw = zlib.decompress(blob)
     m = h * w
     payloads = []
@@ -58,9 +67,11 @@ def _unpack(blob, h, w):
     while off < len(raw):
         mask = np.frombuffer(raw[off:off + (m + 7) // 8], np.uint8); off += (m + 7) // 8
         n_keep = int(np.count_nonzero(np.unpackbits(mask)[:m]))
-        idx = np.frombuffer(raw[off:off + n_keep * 4], np.uint32); off += n_keep * 4
-        mags = np.frombuffer(raw[off:off + n_keep * 4], np.float32); off += n_keep * 4
-        phases = np.frombuffer(raw[off:off + n_keep * 4], np.float32); off += n_keep * 4
+        deltas, used = _varint_decode(raw[off:], n_keep)
+        idx = np.cumsum(deltas).astype(np.uint32)
+        off += used
+        mags = np.frombuffer(raw[off:off + n_keep * 2], np.float16); off += n_keep * 2
+        phases = np.frombuffer(raw[off:off + n_keep * 2], np.float16); off += n_keep * 2
         max_mag = float(np.frombuffer(raw[off:off + 8], np.float64)[0]); off += 8
         payloads.append((mask, idx, np.zeros(0, np.uint8), mags, phases,
                         max_mag, 0.0, m))
