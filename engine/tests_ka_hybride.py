@@ -115,6 +115,132 @@ def executer(modele=None, avec_llm=False):
     return resultats
 
 
+# ══════════════════════════════════════════════════════════════════
+# STYLE VOCAL — les réponses doivent être lisibles par un synthétiseur
+# ══════════════════════════════════════════════════════════════════
+TESTS_VOCAL = [
+    ("7 × 8",                    "CALC"),      # phrase modèle conversationnelle
+    ("c'est quoi le diabète ?",  "MEDICAL"),   # ≥, g/L, mmol/L, %, HbA1c
+    ("que faire en cas d'avc ?", "CONDUITE"),  # ⚠️, —, URGENCE VITALE
+    ("chat",                     "FAIT"),      # phrase modèle conversationnelle
+    ("quasar",                   "REFUS"),     # refus honnête sans « — »
+    ("qui es-tu ?",              "IDENTITE"),  # (Knowledge Amplifier), « — »
+]
+
+# Symboles qu'aucun synthétiseur ne doit recevoir (style vocal)
+_SYMBOLES_NON_PARLES = ["—", "–", "→", "≥", "≤", "±", "⚠", "✅", "❌", "(", ")", "**"]
+
+
+def executer_vocal():
+    """Le protocole vocal : type correct + audit ok + zéro symbole non parlé."""
+    pont = PontHybride(utiliser_ollama=False)
+    resultats = []
+    for question, attendu in TESTS_VOCAL:
+        r = pont.traiter(question, style="vocal")
+        mauvais = [s for s in _SYMBOLES_NON_PARLES if s in r["response"]]
+        ok = (r["type"] == attendu and r["audit"] is True and not mauvais)
+        resultats.append({
+            "question": question, "attendu": attendu, "obtenu": r["type"],
+            "ok": ok, "reponse": r["response"][:80], "audit": r["audit"],
+            "symboles_restants": mauvais,
+        })
+    return resultats
+
+
+_CORPUS_VOCAL = ("⚠️ URGENCE VITALE — Appeler le 15 IMMÉDIATEMENT. "
+                 "Glycémie ≥ 1,26 g/L (7,0 mmol/L) ; HbA1c ≥ 6,5 % ; "
+                 "pression 140/90 mmHg ; 40-60 insufflations/min ; 2x/j ; "
+                 "fièvre > 38,5 °C. → Hospitalisation. 24h/24, 7j/7.")
+
+
+def verifier_vocalisation():
+    """Les symboles RÉELS du corpus deviennent des mots parlés."""
+    from pont_hybride import vocaliser
+    v = vocaliser(_CORPUS_VOCAL)
+    exigences = [
+        "supérieur ou égal à", "grammes par litre", "millimoles par litre",
+        "hémoglobine glyquée", "pour cent", "sur 90", "millimètres de mercure",
+        "de 40 à 60", "fois par jour", "plus de 38,5", "degrés",
+        "24 heures sur 24", "7 jours sur 7", "Hospitalisation",
+    ]
+    manquants = [e for e in exigences if e not in v]
+    restants = [s for s in ["≥", "→", "—", "⚠", "(", ")", "g/L", "%", "/", "°", "**"]
+                if s in v]
+    return v, manquants, restants
+
+
+# ══════════════════════════════════════════════════════════════════
+# LES STYLES DU PHRASEUR INTERNE (étage 3) — déterminisme + contraintes
+# ══════════════════════════════════════════════════════════════════
+STYLES_A_TESTER = ["conversationnel", "vocal", "bref", "pédagogique"]
+
+
+def executer_styles():
+    """Les 4 styles × le protocole vocal : type + audit + contraintes de style."""
+    pont = PontHybride(utiliser_ollama=False)
+    resultats, reps = [], {}
+    for style in STYLES_A_TESTER:
+        for question, attendu in TESTS_VOCAL:
+            r = pont.traiter(question, style=style)
+            reps[(style, question)] = r["response"]
+            mauvais = ([s for s in _SYMBOLES_NON_PARLES if s in r["response"]]
+                       if style == "vocal" else [])
+            ok = r["type"] == attendu and r["audit"] is True and not mauvais
+            resultats.append({
+                "style": style, "question": question, "attendu": attendu,
+                "obtenu": r["type"], "ok": ok, "reponse": r["response"][:70],
+                "symboles_restants": mauvais,
+            })
+    # Contraintes croisées — la spécialisation de chaque style
+    q_med, q_calc, q_refus = "c'est quoi le diabète ?", "7 × 8", "quasar"
+    contraintes = [
+        ("MEDICAL bref = corpus exact (pas de résumé)",
+         reps[("bref", q_med)] == reps[("conversationnel", q_med)]),
+        ("MEDICAL pédagogique = corpus exact",
+         reps[("pédagogique", q_med)] == reps[("conversationnel", q_med)]),
+        ("MEDICAL vocal = symboles devenus mots parlés",
+         "supérieur ou égal à" in reps[("vocal", q_med)]),
+        ("CALC bref plus court que conversationnel",
+         len(reps[("bref", q_calc)]) < len(reps[("conversationnel", q_calc)])),
+        ("CALC pédagogique plus long que bref",
+         len(reps[("pédagogique", q_calc)]) > len(reps[("bref", q_calc)])),
+        ("REFUS bref plus court que conversationnel",
+         len(reps[("bref", q_refus)]) < len(reps[("conversationnel", q_refus)])),
+    ]
+    # Déterminisme total : la même entrée → la même sortie
+    r1 = pont.traiter(q_calc, style="bref")
+    r2 = pont.traiter(q_calc, style="bref")
+    contraintes.append(("Déterminisme : même entrée → même sortie",
+                        r1["response"] == r2["response"]))
+    return resultats, contraintes
+
+
+def verifier_configuration_externe():
+    """État honnête de la chaîne de fournisseurs (aucun appel réseau)."""
+    try:
+        from pont_phraseur_externe import PhraseurExterne
+        p = PhraseurExterne()
+        noms = [n for n, _ in p.fournisseurs]
+        return noms
+    except Exception as e:
+        return [f"erreur: {e}"]
+
+
+def verifier_style_elegan_deterministe():
+    """Sans LLM, le style élégant = conversationnel (zéro cloud, déterministe).
+    L'élégance par polish LLM est testée dans le test global (avec la vraie
+    chaîne). Ici on vérifie la garantie de repli."""
+    pont = PontHybride(utiliser_ollama=False)
+    if "élégant" not in pont.STYLES:
+        return False, "style élégant absent de STYLES"
+    for q in ["7 × 8", "chat", "quasar", "c'est quoi le diabète ?"]:
+        r1 = pont.traiter(q, style="élégant")
+        r2 = pont.traiter(q, style="conversationnel")
+        if r1["response"] != r2["response"]:
+            return False, f"« {q} » : élégant ≠ conversationnel sans LLM"
+    return True, ""
+
+
 def rapport(resultats, titre):
     ok = sum(1 for r in resultats if r["ok"])
     total = len(resultats)
@@ -149,12 +275,63 @@ def main():
     print(f"\n  Mode : NOYAU SEUL (déterministe) — {dt:.1f}s")
     ok1 = rapport(resultats, "TEST 1 · PONT SERVEUR — NOYAU SEUL")
 
-    # 2. Sauvegarde du rapport
+    # 2. STYLE VOCAL — ce que lira le synthétiseur
+    t0 = time.time()
+    resultats_vocal = executer_vocal()
+    dt = time.time() - t0
+    print(f"\n  Mode : STYLE VOCAL (zéro symbole non parlé) — {dt:.1f}s")
+    ok2 = rapport(resultats_vocal, "TEST 2 · STYLE VOCAL — LISIBLE À VOIX HAUTE")
+
+    # 3. Vocalisation pure : les symboles du corpus deviennent des mots
+    v, manquants, restants = verifier_vocalisation()
+    ok3 = not manquants and not restants
+    print(f"\n  Vocalisation du corpus : {'✅' if ok3 else '❌'}")
+    print(f"    → {v[:150]}…")
+    if manquants:
+        print(f"    ⚠️ lectures manquantes : {manquants}")
+    if restants:
+        print(f"    ⚠️ symboles restants : {restants}")
+
+    # 4. LES STYLES DU PHRASEUR INTERNE (étage 3)
+    t0 = time.time()
+    resultats_styles, contraintes = executer_styles()
+    dt = time.time() - t0
+    print(f"\n  Mode : 4 STYLES × 6 questions (PhraseurInterne) — {dt:.1f}s")
+    ok4 = rapport(resultats_styles, "TEST 3 · STYLES DU PHRASEUR INTERNE")
+    ok_contraintes = sum(1 for _, c in contraintes if c)
+    print(f"\n  Contraintes de style : {ok_contraintes}/{len(contraintes)}")
+    for nom, c in contraintes:
+        print(f"    {'✅' if c else '❌'} {nom}")
+    ok4 = ok4 and ok_contraintes == len(contraintes)
+
+    # 5. Style ÉLÉGANT sans LLM = conversationnel (garantie déterministe)
+    ok_elegan, detail_elegan = verifier_style_elegan_deterministe()
+    print(f"\n  Élégant sans LLM = conversationnel : {'✅' if ok_elegan else '❌ ' + detail_elegan}")
+
+    # 6. État de la chaîne de fournisseurs (aucun appel réseau)
+    fournisseurs = verifier_configuration_externe()
+    print(f"\n  Chaîne de fournisseurs détectée : {fournisseurs or 'aucun → PhraseurInterne'}")
+
+    # 7. Sauvegarde du rapport
     dep = {
         "protocole": f"{len(TESTS)} questions pré-enregistrées, critère 100 %",
         "resultats": resultats,
         "ok": sum(1 for r in resultats if r["ok"]),
         "total": len(resultats),
+        "fournisseurs": fournisseurs,
+        "style_elegan_sans_llm": ok_elegan,
+        "vocal": {
+            "ok": sum(1 for r in resultats_vocal if r["ok"]),
+            "total": len(resultats_vocal),
+            "resultats": resultats_vocal,
+            "corpus_vocal_ok": ok3,
+        },
+        "styles": {
+            "ok": sum(1 for r in resultats_styles if r["ok"]),
+            "total": len(resultats_styles),
+            "resultats": resultats_styles,
+            "contraintes": [{"nom": n, "ok": c} for n, c in contraintes],
+        },
         "date": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
     p = os.path.join("data", "benchmarks", "tests_ka_hybride_report.json")
@@ -163,10 +340,10 @@ def main():
         json.dump(dep, f, indent=2, ensure_ascii=False)
     print(f"\nRapport : {p}")
 
-    if not ok1:
+    if not (ok1 and ok2 and ok3 and ok4 and ok_elegan):
         print("\n❌ SUITE NON PASSÉE — corriger les échecs avant validation.")
         sys.exit(1)
-    print("\n✅ SUITE PASSÉE — le pont serveur est validé sur 50 questions.")
+    print("\n✅ SUITE PASSÉE — 50 questions + style vocal + 4 styles + élégant déterministe.")
     print("   → Exécuter aussi : node test_mobile_kernel.js (noyau mobile)")
 
 

@@ -60,8 +60,10 @@ class OpenAILLM(LLMInterface):
                     base_url=self.config.api_base,
                     timeout=self.config.timeout,
                 )
-            except ImportError:
-                # Fallback: requete HTTP directe via requests
+            except (ImportError, TypeError):
+                # Fallback: requete HTTP directe via requests.
+                # TypeError : incompatibilité openai/httpx (httpx ≥ 0.28 a
+                # supprimé l'argument « proxies ») — détectée en réel sur KA.
                 self._client = None
         return self._client
     
@@ -69,8 +71,13 @@ class OpenAILLM(LLMInterface):
         """Fallback HTTP si openai package non installe."""
         import requests
         
+        # La clé et la base peuvent manquer dans le config passé par l'appelant
+        # (ex. deepseek_styler) : on reprend celles du client.
+        api_key = config.api_key or self.config.api_key
+        api_base = config.api_base or self.config.api_base
+        
         headers = {
-            "Authorization": f"Bearer {config.api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
         
@@ -95,7 +102,7 @@ class OpenAILLM(LLMInterface):
         start = time.time()
         try:
             resp = requests.post(
-                f"{config.api_base}/chat/completions",
+                f"{api_base}/chat/completions",
                 headers=headers,
                 json=payload,
                 timeout=config.timeout,

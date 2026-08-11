@@ -1366,9 +1366,11 @@ def _get_pont_hybride():
 def api_hybrid():
     """
     Le pont d'audit : noyau harmonique (calcul exact, résonance, REFUS)
-    + Phraseur (Ollama local, optionnel) + audit + fallback noyau.
+    + couche langage de l'étage 3 (PhraseurInterne déterministe + Ollama
+    local si dispo) + audit + fallback noyau.
 
-    Body: { "message": "7 × 8" }
+    Body: { "message": "7 × 8", "style": "vocal" }
+    Styles : conversationnel · vocal (lisible à voix haute) · bref · pédagogique.
     Returns: { "response": "...", "type": "CALC|FAIT|REFUS",
                "audit": true, "latence_ms": 123 }
     """
@@ -1381,8 +1383,19 @@ def api_hybrid():
     if pont is None:
         return jsonify({'error': 'Pont hybride indisponible'}), 503
 
+    style = data.get('style') or None
+    if style:
+        style = style.lower()
+        if style == "pedagogique":
+            style = "pédagogique"
+        if style == "elegant":
+            style = "élégant"
+        if style not in pont.STYLES:
+            return jsonify({'error': 'Style inconnu (conversationnel, vocal, '
+                                     'bref, pédagogique, élégant)'}), 400
+
     try:
-        r = pont.traiter(message)
+        r = pont.traiter(message, style=style)
         return jsonify({
             'response': r['response'],
             'type': r['type'],

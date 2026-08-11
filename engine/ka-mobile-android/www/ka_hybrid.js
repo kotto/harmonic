@@ -263,16 +263,70 @@
   }
 
   function phraseModele(core) {
+    // Phrases courtes, sans tirets longs ni symboles : lisibles à voix haute
     if (core.type === 'IDENTITE') return REPONSE_IDENTITE;
     if (core.type === 'MEDICAL') return core.valeur;
     if (core.type === 'CONDUITE') return core.valeur;
     if (core.type === 'CALC') {
       var v = core.valeur;
       var s = (v === Math.floor(v)) ? String(v) : v.toFixed(6).replace(/0+$/, '').replace(/\.$/, '');
-      return 'Le résultat exact est ' + s + ' — calculé par les ondes.';
+      return 'Le résultat est ' + s + '. Calculé par les ondes.';
     }
-    if (core.type === 'FAIT') return 'Je connais ' + core.concept + ' — c\'est dans ma mémoire.';
-    return 'Je ne peux pas répondre à ça — ce n\'est pas dans ce que je connais. Je préfère me taire plutôt que d\'inventer.';
+    if (core.type === 'FAIT') return 'Oui, je connais ' + core.concept + '.';
+    return 'Je ne peux pas répondre à ça. Je préfère me taire plutôt que d\'inventer.';
+  }
+
+  // ═══════════════ VOCALISATION TTS — texte écrit → texte PARLÉ ═══════════════
+  // Port exact de vocaliser() (pont_hybride.py). Le synthétiseur (Piper /
+  // Web Speech) lit mal les symboles réels du corpus (≥, →, %, ⚠️, —, g/L,
+  // 140/90…). Le CONTENU reste identique, seuls les symboles deviennent des
+  // mots. Utilisé par ka_index.html avant la synthèse vocale.
+  var UNITES_VOCALES = [
+    ['mmol/L', ' millimoles par litre'], ['mg/dL', ' milligrammes par décilitre'],
+    ['mg/dl', ' milligrammes par décilitre'], ['mg/kg', ' milligrammes par kilogramme'],
+    ['g/L', ' grammes par litre'], ['mmHg', ' millimètres de mercure'],
+    ['HbA1c', ' hémoglobine glyquée'], ['ml/kg', ' millilitres par kilogramme'],
+    ['ml', ' millilitres'], ['mg', ' milligrammes'], ['kg', ' kilogrammes'],
+    ['cm', ' centimètres'], ['°C', ' degrés'], ['°', ' degrés']];
+
+  var FREQUENCES_VOCALES = [
+    ['/min', ' par minute'], ['/j', ' par jour'], ['/an', ' par an'],
+    ['/h', ' par heure'], ['/kg', ' par kilogramme'], ['/semaine', ' par semaine'],
+    ['/mois', ' par mois']];
+
+  function vocaliser(texte) {
+    if (!texte) return texte;
+    var t = String(texte);
+    // 1. Unités et termes médicaux (ils contiennent /, °, %… → AVANT)
+    UNITES_VOCALES.forEach(function (p) { t = t.split(p[0]).join(p[1]); });
+    // 2. Flèches, tirets longs, comparaisons, pourcentages
+    t = t.split('→').join(', ').split('—').join(', ').split('–').join(', ');
+    t = t.split('≥').join('supérieur ou égal à').split('≤').join('inférieur ou égal à');
+    t = t.split('≈').join('environ').split('±').join('environ');
+    t = t.split('%').join(' pour cent').split('&').join(' et ').split('=').join(' égale ');
+    // 3. « 24h/24 » → « 24 heures sur 24 » ; « 7j/7 » → « 7 jours sur 7 » ;
+    //    « 140/90 » → « 140 sur 90 » ; « 6h » → « 6 heures »
+    t = t.replace(/(\d+)h\/(\d+)/g, '$1 heures sur $2');
+    t = t.replace(/(\d+)j\/(\d+)/g, '$1 jours sur $2');
+    t = t.replace(/(\d+)\/(\d+)/g, '$1 sur $2');
+    t = t.replace(/(\d+)h\b/g, '$1 heures');
+    t = t.replace(/(\d+)j\b/g, '$1 jours');
+    // 4. « 2x/j » → « 2 fois par jour » (AVANT les fréquences)
+    t = t.replace(/(\d+)\s*x\s*\/\s*j/g, '$1 fois par jour');
+    FREQUENCES_VOCALES.forEach(function (p) { t = t.split(p[0]).join(p[1]); });
+    t = t.split('/').join(' par ');
+    // 5. Intervalles et opérateurs : « 40-60 » → « de 40 à 60 », « > » → « plus de »
+    t = t.replace(/(\d+)\s*-\s*(\d+)/g, 'de $1 à $2');
+    t = t.split('>').join(' plus de ').split('<').join(' moins de ');
+    t = t.split('×').join(' fois ').split('÷').join(' divisé par ').split('+').join(' plus ');
+    // 6. Parenthèses → virgules (contenu conservé : précision médicale)
+    t = t.replace(/\(/g, ', ').replace(/\)/g, '');
+    // 7. Markdown et émojis (plages Unicode des symboles décoratifs)
+    t = t.replace(/\*\*/g, '').replace(/`/g, '').replace(/#/g, '');
+    t = t.replace(/[\u2190-\u21FF\u2600-\u27BF\uFE0F\ud800-\udfff]/g, '');
+    // 8. Nettoyage : doubles espaces, virgules orphelines
+    t = t.replace(/\s{2,}/g, ' ').replace(/\s+,/g, ',').replace(/,\s*,/g, ',');
+    return t.trim();
   }
 
   // ═══════════════ L'AUDIT LOCAL ═══════════════
@@ -399,5 +453,6 @@
   }
 
   global.KAHybrid = { traiter: traiter, etat: etat, calculer: calculer,
-                      repondre: repondre, phraseModele: phraseModele };
+                      repondre: repondre, phraseModele: phraseModele,
+                      vocaliser: vocaliser };
 })(window);

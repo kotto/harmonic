@@ -1757,9 +1757,19 @@ function startCall(){
 function stopCall(){clearInterval(callIv);if(callTTS){callTTS.cancel();callTTS=null;}if(window._callRec){try{window._callRec.stop();}catch(e){}}}
 // 🆕 Synthèse vocale Web (TTS)
 // 🎵 KA Voice Engine (serveur harmonique) avec fallback Web Speech
+// 🗣️ Le synthétiseur « emprunte » le style conversationnel : kaVocaliser
+//    transforme le texte KA en texte parlé (≥ → « supérieur ou égal à »,
+//    ⚠️ — → nettoyés, 140/90 → « 140 sur 90 »…). Le contenu reste identique,
+//    seuls les symboles deviennent des mots. (port JS de pont_hybride.vocaliser)
 var _kaAudioCtx=null;
+function kaVocaliser(text){
+  if(!text)return text;
+  if(window.KAHybrid&&KAHybrid.vocaliser)return KAHybrid.vocaliser(text);
+  return text;
+}
 function kaCallSpeak(text){
   if(!text)return;
+  text=kaVocaliser(text);
   // ⚡ Essayer le KA Voice Engine serveur d'abord
   fetch(API_URL + '/api/voice/stream', {
     method:'POST',headers:{'Content-Type':'application/json'},
