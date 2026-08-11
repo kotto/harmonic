@@ -136,6 +136,37 @@ def _score_fact(entity: str, i: int) -> float:
     return max(s1, s2)
 
 
+# ═══ LE PONT AGENTIQUE — la mémoire connaît les actions du téléphone ═══════
+# KA, assistant personnel : les fonctions agentiques (appeler, SMS, ouvrir,
+# compresser…) sont des FAITS — (commande, 'action', 'nom_action') — la
+# mémoire les connaît comme le reste ; l'ask() retourne suggested_action
+# quand la requête est une commande. Zéro dépendance open-source côté
+# serveur (le téléphone exécute via le plugin natif KAActions).
+
+ACTIONS = [
+    {'mot': 'appeler', 'action': 'call', 'relation': 'call'},
+    {'mot': 'appelle', 'action': 'call', 'relation': 'call'},
+    {'mot': 'sms', 'action': 'sms', 'relation': 'sms'},
+    {'mot': 'envoie un message', 'action': 'sms', 'relation': 'sms'},
+    {'mot': 'compresse', 'action': 'compress', 'relation': 'compress'},
+    {'mot': 'compresser', 'action': 'compress', 'relation': 'compress'},
+    {'mot': 'espace disque', 'action': 'diskSpace', 'relation': 'diskSpace'},
+    {'mot': 'batterie', 'action': 'battery', 'relation': 'battery'},
+    {'mot': 'ouvre', 'action': 'openApp', 'relation': 'openApp'},
+    {'mot': 'wifi', 'action': 'wifiInfo', 'relation': 'wifiInfo'},
+]
+
+
+def detect_action(query: str) -> dict | None:
+    """Reconnaît une commande agentique (lexical, déterministe — X3).
+    Retourne {action, relation} ou None."""
+    q = _normalize(query)
+    for entry in ACTIONS:
+        if _normalize(entry['mot']) in q:
+            return {'action': entry['action'], 'relation': entry['relation']}
+    return None
+
+
 def ask(query: str, threshold: float | None = None, top_k: int = 3) -> dict:
     """Le pipeline memory-first : question → vocabulaire (pont LEXICAL) →
     résonance intra-entité (confiance) → décision de refus → réponse avec
@@ -148,14 +179,27 @@ def ask(query: str, threshold: float | None = None, top_k: int = 3) -> dict:
     """
     thr = DEFAULT_REFUSAL_THRESHOLD if threshold is None else threshold
     mem = _get_memory()
+
+    # ⚡ PONT AGENTIQUE : une commande du téléphone (appeler, SMS, compresser…)
+    action = detect_action(query)
+    if action is not None:
+        return {'answer': f"Commande reconnue : {action['action']}.",
+                'provenance': [{'sujet': action['relation'], 'relation': 'action',
+                                'objet': action['action'],
+                                'source': 'KA Actions — plugin natif du téléphone'}],
+                'confidence': 1.0, 'refused': False, 'reason': None,
+                'suggested_action': action['action']}
+
     if mem.n_facts == 0:
         return {'answer': None, 'provenance': [], 'confidence': 0.0,
-                'refused': True, 'reason': 'mémoire vide'}
+                'refused': True, 'reason': 'mémoire vide',
+                'suggested_action': None}
 
     entities = _match_entities(query)
     if not entities:
         return {'answer': None, 'provenance': [], 'confidence': 0.0,
-                'refused': True, 'reason': 'aucune entité connue dans la requête'}
+                'refused': True, 'reason': 'aucune entité connue dans la requête',
+                'suggested_action': None}
 
     # les faits des entités trouvées — score intra-entité (max-probe)
     candidates = []
@@ -165,7 +209,8 @@ def ask(query: str, threshold: float | None = None, top_k: int = 3) -> dict:
             candidates.append((i, _score_fact(e, i), e))
     if not candidates:
         return {'answer': None, 'provenance': [], 'confidence': 0.0,
-                'refused': True, 'reason': 'entités sans fait associé'}
+                'refused': True, 'reason': 'entités sans fait associé',
+                'suggested_action': None}
 
     candidates.sort(key=lambda x: -x[1])
     best_i, best_score, best_entity = candidates[0]
@@ -183,7 +228,8 @@ def ask(query: str, threshold: float | None = None, top_k: int = 3) -> dict:
     fact = _facts[best_i]
     answer = f"{fact['sujet']} {fact['relation']} {fact['objet']}."
     return {'answer': answer, 'provenance': provenance,
-            'confidence': round(best_score, 4), 'refused': False, 'reason': None}
+            'confidence': round(best_score, 4), 'refused': False, 'reason': None,
+            'suggested_action': None}
 
 
 def stats() -> dict:

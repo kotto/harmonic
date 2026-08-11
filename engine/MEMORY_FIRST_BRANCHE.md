@@ -42,6 +42,31 @@ Dans la route principale du chat : la couche memory-first est appelée après l'
 | `POST /v1/memory/ask` | **le RAG déterministe** : question → réponse avec provenance ou refus structurel |
 | `POST /v1/memory/store_with_source` | faits avec source — la provenance du RAG |
 
+### ⚡ Le pont agentique — KA, assistant personnel (fonctions du téléphone)
+
+**KA est adapté à l'environnement memory-first** : les fonctions agentiques sont
+des FAITS de la mémoire — le plugin natif `ka-actions` (Capacitor, Java) exécute,
+la mémoire connaît et archive. L'`ask()` reconnaît les commandes et retourne
+`suggested_action` (le téléphone exécute, la mémoire a la provenance).
+
+| Action | Implémentation | Dépendance open-source |
+|---|---|---|
+| `call` · `sms` · `contacts` | ✅ plugin natif (Java + Intent/Telephony) | **non** — SDK Android |
+| `diskSpace` · `battery` · `wifiInfo` | ✅ plugin natif | **non** — SDK Android |
+| `openApp` · `listApps` · `deviceInfo` | ✅ plugin natif | **non** — SDK Android |
+| `compress` (ZIP, background-compatible) | ✅ **ajouté** — `java.util.zip` (dossier/fichier → ZIP, ratio) | **non** — SDK Android embarque tout |
+| Orchestration (reconnaître la commande) | ✅ `detect_action` dans `memory_first.py` (lexical, X3) | **non** — mémoire-d'abord |
+| Exécution en background (WorkManager) | 📋 prochaine étape — `compress` est prête à y être branchée | **oui** — AndroidX WorkManager (open-source, standard Jetpack) |
+| IA embarquée (raisonnement on-device) | 📋 option — la mémoire répond déjà ; le LLM embarqué reste un choix | **oui, si voulu** — Llama/Gemma/Phi via ExecuTorch/llama.cpp (open-source) |
+
+**Verdict open-source** : les fonctions du téléphone (appeler, SMS, contacts,
+espace, batterie, wifi, compression ZIP) sont **natives — aucune dépendance
+open-source nécessaire** (le SDK Android les embarque). L'open-source n'est
+nécessaire que pour : (1) le **background** (WorkManager — le standard
+Jetpack), (2) éventuellement un **LLM embarqué** (aligné avec la philosophie
+on-device), (3) les formats exotiques de compression (7z/xz — Apache Commons
+Compress), si le besoin existe.
+
 ### ✅ Tests (tous verts)
 
 ```

@@ -99,3 +99,32 @@ def test_threshold_parameter_is_declared(seeded):
     assert isinstance(DEFAULT_REFUSAL_THRESHOLD, float)
     r = seeded.post('/api/memory-first/ask', json={'query': 'le soleil'})
     assert r.status_code == 200  # le seuil par défaut ne casse pas les réponses
+
+
+# ═══ LE PONT AGENTIQUE ══════════════════════════════════════════════════════
+
+def test_action_call_recognized(seeded):
+    """« appelle Sophie » → la commande agentique call, pas une fabrication."""
+    r = seeded.post('/api/memory-first/ask', json={'query': 'appelle sophie'})
+    body = r.get_json()
+    assert body['refused'] is False
+    assert body['suggested_action'] == 'call'
+    assert body['provenance'][0]['source'].startswith('KA Actions')
+
+
+def test_action_compress_recognized(seeded):
+    r = seeded.post('/api/memory-first/ask', json={'query': 'compresse le dossier photos'})
+    assert r.get_json()['suggested_action'] == 'compress'
+
+
+def test_action_battery_recognized(seeded):
+    r = seeded.post('/api/memory-first/ask', json={'query': 'niveau de batterie ?'})
+    assert r.get_json()['suggested_action'] == 'battery'
+
+
+def test_medical_question_not_an_action(seeded):
+    """Une question médicale reste une question — pas de fausse commande."""
+    r = seeded.post('/api/memory-first/ask', json={'query': 'qu est ce que la lumiere ?'})
+    body = r.get_json()
+    assert body['suggested_action'] is None
+    assert body['refused'] is False
