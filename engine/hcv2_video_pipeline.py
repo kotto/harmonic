@@ -158,14 +158,24 @@ if __name__ == '__main__':
         rec = decode_video(enc)
         size = len(enc['blob'])
         ratio = orig_bytes / size
+        # ⚠️ LES BASES HONNÊTES : B3.mp4 est DÉJÀ compressé (H.264) — la
+        # référence SDI est la taille RAW non compressée :
+        #   · RAW RGB888      : T × H × W × 3 (les données brutes)
+        #   · SDI 4:2:2 10-bit : T × H × W × 2,5 (le standard broadcast)
+        raw_size = T * 180 * 320 * 3
+        sdi_size = int(T * 180 * 320 * 2.5)
         print(f"\n   {label} :")
-        print(f"      compressé : {size:,} o · ratio vs fichier : {ratio:.2f}×")
+        print(f"      compressé : {size:,} o")
+        print(f"      vs fichier MP4 (DÉJÀ H.264) : {ratio:.2f}× — ⚠️ pas la base SDI")
+        print(f"      vs RAW RGB888 non compressé : {raw_size / size:.2f}×")
+        print(f"      vs SDI 4:2:2 10-bit         : {sdi_size / size:.2f}×")
         print(f"      PSNR : {psnr(np.stack(frames), rec):6.2f} dB · "
               f"SSIM : {ssim(np.stack(frames), rec):.4f}")
-        print(f"      masse de Parseval : {enc['mass_kept']:.4f} · "
-              f"décodeur en boucle fermée ✅")
+        print(f"      décodeur en boucle fermée ✅")
 
     print("\n   Références de la base (les mesures honnêtes) :")
-    print("      B3 (10 frames, H.264, lossless) : 8,51× @ 51,22 dB")
-    print("      Contenu broadcast optimisé       : 15,17× (lossless)")
+    print("      B3 (H.264 déjà compressé — le 8,51× est vs le MP4) : 51,22 dB")
+    print("      Contenu broadcast optimisé (RAW) : 15,17× (lossless)")
+    print("   → la comparaison SDI honnête = le ratio vs RAW (ci-dessus),")
+    print("     jamais vs le MP4 déjà compressé — corrigé, publié")
     print("═" * 70)
