@@ -85,34 +85,49 @@ def _unpack(blob, h, w):
     return payloads
 
 
-def encode_video(frames, use_memory=True):
+def _grain_seed(t: int) -> int:
+    """La graine dorée : int((t+1)·φ·2²⁴) — déterministe, dérivée (T1)."""
+    return int((t + 1) * PHI * (1 << 24)) % (1 << 32)
+
+
+def encode_video(frames, use_memory=True, grain=True):
     """Frames RGB (T, H, W, 3) → dict .hcv2. La mémoire d'or prédit, le
-    résidu est compressé par le codec modal ; les DEPTH premières frames
-    (l'échauffement) sont compressées complètes."""
+    résidu est soit compressé par le codec modal (grain=False), soit —
+    GRAIN PRINCIÉ (P4, l'inspiration SDI/GRAIN_SYNTH) — réduit à sa
+    statistique (σ par canal + graine dorée) et RÉGÉNÉRÉ au décodage."""
     ycbcr = np.stack([_to_ycbcr(f.astype(np.float64)) for f in frames])
     T, H, W, C = ycbcr.shape
     w_gold = golden_weights(DEPTH)
-    blob_parts, masses = [], []
+    blob_parts, masses, grains = [], [], []
     for c in range(C):
         ch = ycbcr[:, :, :, c]
         head = [_encode_channel(ch[t]) for t in range(DEPTH)]
         if use_memory:
             rest = _predict(ch, w_gold)
-            # les résidus : amplitudes FLOAT32 (le float16 leur nuit —
-            # coefficients bruités — mesuré : 26,2 vs 32,7 dB)
-            # les résidus : amplitudes ABSOLUES float32 (la normalisation
-            # par max_mag perd la précision à petite résolution — mesuré)
-            tail = [_encode_channel(ch[t] - rest[i], mag_dtype=np.float32)
-                    for i, t in enumerate(range(DEPTH, T))]
+            if grain:
+                # ✨ LE GRAIN PRINCIÉ : la prédiction dorée a retiré le
+                # signal persistant — le résidu EST le grain ; la mémoire
+                # l'oublie (Zeno t^{1,236}) : on stocke σ et une graine
+                # dorée (~16 o/frame), le décodeur le régénère.
+                for i, t in enumerate(range(DEPTH, T)):
+                    resid = ch[t] - rest[i]
+                    grains.append((float(resid.std()), _grain_seed(t)))
+                tail = []
+            else:
+                tail = [_encode_channel(ch[t] - rest[i], mag_dtype=np.float32)
+                        for i, t in enumerate(range(DEPTH, T))]
         else:
             tail = [_encode_channel(ch[t]) for t in range(DEPTH, T)]
         masses.extend(p[5] for p in head + tail)
         blob_parts.append(_pack(head))
         blob_parts.append(_pack(tail))
+    grain_blob = (np.array([v for pair in grains for v in pair],
+                           np.float32).tobytes() if grains else b'')
     lengths = np.array([len(b) for b in blob_parts], np.uint32)
     header = np.array([T, H, W, use_memory], np.uint32).tobytes() + lengths.tobytes()
-    return {'blob': header + b''.join(blob_parts),
-            'mass_kept': float(np.mean(masses)), 'use_memory': use_memory,
+    return {'blob': header + b''.join(blob_parts) + grain_blob,
+            'mass_kept': float(np.mean(masses)) if masses else 0.0,
+            'use_memory': use_memory, 'grain': grain,
             'T': T, 'H': H, 'W': W}
 
 
@@ -124,6 +139,13 @@ def decode_video(enc):
     w_gold = golden_weights(DEPTH)
     ycbcr = np.zeros((T, H, W, 3))
     off = 40
+    # le grain (à la FIN du blob — l'offset se calcule avant la boucle)
+    n_grains = (T - DEPTH) * 3 if enc.get('grain') else 0
+    grain_params = None
+    grain_off = off + int(lengths.sum())
+    if n_grains:
+        grain_params = np.frombuffer(enc['blob'][grain_off:grain_off + n_grains * 8],
+                                     np.float32).reshape(n_grains, 2)
     for c in range(3):
         head_blob = enc['blob'][off:off + lengths[2 * c]]; off += lengths[2 * c]
         tail_blob = enc['blob'][off:off + lengths[2 * c + 1]]; off += lengths[2 * c + 1]
@@ -134,8 +156,14 @@ def decode_video(enc):
         for i, t in enumerate(range(DEPTH, T)):
             past = np.stack([ycbcr[t - d, :, :, c] for d in range(1, DEPTH + 1)])
             pred = np.tensordot(w_gold / w_gold.sum(), past, axes=(0, 0))
-            resid = _decode_channel(tail[i], (H, W))
-            ycbcr[t, :, :, c] = pred + resid
+            if enc.get('grain'):
+                # ✨ le grain RÉGÉNÉRÉ (déterministe, sa statistique stockée)
+                sigma, seed = grain_params[i * 3 + c]
+                rng = np.random.default_rng(int(seed))
+                ycbcr[t, :, :, c] = pred + rng.normal(0, sigma, (H, W))
+            else:
+                resid = _decode_channel(tail[i], (H, W))
+                ycbcr[t, :, :, c] = pred + resid
     return np.stack([np.clip(_to_rgb(ycbcr[t]), 0, 255).astype(np.uint8)
                      for t in range(T)])
 
