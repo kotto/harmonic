@@ -51,6 +51,37 @@ ka_server/tests/test_wave_api.py        → 14/14 (régression)
 ka_server/tests/test_server_basic.py    → 9/9   (régression — dont /api/chat)
 ```
 
+### 📚 Le corpus KA dans la mémoire (avec provenance)
+
+`ka_server/tools/seed_memory_first.py` — charge les 14 fichiers `data/vital_ka_*.json`
+(91 faits, 8 sources déclarées : KA diseases · OMS 2024 · WHO Maternal · WHO/ICRC
+Trauma/ATLS/AHA BLS · WHO HIV/TB · SAM · IMCI · mhGAP) :
+
+```
+python -m ka_server.tools.seed_memory_first     # tout le corpus (91 faits)
+```
+
+**Le chat mémoire-d'abord vérifié sur le corpus réel** (`smoke_memory_first_medical.py`) :
+
+| Question | Réponse | Source |
+|---|---|---|
+| « arret cardiaque » | ✅ la conduite BLS | WHO/ICRC, ATLS, AHA BLS 2024 |
+| « paludisme » · « traitement du paludisme » | ✅ la conduite | KA diseases |
+| « hemorragie » | ✅ HPP — massage, appel | WHO Maternal 2024 |
+| « la tuberculose » | ✅ dépistage TB | WHO HIV/TB 2024 |
+| « comment reconnaitre une fracture ? » | ✅ immobilisation | ATLS |
+| « recette de pizza » | ❌ **refus** — jamais de fabrication | — |
+
+**Deux bugs réels attrapés par le smoke test** (et corrigés) :
+1. **Interblocage de restauration** — `_get_memory()` tenait le verrou et
+   appelait `_store` qui le ré-acquérait (verrou non réentrant) : refactor en
+   `_ensure_memory_unlocked()` + `_store_unlocked()` ;
+2. **Matcher trop étroit** — sous-chaîne dans un seul sens + accents :
+   « hémorragie » vs « hemorragie » ; corrigé par la normalisation sans
+   accents et le double sens (l'entité dans la requête OU la requête dans
+   l'entité) ; le seuil de refus est passé à −0,05 (l'ancrage lexical est
+   la récupération — la résonance est la confiance rapportée, F6).
+
 ---
 
 ## Les prochaines étapes (documentées, pas faites à l'aveugle)

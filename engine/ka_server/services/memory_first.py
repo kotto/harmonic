@@ -33,11 +33,12 @@ from wave_lang import HolographicMemory, bind, encode, resonate, unbind  # noqa:
 
 DIM = 512
 # Seuil de refus : la résonance en dessous de laquelle la machine se tait.
-# Le refus est STRUCTUREL (aucune entité connue → silence — jamais de
-# fabrication) ; le seuil gate seulement les anti-résonances (score < 0).
-# La confiance est RAPPORTÉE telle quelle : sa variabilité par entité est
-# la frontière publiée F6 (« le spectre s'apprend ») — pas cachée.
-DEFAULT_REFUSAL_THRESHOLD = float(os.environ.get('KA_REFUSAL_THRESHOLD', 0.0))
+# L'ancrage LEXICAL est la récupération (déterministe — le fait existe) ;
+# la résonance est la CONFIDENCE RAPPORTÉE (sa variabilité par entité est
+# la frontière publiée F6, « le spectre s'apprend »). Le seuil gate donc
+# seulement les anti-résonances FORTES (score < −0,05) — un fait connu
+# n'est pas refusé à cause de la variabilité de l'encodeur.
+DEFAULT_REFUSAL_THRESHOLD = float(os.environ.get('KA_REFUSAL_THRESHOLD', -0.05))
 
 _lock = threading.Lock()
 _memory: HolographicMemory | None = None
@@ -46,8 +47,10 @@ _vocabulary: list = []     # les entités connues (sujets + objets)
 
 
 def _data_dir() -> Path:
-    override = Path(os.environ.get('KA_SAAS_WAVE_DIR', ''))
-    return override if str(override) else _ENGINE_DIR / 'data' / 'saas_wave'
+    """Répertoire de persistance. ATTENTION : Path('') = Path('.') — tester
+    la chaîne AVANT de convertir (sinon, écriture dans le CWD)."""
+    raw = os.environ.get('KA_SAAS_WAVE_DIR', '')
+    return Path(raw) if raw else _ENGINE_DIR / 'data' / 'saas_wave'
 
 
 def _persist():
@@ -56,25 +59,41 @@ def _persist():
     path.write_text(json.dumps(_facts, ensure_ascii=False, indent=1), encoding='utf-8')
 
 
-def _get_memory() -> HolographicMemory:
+def _ensure_memory_unlocked():
+    """Initialise + restaure la mémoire — À APPELER avec _lock tenu
+    (jamais de re-entrée : le verrou n'est pas réentrant)."""
     global _memory
+    if _memory is None:
+        _memory = HolographicMemory(dim=DIM)
+        _restore()
+
+
+def _get_memory() -> HolographicMemory:
     with _lock:
-        if _memory is None:
-            _memory = HolographicMemory(dim=DIM)
-            path = _data_dir() / 'memory_first.json'
-            if path.exists():
-                try:
-                    for f in json.loads(path.read_text(encoding='utf-8')):
-                        _store(f['sujet'], f['relation'], f['objet'], f.get('source', ''))
-                except Exception:
-                    pass
+        _ensure_memory_unlocked()
         return _memory
 
 
-def _store(sujet: str, relation: str, objet: str, source: str = ''):
-    mem = _get_memory()
-    mem.store(encode(sujet, dim=DIM), encode(relation, dim=DIM), encode(objet, dim=DIM))
-    _facts.append({'sujet': sujet, 'relation': relation, 'objet': objet, 'source': source})
+def _restore():
+    """Restaure les faits persistés — À APPELER avec _lock tenu (jamais de
+    re-entrée : le verrou n'est pas réentrant, un appel imbriqué = deadlock)."""
+    path = _data_dir() / 'memory_first.json'
+    if not path.exists():
+        return
+    try:
+        for f in json.loads(path.read_text(encoding='utf-8')):
+            _store_unlocked(f['sujet'], f['relation'], f['objet'], f.get('source', ''))
+        _persist()  # une seule écriture finale, pas 91
+    except Exception:
+        pass
+
+
+def _store_unlocked(sujet: str, relation: str, objet: str, source: str = ''):
+    """Stocke un fait — À APPELER avec _lock tenu (interne, pas de re-entrée)."""
+    _memory.store(encode(sujet, dim=DIM), encode(relation, dim=DIM),
+                  encode(objet, dim=DIM))
+    _facts.append({'sujet': sujet, 'relation': relation, 'objet': objet,
+                   'source': source})
     for w in (sujet, objet):
         if w not in _vocabulary:
             _vocabulary.append(w)
@@ -83,18 +102,26 @@ def _store(sujet: str, relation: str, objet: str, source: str = ''):
 
 def store_fact(sujet: str, relation: str, objet: str, source: str = ''):
     """Stocke un fait avec sa provenance (source)."""
-    _store(sujet, relation, objet, source)
+    with _lock:
+        _ensure_memory_unlocked()
+        _store_unlocked(sujet, relation, objet, source)
 
 
 def _normalize(text: str) -> str:
-    return text.lower().strip()
+    """Minuscules + sans accents — le matcher médical tolère « hémorragie »."""
+    import unicodedata
+    return unicodedata.normalize('NFD', text.lower()) \
+        .encode('ascii', 'ignore').decode('ascii')
 
 
 def _match_entities(query: str) -> list:
-    """Le pont sémantique LEXICAL : les entités du vocabulaire présentes
-    dans la requête (normalisée). Déterministe, exact, zéro sémantique."""
+    """Le pont sémantique LEXICAL : les entités du vocabulaire liées à la
+    requête — dans les DEUX sens (la requête dans l'entité « paludisme »,
+    ou l'entité dans la requête « quel est le traitement du paludisme »).
+    Déterministe, exact, zéro sémantique (X3)."""
     q = _normalize(query)
-    return [w for w in _vocabulary if _normalize(w) in q]
+    return [w for w in _vocabulary
+            if _normalize(w) in q or q in _normalize(w)]
 
 
 def _score_fact(entity: str, i: int) -> float:

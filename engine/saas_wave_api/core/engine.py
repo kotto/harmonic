@@ -30,9 +30,10 @@ _fact_log: list = []
 
 
 def data_dir() -> Path:
-    """Répertoire de persistance (surchargeable par KA_SAAS_WAVE_DIR — tests)."""
-    override = Path(__import__('os').environ.get('KA_SAAS_WAVE_DIR', ''))
-    return override if str(override) else _ENGINE_DIR / 'data' / 'saas_wave'
+    """Répertoire de persistance (surchargeable par KA_SAAS_WAVE_DIR — tests).
+    ATTENTION : Path('') = Path('.') — tester la chaîne AVANT de convertir."""
+    raw = __import__('os').environ.get('KA_SAAS_WAVE_DIR', '')
+    return Path(raw) if raw else _ENGINE_DIR / 'data' / 'saas_wave'
 
 
 # ── Sérialisation ────────────────────────────────────────────────────────────
