@@ -1,6 +1,6 @@
 # 🎲 DETERMINISME_THU — La physique sous-jacente : la QM comme écran émergent d'une THU déterministe
 
-**Date** : 09/08/2026 — **Auteur** : Univers-Holistique (Kotto Alain) + ZCode
+**Date** : 09/08/2026 — **Auteur** : Univers-Holistique (Kotto Alain)
 **Version** : 1.0 — **Statut** : Position formalisée — programme de recherche réfutable
 
 ---

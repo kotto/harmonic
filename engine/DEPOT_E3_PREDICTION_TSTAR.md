@@ -2,7 +2,7 @@
 
 **Protocole** : P3.2 — dépôt daté, signé, déposé AVANT tout test
 **Date du dépôt** : 09/08/2026 — **Version** : 2.0 (v1 : oscillateur · v2 : famille oscillateur + ionisation)
-**Auteur** : Univers-Holistique (Kotto Alain) — avec ZCode
+**Auteur** : Univers-Holistique (Kotto Alain)
 **Statut** : ⏳ **DÉPOSÉ — NON ENCORE TESTÉ**
 **Référence** : `THEORIE_HARMONIQUE_REFONDEE.md` — T5 (théorème, famille), F3 (frontière)
 **Certificat** : `data/benchmarks/depot_e3_tstar.json` (v2, horodaté)
@@ -87,7 +87,7 @@ e^{−χ/k_BT*} = e^{−ln φ} = **0,6180339887498948 = 1/φ — exact machine**
 
 ```
 Déposé le 09/08/2026 — v2 (famille T*) — avant tout test
-Univers-Holistique (Kotto Alain) · ZCode
+Univers-Holistique (Kotto Alain)
 Certificat horodaté : data/benchmarks/depot_e3_tstar.json (v2)
 
 Réplique à vérifier :

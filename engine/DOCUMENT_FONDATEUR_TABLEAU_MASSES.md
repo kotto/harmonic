@@ -1,7 +1,7 @@
 # 🌍 DOCUMENT_FONDATEUR — LE TABLEAU PÉRIODIQUE ET LES MASSES
 
 **La matière, générée par la refondation : spectre d'entiers · filtre d'élimination · températures dorées**
-**Date** : 09/08/2026 — **Auteur** : Univers-Holistique (Kotto Alain) + ZCode
+**Date** : 09/08/2026 — **Auteur** : Univers-Holistique (Kotto Alain)
 **Statut** : Document fondateur de l'application — chaque ligne est une commande reproductible
 
 ---

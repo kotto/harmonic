@@ -1,6 +1,6 @@
 # 📋 SESSION_2026_QFT_SYNTHESE — La session QFT / déterminisme / coefficients quantiques
 
-**Date** : 09/08/2026 — **Auteur** : ZCode, avec Univers-Holistique (Kotto Alain)
+**Date** : 09/08/2026 — **Auteur** : Univers-Holistique (Kotto Alain)
 **Statut** : Synthèse de clôture — le dossier complet de la session, prêt à être commité
 
 ---

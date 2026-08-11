@@ -1,6 +1,6 @@
 # 🔁 RG_ELIMINATION — L'élimination comme flot de renormalisation : le pont THU ↔ QFT
 
-**Date** : 09/08/2026 — **Auteur** : ZCode, avec Univers-Holistique
+**Date** : 09/08/2026 — **Auteur** : Univers-Holistique
 **Statut** : Pont formel établi — script vérifié, résultat publié
 **Script** : `rg_point_fixe.py` — **Rapport** : `data/benchmarks/rg_point_fixe_report.json`
 

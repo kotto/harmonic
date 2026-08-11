@@ -1,6 +1,6 @@
 # 🧪 EXPLORATION_TABLEAU_PERIODIQUE — Le tableau périodique par la refondation
 
-**Date** : 09/08/2026 — **Auteur** : ZCode, avec Univers-Holistique
+**Date** : 09/08/2026 — **Auteur** : Univers-Holistique
 **Statut** : Exploration — 2 résultats dérivés ✅ · 1 test négatif ✅ · 1 théorème nouveau ✅
 **Script** : `exploration_tableau_periodique.py` — **Rapport** : `data/benchmarks/tableau_periodique_report.json`
 

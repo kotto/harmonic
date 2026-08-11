@@ -1,6 +1,6 @@
 # 🧠 DEMO_MEMOIRE_DOR — Le Cerveau à Mémoire d'Or : la mémoire dérivée tient sa place sans aucun paramètre
 
-**Date** : 09/08/2026 — **Auteur** : ZCode, avec Univers-Holistique
+**Date** : 09/08/2026 — **Auteur** : Univers-Holistique
 **Statut** : DÉMONSTRATION VALIDÉE — protocole pré-enregistré, verdict publié
 **Référence** : `THEORIE_HARMONIQUE_REFONDEE.md` — T1 (α=1/φ), T2 (λ=φ), T3 (chaîne 1/Γ)
 **Script** : `cerveau_memoire_dor.py` — **Rapport** : `data/benchmarks/memoire_dor_report.json`

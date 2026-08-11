@@ -1,6 +1,6 @@
 # 🌌 BRIGUES_LANGAGE_UNIVERS — L'alphabet du langage source : l'élimination comme origine
 
-**Date** : 09/08/2026 — **Auteur** : Univers-Holistique (Kotto Alain) + ZCode
+**Date** : 09/08/2026 — **Auteur** : Univers-Holistique (Kotto Alain)
 **Version** : 1.0 — **Statut** : Document fondateur — chaque brique est un survivant d'un filtre spécifié
 
 ---

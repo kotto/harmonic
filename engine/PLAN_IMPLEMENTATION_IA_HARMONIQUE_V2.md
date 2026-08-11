@@ -1,6 +1,6 @@
 # 🧠 PLAN GÉNÉRAL D'IMPLÉMENTATION — IA HARMONIQUE V2
 
-**Date** : 09/08/2026 — **Auteur** : Univers-Holistique + ZCode
+**Date** : 09/08/2026 — **Auteur** : Univers-Holistique
 **Statut** : Plan d'implémentation — 5 phases, chaque phase = un critère mesurable
 
 ---

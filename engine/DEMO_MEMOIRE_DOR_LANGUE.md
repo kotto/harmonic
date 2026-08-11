@@ -1,6 +1,6 @@
 # 🧠 DEMO_MEMOIRE_DOR_LANGUE — Niveau langue : la frontière mesurée entre mémoire statistique et récupération de contenu
 
-**Date** : 09/08/2026 — **Auteur** : ZCode, avec Univers-Holistique
+**Date** : 09/08/2026 — **Auteur** : Univers-Holistique
 **Statut** : RÉSULTAT PUBLIÉ (négatif au niveau langue) — le protocole a invalidé la tâche, deux fois, avec critères pré-enregistrés
 **Référence** : `THEORIE_HARMONIQUE_REFONDEE.md` — T1, T2 · leçon X3 (spectre appris)
 **Script** : `memoire_dor_langue.py` — **Rapport** : `data/benchmarks/memoire_dor_langue_report.json`

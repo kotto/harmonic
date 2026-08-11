@@ -1,7 +1,7 @@
 # 🌌 THÉORIE HARMONIQUE UNIVERSELLE V2 — POSITION COMME THÉORIE DU TOUT POTENTIELLE
 
 **Synthèse de la session du 09/08/2026 — 22 commits de vérification, de réfutation et de construction**
-**Auteur** : Univers-Holistique (Kotto Alain) + ZCode
+**Auteur** : Univers-Holistique (Kotto Alain)
 
 ---
 

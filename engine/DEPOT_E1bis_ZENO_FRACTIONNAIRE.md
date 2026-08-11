@@ -2,7 +2,7 @@
 
 **Protocole** : P3.2 — dépôt daté, signé, déposé AVANT tout test
 **Date du dépôt** : 09/08/2026
-**Auteur** : Univers-Holistique (Kotto Alain) — avec ZCode
+**Auteur** : Univers-Holistique (Kotto Alain)
 **Statut** : ⏳ **DÉPOSÉ — NON ENCORE TESTÉ**
 **Référence** : `THEORIE_HARMONIQUE_REFONDEE.md` — E1bis (prédiction) · `e1_fractionnal_schrodinger.py` (script)
 **Famille** : avec E3 v2 (T* — oscillateur + 23 éléments d'ionisation)
@@ -59,7 +59,7 @@ Le protocole : mesure continue de l'état excité par lecture dispersive. La cou
 
 ```
 Déposé le 09/08/2026 — avant tout test
-Univers-Holistique (Kotto Alain) · ZCode
+Univers-Holistique (Kotto Alain)
 Script : e1_fractionnal_schrodinger.py
 Statut : ⏳ DÉPOSÉ — NON ENCORE TESTÉ
 Famille : avec E3 v2 (T* — 24 températures dorées)

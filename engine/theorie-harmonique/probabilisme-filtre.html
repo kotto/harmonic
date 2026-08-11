@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Le probabilisme quantique est une statistique de filtre — Théorie Harmonique Universelle</title>
+<meta name="description" content="Illustration interactive du principe THU-D : une onde déterministe (la chaîne dorée cₙ = 1/Γ(n/φ+1)), un filtre qui lit par la suite dorée {k·φ}, et la statistique qui converge vers |cₙ|² — le probabilisme quantique sans hasard fondamental."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="styles.css"/>
+<style>.reveal{opacity:1!important;transform:none!important}
+.ctrl{display:flex;flex-wrap:wrap;gap:.7rem;justify-content:center;margin:1.2rem auto 0}
+.ctrl button{font-family:'IBM Plex Mono',monospace;font-size:.85rem;letter-spacing:.06em;background:var(--panel);color:var(--ivory);border:1px solid var(--gold-line);padding:.55rem 1.1rem;cursor:pointer;transition:border-color .2s}
+.ctrl button:hover{border-color:var(--gold)}
+.ctrl button.actif{border-color:var(--gold);color:var(--gold)}
+.lecture{font-family:'IBM Plex Mono',monospace;font-size:.9rem;color:var(--muted);text-align:center;margin-top:.6rem;min-height:1.4rem}
+.lecture b{color:var(--gold);font-weight:600}
+.lecture .ok{color:var(--ok)}
+canvas{display:block;max-width:100%;margin:0 auto;background:var(--panel);border:1px solid var(--gold-line)}
+.canvas-legende{font-family:'IBM Plex Mono',monospace;font-size:.8rem;color:var(--muted);text-align:center;margin:.5rem auto 0;max-width:52rem}
+</style></head>
+<body><div class="grain" aria-hidden="true"></div>
+<header class="nav"><a class="nav__brand" href="index.html"><span class="nav__sigil">Ψ</span><span class="nav__title">Théorie Harmonique</span></a>
+<nav class="nav__links"><a href="session-2026-determinisme.html">← Déterminisme · THU-D</a><a href="hpu-v2.html">HPU V2.1</a><a href="v2/">THU V2</a></nav></header>
+<main class="page">
+
+<section class="page__hero"><span class="badge reveal">Illustration · 11/08/2026</span>
+<p class="section-kicker reveal">Le principe, en une machine à mesurer</p>
+<h1 class="page__title reveal">Le probabilisme quantique est une statistique de filtre</h1>
+<p class="page__lede reveal">Il n'y a pas de hasard dans l'onde : il y a une onde entièrement connue, un filtre qui lit selon une suite déterministe — et une statistique qui émerge de la lecture. Les trois volets de la démonstration, interactifs : l'onde, le filtre, l'histogramme.</p></section>
+
+<!-- ══════════════ 1 · L'ONDE ══════════════ -->
+<section class="section" id="onde"><div class="section__head">
+<p class="section-kicker reveal">Volet 1 — rien n'est caché, rien n'est aléatoire</p>
+<h2 class="section__title reveal">L'onde déterministe</h2>
+<p class="section__lede reveal">L'état est une décomposition modale Ψ = Σ cₙ·(Ψ₁)ⁿ. Ici, sept modes — le H-Bit — avec les amplitudes de la chaîne dérivée cₙ = 1/Γ(n/φ+1) (T3, vérifiée machine). Les amplitudes <em>et</em> les phases sont connues : l'onde évolue sans aucun tirage.</p></div>
+<div class="lib-cta reveal"><canvas id="waveCanvas" width="900" height="280"></canvas>
+<p class="canvas-legende">ψ(θ) = Σ cₙ·cos(nθ + n·t) — l'onde évolue, se déforme, interfère : rien ne se perd, rien ne se tire au sort. Les barres de droite sont les sept amplitudes cₙ.</p></div>
+<div class="table-wrap reveal"><table class="deriv-table">
+<thead><tr><th>Mode n</th><th>cₙ = 1/Γ(n/φ+1)</th><th>pₙ = |cₙ|²/Σ|cₖ|² (Parseval)</th><th>cumulé</th></tr></thead><tbody>
+<tr><td>1</td><td>1,1164787</td><td>0,5015</td><td>0,5015</td></tr>
+<tr><td>2</td><td>0,8896304</td><td>0,3184</td><td>0,8199</td></tr>
+<tr><td>3</td><td>0,5696118</td><td>0,1305</td><td>0,9505</td></tr>
+<tr><td>4</td><td>0,3102540</td><td>0,0387</td><td>0,9892</td></tr>
+<tr><td>5</td><td>0,1486490</td><td>0,0089</td><td>0,9981</td></tr>
+<tr><td>6</td><td>0,0640427</td><td>0,0017</td><td>0,9997</td></tr>
+<tr><td>7</td><td>0,0252000</td><td>0,0003</td><td>1,0000</td></tr>
+</tbody></table></div></section>
+
+<!-- ══════════════ 2 · LE FILTRE ══════════════ -->
+<section class="section section--alt" id="filtre"><div class="section__head">
+<p class="section-kicker reveal">Volet 2 — la lecture ne tire rien au sort</p>
+<h2 class="section__title reveal">Le filtre : la suite dorée {k·φ}</h2>
+<p class="section__lede reveal">Le détecteur ne choisit pas : il élimine (A1). Il découpe l'intervalle [0, 1) selon les poids de Parseval — puis lit un point uₖ = {k·φ} de la suite dorée : <strong>déterministe</strong> (le nombre le plus irrationnel, Hurwitz), <strong>non répétitive</strong>, et pourtant indiscernable du bruit (discrépance O(log N/N)).</p></div>
+<div class="lib-cta reveal"><canvas id="filterCanvas" width="900" height="120"></canvas>
+<p class="canvas-legende">La barre [0, 1) est partitionnée par les cumulés de Parseval — chaque lecture uₖ = {k·φ} tombe dans un intervalle : le mode mesuré. Les points de l'historique remplissent [0, 1) sans jamais se répéter.</p></div>
+<div class="ctrl">
+<button id="btn1">Une mesure</button>
+<button id="btn10">×10</button>
+<button id="btn100">×100</button>
+<button id="btnAuto">▶ Lecture automatique</button>
+<button id="btnReset">Réinitialiser</button>
+</div>
+<p class="lecture" id="lecture">Cliquez sur « Une mesure » — la suite avance de k à k+1, sans hasard.</p>
+<p class="lecture" id="deviation">0 mesure — lancez la lecture.</p></section>
+
+<!-- ══════════════ 3 · LA STATISTIQUE ══════════════ -->
+<section class="section" id="statistique"><div class="section__head">
+<p class="section-kicker reveal">Volet 3 — ce qui émerge de la lecture</p>
+<h2 class="section__title reveal">L'histogramme converge vers |cₙ|²</h2>
+<p class="section__lede reveal">Répétez la mesure : les fréquences fₙ se stabilisent sur les poids pₙ = |cₙ|²/Σ|cₖ|². La règle de Born n'est pas un postulat ajouté — c'est la lecture de la normalisation modale (Parseval) par un filtre déterministe.</p></div>
+<div class="lib-cta reveal"><canvas id="statsCanvas" width="900" height="260"></canvas>
+<p class="canvas-legende">Barres : fréquences mesurées fₙ · ligne d'or : pₙ théoriques. L'écart max |fₙ − pₙ| décroît comme 1/√k — la convergence d'un échantillonnage déterministe, pas d'un tirage.</p></div>
+<div class="lib-cta reveal" style="display:flex;flex-wrap:wrap;gap:1rem;justify-content:center">
+<a class="btn btn--ghost" href="session-2026-determinisme.html">🎲 Le programme THU-D — la position complète</a>
+<a class="btn btn--ghost" href="hpu-v2.html">⚛️ Le HPU — la machine qui applique ce principe</a>
+</div></section>
+
+<!-- ══════════════ 4 · LA LEÇON ══════════════ -->
+<section class="section section--dark" id="lecon"><div class="section__head">
+<p class="section-kicker reveal">La leçon — en quatre points</p>
+<h2 class="section__title reveal">Le hasard n'est ni fondamental, ni truqué</h2></div>
+<div class="lib-cta reveal"><p style="max-width:60rem;margin:0 auto;text-align:left">
+<strong>① L'onde est entièrement connue.</strong> Amplitudes et phases — la décomposition modale est déterministe, sa norme est conservée (‖ψ‖ = 1, Parseval).<br/>
+<strong>② Le filtre est déterministe.</strong> La suite {k·φ} ne se répète jamais (α = 1/φ, Hurwitz — le nombre le moins bien approximable) : elle est indistinguable du bruit sans être du bruit.<br/>
+<strong>③ La statistique émerge.</strong> Les fréquences de lecture convergent vers |cₙ|² — c'est l'arithmétique de la normalisation, pas une loi du hasard.<br/>
+<strong>④ La lecture ne détruit rien.</strong> La mesure est une résonance, pas une projection : l'onde continue d'exister après la lecture — zéro effondrement.</p>
+<p style="max-width:60rem;margin:1.4rem auto 0;text-align:left;color:var(--muted);font-size:.9rem">
+<strong>Honnêteté intégrale</strong> : cette page illustre le principe THU-D (l'écran probabiliste d'un substrat déterministe). Elle n'est pas une dérivation de la mécanique quantique — la dérivation de Schrödinger ou du potentiel quantique Q depuis l'équation mère (exigence E1) reste une porte ouverte, avec son critère chiffré.</p></div></section>
+
+</main><script src="app.js"></script>
+<script>
+/* ── Le principe, en une machine à mesurer ────────────────────── */
+const PHI = (1 + Math.sqrt(5)) / 2;
+const C = [1.1164787, 0.8896304, 0.5696118, 0.3102540, 0.1486490, 0.0640427, 0.0252000]; // cₙ = 1/Γ(n/φ+1), T3
+const S = C.reduce((a, x) => a + x * x, 0);
+const P = C.map(x => x * x / S);            // pₙ — poids de Parseval
+const CU = []; let acc = 0; for (const p of P) { acc += p; CU.push(acc); }
+const N = C.length;
+const GOLD = "#f5c96b", GOLD_DIM = "#b8964a", WAVE = "#8fd6e8", IVORY = "#e8e6df", MUTED = "#9aa0b4", OK = "#7fe0a0", PANEL = "#10141f", LINE = "rgba(245,201,107,.16)";
+const HIST = 80;                             // points de l'historique affichés
+
+let k = 0;                                   // index de la suite dorée
+const counts = new Array(N).fill(0);
+let lastU = -1, lastMode = -1;
+let auto = false, autoTimer = null;
+const history = [];
+
+const golden = kk => { const u = kk * PHI % 1; return u < 0 ? u + 1 : u; };
+
+function mesure() {
+  const u = golden(k + 1); k++;
+  let n = 0; while (n < N - 1 && u >= CU[n]) n++;
+  counts[n]++; lastU = u; lastMode = n;
+  history.push(u); if (history.length > HIST) history.shift();
+  return n;
+}
+function reset() { k = 0; counts.fill(0); lastU = -1; lastMode = -1; history.length = 0; }
+
+/* ── dessins ─────────────────────────────────────────────────── */
+function fmt(x, d) { return x.toFixed(d).replace(".", ","); }
+
+function drawWave(t) {
+  const cv = document.getElementById("waveCanvas"), ctx = cv.getContext("2d");
+  const W = cv.width, H = cv.height, padL = 46, padR = 150, padB = 30, padT = 16;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = PANEL; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = LINE; ctx.beginPath();
+  ctx.moveTo(padL, padT); ctx.lineTo(padL, H - padB); ctx.lineTo(W - padR, H - padB); ctx.stroke();
+  const x0 = padL, x1 = W - padR, span = x1 - x0;
+  const amp = (H - padT - padB) / 2.2;
+  /* enveloppe ±|ψ| */
+  ctx.beginPath(); ctx.strokeStyle = MUTED; ctx.lineWidth = 1;
+  for (let i = 0; i <= 360; i++) {
+    const th = i / 360 * 2 * Math.PI;
+    let re = 0, im = 0;
+    for (let n = 0; n < N; n++) { const ph = n * th + n * t; re += C[n] * Math.cos(ph); im += C[n] * Math.sin(ph); }
+    const y = H - padB - Math.hypot(re, im) / 2.4855 * amp;
+    i === 0 ? ctx.moveTo(x0 + i / 360 * span, y) : ctx.lineTo(x0 + i / 360 * span, y);
+  }
+  ctx.stroke();
+  /* l'onde réelle */
+  ctx.beginPath(); ctx.strokeStyle = WAVE; ctx.lineWidth = 1.6;
+  for (let i = 0; i <= 360; i++) {
+    const th = i / 360 * 2 * Math.PI;
+    let re = 0; for (let n = 0; n < N; n++) re += C[n] * Math.cos(n * th + n * t);
+    const y = H - padB - re / 2.4855 * amp;
+    i === 0 ? ctx.moveTo(x0 + i / 360 * span, y) : ctx.lineTo(x0 + i / 360 * span, y);
+  }
+  ctx.stroke();
+  ctx.fillStyle = MUTED; ctx.font = "11px 'IBM Plex Mono',monospace";
+  ctx.fillText("θ →", x1 - 26, H - padB + 16);
+  ctx.fillText("ψ", padL - 30, padT + 8);
+  /* les sept amplitudes */
+  const bw = (padR - 26) / N;
+  for (let n = 0; n < N; n++) {
+    const bh = C[n] / 1.1164787 * (H - padT - padB);
+    const bx = W - padR + 12 + n * bw;
+    ctx.fillStyle = n === lastMode ? GOLD : GOLD_DIM;
+    ctx.globalAlpha = n === lastMode ? 1 : .45;
+    ctx.fillRect(bx, H - padB - bh, bw - 6, bh);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = MUTED; ctx.font = "10px 'IBM Plex Mono',monospace";
+    ctx.fillText("c" + (n + 1), bx, H - padB + 14);
+  }
+}
+function drawFilter() {
+  const cv = document.getElementById("filterCanvas"), ctx = cv.getContext("2d");
+  const W = cv.width, H = cv.height, padL = 46, padR = 46, top = 34, barH = 26;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = PANEL; ctx.fillRect(0, 0, W, H);
+  const span = W - padL - padR;
+  /* la partition de Parseval */
+  let x = padL;
+  for (let n = 0; n < N; n++) {
+    const w = (n === 0 ? CU[0] : CU[n] - CU[n - 1]) * span;
+    ctx.fillStyle = n % 2 ? "rgba(245,201,107,.08)" : "rgba(245,201,107,.16)";
+    ctx.fillRect(x, top, w, barH);
+    ctx.strokeStyle = LINE; ctx.strokeRect(x, top, w, barH);
+    ctx.fillStyle = MUTED; ctx.font = "11px 'IBM Plex Mono',monospace";
+    ctx.fillText("n=" + (n + 1), x + 4, top + 17);
+    ctx.fillStyle = GOLD_DIM; ctx.font = "10px 'IBM Plex Mono',monospace";
+    ctx.fillText(fmt(CU[n], 3), x + w - 30, top + 17);
+    x += w;
+  }
+  /* l'historique — la non-répétition */
+  ctx.fillStyle = IVORY;
+  for (let i = 0; i < history.length; i++) ctx.fillRect(padL + history[i] * span - 1, top + barH + 14, 2, 8);
+  /* le point courant */
+  if (lastU >= 0) {
+    const xp = padL + lastU * span;
+    ctx.strokeStyle = GOLD; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(xp, top - 8); ctx.lineTo(xp, top + barH + 8); ctx.stroke();
+    ctx.fillStyle = GOLD; ctx.beginPath(); ctx.arc(xp, top + barH + 22, 4, 0, 7); ctx.fill();
+    ctx.font = "11px 'IBM Plex Mono',monospace"; ctx.fillText("uₖ = " + fmt(lastU, 4), xp + 8, top + barH + 26);
+  }
+  ctx.fillStyle = MUTED; ctx.font = "11px 'IBM Plex Mono',monospace";
+  ctx.fillText("0", padL - 10, top + 17); ctx.fillText("1", W - padR + 6, top + 17);
+}
+function drawStats() {
+  const cv = document.getElementById("statsCanvas"), ctx = cv.getContext("2d");
+  const W = cv.width, H = cv.height, padL = 60, padB = 30, padT = 16;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = PANEL; ctx.fillRect(0, 0, W, H);
+  const span = W - padL - 30, top = H - padB, bw = span / N;
+  const maxP = Math.max.apply(null, P);
+  /* barres des fréquences */
+  for (let n = 0; n < N; n++) {
+    const f = k ? counts[n] / k : 0;
+    const h = f / maxP * (H - padT - padB);
+    ctx.fillStyle = "rgba(232,230,223,.55)";
+    ctx.fillRect(padL + n * bw + 6, top - h, bw - 12, h);
+    ctx.fillStyle = MUTED; ctx.font = "11px 'IBM Plex Mono',monospace";
+    ctx.fillText("n=" + (n + 1), padL + n * bw + 6, top + 14);
+  }
+  /* la courbe théorique pₙ */
+  ctx.strokeStyle = GOLD; ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  for (let n = 0; n < N; n++) {
+    const h = P[n] / maxP * (H - padT - padB);
+    const xc = padL + n * bw + bw / 2;
+    n === 0 ? ctx.moveTo(xc, top - h) : ctx.lineTo(xc, top - h);
+  }
+  ctx.stroke();
+  ctx.fillStyle = GOLD; ctx.font = "11px 'IBM Plex Mono',monospace";
+  ctx.fillText("pₙ (Parseval)", W - 130, padT + 10);
+  /* l'écart max */
+  let dmax = 0; for (let n = 0; n < N; n++) { const f = k ? counts[n] / k : 0; dmax = Math.max(dmax, Math.abs(f - P[n])); }
+  const el = document.getElementById("deviation");
+  el.innerHTML = k === 0
+    ? "0 mesure — lancez la lecture."
+    : "<b>k = " + k + "</b> mesures · écart max |fₙ − pₙ| = <b class='" + (dmax < 0.02 ? "ok" : "") + "'>" + fmt(dmax, 4) + "</b>" +
+      (dmax < 0.02 ? " — la statistique est la lecture de Parseval." : " — la convergence suit 1/√k.");
+}
+function drawAll(t) { drawWave(t); drawFilter(); drawStats(); }
+
+/* ── lecture ─────────────────────────────────────────────────── */
+const elLect = document.getElementById("lecture");
+function lire() {
+  const n = mesure();
+  elLect.innerHTML = "Mesure #<b>" + k + "</b> : uₖ = {k·φ} = <b>" + fmt(lastU, 4) + "</b> → mode <b>" + (n + 1) +
+    "</b> · intervalle de Parseval pₙ = <b>" + fmt(P[n], 4) + "</b> · fréquence fₙ = <b>" + fmt(counts[n] / k, 4) + "</b>";
+}
+function burst(nb) { for (let i = 0; i < nb; i++) mesure(); }
+
+document.getElementById("btn1").onclick = () => { burst(1); lire(); };
+document.getElementById("btn10").onclick = () => { burst(10); lire(); };
+document.getElementById("btn100").onclick = () => { burst(100); lire(); };
+document.getElementById("btnReset").onclick = () => { reset(); lire(); elLect.innerHTML = "Réinitialisé — la suite repart de k = 0."; };
+const btnAuto = document.getElementById("btnAuto");
+btnAuto.onclick = () => {
+  auto = !auto;
+  btnAuto.textContent = auto ? "⏸ Arrêter" : "▶ Lecture automatique";
+  btnAuto.classList.toggle("actif", auto);
+  if (auto) { autoTimer = setInterval(() => { burst(1); }, 60); }
+  else clearInterval(autoTimer);
+};
+
+/* ── boucle ──────────────────────────────────────────────────── */
+let t0 = performance.now();
+(function loop(now) {
+  requestAnimationFrame(loop);
+  drawAll((now - t0) / 1000 * .6);
+})(t0);
+</script>
+</body></html>

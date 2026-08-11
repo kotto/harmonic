@@ -1,6 +1,6 @@
 # 🔬 R3_QUANTIFICATION_FRACTIONNAIRE — Le chaînon de quantification du spin-2
 
-**Date** : 09/08/2026 — **Auteur** : ZCode, avec Univers-Holistique
+**Date** : 09/08/2026 — **Auteur** : Univers-Holistique
 **Statut** : CHAÎNON TRACÉ — quantification formulable, renormalisabilité partielle démontrée, solution exacte non écrite
 **Script** : `r3_quantification_spin2.py` — **Rapport** : `data/benchmarks/r3_quantification_report.json`
 

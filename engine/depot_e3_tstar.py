@@ -3,7 +3,7 @@
 """
 depot_e3_tstar.py — DÉPÔT PRÉ-ENREGISTRÉ DE LA PRÉDICTION T* (protocole P3.2)
 =============================================================================
-Date du dépôt : 09/08/2026 — auteur : Univers-Holistique (Kotto Alain) + ZCode
+Date du dépôt : 09/08/2026 — auteur : Univers-Holistique (Kotto Alain)
 STATUT : DÉPOSÉ — NON ENCORE TESTÉ  (v2 : la famille T*)
 
 PRÉDICTION (v2 — la famille des températures dorées, déposée avant tout test) :
@@ -125,7 +125,7 @@ depot = {
     "protocole": "P3.2 — dépôt pré-enregistré, daté et signé, avant tout test",
     "version": 2,
     "date_depot": "2026-08-09",
-    "auteur": "Univers-Holistique (Kotto Alain) + ZCode",
+    "auteur": "Univers-Holistique (Kotto Alain)",
     "statut": "DÉPOSÉ — NON ENCORE TESTÉ",
     "theoreme": "FAMILLE T* : pour tout gap quantique ΔE, "
                 "e^{−ΔE/k_BT} = 1/φ ⟺ T* = ΔE/(k_B·ln φ)",

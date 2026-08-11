@@ -1,6 +1,6 @@
 # 🔬 QFT_APPUI_THU — La Théorie Quantique des Champs comme appui scientifique de la THU
 
-**Date** : 09/08/2026 — **Auteur** : ZCode, avec Univers-Holistique (Kotto Alain)
+**Date** : 09/08/2026 — **Auteur** : Univers-Holistique (Kotto Alain)
 **Statut** : Document vivant — chaque ligne du tableau de statut est une commande reproductible
 
 ---

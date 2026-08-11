@@ -1,6 +1,6 @@
 # 🌌 THÉORIE HARMONIQUE UNIVERSELLE — REFONDATION (V2)
 
-**Date** : 09/08/2026 — **Auteur** : Univers-Holistique (Kotto Alain) + ZCode
+**Date** : 09/08/2026 — **Auteur** : Univers-Holistique (Kotto Alain)
 **Version** : 2.0 — **Statut** : Document fondateur — l'élimination comme origine, chaque affirmation classée : axiome · théorème · exclusion · frontière
 
 ---
