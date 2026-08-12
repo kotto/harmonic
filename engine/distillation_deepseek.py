@@ -117,9 +117,10 @@ def generer_dataset_distillation(train_problems, api_key, max_problems=None, out
 # ═══════════════════════════════════════════════════════════════════════════
 
 def entrainer_t5_distille(dataset_path, output_dir="data/t5_distilled",
-                          epochs=4, batch_size=2):
+                          epochs=4, batch_size=2, model_name='google/flan-t5-base',
+                          lora_r=16):
     """
-    Fine-tune T5-small sur le dataset de distillation.
+    Fine-tune T5 sur le dataset de distillation.
 
     Le modèle apprend : problème → séquence d'opérations.
     """
@@ -140,7 +141,6 @@ def entrainer_t5_distille(dataset_path, output_dir="data/t5_distilled",
     print(f"  Données : {len(data)} paires problème→opérations")
 
     # Tokenizer
-    model_name = 'google/flan-t5-small'
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def preprocess(examples):
@@ -159,7 +159,7 @@ def entrainer_t5_distille(dataset_path, output_dir="data/t5_distilled",
     # Modèle avec LoRA
     model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
     lora_config = LoraConfig(
-        task_type=TaskType.SEQ_2_SEQ_LM, r=8, lora_alpha=16,
+        task_type=TaskType.SEQ_2_SEQ_LM, r=lora_r, lora_alpha=32,
         lora_dropout=0.1, target_modules=["q", "v"])
     model = get_peft_model(model, lora_config)
     model.print_trainable_parameters()
@@ -172,7 +172,7 @@ def entrainer_t5_distille(dataset_path, output_dir="data/t5_distilled",
         gradient_accumulation_steps=4,
         learning_rate=3e-4,
         warmup_ratio=0.1,
-        logging_steps=10,
+        logging_steps=20,
         save_strategy="epoch",
         fp16=False,
         report_to="none",
@@ -206,12 +206,13 @@ def entrainer_t5_distille(dataset_path, output_dir="data/t5_distilled",
 class DistilledSolver:
     """Solveur utilisant le modèle distillé comme traducteur."""
 
-    def __init__(self, model_path="data/t5_distilled/final"):
+    def __init__(self, model_path="data/t5_distilled/final",
+                 base_model="google/flan-t5-base"):
         from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
         from peft import PeftModel
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        base = AutoModelForSeq2SeqLM.from_pretrained('google/flan-t5-small')
+        base = AutoModelForSeq2SeqLM.from_pretrained(base_model)
         self.model = PeftModel.from_pretrained(base, model_path)
         self.model.eval()
 
