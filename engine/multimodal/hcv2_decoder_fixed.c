@@ -112,7 +112,13 @@ int hc_decode(const uint8_t *blob, int blob_len,
   h = blob[0] | (blob[1] << 8) | (blob[2] << 16) | (blob[3] << 24);
   w = blob[4] | (blob[5] << 8) | (blob[6] << 16) | (blob[7] << 24);
   pf = blob[8] | (blob[9] << 8) | (blob[10] << 16) | (blob[11] << 24);
-  mag_bytes = (pf == 1) ? 4 : 2;
+  /* Versioning : byte 8 = 0x01 → v1, precision dans byte 9 */
+  if (blob[8] == 0x01) {
+    mag_bytes = (blob[9] == 1) ? 4 : 2;
+  } else {
+    /* Pré-v1 : byte 8 = precision_flag (0, 1, ou 64 pour anciens blobs) */
+    mag_bytes = (pf == 1) ? 4 : 2;
+  }
   if (h == 0 || w == 0 || h > 8192 || w > 8192) return -1;
   *out_w = w; *out_h = h;
 

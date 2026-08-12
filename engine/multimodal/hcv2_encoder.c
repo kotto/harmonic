@@ -129,12 +129,14 @@ int hc_encode(const uint8_t *rgb, int w, int h, int precision,
     if (!data) { free(ycbcr); return -1; }
     int data_len = 0;
     
-    /* Header 12 o */
+    /* Header 12 o (spec v1.0 : version byte 8, precision byte 9) */
     data[0] = h & 0xFF; data[1] = (h >> 8) & 0xFF;
     data[2] = (h >> 16) & 0xFF; data[3] = (h >> 24) & 0xFF;
     data[4] = w & 0xFF; data[5] = (w >> 8) & 0xFF;
     data[6] = (w >> 16) & 0xFF; data[7] = (w >> 24) & 0xFF;
-    data[8] = precision_flag; data[9] = 0; data[10] = 0; data[11] = 0;
+    data[8] = 0x01;             /* version v1 */
+    data[9] = precision_flag;   /* 0 = float16, 1 = float32 */
+    data[10] = 0; data[11] = 0; /* réservé */
     data_len = 12;
     
     /* Pour chaque canal (Y, Cb, Cr) */
