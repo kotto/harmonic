@@ -84,10 +84,9 @@ def _encode_channel(ch: np.ndarray, mag_dtype=np.float16,
     if mag.size:
         q = np.zeros(mag.size, np.uint8)           # réservé (entropie, piste 5)
         mags = (mag / max_mag if normalize else mag).astype(mag_dtype)
-        # phases : float32 pour les résidus bruités (le float16 leur nuit —
-        # mesuré : la qualité vidéo ne récupère pas avec les seules amplitudes)
+        # phases : float32 si mag_dtype=float32, sinon float16 (2 o)
         phases = np.angle(vals).astype(
-            np.float32 if (mag_dtype == np.float32 and not normalize) else np.float16)
+            np.float32 if mag_dtype == np.float32 else np.float16)
     else:
         q = np.zeros(0, np.uint8)
         mags = np.zeros(0, np.float16)
@@ -147,18 +146,23 @@ class HCV2Result:
     mass_kept: float       # la fidélité Parseval moyenne
 
 
-def encode(img: np.ndarray) -> dict:
+def encode(img: np.ndarray, precision: int = 16) -> dict:
     """Encode une image (H, W, 3) → dict {blob, mass_kept, ...}.
+    precision : 16 (float16, défaut, 2 o par valeur, ratio ~500× @ 29 dB)
+                ou 32 (float32, 4 o par valeur, ratio ~250× @ 50+ dB).
     CHROMA 4:2:0 (déclaré : choix perceptif standard — le Y pleine
     résolution, Cb/Cr sous-échantillonnés 2× ; pas un théorème)."""
+    mag_dtype = np.float32 if precision == 32 else np.float16
     ycbcr = _to_ycbcr(img.astype(np.float64))
     payloads = []
     for c in range(3):
         ch = ycbcr[:, :, c]
-        payloads.append(_encode_channel(ch[::2, ::2] if c else ch))
+        payloads.append(_encode_channel(ch[::2, ::2] if c else ch,
+                                        mag_dtype=mag_dtype))
     data = bytearray()
     h, w, _ = img.shape
-    header = np.array([h, w, CHAIN_LEVELS], np.uint32).tobytes()
+    precision_flag = 1 if precision == 32 else 0
+    header = np.array([h, w, precision_flag], np.uint32).tobytes()
     masses = []
     for mask, idx, q, mags, phases, max_mag, mass, m in payloads:
         masses.append(mass)
@@ -181,7 +185,10 @@ def decode(payload: dict | bytes, h: int = None, w: int = None) -> np.ndarray:
     else:
         blob = payload
     header = blob[:12]
-    h, w, n_levels = np.frombuffer(header, np.uint32)
+    h, w, precision_flag = np.frombuffer(header, np.uint32)
+    precision = 32 if precision_flag == 1 else 16
+    mag_dtype = np.float32 if precision == 32 else np.float16
+    mag_bytes = 4 if precision == 32 else 2
     raw = zlib.decompress(blob[12:])
     per = (len(raw) - 24) // 3
     ycbcr = np.zeros((h, w, 3))
@@ -194,8 +201,8 @@ def decode(payload: dict | bytes, h: int = None, w: int = None) -> np.ndarray:
         deltas, used = _varint_decode(raw[off:], n_keep)
         idx = np.cumsum(deltas).astype(np.uint32)
         off += used
-        mags = np.frombuffer(raw[off:off + n_keep * 2], np.float16); off += n_keep * 2
-        phases = np.frombuffer(raw[off:off + n_keep * 2], np.float16); off += n_keep * 2
+        mags = np.frombuffer(raw[off:off + n_keep * mag_bytes], mag_dtype); off += n_keep * mag_bytes
+        phases = np.frombuffer(raw[off:off + n_keep * mag_bytes], mag_dtype); off += n_keep * mag_bytes
         max_mag = float(np.frombuffer(raw[off:off + 8], np.float64)[0]); off += 8
         ch = _decode_channel((mask, idx, np.zeros(0, np.uint8), mags, phases,
                               max_mag, 0, ch_h * ch_w), (ch_h, ch_w))

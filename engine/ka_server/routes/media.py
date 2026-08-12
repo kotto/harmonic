@@ -276,3 +276,76 @@ def register_media_routes(app, services):
             status = get_hcv_status()
         
         return jsonify(status)
+    
+    @app.route('/api/hcv2/compress', methods=['POST', 'OPTIONS'])
+    def api_hcv2_compress():
+        """Compresse une image en format .hcv2 avec le sélecteur 3 modes."""
+        if request.method == 'OPTIONS':
+            return '', 200
+        
+        if 'multipart/form-data' not in (request.content_type or ''):
+            return jsonify({'error': 'Content-Type doit être multipart/form-data'}), 400
+        
+        file = request.files.get('image')
+        if not file:
+            return jsonify({'error': 'Aucun fichier fourni'}), 400
+        
+        mode = request.form.get('mode', 'select')
+        min_psnr = float(request.form.get('min_psnr', 20))
+        return_base64 = request.form.get('base64', 'false').lower() == 'true'
+        
+        file_data = file.read()
+        original_size = len(file_data)
+        filename = file.filename or 'image.jpg'
+        
+        try:
+            import sys, numpy as np
+            from PIL import Image
+            import io
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+            from multimodal.harmonic_codec import HarmonicCodec
+            from multimodal.harmonic_database import HarmonicDatabase
+            
+            img = np.array(Image.open(io.BytesIO(file_data)).convert('RGB'))
+            hc = HarmonicCodec(HarmonicDatabase(patch_size=32, K=8, stride=32),
+                               use_hcv=True, quality=100)
+            
+            if mode == 'modal':
+                import sys as _sys
+                from pathlib import Path as _Path
+                _p = _Path(__file__).resolve().parent.parent.parent / 'vital-ka' / 'core' / 'python'
+                if str(_p) not in _sys.path: _sys.path.insert(0, str(_p))
+                import hcv2_modal_codec as modal
+                enc = modal.encode(img)
+                compressed_data = enc['blob']
+                fmt = 'HCVM'
+            elif mode == 'full':
+                data = hc.encode_full(img)
+                compressed_data = data
+                fmt = 'HHDC'
+            else:  # select (default)
+                data, _mode = hc.encode_select(img, min_psnr=min_psnr)
+                compressed_data = data
+                fmt = 'HCVH' if data[:4] == b'HCVH' else ('HCVM' if data[:4] == b'HCVM' else ('HHD2' if data[:4] == b'HHD2' else 'HHDC'))
+            
+            compressed_size = len(compressed_data)
+            ratio = original_size / compressed_size if compressed_size > 0 else 1.0
+            
+            if return_base64:
+                b64 = base64.b64encode(compressed_data).decode('utf-8')
+                return jsonify({
+                    'success': True, 'format': fmt, 'ratio': round(ratio, 1),
+                    'original_size': original_size, 'compressed_size': compressed_size,
+                    'data_base64': b64
+                })
+            else:
+                output = io.BytesIO(compressed_data)
+                output.seek(0)
+                return send_file(
+                    output, mimetype='application/octet-stream',
+                    as_attachment=True,
+                    download_name=f"{filename.rsplit('.', 1)[0]}.{fmt.lower()}"
+                )
+        except Exception as e:
+            log.error('HCV2 compression error', exc_info=True)
+            return jsonify({'error': str(e)}), 500
