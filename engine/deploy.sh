@@ -1,70 +1,70 @@
-#!/bin/bash
-# Déploiement KA — Frontend Vercel + Backend Render
-# Usage: bash deploy.sh
+#!/usr/bin/env bash
+# HCV2 Pro — Déploiement serveur
+# Usage: ./deploy.sh [install|start|stop|status|test]
 
 set -e
+APP_DIR="$(cd "$(dirname "$0")" && pwd)"
+PORT=8765
+HOST="0.0.0.0"
+DICT="$APP_DIR/dictionaries/broadcast.hdb"
+PIDFILE="/tmp/hcv2_pro.pid"
 
-echo "============================================"
-echo "  DÉPLOIEMENT KA — Harmonic AI + HCV"
-echo "============================================"
-
-# ── 1. FRONTEND (Vercel) ──────────────────────
-echo ""
-echo "[1/2] Déploiement Frontend sur Vercel..."
-cd ../ka-web-complete/ka-web-complete
-
-if command -v vercel &> /dev/null; then
-    echo "  Vercel CLI détecté. Lancement du déploiement..."
-    vercel --prod --confirm
-    echo "  ✅ Frontend déployé sur Vercel"
-else
-    echo "  ⚠️  Vercel CLI non installé."
-    echo "  Installation: npm i -g vercel"
-    echo "  Puis: cd ka-web-complete/ka-web-complete && vercel --prod"
-fi
-
-# ── 2. BACKEND (Render) ──────────────────────
-echo ""
-echo "[2/2] Backend — déploiement Render"
-echo ""
-echo "  Le backend se déploie automatiquement via Git :"
-echo "  1. Va sur https://dashboard.render.com"
-echo "  2. New + → Web Service → Connecte kotto/harmonic"
-echo "  3. Root Directory: engine"
-echo "  4. Build Command: pip install -r requirements_server.txt"
-echo "  5. Start Command: gunicorn ka_server:app --bind 0.0.0.0:\$PORT --workers 2 --timeout 120"
-echo "  6. Create Web Service"
-echo ""
-echo "  Ou déploie via l'API Render (si RENDER_API_KEY est définie) :"
-
-if [ -n "$RENDER_API_KEY" ]; then
-    curl -X POST "https://api.render.com/v1/services" \
-      -H "Authorization: Bearer $RENDER_API_KEY" \
-      -H "Content-Type: application/json" \
-      -d '{
-        "type": "web_service",
-        "name": "ka-api",
-        "ownerId": "'${RENDER_OWNER_ID:-}'",
-        "repo": "https://github.com/kotto/harmonic",
-        "branch": "main",
-        "rootDir": "engine",
-        "buildCommand": "pip install -r requirements_server.txt",
-        "startCommand": "gunicorn ka_server:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120",
-        "plan": "starter"
-      }'
-    echo "  ✅ Backend déployé sur Render"
-else
-    echo "  ⚠️  RENDER_API_KEY non définie — déploiement manuel requis"
-fi
-
-# ── 3. VÉRIFICATION ─────────────────────────
-echo ""
-echo "============================================"
-echo "  VÉRIFICATION"
-echo "============================================"
-echo ""
-echo "  Frontend : https://ka-app.vercel.app"
-echo "  Backend  : https://ka-api.onrender.com"
-echo ""
-echo "  Test : curl https://ka-api.onrender.com/api/health"
-echo "============================================"
+case "${1:-status}" in
+  install)
+    echo "📦 Installation des dépendances..."
+    pip install -q flask pillow numpy opencv-python zstandard 2>/dev/null || true
+    echo "✅ Dépendances installées"
+    ;;
+  start)
+    if [ -f "$PIDFILE" ] && kill -0 $(cat "$PIDFILE") 2>/dev/null; then
+      echo "⚠️ Serveur déjà en cours d'exécution (PID $(cat $PIDFILE))"
+      exit 1
+    fi
+    echo "🚀 Démarrage du serveur HCV2 Pro sur $HOST:$PORT..."
+    cd "$APP_DIR"
+    nohup python multimodal/hcv2_pro.py serve --port $PORT --host $HOST --dict "$DICT" \
+      > /tmp/hcv2_pro.log 2>&1 &
+    echo $! > "$PIDFILE"
+    echo "✅ Serveur démarré (PID $!)"
+    ;;
+  stop)
+    if [ -f "$PIDFILE" ]; then
+      kill $(cat "$PIDFILE") 2>/dev/null || true
+      rm -f "$PIDFILE"
+      echo "⏹️ Serveur arrêté"
+    else
+      echo "⚠️ Aucun serveur en cours"
+    fi
+    ;;
+  status)
+    if [ -f "$PIDFILE" ] && kill -0 $(cat "$PIDFILE") 2>/dev/null; then
+      echo "✅ Serveur HCV2 Pro actif (PID $(cat $PIDFILE))"
+      curl -s http://localhost:$PORT/api/hcv2/status 2>/dev/null || echo "⚠️ API non joignable"
+    else
+      echo "❌ Serveur HCV2 Pro inactif"
+    fi
+    ;;
+  test)
+    echo "🧪 Test du serveur..."
+    curl -s http://localhost:$PORT/api/hcv2/status
+    echo ""
+    echo "🧪 Compression test..."
+    curl -s -X POST http://localhost:$PORT/api/hcv2/compress \
+      -F "image=@$APP_DIR/COMPRESSION-CAMERA/METHOD_2_SDI_LIKE_IMAGE_COMPRESSION/portrait_photo.png" \
+      -F "quality=archive" -o /tmp/hcv2_test_output.hcv2 -w "→ %{http_code} (%{size_download} o)\n"
+    echo "🧪 Vérification..."
+    python -c "
+import sys
+sys.path.insert(0, '$APP_DIR')
+from multimodal.hcv2_pro import read_header
+info = read_header('/tmp/hcv2_test_output.hcv2')
+print(f'  Dimensions: {info[\"width\"]}x{info[\"height\"]}')
+print(f'  Mode: {info[\"mode\"]}')
+print(f'  Ratio: {info[\"ratio\"]}x')
+"
+    ;;
+  *)
+    echo "Usage: $0 [install|start|stop|status|test]"
+    exit 1
+    ;;
+esac
