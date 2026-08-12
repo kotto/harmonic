@@ -149,6 +149,13 @@ def parser_operations(texte: str) -> List[dict]:
         if not line or line.startswith('#') or line.startswith('//'):
             continue
 
+        # Supprimer les commentaires inline (// ou <!-- -->)
+        line = re.sub(r'//.*', '', line)
+        line = re.sub(r'<!--.*?-->', '', line)
+        line = line.strip()
+        if not line:
+            continue
+
         # Pattern: OPERATION(key="value", ...)
         m = re.match(r'(\w+)\((.*)\)', line)
         if not m:
