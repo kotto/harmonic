@@ -24,8 +24,9 @@ Le format `.hcv2` est un format de compression d'image et vidéo basé sur la Th
 | 0 | 4 | `height` | Hauteur de l'image en pixels (uint32 LE) |
 | 4 | 4 | `width` | Largeur de l'image en pixels (uint32 LE) |
 | 8 | 1 | `version` | Version du format : `0x01` |
-| 9 | 1 | `precision` | Précision : `0x00` = float16, `0x01` = float32 |
-| 10 | 2 | `reserved` | Réservé (0x0000) |
+| 9 | 1 | `precision` | Précision des coefficients : `0x00` = float16, `0x01` = float32 |
+| 10 | 1 | `bit_depth` | Profondeur de bits : `8` (SDR), `10`, `12`, `16` (HDR) |
+| 11 | 1 | `reserved` | Réservé (0x00) |
 
 **Contraintes** : `height` ≤ 65535, `width` ≤ 65535, `version` = 0x01.
 

@@ -103,17 +103,18 @@ static void rgb_to_ycbcr(const uint8_t *rgb, double *ycbcr, int n) {
 /**
  * hc_encode — Encode une image RGB en format .hcv2 (MODAL).
  *
- * @param rgb      Image RGB (H × W × 3, uint8)
+ * @param rgb      Image RGB (H × W × 3, uint8 pour 8 bits, uint16 pour 10/12/16 bits)
  * @param w        Largeur
  * @param h        Hauteur
  * @param precision 16 (float16) ou 32 (float32)
+ * @param bit_depth  8, 10, 12 ou 16 (bits par canal)
  * @param out      Buffer de sortie (taille estimée : w*h*2)
  * @param out_len  Taille réelle de sortie
  * @return 0 = succès, -1 = erreur
  */
 EXPORT
 int hc_encode(const uint8_t *rgb, int w, int h, int precision,
-              uint8_t *out, int *out_len) {
+              int bit_depth, uint8_t *out, int *out_len) {
     if (!rgb || w <= 0 || h <= 0 || w > 8192 || h > 8192) return -1;
     
     int mag_bytes = (precision == 32) ? 4 : 2;
@@ -136,7 +137,8 @@ int hc_encode(const uint8_t *rgb, int w, int h, int precision,
     data[6] = (w >> 16) & 0xFF; data[7] = (w >> 24) & 0xFF;
     data[8] = 0x01;             /* version v1 */
     data[9] = precision_flag;   /* 0 = float16, 1 = float32 */
-    data[10] = 0; data[11] = 0; /* réservé */
+    data[10] = bit_depth;       /* profondeur de bits : 8, 10, 12, 16 */
+    data[11] = 0;               /* réservé */
     data_len = 12;
     
     /* Pour chaque canal (Y, Cb, Cr) */

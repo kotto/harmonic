@@ -42,15 +42,11 @@ def read_header(path):
     """Lit et vérifie le header d'un fichier .hcv2."""
     with open(path, 'rb') as f:
         first4 = f.read(4)
-        # Si les 4 premiers octets sont un magic connu, on lit le header après
         if first4 in MAGICS:
             mode = MAGICS[first4]
             magic = first4
             hdr = f.read(12)
         else:
-            # Sinon, c'est un blob modal pur (header + zlib) ou header + magic
-            # Le magic peut être à offset 12
-            # On rembobine et on lit 16 octets
             f.seek(0)
             hdr = f.read(12)
             magic = f.read(4)
@@ -62,6 +58,20 @@ def read_header(path):
     
     if len(hdr) < 12:
         return {'error': 'Fichier trop court'}
+    h = struct.unpack('<I', hdr[0:4])[0]
+    w = struct.unpack('<I', hdr[4:8])[0]
+    version = hdr[8]
+    precision = hdr[9]
+    bit_depth = hdr[10] if hdr[10] > 0 else 8
+    return {
+        'width': w, 'height': h, 'version': version,
+        'precision': 'float32' if precision == 1 else 'float16',
+        'bit_depth': bit_depth,
+        'mode': mode, 'magic': magic.hex() if magic else 'absent',
+        'file_size': os.path.getsize(path),
+        'pixels': h * w * 3,
+        'ratio': round(h * w * 3 / os.path.getsize(path), 1) if os.path.getsize(path) > 0 else 0,
+    }
     
     h = struct.unpack('<I', hdr[0:4])[0]
     w = struct.unpack('<I', hdr[4:8])[0]
@@ -189,6 +199,7 @@ def cmd_info(args):
     print(f"📋 {Path(args.file).name}")
     print(f"   Dimensions : {info['width']}×{info['height']} ({info['pixels']//1024//1024} MP)")
     print(f"   Format : {info['mode']} ({info['precision']})")
+    print(f"   Profondeur : {info['bit_depth']} bits")
     print(f"   Version : {info['version']}")
     print(f"   Taille : {info['file_size']//1024} Ko")
     print(f"   Ratio : {info['ratio']}×")
