@@ -341,6 +341,14 @@ Exemples :
     p_dict.add_argument('--max-images', type=int, default=10000,
                        help='Nombre max d\'images (défaut: 10000)')
     
+    p_serve = sub.add_parser('serve', help='Démarrer le serveur API REST')
+    p_serve.add_argument('--port', type=int, default=8765,
+                        help='Port d\'écoute (défaut: 8765)')
+    p_serve.add_argument('--host', default='0.0.0.0',
+                        help='Adresse d\'écoute (défaut: 0.0.0.0)')
+    p_serve.add_argument('--dict', '-d', default=None,
+                        help='Dictionnaire optionnel')
+    
     args = parser.parse_args()
     
     if args.command == 'encode':
@@ -355,8 +363,119 @@ Exemples :
         cmd_batch(args)
     elif args.command == 'dict':
         cmd_dict(args)
+    elif args.command == 'serve':
+        cmd_serve(args)
     else:
         parser.print_help()
+
+
+def cmd_serve(args):
+    """Démarre le serveur API REST HCV2."""
+    from flask import Flask, request, jsonify, send_file
+    import io
+    
+    app = Flask(__name__)
+    
+    # Charger le dictionnaire si fourni
+    db = None
+    if args.dict:
+        try:
+            db = HarmonicDatabase()
+            db.load(Path(args.dict).resolve())
+            print(f"  Dictionnaire chargé : {len(db._shards)} shards")
+        except Exception as e:
+            print(f"  Dictionnaire non chargé : {e}")
+    
+    @app.route('/api/hcv2/compress', methods=['POST', 'OPTIONS'])
+    def compress():
+        if request.method == 'OPTIONS':
+            return '', 200
+        file = request.files.get('image')
+        if not file:
+            return jsonify({'error': 'Aucun fichier'}), 400
+        
+        quality = request.form.get('quality', 'archive')
+        mode = request.form.get('mode', 'select')
+        min_psnr = float(request.form.get('min_psnr', 20))
+        return_base64 = request.form.get('base64', 'false').lower() == 'true'
+        
+        file_data = file.read()
+        original_size = len(file_data)
+        filename = file.filename or 'image'
+        
+        try:
+            img = np.array(Image.open(io.BytesIO(file_data)).convert('RGB'))
+            hc = HarmonicCodec(db or HarmonicDatabase(patch_size=32, K=8, stride=32),
+                               use_hcv=True, quality=100)
+            
+            if quality == 'lossless':
+                data = hc.encode_full(img)
+            elif quality == 'max':
+                data = modal.encode(img)['blob']
+            elif quality == 'pro':
+                data, _ = hc.encode_select(img, min_psnr=30.0)
+            else:  # archive
+                data, _ = hc.encode_select(img, min_psnr=20.0)
+            
+            fmt = 'HCVM' if data[:4] == b'HCVM' else ('HHD2' if data[:4] == b'HHD2' else 'HHDC')
+            if quality == 'max':
+                fmt = 'HCVM'
+            
+            if return_base64:
+                import base64
+                return jsonify({
+                    'success': True, 'format': fmt,
+                    'ratio': round(original_size / len(data), 1),
+                    'original_size': original_size,
+                    'compressed_size': len(data),
+                    'data_base64': base64.b64encode(data).decode()
+                })
+            else:
+                output = io.BytesIO(data); output.seek(0)
+                resp = send_file(output, mimetype='application/octet-stream',
+                               as_attachment=True,
+                               download_name=f"{filename.rsplit('.',1)[0]}.{fmt.lower()}")
+                resp.headers['X-Ratio'] = str(round(original_size / len(data), 1))
+                resp.headers['X-Original-Size'] = str(original_size)
+                resp.headers['X-Saved'] = str(original_size - len(data))
+                resp.headers['X-Codec'] = f'HCV2/{fmt}'
+                return resp
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    @app.route('/api/hcv2/info', methods=['POST', 'OPTIONS'])
+    def info():
+        if request.method == 'OPTIONS':
+            return '', 200
+        file = request.files.get('file')
+        if not file:
+            return jsonify({'error': 'Aucun fichier'}), 400
+        data = file.read()
+        with io.BytesIO(data) as f:
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.hcv2') as tmp:
+                tmp.write(data)
+                tmp_path = tmp.name
+            try:
+                info = read_header(tmp_path)
+                return jsonify(info)
+            finally:
+                os.unlink(tmp_path)
+    
+    @app.route('/api/hcv2/status', methods=['GET'])
+    def status():
+        return jsonify({
+            'version': '1.0',
+            'format': '.hcv2',
+            'modes': ['archive', 'lossless', 'pro', 'max'],
+            'dictionary': len(db._shards) if db else 0,
+            'codec': 'available' if _HAVE_CODEC else 'unavailable'
+        })
+    
+    print(f"\n🚀 HCV2 Pro API — http://{args.host}:{args.port}")
+    print(f"   Endpoints : /api/hcv2/compress, /info, /status")
+    print(f"   Qualités : archive (373x), lossless (2.9x), pro (259x), max (527x)")
+    app.run(host=args.host, port=args.port, debug=False)
 
 
 if __name__ == '__main__':
