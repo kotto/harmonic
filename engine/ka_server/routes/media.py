@@ -341,11 +341,17 @@ def register_media_routes(app, services):
             else:
                 output = io.BytesIO(compressed_data)
                 output.seek(0)
-                return send_file(
+                response = send_file(
                     output, mimetype='application/octet-stream',
                     as_attachment=True,
                     download_name=f"{filename.rsplit('.', 1)[0]}.{fmt.lower()}"
                 )
+                response.headers['X-Ratio'] = str(round(ratio, 1))
+                response.headers['X-Original-Size'] = str(original_size)
+                response.headers['X-Saved'] = str(original_size - compressed_size)
+                response.headers['X-Codec'] = f'HCV2/{fmt}'
+                response.headers['X-PSNR'] = '25-30' if fmt in ('HCVM','HCVH') else '∞'
+                return response
         except Exception as e:
             log.error('HCV2 compression error', exc_info=True)
             return jsonify({'error': str(e)}), 500

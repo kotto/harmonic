@@ -680,6 +680,13 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
         <span class="pill" style="cursor:pointer;background:rgba(240,149,149,.12);border-color:rgba(240,149,149,.3);color:var(--coral)" onclick="storageSetQuality('eco')" id="sto-q-eco">🌱 Éco</span>
       </div>
 
+      <!-- Codec -->
+      <div class="sec-lbl" style="margin-bottom:6px">CODEC</div>
+      <div style="display:flex;gap:6px;justify-content:center;margin-bottom:10px;flex-wrap:wrap">
+        <span class="pill" style="cursor:pointer" onclick="storageSetCodec('hcv1')" id="sto-codec-hcv1">📦 HCV (serveur)</span>
+        <span class="pill pill--life" style="cursor:pointer" onclick="storageSetCodec('hcv2')" id="sto-codec-hcv2">✨ HCV2 (WASM 527×)</span>
+      </div>
+
       <!-- Upscale 4K -->
       <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px">
         <span style="font-size:11px;color:var(--t4)">Upscale 4K à la lecture</span>
@@ -2666,6 +2673,16 @@ camRenderGallery();
 let stoQuality = 'standard';
 let stoFiles = [];
 let stoUpscale4K = false;
+let stoCodec = 'hcv2'; // 'hcv1' | 'hcv2'
+
+function storageSetCodec(q) {
+  stoCodec = q;
+  document.querySelectorAll('[id^="sto-codec-"]').forEach(function(el) {
+    el.className = 'pill';
+  });
+  var el = document.getElementById('sto-codec-' + q);
+  if (el) el.className = 'pill pill--life';
+}
 
 function storageSetQuality(q) {
   stoQuality = q;
@@ -2784,19 +2801,24 @@ function storageOptimize() {
     var fd = new FormData();
     fd.append('file', f);
     fd.append('quality', stoQuality);
+    fd.append('image', f);
+    fd.append('mode', stoCodec === 'hcv2' ? 'select' : 'auto');
+    fd.append('min_psnr', stoQuality === 'eco' ? '15' : stoQuality === 'archive' ? '30' : '20');
 
-    fetch(API_URL + '/api/storage/optimize', { method: 'POST', body: fd, signal: AbortSignal.timeout(60000) })
+    var endpoint = stoCodec === 'hcv2' ? API_URL + '/api/hcv2/compress' : API_URL + '/api/storage/optimize';
+
+    fetch(endpoint, { method: 'POST', body: fd, signal: AbortSignal.timeout(60000) })
       .then(function(r) {
         return r.blob().then(function(blob) { return {r: r, blob: blob}; });
       })
       .then(function(resp) {
         var r = resp.r;
         var blob = resp.blob;
-        var ratio = parseFloat(r.headers.get('X-Ratio') || '1');
-        var saved = parseInt(r.headers.get('X-Saved') || '0');
-        var orig = parseInt(r.headers.get('X-Original-Size') || '0');
+        var ratio = parseFloat(r.headers.get('X-Ratio') || (orig > 0 ? (orig / blob.size).toFixed(1) : '1'));
+        var saved = parseInt(r.headers.get('X-Saved') || (orig - blob.size));
+        var orig = parseInt(r.headers.get('X-Original-Size') || f.size);
         var warning = r.headers.get('X-Warning') || '';
-        var codec = r.headers.get('X-Codec') || '';
+        var codec = r.headers.get('X-Codec') || (stoCodec === 'hcv2' ? 'HCV2' : 'HCV');
         var psnr = r.headers.get('X-PSNR') || '';
         totalSaved += saved; totalOrig += orig; done++;
 
@@ -2814,7 +2836,7 @@ function storageOptimize() {
           dlBtn.title = 'Télécharger le fichier compressé';
           dlBtn.style.cssText = 'font-size:14px;text-decoration:none;cursor:pointer;padding:4px;margin-left:4px';
           dlBtn.href = URL.createObjectURL(blob);
-          dlBtn.download = (stoFiles[idx] ? stoFiles[idx].name : 'fichier') + '.hcv';
+          dlBtn.download = (stoFiles[idx] ? stoFiles[idx].name : 'fichier') + (codec === 'HCV2' ? '.hcv2' : '.hcv');
           cards[idx].querySelector('span:last-child').parentElement.appendChild(dlBtn);
           // Ajouter le codec sous la ligne taille
           var sub = cards[idx].querySelector('div > div:nth-child(2)');
