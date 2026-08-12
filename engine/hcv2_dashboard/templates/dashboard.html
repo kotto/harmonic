@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HCV2 Pro — Dashboard</title>
+<style>
+:root{--b:#07070f;--b2:#1a1a2e;--b3:#2a2a4e;--p:#8b83ff;--p2:#b8b2ff;--g:#3ddba0;--g2:#2bb880;--w:#f0c060;--c:#ff6b6b;--t1:rgba(255,255,255,.92);--t2:rgba(255,255,255,.62);--t3:rgba(255,255,255,.36);--font:-apple-system,'Inter',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--b);color:var(--t1);font-family:var(--font);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex}
+/* SIDEBAR */
+.sidebar{width:240px;background:rgba(255,255,255,.02);border-right:1px solid rgba(255,255,255,.06);padding:24px;display:flex;flex-direction:column;flex-shrink:0}
+.sidebar .logo{font-size:18px;font-weight:700;margin-bottom:32px;letter-spacing:-.02em}
+.sidebar .logo span{color:var(--p)}
+.sidebar nav{display:flex;flex-direction:column;gap:4px;flex:1}
+.sidebar nav a{padding:10px 14px;border-radius:10px;font-size:14px;color:var(--t2);text-decoration:none;transition:background .2s,color .2s;display:flex;align-items:center;gap:10px}
+.sidebar nav a:hover{background:rgba(139,131,255,.08);color:var(--t1)}
+.sidebar nav a.active{background:rgba(139,131,255,.12);color:var(--p);font-weight:600}
+.sidebar .user{font-size:13px;color:var(--t3);padding-top:20px;border-top:1px solid rgba(255,255,255,.06);margin-top:auto}
+.sidebar .user a{color:var(--t2);text-decoration:none;font-size:13px}
+/* MAIN */
+.main{flex:1;padding:32px;overflow-y:auto;max-height:100vh}
+.main h1{font-size:28px;font-weight:300;margin-bottom:4px}
+.main .sub{font-size:14px;color:var(--t2);margin-bottom:28px}
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px}
+.stat-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:20px;transition:border-color .2s}
+.stat-card:hover{border-color:var(--p)}
+.stat-card .val{font-size:28px;font-weight:700;color:var(--g)}
+.stat-card .lbl{font-size:13px;color:var(--t3);margin-top:4px}
+.stat-card .val.purple{color:var(--p)}
+.stat-card .val.gold{color:var(--w)}
+/* UPLOAD */
+.upload-zone{border:2px dashed rgba(255,255,255,.12);border-radius:20px;padding:40px;text-align:center;cursor:pointer;transition:border-color .3s,background .3s;margin-bottom:24px}
+.upload-zone:hover{border-color:var(--p);background:rgba(139,131,255,.04)}
+.upload-zone.dragover{border-color:var(--g);background:rgba(61,219,160,.04)}
+.upload-zone .icon{font-size:48px;margin-bottom:12px}
+.upload-zone .text{font-size:16px;font-weight:600}
+.upload-zone .sub{font-size:13px;color:var(--t3);margin-top:4px;margin-bottom:0}
+/* QUALITY SELECTOR */
+.quality-selector{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.quality-btn{padding:10px 20px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--t2);font-size:13px;cursor:pointer;transition:all .2s;font-family:var(--font)}
+.quality-btn:hover{border-color:var(--p)}
+.quality-btn.active{background:var(--p);color:#fff;border-color:var(--p)}
+/* JOBS TABLE */
+.jobs-table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border-radius:12px;border:1px solid rgba(255,255,255,.06)}
+.jobs-table th,.jobs-table td{padding:10px 14px;text-align:left;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04)}
+.jobs-table th{background:rgba(139,131,255,.08);color:var(--p2);font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.jobs-table td{color:var(--t2)}
+.jobs-table tr:last-child td{border-bottom:none}
+.jobs-table .ratio{color:var(--g);font-weight:600}
+/* PROGRESS */
+.progress{display:none;margin-bottom:20px}
+.progress-bar{height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;margin-bottom:8px}
+.progress-bar div{height:100%;background:linear-gradient(90deg,var(--p),var(--g));border-radius:4px;width:0%;transition:width .3s}
+.progress .text{font-size:13px;color:var(--t2)}
+/* KEYS */
+.key-box{display:flex;gap:8px;align-items:center;background:rgba(0,0,0,.3);border-radius:10px;padding:12px 16px;margin-bottom:8px}
+.key-box code{font-size:13px;font-family:'JetBrains Mono','Fira Code',monospace;flex:1;word-break:break-all}
+.key-box button{background:none;border:none;color:var(--t2);cursor:pointer;font-size:18px;padding:4px}
+.key-box button:hover{color:var(--t1)}
+/* RESPONSIVE */
+@media(max-width:768px){
+  .sidebar{width:60px;padding:16px 8px}
+  .sidebar .logo{font-size:0}
+  .sidebar .logo::after{content:'HP';font-size:18px}
+  .sidebar nav a span{display:none}
+  .main{padding:16px}
+  .stats{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="logo">HCV2<span>Pro</span></div>
+  <nav>
+    <a href="#" class="active" onclick="showTab('dashboard')"><span>📊</span> <span>Dashboard</span></a>
+    <a href="#" onclick="showTab('compress')"><span>🗜️</span> <span>Compresser</span></a>
+    <a href="#" onclick="showTab('history')"><span>📋</span> <span>Historique</span></a>
+    <a href="#" onclick="showTab('keys')"><span>🔑</span> <span>Clés API</span></a>
+    {% if session.get('role') == 'admin' %}
+    <a href="#" onclick="showTab('admin')"><span>⚙️</span> <span>Admin</span></a>
+    {% endif %}
+  </nav>
+  <div class="user">
+    <div>{{ user }}</div>
+    <a href="/logout">Déconnexion</a>
+  </div>
+</div>
+
+<div class="main">
+  <h1>Dashboard HCV2 Pro</h1>
+  <p class="sub">Compression harmonique pour l'archivage TV/Cinéma</p>
+
+  <!-- STATS -->
+  <div class="stats" id="stats-container">
+    <div class="stat-card"><div class="val" id="stat-ratio">—</div><div class="lbl">Ratio moyen</div></div>
+    <div class="stat-card"><div class="val purple" id="stat-saved">—</div><div class="lbl">Économisés</div></div>
+    <div class="stat-card"><div class="val gold" id="stat-jobs">—</div><div class="lbl">Fichiers compressés</div></div>
+    <div class="stat-card"><div class="val" id="stat-quota">—</div><div class="lbl">Quota utilisé</div></div>
+  </div>
+
+  <!-- COMPRESS TAB -->
+  <div id="tab-compress" style="display:none">
+    <h2 style="font-weight:300;font-size:20px;margin-bottom:12px">🗜️ Compresser un fichier</h2>
+    <div class="quality-selector">
+      <button class="quality-btn active" data-quality="archive" onclick="setQuality(this)">📦 Archive (373×)</button>
+      <button class="quality-btn" data-quality="lossless" onclick="setQuality(this)">🔒 Lossless (2,9×)</button>
+      <button class="quality-btn" data-quality="pro" onclick="setQuality(this)">🎬 Pro (259×)</button>
+      <button class="quality-btn" data-quality="max" onclick="setQuality(this)">🚀 Max (527×)</button>
+    </div>
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+      <div class="icon">📁</div>
+      <div class="text">Déposer un fichier ou cliquer pour choisir</div>
+      <div class="sub">DPX, TIFF, EXR, MOV, PNG, JPG — jusqu'à 2 Go</div>
+    </div>
+    <input type="file" id="fileInput" style="display:none" onchange="compressFile(this.files[0])">
+    <div class="progress" id="progress">
+      <div class="progress-bar"><div id="progress-fill"></div></div>
+      <div class="text" id="progress-text">Compression en cours...</div>
+    </div>
+    <div id="result" style="display:none;background:rgba(61,219,160,.08);border:1px solid rgba(61,219,160,.2);border-radius:16px;padding:20px;margin-bottom:20px">
+      <div style="font-size:18px;font-weight:600;color:var(--g)" id="result-ratio"></div>
+      <div style="font-size:13px;color:var(--t2);margin-top:4px" id="result-detail"></div>
+      <a id="result-download" style="display:inline-block;margin-top:12px;padding:10px 20px;background:var(--p);color:#fff;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none">⬇️ Télécharger</a>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div id="tab-history" style="display:none">
+    <h2 style="font-weight:300;font-size:20px;margin-bottom:12px">📋 Historique des compressions</h2>
+    <table class="jobs-table" id="jobs-table">
+      <thead><tr><th>Fichier</th><th>Format</th><th>Taille</th><th>Ratio</th><th>Qualité</th><th>Date</th></tr></thead>
+      <tbody id="jobs-body"></tbody>
+    </table>
+  </div>
+
+  <!-- KEYS TAB -->
+  <div id="tab-keys" style="display:none">
+    <h2 style="font-weight:300;font-size:20px;margin-bottom:12px">🔑 Clés API</h2>
+    <button class="quality-btn" onclick="generateKey()" style="margin-bottom:16px">+ Générer une clé</button>
+    <div id="keys-container"></div>
+  </div>
+
+  <!-- ADMIN TAB -->
+  {% if session.get('role') == 'admin' %}
+  <div id="tab-admin" style="display:none">
+    <h2 style="font-weight:300;font-size:20px;margin-bottom:12px">⚙️ Administration</h2>
+    <div id="admin-content"></div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+let currentQuality = 'archive';
+
+function showTab(name) {
+  document.querySelectorAll('.main > div[id^="tab-"]').forEach(d => d.style.display = 'none');
+  document.getElementById('tab-' + name).style.display = 'block';
+  document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+  document.querySelector(`.sidebar nav a[onclick*="'${name}'"]`).classList.add('active');
+  if (name === 'dashboard') loadStats();
+  if (name === 'history') loadJobs();
+  if (name === 'keys') loadKeys();
+  if (name === 'admin') loadAdmin();
+}
+
+function setQuality(btn) {
+  document.querySelectorAll('.quality-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentQuality = btn.dataset.quality;
+}
+
+function compressFile(file) {
+  if (!file) return;
+  const progress = document.getElementById('progress');
+  const fill = document.getElementById('progress-fill');
+  const text = document.getElementById('progress-text');
+  const result = document.getElementById('result');
+  progress.style.display = 'block';
+  result.style.display = 'none';
+  fill.style.width = '30%';
+  text.textContent = 'Compression de ' + file.name + '...';
+
+  const form = new FormData();
+  form.append('file', file);
+  form.append('quality', currentQuality);
+
+  fetch('/api/compress', { method: 'POST', body: form })
+    .then(r => {
+      const ratio = r.headers.get('X-Ratio') || '?';
+      const fmt = r.headers.get('X-Format') || '?';
+      const time = r.headers.get('X-Time') || '?';
+      fill.style.width = '100%';
+      text.textContent = `✅ Compression terminée : ${ratio}× (${fmt}) en ${time}s`;
+      setTimeout(() => { progress.style.display = 'none'; fill.style.width = '0%'; }, 2000);
+      return r.blob().then(blob => {
+        result.style.display = 'block';
+        document.getElementById('result-ratio').textContent = `${ratio}× — ${fmt}`;
+        document.getElementById('result-detail').textContent = `${(file.size / 1024 / 1024).toFixed(1)} Mo → ${(blob.size / 1024).toFixed(0)} Ko`;
+        const dl = document.getElementById('result-download');
+        dl.href = URL.createObjectURL(blob);
+        dl.download = file.name.replace(/\.[^.]+$/, '.hcv2');
+        loadStats();
+        loadJobs();
+      });
+    })
+    .catch(e => { text.textContent = '❌ Erreur : ' + e.message; });
+}
+
+function loadStats() {
+  fetch('/api/stats').then(r => r.json()).then(d => {
+    document.getElementById('stat-ratio').textContent = d.avg_ratio ? d.avg_ratio + '×' : '—';
+    document.getElementById('stat-saved').textContent = fmtSize(d.total_saved);
+    document.getElementById('stat-jobs').textContent = d.total_jobs;
+    document.getElementById('stat-quota').textContent = d.quota_percent + '%';
+  });
+}
+
+function loadJobs() {
+  fetch('/api/jobs?limit=50').then(r => r.json()).then(jobs => {
+    const tbody = document.getElementById('jobs-body');
+    tbody.innerHTML = jobs.reverse().map(j => `
+      <tr>
+        <td>${j.filename}</td>
+        <td>${j.format}</td>
+        <td>${fmtSize(j.compressed_size)}</td>
+        <td class="ratio">${j.ratio}×</td>
+        <td>${j.quality}</td>
+        <td>${j.timestamp ? j.timestamp.slice(0, 10) : '—'}</td>
+      </tr>
+    `).join('');
+  });
+}
+
+function loadKeys() {
+  fetch('/api/keys').then(r => r.json()).then(keys => {
+    const container = document.getElementById('keys-container');
+    container.innerHTML = Object.entries(keys).map(([k, v]) => `
+      <div class="key-box">
+        <code>${k}</code>
+        <span style="font-size:11px;color:rgba(255,255,255,.36)">${v.created ? v.created.slice(0,10) : ''}</span>
+        <button onclick="copyKey('${k}')" title="Copier">📋</button>
+        <button onclick="deleteKey('${k}')" title="Supprimer">🗑️</button>
+      </div>
+    `).join('');
+  });
+}
+
+function generateKey() {
+  fetch('/api/keys', { method: 'POST' }).then(r => r.json()).then(d => {
+    if (d.key) { loadKeys(); alert('Clé générée : ' + d.key); }
+  });
+}
+
+function copyKey(key) { navigator.clipboard.writeText(key); }
+function deleteKey(key) {
+  fetch('/api/keys/' + key, { method: 'DELETE' }).then(() => loadKeys());
+}
+
+function loadAdmin() {
+  fetch('/api/admin/users').then(r => r.json()).then(users => {
+    document.getElementById('admin-content').innerHTML = `
+      <h3 style="font-weight:400;font-size:16px;margin-bottom:12px">Utilisateurs</h3>
+      <table class="jobs-table">
+        <thead><tr><th>Utilisateur</th><th>Rôle</th><th>Quota</th></tr></thead>
+        <tbody>${Object.entries(users).map(([u, v]) => `
+          <tr><td>${u}</td><td>${v.role}</td><td>${fmtSize(v.quota || 0)}</td></tr>
+        `).join('')}</tbody>
+      </table>
+    `;
+  });
+}
+
+function fmtSize(bytes) {
+  if (!bytes) return '0 o';
+  const units = ['o', 'Ko', 'Mo', 'Go', 'To'];
+  let i = 0;
+  let size = bytes;
+  while (size >= 1024 && i < units.length - 1) { size /= 1024; i++; }
+  return size.toFixed(1) + ' ' + units[i];
+}
+
+// Drag & drop
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) compressFile(file);
+});
+
+// Initialisation
+loadStats();
+</script>
+</body>
+</html>
