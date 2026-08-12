@@ -1,26 +1,18 @@
-# Render Blueprint — KA Web Complete v3 (Ondulatoire)
-# Déploiement de la version avec 185 blocs curated, 12K phases spectrales,
-# décodeur ondulatoire, voix Edge-TTS/Piper, 4 moteurs (arithmétique/quantique/repliement)
-# https://render.com/docs/blueprint-spec
-
 services:
   - type: web
-    name: ka-web-complete
+    name: hcv2-pro-www
+    env: static
+    buildCommand: cd engine && cp -r www/* .
+    staticPublishPath: engine/www
+    domain: hcv2.pro
+  - type: web
+    name: hcv2-pro-api
     env: python
-    region: frankfurt
-    plan: starter
-    buildCommand: |
-      pip install -r requirements_render.txt
-      mkdir -p data/bootstrapper_output data/tts_cache data/voice_output
-      # Copier les fichiers de données essentiels
-      if [ ! -f data/spectral_phases.json ]; then
-        echo "Phases spectrales: seront chargées au démarrage"
-      fi
-    startCommand: cd ka_phone && python ka_light.py $PORT
-    healthCheckPath: /api/health
+    buildCommand: cd engine && pip install -r requirements.txt
+    startCommand: cd engine && python hcv2_dashboard/app.py
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.8
-      - key: KA_PERSONALITY
-        value: "Tu es KA, ton double numérique. Intelligence ondulatoire, 0 hallucination, 100% déterministe."
-    autoDeploy: true
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PORT
+        value: 8765
+    healthCheckPath: /api/health
