@@ -124,10 +124,30 @@ def encoder_operations(ops: List[dict]) -> List[dict]:
                 variables[src_var] = 0.0
 
             src_val = variables.get(src_var, 0.0)
-            operand = float(op.get('value') or op.get('multiplier') or
+
+            # Extraire l'opérande numérique (robuste aux valeurs non-numériques)
+            raw_operand = (op.get('value') or op.get('multiplier') or
                           op.get('per_unit') or op.get('rate') or
-                          op.get('duration') or op.get('divisor') or
-                          op.get('numerator', 1) / max(op.get('denominator', 1), 1))
+                          op.get('duration') or op.get('divisor'))
+            try:
+                operand = float(raw_operand)
+            except (TypeError, ValueError):
+                # Opérande non numérique (ex: product="shorts_total") → skip
+                variables[var_name] = src_val
+                frames.append({
+                    'code': code, 'amp': 0.0, 'phase': 0.0,
+                    'op': op_name, 'var': var_name, 'value': src_val,
+                })
+                continue
+
+            # Gérer les fractions (numerator/denominator)
+            if op_name == 'FRACTION':
+                try:
+                    num = float(op.get('numerator', 2))
+                    den = float(op.get('denominator', 5))
+                    operand = num / den if den != 0 else 0.5
+                except (TypeError, ValueError):
+                    operand = 0.5
 
             # Calculer la nouvelle valeur
             if op_name == 'ADD':
@@ -314,45 +334,110 @@ def tester_15_exemples():
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# 5. SIGNATURE OSCILLATOIRE PAR TYPE (pour un décodage sans le graphe)
+# 5. SIGNATURE OSCILLATOIRE PAR TYPE (démodulation par corrélation)
 # ═══════════════════════════════════════════════════════════════════════════
 
-def trames_avec_signature(ops: List[dict]) -> List[dict]:
-    """
-    Version enrichie : chaque opération ajoute une composante oscillatoire
-    à sa fréquence caractéristique.
+# Modulation : profondeur ε et phase ψ par type
+SIGNATURE_EPS = {
+    'ADD': 0.12,
+    'SUB': 0.12,
+    'MUL': 0.15,
+    'DIV': 0.15,
+    'FRACTION': 0.10,
+}
+SIGNATURE_PSI = {
+    'ADD': 0.0,
+    'SUB': math.pi / 4,
+    'MUL': math.pi / 2,
+    'DIV': 3 * math.pi / 4,
+    'FRACTION': math.pi,
+}
 
-    L'idée : si on analyse le spectre de la trajectoire, chaque type
-    d'opération laisse une empreinte fréquentielle identifiable —
-    même sans connaître le graphe de dépendances.
 
-    z_k = z_{k-1} + amp·e^{iφ} + ε·e^{i·2π·f_op·k}
+def encoder_operations_sig(ops: List[dict]) -> List[dict]:
     """
-    frames = []
+    Encode les opérations avec oscillation caractéristique embarquée.
+
+    Chaque trame de déplacement horizontal module l'amplitude par
+    une oscillation à la fréquence propre de l'opération :
+
+      amp_eff(k) = amp · (1 + ε·cos(2π·f_op·k + ψ_op))
+
+    La trajectoire x[k] contient alors une composante oscillatoire
+    à f_op — détectable par démodulation, même sans connaître le graphe.
+    """
+    frames = encoder_operations(ops)
     step = 0
-
-    for op in ops:
-        op_name = op.get('op', '').upper()
+    for f in frames:
+        op_name = f.get('op', '')
         freq = SIGNATURE_FREQ.get(op_name, 0.0)
+        eps = SIGNATURE_EPS.get(op_name, 0.0)
+        psi = SIGNATURE_PSI.get(op_name, 0.0)
 
-        # Encode la transition normale
-        base_frames = encoder_operations([op])
-        for f in base_frames:
-            f['signature_freq'] = freq
-            f['step'] = step
-            step += 1
-            frames.append(f)
+        f['signature_freq'] = freq
+        f['signature_eps'] = eps
+        f['signature_psi'] = psi
+        f['step'] = step
+        step += 1
 
-        # Ajoute une trame d'oscillation caractéristique
-        if freq > 0:
-            frames.append({
-                'code': 9, 'amp': 0.1, 'phase': 0.0,
-                'signature_freq': freq, 'step': step,
-                'op': 'SIG_' + op_name, 'var': None, 'value': None,
-            })
-            step += 1
+        # Moduler l'amplitude des trames de déplacement (pas l'étage)
+        if f.get('value') is not None and eps > 0:
+            k = step
+            f['amp'] = f['amp'] * (1 + eps * math.cos(2 * math.pi * freq * k + psi))
 
     return frames
+
+
+def decoder_trajectoire_sig(frames: List[dict]) -> List[complex]:
+    """Décode la trajectoire avec les trames modulées."""
+    z = 0.0 + 0.0j
+    points = [z]
+    for frame in frames:
+        amp = frame['amp']
+        phase = frame['phase']
+        z += amp * np.exp(1j * phase)
+        points.append(z)
+    return points
+
+
+def detecter_signatures(points: List[complex]) -> dict:
+    """
+    Détecte les signatures par DÉMODULATION à fréquence exacte.
+
+    Pour chaque candidat f :
+      corr(f) = |Σ_k x[k] · e^{−i·2π·f·k}|  /  Σ|x[k]|
+
+    Le pic de corrélation à f_op révèle la présence de l'opération —
+    même sur de courtes trajectoires (pas de binning FFT).
+    """
+    if len(points) < 4:
+        return {}
+
+    x = np.array([p.real for p in points])
+    # Centrer le signal (retirer la moyenne)
+    x_c = x - np.mean(x)
+    energy = np.sum(np.abs(x_c)) + 1e-9
+
+    n = len(x_c)
+    k = np.arange(n)
+
+    results = {}
+    for op_name, freq in SIGNATURE_FREQ.items():
+        if freq <= 0:
+            continue
+        # Corrélation à la fréquence exacte
+        corr = np.abs(np.sum(x_c * np.exp(-1j * 2 * np.pi * freq * k)))
+        results[op_name] = corr / energy
+
+    return results
+
+
+def analyser_signatures(frames: List[dict]) -> dict:
+    """Encode avec signatures puis détecte par démodulation."""
+    sig_frames = encoder_operations_sig(frames if frames and 'op' in frames[0] else [])
+    # Si on reçoit déjà des ops, les encoder avec signatures
+    points = decoder_trajectoire_sig(sig_frames)
+    return detecter_signatures(points)
 
 
 def analyser_spectre(points: List[complex]) -> dict:
@@ -397,17 +482,27 @@ if __name__ == '__main__':
         tester_15_exemples()
 
     if args.signature:
-        print("\n═══ TEST SIGNATURES OSCILLATOIRES ═══\n")
+        print("\n═══ TEST SIGNATURES OSCILLATOIRES (démodulation) ═══\n")
         ops = [
             {'op': 'INIT', 'value': 20},
             {'op': 'SUBTRACT', 'value': 8},
             {'op': 'MULTIPLY', 'multiplier': 2},
             {'op': 'SUBTRACT', 'value': 12},
         ]
-        frames = trames_avec_signature(ops)
-        points = decoder_trajectoire(frames)
-        spectre = analyser_spectre(points)
-        print(f"Frames avec signatures : {len(frames)}")
-        print(f"Spectre de la trajectoire : {spectre}")
-        print(f"(fréquences attendues : SUB={SIGNATURE_FREQ['SUB']:.3f}, "
-              f"MUL={SIGNATURE_FREQ['MUL']:.3f})")
+        sig_frames = encoder_operations_sig(ops)
+        points = decoder_trajectoire_sig(sig_frames)
+        detect = detecter_signatures(points)
+
+        print(f"Opérations réelles : SUB, MUL, SUB")
+        print(f"Fréquences attendues : SUB={SIGNATURE_FREQ['SUB']:.4f}, "
+              f"MUL={SIGNATURE_FREQ['MUL']:.4f}")
+        print(f"\nCorrélations détectées :")
+        for op_name, corr in sorted(detect.items(), key=lambda x: -x[1]):
+            expected = '✓' if (op_name == 'SUB' or op_name == 'MUL') else ' '
+            print(f"  {expected} {op_name:<10s} : corr={corr:.4f}  (f={SIGNATURE_FREQ[op_name]:.4f})")
+
+        # Vérifier que SUB et MUL sont en tête
+        top2 = sorted(detect.items(), key=lambda x: -x[1])[:2]
+        top_ops = [op for op, _ in top2]
+        ok_sig = ('SUB' in top_ops and 'MUL' in top_ops)
+        print(f"\n{'✅ SUB et MUL détectés en tête' if ok_sig else '❌ Signatures non détectées'}")
