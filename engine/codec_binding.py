@@ -165,7 +165,9 @@ def encoder_operations_v2(ops: List[dict],
     registre: List[dict] = []
     var_counter = 0
     last_var = None
-    pending_duration = None
+    pending_duration = None  # DURATION attend un RATE
+    pending_rate = None      # RATE attend un DURATION
+    skip_mult_value = None  # multiplier du MULTIPLY doublon à sauter
     chain_entity, chain_obj = None, None   # objet/entité de la chaîne courante
     chain_started = False
 
@@ -181,7 +183,54 @@ def encoder_operations_v2(ops: List[dict],
             last_var = vname  # seule une variable avec valeur devient source
         return vname
 
-    for op in ops:
+    def resoudre_taux(rate, d, op, nxt=None):
+        """Résout RATE×DURATION quand les deux sont connus (4 cas).
+
+        nxt = prochaine op arithmétique : si elle porte déjà le produit
+        précalculé (ADD/SUB value==rate×d, MULTIPLY multiplier==d),
+        la résolution est redondante → neutre.
+        """
+        code = CODE_MAP.get('MULTIPLY', 2)
+        product = rate * d
+        if nxt is not None:
+            nxt_op = nxt.get('op', '').upper()
+            try:
+                nxt_val = float(nxt.get('value') if nxt_op in ('ADD', 'SUBTRACT')
+                                else nxt.get('multiplier'))
+            except (TypeError, ValueError):
+                nxt_val = None
+            if nxt_op in ('ADD', 'SUBTRACT') and nxt_val is not None \
+                    and abs(nxt_val - product) < 1e-9:
+                return  # l'op suivante précalcule déjà le produit
+            if nxt_op == 'MULTIPLY' and nxt_val is not None \
+                    and abs(nxt_val - d) < 1e-9:
+                return  # MULTIPLY(d) duplique la durée
+        if abs(rate - src_val) < 1e-9:
+            # cas 1 : RATE redondant avec la source (DeepSeek duplique
+            # l'INIT) → neutre, chaîne intacte
+            return
+        if src_val == 0.0:
+            # cas 2 : source placeholder (0) → produit simple
+            new_val = product
+        else:
+            # cas 3 : quantité réelle (pension…) → src × rate × durée
+            new_val = src_val * product
+        vname = new_var(new_val, op, parent=src_name)
+        frames.append({'code': code, 'amp': 1.0, 'phase': HALF_PI,
+                       'op': 'MULTIPLY', 'var': vname, 'value': None})
+        delta = abs(new_val - src_val)
+        frames.append({'code': code, 'amp': delta if delta > 1e-9 else 1.0,
+                       'phase': ZERO, 'op': 'MULTIPLY', 'var': vname,
+                       'value': new_val})
+
+    def prochaine_arith(idx):
+        for nxt in ops[idx + 1:]:
+            if nxt.get('op', '').upper() in ('ADD', 'SUBTRACT', 'MULTIPLY',
+                                             'DIVIDE', 'CROSS_MULT'):
+                return nxt
+        return None
+
+    for idx, op in enumerate(ops):
         op_name = op.get('op', '').upper()
 
         # ── INIT : position de départ ──
@@ -220,24 +269,29 @@ def encoder_operations_v2(ops: List[dict],
             })
             continue
 
-        # ── DURATION : mémorise la durée (produit différé) ──
-        if op_name == 'DURATION':
-            try:
-                pending_duration = float(op.get('duration', 0))
-            except (TypeError, ValueError):
-                pending_duration = None
-            vname = new_var(None, op)
-            frames.append({
-                'code': 0, 'amp': 0.0, 'phase': 0.0,
-                'op': 'DURATION', 'var': vname, 'value': None,
-            })
-            continue
-
         # ── Source bindée ──
         src_name = bind_source(op, registre, last_var)
         src_val = next((v['value'] for v in registre if v['name'] == src_name), 0.0)
         if src_val is None:
             src_val = 0.0
+
+        # ── DURATION : mémorise la durée (produit différé) ──
+        if op_name == 'DURATION':
+            try:
+                d = float(op.get('duration', 0))
+            except (TypeError, ValueError):
+                d = None
+            vname = new_var(None, op)
+            frames.append({
+                'code': 0, 'amp': 0.0, 'phase': 0.0,
+                'op': 'DURATION', 'var': vname, 'value': None,
+            })
+            if pending_rate is not None and d is not None:
+                resoudre_taux(pending_rate, d, op, prochaine_arith(idx))
+                pending_rate = None
+            else:
+                pending_duration = d
+            continue
 
         # ── CROSS_MULT : container × per_unit ──
         if op_name == 'CROSS_MULT' and resolve_cross:
@@ -272,27 +326,18 @@ def encoder_operations_v2(ops: List[dict],
                            'op': op_name, 'var': vname, 'value': src_val})
             continue
 
-        # ── RATE : rate × durée en attente ──
+        # ── RATE : rate × durée en attente (3 cas, ordre libre) ──
         if op_name == 'RATE' and resolve_rate:
             try:
                 rate = float(op.get('rate', 0))
             except (TypeError, ValueError):
                 rate = None
-            if rate is not None:
-                if pending_duration is not None:
-                    new_val = rate * pending_duration
-                    pending_duration = None
-                else:
-                    new_val = rate
-                code = CODE_MAP.get('MULTIPLY', 2)
-                vname = new_var(new_val, op)
-                frames.append({'code': code, 'amp': 1.0, 'phase': HALF_PI,
-                               'op': 'MULTIPLY', 'var': vname, 'value': None})
-                delta = abs(new_val - src_val)
-                frames.append({'code': code, 'amp': delta if delta > 1e-9 else 1.0,
-                               'phase': ZERO, 'op': 'MULTIPLY', 'var': vname,
-                               'value': new_val})
+            if rate is not None and pending_duration is not None:
+                resoudre_taux(rate, pending_duration, op, prochaine_arith(idx))
+                pending_duration = None
                 continue
+            # Pas de durée encore : garder le rate en attente
+            pending_rate = rate
             vname = new_var(src_val, op)
             frames.append({'code': 0, 'amp': 0.0, 'phase': 0.0,
                            'op': op_name, 'var': vname, 'value': src_val})
@@ -301,6 +346,10 @@ def encoder_operations_v2(ops: List[dict],
         # ── Opérations arithmétiques classiques ──
         if op_name in ('ADD', 'SUBTRACT', 'MULTIPLY', 'DIVIDE', 'FRACTION'):
             code = CODE_MAP.get(op_name, 3)
+
+            # Une op arithmétique entre RATE et DURATION brise le couple
+            pending_rate = None
+            pending_duration = None
 
             # Opérande numérique ou résolu par nom d'objet
             operand, key = resolve_numeric(op, registre, last_var)
