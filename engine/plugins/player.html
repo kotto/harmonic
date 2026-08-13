@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HCV2 Stream — Player VOD</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07070f;color:rgba(255,255,255,.92);font-family:-apple-system,Inter,system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:20px}
+h1{font-size:20px;font-weight:300;margin-bottom:16px;letter-spacing:-.02em}
+h1 span{color:#8b83ff;font-weight:600}
+#player{position:relative;width:100%;max-width:960px;background:#000;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
+#player canvas{width:100%;display:block}
+.controls{display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(255,255,255,.03);border-radius:12px;margin-top:12px;width:100%;max-width:960px;flex-wrap:wrap}
+.controls button{background:rgba(255,255,255,.08);border:none;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:16px;transition:background .2s;display:flex;align-items:center;justify-content:center}
+.controls button:hover{background:rgba(139,131,255,.3)}
+.controls .progress{flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:2px;cursor:pointer;position:relative;min-width:100px}
+.controls .progress .bar{height:100%;background:linear-gradient(90deg,#8b83ff,#3ddba0);border-radius:2px;width:0%;transition:width .1s}
+.controls .time{font-size:12px;color:rgba(255,255,255,.42);font-variant-numeric:tabular-nums;min-width:80px;text-align:center}
+.controls .status{font-size:12px;color:rgba(255,255,255,.36);margin-left:auto}
+.stats{display:flex;gap:16px;margin-top:8px;font-size:12px;color:rgba(255,255,255,.36)}
+.stats span{color:rgba(255,255,255,.62)}
+#manifest-input{width:100%;max-width:960px;padding:10px 14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:13px;margin-bottom:12px;outline:none}
+</style>
+</head>
+<body>
+<h1>HCV2 <span>Stream</span> — Player VOD</h1>
+<input id="manifest-input" type="text" value="playlist.m3u8" placeholder="URL du manifest .m3u8">
+<div id="player">
+  <canvas id="video-canvas"></canvas>
+</div>
+<div class="controls">
+  <button id="play-btn" onclick="togglePlay()">▶</button>
+  <div class="progress" onclick="seek(event)">
+    <div class="bar" id="progress-bar"></div>
+  </div>
+  <div class="time" id="time-display">00:00 / 00:00</div>
+  <div class="status" id="status">⏸️ Prêt</div>
+</div>
+<div class="stats">
+  <span id="stat-resolution">—</span>
+  <span id="stat-bitrate">—</span>
+  <span id="stat-segments">—</span>
+</div>
+
+<script src="assets/hcv2_decoder.js"></script>
+<script>
+// ─── État du player ─────────────────────────────────────────────────
+const state = {
+  segments: [],
+  currentSegment: 0,
+  playing: false,
+  totalFrames: 0,
+  fps: 24,
+  loaded: false,
+  decodeTime: 0,
+  totalDecodeTime: 0,
+  framesDecoded: 0,
+};
+
+const canvas = document.getElementById('video-canvas');
+const ctx = canvas.getContext('2d');
+const progressBar = document.getElementById('progress-bar');
+const timeDisplay = document.getElementById('time-display');
+const statusEl = document.getElementById('status');
+
+// ─── Initialisation du décodeur WASM ────────────────────────────────
+let decoder = null;
+Module.onRuntimeInitialized = () => {
+  decoder = Module;
+  statusEl.textContent = '✅ Décodeur prêt (47 Ko)';
+};
+
+// ─── Chargement du manifest ─────────────────────────────────────────
+async function loadManifest(url) {
+  statusEl.textContent = '📥 Chargement du manifest...';
+  try {
+    const resp = await fetch(url);
+    const text = await resp.text();
+    const lines = text.split('\n');
+    state.segments = lines.filter(l => l.endsWith('.hcv2'));
+    state.totalFrames = state.segments.length * 12; // 12 frames par GOP
+    document.getElementById('stat-segments').textContent = `${state.segments.length} segments`;
+    statusEl.textContent = `📋 ${state.segments.length} segments chargés`;
+    loadSegment(0);
+  } catch (e) {
+    statusEl.textContent = '❌ Erreur chargement manifest';
+    console.error(e);
+  }
+}
+
+// ─── Chargement et décodage d'un segment ────────────────────────────
+function loadSegment(idx) {
+  if (idx >= state.segments.length) {
+    state.playing = false;
+    document.getElementById('play-btn').textContent = '▶';
+    statusEl.textContent = '✅ Lecture terminée';
+    return;
+  }
+  
+  const base = document.getElementById('manifest-input').value.replace(/[^/]*$/, '');
+  const segUrl = base + state.segments[idx];
+  state.currentSegment = idx;
+  statusEl.textContent = `📥 Segment ${idx+1}/${state.segments.length}...`;
+  
+  fetch(segUrl)
+    .then(r => r.arrayBuffer())
+    .then(buf => {
+      statusEl.textContent = `🔓 Décompression...`;
+      const t0 = performance.now();
+      const blob = new Uint8Array(buf);
+      
+      // Lire le header
+      const h = blob[0] | (blob[1] << 8) | (blob[2] << 16) | (blob[3] << 24);
+      const w = blob[4] | (blob[5] << 8) | (blob[6] << 16) | (blob[7] << 24);
+      
+      if (!canvas.width || !canvas.height) {
+        canvas.width = w;
+        canvas.height = h;
+        document.getElementById('stat-resolution').textContent = `${w}×${h}`;
+      }
+      
+      // Décoder via WASM
+      const n = w * h * 3;
+      const blobPtr = decoder._malloc(blob.length);
+      const outPtr = decoder._malloc(n);
+      const outW = decoder._malloc(4), outH = decoder._malloc(4);
+      
+      decoder.HEAPU8.set(blob, blobPtr);
+      const ret = decoder._hc_decode(blobPtr, blob.length, outPtr, outW, outH);
+      const dw = decoder.getValue(outW, 'i32');
+      const dh = decoder.getValue(outH, 'i32');
+      
+      if (ret === 0) {
+        const decoded = new Uint8Array(decoder.HEAPU8.buffer, outPtr, dw * dh * 3);
+        state.framesDecoded++;
+        state.totalDecodeTime += (performance.now() - t0);
+        
+        // Afficher
+        const imageData = ctx.createImageData(dw, dh);
+        for (let i = 0; i < dw * dh; i++) {
+          imageData.data[i*4] = decoded[i*3];
+          imageData.data[i*4+1] = decoded[i*3+1];
+          imageData.data[i*4+2] = decoded[i*3+2];
+          imageData.data[i*4+3] = 255;
+        }
+        ctx.putImageData(imageData, 0, 0);
+        
+        const bitrate = blob.length * 8 * state.fps / 1024 / 1024;
+        document.getElementById('stat-bitrate').textContent = `${bitrate.toFixed(0)} Mbps`;
+        
+        const avg = state.totalDecodeTime / state.framesDecoded;
+        statusEl.textContent = `🎬 Segment ${idx+1}/${state.segments.length} (${avg.toFixed(0)} ms)`;
+        updateProgress();
+        
+        // Jouer le suivant
+        if (state.playing) {
+          const delay = Math.max(0, 1000 / state.fps - avg);
+          setTimeout(() => loadSegment(idx + 1), delay);
+        }
+      }
+      
+      decoder._free(blobPtr);
+      decoder._free(outPtr);
+      decoder._free(outW);
+      decoder._free(outH);
+    })
+    .catch(e => {
+      statusEl.textContent = '❌ Erreur chargement segment';
+      console.error(e);
+    });
+}
+
+// ─── Contrôles ──────────────────────────────────────────────────────
+function togglePlay() {
+  state.playing = !state.playing;
+  document.getElementById('play-btn').textContent = state.playing ? '⏸' : '▶';
+  if (state.playing && state.currentSegment < state.segments.length) {
+    loadSegment(state.currentSegment);
+  }
+}
+
+function seek(e) {
+  const rect = e.target.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  const idx = Math.floor(pct * state.segments.length);
+  state.currentSegment = Math.max(0, Math.min(idx, state.segments.length - 1));
+  if (state.playing) loadSegment(state.currentSegment);
+}
+
+function updateProgress() {
+  const pct = state.currentSegment / state.segments.length * 100;
+  progressBar.style.width = `${pct}%`;
+  const total = state.segments.length / state.fps;
+  const current = state.currentSegment / state.fps;
+  timeDisplay.textContent = `${fmtTime(current)} / ${fmtTime(total)}`;
+}
+
+function fmtTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+}
+
+// ─── Chargement au démarrage ───────────────────────────────────────
+document.getElementById('manifest-input').addEventListener('change', function() {
+  loadManifest(this.value);
+});
+
+// Auto-chargement
+window.addEventListener('load', () => {
+  const url = document.getElementById('manifest-input').value;
+  if (url) loadManifest(url);
+});
+</script>
+</body>
+</html>
