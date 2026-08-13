@@ -32,6 +32,7 @@ USAGE :
 import sys, os, re, json, math
 import numpy as np
 from typing import List, Dict, Tuple, Optional
+from collections import Counter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from codec_trajectoire import decoder_trames, decoder_trajectoire
@@ -145,7 +146,8 @@ def encoder_operations_v2(ops: List[dict],
                           resolve_cross: bool = True,
                           resolve_rate: bool = True,
                           init_chain: bool = True,
-                          cross_fallback: bool = True) -> List[dict]:
+                          cross_fallback: bool = True,
+                          texte_nums: Optional[List[float]] = None) -> List[dict]:
     """
     Encode une séquence d'opérations en trames ondulatoires (v2).
 
@@ -160,6 +162,10 @@ def encoder_operations_v2(ops: List[dict],
                        (quantité latérale déclarée, pas de redémarrage)
       cross_fallback : CROSS_MULT sans container résolu → multiplier la
                        chaîne (True) ou trame neutre (False)
+      texte_nums     : multiset des nombres du TEXTE SOURCE (% normalisés).
+                       Active la règle R2 : une op arithmétique dont
+                       l'opérande est sur-utilisée par rapport au texte
+                       (duplication DeepSeek) est neutralisée.
     """
     frames = []
     registre: List[dict] = []
@@ -230,6 +236,24 @@ def encoder_operations_v2(ops: List[dict],
                 return nxt
         return None
 
+    # R2 : comptage de consommation des nombres du texte
+    t_counts = {}
+    used_counts = {}
+    if texte_nums is not None:
+        t_counts = Counter(round(v, 6) for v in texte_nums)
+
+    def consomme(v):
+        """Marque un opérande comme consommé (INIT et arithmétique)."""
+        key = round(v, 6)
+        used_counts[key] = used_counts.get(key, 0) + 1
+
+    def sur_utilise(v):
+        """True si l'opérande v dépasse son nombre d'occurrences texte."""
+        key = round(v, 6)
+        if key not in t_counts:
+            return False  # valeur dérivée → laissée au motif pourcentage
+        return used_counts.get(key, 0) >= t_counts[key]
+
     for idx, op in enumerate(ops):
         op_name = op.get('op', '').upper()
 
@@ -239,6 +263,7 @@ def encoder_operations_v2(ops: List[dict],
                 value = float(op.get('value', 0))
             except (TypeError, ValueError):
                 value = 0.0
+            consomme(value)
             e_init = _norm(op.get('entity'))
             o_init = _norm(op.get('object'))
             if not init_chain or not chain_started:
@@ -367,6 +392,34 @@ def encoder_operations_v2(ops: List[dict],
                     operand = num / den if den != 0 else 0.5
                 except (TypeError, ValueError):
                     operand = 0.5
+
+            # R2 (restreinte) : ADD/SUBTRACT consécutif identique dont
+            # l'opérande dépasse son nombre d'occurrences texte → doublon
+            # DeepSeek → neutraliser.
+            #   ex [29] : ADD(5), ADD(5) alors que le texte n'a qu'un 5.
+            # MULTIPLY/DIVIDE jamais neutralisés : la répétition y est
+            # sémantique (doubler chaque mois, ÷3 puis ×3…).
+            if texte_nums is not None and op_name in ('ADD', 'SUBTRACT'):
+                prev = None
+                for p_op in reversed(ops[:idx]):
+                    if p_op.get('op', '').upper() in ('ADD', 'SUBTRACT',
+                                                      'MULTIPLY', 'DIVIDE',
+                                                      'CROSS_MULT', 'RATE'):
+                        prev = p_op
+                        break
+                if prev is not None and prev.get('op', '').upper() == op_name:
+                    try:
+                        pv = float(prev.get('value', 0) or 0)
+                    except (TypeError, ValueError):
+                        pv = None
+                    if pv is not None and abs(pv - operand) < 1e-9 \
+                            and sur_utilise(operand):
+                        vname = new_var(src_val, op)
+                        frames.append({'code': code, 'amp': 0.0, 'phase': 0.0,
+                                       'op': op_name, 'var': vname,
+                                       'value': src_val})
+                        continue
+            consomme(operand)
 
             # MOTIF POURCENTAGE : SUBTRACT sur une source dérivée (MULTIPLY)
             # → la vraie source est le PARENT de la dérivée.
