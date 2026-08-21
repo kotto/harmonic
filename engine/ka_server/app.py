@@ -106,13 +106,22 @@ def create_app(config_override: dict = None) -> Flask:
     except Exception as e:
         app.logger.warning(f'GhostCompressor not available: {e}')
     
+    def _find_www_dir() -> Path:
+        """Localise ka-mobile-android/www/ (racine du repo ou sous-dossier engine/)."""
+        here = Path(__file__).resolve()
+        for candidate in (here.parent.parent / 'ka-mobile-android',
+                          here.parent.parent.parent / 'ka-mobile-android'):
+            if (candidate / 'www').is_dir():
+                return candidate / 'www'
+        return here.parent.parent.parent / 'ka-mobile-android' / 'www'
+    
     # ── Health check racine / point d'entrée de l'app mobile ────────────────
     @app.route('/')
     def index():
         """Le point d'entrée de l'app KA Mobile (server.url: http://10.0.2.2:8765).
         L'app vit dans ka-mobile-android/www/ (webDir Capacitor) — la source.
         Repli : le JSON de santé si le shell est absent."""
-        _WWW_DIR = Path(__file__).resolve().parent.parent / 'ka-mobile-android' / 'www'
+        _WWW_DIR = _find_www_dir()
         if (_WWW_DIR / 'ka_index.html').exists():
             from flask import send_from_directory
             return send_from_directory(str(_WWW_DIR), 'ka_index.html')
@@ -151,7 +160,7 @@ def create_app(config_override: dict = None) -> Flask:
         """Sert les assets de l'app (www/ka_*.js, sw.js, icons…) — si le
         fichier n'existe pas dans www/, repli 404 → les routes du site
         (corporation, fondation…) continuent de fonctionner."""
-        _WWW_DIR = Path(__file__).resolve().parent.parent / 'ka-mobile-android' / 'www'
+        _WWW_DIR = _find_www_dir()
         from flask import abort
         target = _WWW_DIR / filename
         if target.is_file():
@@ -250,7 +259,7 @@ def create_app(config_override: dict = None) -> Flask:
         """Page de téléchargement KA Mobile & Vital Ka (PWA + APK, QR codes)."""
         return send_from_directory(_SITES_DIR, 'download.html')
     
-    _APK_PATH = Path(__file__).resolve().parent.parent / 'ka-mobile-android' / 'android' / 'app' / 'build' / 'outputs' / 'apk' / 'debug' / 'app-debug.apk'
+    _APK_PATH = _find_www_dir().parent / 'android' / 'app' / 'build' / 'outputs' / 'apk' / 'debug' / 'app-debug.apk'
     
     @app.route('/apk')
     def serve_apk():
