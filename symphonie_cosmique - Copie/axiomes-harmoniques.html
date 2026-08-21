@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Axiomes Fondamentaux — La Théorie Harmonique</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --orange: #ffa502; --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;line-height:1.85;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 30% 10%,rgba(122,92,255,0.06),transparent 55%),
+             radial-gradient(ellipse at 60% 60%,rgba(62,240,216,0.04),transparent 60%),
+             radial-gradient(ellipse at 80% 30%,rgba(212,168,67,0.04),transparent 50%);
+  pointer-events:none;
+}
+.container{max-width:1000px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:3px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:5px 12px;border-radius:15px;font-size:0.80em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+
+.hero{text-align:center;padding:70px 20px 60px;background:linear-gradient(180deg,rgba(212,168,67,0.1) 0%,rgba(62,240,216,0.04) 50%,transparent 100%)}
+.hero .badge{display:inline-block;padding:5px 14px;border-radius:14px;font-size:0.80em;font-weight:700;background:rgba(212,168,67,0.14);color:var(--phi);margin-bottom:20px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:2em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:14px;line-height:1.3}
+.hero .tagline{font-size:1.05em;color:var(--ink2);max-width:750px;margin:0 auto 8px}
+.hero .meta{color:var(--ink3);font-size:0.85em;margin-top:10px}
+
+section{padding:50px 0}section:nth-child(even){background:var(--bg2)}
+h2{font-size:1.5em;color:var(--phi);margin-bottom:8px;text-align:center;padding-bottom:10px;border-bottom:1px solid var(--border)}
+h2 .num{display:block;font-size:0.42em;color:var(--ink3);letter-spacing:2px;margin-bottom:4px;font-weight:400;text-transform:uppercase}
+.section-desc{text-align:center;color:var(--ink3);margin-bottom:30px;max-width:700px;margin-left:auto;margin-right:auto;font-size:0.93em}
+h3{font-size:1.1em;color:var(--acc);margin:30px 0 10px}
+h3 .sub{display:block;font-size:0.55em;color:var(--ink3);font-weight:400;letter-spacing:1px;margin-top:2px}
+p{color:var(--ink2);margin-bottom:12px;line-height:1.85}
+p strong{color:var(--ink)}
+em{color:var(--phi2)}
+
+.axiom-card{background:var(--bg3);border:2px solid rgba(212,168,67,0.25);border-radius:18px;padding:22px 28px;margin:24px 0}
+.axiom-card .axiom-id{font-family:'Courier New',monospace;font-size:1.1em;font-weight:700;color:var(--phi);margin-bottom:8px}
+.axiom-card .axiom-name{font-size:1.05em;color:var(--ink);font-weight:600;margin-bottom:6px}
+.axiom-card .axiom-desc{color:var(--ink2);font-size:0.92em;margin-bottom:10px}
+.axiom-card .axiom-cons{color:var(--ink3);font-size:0.88em;font-style:italic}
+.axiom-card .axiom-cons strong{color:var(--acc);font-style:normal}
+
+.eq-box{background:rgba(15,12,46,0.8);border:2px solid rgba(212,168,67,0.35);border-radius:16px;padding:20px 26px;margin:20px 0;text-align:center}
+.eq-box .main-eq{font-family:'Courier New','Consolas',monospace;font-size:1.15em;font-weight:700;color:var(--phi);letter-spacing:1px;line-height:2.2}
+.eq-box .desc{color:var(--ink3);font-size:0.85em;margin-top:6px}
+
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:0.88em}
+th{background:var(--bg3);color:var(--phi);padding:10px 14px;text-align:left;border-bottom:2px solid rgba(212,168,67,0.25);font-weight:600}
+td{padding:9px 14px;border-bottom:1px solid var(--border);color:var(--ink2);font-size:0.87em}
+
+.highlight{background:var(--bg3);border:1px solid rgba(62,240,216,0.2);border-radius:14px;padding:18px 22px;margin:20px 0}
+.result-box{background:rgba(212,168,67,0.04);border:1px solid rgba(212,168,67,0.3);border-radius:14px;padding:18px 22px;margin:20px 0}
+.result-box .label{color:var(--phi);font-weight:600;font-size:0.78em;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+
+blockquote{border-left:3px solid var(--phi);padding:14px 22px;margin:20px 0;background:rgba(212,168,67,0.04);border-radius:0 12px 12px 0;font-style:italic;color:var(--ink);font-size:1.02em}
+.attrib{color:var(--ink3);font-size:0.85em;margin-top:6px;font-style:normal}
+
+footer{text-align:center;padding:30px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.82em;margin-top:40px}
+footer a{color:var(--phi);text-decoration:none}
+footer a:hover{text-decoration:underline}
+
+@media(max-width:640px){
+  .hero h1{font-size:1.3em}
+  .axiom-card{padding:16px 20px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Symphonie</a>
+    <a href="document-fondateur.html">Document Fondateur</a>
+    <a href="preuve-unicite-1surphi.html">Preuve d'Unicité</a>
+    <a href="synthese-harmonique.html">Synthèse</a>
+    <a href="#introduction">Introduction</a>
+    <a href="#axiomes">Les 5 Axiomes</a>
+    <a href="#implications">Implications</a>
+    <a href="#statut">Statut</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">Fondations</div>
+    <h1>Axiomes Fondamentaux<br>de la Théorie Harmonique</h1>
+    <p class="tagline">Les principes premiers dont découle toute la physique harmonique — rendus explicites</p>
+    <p class="meta">18 Juin 2026 — KOTTO Alain — Théorie Harmonique</p>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ================================================================== -->
+<section id="introduction">
+  <h2><span class="num">Section 0</span>Pourquoi formaliser des axiomes ?</h2>
+  <p class="section-desc">La Théorie Harmonique repose sur des principes implicites. Les rendre explicites clarifie sa structure logique et facilite sa critique.</p>
+
+  <p>La Théorie Harmonique, dans sa forme actuelle, est construite autour de trois piliers :</p>
+
+  <div class="eq-box">
+    <div class="main-eq">G<sub>ij,j</sub> = 0 &nbsp;+&nbsp; ᴬᴮᶜD<sup>1/φ</sup> Ψ = −φ·R·Ψ &nbsp;→&nbsp; Ψ = Σ Hₙ (Ψ₁)ⁿ</div>
+    <div class="desc">Les trois piliers — conservation, évolution avec mémoire, solution spectrale</div>
+  </div>
+
+  <p>Mais ces piliers eux-mêmes reposent sur des <strong>principes plus fondamentaux</strong> qui n'ont jamais été énoncés explicitement. Pourquoi la conservation absolue ? Pourquoi une dérivée fractionnaire ? Pourquoi le nombre d'or ?</p>
+
+  <p>Cette page formalise les <strong>5 axiomes</strong> qui sous-tendent la théorie. Un axiome n'est pas une vérité démontrée — c'est un <strong>point de départ</strong> dont on explore les conséquences. Si les conséquences sont vérifiées, les axiomes gagnent en crédibilité. Si elles sont réfutées, les axiomes doivent être révisés.</p>
+
+  <div class="highlight">
+    <p style="color:var(--acc);font-weight:600;margin-bottom:8px">⚡ Principe de transparence</p>
+    <p>
+      <strong>Une théorie qui cache ses axiomes n'est pas scientifique.</strong> En rendant explicites les principes fondateurs de la Théorie Harmonique, nous offrons à la communauté scientifique les outils pour la critiquer à sa racine — pas seulement dans ses conséquences. C'est l'inverse du dogme : c'est l'invitation à la réfutation.
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="axiomes">
+  <h2><span class="num">Section 1</span>Les Cinq Axiomes Fondamentaux</h2>
+  <p class="section-desc">Chaque axiome est énoncé, justifié intuitivement, et ses conséquences sont explicitées.</p>
+
+  <!-- Axiome A1 -->
+  <div class="axiom-card" id="a1">
+    <div class="axiom-id">Axiome A1 — Non-localité Fondamentale</div>
+    <div class="axiom-name">Les systèmes physiques fondamentaux possèdent une mémoire non locale.</div>
+    <div class="axiom-desc">
+      <p>L'univers n'est pas markovien. L'état présent d'un système ne dépend pas seulement de son état immédiatement antérieur, mais de <strong>tout son historique</strong>. La mémoire est une propriété intrinsèque de l'espace-temps, pas une approximation utile.</p>
+      <p><strong>Justification intuitive :</strong> Si l'univers obéit à une conservation absolue de l'énergie-information (G<sub>ij,j</sub> = 0), alors aucune information n'est jamais perdue. Chaque événement laisse une trace indélébile dans la structure de l'espace-temps. Un système sans mémoire violerait cette conservation.</p>
+    </div>
+    <div class="axiom-cons">
+      <strong>Conséquence directe :</strong> L'ordre fractionnaire α ne peut pas être égal à 1 (dérivée classique, sans mémoire). Le calcul différentiel classique est un cas limite — une approximation locale d'une réalité non locale.
+    </div>
+  </div>
+
+  <!-- Axiome A2 -->
+  <div class="axiom-card" id="a2">
+    <div class="axiom-id">Axiome A2 — Invariance Récursive</div>
+    <div class="axiom-name">La dynamique fondamentale est auto-similaire sous renormalisation.</div>
+    <div class="axiom-desc">
+      <p>L'opérateur d'évolution d'un système fondamental, appliqué deux fois, doit être <strong>équivalent</strong> à une application simple d'un opérateur de même nature. Il existe un opérateur récursif R tel que R(α) = α au point fixe.</p>
+      <p><strong>Justification intuitive :</strong> Les lois de la physique ne doivent pas dépendre de l'échelle à laquelle on les observe. Si l'opérateur d'évolution change de nature quand on l'itère, alors la physique dépend du nombre d'itérations — ce qui est arbitraire. L'auto-similarité est la traduction mathématique de l'absence d'échelle privilégiée.</p>
+    </div>
+    <div class="axiom-cons">
+      <strong>Conséquence directe :</strong> L'ordre α doit être un point fixe de la transformation R. Cela conduit à l'équation α² + α − 1 = 0 et donc à α = 1/φ. <em>(Voir la <a href="preuve-unicite-1surphi.html" style="color:var(--acc)">preuve d'unicité</a> pour la démonstration complète.)</em>
+    </div>
+  </div>
+
+  <!-- Axiome A3 -->
+  <div class="axiom-card" id="a3">
+    <div class="axiom-id">Axiome A3 — Optimalité Harmonique</div>
+    <div class="axiom-name">Le système physique minimise simultanément dissipation, incohérence spectrale et entropie effective.</div>
+    <div class="axiom-desc">
+      <p>Il existe une fonctionnelle de coût ℋ(α) — pondérant l'entropie, l'énergie, la cohérence récursive et la stabilité spectrale — dont le minimum global détermine l'ordre fractionnaire optimal.</p>
+      <p><strong>Justification intuitive :</strong> La nature ne choisit pas des paramètres au hasard. Tout système physique tend vers un état d'équilibre qui minimise une quantité (principe de moindre action, deuxième principe de la thermodynamique). L'ordre fractionnaire α devrait obéir au même principe.</p>
+    </div>
+    <div class="axiom-cons">
+      <strong>Conséquence directe :</strong> Le minimum de ℋ(α) coïncide avec α = 1/φ — offrant une <strong>seconde justification indépendante</strong> (variationnelle) de la même valeur. <em>(Voir la <a href="gagut-abc-optimiseur.html#fonctionnelle" style="color:var(--acc)">fonctionnelle harmonique</a> pour le détail.)</em>
+    </div>
+  </div>
+
+  <!-- Axiome A4 -->
+  <div class="axiom-card" id="a4">
+    <div class="axiom-id">Axiome A4 — Minimalité Structurelle</div>
+    <div class="axiom-name">L'univers sélectionne les structures récursives minimales compatibles avec la stabilité.</div>
+    <div class="axiom-desc">
+      <p>Parmi toutes les structures mathématiques possibles, la nature sélectionne la <strong>plus simple</strong> qui satisfait les contraintes de cohérence. Le nombre d'or φ est la structure récursive minimale non triviale — toute structure plus simple (α rationnel) conduit à des résonances destructives.</p>
+      <p><strong>Justification intuitive :</strong> Le rasoir d'Occam appliqué aux structures mathématiques. Pourquoi l'univers choisirait-il une structure complexe quand une structure simple suffit ? φ = (1+√5)/2 est le nombre irrationnel le plus « simple » — c'est la racine de l'équation quadratique à coefficients entiers la plus élémentaire : x² = x + 1.</p>
+    </div>
+    <div class="axiom-cons">
+      <strong>Conséquence directe :</strong> Les constantes physiques émergent comme combinaisons des constantes mathématiques minimales {φ, π, e, √2, √3, √5}. L'alphabet de la physique est l'alphabet de la minimalité structurelle.
+    </div>
+  </div>
+
+  <!-- Axiome A5 -->
+  <div class="axiom-card" id="a5">
+    <div class="axiom-id">Axiome A5 — Cohérence Géométrique</div>
+    <div class="axiom-name">Les constantes physiques émergent comme invariants géométriques de structures récursives fondamentales.</div>
+    <div class="axiom-desc">
+      <p>Les constantes de la physique (G, h, c, α) ne sont pas des paramètres libres de l'univers. Ce sont des <strong>projections</strong> de structures géométriques récursives sur l'espace-temps observable. Elles sont à la physique ce que π est au cercle : non pas des nombres choisis, mais des rapports imposés par la géométrie sous-jacente.</p>
+      <p><strong>Justification intuitive :</strong> Si l'univers est fondamentalement géométrique (espace-temps d'Einstein) et récursif (auto-similaire à toutes les échelles), alors les quantités mesurables ne peuvent être que des invariants de cette géométrie. De même que π émerge de la définition du cercle, α (structure fine) émergerait de la structure récursive de l'espace-temps.</p>
+    </div>
+    <div class="axiom-cons">
+      <strong>Conséquence directe :</strong> Les prédictions de la Théorie Harmonique (α à 0.000024%, m<sub>μ</sub>/m<sub>e</sub> à 0.0008%, etc.) ne sont pas des coïncidences numériques — ce sont des conséquences nécessaires de la géométrie récursive sous-jacente.
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="implications">
+  <h2><span class="num">Section 2</span>Comment ces axiomes s'articulent</h2>
+  <p class="section-desc">Les 5 axiomes ne sont pas indépendants — ils forment un système cohérent où chaque axiome renforce les autres.</p>
+
+  <h3>2.1 La chaîne logique</h3>
+
+  <div class="eq-box" style="text-align:left;padding:24px 30px;line-height:2.4">
+    <div style="font-family:'Courier New',monospace;font-size:0.92em;color:var(--ink2)">
+      <strong style="color:var(--phi)">A1</strong> (Non-localité) → Nécessite un opérateur avec mémoire → Dérivée fractionnaire ABC<br>
+      <strong style="color:var(--phi)">A2</strong> (Invariance récursive) → Point fixe R(α)=α → <strong style="color:var(--phi2)">α = 1/φ</strong><br>
+      <strong style="color:var(--phi)">A3</strong> (Optimalité harmonique) → Minimum de ℋ(α) → <strong style="color:var(--phi2)">α = 1/φ</strong> (confirmation indépendante)<br>
+      <strong style="color:var(--phi)">A4</strong> (Minimalité structurelle) → Alphabet {φ,π,e,√2,√3,√5} → Coefficients Hₙ<br>
+      <strong style="color:var(--phi)">A5</strong> (Cohérence géométrique) → Hₙ = constantes fondamentales → Ψ = Σ Hₙ (Ψ₁)ⁿ
+    </div>
+  </div>
+
+  <h3>2.2 La double émergence de φ</h3>
+  <p>Le nombre d'or apparaît <strong>deux fois</strong> dans la chaîne axiomatique, par des chemins différents :</p>
+
+  <table>
+    <tr><th>Chemin</th><th>Axiomes impliqués</th><th>Mécanisme</th><th>Résultat</th></tr>
+    <tr>
+      <td><strong>Chemin dynamique</strong></td>
+      <td>A1, A2</td>
+      <td>Point fixe de l'opérateur d'évolution : R(α) = α → α²+α−1=0</td>
+      <td style="color:var(--phi)"><strong>α = 1/φ</strong></td>
+    </tr>
+    <tr>
+      <td><strong>Chemin variationnel</strong></td>
+      <td>A3</td>
+      <td>Minimum de la fonctionnelle ℋ(α)</td>
+      <td style="color:var(--phi)"><strong>α_min = 1/φ</strong></td>
+    </tr>
+    <tr>
+      <td><strong>Chemin géométrique</strong></td>
+      <td>A4, A5</td>
+      <td>Projection de la courbure sur la base monomiale</td>
+      <td style="color:var(--phi)"><strong>H₁ = φ</strong></td>
+    </tr>
+  </table>
+
+  <div class="result-box">
+    <div class="label">Convergence remarquable</div>
+    <p>
+      <strong>Trois chemins indépendants — dynamique, variationnel et géométrique — convergent vers φ.</strong><br><br>
+      Cette triple convergence est le signe d'une structure profonde. Si la Théorie Harmonique était une construction arbitraire, la probabilité que trois méthodes indépendantes donnent exactement le même nombre (φ) serait infime. C'est l'équivalent mathématique de trois témoins indépendants décrivant la même scène.
+    </p>
+  </div>
+
+  <h3>2.3 Ce que les axiomes ne sont PAS</h3>
+
+  <div class="highlight">
+    <p style="color:var(--orange);font-weight:600;margin-bottom:8px">⚠️ Clarification épistémologique</p>
+    <p>
+      <strong>Ces axiomes ne sont pas des vérités révélées.</strong><br><br>
+      • Ce sont des <strong>hypothèses de travail</strong> — des points de départ dont on explore les conséquences<br>
+      • Ils sont <strong>falsifiables indirectement</strong> — si les prédictions de la théorie sont réfutées, les axiomes doivent être révisés<br>
+      • Ils pourraient ne pas être <strong>indépendants</strong> — A3 pourrait être une conséquence de A1+A2, A5 pourrait impliquer A4<br>
+      • Ils pourraient ne pas être <strong>complets</strong> — d'autres axiomes pourraient être nécessaires<br><br>
+      La valeur d'un système axiomatique n'est pas sa vérité intrinsèque, mais sa <strong>fécondité</strong> : produit-il des prédictions testables ? La Théorie Harmonique en produit.
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="statut">
+  <h2><span class="num">Section 3</span>Statut Scientifique et Prochaines Étapes</h2>
+  <p class="section-desc">Où nous en sommes, ce qui manque, où nous allons.</p>
+
+  <h3>3.1 Ce qui est établi</h3>
+
+  <table>
+    <tr><th>Niveau</th><th>Élément</th><th>Statut</th></tr>
+    <tr><td>1 — Identités</td><td>G<sub>ij,j</sub> = 0 (identité de Bianchi)</td><td style="color:var(--green)">✅ Mathématiquement vrai</td></tr>
+    <tr><td>1 — Identités</td><td>Si R(α)=1−α², alors point fixe = 1/φ</td><td style="color:var(--green)">✅ Algèbre élémentaire</td></tr>
+    <tr><td>2 — Conjectures</td><td>R(α)=1−α² découle de la fermeture spectrale</td><td style="color:var(--orange)">⚠️ Dérivation partielle</td></tr>
+    <tr><td>2 — Conjectures</td><td>La base monomiale est l'unique base fermée</td><td style="color:var(--orange)">⚠️ Non démontré</td></tr>
+    <tr><td>3 — Axiomes</td><td>A1–A5 formulés ci-dessus</td><td style="color:var(--orange)">⚠️ Hypothèses de travail</td></tr>
+    <tr><td>4 — Corroborations</td><td>47/47 prédictions vérifiées, aucune réfutée</td><td style="color:var(--green)">✅ Forte corroboration empirique</td></tr>
+    <tr><td>5 — Validation externe</td><td>Publication avec revue par les pairs</td><td style="color:var(--red)">❌ Non réalisé</td></tr>
+  </table>
+
+  <h3>3.2 Prochaines étapes</h3>
+
+  <table>
+    <tr><th>Priorité</th><th>Action</th><th>Impact</th></tr>
+    <tr><td style="color:var(--red)"><strong>Critique</strong></td><td>Prouver rigoureusement que R(α)=1−α² est la <strong>seule</strong> solution de l'équation fonctionnelle Γ ∀n</td><td style="color:var(--green)">Élimine le maillon faible de la dérivation</td></tr>
+    <tr><td style="color:var(--orange)"><strong>Haute</strong></td><td>Démontrer que la base monomiale est l'unique base fermée de l'opérateur ABC</td><td style="color:var(--green)">Élimine les alternatives</td></tr>
+    <tr><td style="color:var(--orange)"><strong>Haute</strong></td><td>Publier la projection spectrale complète Hₙ = ∫ Ψ·(Ψ₁)ⁿ·√|g| d⁴x</td><td style="color:var(--green)">Validation externe indispensable</td></tr>
+    <tr><td style="color:var(--phi)"><strong>Moyenne</strong></td><td>Rechercher des mesures expérimentales d'ordres fractionnaires proches de 0.618</td><td style="color:var(--phi)">Connexion au monde réel</td></tr>
+    <tr><td style="color:var(--phi)"><strong>Moyenne</strong></td><td>Tester si un des axiomes est redondant (conséquence des autres)</td><td style="color:var(--phi)">Simplification du système</td></tr>
+  </table>
+
+  <blockquote>
+    « Un système axiomatique n'est pas une prison pour la pensée — c'est un échafaudage pour construire. La Théorie Harmonique a bâti 47 prédictions vérifiées sur ces 5 axiomes. Que l'échafaudage soit perfectible ne change rien à la solidité de l'édifice. »
+    <div class="attrib">— Théorie Harmonique, 18 Juin 2026</div>
+  </blockquote>
+</section>
+
+</div><!-- .container -->
+
+<footer>
+  <div class="container">
+    <p>
+      <a href="index.html">Symphonie Cosmique</a> |
+      <a href="document-fondateur.html">Document Fondateur</a> |
+      <a href="preuve-unicite-1surphi.html">Preuve d'Unicité</a> |
+      <a href="synthese-harmonique.html">Synthèse</a> |
+      <a href="gagut-abc-optimiseur.html">GAGUT+ABC</a>
+    </p>
+    <p style="margin-top:8px">Axiomes Fondamentaux — Théorie Harmonique — © 2026 KOTTO Alain</p>
+  </div>
+</footer>
+
+</body>
+</html>

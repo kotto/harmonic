@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harmonic HPU Cloud — SaaS</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,sans-serif;background:#0d0d1a;color:#e0d8c8;line-height:1.6;min-height:100vh}
+  a{color:#C9A84C;text-decoration:none}
+  a:hover{color:#e8c84c}
+  
+  /* Header */
+  .header{background:linear-gradient(135deg,#1a1a2e,#16213e);border-bottom:2px solid #C9A84C;padding:15px 30px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+  .header .logo{font-size:1.5em;font-weight:700;color:#C9A84C}
+  .header .logo span{color:#e0d8c8;font-weight:300}
+  .header .nav a{margin-left:20px;font-size:.9em;padding:5px 10px;border-radius:4px;transition:background .3s}
+  .header .nav a:hover{background:rgba(201,168,76,.15)}
+  
+  /* Hero */
+  .hero{text-align:center;padding:80px 20px 40px;background:radial-gradient(ellipse at center,rgba(201,168,76,.08) 0%,transparent 70%)}
+  .hero h1{font-size:3em;margin-bottom:10px}
+  .hero h1 span{color:#C9A84C}
+  .hero .sub{font-size:1.2em;color:#a09080;max-width:600px;margin:0 auto}
+  .hero .phi{font-size:1.5em;color:#C9A84C;margin-top:20px;font-family:monospace}
+  
+  /* Stats Bar */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:15px;max-width:1000px;margin:40px auto;padding:0 20px}
+  .stat{background:#1a1a2e;border:1px solid #2a2a4e;border-radius:12px;padding:20px;text-align:center}
+  .stat .n{font-size:2em;font-weight:700;color:#C9A84C;display:block}
+  .stat .l{font-size:.8em;color:#8a7a6a;margin-top:5px;text-transform:uppercase;letter-spacing:1px}
+  
+  /* Main Container */
+  .container{max-width:1200px;margin:0 auto;padding:20px}
+  
+  /* Tab Navigation */
+  .tabs{display:flex;gap:2px;margin-bottom:0;overflow-x:auto}
+  .tab{padding:12px 25px;background:#1a1a2e;border:1px solid #2a2a4e;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:.9em;color:#8a7a6a;transition:all .3s;white-space:nowrap}
+  .tab:hover{color:#C9A84C;background:#222240}
+  .tab.active{color:#C9A84C;background:#0d0d1a;border-color:#C9A84C;font-weight:600}
+  
+  /* Tab Content */
+  .tab-content{display:none;background:#0d0d1a;border:1px solid #2a2a4e;border-radius:0 8px 8px 8px;padding:30px;margin-top:-1px}
+  .tab-content.active{display:block}
+  
+  /* Dashboard */
+  .dashboard-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+  .card{background:#1a1a2e;border:1px solid #2a2a4e;border-radius:8px;padding:25px;transition:transform .3s,border-color .3s}
+  .card:hover{transform:translateY(-2px);border-color:#C9A84C}
+  .card h3{color:#C9A84C;font-size:1.1em;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .card p{color:#a09080;font-size:.9em;margin-bottom:15px}
+  .card .badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.75em;font-weight:600}
+  .badge.online{background:#1a3a2a;color:#4a8a5a}
+  .badge.beta{background:#3a3a1a;color:#C9A84C}
+  .badge.preview{background:#2a1a3a;color:#8a4aaa}
+  .badge.free{background:#1a2a3a;color:#4a8aaa}
+  
+  .card .price{font-size:1.5em;font-weight:700;color:#e0d8c8;margin:10px 0}
+  .card .price small{font-size:.5em;font-weight:300;color:#8a7a6a}
+  
+  /* API Playground */
+  .playground{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:768px){.playground{grid-template-columns:1fr}}
+  
+  .playground .panel{background:#1a1a2e;border:1px solid #2a2a4e;border-radius:8px;padding:20px}
+  .playground .panel h3{color:#C9A84C;margin-bottom:15px;font-size:1em}
+  .playground select,.playground input,.playground textarea{width:100%;padding:10px;margin-bottom:10px;background:#0d0d1a;border:1px solid #2a2a4e;border-radius:6px;color:#e0d8c8;font-family:monospace;font-size:.9em}
+  .playground textarea{min-height:80px;resize:vertical}
+  .playground button{padding:10px 25px;background:#C9A84C;color:#0d0d1a;border:none;border-radius:6px;cursor:pointer;font-weight:600;transition:background .3s}
+  .playground button:hover{background:#e8c84c}
+  .playground .response{background:#0d0d1a;border:1px solid #2a2a4e;border-radius:6px;padding:15px;font-family:monospace;font-size:.85em;white-space:pre-wrap;min-height:150px;max-height:300px;overflow-y:auto;color:#a8d8a8}
+  
+  .playground .method{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.75em;font-weight:700;margin-right:8px}
+  .method.get{background:#1a3a5a;color:#4a8aca}
+  .method.post{background:#3a3a1a;color:#C9A84C}
+  
+  /* Documentation */
+  .doc-section{margin-bottom:30px}
+  .doc-section h3{color:#C9A84C;font-size:1.2em;margin-bottom:15px;border-bottom:1px solid #2a2a4e;padding-bottom:8px}
+  .doc-section h4{color:#e0d8c8;margin:15px 0 8px}
+  .doc-section code{background:#1a1a2e;padding:2px 6px;border-radius:3px;font-family:monospace;font-size:.9em;color:#a8d8a8}
+  .doc-section .endpoint{background:#1a1a2e;border:1px solid #2a2a4e;border-radius:6px;padding:15px;margin:10px 0;font-family:monospace}
+  .doc-section .endpoint .url{color:#4a8aca;font-size:1.1em}
+  .doc-section .endpoint .desc{color:#a09080;font-size:.85em;margin-top:5px}
+  
+  /* Pricing */
+  .pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-top:20px}
+  .plan{background:#1a1a2e;border:1px solid #2a2a4e;border-radius:12px;padding:30px;text-align:center;transition:transform .3s,border-color .3s}
+  .plan:hover{transform:translateY(-4px);border-color:#C9A84C}
+  .plan.featured{border-color:#C9A84C;background:#1a1a2e}
+  .plan h3{color:#C9A84C;font-size:1.3em}
+  .plan .price{font-size:2.5em;font-weight:700;color:#e0d8c8;margin:20px 0}
+  .plan .price small{font-size:.4em;font-weight:300;color:#8a7a6a}
+  .plan ul{list-style:none;text-align:left;margin:20px 0}
+  .plan ul li{padding:8px 0;border-bottom:1px solid #2a2a4e;font-size:.9em;color:#a09080}
+  .plan ul li::before{content:"✓ ";color:#4a8a5a}
+  .plan button{padding:12px 40px;background:#C9A84C;color:#0d0d1a;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:1em;transition:background .3s}
+  .plan button:hover{background:#e8c84c}
+  .plan.featured button{background:#C9A84C}
+  
+  /* Footer */
+  .footer{text-align:center;padding:40px;color:#6a5a4a;font-size:.85em;border-top:1px solid #2a2a4e;margin-top:60px}
+  .footer strong{color:#C9A84C}
+  
+  /* Loading */
+  .loading{text-align:center;padding:20px;color:#8a7a6a}
+  .loading::after{content:"...";animation:dots 1.5s infinite}
+  @keyframes dots{0%,20%{content:"."}40%{content:".."}60%,100%{content:"..."}}
+  
+  /* Scrollbar */
+  ::-webkit-scrollbar{width:6px}
+  ::-webkit-scrollbar-track{background:#0d0d1a}
+  ::-webkit-scrollbar-thumb{background:#2a2a4e;border-radius:3px}
+  ::-webkit-scrollbar-thumb:hover{background:#C9A84C}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">🌊 <span>Harmonic</span> HPU</div>
+  <div class="nav">
+    <a href="#" onclick="showTab('dashboard')">Dashboard</a>
+    <a href="#" onclick="showTab('playground')">API Playground</a>
+    <a href="#" onclick="showTab('pricing')">Pricing</a>
+    <a href="#" onclick="showTab('docs')">Documentation</a>
+    <a href="/docs" target="_blank">Swagger</a>
+  </div>
+</div>
+
+<div class="hero">
+  <h1>Harmonic <span>HPU</span> Cloud</h1>
+  <div class="sub">Calcul par résonance harmonique. Zéro GPU. Zéro hallucination. 119× plus efficace.</div>
+  <div class="phi">D<sup>1/φ</sup>[Ψ] = G[Ψ] — φ = 1.618033988749895</div>
+</div>
+
+<div class="stats" id="stats">
+  <div class="stat"><span class="n" id="stat-uptime">—</span><span class="l">Disponibilité</span></div>
+  <div class="stat"><span class="n" id="stat-particles">18</span><span class="l">Particules classées</span></div>
+  <div class="stat"><span class="n" id="stat-theorems">6</span><span class="l">Théorèmes</span></div>
+  <div class="stat"><span class="n" id="stat-predicted">30</span><span class="l">Particules prédites</span></div>
+  <div class="stat"><span class="n">119.5<span style="font-size:.5em">×</span></span><span class="l">Compression audio</span></div>
+  <div class="stat"><span class="n" id="stat-gsm8k">99.2<span style="font-size:.5em">%</span></span><span class="l">GSM8K</span></div>
+</div>
+
+<div class="container">
+  
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('dashboard')">📊 Dashboard</div>
+    <div class="tab" onclick="showTab('playground')">🔬 API Playground</div>
+    <div class="tab" onclick="showTab('pricing')">💰 Pricing</div>
+    <div class="tab" onclick="showTab('docs')">📖 Documentation</div>
+  </div>
+
+  <!-- TAB 1: Dashboard -->
+  <div class="tab-content active" id="tab-dashboard">
+    <div class="dashboard-grid">
+      <div class="card">
+        <h3>🧠 H-Bit Core</h3>
+        <p>Calcul vectoriel harmonique par H-Bit. Interférence, binding, résonance.</p>
+        <span class="badge online">Online</span>
+        <span class="badge free">$0.001/10K ops</span>
+        <div class="price">$0.001 <small>/ 10K opérations</small></div>
+      </div>
+      
+      <div class="card">
+        <h3>💾 Golden Memory</h3>
+        <p>Stockage holographique. Apprentissage en 3-5 répétitions. Mémoire persistante.</p>
+        <span class="badge online">Online</span>
+        <span class="badge free">$0.01/concept</span>
+        <div class="price">$0.01 <small>/ concept / mois</small></div>
+      </div>
+      
+      <div class="card">
+        <h3>🔍 Wave Inference</h3>
+        <p>Inférence par résonance. Zéro hallucination. Refus calibré si confiance insuffisante.</p>
+        <span class="badge online">Online</span>
+        <span class="badge free">$0.001/query</span>
+        <div class="price">$0.001 <small>/ requête</small></div>
+      </div>
+      
+      <div class="card">
+        <h3>🎵 HCV Compression</h3>
+        <p>Compression audio 119.5× et vidéo 372.9×. Dictionnaire spectral 9D.</p>
+        <span class="badge online">Online</span>
+        <span class="badge free">$0.01/GB</span>
+        <div class="price">$0.01 <small>/ GB traité</small></div>
+      </div>
+      
+      <div class="card">
+        <h3>🔬 HarmoFold</h3>
+        <p>Repliement de protéines par résonance. Score Ramachandran 0.71-0.78.</p>
+        <span class="badge beta">Beta</span>
+        <span class="badge free">$0.10/protéine</span>
+        <div class="price">$0.10 <small>/ protéine</small></div>
+      </div>
+      
+      <div class="card">
+        <h3>🧮 GSM8K API</h3>
+        <p>Raisonnement mathématique. 99.2% sans fine-tuning, sans GPU.</p>
+        <span class="badge online">Online</span>
+        <span class="badge free">$0.001/problème</span>
+        <div class="price">$0.001 <small>/ problème</small></div>
+      </div>
+      
+      <div class="card">
+        <h3>⚡ NP Solver</h3>
+        <p>Résolution SAT, TSP, Subset Sum par résonance. O(n²) sur émulateur.</p>
+        <span class="badge preview">Preview</span>
+        <span class="badge free">$0.05/problème</span>
+        <div class="price">$0.05 <small>/ problème</small></div>
+      </div>
+      
+      <div class="card">
+        <h3>📊 Periodic Table</h3>
+        <p>118 éléments classifiés, 30 particules prédites, bloc g (Z=121-138).</p>
+        <span class="badge online">Online</span>
+        <span class="badge free">Gratuit</span>
+        <div class="price">Gratuit <small>— open data</small></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: API Playground -->
+  <div class="tab-content" id="tab-playground">
+    <div style="margin-bottom:20px">
+      <label for="api-endpoint">Endpoint</label>
+      <select id="api-endpoint" onchange="updatePlayground()">
+        <option value="health">GET /health — État du service</option>
+        <option value="particles">GET /api/v1/particles — Particules</option>
+        <option value="theorems">GET /api/v1/theorems — Théorèmes</option>
+        <option value="elements">GET /api/v1/elements — Éléments chimiques</option>
+        <option value="gsm8k">GET /api/v1/gsm8k — Raisonnement mathématique</option>
+        <option value="hbit">POST /api/v1/hbit — Calcul H-Bit</option>
+        <option value="memory">POST /api/v1/memory/store — Apprentissage</option>
+        <option value="infer">POST /api/v1/infer — Inférence</option>
+      </select>
+    </div>
+    
+    <div class="playground">
+      <div class="panel">
+        <h3>Requête</h3>
+        <div id="playground-params">
+          <label>Paramètres</label>
+          <input type="text" id="param1" placeholder="paramètre 1" value="">
+          <input type="text" id="param2" placeholder="paramètre 2" value="">
+          <input type="text" id="param3" placeholder="paramètre 3" value="">
+        </div>
+        <button onclick="executeQuery()">▶ Exécuter</button>
+      </div>
+      <div class="panel">
+        <h3>Réponse</h3>
+        <div class="response" id="api-response">Cliquez sur "Exécuter" pour lancer une requête...</div>
+      </div>
+    </div>
+    
+    <div style="margin-top:20px;text-align:center">
+      <p style="color:#8a7a6a;font-size:.85em">API Key : <code style="background:#1a1a2e;padding:5px 10px">demo-key-2026</code></p>
+      <p style="color:#6a5a4a;font-size:.8em;margin-top:5px">Mode démo — pas d'authentification requise sur localhost</p>
+    </div>
+  </div>
+
+  <!-- TAB 3: Pricing -->
+  <div class="tab-content" id="tab-pricing">
+    <div class="pricing-grid">
+      <div class="plan">
+        <h3>Free</h3>
+        <div class="price">$0 <small>/ mois</small></div>
+        <ul>
+          <li>1K opérations H-Bit / jour</li>
+          <li>10 concepts en mémoire</li>
+          <li>10 inférences / jour</li>
+          <li>100 MB compression</li>
+          <li>API publique</li>
+        </ul>
+        <button>Commencer</button>
+      </div>
+      
+      <div class="plan featured">
+        <h3>Pro</h3>
+        <div class="price">$29 <small>/ mois</small></div>
+        <ul>
+          <li>100K opérations H-Bit / jour</li>
+          <li>1 000 concepts en mémoire</li>
+          <li>1 000 inférences / jour</li>
+          <li>10 GB compression</li>
+          <li>Support prioritaire</li>
+          <li>API Key dédiée</li>
+        </ul>
+        <button>Choisir Pro</button>
+      </div>
+      
+      <div class="plan">
+        <h3>Enterprise</h3>
+        <div class="price">$299 <small>/ mois</small></div>
+        <ul>
+          <li>Opérations illimitées</li>
+          <li>Mémoire illimitée</li>
+          <li>Inférences illimitées</li>
+          <li>1 TB compression</li>
+          <li>SLA 99.9%</li>
+          <li>Déploiement privé</li>
+          <li>Support 24/7</li>
+        </ul>
+        <button>Contacter</button>
+      </div>
+      
+      <div class="plan">
+        <h3>HPC</h3>
+        <div class="price">Sur devis</div>
+        <ul>
+          <li>HPU-2 FPGA (128 H-Bits)</li>
+          <li>HPU-3 ASIC (1024 H-Bits)</li>
+          <li>Cluster dédié</li>
+          <li>Formation équipe</li>
+          <li>Co-développement</li>
+        </ul>
+        <button>Nous contacter</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: Documentation -->
+  <div class="tab-content" id="tab-docs">
+    <div class="doc-section">
+      <h3>🔌 Authentification</h3>
+      <p>Inclure votre clé API dans l'en-tête <code>X-API-Key</code>.</p>
+      <div class="endpoint">
+        <code>curl -H "X-API-Key: votre-clé" http://localhost:9100/health</code>
+      </div>
+    </div>
+
+    <div class="doc-section">
+      <h3>📡 Endpoints</h3>
+      
+      <div class="endpoint">
+        <span class="method get">GET</span> <span class="url">/health</span>
+        <div class="desc">État de santé du HPU, version, noyau doré, φ</div>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method get">GET</span> <span class="url">/api/v1/status</span>
+        <div class="desc">Statut détaillé : mémoire utilisée, patterns, statistiques</div>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method get">GET</span> <span class="url">/api/v1/theorems</span>
+        <div class="desc">Les 6 théorèmes de la THU (T1-T6) et les 9 frontières</div>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method get">GET</span> <span class="url">/api/v1/particles</span>
+        <div class="desc">Tableau périodique des particules — 18 classées, 30 prédites</div>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method get">GET</span> <span class="url">/api/v1/elements</span>
+        <div class="desc">Tableau périodique des éléments chimiques (118)</div>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method get">GET</span> <span class="url">/api/v1/gsm8k?probleme={question}</span>
+        <div class="desc">Raisonnement mathématique. Exemple : <code>?probleme=2+2</code></div>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method post">POST</span> <span class="url">/api/v1/hbit</span>
+        <div class="desc">Calcul H-Bit. Body : <code>{"operation":"encode","a":"concept"}</code></div>
+        <div style="margin-top:8px;font-size:.85em;color:#6a5a4a">
+          Operations : encode, resonate, bind, superpose, interfere
+        </div>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method post">POST</span> <span class="url">/api/v1/memory/store</span>
+        <div class="desc">Apprentissage. Body : <code>{"concept":"nom","iterations":5}</code></div>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method post">POST</span> <span class="url">/api/v1/memory/recall</span>
+        <div class="desc">Rappel. Body : <code>{"question":"concept"}</code></div>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method post">POST</span> <span class="url">/api/v1/infer</span>
+        <div class="desc">Inférence par résonance. Body : <code>{"question":"votre question"}</code></div>
+      </div>
+    </div>
+
+    <div class="doc-section">
+      <h3>📦 Exemples</h3>
+      <div class="endpoint">
+        <div style="color:#C9A84C;margin-bottom:8px"># Santé du service</div>
+        <code>curl http://localhost:9100/health</code>
+      </div>
+      <div class="endpoint">
+        <div style="color:#C9A84C;margin-bottom:8px"># Liste des particules</div>
+        <code>curl http://localhost:9100/api/v1/particles</code>
+      </div>
+      <div class="endpoint">
+        <div style="color:#C9A84C;margin-bottom:8px"># Calcul H-Bit</div>
+        <code>curl -X POST http://localhost:9100/api/v1/hbit -H 'Content-Type: application/json' -d '{"operation":"encode","a":"électron"}'</code>
+      </div>
+      <div class="endpoint">
+        <div style="color:#C9A84C;margin-bottom:8px"># Apprentissage (3 répétitions)</div>
+        <code>curl -X POST http://localhost:9100/api/v1/memory/store -H 'Content-Type: application/json' -d '{"concept":"chat","iterations":3}'</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <p>🌊 <strong>Harmonic HPU Cloud</strong> — Moteur : D<sup>1/φ</sup>[Ψ] = G[Ψ]</p>
+  <p style="margin-top:10px">14 août 2026 — T6 modulo 7 · E1b fermé · F5 fermé · Carte des particules</p>
+  <p style="margin-top:5px;font-size:.8em">φ = 1.618033988749895 · α = 1/φ</p>
+</div>
+
+<script>
+// API base URL
+const API = 'http://localhost:9100';
+
+// Tab switching
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab:has(+ .tab-content#tab-${name}), .tab:nth-child(${
+    ['dashboard','playground','pricing','docs'].indexOf(name)+1
+  })`).classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+}
+
+// Update playground params based on selected endpoint
+function updatePlayground() {
+  const ep = document.getElementById('api-endpoint').value;
+  const p1 = document.getElementById('param1');
+  const p2 = document.getElementById('param2');
+  const p3 = document.getElementById('param3');
+  
+  const presets = {
+    health: ['', '', ''],
+    particles: ['', '', ''],
+    theorems: ['', '', ''],
+    elements: ['', '', ''],
+    gsm8k: ['2 + 2', '', ''],
+    hbit: ['encode', 'concept', ''],
+    memory: ['chat', '5', ''],
+    infer: ['Quelle est la masse de l\'électron ?', '', '']
+  };
+  
+  const [a, b, c] = presets[ep] || ['', '', ''];
+  p1.value = a; p2.value = b; p3.value = c;
+  
+  const labels = {
+    health: ['—', '—', '—'],
+    particles: ['—', '—', '—'],
+    theorems: ['—', '—', '—'],
+    elements: ['Z (optionnel)', 'Symbole (optionnel)', '—'],
+    gsm8k: ['Problème mathématique', '—', '—'],
+    hbit: ['Opération (encode/resonate/bind/...)', 'Argument A', 'Argument B (optionnel)'],
+    memory: ['Concept', 'Itérations (3-5)', '—'],
+    infer: ['Question', '—', '—']
+  };
+  
+  const [l1, l2, l3] = labels[ep] || ['Param 1', 'Param 2', 'Param 3'];
+  document.querySelectorAll('#playground-params label')[0].textContent = l1;
+  document.querySelectorAll('#playground-params label')[1].textContent = l2;
+  document.querySelectorAll('#playground-params label')[2].textContent = l3;
+}
+
+// Execute API query
+async function executeQuery() {
+  const ep = document.getElementById('api-endpoint').value;
+  const p1 = document.getElementById('param1').value;
+  const p2 = document.getElementById('param2').value;
+  const p3 = document.getElementById('param3').value;
+  const response = document.getElementById('api-response');
+  
+  response.textContent = 'En attente de la réponse...';
+  response.style.color = '#8a7a6a';
+  
+  try {
+    let url = `${API}/`;
+    let options = { headers: { 'Accept': 'application/json' } };
+    
+    switch(ep) {
+      case 'health':
+        url = `${API}/health`;
+        break;
+      case 'particles':
+        url = `${API}/api/v1/particles`;
+        break;
+      case 'theorems':
+        url = `${API}/api/v1/theorems`;
+        break;
+      case 'elements':
+        url = `${API}/api/v1/elements${p1 ? '?z='+p1 : ''}`;
+        break;
+      case 'gsm8k':
+        url = `${API}/api/v1/gsm8k?probleme=${encodeURIComponent(p1)}`;
+        break;
+      case 'hbit':
+        url = `${API}/api/v1/hbit`;
+        options.method = 'POST';
+        options.body = JSON.stringify({
+          operation: p1 || 'encode',
+          a: p2 || 'concept',
+          b: p3 || undefined
+        });
+        options.headers['Content-Type'] = 'application/json';
+        break;
+      case 'memory':
+        url = `${API}/api/v1/memory/store`;
+        options.method = 'POST';
+        options.body = JSON.stringify({
+          concept: p1 || 'concept',
+          iterations: parseInt(p2) || 5
+        });
+        options.headers['Content-Type'] = 'application/json';
+        break;
+      case 'infer':
+        url = `${API}/api/v1/infer`;
+        options.method = 'POST';
+        options.body = JSON.stringify({
+          question: p1 || 'test'
+        });
+        options.headers['Content-Type'] = 'application/json';
+        break;
+    }
+    
+    const res = await fetch(url, options);
+    const data = await res.json();
+    response.textContent = JSON.stringify(data, null, 2);
+    response.style.color = '#a8d8a8';
+  } catch(e) {
+    response.textContent = `Erreur : ${e.message}`;
+    response.style.color = '#d8a8a8';
+  }
+}
+
+// Load initial stats
+async function loadStats() {
+  try {
+    const r = await fetch(`${API}/health`);
+    const data = await r.json();
+    document.getElementById('stat-uptime').textContent = data.status === 'ok' ? 'Online' : 'Offline';
+  } catch(e) {
+    document.getElementById('stat-uptime').textContent = 'Offline';
+  }
+}
+
+// Init
+updatePlayground();
+loadStats();
+</script>
+</body>
+</html>

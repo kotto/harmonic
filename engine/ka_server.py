@@ -2406,6 +2406,76 @@ def compress():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/compress_mobile', methods=['POST'])
+def compress_mobile():
+    """
+    Compression Mobile KA — image ou vidéo, mode Mobile par défaut.
+    Body: multipart/form-data avec 'file' (image ou vidéo)
+    Returns: JSON avec métriques PSNR/SSIM/Ratio + preview
+    """
+    if 'file' not in request.files:
+        return jsonify({'error': 'Fichier requis'}), 400
+
+    file = request.files['file']
+    input_data = file.read()
+    filename = file.filename or 'file'
+    ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+    video_exts = {'mp4', 'avi', 'mov', 'mkv', 'webm', 'm4v', 'mpeg', 'mpg', 'wmv', 'flv'}
+
+    try:
+        from ka_mobile_compress import KaMobileCompressor
+        kc = KaMobileCompressor()
+
+        if ext in video_exts:
+            result = kc.compress_video(input_data, filename)
+        else:
+            result = kc.compress_image(input_data)
+
+        # Ne pas renvoyer le blob brut dans la réponse JSON (trop gros)
+        resp = {k: v for k, v in result.items() if k != 'blob'}
+        return jsonify(resp)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/download_mobile', methods=['POST'])
+def download_mobile():
+    """Télécharge le fichier compressé (blob HCV2)."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'Fichier requis'}), 400
+
+    file = request.files['file']
+    input_data = file.read()
+    filename = file.filename or 'file'
+    ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+    video_exts = {'mp4', 'avi', 'mov', 'mkv', 'webm', 'm4v', 'mpeg', 'mpg', 'wmv', 'flv'}
+
+    try:
+        from ka_mobile_compress import KaMobileCompressor
+        kc = KaMobileCompressor()
+
+        if ext in video_exts:
+            result = kc.compress_video(input_data, filename)
+        else:
+            result = kc.compress_image(input_data)
+
+        if 'error' in result:
+            return jsonify(result), 400
+
+        import base64
+        blob = result.get('blob', b'')
+        dl_name = result.get('download_name', f'compressed.{ext}')
+        if not blob:
+            return jsonify({'error': 'Aucune donnée compressée'}), 500
+
+        return jsonify({
+            'download_b64': base64.b64encode(blob).decode(),
+            'download_name': dl_name,
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/upscale', methods=['POST'])
 def upscale():
     """

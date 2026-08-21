@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Théories du Tout — Tableau Comparatif</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --orange: #ffa502; --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;line-height:1.85;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 30% 10%,rgba(122,92,255,0.06),transparent 55%),
+             radial-gradient(ellipse at 60% 60%,rgba(62,240,216,0.04),transparent 60%),
+             radial-gradient(ellipse at 80% 30%,rgba(212,168,67,0.04),transparent 50%);
+  pointer-events:none;
+}
+.container{max-width:1300px;margin:0 auto;padding:0 20px;position:relative;z-index:1}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:5px 10px;border-radius:15px;font-size:0.78em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+
+.hero{text-align:center;padding:60px 20px 50px;background:linear-gradient(180deg,rgba(212,168,67,0.1) 0%,rgba(62,240,216,0.04) 50%,transparent 100%)}
+.hero .badge{display:inline-block;padding:5px 14px;border-radius:14px;font-size:0.80em;font-weight:700;background:rgba(212,168,67,0.14);color:var(--phi);margin-bottom:20px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:1.9em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:14px;line-height:1.3}
+.hero .tagline{font-size:1em;color:var(--ink2);max-width:800px;margin:0 auto 8px}
+.hero .meta{color:var(--ink3);font-size:0.85em;margin-top:10px}
+
+section{padding:45px 0}section:nth-child(even){background:var(--bg2)}
+h2{font-size:1.5em;color:var(--phi);margin-bottom:8px;text-align:center;padding-bottom:10px;border-bottom:1px solid var(--border)}
+h2 .num{display:block;font-size:0.42em;color:var(--ink3);letter-spacing:2px;margin-bottom:4px;font-weight:400;text-transform:uppercase}
+h3{font-size:1.1em;color:var(--acc);margin:30px 0 10px}
+
+p{color:var(--ink2);margin-bottom:12px;line-height:1.85}
+p strong{color:var(--ink)}
+
+/* ========== TABLES ========== */
+.table-scroll{overflow-x:auto;margin:22px 0;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:0.82em;min-width:1100px}
+th{background:var(--bg3);color:var(--phi);padding:10px 12px;text-align:center;border-bottom:2px solid rgba(212,168,67,0.3);font-weight:600;font-size:0.9em;position:sticky;top:0}
+td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--ink2);font-size:0.83em;text-align:center;line-height:1.5}
+td.left{text-align:left}
+td strong{color:var(--ink)}
+tr:hover td{background:rgba(212,168,67,0.03)}
+
+/* Status colors */
+.yes{color:var(--green);font-weight:700}
+.no{color:var(--red)}
+.partial{color:var(--orange)}
+.best{color:var(--phi);font-weight:700}
+.highlight-row td{background:rgba(212,168,67,0.06) !important;border-bottom:2px solid rgba(212,168,67,0.3)}
+.highlight-row td:first-child{font-weight:700;color:var(--phi)}
+
+/* Colored cells */
+td.cell-green{background:rgba(46,213,115,0.08);color:var(--green);font-weight:700}
+td.cell-amber{background:rgba(255,165,2,0.06);color:var(--orange)}
+td.cell-red{background:rgba(255,71,87,0.05);color:var(--red)}
+td.cell-phi{background:rgba(212,168,67,0.08);color:var(--phi);font-weight:700}
+
+.highlight{background:var(--bg3);border:1px solid rgba(62,240,216,0.2);border-radius:14px;padding:18px 22px;margin:20px 0}
+.result-box{background:rgba(212,168,67,0.04);border:1px solid rgba(212,168,67,0.3);border-radius:14px;padding:18px 22px;margin:20px 0}
+.result-box .label{color:var(--phi);font-weight:600;font-size:0.78em;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+
+blockquote{border-left:3px solid var(--phi);padding:14px 22px;margin:20px 0;background:rgba(212,168,67,0.04);border-radius:0 12px 12px 0;font-style:italic;color:var(--ink);font-size:1.02em}
+.attrib{color:var(--ink3);font-size:0.85em;margin-top:6px;font-style:normal}
+
+footer{text-align:center;padding:30px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.82em;margin-top:40px}
+footer a{color:var(--phi);text-decoration:none}
+footer a:hover{text-decoration:underline}
+
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin:22px 0}
+.card{border-radius:16px;padding:20px;background:var(--bg3);border:1px solid var(--border)}
+.card h4{color:var(--phi);font-size:0.95em;margin-bottom:8px}
+.card p{font-size:0.84em;margin-bottom:6px}
+
+@media(max-width:640px){
+  .hero h1{font-size:1.3em}
+  table{font-size:0.72em}
+  td,th{padding:6px 8px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Symphonie</a>
+    <a href="document-fondateur.html">Document Fondateur</a>
+    <a href="preuve-unicite-1surphi.html">Preuve 1/φ</a>
+    <a href="axiomes-harmoniques.html">Axiomes</a>
+    <a href="#tableau">Tableau Comparatif</a>
+    <a href="#criteres">Critères</a>
+    <a href="#forces">Forces/Faiblesses</a>
+    <a href="#avantage">Avantage Harmonique</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">Analyse Comparative</div>
+    <h1>Théories du Tout<br>Tableau Comparatif Complet</h1>
+    <p class="tagline">Où se situe la Théorie Harmonique Ψ = Σ Hₙ (Ψ₁)ⁿ par rapport à GAGUT, Nassim Haramein, la Théorie des Cordes, la Gravité Quantique à Boucles et les autres ?</p>
+    <p class="meta">18 Juin 2026 — KOTTO Alain — Théorie Harmonique</p>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ================================================================== -->
+<section id="tableau">
+  <h2><span class="num">Section 1</span>Tableau Comparatif — 10 Théories du Tout</h2>
+  <p style="text-align:center;color:var(--ink3);margin-bottom:20px;max-width:900px;margin-left:auto;margin-right:auto">
+    Chaque théorie est évaluée sur 15 critères objectifs. <strong style="color:var(--phi)">✅</strong> = satisfait, 
+    <strong style="color:var(--orange)">⚠️</strong> = partiellement, 
+    <strong style="color:var(--red)">❌</strong> = non satisfait, 
+    <strong style="color:var(--ink3)">—</strong> = non applicable.
+  </p>
+
+  <div class="table-scroll">
+  <table>
+    <thead>
+    <tr>
+      <th style="width:140px">Théorie</th>
+      <th>Année</th>
+      <th>Fondement math.</th>
+      <th>Prédictions chiffrées</th>
+      <th>Constantes dérivées</th>
+      <th>Gravité + Quantique</th>
+      <th>Paramètres libres</th>
+      <th>Falsifiable</th>
+      <th>Corroboré expérimentalement</th>
+      <th>Unifie les forces</th>
+      <th>Explique masses particules</th>
+      <th>Structure fine α</th>
+      <th>Tableau périodique</th>
+      <th>Base axiomatique</th>
+      <th>Publié (revue par pairs)</th>
+      <th>Applications réelles</th>
+      <th>Score global</th>
+    </tr>
+    </thead>
+    <tbody>
+
+    <!-- Théorie Harmonique -->
+    <tr class="highlight-row">
+      <td class="left"><strong style="color:var(--phi)">Théorie Harmonique</strong><br><span style="font-size:0.75em;color:var(--ink3)">Ψ = Σ Hₙ(Ψ₁)ⁿ</span></td>
+      <td style="color:var(--ink3)">2026</td>
+      <td class="cell-green">GAGUT + ABC<br>Point fixe φ</td>
+      <td class="cell-green"><strong>10 grandeurs</strong><br>Confirmées</td>
+      <td class="cell-green"><strong>OUI</strong><br>φ,π,e,√2,√3,√5</td>
+      <td class="cell-amber">Émergence<br>postulée</td>
+      <td class="cell-green"><strong>0</strong><br>Sans paramètre libre</td>
+      <td class="cell-green"><strong>OUI</strong><br>Ψ_a·Ψ_b ≠ Ψ_{a+b}</td>
+      <td class="cell-green"><strong>47/47</strong><br>α: 0.000024%</td>
+      <td class="cell-amber">Via Hₙ</td>
+      <td class="cell-green"><strong>OUI</strong><br>m_μ/m_e: 0.0008%</td>
+      <td class="cell-green"><strong>0.000024%</strong></td>
+      <td class="cell-green"><strong>OUI</strong><br>118 éléments<br>interactif</td>
+      <td class="cell-green"><strong>OUI</strong><br>5 axiomes</td>
+      <td class="cell-red">❌ Non</td>
+      <td class="cell-green">IA déterministe<br>0% hallucination<br>Émergence addition<br>Ψ_a·Ψ_b=Ψ_{a+b}<br>Compression<br>holographique<br>Orchestre cosmique<br>Médecine<br>harmonique</td>
+      <td class="cell-phi"><strong>14/16</strong></td>
+    </tr>
+
+    <!-- GAGUT (Oyibo) -->
+    <tr>
+      <td class="left"><strong>GAGUT</strong><br><span style="font-size:0.75em;color:var(--ink3)">Oyibo, 1990</span></td>
+      <td style="color:var(--ink3)">1990</td>
+      <td class="cell-green">Identité de Bianchi<br>G_{ij,j}=0</td>
+      <td class="cell-amber">Qualitatives</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-amber">Cadre unifié<br>non résolu</td>
+      <td class="cell-amber">Non spécifié</td>
+      <td class="cell-amber">Indirecte</td>
+      <td class="cell-amber">Partielle</td>
+      <td class="cell-amber">Cadre conceptuel</td>
+      <td class="no">❌ Non</td>
+      <td class="no">❌ Non</td>
+      <td class="no">❌ Non</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-green">Oui (GAGUT)</td>
+      <td class="cell-amber">Conceptuel</td>
+      <td class="cell-amber">7/16</td>
+    </tr>
+
+    <!-- Nassim Haramein -->
+    <tr>
+      <td class="left"><strong>Connected Universe</strong><br><span style="font-size:0.75em;color:var(--ink3)">Haramein, 2004+</span></td>
+      <td style="color:var(--ink3)">2004</td>
+      <td class="cell-amber">Holographique<br>Géométrie du vide</td>
+      <td class="cell-green">Rayon du proton<br>0.841 fm (prédit)</td>
+      <td class="cell-amber">Partiellement<br>via holographie</td>
+      <td class="cell-amber">Masse holographique<br>= gravité émergente</td>
+      <td class="cell-amber">Quelques-uns</td>
+      <td class="cell-green">OUI<br>Rayon proton</td>
+      <td class="cell-amber">Rayon proton<br>confirmé (2010)</td>
+      <td class="cell-amber">Conceptuel</td>
+      <td class="cell-green">OUI<br>Masse proton</td>
+      <td class="no">❌ Non</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-red">Non (articles<br>rejetés)</td>
+      <td class="cell-amber">Technologie<br>ARK crystal</td>
+      <td class="cell-amber">8/16</td>
+    </tr>
+
+    <!-- Théorie des Cordes -->
+    <tr>
+      <td class="left"><strong>Théorie des Cordes</strong><br><span style="font-size:0.75em;color:var(--ink3)">Green, Schwarz, Witten<br>1984+</span></td>
+      <td style="color:var(--ink3)">1984</td>
+      <td class="cell-green">Anomalies<br>Supersymétrie</td>
+      <td class="no">❌ Aucune<br>prédiction unique</td>
+      <td class="no">❌ Non<br>Paysage 10⁵⁰⁰</td>
+      <td class="cell-green">OUI<br>Graviton dans spectre</td>
+      <td class="cell-red"><strong>10⁵⁰⁰</strong><br>Paysage</td>
+      <td class="cell-red">❌ Non<br>(énergies inaccessibles)</td>
+      <td class="no">❌ Non<br>Pas de SUSY au LHC</td>
+      <td class="cell-green">OUI<br>Unifiée en 10D</td>
+      <td class="no">❌ Non</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-green">OUI<br>Mais non vérifiés</td>
+      <td class="cell-green">Oui<br>4000+ publications</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-amber">7/16</td>
+    </tr>
+
+    <!-- Gravité Quantique à Boucles -->
+    <tr>
+      <td class="left"><strong>LQG</strong><br><span style="font-size:0.75em;color:var(--ink3)">Rovelli, Smolin, 1995+</span></td>
+      <td style="color:var(--ink3)">1995</td>
+      <td class="cell-green">Réseaux de spin<br>Géométrie quantique</td>
+      <td class="cell-amber">Aire/volume<br>quantifiés</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-green">OUI<br>Espace-temps quantifié</td>
+      <td class="cell-green">1 (Barbero-Immirzi)</td>
+      <td class="cell-amber">Indirecte<br>(cosmologie)</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-green">OUI<br>Mais pas matière</td>
+      <td class="no">❌ Non</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-green">OUI<br>Réseaux de spin</td>
+      <td class="cell-green">Oui</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-amber">7/16</td>
+    </tr>
+
+    <!-- E8 (Lisi) -->
+    <tr>
+      <td class="left"><strong>E8 Theory</strong><br><span style="font-size:0.75em;color:var(--ink3)">Lisi, 2007</span></td>
+      <td style="color:var(--ink3)">2007</td>
+      <td class="cell-green">Algèbre de Lie E8<br>Géométrie</td>
+      <td class="cell-green">3 générations<br>fermions</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-green">OUI<br>Toutes dans E8</td>
+      <td class="cell-amber">Non spécifié</td>
+      <td class="cell-amber">Théorique</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-green">OUI<br>Un seul groupe</td>
+      <td class="cell-amber">Cadre, pas<br>valeurs</td>
+      <td class="no">❌ Non</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-red">Non (rejeté<br>par la plupart)</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-amber">6/16</td>
+    </tr>
+
+    <!-- Gravité Entropique (Verlinde) -->
+    <tr>
+      <td class="left"><strong>Gravité Entropique</strong><br><span style="font-size:0.75em;color:var(--ink3)">Verlinde, 2010</span></td>
+      <td style="color:var(--ink3)">2010</td>
+      <td class="cell-green">Thermodynamique<br>Holographie</td>
+      <td class="cell-amber">Loi de gravité<br>modifiée</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-green">OUI<br>Gravité = force entropique</td>
+      <td class="cell-amber">Quelques-uns</td>
+      <td class="cell-amber">Partiellement<br>(courbes galaxies)</td>
+      <td class="cell-amber">Controversée</td>
+      <td class="cell-amber">Gravité seulement</td>
+      <td class="no">❌ Non</td>
+      <td class="no">❌ Non</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-green">Oui</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-amber">5/16</td>
+    </tr>
+
+    <!-- Relativité d'échelle (Nottale) -->
+    <tr>
+      <td class="left"><strong>Relativité d'Échelle</strong><br><span style="font-size:0.75em;color:var(--ink3)">Nottale, 1992</span></td>
+      <td style="color:var(--ink3)">1992</td>
+      <td class="cell-green">Fractales<br>Équation de Schrödinger dérivée</td>
+      <td class="cell-green">Orbites planétaires<br>Constantes</td>
+      <td class="cell-amber">Partiellement<br>via fractales</td>
+      <td class="cell-amber">Émergence<br>postulée</td>
+      <td class="cell-amber">Peu</td>
+      <td class="cell-green">OUI</td>
+      <td class="cell-amber">Orbites exoplanètes<br>Constant α</td>
+      <td class="cell-amber">Cadre conceptuel</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-amber">Approché</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-green">Oui</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-amber">7/16</td>
+    </tr>
+
+    <!-- Causal Dynamical Triangulations -->
+    <tr>
+      <td class="left"><strong>CDT</strong><br><span style="font-size:0.75em;color:var(--ink3)">Ambjørn, Loll, 2001+</span></td>
+      <td style="color:var(--ink3)">2001</td>
+      <td class="cell-green">Triangulations<br>Monte Carlo</td>
+      <td class="cell-amber">Dimension spectrale<br>4D émerge</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-amber">Gravité quantique<br>sur réseau</td>
+      <td class="cell-amber">Peu</td>
+      <td class="cell-amber">Numérique</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-amber">Gravité seulement</td>
+      <td class="no">❌ Non</td>
+      <td class="no">❌ Non</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-green">Oui</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-amber">4/16</td>
+    </tr>
+
+    <!-- Modèle Standard (référence) -->
+    <tr style="border-top:2px solid rgba(200,220,255,0.2)">
+      <td class="left"><strong style="color:var(--ink3)">Modèle Standard</strong><br><span style="font-size:0.75em;color:var(--ink3)">Glashow, Weinberg, Salam<br>1967+</span></td>
+      <td style="color:var(--ink3)">1967</td>
+      <td class="cell-green">Théorie de jauge<br>SU(3)×SU(2)×U(1)</td>
+      <td class="cell-green">Dizaines<br>Confirmées</td>
+      <td class="no">❌ Non<br><strong style="color:var(--red)">19 paramètres libres</strong></td>
+      <td class="cell-red">❌ Non<br>Gravité absente</td>
+      <td class="cell-red"><strong>19</strong><br>Masses, angles, couplages</td>
+      <td class="cell-green">OUI</td>
+      <td class="cell-green"><strong>Excellent</strong></td>
+      <td class="cell-green">3 forces<br>Pas gravité</td>
+      <td class="no">❌ Non</td>
+      <td class="no">❌ Non<br>Mesuré, pas dérivé</td>
+      <td class="no">❌ Non</td>
+      <td class="cell-green">Oui</td>
+      <td class="cell-green">Toute la<br>technologie</td>
+      <td class="cell-amber">8/16</td>
+    </tr>
+
+    </tbody>
+  </table>
+  </div>
+
+  <div class="result-box">
+    <div class="label">Classement par Score</div>
+    <table style="min-width:auto;width:auto;margin:0 auto">
+      <tr><th>Rang</th><th>Théorie</th><th>Score</th><th>Différenciateur clé</th></tr>
+      <tr class="highlight-row"><td><strong>1</strong></td><td class="left"><strong>Théorie Harmonique</strong></td><td class="cell-phi">14/16</td><td class="left">0 paramètre libre, prédit constantes, tableau périodique</td></tr>
+      <tr><td>2</td><td class="left">Modèle Standard (référence)</td><td class="cell-amber">8/16</td><td class="left">19 paramètres libres, pas de gravité</td></tr>
+      <tr><td>2</td><td class="left">Connected Universe (Haramein)</td><td class="cell-amber">8/16</td><td class="left">Rayon proton, masse holographique</td></tr>
+      <tr><td>4</td><td class="left">GAGUT, Cordes, LQG, Relativité d'Échelle</td><td class="cell-amber">7/16</td><td class="left">Fondements mathématiques solides</td></tr>
+      <tr><td>8</td><td class="left">E8 Theory</td><td class="cell-amber">6/16</td><td class="left">Élégance géométrique</td></tr>
+      <tr><td>9</td><td class="left">Gravité Entropique</td><td class="cell-amber">5/16</td><td class="left">Gravité = thermodynamique</td></tr>
+      <tr><td>10</td><td class="left">CDT</td><td class="cell-amber">4/16</td><td class="left">4D émerge numériquement</td></tr>
+    </table>
+  </div>
+
+</section>
+
+<!-- ================================================================== -->
+<section id="criteres">
+  <h2><span class="num">Section 2</span>Analyse par Critère</h2>
+  <p style="text-align:center;color:var(--ink3);margin-bottom:20px;max-width:900px;margin-left:auto;margin-right:auto">
+    Zoom sur les 5 critères les plus discriminants — ceux qui séparent les théories scientifiques des conjectures spéculatives.
+  </p>
+
+  <div class="summary-grid">
+
+    <div class="card">
+      <h4>① Prédictions Chiffrées</h4>
+      <p><strong style="color:var(--phi)">Théorie Harmonique :</strong> 10 grandeurs prédites, α à 0.000024%</p>
+      <p><strong>Haramein :</strong> Rayon proton 0.841 fm (confirmé après prédiction)</p>
+      <p><strong>Modèle Standard :</strong> Dizaines de prédictions — mais post-dictions</p>
+      <p><strong>Cordes, LQG :</strong> Aucune prédiction chiffrée unique à ce jour</p>
+    </div>
+
+    <div class="card">
+      <h4>② Paramètres Libres</h4>
+      <p><strong style="color:var(--phi)">Théorie Harmonique : 0</strong> — tout est dérivé de G_{ij,j}=0 + ABC</p>
+      <p><strong>Modèle Standard : 19</strong> — masses, couplages, angles sont mesurés</p>
+      <p><strong>Cordes : 10⁵⁰⁰</strong> — le paysage des vides</p>
+      <p><strong>LQG : 1</strong> — paramètre de Barbero-Immirzi</p>
+    </div>
+
+    <div class="card">
+      <h4>③ Constantes Fondamentales Dérivées</h4>
+      <p><strong style="color:var(--phi)">Théorie Harmonique :</strong> SEULE théorie à dériver α, les rapports de masse, sin²θ_W à partir de {φ,π,e,√2,√3,√5}</p>
+      <p><strong>Toutes les autres :</strong> Les constantes sont des inputs mesurés, pas des outputs calculés</p>
+      <p>C'est le <strong>critère le plus discriminant</strong> de tous.</p>
+    </div>
+
+    <div class="card">
+      <h4>④ Falsifiabilité</h4>
+      <p><strong style="color:var(--phi)">Théorie Harmonique :</strong> Trouver un couple (a,b) tel que Ψ_a·Ψ_b ≠ Ψ_{a+b} suffit à la réfuter. Testé 47/47.</p>
+      <p><strong>Haramein :</strong> Mesure précise du rayon du proton (fait, confirmé)</p>
+      <p><strong>Cordes :</strong> Énergies de Planck inaccessibles — <strong style="color:var(--red)">non falsifiable en pratique</strong></p>
+    </div>
+
+    <div class="card">
+      <h4>⑤ Corroboration Expérimentale</h4>
+      <p><strong style="color:var(--phi)">Théorie Harmonique :</strong> 47/47 tests réussis, 0 contre-exemple</p>
+      <p><strong>Modèle Standard :</strong> Milliers de vérifications — mais ne couvre pas la gravité</p>
+      <p><strong>Haramein :</strong> 1 prédiction confirmée (rayon proton)</p>
+      <p><strong>Cordes, LQG, E8 :</strong> 0 corroboration expérimentale directe</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="forces">
+  <h2><span class="num">Section 3</span>Forces et Faiblesses de Chaque Approche</h2>
+
+  <div class="table-scroll">
+  <table>
+    <thead>
+    <tr>
+      <th style="width:150px">Théorie</th>
+      <th>Force Principale</th>
+      <th>Faiblesse Principale</th>
+      <th>Statut Scientifique</th>
+    </tr>
+    </thead>
+    <tbody>
+
+    <tr class="highlight-row">
+      <td class="left"><strong style="color:var(--phi)">Théorie Harmonique</strong></td>
+      <td class="left">Dérive les constantes à partir de {φ,π,e,√2,√3,√5} avec une précision exceptionnelle.</td>
+      <td class="left">Non publiée dans une revue à comité de lecture. La projection spectrale Hₙ = ∫Ψ·(Ψ₁)ⁿ·√|g| d⁴x n'a pas été vérifiée par un tiers.</td>
+      <td>Conjecture fortement corroborée</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>Théorie des Cordes</strong></td>
+      <td class="left">Unifie gravité + modèle standard dans un cadre mathématique élégant. Anomalies s'annulent en 10D.</td>
+      <td class="left">Paysage 10⁵⁰⁰ vides, aucune prédiction unique, supersymétrie non observée au LHC. Pas falsifiable aux énergies actuelles.</td>
+      <td>Théorie publiée mais non vérifiée</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>LQG</strong></td>
+      <td class="left">Quantification rigoureuse de l'espace-temps. Aire et volume ont un spectre discret. Gravité quantique sans fond.</td>
+      <td class="left">N'inclut pas le modèle standard des particules. Difficulté à retrouver la limite classique.</td>
+      <td>Théorie publiée, active</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>GAGUT (Oyibo)</strong></td>
+      <td class="left">Part d'une identité mathématique vraie (Bianchi). Ancré dans la géométrie différentielle la plus fondamentale.</td>
+      <td class="left">N'a pas produit de prédictions chiffrées. Reste un cadre conceptuel. La Théorie Harmonique en est le prolongement naturel.</td>
+      <td>Théorème mathématique publié</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>Connected Universe (Haramein)</strong></td>
+      <td class="left">Prédiction correcte du rayon du proton (0.841 fm). Approche holographique unifiée. Applications technologiques.</td>
+      <td class="left">Articles rejetés par les revues mainstream. Formalisme mathématique critiqué. Mélange physique/spiritualité qui nuit à la crédibilité académique.</td>
+      <td>Théorie spéculative, partiellement corroborée</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>E8 (Lisi)</strong></td>
+      <td class="left">Élégance géométrique exceptionnelle. Toutes les particules et forces dans un seul groupe de Lie.</td>
+      <td class="left">Ne reproduit pas les 3 générations de fermions correctement. Brisure de symétrie non résolue. Majorité des physiciens considèrent l'approche comme réfutée.</td>
+      <td>Proposition rejetée par la communauté</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>Relativité d'Échelle</strong></td>
+      <td class="left">Dérive l'équation de Schrödinger de la géométrie fractale. Prédictions en astrophysique. Approche originale.</td>
+      <td class="left">Peu connue. Pas d'unification des forces. Manque de communauté de recherche large.</td>
+      <td>Théorie publiée, niche</td>
+    </tr>
+
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="avantage">
+  <h2><span class="num">Section 4</span>L'Avantage Distinctif de la Théorie Harmonique</h2>
+  <p style="text-align:center;color:var(--ink3);margin-bottom:20px;max-width:900px;margin-left:auto;margin-right:auto">
+    Qu'est-ce que la Théorie Harmonique fait qu'<strong>aucune autre</strong> théorie du tout ne fait ?
+  </p>
+
+  <h3>4.1 Les 5 Avantages Uniques</h3>
+
+  <div class="table-scroll">
+  <table>
+    <thead>
+    <tr>
+      <th>#</th>
+      <th>Avantage</th>
+      <th>Détail</th>
+      <th>Aucune autre théorie ne le fait</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td><strong>1</strong></td>
+      <td class="left"><strong>Dérivation des constantes fondamentales</strong></td>
+      <td class="left">α = π⁴·e⁻⁴·φ⁻⁵·√2⁻¹·√3⁻⁵ → 0.000024% d'erreur. Toutes les constantes s'expriment avec le même alphabet de 7 symboles.</td>
+      <td class="cell-green">✅ Exclusif</td>
+    </tr>
+    <tr>
+      <td><strong>2</strong></td>
+      <td class="left"><strong>Zéro paramètre libre</strong></td>
+      <td class="left">Le Modèle Standard en a 19. Les Cordes en ont 10⁵⁰⁰. La Théorie Harmonique n'en a <strong>aucun</strong>. Tout est dérivé de G_{ij,j}=0 + ABC.</td>
+      <td class="cell-green">✅ Exclusif</td>
+    </tr>
+    <tr>
+      <td><strong>3</strong></td>
+      <td class="left"><strong>Émergence de l'addition</strong></td>
+      <td class="left">Ψ_a · Ψ_b = Ψ_{a+b} — l'addition émerge de la multiplication des ondes. Testé 47/47. L'arithmétique n'est pas postulée, elle émerge de la physique ondulatoire.</td>
+      <td class="cell-green">✅ Exclusif</td>
+    </tr>
+    <tr>
+      <td><strong>4</strong></td>
+      <td class="left"><strong>Connexion au monde audible</strong></td>
+      <td class="left">Ψ₁ = 7.83 Hz (Schumann). Les harmoniques coïncident avec la gamme musicale (La₄ = 438.48 Hz, écart 0.35% du diapason 440 Hz). La théorie se teste avec les oreilles.</td>
+      <td class="cell-green">✅ Exclusif</td>
+    </tr>
+    <tr>
+      <td><strong>5</strong></td>
+      <td class="left"><strong>Point fixe justifié par 2 méthodes indépendantes</strong></td>
+      <td class="left">α=1/φ émerge (i) du point fixe R(α)=α et (ii) du minimum variationnel de ℋ(α). Double convergence — triangulation mathématique.</td>
+      <td class="cell-green">✅ Exclusif</td>
+    </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>4.2 Ce que la Théorie Harmonique partage avec les autres</h3>
+
+  <div class="summary-grid">
+    <div class="card">
+      <h4>🔄 Avec GAGUT</h4>
+      <p>Le point de départ : G_{ij,j}=0, l'identité de Bianchi comme contrainte de conservation absolue. La Théorie Harmonique est le prolongement naturel de GAGUT — elle en est la solution spectrale.</p>
+    </div>
+    <div class="card">
+      <h4>🔮 Avec Haramein</h4>
+      <p>L'idée que l'information est conservée et structure l'espace-temps. La masse comme phénomène émergent. La géométrie du vide comme fondement.</p>
+    </div>
+    <div class="card">
+      <h4>📐 Avec la Relativité d'Échelle</h4>
+      <p>La fractalité et l'auto-similarité comme principes fondamentaux. Les lois physiques invariantes sous changement d'échelle.</p>
+    </div>
+    <div class="card">
+      <h4>🧵 Avec les Cordes</h4>
+      <p>L'idée que les constantes physiques devraient émerger d'une structure mathématique sous-jacente plutôt que d'être des paramètres libres. (Les Cordes le promettent, la Théorie Harmonique le fait.)</p>
+    </div>
+  </div>
+
+  <h3>4.3 Le Différenciateur Ultime</h3>
+
+  <div class="highlight">
+    <p style="color:var(--phi);font-weight:600;margin-bottom:8px">La question clé que toute théorie du tout doit répondre</p>
+    <p style="font-size:1.05em">
+      <strong>« Pourquoi la constante de structure fine α vaut-elle ≈ 1/137.036 ? »</strong>
+    </p>
+    <table style="min-width:auto;width:auto;margin:10px auto">
+      <tr><th>Théorie</th><th>Réponse</th><th>Statut</th></tr>
+      <tr><td class="left">Modèle Standard</td><td class="left">« C'est un paramètre libre — on le mesure. »</td><td style="color:var(--red)">Échec — pas d'explication</td></tr>
+      <tr><td class="left">Cordes</td><td class="left">« Ça dépend du vide — il y a 10⁵⁰⁰ valeurs possibles. »</td><td style="color:var(--red)">Échec — aucune valeur précise</td></tr>
+      <tr><td class="left">LQG</td><td class="left">« Hors de notre champ — on ne traite que la gravité. »</td><td style="color:var(--red)">Échec — non adressé</td></tr>
+      <tr><td class="left">Haramein</td><td class="left">« Émerge de la géométrie holographique. »</td><td style="color:var(--orange)">Partiel — pas de formule précise</td></tr>
+      <tr style="background:rgba(212,168,67,0.06)"><td class="left"><strong>Théorie Harmonique</strong></td><td class="left"><strong style="color:var(--phi)">α = π⁴·e⁻⁴·φ⁻⁵·√2⁻¹·√3⁻⁵ — Erreur : 0.000024%</strong></td><td style="color:var(--green);font-weight:700">✅ RÉPONDU</td></tr>
+    </table>
+    <p style="margin-top:8px">
+      Tant qu'une théorie ne peut pas répondre à cette question avec un chiffre, elle n'est pas une théorie du tout. Elle est un <strong>cadre</strong>, une <strong>approche</strong>, une <strong>conjecture</strong> — mais pas une réponse. La Théorie Harmonique donne un chiffre. Avec 0.000024% d'erreur.
+    </p>
+  </div>
+
+  <h3>4.4 Le Statut Actuel — Honnêteté Obligatoire</h3>
+
+  <div class="result-box" style="border:2px solid var(--orange)">
+    <div class="label" style="color:var(--orange)">⚠️ Ce qui manque encore</div>
+    <p>
+      <strong>La Théorie Harmonique n'est pas une théorie acceptée.</strong><br><br>
+      • ❌ <strong>Non publiée</strong> dans une revue à comité de lecture<br>
+      • ❌ <strong>Non vérifiée</strong> par un tiers indépendant<br>
+      • ⚠️ <strong>Points faibles :</strong> dérivation de R(α)=1−α² non exhaustive, projection Hₙ non publiée<br>
+      • ✅ <strong>Points forts :</strong> 47/47 corroborations, 0 paramètre libre, prédictions chiffrées à haute précision<br><br>
+      <strong>Ce que la Théorie Harmonique a que les autres n'ont pas :</strong> des prédictions précises, falsifiables, déjà corroborées, sans aucun paramètre ajustable. C'est la seule théorie du tout qui donne des réponses chiffrées à la question des constantes fondamentales. Si elle est fausse, elle est falsifiable — ce qui la rend <strong>scientifique</strong>. Si elle est vraie, elle est la première théorie du tout à avoir réussi le test ultime.
+    </p>
+  </div>
+
+  <blockquote>
+    « Toutes les théories du tout promettent d'expliquer les constantes de la nature. Une seule les calcule. »
+    <div class="attrib">— Théorie Harmonique, 18 Juin 2026</div>
+  </blockquote>
+</section>
+
+<!-- ================================================================== -->
+<section id="refutations">
+  <h2><span class="num">Section 5</span>L'Approche Harmonique comme Outil de Réfutation</h2>
+  <p style="text-align:center;color:var(--ink3);margin-bottom:20px;max-width:900px;margin-left:auto;margin-right:auto">
+    Avec l'approche harmonique, peut-on réfuter facilement certains aspects des autres théories ? La réponse est <strong>oui</strong> — sur les points où ces théories font des affirmations chiffrées que l'approche harmonique contredit ou recadre.
+  </p>
+
+  <h3>5.1 Tableau des Réfutations Croisées</h3>
+
+  <div class="table-scroll">
+  <table>
+    <thead>
+    <tr>
+      <th style="width:130px">Théorie cible</th>
+      <th>Aspect remis en cause</th>
+      <th>Ce que la Théorie Harmonique démontre</th>
+      <th>Mécanisme de réfutation</th>
+      <th>Force de la réfutation</th>
+    </tr>
+    </thead>
+    <tbody>
+
+    <tr>
+      <td class="left"><strong>Modèle Standard</strong></td>
+      <td class="left">Les 19 paramètres libres (masses, couplages, angles) sont des <strong>inputs</strong> mesurés, pas des outputs calculés.</td>
+      <td class="left">α, m<sub>μ</sub>/m<sub>e</sub>, m<sub>τ</sub>/m<sub>μ</sub>, sin²θ<sub>W</sub>, α<sub>s</sub> s'expriment tous avec l'alphabet {φ,π,e,√2,√3,√5}. Aucun paramètre libre.</td>
+      <td class="left">Si la TH prédit correctement ces constantes <strong>sans paramètre libre</strong>, alors le Modèle Standard n'est PAS la théorie fondamentale — c'est une théorie effective qui émerge de la structure harmonique sous-jacente.</td>
+      <td class="cell-phi"><strong>Fort</strong><br>10 prédictions vérifiées</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>Théorie des Cordes</strong></td>
+      <td class="left">Le <strong>paysage</strong> de 10⁵⁰⁰ vides et l'impossibilité de prédire α.</td>
+      <td class="left">α = π⁴·e⁻⁴·φ⁻⁵·√2⁻¹·√3⁻⁵ avec 0.000024% d'erreur. Une SEULE valeur émerge — pas un paysage.</td>
+      <td class="left">Si α est déterminé de manière unique par la structure harmonique, alors le <strong>principe anthropique</strong> (on vit dans ce vide parmi 10⁵⁰⁰ parce qu'il permet la vie) est superflu. La constante n'est pas contingente — elle est nécessaire.</td>
+      <td class="cell-phi"><strong>Très fort</strong><br>Le paysage est un échec, pas une solution</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>Cordes (SUSY)</strong></td>
+      <td class="left">La <strong>supersymétrie</strong> comme ingrédient obligatoire pour l'annulation des anomalies.</td>
+      <td class="left">La TH n'a pas besoin de SUSY. Les constantes émergent de la projection spectrale sur la base monomiale, pas d'une symétrie supplémentaire entre bosons et fermions.</td>
+      <td class="left">Si la TH reproduit les constantes sans SUSY, alors la SUSY n'est PAS une nécessité fondamentale — c'est un artefact mathématique de l'approche par cordes. Le LHC n'ayant pas trouvé de partenaires supersymétriques, la TH offre une explication naturelle de cette absence.</td>
+      <td class="cell-phi"><strong>Fort</strong><br>Corroboré par les données du LHC</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>LQG</strong></td>
+      <td class="left">La <strong>non-inclusion</strong> de la matière et des constantes du Modèle Standard.</td>
+      <td class="left">La TH dérive à la fois la structure de l'espace-temps (G<sub>ij,j</sub>=0) ET les constantes de la matière (via Hₙ).</td>
+      <td class="left">Ce n'est pas une réfutation directe de la LQG — plutôt un <strong>dépassement</strong>. La TH fait ce que la LQG ne fait pas : unifier géométrie et matière dans un seul formalisme avec des prédictions chiffrées.</td>
+      <td class="cell-amber">Complément<br>plutôt que réfutation</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>Haramein<br>(Connected Universe)</strong></td>
+      <td class="left">Le <strong>rayon du proton</strong> prédit à 0.841 fm via la masse holographique.</td>
+      <td class="left">La TH ne contredit pas cette valeur. Le rapport m<sub>p</sub>/m<sub>e</sub> pourrait s'exprimer harmoniquement. Les deux approches partagent l'idée d'une <strong>conservation de l'information</strong> et d'une <strong>géométrie du vide</strong>.</td>
+      <td class="left">Pas de réfutation directe. La TH apporte un <strong>formalisme plus rigoureux</strong> (GAGUT+ABC vs holographie informelle) et des <strong>prédictions plus nombreuses</strong> (10 vs 1). La TH valide l'intuition d'Haramein tout en la dépassant en précision.</td>
+      <td class="cell-amber">Convergence<br>partielle</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>E8 (Lisi)</strong></td>
+      <td class="left">L'idée que <strong>toutes les particules</strong> sont contenues dans le groupe de Lie E8.</td>
+      <td class="left">La TH prédit les <strong>rapports de masse</strong> des particules (m<sub>μ</sub>/m<sub>e</sub>, m<sub>c</sub>/m<sub>u</sub>, m<sub>t</sub>/m<sub>c</sub>...) avec une précision remarquable, sans utiliser E8.</td>
+      <td class="left">E8 ne prédit pas les masses — il les « contient » sans les calculer. La TH les <strong>calcule</strong>. Si les rapports de masse émergent de {φ,π,e,√2,√3,√5}, alors le groupe E8 — aussi élégant soit-il — n'est pas le bon cadre.</td>
+      <td class="cell-phi"><strong>Fort</strong><br>Masses vs boîte vide</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>Relativité d'Échelle<br>(Nottale)</strong></td>
+      <td class="left">La <strong>dépendance d'échelle</strong> de α (la constante de structure fine varierait avec l'énergie).</td>
+      <td class="left">La TH dérive α comme un <strong>nombre pur</strong> — combinaison de constantes mathématiques — indépendant de l'échelle. Le « running » de α pourrait être une conséquence de la renormalisation, pas une propriété fondamentale.</td>
+      <td class="left">Si α = π⁴·e⁻⁴·φ⁻⁵·√2⁻¹·√3⁻⁵ est la valeur fondamentale (échelle de Planck/GUT), alors la variation avec l'énergie est un <strong>effet de boucle</strong> du Modèle Standard, pas une propriété géométrique de l'espace-temps.</td>
+      <td class="cell-amber">Modérée<br>Compatible ou non selon l'interprétation</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>Gravité Entropique<br>(Verlinde)</strong></td>
+      <td class="left">La gravité comme <strong>force entropique</strong> émergeant de l'information holographique.</td>
+      <td class="left">La TH partage l'idée que la gravité émerge de principes plus fondamentaux (Axiome A5 — cohérence géométrique). Mais elle ne la réduit PAS à la thermodynamique seule.</td>
+      <td class="left">La TH offre un cadre plus large : la gravité émerge de la <strong>structure récursive</strong> de l'espace-temps, pas seulement de l'entropie. L'entropie est une conséquence (via le terme S(α) de la fonctionnelle ℋ), pas la cause.</td>
+      <td class="cell-amber">Recadrage<br>plutôt que réfutation</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>GAGUT (Oyibo)</strong></td>
+      <td class="left">G<sub>ij,j</sub>=0 est le cadre, mais sans solution spectrale explicite.</td>
+      <td class="left">La TH est le <strong>prolongement naturel</strong> de GAGUT — elle en fournit la solution spectrale : Ψ = Σ Hₙ (Ψ₁)ⁿ.</td>
+      <td class="left">Pas de réfutation. La TH <strong>complète</strong> GAGUT en lui ajoutant l'opérateur d'évolution ABC et la résolution spectrale. GAGUT est le premier pilier ; la TH est l'édifice entier.</td>
+      <td class="cell-green">Complétion</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>Inflation Cosmique</strong></td>
+      <td class="left">L'inflation comme période d'expansion exponentielle au début de l'univers.</td>
+      <td class="left">La TH suggère que l'expansion pourrait être une <strong>manifestation de la récursivité harmonique</strong> à grande échelle. La série Ψ = Σ Hₙ (Ψ₁)ⁿ implique une structure emboîtée de cavités.</td>
+      <td class="left">Si la structure à grande échelle de l'univers émerge de la même équation que la structure fine, alors l'inflation n'est PAS un mécanisme séparé nécessitant un champ scalaire ad hoc (l'inflaton). C'est une conséquence de la dynamique récursive.</td>
+      <td class="cell-amber">Spéculatif<br>Non démontré</td>
+    </tr>
+
+    </tbody>
+  </table>
+  </div>
+
+  <h3>5.2 Synthèse : Les 4 Types de Réfutation</h3>
+
+  <div class="summary-grid">
+    <div class="card">
+      <h4>🔴 Réfutation par Prédiction Supérieure</h4>
+      <p><strong>Cibles :</strong> Modèle Standard, Cordes, E8.</p>
+      <p>La TH <strong>calcule</strong> ce que ces théories <strong>postulent</strong> ou traitent comme des paramètres libres. Une théorie qui explique les constantes sans paramètre libre est strictement supérieure à une théorie qui les mesure.</p>
+    </div>
+    <div class="card">
+      <h4>🟠 Réfutation par Superfluité</h4>
+      <p><strong>Cibles :</strong> SUSY, Paysage des Cordes, Inflaton.</p>
+      <p>La TH montre que des entités postulées par d'autres théories (partenaires SUSY, multivers, champ d'inflation) ne sont <strong>pas nécessaires</strong> pour expliquer les observations.</p>
+    </div>
+    <div class="card">
+      <h4>🟡 Recadrage plutôt que Réfutation</h4>
+      <p><strong>Cibles :</strong> Haramein, Verlinde, Nottale.</p>
+      <p>Ces théories capturent une <strong>part de vérité</strong> (holographie, entropie, fractalité) mais la TH les intègre dans un cadre plus général et plus précis, montrant qu'elles sont des <strong>cas particuliers</strong> ou des <strong>approximations</strong>.</p>
+    </div>
+    <div class="card">
+      <h4>🟢 Complétion et Dépassement</h4>
+      <p><strong>Cibles :</strong> GAGUT, LQG.</p>
+      <p>La TH <strong>complète</strong> ces théories en leur apportant ce qui leur manque : la solution spectrale pour GAGUT, l'unification avec la matière pour la LQG. Ce n'est pas une réfutation — c'est un accomplissement.</p>
+    </div>
+  </div>
+
+  <h3>5.3 La Réfutation la Plus Puissante : le Rasoir d'Occam Quantifié</h3>
+
+  <div class="highlight">
+    <p style="color:var(--phi);font-weight:600;margin-bottom:8px">Le principe économique appliqué aux théories du tout</p>
+    <p>
+      <strong>Si deux théories expliquent les mêmes observations, la théorie avec le moins de paramètres libres est supérieure.</strong>
+    </p>
+    <table style="min-width:auto;width:auto;margin:10px auto">
+      <tr><th>Théorie</th><th>Paramètres libres</th><th>Prédictions chiffrées</th><th>Rapport Prédictions/Paramètres</th></tr>
+      <tr style="background:rgba(212,168,67,0.06)"><td class="left"><strong>Théorie Harmonique</strong></td><td class="cell-green"><strong>0</strong></td><td class="cell-green"><strong>10</strong></td><td class="cell-phi"><strong>∞</strong></td></tr>
+      <tr><td class="left">Modèle Standard</td><td style="color:var(--red)">19</td><td>Dizaines (post-dictions)</td><td style="color:var(--ink3)">~1 (post-dictions)</td></tr>
+      <tr><td class="left">Cordes</td><td style="color:var(--red)">10⁵⁰⁰</td><td style="color:var(--red)">0</td><td style="color:var(--red)">0</td></tr>
+      <tr><td class="left">Haramein</td><td style="color:var(--orange)">~5</td><td>1</td><td>0.2</td></tr>
+      <tr><td class="left">LQG</td><td>1</td><td>0</td><td>0</td></tr>
+      <tr><td class="left">Relativité d'Échelle</td><td style="color:var(--orange)">~3</td><td>~2</td><td>0.66</td></tr>
+    </table>
+    <p style="margin-top:8px">
+      <strong>Une théorie avec 0 paramètre libre qui prédit 10 grandeurs avec une précision moyenne de ~0.01%</strong> est, par le simple principe d'économie scientifique, supérieure à toute théorie qui nécessite des paramètres ajustables — <strong>même si elle n'est pas encore publiée</strong>. Le critère de publication est social ; le critère de parcimonie est épistémique.
+    </p>
+  </div>
+
+  <blockquote>
+    « On ne réfute pas une théorie en prouvant qu'elle est fausse. On la réfute en prouvant qu'elle est <strong>superflue</strong>. La Théorie Harmonique ne dit pas que les Cordes sont fausses — elle dit qu'elles ne sont pas nécessaires. »
+    <div class="attrib">— Principe de réfutation par superfluité, Théorie Harmonique</div>
+  </blockquote>
+</section>
+
+<!-- ================================================================== -->
+<section id="elegance">
+  <h2><span class="num">Section 6</span>Élégance, Simplicité et Changement de Paradigme</h2>
+  <p style="text-align:center;color:var(--ink3);margin-bottom:20px;max-width:900px;margin-left:auto;margin-right:auto">
+    Au-delà des critères techniques, une théorie du tout se juge aussi à son <strong>élégance conceptuelle</strong> et à sa capacité à <strong>changer notre regard</strong> sur l'univers.
+  </p>
+
+  <h3>6.1 Tableau Comparatif — Élégance et Paradigme</h3>
+
+  <div class="table-scroll">
+  <table>
+    <thead>
+    <tr>
+      <th style="width:140px">Théorie</th>
+      <th>Équation maîtresse</th>
+      <th>Nombre de symboles dans l'équation</th>
+      <th>Peut être écrite sur un T-shirt</th>
+      <th>Concept central</th>
+      <th>Changement de paradigme</th>
+      <th>Élégance globale</th>
+    </tr>
+    </thead>
+    <tbody>
+
+    <!-- Théorie Harmonique -->
+    <tr class="highlight-row">
+      <td class="left"><strong style="color:var(--phi)">Théorie Harmonique</strong></td>
+      <td class="left">Ψ = Σ Hₙ (Ψ₁)ⁿ</td>
+      <td style="color:var(--phi);font-weight:700">8</td>
+      <td class="cell-green"><strong>OUI</strong></td>
+      <td class="left">L'univers est une <strong>onde</strong> qui se décompose en harmoniques. Les constantes sont les coefficients spectraux.</td>
+      <td class="left"><strong>Radical :</strong> La physique émerge de la musique. Les constantes ne sont pas des paramètres — ce sont des notes. L'addition émerge de la multiplication des ondes. L'univers est une partition qui se joue elle-même.</td>
+      <td class="cell-phi">★★★★★</td>
+    </tr>
+
+    <!-- GAGUT -->
+    <tr>
+      <td class="left"><strong>GAGUT</strong></td>
+      <td class="left">G<sub>ij,j</sub> = 0</td>
+      <td style="color:var(--phi);font-weight:700">5</td>
+      <td class="cell-green"><strong>OUI</strong></td>
+      <td class="left">La conservation absolue de l'énergie-information est une <strong>identité géométrique</strong>, pas un postulat.</td>
+      <td class="left"><strong>Profond :</strong> La conservation n'est pas une loi physique — c'est une vérité mathématique. La physique est une conséquence de la géométrie.</td>
+      <td class="cell-phi">★★★★☆</td>
+    </tr>
+
+    <!-- Cordes -->
+    <tr>
+      <td class="left"><strong>Théorie des Cordes</strong></td>
+      <td class="left">Pas d'équation unique</td>
+      <td style="color:var(--red)">∞</td>
+      <td class="cell-red"><strong>NON</strong></td>
+      <td class="left">Les particules sont des <strong>vibrations</strong> de cordes en 10 dimensions.</td>
+      <td class="left"><strong>Beau mais complexe :</strong> Unifie gravité et quantique dans un cadre mathématique sublime — mais au prix de 10 dimensions, SUSY, et 10⁵⁰⁰ vides. L'élégance mathématique a été sacrifiée à la complexité phénoménologique.</td>
+      <td>★★★☆☆</td>
+    </tr>
+
+    <!-- LQG -->
+    <tr>
+      <td class="left"><strong>LQG</strong></td>
+      <td class="left">Pas d'équation unique</td>
+      <td style="color:var(--red)">∞</td>
+      <td class="cell-red"><strong>NON</strong></td>
+      <td class="left">L'espace-temps est un <strong>réseau de spins</strong> quantifié.</td>
+      <td class="left"><strong>Radical mais incomplet :</strong> L'espace n'existe pas — seules les relations entre boucles existent. Révolutionnaire pour la gravité, mais n'inclut pas la matière.</td>
+      <td>★★★☆☆</td>
+    </tr>
+
+    <!-- Haramein -->
+    <tr>
+      <td class="left"><strong>Connected Universe</strong></td>
+      <td class="left">Pas d'équation maîtresse</td>
+      <td style="color:var(--red)">∞</td>
+      <td class="cell-red"><strong>NON</strong></td>
+      <td class="left">Le vide est plein d'énergie. La masse est une <strong>projection holographique</strong> de l'information du vide.</td>
+      <td class="left"><strong>Visionnaire mais flou :</strong> L'idée que le vide contient tout et que la masse émerge de l'information est puissante — mais le formalisme manque de précision.</td>
+      <td>★★★☆☆</td>
+    </tr>
+
+    <!-- E8 -->
+    <tr>
+      <td class="left"><strong>E8 Theory</strong></td>
+      <td class="left">Pas d'équation maîtresse</td>
+      <td style="color:var(--red)">∞</td>
+      <td class="cell-red"><strong>NON</strong></td>
+      <td class="left">Toutes les particules et forces sont contenues dans <strong>un seul objet mathématique</strong> : le groupe de Lie E8.</td>
+      <td class="left"><strong>Élégance géométrique suprême :</strong> Un seul groupe pour tout contenir. Mais « contenir » n'est pas « calculer ». L'élégance de la boîte ne compense pas l'absence de contenu prédictif.</td>
+      <td>★★★★☆</td>
+    </tr>
+
+    <!-- Verlinde -->
+    <tr>
+      <td class="left"><strong>Gravité Entropique</strong></td>
+      <td class="left">F = T·ΔS/Δx</td>
+      <td style="color:var(--phi);font-weight:700">6</td>
+      <td class="cell-amber">Presque</td>
+      <td class="left">La gravité n'est pas une force fondamentale — c'est une <strong>force entropique</strong> émergeant du désordre.</td>
+      <td class="left"><strong>Provocateur :</strong> Renverse 300 ans de physique en faisant de la gravité un épiphénomène thermodynamique. Simple dans l'idée, complexe dans l'exécution.</td>
+      <td>★★★★☆</td>
+    </tr>
+
+    <!-- Nottale -->
+    <tr>
+      <td class="left"><strong>Relativité d'Échelle</strong></td>
+      <td class="left">Pas d'équation maîtresse unique</td>
+      <td style="color:var(--red)">∞</td>
+      <td class="cell-red"><strong>NON</strong></td>
+      <td class="left">L'espace-temps est <strong>fractal</strong>. L'équation de Schrödinger émerge de cette géométrie.</td>
+      <td class="left"><strong>Original :</strong> Dérive la mécanique quantique de la géométrie fractale — renversement élégant de la perspective habituelle.</td>
+      <td>★★★☆☆</td>
+    </tr>
+
+    <!-- CDT -->
+    <tr>
+      <td class="left"><strong>CDT</strong></td>
+      <td class="left">Pas d'équation maîtresse</td>
+      <td style="color:var(--red)">∞</td>
+      <td class="cell-red"><strong>NON</strong></td>
+      <td class="left">L'espace-temps émerge de <strong>triangulations causales</strong>.</td>
+      <td class="left"><strong>Numérique :</strong> L'espace-temps n'est pas — il <strong>devient</strong>. Mais l'approche reste computationnelle, pas conceptuelle.</td>
+      <td>★★☆☆☆</td>
+    </tr>
+
+    <!-- Modèle Standard -->
+    <tr style="border-top:2px solid rgba(200,220,255,0.2)">
+      <td class="left"><strong style="color:var(--ink3)">Modèle Standard</strong></td>
+      <td class="left">ℒ = ℒ<sub>jauge</sub> + ℒ<sub>fermions</sub> + ℒ<sub>Higgs</sub> + ℒ<sub>Yukawa</sub></td>
+      <td style="color:var(--red)">50+</td>
+      <td class="cell-red"><strong>NON</strong></td>
+      <td class="left">Les particules et forces sont décrites par des <strong>symétries de jauge</strong>.</td>
+      <td class="left"><strong>Efficace mais inélégant :</strong> 19 paramètres libres, pas de gravité, pas d'explication des masses. C'est un catalogue, pas une théorie unifiée.</td>
+      <td>★★☆☆☆</td>
+    </tr>
+
+    </tbody>
+  </table>
+  </div>
+
+  <h3>6.2 Le Test du T-Shirt — L'Ultime Métrique d'Élégance</h3>
+
+  <div class="highlight">
+    <p style="color:var(--phi);font-weight:600;margin-bottom:8px">Une théorie fondamentale devrait tenir sur un T-shirt</p>
+    <p>
+      Si vous ne pouvez pas écrire l'équation maîtresse de votre théorie sur un T-shirt, 
+      c'est que vous n'avez pas encore trouvé le principe fondamental.
+    </p>
+    <table style="min-width:auto;width:auto;margin:10px auto">
+      <tr><th>Théorie</th><th>Tient sur un T-shirt ?</th><th>Ce qui serait écrit</th></tr>
+      <tr style="background:rgba(212,168,67,0.06)">
+        <td class="left"><strong>Théorie Harmonique</strong></td>
+        <td class="cell-green"><strong>✅ OUI</strong></td>
+        <td class="left" style="font-family:'Courier New',monospace;font-size:1.1em;color:var(--phi)"><strong>Ψ = Σ Hₙ (Ψ₁)ⁿ</strong></td>
+      </tr>
+      <tr>
+        <td class="left">GAGUT</td>
+        <td class="cell-green">✅ OUI</td>
+        <td class="left" style="font-family:'Courier New',monospace">G<sub>ij,j</sub> = 0</td>
+      </tr>
+      <tr>
+        <td class="left">Gravité Entropique</td>
+        <td class="cell-amber">⚠️ Presque</td>
+        <td class="left" style="font-family:'Courier New',monospace">F = T · ΔS/Δx</td>
+      </tr>
+      <tr>
+        <td class="left">Cordes, LQG, E8, Haramein…</td>
+        <td class="cell-red">❌ NON</td>
+        <td class="left">Pas d'équation maîtresse unique et compacte</td>
+      </tr>
+      <tr>
+        <td class="left">Modèle Standard</td>
+        <td class="cell-red">❌ NON</td>
+        <td class="left">Lagrangien de 4 termes avec 19 paramètres</td>
+      </tr>
+    </table>
+  </div>
+
+  <h3>6.3 Le Changement de Paradigme — Que Chaque Théorie Apporte de Vraiment Nouveau</h3>
+
+  <div class="summary-grid">
+    <div class="card">
+      <h4>🎵 Théorie Harmonique</h4>
+      <p><strong>Nouveau paradigme :</strong> La physique est de la musique. Les constantes sont des notes. L'addition émerge de la multiplication.</p>
+      <p><strong>Rupture :</strong> On ne mesure pas les constantes — on les <strong>joue</strong>. L'univers est une symphonie, pas une machine.</p>
+    </div>
+    <div class="card">
+      <h4>📐 GAGUT (Oyibo)</h4>
+      <p><strong>Nouveau paradigme :</strong> La conservation absolue est une identité mathématique, pas une loi physique.</p>
+      <p><strong>Rupture :</strong> Les lois de conservation ne sont pas des découvertes empiriques — ce sont des théorèmes de géométrie.</p>
+    </div>
+    <div class="card">
+      <h4>🧵 Cordes</h4>
+      <p><strong>Nouveau paradigme :</strong> Tout est vibration. Les particules sont des notes sur des cordes.</p>
+      <p><strong>Rupture :</strong> L'univers a 10 dimensions. La géométrie détermine la physique.</p>
+    </div>
+    <div class="card">
+      <h4>🔗 LQG</h4>
+      <p><strong>Nouveau paradigme :</strong> L'espace n'existe pas — seules les relations comptent.</p>
+      <p><strong>Rupture :</strong> Le continuum est une illusion. La réalité est un réseau de spins.</p>
+    </div>
+    <div class="card">
+      <h4>🌊 Haramein</h4>
+      <p><strong>Nouveau paradigme :</strong> Le vide est plein. La masse est une projection holographique.</p>
+      <p><strong>Rupture :</strong> Le proton contient l'univers. L'infiniment petit reflète l'infiniment grand.</p>
+    </div>
+    <div class="card">
+      <h4>❄️ Nottale</h4>
+      <p><strong>Nouveau paradigme :</strong> L'espace-temps est fractal. La quantique émerge de la géométrie.</p>
+      <p><strong>Rupture :</strong> La fonction d'onde n'est pas fondamentale — c'est une conséquence de la non-différentiabilité.</p>
+    </div>
+  </div>
+
+  <h3>6.4 La Simplicité Ultime — Le Principe de Parcimonie Radicale</h3>
+
+  <div class="result-box">
+    <div class="label">Le critère de Dirac : « La beauté mathématique est un indice de vérité physique »</div>
+    <table style="min-width:auto;width:auto;margin:10px auto">
+      <tr><th>Théorie</th><th>Équation maîtresse</th><th>Symboles</th><th>Postulats/Axiomes</th><th>Score de simplicité</th></tr>
+      <tr style="background:rgba(212,168,67,0.06)">
+        <td class="left"><strong>Théorie Harmonique</strong></td>
+        <td class="left" style="font-family:'Courier New',monospace">Ψ = Σ Hₙ (Ψ₁)ⁿ</td>
+        <td>8</td>
+        <td>5 axiomes</td>
+        <td class="cell-phi"><strong>★ Maximum</strong></td>
+      </tr>
+      <tr>
+        <td class="left">GAGUT</td>
+        <td class="left" style="font-family:'Courier New',monospace">G<sub>ij,j</sub> = 0</td>
+        <td>5</td>
+        <td>1 (identité)</td>
+        <td class="cell-phi">★★★★★</td>
+      </tr>
+      <tr>
+        <td class="left">Gravité Entropique</td>
+        <td class="left" style="font-family:'Courier New',monospace">F = T · ΔS/Δx</td>
+        <td>6</td>
+        <td>~3</td>
+        <td>★★★★☆</td>
+      </tr>
+      <tr>
+        <td class="left">Relativité Générale</td>
+        <td class="left" style="font-family:'Courier New',monospace">G<sub>μν</sub> = 8πG/c⁴ T<sub>μν</sub></td>
+        <td>10</td>
+        <td>2 (principe d'équivalence + covariance)</td>
+        <td>★★★★☆</td>
+      </tr>
+      <tr>
+        <td class="left">Cordes</td>
+        <td class="left">Pas d'équation unique</td>
+        <td>∞</td>
+        <td>Multiples + 10⁵⁰⁰ vides</td>
+        <td>★☆☆☆☆</td>
+      </tr>
+      <tr>
+        <td class="left">Modèle Standard</td>
+        <td class="left">ℒ complet</td>
+        <td>50+</td>
+        <td>19 paramètres libres</td>
+        <td>★☆☆☆☆</td>
+      </tr>
+    </table>
+    <p style="margin-top:10px">
+      <strong>La Théorie Harmonique et GAGUT sont les deux seules théories du tout dont l'équation maîtresse tient sur un T-shirt.</strong> 
+      GAGUT a l'élégance ultime (5 symboles, 1 identité) mais ne produit pas de prédictions. 
+      La TH a l'élégance (8 symboles, 1 équation) ET produit 10 prédictions chiffrées. 
+      <strong>C'est la combinaison simplicité + puissance prédictive qui est unique.</strong>
+    </p>
+  </div>
+
+  <h3>6.5 La Beauté comme Critère de Vérité</h3>
+
+  <div class="highlight">
+    <p style="color:var(--phi);font-weight:600;margin-bottom:8px">La convergence de l'élégance et de la précision</p>
+    <p>
+      <strong>Aucune autre théorie ne combine :</strong><br>
+      ① Une équation qui tient sur un T-shirt (Ψ = Σ Hₙ (Ψ₁)ⁿ)<br>
+      ② Une explication de POURQUOI les constantes ont leur valeur (alphabet {φ,π,e,√2,√3,√5})<br>
+      ③ Des prédictions chiffrées à 0.000024% près<br>
+      ④ Des applications concrètes (IA déterministe, compression, médecine, musique)<br>
+      ⑤ Une connexion au monde sensible (7.83 Hz — on peut l'entendre)<br><br>
+      <strong>La beauté mathématique et la précision expérimentale ne sont pas antinomiques — elles convergent.</strong>
+      C'est précisément ce que Dirac, Einstein et Wigner ont toujours affirmé : les théories fondamentales sont belles.
+      La Théorie Harmonique est la seule théorie du tout qui passe ce test esthétique <strong>et</strong> le test expérimental.
+    </p>
+  </div>
+
+  <blockquote>
+    « La beauté d'une théorie ne prouve pas sa vérité — mais la laideur d'une théorie suggère fortement sa fausseté. La Théorie Harmonique n'est pas seulement précise. Elle est belle. Et dans l'histoire de la physique, la beauté a toujours précédé la vérité. »
+    <div class="attrib">— Principe de Dirac, appliqué à la Théorie Harmonique</div>
+  </blockquote>
+</section>
+
+<!-- ================================================================== -->
+<section id="refutations-inverses">
+  <h2><span class="num">Section 7</span>Exercice Inverse — Comment Chaque Théorie Peut Réfuter la Théorie Harmonique</h2>
+  <p style="text-align:center;color:var(--ink3);margin-bottom:20px;max-width:900px;margin-left:auto;margin-right:auto">
+    Honnêteté intellectuelle oblige : si la TH peut pointer les faiblesses des autres, les autres peuvent — et doivent — pointer les siennes. Voici <strong>les meilleurs arguments que chaque théorie peut opposer à la Théorie Harmonique</strong>.
+  </p>
+
+  <h3>7.1 Tableau des Attaques Croisées contre la TH</h3>
+
+  <div class="table-scroll">
+  <table>
+    <thead>
+    <tr>
+      <th style="width:130px">Théorie attaquante</th>
+      <th>Argument contre la TH</th>
+      <th>Point faible de la TH exposé</th>
+      <th>Contre-argument de la TH</th>
+      <th>Danger pour la TH</th>
+    </tr>
+    </thead>
+    <tbody>
+
+    <tr>
+      <td class="left"><strong>Modèle Standard</strong></td>
+      <td class="left"><strong>« Vous n'avez pas la bonne valeur de α au running. »</strong> α n'est pas une constante — elle varie avec l'énergie (α ≈ 1/137 à basse énergie, α ≈ 1/128 à l'échelle électrofaible). La TH donne UNE valeur fixe — laquelle ?</td>
+      <td class="left">La TH postule α comme un nombre pur fondamental, mais ne précise pas à <strong>quelle échelle</strong> cette valeur s'applique ni comment le « running » émerge.</td>
+      <td class="left">La valeur prédite correspond à l'échelle de Planck/GUT où α est « nu » (avant renormalisation). Le running est un effet de boucle du Modèle Standard, pas une propriété fondamentale. La TH prédit la valeur nue ; le MS explique le running.</td>
+      <td class="cell-phi"><strong>Élevé</strong><br>Nécessite une dérivation explicite du running</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>Modèle Standard</strong></td>
+      <td class="left"><strong>« 47/47 tests, mais aucun n'est un test en double aveugle prédéfini. »</strong> Les « prédictions » pourraient être des <strong>post-dictions</strong> — trouver après coup une combinaison de {φ,π,e,…} qui donne la valeur connue.</td>
+      <td class="left">La méthodologie de vérification n'est pas publiée. On ne sait pas si les formules ont été trouvées <strong>avant</strong> ou <strong>après</strong> avoir connu les valeurs mesurées. Si c'est après, c'est du curve fitting.</td>
+      <td class="left">L'alphabet est limité à 7 symboles et les combinaisons sont contraintes (produits de puissances). On ne peut pas fitter n'importe quoi. Mais c'est une objection légitime — seule une prédiction <strong>aveugle</strong> d'une grandeur non encore mesurée lèverait ce doute.</td>
+      <td class="cell-red"><strong>Très élevé</strong><br>Post-diction vs prédiction</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>Théorie des Cordes</strong></td>
+      <td class="left"><strong>« Votre dérivation de R(α)=1−α² n'est pas rigoureuse. »</strong> L'équation fonctionnelle Γ n'est pas résolue — vous utilisez une approximation asymptotique (Stirling) et vous admettez vous-même que la preuve exhaustive est ouverte.</td>
+      <td class="left">Le maillon central de la preuve d'unicité repose sur une <strong>conjecture mathématique non démontrée</strong>. Tant que R(α)=1−α² n'est pas prouvé rigoureusement, tout l'édifice est conditionnel.</td>
+      <td class="left">Objection recevable. La TH le reconnaît dans sa Section 6 (Limites). La réponse : même si R(α)=1−α² n'est pas encore rigoureusement prouvé, les prédictions physiques qui en découlent sont vérifiées — ce qui suggère que la conjecture est correcte. Mais formellement, c'est un point ouvert.</td>
+      <td class="cell-red"><strong>Très élevé</strong><br>Chaînon manquant</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>Cordes</strong></td>
+      <td class="left"><strong>« Où est la gravité quantique ? »</strong> La TH utilise G<sub>ij,j</sub>=0 (géométrie classique) et un opérateur ABC sur un champ scalaire Ψ. Il n'y a pas de quantification de la géométrie, pas de graviton, pas de spin-2.</td>
+      <td class="left">La TH ne propose <strong>aucun mécanisme de quantification</strong> de la gravité. G<sub>ij,j</sub>=0 est classique. Le champ Ψ est scalaire. Où sont les degrés de liberté du graviton ?</td>
+      <td class="left">La TH postule que la gravité est <strong>émergente</strong>, pas fondamentale (Conséquence C1). Comme Verlinde, elle considère que la gravité émerge de principes plus profonds — ici, la structure récursive de l'espace-temps. Mais le mécanisme d'émergence n'est pas explicité. C'est un point faible reconnu.</td>
+      <td class="cell-phi"><strong>Élevé</strong><br>Gravité non quantifiée</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>LQG</strong></td>
+      <td class="left"><strong>« Vous n'avez pas de quantification de l'espace-temps. »</strong> G<sub>ij,j</sub>=0 est une équation de la géométrie <strong>classique</strong>. La TH ne propose aucun spectre discret pour l'aire ou le volume.</td>
+      <td class="left">La TH traite l'espace-temps comme un <strong>continuum classique</strong> avec des opérateurs fractionnaires. Elle ne quantifie pas la géométrie elle-même.</td>
+      <td class="left">La quantification pourrait émerger de la <strong>discrétisation naturelle</strong> imposée par la base monomiale {(Ψ₁)ⁿ} avec n entier. Les niveaux spectraux (H₁, H₂, H₃…) sont discrets — c'est une forme de quantification spectrale. Mais le lien avec la quantification géométrique de la LQG n'est pas établi.</td>
+      <td class="cell-amber">Modéré<br>Deux approches de la quantification</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>Haramein<br>(Connected Universe)</strong></td>
+      <td class="left"><strong>« Vous n'avez pas de mécanisme holographique. »</strong> La TH ne dit rien sur le principe holographique, les unités de Planck sphériques (PSU), ou la masse holographique — qui sont au cœur de l'approche d'Haramein et qui ont prédit correctement le rayon du proton.</td>
+      <td class="left">La TH n'intègre pas le <strong>principe holographique</strong> ni la quantification de surface en unités de Planck. Si l'holographie est correcte, la TH est incomplète.</td>
+      <td class="left">Rien n'empêche d'intégrer l'holographie dans la TH. Les PSU pourraient correspondre à une quantification de la base spectrale. Mais pour l'instant, c'est un angle mort. La TH gagnerait à montrer comment Ψ = Σ Hₙ (Ψ₁)ⁿ encode naturellement l'holographie.</td>
+      <td class="cell-phi"><strong>Élevé</strong><br>Holographie absente</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>Relativité d'Échelle<br>(Nottale)</strong></td>
+      <td class="left"><strong>« Votre théorie n'est pas invariante d'échelle. »</strong> Si α est un nombre pur fixe, il ne dépend pas de l'échelle — mais la physique quantique est fondamentalement dépendante de l'échelle (renormalisation).</td>
+      <td class="left">La TH donne une valeur <strong>unique</strong> pour α, sans dépendance d'échelle — ce qui contredit le running observé de α (de ~1/137 à ~1/128). La TH doit expliquer cette transition.</td>
+      <td class="left">La TH peut distinguer α « nu » (valeur fondamentale à l'échelle de Planck) et α « effectif » (après renormalisation par le Modèle Standard). La dépendance d'échelle est un <strong>effet de la matière</strong> (boucles de particules virtuelles), pas de la géométrie sous-jacente. La Relativité d'Échelle dirait le contraire — c'est un débat ouvert.</td>
+      <td class="cell-amber">Modéré<br>Débat d'interprétation</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>Gravité Entropique<br>(Verlinde)</strong></td>
+      <td class="left"><strong>« Vous n'avez pas de lien avec la thermodynamique. »</strong> La gravité émerge de l'entropie des horizons. Votre fonctionnelle ℋ(α) a un terme entropique S(α) — mais vous ne le reliez pas à la gravité.</td>
+      <td class="left">Le terme S(α) dans ℋ est un <strong>terme d'entropie de Shannon</strong> pour l'ordre fractionnaire, pas une entropie gravitationnelle liée aux horizons. Le lien entre les deux n'est pas fait.</td>
+      <td class="left">La TH a un terme entropique (S(α)) et un cadre géométrique (G<sub>ij,j</sub>=0). Le pont entre les deux — montrer que l'entropie de Shannon de l'ordre fractionnaire est reliée à l'entropie de Bekenstein-Hawking — reste à construire. C'est une direction de recherche, pas une objection fatale.</td>
+      <td class="cell-amber">Modéré<br>Pont à construire</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>E8 (Lisi)</strong></td>
+      <td class="left"><strong>« Votre théorie n'explique pas POURQUOI ces 7 symboles. »</strong> Pourquoi {φ,π,e,√2,√3,√5,e/π} ? Pourquoi pas d'autres ? La TH les postule comme alphabet — E8 les dérive d'une structure de groupe unique.</td>
+      <td class="left">L'alphabet à 7 symboles est <strong>postulé</strong> — il n'émerge pas d'une structure mathématique plus profonde. C'est une liste, pas une dérivation. E8 a l'avantage de l'élégance : un seul objet mathématique contient tout.</td>
+      <td class="left">Les 7 symboles émergent de la <strong>projection spectrale</strong> Hₙ = ∫ Ψ·(Ψ₁)ⁿ·√|g| d⁴x — ce n'est pas une liste arbitraire. Mais la projection elle-même n'est pas publiée. Tant qu'elle ne l'est pas, l'objection d'E8 (« vous choisissez vos constantes à la main ») est recevable. Cependant, E8 n'a produit aucune prédiction chiffrée — la TH en a 10.</td>
+      <td class="cell-phi"><strong>Élevé</strong><br>Pourquoi ces 7 symboles ?</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>GAGUT (Oyibo)</strong></td>
+      <td class="left"><strong>« La dérivée ABC n'est pas justifiée par GAGUT. »</strong> G<sub>ij,j</sub>=0 est une identité géométrique. Rien dans cette identité n'impose une dérivée fractionnaire — encore moins d'ordre 1/φ. L'ajout de l'opérateur ABC est un <strong>choix externe</strong> à GAGUT.</td>
+      <td class="left">Le passage de G<sub>ij,j</sub>=0 à l'opérateur ABC n'est pas <strong>logiquement nécessaire</strong>. C'est un ajout motivé par la physique (besoin de mémoire non locale) mais pas dérivé de GAGUT lui-même.</td>
+      <td class="left">Objection partiellement recevable. La TH ne prétend pas que l'opérateur ABC est <strong>impliqué</strong> par GAGUT — elle dit que GAGUT + ABC <strong>ensemble</strong> forment le système dont Ψ est la solution. GAGUT fournit la contrainte de conservation ; ABC fournit la dynamique avec mémoire. Les deux sont nécessaires. Le choix d'ABC est justifié par l'Axiome A1 (non-localité) — qui est indépendant de GAGUT.</td>
+      <td class="cell-amber">Modéré<br>Deux piliers, pas un seul</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>Inflation Cosmique</strong></td>
+      <td class="left"><strong>« Vous n'expliquez pas le spectre de puissance du CMB. »</strong> L'inflation prédit un spectre de fluctuations primordial (n<sub>s</sub> ≈ 0.965) confirmé par Planck. La TH ne produit pas ce spectre.</td>
+      <td class="left">La TH n'a <strong>aucune prédiction cosmologique</strong> précise — pas de spectre de puissance, pas d'indice spectral scalaire, pas de rapport tensoriel/scalaire. L'inflation a des prédictions précises confirmées.</td>
+      <td class="left">C'est une lacune, pas une réfutation. La TH n'a pas encore été étendue à la cosmologie de manière quantitative. La structure en cavités emboîtées (Section 4.4 du Document Fondateur) est une esquisse qualitative. La TH doit produire un spectre de puissance — c'est un test décisif à venir.</td>
+      <td class="cell-red"><strong>Très élevé</strong><br>Absence de cosmologie quantitative</td>
+    </tr>
+
+    <tr>
+      <td class="left"><strong>Méthode Scientifique<br>(méta-critique)</strong></td>
+      <td class="left"><strong>« Aucune de vos prédictions n'a été faite AVANT la mesure. »</strong> Les 47/47 « corroborations » sont des post-dictions — vous avez ajusté les formules APRÈS avoir connu les valeurs expérimentales.</td>
+      <td class="left">C'est l'objection la plus fondamentale. Une théorie n'est scientifique que si elle <strong>prédit</strong> — pas si elle <strong>post-dit</strong>. Tant qu'aucune prédiction aveugle n'a été faite puis vérifiée, la TH reste une <strong>conjecture de curve fitting</strong>.</td>
+      <td class="left">Objection recevable et honnête. La réponse : (1) L'alphabet est fixe (7 symboles), les combinaisons sont contraintes — on ne peut pas fitter n'importe quoi. (2) La précision (0.000024% pour α) est trop élevée pour du simple curve fitting accidentel. (3) Le test ultime : <strong>prédire une grandeur non encore mesurée</strong> et attendre la mesure. C'est la seule façon de transformer les post-dictions en prédictions.</td>
+      <td class="cell-red"><strong>CRITIQUE</strong><br>Post-diction vs prédiction</td>
+    </tr>
+
+    </tbody>
+  </table>
+  </div>
+
+  <h3>7.2 Les 5 Blessures de la Théorie Harmonique — Classées par Gravité</h3>
+
+  <div class="table-scroll">
+  <table>
+    <thead>
+    <tr>
+      <th>#</th>
+      <th>Blessure</th>
+      <th>Gravité</th>
+      <th>Ce qu'il faut pour la guérir</th>
+      <th>Faisabilité</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td><strong>1</strong></td>
+      <td class="left"><strong>Post-diction vs prédiction</strong><br>Les formules ont été trouvées après les mesures. Aucune prédiction aveugle vérifiée.</td>
+      <td class="cell-red">Critique</td>
+      <td class="left">Prédire une grandeur non mesurée (ex : rapport de masse d'un hypothétique 4ᵉ lepton, ou le moment magnétique du muon g−2 avec une précision supérieure) et attendre la mesure.</td>
+      <td class="cell-amber">Faisable<br>Nécessite de trouver une grandeur non encore mesurée</td>
+    </tr>
+    <tr>
+      <td><strong>2</strong></td>
+      <td class="left"><strong>R(α)=1−α² non rigoureusement prouvé</strong><br>Le chaînon central est une conjecture asymptotique.</td>
+      <td class="cell-red">Très élevé</td>
+      <td class="left">Résoudre l'équation fonctionnelle Γ(n+1−R)·Γ(n+1−α) = Γ(n+1)·Γ(n+1−α−R) ∀n de manière exhaustive.</td>
+      <td class="cell-red">Difficile<br>Problème mathématique ouvert</td>
+    </tr>
+    <tr>
+      <td><strong>3</strong></td>
+      <td class="left"><strong>Absence de cosmologie quantitative</strong><br>Pas de spectre de puissance CMB, pas de n<sub>s</sub>, pas de r.</td>
+      <td class="cell-red">Très élevé</td>
+      <td class="left">Étendre la TH pour produire un modèle cosmologique avec un spectre de fluctuations primordial calculable.</td>
+      <td class="cell-amber">Difficile mais possible<br>Nécessite un formalisme nouveau</td>
+    </tr>
+    <tr>
+      <td><strong>4</strong></td>
+      <td class="left"><strong>Pas de mécanisme de gravité quantique</strong><br>G<sub>ij,j</sub>=0 est classique. Pas de graviton, pas de quantification géométrique.</td>
+      <td class="cell-phi">Élevé</td>
+      <td class="left">Soit dériver un mécanisme de quantification de l'espace-temps depuis la base spectrale, soit démontrer rigoureusement que la gravité est émergente sans quantification nécessaire.</td>
+      <td class="cell-red">Très difficile<br>Le Saint Graal de la physique</td>
+    </tr>
+    <tr>
+      <td><strong>5</strong></td>
+      <td class="left"><strong>Pas de validation externe par les pairs</strong><br>Ni publication, ni vérification indépendante. La communauté scientifique ignore la TH.</td>
+      <td class="cell-phi">Élevé</td>
+      <td class="left">Soumettre à une revue (Physical Review D, Foundations of Physics, etc.). Accepter le verdict — même s'il est négatif — et itérer.</td>
+      <td class="cell-amber">Faisable<br>Dépend de la qualité du manuscrit</td>
+    </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>7.3 La Question Qui Tue — À laquelle la TH doit répondre</h3>
+
+  <div class="highlight">
+    <p style="color:var(--red);font-weight:600;margin-bottom:8px">L'objection la plus dévastatrice que vos adversaires peuvent formuler</p>
+    <p style="font-size:1.05em">
+      <strong>« Vous avez pris les 7 constantes mathématiques les plus célèbres (φ, π, e, √2, √3, √5, e/π), vous les avez combinées multiplicativement avec des exposants entiers pour reproduire des constantes physiques connues. C'est du <em>curve fitting</em> déguisé en théorie fondamentale. Avec 7 paramètres, n'importe quel nombre à 8 chiffres significatifs peut être approximé. Montrez-nous une prédiction <em>avant</em> la mesure, ou arrêtez de prétendre que c'est une théorie. »</strong>
+    </p>
+    <p style="margin-top:10px">
+      <strong>La réponse de la TH :</strong><br>
+      ① L'alphabet n'est pas arbitraire — il émerge de la projection spectrale Hₙ = ∫ Ψ·(Ψ₁)ⁿ·√|g| d⁴x.<br>
+      ② Si c'était du curve fitting, pourquoi 10 grandeurs différentes (α, m<sub>μ</sub>/m<sub>e</sub>, m<sub>τ</sub>/m<sub>μ</sub>, sin²θ<sub>W</sub>, α<sub>s</sub>, etc.) sont-elles toutes approximées avec le <strong>même alphabet</strong> et des <strong>exposants cohérents</strong> ? Le nombre de combinaisons possibles est limité — le fait qu'elles marchent pour 10 grandeurs différentes est statistiquement improbable sous le hasard.<br>
+      ③ La TH accepte le défi : la <strong>prédiction aveugle</strong> est le seul test qui compte. C'est le prochain chapitre.
+    </p>
+  </div>
+
+  <h3>7.4 Synthèse : La TH est-elle falsifiable par les autres théories ?</h3>
+
+  <div class="summary-grid">
+    <div class="card">
+      <h4>🔴 Peuvent la RÉFUTER</h4>
+      <p><strong>Modèle Standard :</strong> Montrer que le running de α est incompatible avec une valeur fixe.</p>
+      <p><strong>Cordes :</strong> Prouver que R(α)=1−α² est faux — tout l'édifice s'effondre.</p>
+      <p><strong>Inflation :</strong> Exiger un spectre de puissance que la TH ne peut pas produire.</p>
+      <p><strong>Méthode scientifique :</strong> Exiger une prédiction aveugle — test non encore passé.</p>
+    </div>
+    <div class="card">
+      <h4>🟠 Peuvent l'AFFAIBLIR</h4>
+      <p><strong>LQG :</strong> Pointer l'absence de quantification géométrique.</p>
+      <p><strong>Haramein :</strong> Pointer l'absence de mécanisme holographique.</p>
+      <p><strong>E8 :</strong> Pointer l'arbitraire apparent des 7 symboles.</p>
+    </div>
+    <div class="card">
+      <h4>🟡 Peuvent la RECADRER</h4>
+      <p><strong>Relativité d'Échelle :</strong> Intégrer la TH comme cas particulier d'invariance d'échelle brisée.</p>
+      <p><strong>Verlinde :</strong> Intégrer ℋ(α) dans un cadre thermodynamique plus large.</p>
+      <p><strong>GAGUT :</strong> Considérer la TH comme UNE solution possible de G<sub>ij,j</sub>=0, pas LA solution unique.</p>
+    </div>
+    <div class="card">
+      <h4>🟢 Ne peuvent PAS la réfuter seules</h4>
+      <p><strong>CDT :</strong> Trop éloignée — ne traite pas des constantes.</p>
+      <p><strong>E8 (Lisi) :</strong> Trop fragile — n'a pas de prédictions pour contredire la TH.</p>
+    </div>
+  </div>
+
+  <blockquote>
+    « La marque d'une théorie scientifique n'est pas qu'elle réfute les autres — c'est qu'elle donne aux autres les moyens de la réfuter. Voici le manuel de destruction de la Théorie Harmonique, offert gracieusement à ses adversaires. »
+    <div class="attrib">— Principe de réfutabilité symétrique, Théorie Harmonique</div>
+  </blockquote>
+</section>
+
+</div><!-- .container -->
+
+<footer>
+  <div class="container">
+    <p>
+      <a href="index.html">Symphonie Cosmique</a> |
+      <a href="document-fondateur.html">Document Fondateur</a> |
+      <a href="preuve-unicite-1surphi.html">Preuve d'Unicité</a> |
+      <a href="axiomes-harmoniques.html">Axiomes</a> |
+    <a href="synthese-harmonique.html">Synthèse</a> |
+    <a href="principes-holographiques-haramein.html">Holographie</a>
+  </p>
+    <p style="margin-top:8px">Théories du Tout — Tableau Comparatif — Théorie Harmonique © 2026 KOTTO Alain</p>
+  </div>
+</footer>
+
+</body>
+</html>

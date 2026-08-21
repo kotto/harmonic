@@ -39,14 +39,17 @@ const KA_VOICE = (() => {
   // ═══════════════════════════════════════════════════════════════
 
   const server = {
-    // URL auto-détectée : même IP que la page, port issu de vital_ka_config.js
+    // URL auto-détectée : même IP que la page, ports multiples (ka_server)
+    // Vérifiés dans l'ordre : config → port custom → 8420 (KA PHONE legacy)
+    // → 8765 (KA Server mobile) → 8767 (KA Server enterprise)
     get url() {
       if (_cfg && _cfg.voiceServerUrl) return _cfg.voiceServerUrl;
       if (typeof location !== 'undefined' && location.hostname && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-        return 'http://' + location.hostname + ':8420';
+        return 'http://' + location.hostname + ':' + (this._detectedPort || '8420');
       }
-      return 'http://localhost:8420';
+      return 'http://localhost:' + (this._detectedPort || '8420');
     },
+    _detectedPort: null,    // port détecté automatiquement (8420, 8765, etc.)
     available: null,        // null = pas encore vérifié, true/false après détection
     _checking: false,       // éviter les détections parallèles
     _checkPromise: null,    // promesse de détection en cours
@@ -122,34 +125,45 @@ const KA_VOICE = (() => {
 
     async _doDetect() {
       this._lastCheck = Date.now();
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 2000);  // timeout plus long (2s)
-        const resp = await fetch(this.url + '/api/voice/offline/caps', {
-          signal: controller.signal,
-          method: 'GET',
-        });
-        clearTimeout(timeout);
-        if (resp.ok) {
-          const caps = await resp.json();
-          this.available = caps.offline_ready === true;
-          if (this.available) {
-            console.log('[KA_VOICE] ✅ Serveur détecté — Piper harmonique prêt (' +
-              (caps.engines?.piper ? 'Piper' : '') +
-              (caps.enhancements?.harmonic_post_processor ? ', boost φ' : '') + ')');
-          } else {
-            console.log('[KA_VOICE] ⚠️ Serveur présent mais Piper non disponible');
-          }
-          return this.available;
-        }
-        // Si le serveur répond mais pas OK, ne pas cacher — on réessaiera
-        console.log('[KA_VOICE] ⚠️ Serveur injoignable (HTTP ' + resp.status + '), fallback Web Speech');
-        this.available = false;
-      } catch (e) {
-        // Erreur réseau : ne pas mettre en cache négatif, le serveur peut démarrer
-        console.log('[KA_VOICE] 🔄 Serveur non détecté (' + (e.name || 'network') + '), réessai au prochain speak()');
-        return false;  // pas de cache négatif — on réessaiera au prochain appel
+      // Tester plusieurs ports dans l'ordre : config → 8420 (KA PHONE) → 8765 (KA Server) → 8767 (Enterprise)
+      const hosts = [];
+      if (typeof location !== 'undefined' && location.hostname && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        hosts.push(location.hostname);
       }
+      hosts.push('localhost');
+      const portsToTry = ['8420', '8765', '8767'];
+      if (_cfg && _cfg.voiceServerPort) {
+        portsToTry.unshift(String(_cfg.voiceServerPort));
+      }
+      for (const host of hosts) {
+        for (const port of portsToTry) {
+          const testUrl = 'http://' + host + ':' + port + '/api/voice/offline/caps';
+          try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 1500);
+            const resp = await fetch(testUrl, { signal: controller.signal, method: 'GET' });
+            clearTimeout(timeout);
+            if (resp.ok) {
+              const caps = await resp.json();
+              if (caps.offline_ready === true) {
+                this._detectedPort = port;
+                this.available = true;
+                console.log('[KA_VOICE] ✅ Serveur Piper détecté sur port ' + port + ' (' + host + ')');
+                return true;
+              }
+              // Serveur répond mais Piper pas prêt → on garde ce port quand même
+              this._detectedPort = port;
+              this.available = false;
+              console.log('[KA_VOICE] ⚠️ Serveur sur port ' + port + ' mais Piper non disponible');
+              return false;
+            }
+          } catch (e) {
+            // Timeout ou connexion refusée → essayer le port suivant
+            console.log('[KA_VOICE] 🔄 Port ' + port + ' sur ' + host + ' : ' + (e.name || 'non disponible'));
+          }
+        }
+      }
+      console.log('[KA_VOICE] ❌ Aucun serveur vocal trouvé sur les ports testés (8420, 8765, 8767), fallback Web Speech');
       this.available = false;
       return false;
     },

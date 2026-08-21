@@ -17,6 +17,9 @@ from .system import register_system_routes
 from .harmonic import register_harmonic_routes
 from .wave import register_wave_routes
 from .memory_first import register_memory_first_routes
+from .demo_public import register_demo_public_routes
+from .sonic_id import register_sonic_id_routes
+from .compress_dashboard import register_compress_dashboard_routes
 
 
 def register_routes(app, services):
@@ -51,6 +54,15 @@ def register_routes(app, services):
     # Routes Memory-First — l'architecture memory-first (provenance + refus)
     register_memory_first_routes(app, services)
     
+# Routes Démo Publique — la preuve en ligne (sans authentification)
+    register_demo_public_routes(app, services)
+
+    # Routes Sonic ID — empreinte sonore pseudo-aléatoire par identifiant
+    register_sonic_id_routes(app, services)
+
+    # Routes Dashboard Compression — historique & stats Ψ Compress
+    register_compress_dashboard_routes(app, services)
+
     # Routes Agent (peuvent nécessiter auth selon config)
     register_agent_routes(app, services)
     
@@ -76,4 +88,5 @@ __all__ = [
     'register_harmonic_routes',
     'register_wave_routes',
     'register_memory_first_routes',
+    'register_demo_public_routes',
 ]

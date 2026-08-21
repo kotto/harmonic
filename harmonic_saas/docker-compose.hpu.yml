@@ -1,0 +1,128 @@
+version: '3.8'
+
+services:
+  # ── HPU Core : Émulateur Harmonique ──
+  hpu-core:
+    build:
+      context: ./engine
+      dockerfile: Dockerfile.hpu
+    ports:
+      - "9100:9100"
+    environment:
+      HPU_MODE: emulator
+      HPU_THREADS: ${HPU_THREADS:-4}
+      MEMORY_TTL: ${MEMORY_TTL:-3600}
+      SEUIL_RESONANCE: "0.3"
+      LOG_LEVEL: info
+    volumes:
+      - hpu_memory:/data/memory
+      - hpu_holograms:/data/holograms
+    healthcheck:
+      test: ["CMD", "python", "-c", "from hpu_v2_complet import HPU_V2; h=HPU_V2(); assert h.etat()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+
+  # ── API REST ──
+  hpu-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "9101:9101"
+    depends_on:
+      hpu-core:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      HPU_CORE_URL: http://hpu-core:9100
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql://harmonic:harmonic123@postgres:5432/harmonic_saas
+      JWT_SECRET: ${JWT_SECRET:-harmonic-hpu-secret-2026}
+      API_RATE_LIMIT: "100/minute"
+    volumes:
+      - ./app:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9101/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Postgres ──
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: harmonic
+      POSTGRES_PASSWORD: harmonic123
+      POSTGRES_DB: harmonic_saas
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U harmonic"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ──
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Gateway ──
+  gateway:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/hpu.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - hpu-api
+    environment:
+      DOMAIN: ${DOMAIN:-harmonic-hpu.cloud}
+
+  # ── Monitoring ──
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/hpu.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+
+volumes:
+  hpu_memory:
+  hpu_holograms:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:

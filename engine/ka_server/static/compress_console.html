@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ψ Compress — Console de compression</title>
+<link rel="icon" type="image/svg+xml" href="/brand/psi.svg">
+<style>
+:root{
+  --void:#06060f;--soul:#8b83ff;--soul-l:#b8b2ff;--soul-d:rgba(139,131,255,.14);--soul-g:rgba(139,131,255,.3);
+  --life:#3ddba0;--life-d:rgba(61,219,160,.12);--life-g:rgba(61,219,160,.26);
+  --wisdom:#f0c060;--wisdom-d:rgba(240,192,96,.12);--wisdom-g:rgba(240,192,96,.26);
+  --rose:#ed93b1;--rose-d:rgba(237,147,177,.12);--rose-g:rgba(237,147,177,.26);
+  --sky:#85b7eb;--sky-d:rgba(133,183,235,.12);--sky-g:rgba(133,183,235,.26);
+  --g1:rgba(255,255,255,.04);--g2:rgba(255,255,255,.07);--g3:rgba(255,255,255,.12);
+  --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.1);--b3:rgba(255,255,255,.16);
+  --t1:rgba(255,255,255,.92);--t2:rgba(255,255,255,.62);--t3:rgba(255,255,255,.36);
+  --font:-apple-system,"SF Pro Display","Inter",system-ui,sans-serif;
+  --mono:"SF Mono","JetBrains Mono",Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--void);color:var(--t1);font-family:var(--font);-webkit-font-smoothing:antialiased;line-height:1.55;min-height:100vh}
+a{color:var(--soul-l);text-decoration:none}
+a:hover{color:var(--life)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+section{padding:44px 0}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:50;background:rgba(6,6,15,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--b1)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14px;letter-spacing:.02em}
+.brand img.mark{width:28px;height:28px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));transition:transform .3s}
+.brand:hover img.mark{transform:scale(1.08) rotate(-4deg)}
+.brand b{color:var(--soul-l)}
+nav .links{display:flex;gap:16px;font-size:12.5px;font-weight:600}
+nav .links a{color:var(--t2)}nav .links a:hover{color:#fff}
+nav .links a.active{color:var(--soul-l)}
+
+/* HEADER */
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.page-head h1{font-size:clamp(22px,3.2vw,30px);font-weight:800;letter-spacing:-.01em}
+.page-head .sub{color:var(--t2);font-size:14px;margin-top:4px}
+.page-head .btn{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:8px 16px;border-radius:10px;border:1px solid var(--b2);color:var(--t2);background:var(--g1);transition:all .15s;cursor:pointer}
+.page-head .btn:hover{color:var(--rose);border-color:var(--rose-g);background:var(--rose-d)}
+.page-head .btn:active{transform:scale(.96)}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:24px}
+.kpi{background:linear-gradient(180deg,var(--g1),transparent);border:1px solid var(--b1);border-radius:14px;padding:18px;position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;inset:0;background:radial-gradient(120px 60px at 20% 0%,var(--soul-d),transparent);opacity:.5}
+.kpi .k-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
+.kpi .k-value{font-size:clamp(20px,2.6vw,28px);font-weight:800;margin-top:6px;letter-spacing:-.02em}
+.kpi .k-value.soul{color:var(--soul-l)}.kpi .k-value.life{color:var(--life)}
+.kpi .k-value.gold{color:var(--wisdom)}.kpi .k-value.rose{color:var(--rose)}.kpi .k-value.sky{color:var(--sky)}
+.kpi .k-sub{font-size:11.5px;color:var(--t3);margin-top:3px}
+
+/* GRID 2 colonnes */
+.grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;margin-top:26px}
+@media(max-width:960px){.grid2{grid-template-columns:1fr}}
+
+/* CARD générique */
+.card{background:linear-gradient(180deg,var(--g1),transparent);border:1px solid var(--b1);border-radius:16px;padding:22px}
+.card h2{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card h2 .ic{font-size:16px}
+.card h2 .pill{margin-left:auto;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);background:var(--g2);padding:3px 10px;border-radius:999px}
+
+/* AVANT / APRÈS */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.compare .side{background:var(--g1);border:1px solid var(--b1);border-radius:12px;overflow:hidden}
+.compare .side .frame{position:relative;aspect-ratio:3/2;background:#05070d;display:flex;align-items:center;justify-content:center}
+.compare .side .frame img{width:100%;height:100%;object-fit:contain;display:block}
+.compare .side .frame .ph{color:var(--t4,var(--t3));font-size:11px;text-align:center;padding:20px;line-height:1.6}
+.compare .side .cap{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;border-top:1px solid var(--b1);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.compare .side .cap .sz{font-family:var(--mono);font-weight:600;letter-spacing:0}
+.cap--orig{color:var(--t2)}.cap--orig .sz{color:var(--rose)}
+.cap--comp{color:var(--life)}.cap--comp .sz{color:var(--life)}
+.compare .vs-badge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;background:var(--void);border:1px solid var(--b3);border-radius:999px;padding:6px 14px;font-size:12px;font-weight:800;color:var(--t1);box-shadow:0 4px 20px rgba(0,0,0,.5);white-space:nowrap;pointer-events:none}
+.compare-wrap{position:relative}
+
+/* UPLOAD ZONE */
+.dropzone{border:1.5px dashed var(--b3);border-radius:14px;padding:34px 20px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+.dropzone:hover{border-color:var(--soul-g);background:var(--soul-d)}
+.dropzone.drag{border-color:var(--life);background:var(--life-d);transform:scale(1.01)}
+.dropzone .dz-ic{font-size:38px;margin-bottom:10px;filter:drop-shadow(0 4px 14px rgba(139,131,255,.35))}
+.dropzone .dz-t{font-size:14.5px;font-weight:600}
+.dropzone .dz-s{font-size:12px;color:var(--t3);margin-top:4px}
+.dropzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.options{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;align-items:center}
+.options label{font-size:12px;color:var(--t3);display:flex;align-items:center;gap:8px}
+.options select{background:var(--g2);border:1px solid var(--b2);color:var(--t1);font-family:var(--font);font-size:12.5px;padding:7px 10px;border-radius:8px;outline:none}
+.options select:focus{border-color:var(--soul-g)}
+.hint{font-size:11px;color:var(--t4,var(--t3));margin-top:10px;line-height:1.6}
+
+/* RESULTAT */
+.result{display:none;margin-top:16px;padding:16px;border-radius:14px;background:var(--life-d);border:1px solid var(--life-g)}
+.result.visible{display:block}
+.result .r-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.result .r-title{font-size:13.5px;font-weight:700;color:var(--life)}
+.result .r-metrics{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--t2)}
+.result .r-metrics b{color:var(--t1)}
+.result .r-bar{height:6px;border-radius:3px;background:var(--g2);margin-top:12px;overflow:hidden}
+.result .r-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--life),var(--sky));border-radius:3px;transition:width .6s ease}
+.result .r-actions{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap}
+.btn--small{font-size:12px;font-weight:600;padding:8px 14px;border-radius:9px;border:1px solid var(--b2);cursor:pointer;transition:all .15s;background:var(--g1);color:var(--t1)}
+.btn--small:hover{transform:translateY(-1px);border-color:var(--b3)}
+.btn--small.primary{background:linear-gradient(135deg,var(--soul),#6a5cff);color:#fff;border-color:transparent}
+
+/* CHART */
+.chart{width:100%;height:150px;margin-top:6px}
+.chart .gridline{stroke:rgba(255,255,255,.05)}
+.chart .bar{fill:url(#barGrad);rx:3;transition:opacity .2s}
+.chart .bar:hover{opacity:.75}
+.chart .bar-label{font-size:9px;fill:var(--t3)}
+.chart .axis-label{font-size:10px;fill:var(--t3)}
+.empty-chart{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--t3);font-size:12.5px;padding:34px 0}
+.empty-chart .ic{font-size:30px;opacity:.5}
+
+/* TABLEAU HISTORIQUE */
+.history{width:100%;border-collapse:collapse;font-size:12.5px}
+.history th{text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);padding:8px 10px;border-bottom:1px solid var(--b2)}
+.history td{padding:9px 10px;border-bottom:1px solid var(--b1);color:var(--t2)}
+.history td:first-child{color:var(--t1);font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.history .mono{font-family:var(--mono);font-size:11.5px}
+.history .tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;letter-spacing:.04em}
+.history .tag.hcv{background:var(--soul-d);color:var(--soul-l)}
+.history .tag.ratio{background:var(--life-d);color:var(--life)}
+.history .num{text-align:right}
+.history-wrap{max-height:340px;overflow-y:auto}
+.history-wrap::-webkit-scrollbar{width:6px}
+.history-wrap::-webkit-scrollbar-thumb{background:var(--b3);border-radius:3px}
+.empty-row td{padding:28px 10px;text-align:center;color:var(--t3)}
+
+/* DIVERS */
+.loading{display:flex;align-items:center;gap:10px;color:var(--t3);font-size:12.5px;padding:12px 0}
+.spin{width:14px;height:14px;border:2px solid var(--b3);border-top-color:var(--soul-l);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+footer{text-align:center;padding:28px;font-size:12px;color:var(--t3);border-top:1px solid var(--b1)}
+footer a{color:var(--t3)}footer a:hover{color:var(--soul-l)}
+.err{color:var(--rose);font-size:12.5px;margin-top:10px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="/compress"><img class="mark" src="/brand/psi.svg" alt="Ψ Compress">Ψ <b>Compress</b></a>
+    <div class="links">
+      <a href="/compress">Site</a>
+      <a href="/compress/console" class="active">Console</a>
+      <a href="/harmonic-ai">HARMONIC AI</a>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- ══ EN-TÊTE + KPI ══ -->
+  <section style="padding-top:36px">
+    <div class="page-head">
+      <div>
+        <h1>Console Ψ Compress</h1>
+        <div class="sub">Compression harmonique sans perte — tout est mesuré, rien n'est promis.</div>
+      </div>
+      <button class="btn" onclick="resetHistory()">🗑 Réinitialiser l'historique</button>
+    </div>
+
+    <div class="kpis" id="kpis">
+      <div class="kpi"><div class="k-label">Fichiers compressés</div><div class="k-value soul" id="k-ops">—</div><div class="k-sub" id="k-ops-sub">—</div></div>
+      <div class="kpi"><div class="k-label">Espace économisé</div><div class="k-value life" id="k-saved">—</div><div class="k-sub" id="k-saved-sub">sur <span id="k-orig">—</span> traités</div></div>
+      <div class="kpi"><div class="k-label">Ratio moyen</div><div class="k-value gold" id="k-ratio">—</div><div class="k-sub" id="k-ratio-sub">meilleur : <span id="k-best">—</span></div></div>
+      <div class="kpi"><div class="k-label">CO₂ évité</div><div class="k-value sky" id="k-co2">—</div><div class="k-sub" id="k-co2-sub">stockage cloud non sollicité</div></div>
+      <div class="kpi"><div class="k-label">Coût stockage évité</div><div class="k-value rose" id="k-cost">—</div><div class="k-sub" id="k-cost-sub">≈ /mois en objet cloud</div></div>
+    </div>
+  </section>
+
+  <!-- ══ UPLOAD + CHART ══ -->
+  <section style="padding-top:6px">
+    <div class="grid2">
+      <div class="card">
+        <h2><span class="ic">🌀</span>Compresser un fichier</h2>
+        <div class="dropzone" id="dz">
+          <div class="dz-ic">🗂️</div>
+          <div class="dz-t">Glissez un fichier ici, ou cliquez pour parcourir</div>
+          <div class="dz-s">Images, archives, documents — max 100 Mo</div>
+          <input type="file" id="fileInput">
+        </div>
+        <div class="options">
+          <label>Qualité
+            <select id="quality">
+              <option value="archive">Archive (sans perte)</option>
+              <option value="standard" selected>Standard</option>
+              <option value="eco">Éco (taille min)</option>
+            </select>
+          </label>
+          <label>Méthode
+            <select id="method">
+              <option value="auto" selected>Auto (meilleure)</option>
+              <option value="wasm">WASM</option>
+              <option value="server">Serveur</option>
+            </select>
+          </label>
+        </div>
+        <div class="loading" id="loading" style="display:none"><div class="spin"></div><span id="loading-text">Compression en cours…</span></div>
+        <div class="err" id="err" style="display:none"></div>
+
+        <!-- AVANT / APRÈS en temps réel -->
+        <div class="compare-wrap" id="compare-wrap" style="display:none">
+          <div class="compare">
+            <div class="side">
+              <div class="frame"><img id="img-orig" alt="Original"><div class="ph" id="ph-orig">Choisissez une image</div></div>
+              <div class="cap cap--orig">Original <span class="sz" id="sz-orig">—</span></div>
+            </div>
+            <div class="side">
+              <div class="frame"><img id="img-rec" alt="Reconstruit" style="display:none"><div class="ph" id="ph-rec">La compression se lance…</div></div>
+              <div class="cap cap--comp">Ψ Compressé <span class="sz" id="sz-comp">—</span></div>
+            </div>
+            <div class="vs-badge" id="vs-badge" style="display:none">×—</div>
+          </div>
+          <div class="r-metrics" style="margin-top:12px;display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--t2)">
+            <span>Ratio : <b id="m-ratio" class="gold" style="color:var(--gold)">—</b></span>
+            <span>PSNR : <b id="m-psnr" style="color:var(--t1)">—</b> dB</span>
+            <span>Gain : <b id="m-saved" style="color:var(--t1)">—</b></span>
+            <span>Format : <b id="m-format" style="color:var(--t1)">—</b></span>
+            <span>Dimensions : <b id="m-dims" style="color:var(--t1)">—</b></span>
+          </div>
+          <div class="r-bar" style="margin-top:10px"><i id="r-bar" style="width:0%"></i></div>
+          <div class="r-actions" style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn--small primary" id="r-dl" onclick="downloadResult()">⬇ Télécharger .hcv</button>
+            <button class="btn--small" onclick="compressAnother()">🔄 Essayer une autre image</button>
+          </div>
+        </div>
+
+        <!-- Bouton de démo : image réelle pré-chargée -->
+        <button class="btn--small primary" id="btn-demo" onclick="loadDemoImage()" style="margin-top:14px;width:100%;justify-content:center;padding:11px;font-size:13px">🖼️ Utiliser une image réelle de démonstration</button>
+
+        <div class="hint">⚡ Le codec tourne côté <b>WASM dans votre navigateur</b> quand c'est possible — vos données ne quittent pas votre machine. L'opération est enregistrée dans l'historique (nom, tailles, ratio) pour alimenter les statistiques de cette console.</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="ic">📈</span>Évolution du ratio <span class="pill">14 derniers</span></h2>
+        <div id="chart-area">
+          <div class="empty-chart" id="chart-empty"><div class="ic">📊</div><div>Compressez des fichiers pour voir le graphique</div></div>
+          <svg class="chart" id="chart" viewBox="0 0 460 150" preserveAspectRatio="none" style="display:none">
+            <defs><linearGradient id="barGrad" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#8b83ff"/><stop offset="100%" stop-color="#3ddba0"/></linearGradient></defs>
+          </svg>
+        </div>
+        <div style="margin-top:14px;font-size:12px;color:var(--t3);display:flex;justify-content:space-between">
+          <span>24 dernières heures : <b style="color:var(--t1)" id="k-24h">—</b> opérations</span>
+          <span>Temps moyen : <b style="color:var(--t1)" id="k-dur">—</b></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ HISTORIQUE ══ -->
+  <section style="padding-top:6px">
+    <div class="card">
+      <h2><span class="ic">🕘</span>Historique des compressions <span class="pill" id="hist-count">—</span></h2>
+      <div class="loading" id="hist-loading"><div class="spin"></div><span>Chargement de l'historique…</span></div>
+      <div class="history-wrap" id="hist-wrap" style="display:none">
+        <table class="history">
+          <thead>
+            <tr><th>Fichier</th><th>Original</th><th>Compressé</th><th class="num">Ratio</th><th>Gain</th><th>Format</th><th>Date</th></tr>
+          </thead>
+          <tbody id="hist-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <a href="/compress">← Retour au site Ψ Compress</a> · <a href="/harmonic-ai">HARMONIC AI</a> · compression HCV ×213 mesurée
+</footer>
+
+<script>
+// ── État ──
+let currentResult = null  // {blob, name, ratio}
+let lastStats = null
+let currentOrigB64 = null // pour la compression de la même image
+
+// ── Helpers ──
+const $ = id => document.getElementById(id)
+function fmtBytes(n) {
+  if (n < 1024) return n + ' o'
+  if (n < 1024 ** 2) return (n / 1024).toFixed(1) + ' Ko'
+  if (n < 1024 ** 3) return (n / 1024 ** 2).toFixed(1) + ' Mo'
+  return (n / 1024 ** 3).toFixed(2) + ' Go'
+}
+
+// ── Dropzone ──
+const dz = $('dz'), fileInput = $('fileInput')
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag') })
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'))
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag')
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0])
+})
+fileInput.addEventListener('change', () => { if (fileInput.files.length) handleFile(fileInput.files[0]) })
+
+function handleFile(file) {
+  $('err').style.display = 'none'
+  $('compare-wrap').style.display = 'none'
+  $('vs-badge').style.display = 'none'
+  $('ph-orig').textContent = 'Chargement…'
+
+  const reader = new FileReader()
+  reader.onload = e => {
+    currentOrigB64 = e.target.result.split(',')[1]
+    const img = $('img-orig')
+    img.src = e.target.result
+    img.style.display = 'block'
+    $('ph-orig').style.display = 'none'
+    $('sz-orig').textContent = fmtBytes(file.size)
+    compressCurrent(file.name)
+  }
+  reader.readAsDataURL(file)
+}
+
+/** Compression réelle via /api/compress/preview (encode + decode → avant/après) */
+function compressCurrent(filename) {
+  if (!currentOrigB64) return
+
+  $('err').style.display = 'none'
+  $('ph-rec').style.display = 'block'
+  $('ph-rec').textContent = 'Compression en cours…'
+  $('img-rec').style.display = 'none'
+  $('loading').style.display = 'flex'
+  $('loading-text').textContent = 'Compression harmonique en cours…'
+
+  const form = new FormData()
+  form.append('file', new Blob([Uint8Array.from(atob(currentOrigB64), c => c.charCodeAt(0))], { type: 'image/jpeg' }), filename || 'image.jpg')
+  form.append('quality', $('quality').value)
+  form.append('method', $('method').value)
+  form.append('mode', $('method').value === 'auto' ? 'select' : $('method').value)
+
+  // Qualité → PSNR cible (compromis ratio/qualité visible en direct)
+  const psnrMap = { archive: 40, standard: 25, eco: 15 }
+  form.append('min_psnr', psnrMap[$('quality').value] || 25)
+
+  fetch('/api/compress/preview', { method: 'POST', body: form })
+    .then(async r => {
+      const data = await r.json()
+      if (!r.ok) throw new Error(data.error || 'Compression échouée')
+      return data
+    })
+    .then(data => {
+      $('loading').style.display = 'none'
+      $('ph-rec').style.display = 'none'
+
+      // Image reconstruite (après)
+      $('img-rec').src = 'data:image/jpeg;base64,' + data.reconstructed_base64
+      $('img-rec').style.display = 'block'
+      $('sz-comp').textContent = fmtBytes(data.compressed_size)
+      $('vs-badge').textContent = '×' + data.ratio
+      $('vs-badge').style.display = 'block'
+      $('compare-wrap').style.display = 'block'
+
+      // Métriques réelles
+      $('m-ratio').textContent = '×' + data.ratio
+      $('m-psnr').textContent = data.psnr >= 99 ? '∞' : data.psnr.toFixed(1)
+      $('m-saved').textContent = data.saved_percent + '%'
+      $('m-format').textContent = data.format
+      $('m-dims').textContent = data.width + '×' + data.height
+      $('r-bar').style.width = Math.min(100, data.saved_percent) + '%'
+
+      // Résultat binaire pour téléchargement
+      const bin = Uint8Array.from(atob(data.compressed_base64 || ''), c => c.charCodeAt(0))
+      currentResult = bin.length
+        ? { blob: new Blob([bin], { type: 'application/octet-stream' }), name: (data.filename || 'image') + '.hcv', ratio: data.ratio }
+        : null
+
+      // Rafraîchit stats + historique
+      loadStats(); loadHistory()
+    })
+    .catch(err => {
+      $('loading').style.display = 'none'
+      $('err').textContent = '❌ ' + err.message
+      $('err').style.display = 'block'
+    })
+}
+
+/** Charge l'image réelle de démo (picsum, servie localement) et la compresse */
+function loadDemoImage() {
+  $('err').style.display = 'none'
+  $('compare-wrap').style.display = 'none'
+  $('loading').style.display = 'flex'
+  $('loading-text').textContent = 'Chargement de l\'image de démonstration…'
+
+  const img = $('img-orig')
+  img.onload = () => {
+    $('loading').style.display = 'none'
+    img.style.display = 'block'
+    $('ph-orig').style.display = 'none'
+
+    // Récupère les bytes → base64 → compression réelle
+    fetch('/img/demo_landscape.jpg')
+      .then(r => r.arrayBuffer())
+      .then(buf => {
+        const bytes = new Uint8Array(buf)
+        let bin = ''
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i])
+        currentOrigB64 = btoa(bin)
+        $('sz-orig').textContent = fmtBytes(bytes.length)
+        compressCurrent('demo_landscape.jpg')
+      })
+  }
+  img.src = '/img/demo_landscape.jpg'
+}
+
+function downloadResult() {
+  if (!currentResult) { alert('Le fichier .hcv n\'est pas disponible — utilisez l\'aperçu visuel comme preuve.'); return }
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(currentResult.blob)
+  a.download = currentResult.name
+  a.click()
+}
+
+function compressAnother() {
+  $('compare-wrap').style.display = 'none'
+  $('vs-badge').style.display = 'none'
+  $('img-orig').style.display = 'none'
+  $('img-rec').style.display = 'none'
+  $('ph-orig').style.display = 'block'
+  $('ph-orig').textContent = 'Choisissez une image'
+  currentOrigB64 = null
+  fileInput.value = ''
+  dz.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
+// ── Stats ──
+function loadStats() {
+  fetch('/api/compress/dashboard/stats')
+    .then(r => r.json())
+    .then(s => {
+      lastStats = s
+      $('k-ops').textContent = s.total_operations
+      $('k-ops-sub').textContent = `${s.last_24h} ces dernières 24 h`
+      $('k-saved').textContent = s.total_saved_fmt
+      $('k-orig').textContent = s.total_original_fmt
+      $('k-ratio').textContent = s.avg_ratio ? `×${s.avg_ratio}` : '—'
+      $('k-best').textContent = s.best_ratio ? `×${s.best_ratio}` : '—'
+      $('k-co2').textContent = s.co2_saved_kg ? `${s.co2_saved_kg} kg` : '—'
+      $('k-cost').textContent = s.cloud_cost_saved_eur ? `${s.cloud_cost_saved_eur} €` : '—'
+      $('k-24h').textContent = s.last_24h
+      $('k-dur').textContent = s.avg_duration_ms ? `${s.avg_duration_ms} ms` : '—'
+    })
+    .catch(() => {})
+}
+
+// ── Graphique (14 dernières compressions, ratio) ──
+function renderChart(history) {
+  const area = $('chart-area')
+  const svg = $('chart')
+  const empty = $('chart-empty')
+  const recent = history.slice(0, 14)
+
+  if (!recent.length) {
+    svg.style.display = 'none'
+    empty.style.display = 'flex'
+    return
+  }
+  svg.style.display = 'block'
+  empty.style.display = 'none'
+
+  const W = 460, H = 150, padB = 18, padT = 12
+  const maxR = Math.max(...recent.map(h => h.ratio), 1)
+  const n = recent.length
+  const slot = W / n
+  const barW = Math.min(34, slot * 0.6)
+
+  let inner = ''
+  // lignes de grille
+  for (let g = 0; g <= 3; g++) {
+    const y = padT + (H - padT - 6) * g / 3
+    inner += `<line class="gridline" x1="0" y1="${y}" x2="${W}" y2="${y}"/>`
+  }
+  recent.forEach((h, i) => {
+    const hPct = h.ratio / maxR
+    const bh = Math.max(4, (H - padT - 6) * hPct)
+    const x = i * slot + (slot - barW) / 2
+    const y = H - padB - bh
+    inner += `<rect class="bar" x="${x}" y="${y}" width="${barW}" height="${bh}"><title>${h.filename} — ×${h.ratio}</title></rect>`
+  })
+  svg.innerHTML = svg.querySelector('defs')?.outerHTML + inner
+}
+
+// ── Historique ──
+function loadHistory() {
+  fetch('/api/compress/dashboard/history?limit=60')
+    .then(r => r.json())
+    .then(d => {
+      const hist = d.history || []
+      $('hist-count').textContent = `${d.count} entrée${d.count > 1 ? 's' : ''}`
+      $('hist-loading').style.display = 'none'
+      $('hist-wrap').style.display = 'block'
+      renderChart(hist)
+
+      const body = $('hist-body')
+      if (!hist.length) {
+        body.innerHTML = '<tr class="empty-row"><td colspan="7">Aucune compression enregistrée — compressez un fichier pour commencer.</td></tr>'
+        return
+      }
+      body.innerHTML = hist.map(h => `
+        <tr>
+          <td title="${h.filename}">${h.filename}</td>
+          <td class="mono">${fmtBytes(h.original_size)}</td>
+          <td class="mono">${fmtBytes(h.compressed_size)}</td>
+          <td class="num"><span class="tag ratio">×${h.ratio}</span></td>
+          <td class="mono">${h.saved_percent}%</td>
+          <td><span class="tag hcv">${(h.format || 'HCV').toUpperCase()}</span></td>
+          <td class="mono">${h.date}</td>
+        </tr>`).join('')
+    })
+    .catch(() => {})
+}
+
+// ── Reset ──
+function resetHistory() {
+  if (!confirm('Vider l\'historique de compression ?')) return
+  fetch('/api/compress/dashboard/reset', { method: 'POST' })
+    .then(r => r.json())
+    .then(() => { loadStats(); loadHistory() })
+    .catch(() => {})
+}
+
+// ── Init ──
+loadStats()
+loadHistory()
+</script>
+</body>
+</html>

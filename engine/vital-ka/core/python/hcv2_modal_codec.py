@@ -58,16 +58,16 @@ def _to_rgb(ycbcr: np.ndarray) -> np.ndarray:
 
 
 def _encode_channel(ch: np.ndarray, mag_dtype=np.float16,
-                       normalize=True) -> tuple:
+                       normalize=True, threshold_scale=1.0) -> tuple:
     """Un canal : FFT → poids de Parseval → troncature dorée → payload.
-    mag_dtype : float16 (images — mesuré suffisant) ou float32 (les
-    résidus vidéo — le float16 nuit aux coefficients bruités)."""
+    threshold_scale < 1 = garder PLUS de coefficients (meilleure qualité).
+    mag_dtype : float16 (images) ou float32 (résidus vidéo)."""
     H = np.fft.fft2(ch)
     m = H.size
     p = np.abs(H) ** 2
     norm = p.sum()
     p /= norm
-    keep = p > 1.0 / (PHI * m)            # ← LE SEUIL DORÉ (dérivé, zéro paramètre)
+    keep = p > threshold_scale / (PHI * m)            # ← SEUIL DORÉ AJUSTABLE
     mass = float(p[keep].sum())           # la fidélité Parseval
     idx = np.nonzero(keep.ravel())[0]
     vals = H.ravel()[idx]
@@ -146,19 +146,18 @@ class HCV2Result:
     mass_kept: float       # la fidélité Parseval moyenne
 
 
-def encode(img: np.ndarray, precision: int = 16) -> dict:
+def encode(img: np.ndarray, precision: int = 16,
+            threshold_scale: float = 1.0) -> dict:
     """Encode une image (H, W, 3) → dict {blob, mass_kept, ...}.
-    precision : 16 (float16, défaut, 2 o par valeur, ratio ~500× @ 29 dB)
-                ou 32 (float32, 4 o par valeur, ratio ~250× @ 50+ dB).
-    CHROMA 4:2:0 (déclaré : choix perceptif standard — le Y pleine
-    résolution, Cb/Cr sous-échantillonnés 2× ; pas un théorème)."""
+    threshold_scale < 1 = garder PLUS de coefficients (meilleure qualité)."""
     mag_dtype = np.float32 if precision == 32 else np.float16
     ycbcr = _to_ycbcr(img.astype(np.float64))
     payloads = []
     for c in range(3):
         ch = ycbcr[:, :, c]
         payloads.append(_encode_channel(ch[::2, ::2] if c else ch,
-                                        mag_dtype=mag_dtype))
+                                        mag_dtype=mag_dtype,
+                                        threshold_scale=threshold_scale))
     data = bytearray()
     h, w, _ = img.shape
     precision_flag = 1 if precision == 32 else 0

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Sonic ID — Empreinte sonore HARMONIC AI</title>
+<link rel="icon" type="image/svg+xml" href="/brand/ka.svg">
+<style>
+*,:after,:before{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#0a1428;--soul:#6c63ff;--sky:#8b83ff;--silver:#dde1e8;--gold:#f0c040;--radius:14px}
+body{font-family:-apple-system,'Segoe UI',system-ui,sans-serif;background:var(--navy);color:#d4d8e0;min-height:100vh;display:flex;flex-direction:column}
+
+/* ── Nav ── */
+.nav{display:flex;align-items:center;gap:14px;padding:14px 24px;border-bottom:1px solid rgba(255,255,255,.06)}
+.nav .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px;color:#fff;text-decoration:none}
+.nav .brand img{width:30px;height:30px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+.nav .brand b{color:var(--soul)}
+
+/* ── Hero ── */
+.hero{text-align:center;padding:72px 24px 48px;max-width:700px;margin:0 auto}
+.hero h1{font-size:clamp(28px,5vw,42px);font-weight:800;color:#fff;margin-bottom:12px}
+.hero h1 b{background:linear-gradient(135deg,var(--soul),var(--sky));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{font-size:17px;line-height:1.6;color:#9ca3b8;margin-bottom:8px}
+.hero .emoji{display:inline-block;font-size:42px;margin-bottom:16px;filter:drop-shadow(0 4px 16px rgba(139,131,255,.3))}
+
+/* ── Démo ── */
+.demo{flex:1;display:flex;flex-direction:column;align-items:center;padding:0 20px 60px}
+.panel{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:36px;width:100%;max-width:580px}
+.input-group{display:flex;gap:10px;margin-bottom:22px}
+.input-group input{flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:13px 16px;font-size:16px;color:#fff;outline:none;transition:border .25s}
+.input-group input::placeholder{color:#5a6278}
+.input-group input:focus{border-color:var(--soul)}
+.input-group button{background:linear-gradient(135deg,var(--soul),var(--sky));border:none;border-radius:10px;padding:13px 24px;font-size:15px;font-weight:700;color:#fff;cursor:pointer;white-space:nowrap;transition:opacity .2s,transform .15s}
+.input-group button:hover{opacity:.9;transform:scale(1.03)}
+.input-group button:active{transform:scale(.97)}
+.input-group button:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── Suggestions ── */
+.suggestions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;justify-content:center}
+.suggestions button{background:rgba(108,99,255,.12);border:1px solid rgba(108,99,255,.2);border-radius:20px;padding:6px 16px;font-size:13px;color:var(--sky);cursor:pointer;transition:all .2s}
+.suggestions button:hover{background:rgba(108,99,255,.2);border-color:var(--soul)}
+
+/* ── Variants ── */
+.variants{display:flex;gap:10px;margin-bottom:22px}
+.variants button{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 8px;font-size:13px;color:#9ca3b8;cursor:pointer;text-align:center;transition:all .2s}
+.variants button .label{display:block;font-size:11px;color:#5a6278;margin-top:2px}
+.variants button.active{background:rgba(108,99,255,.15);border-color:var(--soul);color:#fff}
+.variants button:hover:not(.active){background:rgba(255,255,255,.08)}
+
+/* ── Lecteur ── */
+.player{display:none;flex-direction:column;align-items:center;gap:14px;padding:20px 0 8px;border-top:1px solid rgba(255,255,255,.06);margin-top:8px}
+.player.visible{display:flex}
+.player .id-label{font-size:13px;color:#5a6278}
+.player .id-label span{color:#fff;font-weight:600}
+.player .duration{font-size:12px;color:#5a6278}
+.player .visualizer{display:flex;align-items:center;gap:3px;height:40px;width:100%;max-width:340px;justify-content:center}
+.player .visualizer .bar{width:4px;background:var(--soul);border-radius:2px;transition:height .15s ease}
+.player .visualizer .bar.active{background:linear-gradient(to top,var(--soul),var(--sky))}
+
+/* ── Waveform ── */
+.waveform-svg{width:100%;max-width:480px;height:56px;margin:8px 0;overflow:visible}
+.waveform-svg path{stroke:var(--soul);stroke-width:1.8;fill:none;opacity:.7}
+.waveform-svg path.highlight{stroke:var(--sky);stroke-width:2;opacity:1}
+
+/* ── API info ── */
+.api-info{margin-top:40px;text-align:center;font-size:14px;color:#5a6278}
+.api-info code{background:rgba(108,99,255,.1);padding:2px 8px;border-radius:4px;font-size:13px;color:var(--sky)}
+.api-info a{color:var(--soul);text-decoration:none}
+.api-info a:hover{text-decoration:underline}
+
+/* ── Footer ── */
+.footer{text-align:center;padding:24px;font-size:13px;color:#3c4250;border-top:1px solid rgba(255,255,255,.05)}
+.footer a{color:#5a6278;text-decoration:none}
+.footer a:hover{color:var(--soul)}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+<a class="brand" href="/harmonic-ai"><img src="/brand/ka.svg" alt="">HARMONIC <b>AI</b></a>
+<span style="color:#5a6278;font-size:13px">/</span>
+<span style="color:#9ca3b8;font-size:14px;font-weight:600">Sonic ID</span>
+</nav>
+
+<section class="hero">
+<div class="emoji">🎵🔐</div>
+<h1>Empreinte <b>sonore</b></h1>
+<p>Chaque identifiant produit un son unique, mélodique et apaisant — une signature sonore reconnaissable par l'oreille humaine.</p>
+<p style="font-size:14px;color:#5a6278">SHA-256 → gamme pentatonique → onde sinusoïdale → WAV 22 kHz</p>
+</section>
+
+<section class="demo">
+<div class="panel">
+
+  <!-- Suggestions -->
+  <div class="suggestions">
+    <button onclick="setId('ABC-2026-00042')">📦 ABC-2026-00042</button>
+    <button onclick="setId('PATIENT-MB-3847')">🏥 PATIENT-MB-3847</button>
+    <button onclick="setId('KA-42')">⚡ KA-42</button>
+    <button onclick="setId('ALICE-777')">👤 ALICE-777</button>
+    <button onclick="setId('HARMONIC-AI-V1')">🧬 HARMONIC-AI-V1</button>
+    <button onclick="setId('URGENCE-911')">🚑 URGENCE-911</button>
+  </div>
+
+  <!-- Input -->
+  <div class="input-group">
+    <input id="idInput" type="text" placeholder="Entrez un identifiant…" value="ABC-2026-00042" autocomplete="off" spellcheck="false">
+    <button id="playBtn" onclick="playSonic()">▶ Jouer</button>
+  </div>
+
+  <!-- Variants -->
+  <div class="variants">
+    <button class="active" data-variant="default" onclick="setVariant(this,'default')">
+      🎼 Neutre
+      <span class="label">équilibré</span>
+    </button>
+    <button data-variant="mobile" onclick="setVariant(this,'mobile')">
+      📱 Mobile
+      <span class="label">vif, majeur</span>
+    </button>
+    <button data-variant="care" onclick="setVariant(this,'care')">
+      🏥 Care
+      <span class="label">lent, grave</span>
+    </button>
+  </div>
+
+  <!-- Player -->
+  <div id="player" class="player">
+    <div class="id-label">Signature sonore de <span id="currentId">ABC-2026-00042</span></div>
+    <audio id="audioEl" controls style="width:100%;height:38px;border-radius:8px"></audio>
+    <div class="duration" id="durationLabel">Durée : —</div>
+
+    <!-- Waveforme SVG générée côté client -->
+    <svg class="waveform-svg" id="waveformSvg" viewBox="0 0 480 56" preserveAspectRatio="none">
+      <path id="wfBg" d=""/>
+      <path id="wfHighlight" class="highlight" d=""/>
+    </svg>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:4px">
+      <a id="downloadLink" href="#" style="font-size:13px;color:var(--soul);text-decoration:none" download>⬇ Télécharger WAV</a>
+      <span style="color:#3c4250">·</span>
+      <a id="apiLink" href="#" target="_blank" style="font-size:13px;color:var(--soul);text-decoration:none" onclick="event.stopPropagation()">🔗 API directe</a>
+    </div>
+  </div>
+
+</div>
+
+<!-- Info API -->
+<div class="api-info">
+  <code>GET /api/sonic-id/ABC-2026-00042</code>
+  <span style="margin:0 6px">·</span>
+  <code>?variant=mobile</code>
+  <br><br>
+  <a href="#" onclick="event.preventDefault();fetchSvg()">🎨 Télécharger la waveform SVG</a>
+</div>
+</section>
+
+<footer class="footer">
+<a href="/harmonic-ai">← HARMONIC AI</a>
+</footer>
+
+<script>
+// ── État ──
+let currentVariant = 'default';
+let currentId = 'ABC-2026-00042';
+let audioCtx = null;
+
+// ── UI ──
+function setId(id) {
+    document.getElementById('idInput').value = id;
+    playSonic();
+}
+
+function setVariant(btn, variant) {
+    document.querySelectorAll('.variants button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentVariant = variant;
+    document.getElementById('player').classList.remove('visible');
+}
+
+// ── Lecture ──
+async function playSonic() {
+    const id = document.getElementById('idInput').value.trim();
+    if (!id) return;
+    currentId = id;
+
+    const playBtn = document.getElementById('playBtn');
+    playBtn.disabled = true;
+    playBtn.textContent = '⏳';
+
+    try {
+        const variantParam = currentVariant === 'default' ? '' : `?variant=${currentVariant}`;
+        const url = `/api/sonic-id/${encodeURIComponent(id)}${variantParam}`;
+        const resp = await fetch(url);
+
+        if (!resp.ok) {
+            const err = await resp.text().catch(() => 'Erreur inconnue');
+            alert('Erreur ' + resp.status + ' : ' + err);
+            return;
+        }
+
+        const blob = await resp.blob();
+        const duration = resp.headers.get('X-Sonic-Duration') || '—';
+
+        // Audio
+        const audioEl = document.getElementById('audioEl');
+        const urlObj = URL.createObjectURL(blob);
+        audioEl.src = urlObj;
+        audioEl.load();
+
+        // UI
+        document.getElementById('currentId').textContent = id;
+        document.getElementById('durationLabel').textContent = `Durée : ${duration} s`;
+        document.getElementById('player').classList.add('visible');
+
+        // Lien download
+        const downloadEl = document.getElementById('downloadLink');
+        downloadEl.href = urlObj;
+        downloadEl.download = `sonic-${id.replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,40)}.wav`;
+
+        // Lien API directe
+        document.getElementById('apiLink').href = url;
+
+        // Waveforme SVG
+        renderWaveform(blob);
+
+        // Lecture auto
+        audioEl.play().catch(e => console.log('Auto-play blocked:', e));
+
+    } catch (err) {
+        console.error('Sonic ID error:', err);
+        alert('Erreur de connexion au serveur');
+    } finally {
+        playBtn.disabled = false;
+        playBtn.textContent = '▶ Jouer';
+    }
+}
+
+// ── Waveforme SVG simple depuis le WAV ──
+async function renderWaveform(blob) {
+    try {
+        const buf = await blob.arrayBuffer();
+        const dv = new DataView(buf);
+
+        // Cherche le chunk "data" dans le WAV
+        let offset = 12; // après RIFF + size + WAVE
+        let found = false;
+        while (offset < buf.byteLength - 8) {
+            const chunkId = String.fromCharCode(dv.getUint8(offset), dv.getUint8(offset+1), dv.getUint8(offset+2), dv.getUint8(offset+3));
+            const chunkSize = dv.getUint32(offset + 4, true);
+            if (chunkId === 'data') {
+                found = true;
+                offset += 8;
+                break;
+            }
+            offset += 8 + chunkSize;
+        }
+        if (!found) return;
+
+        const sampleCount = Math.floor((buf.byteLength - offset) / 2);
+        const samples = new Int16Array(sampleCount);
+        for (let i = 0; i < sampleCount; i++) {
+            samples[i] = dv.getInt16(offset + i * 2, true);
+        }
+
+        // Sous-échantillonnage pour ~200 points
+        const points = 160;
+        const step = Math.max(1, Math.floor(sampleCount / points));
+        const values = [];
+        for (let i = 0; i < points; i++) {
+            const idx = Math.min(i * step, sampleCount - 1);
+            values.push(samples[idx] / 32768);
+        }
+
+        // Crée les chemins SVG
+        const w = 480, h = 56, mid = h / 2;
+        const xStep = w / (values.length - 1);
+
+        let dBg = '', dHighlight = '';
+        for (let i = 0; i < values.length; i++) {
+            const x = i * xStep;
+            const y = mid + values[i] * (mid - 4);
+            const cmd = i === 0 ? 'M' : 'L';
+            dBg += `${cmd}${x.toFixed(1)},${y.toFixed(1)}`;
+
+            // La moitié en highlight
+            if (i <= values.length / 2) {
+                dHighlight += `${cmd}${x.toFixed(1)},${y.toFixed(1)}`;
+            }
+        }
+
+        document.getElementById('wfBg').setAttribute('d', dBg);
+        document.getElementById('wfHighlight').setAttribute('d', dHighlight);
+    } catch (e) {
+        console.warn('Waveform render failed:', e);
+    }
+}
+
+// ── Entrée clavier ──
+document.getElementById('idInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') playSonic();
+});
+
+// Auto-play au chargement
+window.addEventListener('load', () => {
+    setTimeout(playSonic, 400);
+});
+</script>
+</body>
+</html>

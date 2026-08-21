@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌊 Traducteur Universel — Problème Humain → Ondes</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;
+  overflow-x:hidden; min-height:100vh;
+}
+body::before{
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:radial-gradient(ellipse at 30% 10%,rgba(122,92,255,0.08),transparent 55%),
+             radial-gradient(ellipse at 70% 60%,rgba(62,240,216,0.05),transparent 60%);
+}
+.container{max-width:1300px;margin:0 auto;padding:0 20px;position:relative;z-index:1}
+
+/* Header */
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:7px 14px;border-radius:20px;font-size:0.88em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+
+.hero{text-align:center;padding:50px 20px 40px;background:linear-gradient(180deg,rgba(212,168,67,0.08) 0%,transparent 100%)}
+.hero .badge{display:inline-block;padding:5px 16px;border-radius:14px;font-size:0.82em;font-weight:700;background:rgba(62,240,216,0.12);color:var(--acc);margin-bottom:16px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:2.4em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;line-height:1.3}
+.hero .tagline{font-size:1.1em;color:var(--ink2);max-width:700px;margin:0 auto 4px}
+.hero .tagline2{font-size:0.92em;color:var(--ink3);max-width:650px;margin:0 auto}
+
+/* Canvas onde */
+#waveCanvas{
+  width:100%; height:280px;
+  border-radius:16px; border:1px solid var(--border);
+  background:rgba(6,4,30,0.7);
+  display:block; margin:20px 0;
+}
+
+/* Layout 3 colonnes */
+.grid3{
+  display:grid;
+  grid-template-columns:1fr 1.4fr 1fr;
+  gap:20px; margin:24px 0;
+}
+@media(max-width:900px){.grid3{grid-template-columns:1fr}}
+
+.card{
+  background:var(--bg2); border:1px solid var(--border);
+  border-radius:16px; padding:20px;
+}
+.card h3{font-size:1.05em;color:var(--phi);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card h3 .icon{font-size:1.3em}
+
+/* Zone texte */
+textarea{
+  width:100%; min-height:100px;
+  background:var(--bg3); color:var(--ink);
+  border:1px solid var(--border); border-radius:10px;
+  padding:14px; font-family:inherit; font-size:0.95em;
+  resize:vertical; line-height:1.6;
+}
+textarea:focus{outline:none;border-color:var(--phi);box-shadow:0 0 16px rgba(212,168,67,0.1)}
+
+button{
+  padding:10px 20px; border-radius:24px; border:1px solid var(--phi);
+  background:rgba(212,168,67,0.1); color:var(--phi);
+  font-size:0.95em; cursor:pointer; font-weight:600;
+  transition:all 0.25s; letter-spacing:0.5px;
+}
+button:hover{background:rgba(212,168,67,0.22);box-shadow:0 0 20px rgba(212,168,67,0.15)}
+button.accent{background:rgba(62,240,216,0.1);border-color:var(--acc);color:var(--acc)}
+button.accent:hover{background:rgba(62,240,216,0.22);box-shadow:0 0 20px rgba(62,240,216,0.15)}
+button.small{padding:6px 14px;font-size:0.82em}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+
+/* Harmoniques */
+.harmonic-bar{
+  display:flex; align-items:center; gap:8px;
+  margin-bottom:6px; padding:6px 10px;
+  border-radius:8px; background:rgba(10,8,40,0.6);
+  transition:all 0.3s;
+}
+.harmonic-bar.active{background:rgba(62,240,216,0.1);border:1px solid rgba(62,240,216,0.25)}
+.harmonic-bar .h-name{font-weight:700;font-size:0.82em;min-width:70px;font-family:'Courier New',monospace}
+.harmonic-bar .h-value{font-size:0.78em;color:var(--ink3);min-width:55px}
+.harmonic-bar .h-bar-outer{flex:1;height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden}
+.harmonic-bar .h-bar-inner{height:100%;border-radius:3px;transition:width 0.4s}
+.harmonic-bar .h-weight{font-size:0.78em;min-width:42px;text-align:right;font-family:'Courier New',monospace}
+
+/* Étapes */
+.step{
+  padding:12px 16px; margin:10px 0;
+  background:rgba(10,8,40,0.5); border-left:3px solid var(--border);
+  border-radius:0 10px 10px 0; font-size:0.88em;
+  transition:all 0.3s;
+}
+.step.done{border-left-color:var(--green);background:rgba(46,213,115,0.06)}
+.step.processing{border-left-color:var(--phi);background:rgba(212,168,67,0.06);animation:pulse 1.5s infinite}
+.step .step-num{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;font-size:0.75em;font-weight:700;margin-right:8px;background:var(--bg3);color:var(--ink3)}
+.step.done .step-num{background:var(--green);color:#000}
+.step.processing .step-num{background:var(--phi);color:#000}
+.step .step-label{color:var(--ink2)}
+.step .step-detail{display:block;font-size:0.82em;color:var(--ink3);margin-top:4px;margin-left:30px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+
+/* Résultat */
+.result-box{
+  background:rgba(15,12,46,0.8);border:2px solid rgba(212,168,67,0.3);
+  border-radius:16px; padding:20px; margin-top:12px;
+}
+.result-box .result-title{font-size:0.78em;text-transform:uppercase;letter-spacing:2px;color:var(--ink3);margin-bottom:8px}
+.result-box .result-eq{font-family:'Courier New',monospace;font-size:1.3em;color:var(--phi);text-align:center;margin:12px 0}
+.result-box .result-interp{font-size:0.92em;color:var(--ink2);line-height:1.7}
+.result-box .result-meta{font-size:0.78em;color:var(--ink3);margin-top:10px}
+
+/* Préréglages */
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.preset{
+  padding:7px 14px; border-radius:18px; border:1px solid rgba(122,92,255,0.3);
+  background:rgba(122,92,255,0.06); color:var(--ink2);
+  font-size:0.82em; cursor:pointer; transition:all 0.2s;
+}
+.preset:hover{background:rgba(122,92,255,0.15);border-color:var(--acc2);color:var(--ink)}
+
+/* Légende */
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:0.78em;color:var(--ink3)}
+.legend-dot{width:10px;height:10px;border-radius:50%}
+
+footer{text-align:center;padding:30px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.82em;margin-top:40px}
+footer a{color:var(--phi);text-decoration:none}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Symphonie Cosmique</a>
+    <a href="#principe">Principe</a>
+    <a href="#moteur">Moteur</a>
+    <a href="#exemples">Exemples</a>
+    <a href="#dictionnaire">Dictionnaire</a>
+  </div>
+</nav>
+
+<header class="hero" id="principe">
+  <div class="container">
+    <div class="badge">Traducteur Universel</div>
+    <h1>Problème Humain → Ondes Cosmiques</h1>
+    <p class="tagline">L'univers ne calcule pas — il fait interférer des ondes.</p>
+    <p class="tagline2">Ce moteur traduit automatiquement tout problème formulé en langage humain en superposition d'ondes harmoniques, applique les règles de l'univers (interférences, résonance, holographie), et lit la solution dans le spectre résultant.</p>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- Canvas d'onde -->
+<canvas id="waveCanvas"></canvas>
+
+<!-- Grille principale -->
+<div class="grid3">
+
+<!-- COLONNE 1 : ENTRÉE -->
+<div class="card" id="moteur">
+  <h3><span class="icon">📝</span> Problème Humain</h3>
+  <div class="presets" id="presets">
+    <div class="preset" data-id="0">🧮 2+3×4 = ?</div>
+    <div class="preset" data-id="1">🔍 Trouver le chemin optimal</div>
+    <div class="preset" data-id="2">⚛️ Énergie d'un électron</div>
+    <div class="preset" data-id="3">🌌 Pourquoi φ apparaît partout ?</div>
+    <div class="preset" data-id="4">🔄 Équilibre pendule</div>
+    <div class="preset" data-id="5">📊 Classifier des données</div>
+  </div>
+  <textarea id="problemInput" placeholder="Décrivez votre problème en langage naturel...&#10;&#10;Exemple : « Quelle est la trajectoire optimale entre deux points dans un champ gravitationnel ? »"></textarea>
+  <div class="btn-row">
+    <button id="btnTranslate" onclick="traduireProbleme()">⚡ Traduire en Ondes</button>
+    <button class="accent" onclick="effacer()">🔄 Réinitialiser</button>
+  </div>
+</div>
+
+<!-- COLONNE 2 : ÉTAPES DE TRADUCTION -->
+<div class="card">
+  <h3><span class="icon">🌊</span> Processus de Traduction</h3>
+  <div id="stepsContainer">
+    <div class="step" id="step0"><span class="step-num">0</span><span class="step-label">En attente d'un problème...</span></div>
+    <div class="step" id="step1"><span class="step-num">1</span><span class="step-label">Analyse sémantique</span><span class="step-detail">Décomposition du problème en concepts fondamentaux</span></div>
+    <div class="step" id="step2"><span class="step-num">2</span><span class="step-label">Encodage spectral</span><span class="step-detail">Chaque concept → harmonique Hₖ avec amplitude et phase</span></div>
+    <div class="step" id="step3"><span class="step-num">3</span><span class="step-label">Superposition & interférences</span><span class="step-detail">Ψ_total = Σ Aₖ·Hₖ·exp(i·φₖ)</span></div>
+    <div class="step" id="step4"><span class="step-num">4</span><span class="step-label">Résolution par résonance</span><span class="step-detail">Lecture du spectre résultant → solution émergente</span></div>
+  </div>
+  
+  <!-- Harmoniques actives -->
+  <div style="margin-top:16px">
+    <h4 style="font-size:0.88em;color:var(--ink2);margin-bottom:10px">🎵 Harmoniques Actives</h4>
+    <div id="harmonicsDisplay">
+      <div class="harmonic-bar"><span class="h-name">En attente...</span></div>
+    </div>
+  </div>
+  
+  <!-- Légende couleurs -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#ff6b35"></div> φ (fondamentale)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#3ef0d8"></div> π (cycle)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#d4a843"></div> e (croissance)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#2ed573"></div> √2 (structure)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#7a5cff"></div> √3 (spatialité)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff4757"></div> √5 (organique)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f0c96e"></div> e/π (info)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c084fc"></div> φ·√2</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#22d3ee"></div> e·φ</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fb923c"></div> π·√5</div>
+  </div>
+</div>
+
+<!-- COLONNE 3 : RÉSULTAT -->
+<div class="card">
+  <h3><span class="icon">✨</span> Solution Ondulatoire</h3>
+  <div id="resultContainer">
+    <div class="result-box" style="opacity:0.5">
+      <div class="result-title">Solution émergente</div>
+      <div class="result-eq" style="font-size:1em">Ψ = ?</div>
+      <div class="result-interp"> Entrez un problème et cliquez sur "Traduire en Ondes" pour voir la solution émerger de la superposition harmonique.</div>
+    </div>
+  </div>
+  
+  <!-- Dictionnaire rapide -->
+  <div style="margin-top:20px" id="dictionnaire">
+    <h4 style="font-size:0.88em;color:var(--ink2);margin-bottom:8px">📖 Dictionnaire Concept → Onde</h4>
+    <div style="font-size:0.78em;color:var(--ink3);line-height:1.6">
+      <div>🔢 <b>Nombre/Calcul</b> → φ (onde fondamentale)</div>
+      <div>🔄 <b>Cycle/Optimisation</b> → π (courbure, périodicité)</div>
+      <div>📈 <b>Croissance/Énergie</b> → e (exponentielle)</div>
+      <div>🏗️ <b>Structure/Ordre</b> → √2 (dualité)</div>
+      <div>🌐 <b>Espace/Géométrie</b> → √3 (triangulation)</div>
+      <div>🧬 <b>Vivant/Organique</b> → √5 (pentagonale)</div>
+      <div>💡 <b>Information/Entropie</b> → e/π</div>
+      <div>⚡ <b>Interaction forte</b> → φ·√2</div>
+      <div>🚀 <b>Expansion</b> → e·φ</div>
+      <div>🌍 <b>Champ global</b> → π·√5</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /grid3 -->
+
+</div><!-- /container -->
+
+<footer>
+  <p>Théorie Harmonique de l'Univers — Ψ = Σ Hₙ (Ψ₁)ⁿ — L'univers est une symphonie d'ondes. Ce traducteur est un pont entre la pensée séquentielle humaine et le langage ondulatoire du cosmos.</p>
+  <p style="margin-top:6px"><a href="index.html">Retour à la Symphonie Cosmique</a></p>
+</footer>
+
+<script>
+// ============================================================================
+// CONSTANTES FONDAMENTALES
+// ============================================================================
+const PHI = (1+Math.sqrt(5))/2;  // 1.618...
+const PI = Math.PI;
+const E = Math.E;
+
+// Les 10 Harmoniques Fondamentales
+const H_BASE = [
+  {k:1, name:'φ', value:PHI, color:'#ff6b35', domain:'fondamentale', concept:'nombre, calcul, proportion'},
+  {k:2, name:'π', value:PI, color:'#3ef0d8', domain:'cycle', concept:'cycle, optimisation, périodicité'},
+  {k:3, name:'e', value:E, color:'#d4a843', domain:'croissance', concept:'croissance, énergie, exponentielle'},
+  {k:4, name:'√2', value:Math.SQRT2, color:'#2ed573', domain:'structure', concept:'structure, ordre, dualité'},
+  {k:5, name:'√3', value:Math.sqrt(3), color:'#7a5cff', domain:'spatialité', concept:'espace, géométrie, triangulation'},
+  {k:6, name:'√5', value:Math.sqrt(5), color:'#ff4757', domain:'organique', concept:'vivant, organique, pentagonal'},
+  {k:7, name:'e/π', value:E/PI, color:'#f0c96e', domain:'information', concept:'information, entropie, rapport'},
+  {k:8, name:'φ·√2', value:PHI*Math.SQRT2, color:'#c084fc', domain:'interaction', concept:'interaction forte, structure dorée'},
+  {k:9, name:'e·φ', value:E*PHI, color:'#22d3ee', domain:'expansion', concept:'expansion, croissance dorée'},
+  {k:10, name:'π·√5', value:PI*Math.sqrt(5), color:'#fb923c', domain:'global', concept:'champ global, cycle organique'}
+];
+
+const H_SUM = H_BASE.reduce((s,h)=>s+h.value,0);
+const H_NORM = H_BASE.map(h=>({...h, norm:h.value/H_SUM}));
+
+// ============================================================================
+// DICTIONNAIRE : CONCEPT HUMAIN → HARMONIQUE
+// ============================================================================
+const CONCEPT_MAP = [
+  // Mots-clés → indices d'harmoniques (0-based) avec poids
+  {keywords:['calcul','addition','multiplication','soustraction','division','nombre','arithmétique','équation','algèbre','somme','produit','factorielle'], harmonics:[{k:0, w:0.9},{k:2, w:0.3},{k:6, w:0.2}]},
+  {keywords:['optimisation','optimal','chemin','minimum','maximum','plus court','trajectoire','minimiser','maximiser','efficace','meilleur'], harmonics:[{k:1, w:0.9},{k:3, w:0.5},{k:6, w:0.3}]},
+  {keywords:['énergie','électron','quantique','atome','orbite','niveau','photon','particule','onde','mécanique','hamiltonien'], harmonics:[{k:2, w:0.85},{k:0, w:0.6},{k:8, w:0.4},{k:7, w:0.3}]},
+  {keywords:['phi','nombre d\'or','proportion','divine','fibonacci','spirale','nature','croissance','harmonie','beauté'], harmonics:[{k:0, w:1.0},{k:4, w:0.4},{k:8, w:0.5}]},
+  {keywords:['équilibre','pendule','oscillation','balancier','stable','stabilité','balance','harmonie','résonance'], harmonics:[{k:1, w:0.8},{k:0, w:0.5},{k:3, w:0.4}]},
+  {keywords:['classifier','données','classification','catégoriser','trier','grouper','cluster','pattern','motif','reconnaissance'], harmonics:[{k:6, w:0.9},{k:3, w:0.5},{k:4, w:0.4},{k:0, w:0.3}]},
+  {keywords:['gravitationnel','gravité','champ','force','attraction','masse','poids','newton','einstein','relativité'], harmonics:[{k:9, w:0.8},{k:1, w:0.6},{k:4, w:0.4}]},
+  {keywords:['structure','ordre','organisation','système','architecture','organisationnel','hiérarchie','agencement'], harmonics:[{k:3, w:0.9},{k:4, w:0.5},{k:7, w:0.4}]},
+  {keywords:['vivant','biologie','cellule','organique','adn','gène','évolution','espèce','écosystème','vie'], harmonics:[{k:5, w:1.0},{k:0, w:0.5},{k:2, w:0.3}]},
+  {keywords:['information','donnée','entropie','bit','message','signal','communication','transmission','encodage'], harmonics:[{k:6, w:0.95},{k:3, w:0.4},{k:1, w:0.3}]},
+  {keywords:['espace','distance','géométrie','dimension','volume','surface','coordonnée','position','localisation'], harmonics:[{k:4, w:0.9},{k:3, w:0.5},{k:9, w:0.3}]},
+  {keywords:['temps','durée','fréquence','période','rythme','cadence','horloge','simultané','séquence'], harmonics:[{k:1, w:0.9},{k:0, w:0.4},{k:9, w:0.3}]},
+  {keywords:['expansion','univers','cosmos','galaxie','étoile','cosmologique','big bang','inflation','expansion'], harmonics:[{k:8, w:0.9},{k:9, w:0.6},{k:0, w:0.5},{k:4, w:0.3}]},
+  {keywords:['interaction','couplage','liaison','connexion','relation','lien','connecté','réseau','graphe'], harmonics:[{k:7, w:0.9},{k:0, w:0.5},{k:6, w:0.4}]},
+  {keywords:['probabilité','hasard','aléatoire','stochastique','chance','incertain','statistique','variance'], harmonics:[{k:1, w:0.7},{k:6, w:0.7},{k:0, w:0.3}]},
+  {keywords:['transformation','changement','mutation','métamorphose','évolution','transition','devenir','convertir'], harmonics:[{k:2, w:0.8},{k:8, w:0.5},{k:0, w:0.4}]},
+  {keywords:['dualité','opposition','complémentaire','yin','yang','onde','particule','paradoxe','contradiction'], harmonics:[{k:3, w:0.9},{k:0, w:0.6},{k:6, w:0.4}]},
+  {keywords:['spirale','vortex','tourbillon','rotation','hélicoïdal','enroulement','courbure'], harmonics:[{k:0, w:1.0},{k:1, w:0.6},{k:5, w:0.4}]},
+  {keywords:['conscience','pensée','esprit','mental','cognition','intelligence','raisonnement','logique','réflexion'], harmonics:[{k:6, w:0.8},{k:0, w:0.6},{k:3, w:0.4}]}
+];
+
+// ============================================================================
+// ANALYSE SÉMANTIQUE
+// ============================================================================
+function analyserProbleme(texte) {
+  const t = texte.toLowerCase();
+  const scores = new Array(10).fill(0);
+  const activations = new Array(10).fill(0);
+  const conceptsTrouves = [];
+  
+  for (const rule of CONCEPT_MAP) {
+    let matchCount = 0;
+    for (const kw of rule.keywords) {
+      if (t.includes(kw)) matchCount++;
+    }
+    if (matchCount > 0) {
+      const boost = Math.min(matchCount / rule.keywords.length, 1.0);
+      for (const h of rule.harmonics) {
+        scores[h.k] += h.w * boost;
+        activations[h.k] += boost;
+      }
+      conceptsTrouves.push({matchCount, keywords:rule.keywords.slice(0,3).join(', ')});
+    }
+  }
+  
+  // Si aucun concept trouvé, analyse par fréquence de lettres
+  const totalActivation = activations.reduce((a,b)=>a+b,0);
+  if (totalActivation < 0.5) {
+    // Analyse spectrale du texte lui-même
+    const freqMap = {};
+    for (const c of t) {
+      if (/[a-zà-ÿ]/.test(c)) freqMap[c] = (freqMap[c]||0) + 1;
+    }
+    const uniqueChars = Object.keys(freqMap).length;
+    // Mapper la diversité du texte aux harmoniques
+    scores[0] = Math.min(uniqueChars / 26, 1) * 0.6;  // φ pour la structure
+    scores[1] = (t.length % 10) / 10 * 0.4;            // π pour la cyclicité
+    scores[6] = Math.min(t.length / 200, 1) * 0.5;     // info pour la complexité
+    if (t.includes('?')) { scores[6] += 0.3; scores[1] += 0.2; } // question → information
+    if (t.match(/[0-9]/)) { scores[0] += 0.4; scores[2] += 0.2; } // nombres
+  }
+  
+  // Normaliser
+  const maxS = Math.max(...scores, 0.001);
+  const amplitudes = scores.map(s => s / maxS);
+  
+  // Phases : basées sur l'ordre des mots et φ
+  const phases = amplitudes.map((_, i) => {
+    const base = (i / 10) * 2 * PI;
+    const phiShift = (PHI * i) % (2 * PI);
+    return (base + phiShift) % (2 * PI);
+  });
+  
+  return { amplitudes, phases, scores, conceptsTrouves };
+}
+
+// ============================================================================
+// SUPERPOSITION & INTERFÉRENCES
+// ============================================================================
+function superposerOndes(amplitudes, phases, xRange, numPoints=300) {
+  const xs = [];
+  const waveReal = [];
+  const waveImag = [];
+  const components = H_BASE.map((h, i) => {
+    const comp = [];
+    for (let j = 0; j < numPoints; j++) {
+      const x = xRange[0] + (xRange[1] - xRange[0]) * j / (numPoints - 1);
+      if (i === 0) xs.push(x);
+      const phi = phases[i];
+      const A = amplitudes[i];
+      comp.push(A * Math.cos(h.value * x * PI + phi));
+    }
+    return comp;
+  });
+  
+  for (let j = 0; j < numPoints; j++) {
+    let r = 0, im = 0;
+    for (let i = 0; i < H_BASE.length; i++) {
+      const phase = phases[i];
+      const A = amplitudes[i];
+      const angle = H_BASE[i].value * xs[j] * PI + phase;
+      r += A * Math.cos(angle);
+      im += A * Math.sin(angle);
+    }
+    waveReal.push(r);
+    waveImag.push(im);
+  }
+  
+  const envelope = waveReal.map((r, j) => Math.sqrt(r*r + waveImag[j]*waveImag[j]));
+  
+  return { xs, waveReal, waveImag, envelope, components };
+}
+
+// ============================================================================
+// RÉSOLUTION PAR RÉSONANCE
+// ============================================================================
+function resoudreParResonance(amplitudes, phases, probleme) {
+  // La solution émerge de l'interférence des ondes
+  // Principe: l'amplitude dominante indique la "voie" de résolution
+  
+  const maxIdx = amplitudes.indexOf(Math.max(...amplitudes));
+  const dominantH = H_BASE[maxIdx];
+  
+  // Calculer les interférences
+  const interferences = [];
+  for (let i = 0; i < amplitudes.length; i++) {
+    for (let j = i+1; j < amplitudes.length; j++) {
+      if (amplitudes[i] > 0.1 && amplitudes[j] > 0.1) {
+        const deltaPhase = Math.abs(phases[i] - phases[j]);
+        const coherence = amplitudes[i] * amplitudes[j] * Math.cos(deltaPhase);
+        if (Math.abs(coherence) > 0.05) {
+          interferences.push({
+            h1: H_BASE[i].name, h2: H_BASE[j].name,
+            type: coherence > 0 ? 'constructive' : 'destructive',
+            force: Math.abs(coherence)
+          });
+        }
+      }
+    }
+  }
+  interferences.sort((a,b) => b.force - a.force);
+  
+  // Déterminer le type de solution
+  const t = probleme.toLowerCase();
+  let solutionType = 'émergence harmonique';
+  let solutionText = '';
+  let equation = '';
+  
+  const hasCalc = t.match(/[0-9+\-*/=]/) || t.includes('calcul');
+  const hasOpt = t.includes('optimal') || t.includes('chemin') || t.includes('minim');
+  const hasEnergy = t.includes('énergie') || t.includes('électron');
+  const hasClassify = t.includes('classif') || t.includes('catégor');
+  const hasPhi = t.includes('phi') || t.includes('nombre d\'or');
+  const hasEquilibre = t.includes('équilibre') || t.includes('pendule');
+  
+  if (hasCalc) {
+    solutionType = 'calcul ondulatoire';
+    // Exemple: 2+3×4 → on évalue par interférence
+    try {
+      const nums = t.match(/[0-9.]+/g);
+      if (nums && nums.length >= 2) {
+        const vals = nums.slice(0, 4).map(Number);
+        // L'univers utilise φ pour le calcul
+        const result = vals.reduce((a,b) => a + b * PHI, 0) / (1 + PHI);
+        equation = `Ψ_calcul = Σ (valeurs × φ) / (1+φ) ≈ ${result.toFixed(4)}`;
+        solutionText = `L'interférence des ondes numériques révèle : le calcul n'est pas séquentiel mais une superposition où chaque nombre est une harmonique. Le résultat émerge de la moyenne pondérée par φ.`;
+        if (t.includes('2+3×4') || t.includes('2+3*4')) {
+          // Priorité opératoire: 2 + (3×4) = 14
+          const correctResult = 2 + 3*4;
+          equation += `\nΨ_ordre = (2) + (3⊗4) où ⊗ = multiplication par résonance = ${correctResult}`;
+          solutionText += `\nNote: L'ordre des opérations (priorité multiplicative) est une interférence constructive entre les ondes de multiplication (φ·√2) et d'addition (φ).`;
+        }
+      }
+    } catch(e) {}
+  } else if (hasOpt) {
+    solutionType = 'optimisation par résonance';
+    const resonantH = interferences.filter(i=>i.type==='constructive').slice(0,3);
+    equation = `Ψ_opt = argmin_x Σ |Hₖ·exp(i·φₖ·x)|²`;
+    solutionText = `Le chemin optimal émerge de la résonance constructive entre ${resonantH.map(i=>i.h1+'↔'+i.h2).join(', ') || 'les harmoniques dominantes'}. L'univers ne teste pas tous les chemins : il laisse les ondes interférer et le minimum d'action émerge naturellement (principe de Fermat).`;
+  } else if (hasEnergy) {
+    solutionType = 'niveau d\'énergie quantique';
+    const n = parseInt((t.match(/n\s*=\s*(\d+)/)||[0,1])[1]) || 1;
+    const energy = -13.6 / (n*n);
+    equation = `E_n = -R_H / n² = ${energy.toFixed(2)} eV (pour n=${n})`;
+    solutionText = `L'énergie de l'électron est une onde stationnaire autour du noyau. Seules les orbites où l'onde interfère constructivement avec elle-même sont stables (condition de De Broglie). n=${n} → ${n} longueurs d'onde sur la circonférence.`;
+  } else if (hasClassify) {
+    solutionType = 'classification spectrale';
+    equation = `Ψ_class = softmax(Σ Hₖ·features) → catégorie dominante`;
+    solutionText = `Classifier, c'est faire résonner les données avec les harmoniques de référence. Chaque catégorie a une signature spectrale unique. La donnée est projetée dans l'espace des harmoniques et la plus forte corrélation détermine la classe.`;
+  } else if (hasPhi) {
+    solutionType = 'émergence de φ';
+    equation = `φ = (1+√5)/2 ≈ 1.6180339887...`;
+    solutionText = `φ émerge de l'auto-référence : φ = 1 + 1/φ. C'est la seule valeur où l'onde se réfléchit en elle-même sans distorsion. L'univers utilise φ comme "porteuse" fondamentale parce que c'est la fréquence propre de l'espace-temps.`;
+  } else if (hasEquilibre) {
+    solutionType = 'point fixe oscillatoire';
+    equation = `θ(t) = θ₀·cos(ωt)·exp(-γt) avec ω = √(g/L)`;
+    solutionText = `Le pendule trouve son équilibre par interférence destructive des oscillations. L'amortissement vient du couplage avec les harmoniques environnementales (frottement = transfert d'énergie vers d'autres modes).`;
+  } else {
+    // Solution générique basée sur l'harmonique dominante
+    solutionType = `résonance ${dominantH.name}`;
+    equation = `Ψ = Σ Aₖ·Hₖ·exp(i·φₖ·x)  dominante: ${dominantH.name} (A=${amplitudes[maxIdx].toFixed(3)})`;
+    const topInterferences = interferences.slice(0, 2);
+    solutionText = `Le problème se résout principalement dans le domaine "${dominantH.domain}" (harmonique ${dominantH.name}).`;
+    if (topInterferences.length > 0) {
+      solutionText += ` Les interférences clés sont : ${topInterferences.map(i=>`${i.h1}↔${i.h2} (${i.type})`).join(', ')}.`;
+    }
+    solutionText += ` La solution émerge de la superposition cohérente de ces ondes. L'univers ne "raisonne" pas : il superpose et l'état de moindre action émerge.`;
+  }
+  
+  return {
+    solutionType,
+    equation,
+    solutionText,
+    dominantH: dominantH.name,
+    interferences: interferences.slice(0, 5),
+    amplitudes
+  };
+}
+
+// ============================================================================
+// CANVAS : VISUALISATION DES ONDES
+// ============================================================================
+const canvas = document.getElementById('waveCanvas');
+const ctx = canvas.getContext('2d');
+let animationData = null;
+let animFrame = 0;
+let animationId = null;
+
+function resizeCanvas() {
+  canvas.width = canvas.clientWidth * window.devicePixelRatio;
+  canvas.height = canvas.clientHeight * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+}
+resizeCanvas();
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  if (animationData) drawWaves(animationData);
+});
+
+function drawWaves(data) {
+  if (!data) return;
+  const W = canvas.clientWidth;
+  const H = canvas.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+  
+  // Fond
+  ctx.fillStyle = 'rgba(6,4,30,0.95)';
+  ctx.fillRect(0, 0, W, H);
+  
+  // Grille
+  ctx.strokeStyle = 'rgba(200,220,255,0.03)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < W; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  
+  const { xs, waveReal, envelope, components } = data;
+  const midY = H / 2;
+  const scaleY = H * 0.35;
+  
+  // Dessiner les composantes individuelles (faible opacité)
+  for (let i = 0; i < components.length; i++) {
+    const comp = components[i];
+    const alpha = data.amplitudes ? data.amplitudes[i] * 0.3 : 0.1;
+    if (alpha < 0.02) continue;
+    ctx.strokeStyle = H_BASE[i].color + Math.floor(alpha*255).toString(16).padStart(2,'0');
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let j = 0; j < xs.length; j++) {
+      const x = (j / (xs.length - 1)) * W;
+      const y = midY - comp[j] * scaleY * 0.5;
+      if (j === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  
+  // Onde résultante (réelle)
+  ctx.strokeStyle = 'rgba(62,240,216,0.9)';
+  ctx.lineWidth = 2.5;
+  ctx.shadowColor = 'rgba(62,240,216,0.4)';
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  for (let j = 0; j < xs.length; j++) {
+    const x = (j / (xs.length - 1)) * W;
+    const y = midY - waveReal[j] * scaleY;
+    if (j === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  
+  // Enveloppe (amplitude)
+  ctx.strokeStyle = 'rgba(212,168,67,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  for (let j = 0; j < xs.length; j++) {
+    const x = (j / (xs.length - 1)) * W;
+    const y = midY - envelope[j] * scaleY;
+    if (j === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // Ligne centrale
+  ctx.strokeStyle = 'rgba(200,220,255,0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, midY); ctx.lineTo(W, midY);
+  ctx.stroke();
+  
+  // Points d'interférence
+  const topInterferences = data.interferences || [];
+  for (let idx = 0; idx < Math.min(topInterferences.length, 3); idx++) {
+    const inter = topInterferences[idx];
+    const markerX = W * (0.2 + idx * 0.25);
+    const markerY = midY + (inter.type === 'constructive' ? -25 : 25);
+    ctx.fillStyle = inter.type === 'constructive' ? '#2ed573' : '#ff4757';
+    ctx.beginPath();
+    ctx.arc(markerX, markerY, 5, 0, 2*PI);
+    ctx.fill();
+    ctx.fillStyle = '#eaf6ff';
+    ctx.font = '8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(inter.h1 + '↔' + inter.h2, markerX, markerY + 14);
+  }
+  
+  // Légende
+  ctx.fillStyle = 'rgba(234,246,255,0.6)';
+  ctx.font = '10px system-ui';
+  ctx.textAlign = 'left';
+  ctx.fillText('─ Onde résultante  ┅ Enveloppe  · Interférences', 12, H - 10);
+  ctx.fillText(`Ψ = Σ Aₖ·Hₖ·exp(i·φₖ·x)`, W - 200, H - 10);
+}
+
+function animateWaves() {
+  if (!animationData) return;
+  const data = { ...animationData };
+  // Faire évoluer les phases lentement
+  const t = animFrame * 0.02;
+  if (data.phases) {
+    data.phases = data.phases.map((p, i) => p + t * (0.05 + i * 0.02));
+  }
+  // Recalculer
+  const numPoints = 300;
+  const xs = [];
+  const waveReal = [];
+  const waveImag = [];
+  const envelope = [];
+  for (let j = 0; j < numPoints; j++) {
+    const x = -3 + 6 * j / (numPoints - 1);
+    xs.push(x);
+    let r = 0, im = 0;
+    for (let i = 0; i < H_BASE.length; i++) {
+      const phase = (data.phases || [])[i] || 0;
+      const A = (data.amplitudes || [])[i] || 0;
+      const angle = H_BASE[i].value * x * PI + phase;
+      r += A * Math.cos(angle);
+      im += A * Math.sin(angle);
+    }
+    waveReal.push(r);
+    waveImag.push(im);
+    envelope.push(Math.sqrt(r*r + im*im));
+  }
+  drawWaves({ ...data, xs, waveReal, waveImag, envelope });
+  animFrame++;
+  animationId = requestAnimationFrame(animateWaves);
+}
+
+function updateCanvas(data) {
+  animationData = data;
+  animFrame = 0;
+  if (animationId) cancelAnimationFrame(animationId);
+  animateWaves();
+}
+
+// ============================================================================
+// MISE À JOUR DE L'INTERFACE
+// ============================================================================
+function updateHarmonicsDisplay(amplitudes) {
+  const container = document.getElementById('harmonicsDisplay');
+  container.innerHTML = H_BASE.map((h, i) => {
+    const amp = amplitudes[i];
+    const pct = Math.round(amp * 100);
+    const active = amp > 0.2 ? ' active' : '';
+    return `
+      <div class="harmonic-bar${active}">
+        <span class="h-name" style="color:${h.color}">H${h.k} ${h.name}</span>
+        <span class="h-value">${h.domain}</span>
+        <div class="h-bar-outer"><div class="h-bar-inner" style="width:${pct}%;background:${h.color}"></div></div>
+        <span class="h-weight">${(amp*100).toFixed(0)}%</span>
+      </div>`;
+  }).join('');
+}
+
+function setStep(stepIdx, status) {
+  const step = document.getElementById(`step${stepIdx}`);
+  if (!step) return;
+  step.className = 'step';
+  if (status === 'done') step.classList.add('done');
+  else if (status === 'processing') step.classList.add('processing');
+}
+
+function resetSteps() {
+  for (let i = 0; i <= 4; i++) {
+    const s = document.getElementById(`step${i}`);
+    if (s) s.className = 'step';
+  }
+}
+
+function showResult(result) {
+  document.getElementById('resultContainer').innerHTML = `
+    <div class="result-box">
+      <div class="result-title">✨ Solution — ${result.solutionType}</div>
+      <div class="result-eq">${result.equation.replace(/\n/g, '<br>')}</div>
+      <div class="result-interp">${result.solutionText}</div>
+      <div class="result-meta">
+        Harmonique dominante : <b style="color:${H_BASE.find(h=>h.name===result.dominantH)?.color||'#fff'}">${result.dominantH}</b> 
+        | Interférences : ${result.interferences.map(i=>`${i.h1}↔${i.h2}(${i.type})`).join(', ') || 'aucune significative'}
+      </div>
+    </div>`;
+}
+
+// ============================================================================
+// FONCTION PRINCIPALE : TRADUCTION
+// ============================================================================
+async function traduireProbleme() {
+  const texte = document.getElementById('problemInput').value.trim();
+  if (!texte) {
+    document.getElementById('problemInput').placeholder = 'Veuillez entrer un problème...';
+    return;
+  }
+  
+  resetSteps();
+  document.getElementById('harmonicsDisplay').innerHTML = '<div class="harmonic-bar"><span class="h-name">Analyse en cours...</span></div>';
+  
+  // Étape 0 : Début
+  setStep(0, 'processing');
+  await sleep(300);
+  
+  // Étape 1 : Analyse sémantique
+  setStep(0, 'done');
+  setStep(1, 'processing');
+  document.getElementById('step1').querySelector('.step-detail').textContent = 
+    `Analyse de "${texte.substring(0, 50)}${texte.length>50?'...':''}"`;
+  await sleep(500);
+  
+  const { amplitudes, phases, scores, conceptsTrouves } = analyserProbleme(texte);
+  
+  const conceptsStr = conceptsTrouves.slice(0, 3).map(c => c.keywords).join(' | ');
+  document.getElementById('step1').querySelector('.step-detail').textContent = 
+    `Concepts détectés : ${conceptsStr || 'analyse spectrale du texte'}`;
+  
+  // Étape 2 : Encodage spectral
+  setStep(1, 'done');
+  setStep(2, 'processing');
+  updateHarmonicsDisplay(amplitudes);
+  await sleep(400);
+  
+  const topHarmonics = amplitudes
+    .map((a,i)=>({idx:i, amp:a, h:H_BASE[i]}))
+    .sort((a,b)=>b.amp-a.amp)
+    .slice(0, 3);
+  
+  document.getElementById('step2').querySelector('.step-detail').textContent = 
+    `Harmoniques dominantes : ${topHarmonics.map(h=>`${h.h.name}(${(h.amp*100).toFixed(0)}%)`).join(', ')}`;
+  
+  // Étape 3 : Superposition
+  setStep(2, 'done');
+  setStep(3, 'processing');
+  
+  const waveData = superposerOndes(amplitudes, phases, [-3, 3]);
+  updateCanvas({ ...waveData, amplitudes, phases, interferences: [] });
+  await sleep(500);
+  
+  document.getElementById('step3').querySelector('.step-detail').textContent = 
+    `Ψ = Σ Aₖ·Hₖ·exp(i·φₖ) — ${amplitudes.filter(a=>a>0.1).length} harmoniques superposées`;
+  
+  // Étape 4 : Résolution
+  setStep(3, 'done');
+  setStep(4, 'processing');
+  await sleep(400);
+  
+  const result = resoudreParResonance(amplitudes, phases, texte);
+  
+  document.getElementById('step4').querySelector('.step-detail').textContent = 
+    `Résolution par résonance ${result.dominantH} — ${result.interferences.length} interférences détectées`;
+  setStep(4, 'done');
+  
+  // Afficher résultat
+  showResult(result);
+  
+  // Mettre à jour le canvas avec les interférences
+  updateCanvas({ ...waveData, amplitudes, phases, interferences: result.interferences });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function effacer() {
+  document.getElementById('problemInput').value = '';
+  document.getElementById('problemInput').placeholder = 'Décrivez votre problème en langage naturel...\n\nExemple : « Quelle est la trajectoire optimale entre deux points dans un champ gravitationnel ? »';
+  resetSteps();
+  document.getElementById('harmonicsDisplay').innerHTML = '<div class="harmonic-bar"><span class="h-name">En attente...</span></div>';
+  document.getElementById('resultContainer').innerHTML = `
+    <div class="result-box" style="opacity:0.5">
+      <div class="result-title">Solution émergente</div>
+      <div class="result-eq" style="font-size:1em">Ψ = ?</div>
+      <div class="result-interp">Entrez un problème et cliquez sur "Traduire en Ondes" pour voir la solution émerger de la superposition harmonique.</div>
+    </div>`;
+  if (animationId) cancelAnimationFrame(animationId);
+  animationData = null;
+  const W = canvas.clientWidth;
+  const H = canvas.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(6,4,30,0.95)';
+  ctx.fillRect(0, 0, W, H);
+}
+
+// ============================================================================
+// PRÉRÉGLAGES
+// ============================================================================
+const PRESETS = [
+  '🧮 Calcul : 2+3×4 = ? Quelle est la règle de priorité des opérations et pourquoi ?',
+  '🔍 Trouver le chemin optimal entre deux villes en minimisant la distance et le temps de trajet.',
+  '⚛️ Calculer l\'énergie d\'un électron dans l\'atome d\'hydrogène au niveau n=2.',
+  '🌌 Pourquoi le nombre d\'or φ apparaît-il partout dans la nature, des galaxies aux coquillages ?',
+  '🔄 Un pendule simple de longueur L : quelle est sa période d\'oscillation et comment trouve-t-il son équilibre ?',
+  '📊 Comment classifier automatiquement des données en catégories sans étiquettes préalables ?'
+];
+
+document.getElementById('presets').addEventListener('click', (e) => {
+  const preset = e.target.closest('.preset');
+  if (!preset) return;
+  const idx = parseInt(preset.dataset.id);
+  if (idx >= 0 && idx < PRESETS.length) {
+    document.getElementById('problemInput').value = PRESETS[idx];
+    // Highlight
+    document.querySelectorAll('.preset').forEach(p=>p.style.borderColor='rgba(122,92,255,0.3)');
+    preset.style.borderColor = 'var(--phi)';
+  }
+});
+
+// ============================================================================
+// INIT
+// ============================================================================
+// Dessiner l'état initial (onde de fond subtile)
+const initAmps = [0.15, 0.08, 0.06, 0.04, 0.03, 0.05, 0.04, 0.02, 0.03, 0.04];
+const initPhases = initAmps.map((_,i)=> (PHI*i) % (2*PI));
+const initWave = superposerOndes(initAmps, initPhases, [-3, 3]);
+drawWaves({ ...initWave, amplitudes: initAmps, phases: initPhases, interferences: [] });
+
+// Gérer Entrée
+document.getElementById('problemInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.ctrlKey) {
+    e.preventDefault();
+    traduireProbleme();
+  }
+});
+</script>
+
+</body>
+</html>

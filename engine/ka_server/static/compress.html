@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>KA Compress — Votre assistant</title>
+<link rel="icon" href="/brand/psi.svg">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --void:#06060f;--soul:#8b83ff;--soul-l:#b8b2ff;--soul-d:rgba(139,131,255,.14);--soul-g:rgba(139,131,255,.35);
+  --life:#3ddba0;--life-d:rgba(61,219,160,.12);--life-g:rgba(61,219,160,.28);
+  --sky:#85b7eb;--gold:#f0c060;--rose:#ed93b1;
+  --t1:rgba(255,255,255,.93);--t2:rgba(255,255,255,.58);--t3:rgba(255,255,255,.32);
+  --g1:rgba(255,255,255,.04);--g2:rgba(255,255,255,.08);--g3:rgba(255,255,255,.13);
+  --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.11);--b3:rgba(255,255,255,.18);
+  --font:-apple-system,"SF Pro Display","Inter",system-ui,sans-serif;
+  --mono:"SF Mono","JetBrains Mono",Consolas,monospace;
+  --ka-size:36px;
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--void);color:var(--t1);font-family:var(--font);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
+a{color:var(--soul-l);text-decoration:none}
+
+/* ── Logo KA (disque argent) ── */
+#ka-disc{width:130px;height:130px;margin-bottom:26px;filter:drop-shadow(0 14px 50px rgba(180,190,205,.35));animation:discSpin 24s linear infinite,discFloat 5s ease-in-out infinite}
+@keyframes discSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes discFloat{0%,100%{margin-bottom:26px}50%{margin-bottom:34px}}
+
+/* ── Canvas arrière ── */
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
+nav,.chat,.wlc{position:relative;z-index:1}
+
+/* ── Nav ── */
+nav{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--b1);background:rgba(6,6,15,.75);backdrop-filter:blur(18px) saturate(1.4);flex-shrink:0}
+nav .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:16px;color:#fff;text-decoration:none}
+nav .brand img{width:28px;height:28px;filter:drop-shadow(0 2px 8px rgba(139,131,255,.4));transition:transform .4s}
+nav .brand:hover img{transform:rotate(-8deg) scale(1.06)}
+nav .brand b{color:var(--soul-l)}
+nav .badge{margin-left:auto;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);border:1px solid var(--b2);border-radius:999px;padding:4px 12px;background:var(--g1)}
+nav .links{display:flex;gap:12px;font-size:12px;font-weight:600}
+nav .links a{color:var(--t3);padding:5px 10px;border-radius:8px;transition:all .2s}
+nav .links a:hover{color:#fff;background:var(--g2)}
+
+/* ── Chat ── */
+.chat{flex:1;overflow-y:auto;padding:18px 16px 10px;display:flex;flex-direction:column;gap:16px;scroll-behavior:smooth}
+.chat::-webkit-scrollbar{width:4px}
+.chat::-webkit-scrollbar-track{background:transparent}
+.chat::-webkit-scrollbar-thumb{background:var(--b3);border-radius:2px}
+
+/* ── Messages ── */
+.msg{display:flex;gap:11px;max-width:92%;animation:msgIn .45s cubic-bezier(.16,1,.3,1)}
+.msg.ka{align-self:flex-start}
+.msg.user{align-self:flex-end;flex-direction:row-reverse}
+@keyframes msgIn{from{opacity:0;transform:translateY(16px) scale(.97)}}
+.msg .av{width:var(--ka-size);height:var(--ka-size);border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;position:relative}
+.msg.ka .av{color:#fff;box-shadow:0 0 20px rgba(139,131,255,.35),inset 0 1px 0 rgba(255,255,255,.15);animation:kaPulse 3s ease-in-out infinite}
+.msg.ka .av-in{width:100%;height:100%;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,var(--soul),#5a4aff);position:relative}
+.msg.ka .av img{width:100%;height:100%;object-fit:cover;display:block}
+@keyframes kaPulse{0%,100%{box-shadow:0 0 20px rgba(139,131,255,.35)}50%{box-shadow:0 0 32px rgba(139,131,255,.55)}}
+.msg.ka .av::after{content:'';position:absolute;inset:-3px;border-radius:50%;border:1px solid var(--soul-g);animation:kaRing 4s linear infinite}
+@keyframes kaRing{0%{opacity:.6}50%{opacity:0}100%{opacity:.6}}
+.msg.user .av{background:linear-gradient(135deg,var(--g2),var(--g1));border:1px solid var(--b2);font-size:17px}
+
+.msg .b{background:var(--g1);border:1px solid var(--b1);border-radius:14px;padding:13px 15px;font-size:14px;line-height:1.6;min-width:0;backdrop-filter:blur(6px)}
+.msg.ka .b{border-bottom-left-radius:5px;background:linear-gradient(135deg,rgba(255,255,255,.03),rgba(139,131,255,.04))}
+.msg.user .b{background:linear-gradient(135deg,var(--soul-d),rgba(139,131,255,.08));border-color:var(--soul-g);border-bottom-right-radius:5px}
+.msg .b .nm{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--soul-l);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.msg .b .nm .dot{width:5px;height:5px;border-radius:50%;background:var(--life);display:inline-block;animation:dotPulse 2s ease-in-out infinite}
+@keyframes dotPulse{0%,100%{opacity:.4}50%{opacity:1}}
+.msg .b .ti{font-size:12.5px;color:var(--t2);line-height:1.55;display:block;margin-top:4px}
+
+/* ── Résultat inline ── */
+.ri{margin-top:12px;border-radius:14px;overflow:hidden;border:1px solid var(--b1);background:var(--g1)}
+.ri .ri-top{width:100%;aspect-ratio:3/2;background:#05070d;position:relative;overflow:hidden}
+.ri .ri-m{display:flex;gap:14px;padding:11px 14px;font-size:12px;color:var(--t2);flex-wrap:wrap;background:rgba(255,255,255,.02);border-top:1px solid var(--b1)}
+.ri .ri-m b{color:var(--t1)}.ri .ri-m .g{color:var(--life);font-weight:800}
+.ri .ri-b{height:4px;background:var(--g2);border-radius:0 0 14px 14px;overflow:hidden}
+.ri .ri-b i{display:block;height:100%;background:linear-gradient(90deg,var(--life),var(--sky));transition:width .6s cubic-bezier(.16,1,.3,1);border-radius:0 0 14px 14px}
+
+/* ── Comparateur ── */
+.cmp{position:relative;width:100%;height:100%;user-select:none}
+.cmp img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;display:block}
+.cmp .co{position:absolute;inset:0;overflow:hidden;z-index:2}
+.cmp .ch{position:absolute;top:0;bottom:0;width:3px;background:#fff;z-index:3;cursor:ew-resize;box-shadow:0 0 12px rgba(0,0,0,.7);transition:none}
+.cmp .ch::before,.cmp .ch::after{content:'';position:absolute;top:50%;border:5px solid transparent}
+.cmp .ch::before{left:-8px;border-right-color:#fff;transform:translateY(-50%)}
+.cmp .ch::after{right:-8px;border-left-color:#fff;transform:translateY(-50%)}
+.cmp .cl{position:absolute;bottom:12px;z-index:4;font-size:10px;font-weight:700;padding:4px 12px;border-radius:999px;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);letter-spacing:.04em}
+.cmp .cl-l{left:12px;color:var(--rose)}
+.cmp .cl-r{right:12px;color:var(--life)}
+
+/* ── Boutons suggestions ── */
+.sugs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.sugs button{background:linear-gradient(135deg,rgba(139,131,255,.12),rgba(139,131,255,.06));border:1px solid var(--soul-g);border-radius:999px;padding:7px 16px;font-size:12px;font-weight:600;color:var(--soul-l);cursor:pointer;transition:all .25s;font-family:var(--font);backdrop-filter:blur(4px)}
+.sugs button:hover{background:rgba(139,131,255,.25);transform:translateY(-1px);box-shadow:0 4px 16px rgba(139,131,255,.2)}
+.sugs button:active{transform:scale(.96)}
+.sugs button.primary{background:linear-gradient(135deg,var(--life),#1fae7c);color:#04261a;border-color:var(--life-g)}
+.sugs button.primary:hover{background:linear-gradient(135deg,#4ae8b0,#27c58b);box-shadow:0 4px 16px rgba(61,219,160,.3)}
+.sugs button.danger{background:linear-gradient(135deg,rgba(237,147,177,.12),rgba(237,147,177,.06));border-color:rgba(237,147,177,.3);color:var(--rose)}
+.sugs button.danger:hover{background:rgba(237,147,177,.2)}
+
+/* ── Typing ── */
+.ty{display:flex;gap:5px;padding:5px 0}
+.ty span{width:8px;height:8px;border-radius:50%;background:var(--t3);animation:tyB 1.4s ease-in-out infinite}
+.ty span:nth-child(2){animation-delay:.2s}
+.ty span:nth-child(3){animation-delay:.4s}
+@keyframes tyB{0%,40%,100%{opacity:.3;transform:scale(.8)}20%{opacity:1;transform:scale(1)}}
+
+/* ── Upload zone ── */
+.uz{flex-shrink:0;margin:8px 0;border:1.5px dashed var(--b3);border-radius:16px;padding:26px 18px;text-align:center;cursor:pointer;transition:all .3s;position:relative;max-width:360px;background:linear-gradient(135deg,rgba(139,131,255,.03),transparent)}
+.uz:hover{border-color:var(--soul-g);background:rgba(139,131,255,.08);transform:scale(1.01)}
+.uz.drag{border-color:var(--life);background:var(--life-d);transform:scale(1.02);box-shadow:0 0 30px rgba(61,219,160,.15)}
+.uz .ui{font-size:30px;margin-bottom:8px;display:block;filter:drop-shadow(0 4px 14px rgba(139,131,255,.3));transition:transform .3s}
+.uz:hover .ui{transform:translateY(-2px)}
+.uz .ut{font-size:14px;font-weight:700}
+.uz .us{font-size:11px;color:var(--t3);margin-top:5px}
+.uz input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.uz .uo{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap;font-size:11px;color:var(--t3)}
+.uz .uo label{display:flex;align-items:center;gap:5px}
+.uz .uo input[type=range]{width:80px;accent-color:var(--soul);cursor:pointer;height:3px}
+
+/* ── Welcome ── */
+.wlc{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 20px;text-align:center;animation:wlcIn 1.4s cubic-bezier(.16,1,.3,1);transition:opacity 3.2s cubic-bezier(.4,0,.2,1),transform 3.2s cubic-bezier(.4,0,.2,1),filter 2.8s cubic-bezier(.4,0,.2,1);transform-origin:center;will-change:opacity,transform,filter}
+.wlc.fade-out{opacity:0;transform:scale(.86) translateY(-30px);pointer-events:none;filter:blur(6px)}
+@keyframes wlcIn{from{opacity:0;transform:translateY(24px)}}
+.wlc h1{font-size:clamp(28px,6vw,40px);font-weight:200;margin-bottom:8px;letter-spacing:.12em;color:var(--t2);position:relative}
+.wlc h1 .ka-text{font-family:Georgia,'Times New Roman',serif;font-weight:700;background:linear-gradient(180deg,#eceff3,#9ea5af);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 20px rgba(180,190,205,.2))}
+.wlc .sub{font-family:var(--font);font-size:13px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--t3);margin-bottom:20px;border:1px solid var(--b1);border-radius:999px;padding:6px 18px;background:var(--g1);display:inline-block}
+.wlc p{color:var(--t2);font-size:14.5px;line-height:1.7;max-width:440px;margin-bottom:26px;letter-spacing:.015em}
+.wlc p b{color:var(--soul-l)}
+
+/* ── Loading inline ── */
+.il{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px;color:var(--t2)}
+.il .sp{width:14px;height:14px;border:2px solid var(--b2);border-top-color:var(--soul-l);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.er{color:var(--rose);font-size:13px;padding:8px 0;line-height:1.5}
+
+/* ── Storage card dans le chat ── */
+.sc{margin-top:10px;padding:12px 14px;border-radius:12px;background:linear-gradient(135deg,rgba(61,219,160,.06),rgba(139,131,255,.04));border:1px solid rgba(61,219,160,.18)}
+.sc .sc-l{display:flex;justify-content:space-between;font-size:12px;color:var(--t2);padding:4px 0}
+.sc .sc-l b{color:var(--t1)}
+.sc .sc-b{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.sc .sc-p{height:4px;border-radius:2px;background:var(--g2);overflow:hidden;margin-top:8px}
+.sc .sc-p i{display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,var(--life),var(--soul));transition:width .6s}
+
+/* ── Badge rendement ── */
+.badge-ratio{display:inline-flex;align-items:center;gap:4px;background:var(--life-d);border:1px solid var(--life-g);border-radius:999px;padding:2px 10px 2px 8px;font-size:11px;font-weight:700;color:var(--life)}
+
+@media(max-width:500px){.msg{max-width:98%}.nav .badge{display:none}}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<nav>
+  <a class="brand" href="/compress"><img src="/brand/ka-disc.svg" alt="">KA <b>Compress</b></a>
+  <span class="badge">Ψ Codec</span>
+  <div class="links">
+    <a href="/harmonic-ai">HARMONIC AI</a>
+    <a href="/compress/console">Console</a>
+  </div>
+</nav>
+
+<div class="chat" id="chat"></div>
+
+<div class="wlc" id="welcome">
+  <img id="ka-disc" src="/brand/ka.svg" alt="">
+  <h1><span class="ka-text">KA</span></h1>
+  <span class="sub">Compression Harmonique</span>
+  <p><b>Bonjour</b>, je suis votre compagnon de compression harmonique.<br>Déposez une image ou laissez-moi gérer votre stockage.<br><b style="color:var(--life)">Zéro cloud, zéro perte.</b></p>
+  <div class="uz" id="uz-w">
+    <span class="ui">📤</span>
+    <div class="ut">Déposer une photo</div>
+    <div class="us">JPEG, PNG, WebP — max 50 Mo</div>
+    <input type="file" id="wf" accept="image/*">
+    <div class="uo">
+      <label>Qualité <input type="range" id="wq" min="12" max="45" value="25"></label>
+      <label><span id="wql">25</span> dB PSNR</label>
+    </div>
+  </div>
+  <div class="sugs" style="justify-content:center;margin-top:14px">
+    <button class="primary" onclick="demoExpress()">🚀 Voir un exemple</button>
+    <button onclick="proposeStorageScan()">📱 Libérer de l'espace</button>
+  </div>
+</div>
+
+<script>
+// ── Transition welcome → chat (fondu doux) ──
+function KW(cb){
+  if(!W||W.style.display==='none'){cb&&cb();return}
+  W.classList.add('fade-out')
+  setTimeout(function(){
+    W.style.display='none'
+    W.classList.remove('fade-out')
+    cb&&cb()
+  },3200)
+}
+
+// ── Toile de fond (ondes) ──
+(function(){
+  var cv=document.getElementById('bg-canvas'),ctx=cv.getContext('2d');
+  function sz(){cv.width=cv.offsetWidth;cv.height=cv.offsetHeight}
+  sz();addEventListener('resize',sz);
+  var t0=performance.now();
+  function loop(t){
+    var w=cv.width,h=cv.height;ctx.clearRect(0,0,w,h);
+    var ph=((t-t0)/4000)%1*Math.PI*2;
+    for(var j=0;j<2;j++){
+      ctx.strokeStyle=j?'rgba(61,219,160,.08)':'rgba(139,131,255,.12)';
+      ctx.lineWidth=j?1.5:2;
+      ctx.beginPath();
+      for(var x=0;x<=w;x+=4){
+        var y=h*.58+
+          Math.sin(x/w*Math.PI*3+ph*.6+j)*h*.05+
+          Math.sin(x/w*Math.PI*7+ph*1.2+j)*h*.025;
+        x?ctx.lineTo(x,y):ctx.moveTo(x,y);
+      }
+      ctx.stroke();
+    }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+
+// ── État ──
+var S={b64:'',blob:null,name:'',fsize:0,ratio:0}
+var C=document.getElementById('chat'),W=document.getElementById('welcome')
+var csActive=false
+function fmtB(n){
+  if(n<1024)return n+' o';
+  if(n<1048576)return(n/1024).toFixed(1)+' Ko';
+  if(n<1073741824)return(n/1048576).toFixed(1)+' Mo';
+  return(n/1073741824).toFixed(2)+' Go';
+}
+function $(i){return document.getElementById(i)}
+$('wq').addEventListener('input',function(){$('wql').textContent=this.value})
+
+// ── Dropzone ──
+var dz=$('uz-w'),fi=$('wf')
+dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('drag')})
+dz.addEventListener('dragleave',function(){dz.classList.remove('drag')})
+dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('drag');if(e.dataTransfer.files.length)up(e.dataTransfer.files[0])})
+fi.addEventListener('change',function(){if(fi.files.length)up(fi.files[0])})
+
+// ── Upload ──
+function up(file){
+  if(!file)return
+  S.fsize=file.size;S.name=file.name
+  var r=new FileReader()
+  r.onload=function(e){
+    S.b64=e.target.result.split(',')[1]
+    KW(function(){
+      M('user','<div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">📸</span><div><b>'+file.name+'</b><div class="ti">'+fmtB(file.size)+'</div></div></div>')
+      T();setTimeout(function(){R();T();setTimeout(function(){cp()},400)},600)
+    })
+  }
+  r.readAsDataURL(file)
+}
+function M(role,html){
+  var d=document.createElement('div');d.className='msg '+role
+  d.innerHTML='<div class="av">'+(role==='ka'?'<div class="av-in"><img src="/brand/ka-disc.svg" alt="KA"></div>':'👤')+'</div><div class="b">'+(role==='ka'?'<div class="nm"><span class="dot"></span>KA</div>':'')+html+'</div>'
+  C.appendChild(d);C.scrollTop=C.scrollHeight
+  return d
+}
+function T(){
+  var d=$('_ty');if(d){d.remove();return}
+  var v=document.createElement('div');v.className='msg ka';v.id='_ty'
+  v.innerHTML='<div class="av"><div class="av-in"><img src="/brand/ka-disc.svg" alt="KA"></div></div><div class="b"><div class="nm"><span class="dot"></span>KA</div><div class="ty"><span></span><span></span><span></span></div></div>'
+  C.appendChild(v);C.scrollTop=C.scrollHeight
+}
+function R(){var d=$('_ty');if(d)d.remove()}
+
+// ── Compression ──
+function cp(){
+  M('ka','<div class="il"><div class="sp"></div>Analyse harmonique en cours...</div>')
+  var f=new FormData()
+  f.append('file',new Blob([Uint8Array.from(atob(S.b64),function(c){return c.charCodeAt(0)})],{type:'image/jpeg'}),S.name||'image.jpg')
+  f.append('mode','select')
+  f.append('min_psnr',$('wq').value)
+  fetch('/api/compress/preview',{method:'POST',body:f})
+    .then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error||'Erreur');return d})})
+    .then(function(d){
+      C.removeChild(C.lastChild)
+      S.ratio=d.ratio
+      var bin=Uint8Array.from(atob(d.compressed_base64||''),function(c){return c.charCodeAt(0)})
+      S.blob=bin.length?new Blob([bin],{type:'application/octet-stream'}):null
+      var sv=d.saved_percent,vr=d.ratio
+      var h='<b>✅ Compression terminée</b> <span class="badge-ratio">×'+vr+'</span><div class="ti">J\'ai compressé <b style="color:var(--life)">'+fmtB(d.original_size)+'</b> → <b style="color:var(--soul-l)">'+fmtB(d.compressed_size)+'</b> soit <b style="color:var(--life)">'+sv+'%</b> économisés.</div>'
+      h+='<div class="ri"><div class="ri-top"><div class="cmp">'
+      h+='<div style="position:absolute;inset:0"><img src="data:image/jpeg;base64,'+d.reconstructed_base64+'" alt="Ψ"></div>'
+      h+='<div class="co" style="width:50%"><img src="data:image/jpeg;base64,'+d.original_base64+'" alt="Orig" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain"></div>'
+      h+='<div class="ch" style="left:50%"></div>'
+      h+='<div class="cl cl-l">Original</div><div class="cl cl-r">Ψ</div>'
+      h+='</div></div>'
+      h+='<div class="ri-m"><span>🔷 Ratio <b class="g">×'+vr+'</b></span><span>🎯 PSNR <b>'+(d.psnr>=99?'∞':d.psnr.toFixed(1))+' dB</b></span><span>📦 <b>'+d.format+'</b></span><span>📐 <b>'+d.width+'×'+d.height+'</b></span></div>'
+      h+='<div class="ri-b"><i style="width:'+Math.min(100,sv)+'%"></i></div></div>'
+      h+='<div class="sugs"><button onclick="DL()">⬇ Télécharger .hcv</button><button onclick="location.reload()">🔄 Nouvelle image</button></div>'
+      M('ka',h)
+      setTimeout(function(){
+        var h=$('ch'),o=$('co');if(!h||!o)return
+        function mv(e){
+          var r=document.querySelector('.ri-top').getBoundingClientRect()
+          var x=(e.clientX||(e.touches&&e.touches[0].clientX))-r.left
+          var p=Math.max(0.04,Math.min(0.96,x/r.width))
+          h.style.left=(p*100)+'%';o.style.width=(p*100)+'%'
+        }
+        function st(e){csActive=true;mv(e)}
+        function sp(){csActive=false}
+        h.addEventListener('mousedown',st)
+        document.addEventListener('mousemove',function(e){if(csActive)mv(e)})
+        document.addEventListener('mouseup',sp)
+        h.addEventListener('touchstart',st)
+        document.addEventListener('touchmove',function(e){if(csActive)mv(e)})
+        document.addEventListener('touchend',sp)
+      },150)
+    })
+    .catch(function(e){C.removeChild(C.lastChild);M('ka','<span class="er">❌ '+e.message+'</span>')})
+}
+
+// ── Démo express ──
+function demoExpress(){
+  KW(function(){
+    M('ka','<b>🚀 Démo express</b><div class="ti">Je charge une photo de démonstration et je la compresse sous vos yeux.</div>')
+    T()
+    fetch('/img/demo_landscape.jpg')
+      .then(function(r){return r.arrayBuffer()})
+      .then(function(b){
+        var u=new Uint8Array(b),s=''
+        for(var i=0;i<u.length;i++)s+=String.fromCharCode(u[i])
+        S.b64=btoa(s);S.name='demo_landscape.jpg';S.fsize=b.byteLength
+        R();M('ka','📸 Photo chargée !<div class="ti">Je lance la compression...</div>')
+        T();setTimeout(function(){R();cp()},350)
+      })
+  })
+}
+function DL(){
+  if(!S.blob){alert('Fichier non disponible');return}
+  var a=document.createElement('a');a.href=URL.createObjectURL(S.blob);a.download=S.name.replace(/\.[^.]+$/,'')+'.hcv';a.click()
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// INIT — Premier message de KA
+// ═══════════════════════════════════════════════════════════════════════
+setTimeout(function(){
+  KW(function(){
+    M('ka','<b>👋 Bonjour, je suis KA</b><div class="ti">Je compresse vos fichiers <b>sans perte visible</b> et <b>sans envoyer vos données</b> sur le cloud.<br>Je peux aussi analyser votre stockage et libérer de l\'espace en un clic — les originaux sont gardés <b style="color:var(--life)">7 jours</b>.</div>')
+    var sg=document.createElement('div');sg.className='sugs'
+    sg.innerHTML='<button class="primary" onclick="proposeStorageScan()">📱 Analyser le téléphone</button><button onclick="demoExpress()">🚀 Essayer une photo</button>'
+    C.lastChild.querySelector('.b').appendChild(sg)
+  })
+},6000)
+
+// ═══════════════════════════════════════════════════════════════════════
+// STORAGE SAVER
+// ═══════════════════════════════════════════════════════════════════════
+function proposeStorageScan(){
+  KW(function(){
+    M('ka','<b>📱 Analyser le stockage ?</b><div class="ti">Je peux scanner l\'intégralité de votre téléphone, compresser les fichiers et libérer de l\'espace.<br>Les originaux sont conservés <b style="color:var(--life)">7 jours</b> en cas de besoin.</div>')
+    var d=document.createElement('div');d.className='sugs'
+    d.innerHTML='<button class="primary" onclick="startStorageScan()">✅ Oui, analyser</button><button class="danger" onclick="skipStorage()">Non merci</button>'
+    C.lastChild.querySelector('.b').appendChild(d)
+  })
+}
+
+function startStorageScan(){
+  var btn=C.querySelector('.msg.ka:last-child .sugs');if(btn)btn.style.display='none'
+  M('ka','<div class="il"><div class="sp"></div>Analyse du stockage...</div>')
+  fetch('/api/compress/storage/scan')
+    .then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error||'Erreur');return d})})
+    .then(function(d){
+      C.removeChild(C.lastChild)
+      var msg='<b>📊 Analyse terminée</b><div class="ti">J\'ai trouvé <b>'+d.total_files+' fichiers</b> représentant <b>'+d.total_size_fmt+'</b>.</div>'
+      msg+='<div class="sc"><div class="sc-l"><span>💾 Estimation d\'économie</span><b style="color:var(--life)">'+d.saved_estimate_fmt+'</b></div><div class="sc-l"><span>📦 Ratio estimé</span><b>×'+d.estimated_ratio+'</b></div><div class="sc-l"><span>🔒 Garantie</span><b>7 jours</b></div><div class="sc-p"><i style="width:'+Math.min(90,90)+'%"></i></div></div>'
+      msg+='<div class="ti" style="margin-top:6px;color:var(--t3)">Les originaux sont déplacés dans la corbeille 🗑️ et supprimés définitivement après 7 jours.</div>'
+      M('ka',msg)
+      var sg=document.createElement('div');sg.className='sugs'
+      sg.innerHTML='<button class="primary" onclick="activateStorage()">🚀 Lancer la compression</button><button onclick="viewStorageStatus()">📈 Statistiques</button><button class="danger" onclick="skipStorage()">Plus tard</button>'
+      C.lastChild.querySelector('.b').appendChild(sg)
+    })
+    .catch(function(e){C.removeChild(C.lastChild);M('ka','<span class="er">❌ '+e.message+'</span>')})
+}
+
+function activateStorage(){
+  var btn=C.querySelector('.msg.ka:last-child .sugs');if(btn)btn.style.display='none'
+  M('ka','<div class="il"><div class="sp"></div>Activation du compresseur de fond...</div>')
+  fetch('/api/compress/storage/activate',{method:'POST'})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      C.removeChild(C.lastChild)
+      M('ka','<b>✅ Compression activée</b><div class="ti">Le <b>GhostCompressor</b> tourne en arrière-plan. Chaque fichier est compressé un par un. Vous pouvez suivre la progression en temps réel.</div>')
+      setTimeout(function(){viewStorageStatus()},600)
+    })
+    .catch(function(e){C.removeChild(C.lastChild);M('ka','<span class="er">❌ '+e.message+'</span>')})
+}
+
+function viewStorageStatus(){
+  fetch('/api/compress/storage/status')
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(!d.success)throw new Error(d.error||'Erreur')
+      var pct=d.total_original_bytes?Math.round(100*d.total_saved_bytes/d.total_original_bytes):0
+      var msg='<b>📈 GhostCompressor — état</b>'
+      msg+='<div class="sc" style="margin-top:8px">'
+      msg+='<div class="sc-l"><span>📂 Fichiers compressés</span><b>'+d.files_count+'</b></div>'
+      msg+='<div class="sc-l"><span>💾 Avant</span><b>'+d.total_original_fmt+'</b></div>'
+      msg+='<div class="sc-l"><span>📦 Après</span><b style="color:var(--soul-l)">'+d.total_compressed_fmt+'</b></div>'
+      msg+='<div class="sc-l"><span>✅ Économisé</span><b style="color:var(--life)">'+d.total_saved_fmt+'</b></div>'
+      if(d.free_space_gb)msg+='<div class="sc-l"><span>💽 Espace libre</span><b>'+d.free_space_gb+' Go</b></div>'
+      msg+='<div class="sc-p"><i style="width:'+Math.min(100,pct)+'%"></i></div>'
+      msg+='</div>'
+      if(d.projection&&d.projection.photos_can_fit>0){
+        msg+='<div class="ti" style="margin-top:6px">🔮 Vous pouvez encore stocker environ <b>+'+d.projection.photos_can_fit+' photos</b>.</div>'
+      }
+      M('ka',msg)
+      var sg=document.createElement('div');sg.className='sugs'
+      sg.innerHTML='<button class="primary" onclick="activateStorage()">🚀 Activer</button><button onclick="viewStorageStatus()">🔄 Rafraîchir</button><button class="danger" onclick="deactivateStorage()">⏹ Arrêter</button><button onclick="skipStorage()">Fermer</button>'
+      C.lastChild.querySelector('.b').appendChild(sg)
+    })
+    .catch(function(e){M('ka','<span class="er">❌ '+e.message+'</span>')})
+}
+
+function deactivateStorage(){
+  var m=C.querySelectorAll('.msg.ka');if(m.length)m[m.length-1].remove()
+  fetch('/api/compress/storage/deactivate',{method:'POST'}).catch(function(){})
+  M('ka','⏹ GhostCompressor arrêté.')
+}
+function skipStorage(){
+  var m=C.querySelectorAll('.msg.ka');if(m.length)m[m.length-1].remove()
+  M('ka','👍 D\'accord. Je reste disponible.')
+}
+</script>
+</body>
+</html>

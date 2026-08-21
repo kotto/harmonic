@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HARMONIC AI — L'IA déterministe. Zéro hallucination.</title>
+<link rel="icon" type="image/svg+xml" href="/brand/ka.svg">
+<meta name="description" content="HARMONIC AI : intelligence artificielle déterministe. Codec ψ — 88.4% GSM8K, 0% hallucination. Hologrammes de 2 Mo remplacent le RAG. Compression HCV ×213. 100% on-premise, 0 GPU.">
+<meta name="keywords" content="IA déterministe, hallucination IA, codec psi, hologrammes IA, RAG, post-RAG, compression HCV, harmonique, onde">
+<style>
+:root{
+  --void:#06060f;--soul:#8b83ff;--soul-l:#b8b2ff;--soul-d:rgba(139,131,255,.18);--soul-g:rgba(139,131,255,.32);
+  --life:#3ddba0;--life-d:rgba(61,219,160,.15);--life-g:rgba(61,219,160,.28);
+  --wisdom:#f0c060;--wisdom-d:rgba(240,192,96,.15);--wisdom-g:rgba(240,192,96,.28);
+  --rose:#ed93b1;--rose-d:rgba(212,83,126,.15);--rose-g:rgba(212,83,126,.28);
+  --sky:#85b7eb;--sky-d:rgba(133,183,235,.15);--sky-g:rgba(133,183,235,.28);
+  --g1:rgba(255,255,255,.04);--g2:rgba(255,255,255,.075);--g3:rgba(255,255,255,.13);
+  --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.1);--b3:rgba(255,255,255,.16);
+  --t1:rgba(255,255,255,.92);--t2:rgba(255,255,255,.62);--t3:rgba(255,255,255,.36);--t4:rgba(255,255,255,.18);
+  --font:-apple-system,"SF Pro Display","Inter",system-ui,sans-serif;
+  --mono:"SF Mono","JetBrains Mono",Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--void);color:var(--t1);font-family:var(--font);-webkit-font-smoothing:antialiased;line-height:1.6;overflow-x:hidden}
+a{color:var(--soul-l);text-decoration:none}
+a:hover{color:var(--life)}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+section{padding:80px 0}
+h1{font-size:clamp(34px,5.8vw,56px);font-weight:900;letter-spacing:-.02em;line-height:1.08}
+h2{font-size:clamp(26px,3.8vw,38px);font-weight:800;letter-spacing:-.01em;margin-bottom:16px}
+h3{font-size:17px;font-weight:700;margin-bottom:10px}
+p.sub{color:var(--t2);font-size:16px;max-width:680px;line-height:1.65}
+.chip{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:5px 14px;border-radius:999px;margin-bottom:14px}
+.chip--soul{background:var(--soul-d);color:var(--soul-l);border:1px solid var(--soul-g)}
+.chip--life{background:var(--life-d);color:var(--life);border:1px solid var(--life-g)}
+.chip--gold{background:var(--wisdom-d);color:var(--wisdom);border:1px solid var(--wisdom-g)}
+.chip--rose{background:var(--rose-d);color:var(--rose);border:1px solid var(--rose-g)}
+.btn{display:inline-block;font-weight:700;font-size:14.5px;padding:12px 24px;border-radius:11px;transition:transform .12s;border:1px solid transparent}
+.btn:hover{transform:translateY(-2px)}
+.btn--soul{background:linear-gradient(135deg,var(--soul),#6a5cff);color:#fff}
+.btn--life{background:linear-gradient(135deg,var(--life),#1fae7c);color:#04261a}
+.btn--ghost{background:var(--g2);color:var(--t1);border-color:var(--b2)}
+.btn--xl{padding:15px 30px;font-size:15px;border-radius:12px}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:50;background:rgba(6,6,15,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--b1)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:62px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px;letter-spacing:.02em}
+.brand img.mark{width:32px;height:32px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));transition:transform .3s}
+.brand:hover img.mark{transform:scale(1.08) rotate(-4deg)}
+.brand b{color:var(--soul-l)}
+nav .links{display:flex;gap:20px;font-size:13px;font-weight:600}
+nav .links a{color:var(--t2)} nav .links a:hover{color:#fff}
+nav .lang{font-size:12px;font-weight:700;color:var(--t3);border:1px solid var(--b2);border-radius:999px;padding:5px 12px;background:none}
+nav .lang:hover{color:var(--t1);border-color:var(--soul-g)} nav .lang.active{background:var(--soul-d);color:var(--soul-l);border-color:var(--soul-g)}
+@media(max-width:720px){nav .links{display:none}}
+
+/* HERO */
+.hero{min-height:92vh;display:flex;align-items:center;position:relative;overflow:hidden;
+  background:radial-gradient(ellipse at 50% -8%,#1a1035 0%,#0d0b1e 45%,var(--void) 100%)}
+.hero canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.5}
+.hero .inner{position:relative;z-index:2}
+.hero .emblem{position:absolute;right:4%;top:50%;transform:translateY(-50%);width:min(340px,30vw);z-index:1;
+  animation:levitate 7s ease-in-out infinite;filter:drop-shadow(0 24px 60px rgba(139,131,255,.35))}
+.hero .emblem::after{content:"";position:absolute;inset:-18%;border-radius:50%;z-index:-1;
+  background:radial-gradient(circle,rgba(139,131,255,.22),transparent 65%)}
+@keyframes levitate{0%,100%{transform:translateY(-52%)}50%{transform:translateY(-46%)}}
+@media(max-width:900px){.hero .emblem{display:none}}
+.hero h1{margin-top:12px}
+.hero h1 .grad{background:linear-gradient(120deg,var(--soul-l),var(--sky));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .sub{margin-top:16px;font-size:clamp(14px,1.6vw,17px);max-width:700px}
+.hero .badges{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+.hero .badges span{font-size:12px;color:var(--t2);background:var(--g1);border:1px solid var(--b1);padding:8px 14px;border-radius:10px}
+.hero .ctas{margin-top:34px;display:flex;gap:12px;flex-wrap:wrap}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px;margin-top:24px}
+.card{background:linear-gradient(180deg,var(--g1),transparent);border:1px solid var(--b1);border-radius:16px;padding:24px}
+.card:hover{border-color:var(--soul-g)}
+.card .ico{font-size:24px;margin-bottom:10px}
+.card h3{color:var(--t1)}
+.card p{font-size:13.5px;color:var(--t2);line-height:1.6}
+.card .metric{font-size:28px;font-weight:800;color:var(--life);margin:8px 0 2px}
+.card .metric.rose{color:var(--rose)} .card .metric.soul{color:var(--soul-l)} .card .metric.gold{color:var(--wisdom)}
+.card .m-label{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em}
+
+/* BIG QUOTE */
+.big-quote{background:linear-gradient(135deg,var(--soul-d),var(--life-d));border:1px solid var(--soul-g);border-radius:20px;padding:44px 36px;text-align:center;margin:30px 0}
+.big-quote .q{font-size:clamp(20px,3vw,28px);font-weight:800;line-height:1.35;color:#fff}
+.big-quote .q .sl{color:var(--soul-l)}
+.big-quote .q .gr{color:var(--life)}
+.big-quote .q .em{color:var(--wisdom)}
+.big-quote .note{margin-top:12px;color:var(--t2);font-size:14px}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;margin-top:20px;font-size:13.5px}
+th{text-align:left;color:var(--t3);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.07em;padding:12px 14px;border-bottom:1px solid var(--b2)}
+td{padding:12px 14px;border-bottom:1px solid var(--b1);color:var(--t2)}
+td:first-child{color:var(--t1);font-weight:600}
+.ok{color:var(--life);font-weight:700}
+.no{color:var(--rose)}
+
+/* INLINE CODE */
+code{font-family:var(--mono);font-size:12.5px;background:var(--g1);border:1px solid var(--b1);padding:2px 7px;border-radius:6px;color:var(--soul-l)}
+
+/* FOOTER */
+footer{border-top:1px solid var(--b1);padding:40px 0 50px;color:var(--t3);font-size:12.5px}
+footer .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;margin-bottom:24px}
+footer h4{color:var(--t2);font-size:12px;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;font-weight:700}
+footer a{display:block;color:var(--t3);padding:4px 0;font-size:12.5px}
+footer a:hover{color:var(--t1)}
+@media(max-width:720px){section{padding:60px 0} .hero{min-height:80vh}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="/harmonic-ai"><img class="mark" src="/brand/ka.svg" alt="HARMONIC AI">HARMONIC <b>AI</b></a>
+    <div class="links">
+      <a href="#thesis" data-i18n="nav.thesis">Thèse</a>
+      <a href="#tech" data-i18n="nav.tech">Technologie</a>
+      <a href="#proofs" data-i18n="nav.proofs">Preuves</a>
+      <a href="#products" data-i18n="nav.products">Produits</a>
+      <a href="/demo" data-i18n="nav.demo">Démo</a>
+      <a href="#contact" data-i18n="nav.contact">Contact</a>
+      <a href="/compress" style="color:var(--t2)">Ψ Compress</a>
+      <a href="/care" style="color:var(--t2)">KA Care</a>
+    </div>
+    <div>
+      <button class="lang" id="lang-fr" onclick="setLang('fr')">FR</button>
+      <button class="lang" id="lang-en" onclick="setLang('en')">EN</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ HERO ══ -->
+<header class="hero">
+  <canvas id="waves"></canvas>
+  <img class="emblem" src="/brand/ka.svg" alt="" aria-hidden="true">
+  <div class="wrap inner">
+    <span class="chip chip--soul" data-i18n="hero.chip">Intelligence artificielle déterministe</span>
+    <h1><span class="grad" data-i18n="hero.h1">L'IA qui calcule au lieu de générer.</span><br><span data-i18n="hero.h1b">Zéro hallucination.</span></h1>
+    <p class="sub" data-i18n="hero.sub">88.4% sur GSM8K. 0% d'hallucination. Aucune donnée ne quitte votre réseau. Pas de GPU. Pas de promesses — des preuves mesurables.</p>
+    <div class="badges">
+      <span data-i18n="hb1">88.4% GSM8K</span>
+      <span data-i18n="hb2">0% hallucination</span>
+      <span data-i18n="hb3">100% on-premise</span>
+      <span data-i18n="hb4">0 GPU</span>
+      <span data-i18n="hb5">×213 compression HCV</span>
+    </div>
+    <div class="ctas">
+      <a class="btn btn--soul btn--xl" href="/demo" data-i18n="hero.cta1">Essayer la démo →</a>
+      <a class="btn btn--ghost btn--xl" href="#thesis" data-i18n="hero.cta2">Comprendre la thèse</a>
+    </div>
+  </div>
+</header>
+
+<!-- ══ THÈSE ══ -->
+<section id="thesis">
+  <div class="wrap">
+    <span class="chip chip--life" data-i18n="thesis.chip">La thèse</span>
+    <h2 data-i18n="thesis.title">Les IA génèrent. Nous calculons.</h2>
+    <p class="sub" data-i18n="thesis.sub">L'industrie a construit des machines à prédire des mots. Nous avons construit une machine à <b>calculer des vérités</b>. Le codec ψ ne génère pas : il émerge, aligne, interfère. Chaque réponse est une conséquence mathématique, pas une distribution probabiliste.</p>
+    <div class="big-quote">
+      <div class="q"><span class="sl">Ψ</span><span class="gr">(a)</span> × <span class="sl">Ψ</span><span class="gr">(b)</span> = <span class="sl">Ψ</span><span class="gr">(a+b)</span> · <span class="em">le calcul émerge</span></div>
+      <div class="note" data-i18n="thesis.eq">Multiplier deux ondes <b>crée</b> l'addition. La soustraction est une interférence destructive. Le raisonnement est un alignement de phases. Aucun fait stocké, aucune table consultée.</div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <div class="ico">🔮</div>
+        <h3 data-i18n="t1t">Raisonnement déterministe</h3>
+        <p data-i18n="t1p">Le codec ψ produit la même réponse à la même question. Chaque étape est traçable, vérifiable, reproductible. Pas de température, pas de stochasticité.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🧩</div>
+        <h3 data-i18n="t2t">Hologrammes ≠ RAG</h3>
+        <p data-i18n="t2p">Un fichier de 2 Mo capture la connaissance complète d'un domaine. Pas de chunking, pas d'embeddings, pas de vector DB. Mise à jour instantanée.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🔒</div>
+        <h3 data-i18n="t3t">Privacy par architecture</h3>
+        <p data-i18n="t3p">Aucune donnée ne quitte jamais le réseau. La compression HCV (×213) chiffre tout. Pas de cloud, pas de fuite, pas de RGPD violé.</p>
+      </div>
+      <div class="card">
+        <div class="ico">⚡</div>
+        <h3 data-i18n="t4t">Zéro GPU requis</h3>
+        <p data-i18n="t4p">Un serveur CPU standard suffit. Pas de GPU à 100 000 €, pas de coût par token, pas de facture d'inférence qui explose.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ TECHNOLOGIE ══ -->
+<section id="tech" style="background:linear-gradient(180deg,transparent,rgba(139,131,255,.05))">
+  <div class="wrap">
+    <span class="chip chip--gold" data-i18n="tech.chip">Technologie</span>
+    <h2 data-i18n="tech.title">Quatre innovations, un seul moteur</h2>
+    <p class="sub" data-i18n="tech.sub">Derrière chaque produit HARMONIC AI se trouve le même socle ondulatoire : le codec ψ, le langage ondulatoire, le compilateur harmonique, le Wave IR.</p>
+
+    <div class="big-quote" style="margin:20px 0 28px">
+      <div class="q"><span class="sl">THU</span> <span style="color:var(--t3);font-weight:300">·</span> <span class="sl">T</span>héorie <span class="sl">H</span>armonique <span class="sl">U</span>niverselle</div>
+      <div class="note" data-i18n="tech.thu">Un cadre mathématique unifié qui traite l'information comme des ondes. L'ensemble HARMONIC AI — codec ψ, hologrammes, compression HCV, langage ondulatoire — en est une implémentation concrète. 41 primitives transverticales traversant 7 domaines (mathématiques, physique, biologie, droit, médecine, finance, linguistique) pour un raisonnement cohérent au-delà des silos de connaissance.</div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="ico">🧠</div>
+        <h3>Codec ψ</h3>
+        <p data-i18n="tc1">Moteur de raisonnement déterministe. 88.4% GSM8K, 0% hallucination. Émergence arithmétique, consensus holographique M4, synchronisation de Kuramoto.</p>
+        <div class="metric">88.4%</div><div class="m-label" data-i18n="tc1m">GSM8K · 0% hallucination</div>
+      </div>
+      <div class="card">
+        <div class="ico">🌊</div>
+        <h3 data-i18n="tc2t">Langage ondulatoire</h3>
+        <p data-i18n="tc2p">13 primitives, 41 transverticales. Exprimer un problème en ondes, pas en instructions. Wave IR (AST) + compilateur harmonique → NumPy optimisé.</p>
+        <div class="metric soul">13</div><div class="m-label" data-i18n="tc2m">primitives ondulatoires</div>
+      </div>
+      <div class="card">
+        <div class="ico">📦</div>
+        <h3 data-i18n="tc3t">Compression HCV</h3>
+        <p data-i18n="tc3p">Compression harmonique bit-exact. Ratio ×213 mesuré. Codec hybride WASM/server : compression sur téléphone, serveur, ou navigateur.</p>
+        <div class="metric gold">×213</div><div class="m-label" data-i18n="tc3m">compression sans perte</div>
+      </div>
+      <div class="card">
+        <div class="ico">🔄</div>
+        <h3 data-i18n="tc4t">Hologrammes</h3>
+        <p data-i18n="tc4p">Adaptateurs LoRA de 2 Mo, créés en 2 minutes. Spécialisent l'IA dans un domaine (santé, finance, droit, technique) sans réentraînement.</p>
+        <div class="metric rose">2 Mo</div><div class="m-label" data-i18n="tc4m">par domaine · 2 min</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PREUVES ══ -->
+<section id="proofs">
+  <div class="wrap">
+    <span class="chip chip--rose" data-i18n="proofs.chip">Preuves mesurées</span>
+    <h2 data-i18n="proofs.title">Pas de promesses. Des benchmarks.</h2>
+    <p class="sub" data-i18n="proofs.sub">Chaque chiffre est le résultat d'une mesure reproductible. Nous ne faisons pas de prédictions — nous publions des résultats.</p>
+    <table>
+      <tr><th data-i18n="m">Mesure</th><th data-i18n="r">Résultat</th><th data-i18n="d">Détail</th></tr>
+      <tr><td data-i18n="pm1">GSM8K</td><td class="ok">88.4%</td><td data-i18n="pd1">Raisonnement mathématique, 0% hallucination</td></tr>
+      <tr><td data-i18n="pm2">Hallucination</td><td class="ok">0%</td><td data-i18n="pd2">Trajectoire ψ vérifiable — impossible d'inventer</td></tr>
+      <tr><td data-i18n="pm3">Émergence arithmétique</td><td class="ok">400/400</td><td data-i18n="pd3">Opérations vérifiées, émergence ondulatoire</td></tr>
+      <tr><td data-i18n="pm4">Compression HCV</td><td class="ok">×213</td><td data-i18n="pd4">Sans perte, bit-exact</td></tr>
+      <tr><td data-i18n="pm5">Hologrammes</td><td class="ok">2 min</td><td data-i18n="pd5">Création d'un expert IA spécialisé</td></tr>
+      <tr><td data-i18n="pm6">Infrastructure</td><td class="ok">1 CPU</td><td data-i18n="pd6">Pas de GPU, pas de vector DB, pas de cloud</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ══ PRODUITS ══ -->
+<section id="products" style="background:linear-gradient(180deg,transparent,rgba(61,219,160,.05))">
+  <div class="wrap">
+    <span class="chip chip--life" data-i18n="products.chip">Produits</span>
+    <h2 data-i18n="products.title">Trois gammes, un même moteur</h2>
+    <p class="sub" data-i18n="products.sub">Du téléphone au datacenter, le codec ψ s'adapte. Même raisonnement déterministe, même garantie 0% hallucination.</p>
+    <div class="grid">
+      <div class="card">
+        <div class="ico">📱</div>
+        <h3>KA Mobile</h3>
+        <p data-i18n="pm1d">Votre IA personnelle sur votre téléphone. Compression HCV, hologrammes personnels, assistant vocal. 100% hors-ligne, 0% hallucination.</p>
+        <div class="metric soul">100%</div><div class="m-label" data-i18n="pm1l">hors-ligne · 0 cloud</div>
+      </div>
+      <div class="card">
+        <div class="ico">🏢</div>
+        <h3>KA Enterprise</h3>
+        <p data-i18n="pm2d">Post-RAG Platform. Remplacez votre RAG par des hologrammes déterministes. 100% on-premise, audit intégré, conformité RGPD/AI Act/HIPAA.</p>
+        <div class="metric">0%</div><div class="m-label" data-i18n="pm2l">hallucination · on-premise</div>
+      </div>
+      <div class="card">
+        <div class="ico">🔌</div>
+        <h3>API</h3>
+        <p data-i18n="pm3d">Intégration REST. Raisonnement déterministe, hologrammes spécialisés, compression HCV. Vos données ne quittent jamais votre backend.</p>
+        <div class="metric gold"><code>POST</code></div><div class="m-label" data-i18n="pm3l">/api/ · 0 data leak</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ DÉMO CTA ══ -->
+<section id="demo-cta">
+  <div class="wrap" style="text-align:center">
+    <div class="big-quote" style="text-align:center">
+      <div class="q"><span class="sl" data-i18n="demo.q">Posez une question.</span><br><span class="gr" data-i18n="demo.q2">Regardez une IA qui ne peut pas mentir.</span></div>
+      <div class="note" style="margin-top:16px" data-i18n="demo.note">Parce qu'elle calcule au lieu de générer. Arithmétique, connaissance, provenance — tout est traçable.</div>
+      <a class="btn btn--soul btn--xl" href="/demo" style="margin-top:24px" data-i18n="demo.btn">Ouvrir la démo →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CONTACT ═══ -->
+<section id="contact">
+  <div class="wrap" style="text-align:center">
+    <span class="chip chip--gold" data-i18n="contact.chip">Contact</span>
+    <h2 data-i18n="contact.title">Construisons la suite ensemble</h2>
+    <p class="sub" style="margin:0 auto 20px" data-i18n="contact.sub">Une démonstration prend 30 secondes. Un partenariat commence par une conversation.</p>
+    <a class="btn btn--soul" href="mailto:contact@harmonic-ai.com">contact@harmonic-ai.com</a>
+    <a class="btn btn--ghost" href="/corporation" style="margin-left:10px" data-i18n="contact.ka">KA Corporation →</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <h4>HARMONIC AI</h4>
+        <p style="font-size:12.5px;color:var(--t3)">L'IA qui calcule au lieu de générer. Zéro hallucination, zéro GPU, zéro cloud.</p>
+      </div>
+      <div>
+        <h4 data-i18n="foot.products">Produits</h4>
+        <a href="#products" data-i18n="foot.mobile">KA Mobile</a>
+        <a href="/enterprise" data-i18n="foot.enterprise">KA Enterprise</a>
+        <a href="#products" data-i18n="foot.api">API</a>
+      </div>
+      <div>
+        <h4 data-i18n="foot.resources">Ressources</h4>
+        <a href="/demo" data-i18n="foot.demo">Démo publique</a>
+        <a href="#proofs" data-i18n="foot.benchmarks">Benchmarks</a>
+        <a href="#tech" data-i18n="foot.tech">Technologie</a>
+        <a href="/corporation" data-i18n="foot.corp">KA Corporation</a>
+      </div>
+    </div>
+    <div data-i18n="foot.copy">© 2026 HARMONIC AI — codec ψ · 0% hallucination · 100% on-premise</div>
+  </div>
+</footer>
+
+<script>
+// ─── Wave canvas (hero) ───
+(function(){
+  var cv=document.getElementById('waves'),ctx=cv.getContext('2d');
+  function size(){cv.width=cv.offsetWidth;cv.height=cv.offsetHeight;}
+  size();addEventListener('resize',size);
+  var t0=performance.now();
+  function frame(t){
+    var w=cv.width,h=cv.height,ctx2=ctx;
+    ctx2.clearRect(0,0,w,h);
+    var p=((t-t0)/2600)%1,phase=(1-p)*Math.PI,mid=h*0.5;
+    ctx2.strokeStyle='rgba(139,131,255,.7)';ctx2.lineWidth=2.5;ctx2.beginPath();
+    for(var x=0;x<=w;x+=5){var y=mid-Math.sin(x/w*Math.PI*4)*h*0.08;x?ctx2.lineTo(x,y):ctx2.moveTo(x,y);}
+    ctx2.stroke();
+    ctx2.strokeStyle='rgba(61,219,160,.7)';ctx2.lineWidth=2.5;ctx2.beginPath();
+    for(x=0;x<=w;x+=5){y=mid-Math.sin(x/w*Math.PI*4+phase)*h*0.08;x?ctx2.lineTo(x,y):ctx2.moveTo(x,y);}
+    ctx2.stroke();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+
+// ─── i18n FR/EN ───
+var LANG='fr';
+try{if(localStorage.getItem('harmonic_lang')==='en')LANG='en';}catch(e){}
+var I18N={fr:{
+  'nav.thesis':'Thèse','nav.tech':'Technologie','nav.proofs':'Preuves','nav.products':'Produits','nav.demo':'Démo','nav.contact':'Contact',
+  'hero.chip':'Intelligence artificielle déterministe','hero.h1':'L\'IA qui calcule au lieu de générer.','hero.h1b':'Zéro hallucination.',
+  'hero.sub':'88.4% sur GSM8K. 0% d\'hallucination. Aucune donnée ne quitte votre réseau. Pas de GPU. Pas de promesses — des preuves mesurables.',
+  'hb1':'88.4% GSM8K','hb2':'0% hallucination','hb3':'100% on-premise','hb4':'0 GPU','hb5':'×213 compression HCV',
+  'hero.cta1':'Essayer la démo →','hero.cta2':'Comprendre la thèse',
+  'thesis.chip':'La thèse','thesis.title':'Les IA génèrent. Nous calculons.','thesis.sub':'L\'industrie a construit des machines à prédire des mots. Nous avons construit une machine à calculer des vérités. Le codec ψ ne génère pas : il émerge, aligne, interfère. Chaque réponse est une conséquence mathématique, pas une distribution probabiliste.',
+  'thesis.eq':'Multiplier deux ondes crée l\'addition. La soustraction est une interférence destructive. Le raisonnement est un alignement de phases. Aucun fait stocké, aucune table consultée.',
+  't1t':'Raisonnement déterministe','t1p':'Le codec ψ produit la même réponse à la même question. Chaque étape est traçable, vérifiable, reproductible. Pas de température, pas de stochasticité.',
+  't2t':'Hologrammes ≠ RAG','t2p':'Un fichier de 2 Mo capture la connaissance complète d\'un domaine. Pas de chunking, pas d\'embeddings, pas de vector DB. Mise à jour instantanée.',
+  't3t':'Privacy par architecture','t3p':'Aucune donnée ne quitte jamais le réseau. La compression HCV (×213) chiffre tout. Pas de cloud, pas de fuite, pas de RGPD violé.',
+  't4t':'Zéro GPU requis','t4p':'Un serveur CPU standard suffit. Pas de GPU à 100 000 €, pas de coût par token, pas de facture d\'inférence qui explose.',
+  'tech.chip':'Technologie','tech.title':'Quatre innovations, un seul moteur','tech.sub':'Derrière chaque produit HARMONIC AI se trouve le même socle ondulatoire : le codec ψ, le langage ondulatoire, le compilateur harmonique, le Wave IR.',
+  'tc1':'Moteur de raisonnement déterministe. 88.4% GSM8K, 0% hallucination. Émergence arithmétique, consensus holographique M4, synchronisation de Kuramoto.','tc1m':'GSM8K · 0% hallucination',
+  'tech.thu':'Un cadre mathématique unifié qui traite l\'information comme des ondes. L\'ensemble HARMONIC AI — codec ψ, hologrammes, compression HCV, langage ondulatoire — en est une implémentation concrète. 41 primitives transverticales traversant 7 domaines (mathématiques, physique, biologie, droit, médecine, finance, linguistique) pour un raisonnement cohérent au-delà des silos de connaissance.',
+  'tc2t':'Langage ondulatoire','tc2p':'13 primitives, 41 transverticales. Exprimer un problème en ondes, pas en instructions. Wave IR (AST) + compilateur harmonique → NumPy optimisé.','tc2m':'primitives ondulatoires',
+  'tc3t':'Compression HCV','tc3p':'Compression harmonique bit-exact. Ratio ×213 mesuré. Codec hybride WASM/server : compression sur téléphone, serveur, ou navigateur.','tc3m':'compression sans perte',
+  'tc4t':'Hologrammes','tc4p':'Adaptateurs de 2 Mo, créés en 2 minutes. Spécialisent l\'IA dans un domaine (santé, finance, droit, technique) sans réentraînement.','tc4m':'par domaine · 2 min',
+  'proofs.chip':'Preuves mesurées','proofs.title':'Pas de promesses. Des benchmarks.','proofs.sub':'Chaque chiffre est le résultat d\'une mesure reproductible. Nous ne faisons pas de prédictions — nous publions des résultats.',
+  'm':'Mesure','r':'Résultat','d':'Détail',
+  'pm1':'GSM8K','pd1':'Raisonnement mathématique, 0% hallucination',
+  'pm2':'Hallucination','pd2':'Trajectoire ψ vérifiable — impossible d\'inventer',
+  'pm3':'Émergence arithmétique','pd3':'Opérations vérifiées, émergence ondulatoire',
+  'pm4':'Compression HCV','pd4':'Sans perte, bit-exact',
+  'pm5':'Hologrammes','pd5':'Création d\'un expert IA spécialisé en 2 minutes',
+  'pm6':'Infrastructure','pd6':'Pas de GPU, pas de vector DB, pas de cloud',
+  'products.chip':'Produits','products.title':'Trois gammes, un même moteur','products.sub':'Du téléphone au datacenter, le codec ψ s\'adapte. Même raisonnement déterministe, même garantie 0% hallucination.',
+  'pm1d':'Votre IA personnelle sur votre téléphone. Compression HCV, hologrammes personnels, assistant vocal. 100% hors-ligne, 0% hallucination.','pm1l':'hors-ligne · 0 cloud',
+  'pm2d':'Post-RAG Platform. Remplacez votre RAG par des hologrammes déterministes. 100% on-premise, audit intégré, conformité RGPD/AI Act/HIPAA.','pm2l':'hallucination · on-premise',
+  'pm3d':'Intégration REST. Raisonnement déterministe, hologrammes spécialisés, compression HCV. Vos données ne quittent jamais votre backend.','pm3l':'/api/ · 0 data leak',
+  'demo.q':'Posez une question.','demo.q2':'Regardez une IA qui ne peut pas mentir.','demo.note':'Parce qu\'elle calcule au lieu de générer. Arithmétique, connaissance, provenance — tout est traçable.','demo.btn':'Ouvrir la démo →',
+  'contact.chip':'Contact','contact.title':'Construisons la suite ensemble','contact.sub':'Une démonstration prend 30 secondes. Un partenariat commence par une conversation.','contact.ka':'KA Corporation →',
+  'foot.products':'Produits','foot.mobile':'KA Mobile','foot.enterprise':'KA Enterprise','foot.api':'API',
+  'foot.resources':'Ressources','foot.demo':'Démo publique','foot.benchmarks':'Benchmarks','foot.tech':'Technologie','foot.corp':'KA Corporation',
+  'foot.copy':'© 2026 HARMONIC AI — codec ψ · 0% hallucination · 100% on-premise'
+},en:{
+  'nav.thesis':'Thesis','nav.tech':'Technology','nav.proofs':'Proofs','nav.products':'Products','nav.demo':'Demo','nav.contact':'Contact',
+  'hero.chip':'Deterministic artificial intelligence','hero.h1':'The AI that computes instead of generating.','hero.h1b':'Zero hallucination.',
+  'hero.sub':'88.4% on GSM8K. 0% hallucination. No data leaves your network. No GPU. No promises — measurable proofs.',
+  'hb1':'88.4% GSM8K','hb2':'0% hallucination','hb3':'100% on-premise','hb4':'0 GPU','hb5':'×213 HCV compression',
+  'hero.cta1':'Try the demo →','hero.cta2':'Understand the thesis',
+  'thesis.chip':'The thesis','thesis.title':'They generate. We compute.','thesis.sub':'The industry built machines that predict words. We built a machine that computes truths. The ψ codec does not generate: it emerges, aligns, interferes. Every answer is a mathematical consequence, not a probabilistic distribution.',
+  'thesis.eq':'Multiplying two waves creates addition. Subtraction is destructive interference. Reasoning is phase alignment. No stored facts, no lookup tables.',
+  't1t':'Deterministic reasoning','t1p':'The ψ codec produces the same answer to the same question. Every step is traceable, verifiable, reproducible. No temperature, no stochasticity.',
+  't2t':'Holograms ≠ RAG','t2p':'A 2 MB file captures the complete knowledge of a domain. No chunking, no embeddings, no vector DB. Instant updates.',
+  't3t':'Privacy by architecture','t3p':'No data ever leaves the network. HCV compression (×213) encrypts everything. No cloud, no leaks, no GDPR violations.',
+  't4t':'Zero GPU required','t4p':'A standard CPU server is enough. No €100k GPU, no per-token cost, no exploding inference bill.',
+  'tech.chip':'Technology','tech.title':'Four innovations, one engine','tech.sub':'Behind every HARMONIC AI product lies the same wave-based foundation: the ψ codec, the wave language, the harmonic compiler, the Wave IR.',
+  'tc1':'Deterministic reasoning engine. 88.4% GSM8K, 0% hallucination. Arithmetic emergence, M4 holographic consensus, Kuramoto synchronization.','tc1m':'GSM8K · 0% hallucination',
+  'tech.thu':'A unified mathematical framework that treats information as waves. The entire HARMONIC AI stack — ψ codec, holograms, HCV compression, wave language — is a concrete implementation of this framework. 41 transvertical primitives spanning 7 domains (mathematics, physics, biology, law, medicine, finance, linguistics) for coherent reasoning across knowledge silos.',
+  'tc2t':'Wave language','tc2p':'13 primitives, 41 transverticals. Express a problem in waves, not instructions. Wave IR (AST) + harmonic compiler → optimized NumPy.','tc2m':'wave primitives',
+  'tc3t':'HCV Compression','tc3p':'Harmonic bit-exact compression. ×213 measured ratio. Hybrid WASM/server codec: compress on phone, server, or browser.','tc3m':'lossless compression',
+  'tc4t':'Holograms','tc4p':'2 MB adapters, created in 2 minutes. Specialize the AI in a domain (health, finance, legal, tech) without retraining.','tc4m':'per domain · 2 min',
+  'proofs.chip':'Measured proofs','proofs.title':'No promises. Benchmarks.','proofs.sub':'Every number is the result of a reproducible measurement. We do not make predictions — we publish results.',
+  'm':'Measure','r':'Result','d':'Detail',
+  'pm1':'GSM8K','pd1':'Mathematical reasoning, 0% hallucination',
+  'pm2':'Hallucination','pd2':'Verifiable ψ trajectory — impossible to invent',
+  'pm3':'Arithmetic emergence','pd3':'Verified operations, wave emergence',
+  'pm4':'HCV Compression','pd4':'Lossless, bit-exact',
+  'pm5':'Holograms','pd5':'Specialized AI expert created in 2 minutes',
+  'pm6':'Infrastructure','pd6':'No GPU, no vector DB, no cloud',
+  'products.chip':'Products','products.title':'Three lines, one engine','products.sub':'From phone to datacenter, the ψ codec adapts. Same deterministic reasoning, same 0% hallucination guarantee.',
+  'pm1d':'Your personal AI on your phone. HCV compression, personal holograms, voice assistant. 100% offline, 0% hallucination.','pm1l':'offline · 0 cloud',
+  'pm2d':'Post-RAG Platform. Replace your RAG with deterministic holograms. 100% on-premise, built-in audit, GDPR/AI Act/HIPAA compliance.','pm2l':'hallucination · on-premise',
+  'pm3d':'REST integration. Deterministic reasoning, specialized holograms, HCV compression. Your data never leaves your backend.','pm3l':'/api/ · 0 data leak',
+  'demo.q':'Ask a question.','demo.q2':'Watch an AI that cannot lie.','demo.note':'Because it computes instead of generating. Arithmetic, knowledge, provenance — everything is traceable.','demo.btn':'Open the demo →',
+  'contact.chip':'Contact','contact.title':'Let\'s build the future together','contact.sub':'A demonstration takes 30 seconds. A partnership begins with a conversation.','contact.ka':'KA Corporation →',
+  'foot.products':'Products','foot.mobile':'KA Mobile','foot.enterprise':'KA Enterprise','foot.api':'API',
+  'foot.resources':'Resources','foot.demo':'Public demo','foot.benchmarks':'Benchmarks','foot.tech':'Technology','foot.corp':'KA Corporation',
+  'foot.copy':'© 2026 HARMONIC AI — ψ codec · 0% hallucination · 100% on-premise'
+}};
+function i18n(k){return(I18N[LANG]&&I18N[LANG][k])||(I18N.fr[k]||k);}
+function applyI18n(){
+  document.documentElement.lang=LANG;
+  document.querySelectorAll('[data-i18n]').forEach(function(el){
+    if(el.querySelector('[data-i18n]'))return;
+    var v=i18n(el.getAttribute('data-i18n'));if(v)el.textContent=v;
+  });
+  document.getElementById('lang-fr').classList.toggle('active',LANG==='fr');
+  document.getElementById('lang-en').classList.toggle('active',LANG==='en');
+}
+function setLang(l){LANG=l;try{localStorage.setItem('harmonic_lang',l);}catch(e){}applyI18n();}
+applyI18n();
+</script>
+</body>
+</html>

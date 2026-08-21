@@ -61,7 +61,7 @@ Trois filtres emboîtés — trois survivants : **les couches fermées** (gaz no
 
 ### 3.1 La base (honnêteté intégrale)
 
-Les modèles « harmoniques » antérieurs (Haramein-Oyibo 6π⁵, m = m_Planck/H_Z²) ont été **réfutés** par le protocole (A1.3 : p = 0,70 — coïncidence banale ; A1.5 : les coefficients ne sont pas dérivables de φ/π/e). La base des masses est la **formule de Weizsäcker standard** (coefficients empiriques documentés : a_V = 15,8 · a_S = 18,3 · a_C = 0,714 · a_A = 23,2 · a_P = 12).
+La **formule de masse** « harmonique » antérieure (6π⁵, m = m_Planck/H_Z², attribuée à Haramein/Oyibo) a été **réfutée** par le protocole (A1.3 : p = 0,70 — coïncidence banale ; A1.5 : les coefficients ne sont pas dérivables de φ/π/e). **[RECTIFICATION : cette réfutation ne porte QUE sur la formule de masse. L'apport propre d'Oyibo — l'invariance d'échelle fractale F(λx)=λ^{-1/φ}F(x) — n'est PAS invalidé. Voir `RECONSIDERATION_OYIBO.md`.]** La base des masses est la **formule de Weizsäcker standard** (coefficients empiriques documentés : a_V = 15,8 · a_S = 18,3 · a_C = 0,714 · a_A = 23,2 · a_P = 12).
 
 ### 3.2 Les résultats
 

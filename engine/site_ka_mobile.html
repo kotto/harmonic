@@ -1,133 +1,570 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>KA MOBILE — L'Intelligence qui ne ment pas</title>
-<meta name="description" content="Le premier compagnon IA à interférence d'ondes. Zéro paramètre, zéro hallucination, 100% privé. Fonctionne sur votre téléphone.">
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>KA MOBILE</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#070514;--text:#e0d8c8;--muted:#8a80a0;--accent:#d4a853;--accent2:#7c3aed;--success:#10b981}
-*{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
-section{padding:80px 24px;max-width:1100px;margin:0 auto}
-.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;position:relative;background:radial-gradient(ellipse at 50% 0%,rgba(124,58,237,.08) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(212,168,83,.05) 0%,transparent 40%)}
-.hero h1{font-size:clamp(2.2em,6vw,4em);font-weight:900;line-height:1.1;margin-bottom:16px;background:linear-gradient(135deg,#d4a853,#c89840,#a07030);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.hero .sub{font-size:clamp(1em,2.5vw,1.3em);color:var(--muted);max-width:600px;margin-bottom:32px}
-.btn{display:inline-block;padding:14px 32px;border-radius:12px;font-weight:700;font-size:1em;cursor:pointer;text-decoration:none;transition:all .3s;border:none}
-.btn-primary{background:linear-gradient(135deg,#d4a853,#b89030);color:#070514;box-shadow:0 4px 24px rgba(212,168,83,.25)}.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 36px rgba(212,168,83,.35)}
-.btn-secondary{background:transparent;border:1px solid rgba(212,168,83,.2);color:#d4a853;margin-left:12px}.btn-secondary:hover{background:rgba(212,168,83,.06)}
-h2{font-size:2em;font-weight:800;margin-bottom:12px;text-align:center}
-h3{font-size:1.2em;font-weight:700;margin-bottom:8px}
-.grid{display:grid;gap:20px}
-.grid2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
-.grid3{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
-.grid4{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
-.card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:28px 24px;transition:all .3s}
-.card:hover{border-color:rgba(212,168,83,.15);background:rgba(212,168,83,.02)}
-.card .icon{font-size:2em;margin-bottom:12px}
-.vs-card{background:rgba(239,68,68,.02);border:1px solid rgba(239,68,68,.08);border-radius:14px;padding:20px}
-.vs-card.win{background:rgba(16,185,129,.02);border:1px solid rgba(16,185,129,.12)}
-.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:800px;margin:0 auto}
-.table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th{text-align:left;padding:10px 14px;background:rgba(212,168,83,.04);color:#d4a853;font-weight:700}
-td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.03)}
-tr:hover td{background:rgba(255,255,255,.01)}
-.check{color:var(--success)}.cross{color:#ef4444}
-.price-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;max-width:1000px;margin:0 auto}
-.price-card{background:rgba(255,255,255,.015);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:28px 20px;text-align:center;transition:all .3s}
-.price-card.featured{border-color:#d4a853;background:rgba(212,168,83,.03);box-shadow:0 0 40px rgba(212,168,83,.06)}
-.price-card .price{font-size:2.2em;font-weight:900;color:#d4a853}
-.price-card .period{font-size:.9em;color:var(--muted)}
-.footer{text-align:center;padding:40px 24px;color:var(--muted);font-size:.85em;border-top:1px solid rgba(255,255,255,.03)}
-.tag{display:inline-block;padding:4px 12px;border-radius:20px;font-size:.75em;font-weight:600;background:rgba(124,58,237,.1);color:#a78bfa;margin-bottom:8px}
-nav{position:fixed;top:0;width:100%;z-index:100;background:rgba(7,5,20,.85);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.03);padding:12px 24px;display:flex;justify-content:space-between;align-items:center}
-nav .brand{font-weight:800;font-size:1.1em;color:#d4a853}
-nav a{color:var(--muted);text-decoration:none;margin-left:20px;font-size:.9em;font-weight:500;transition:color .2s}
-nav a:hover{color:var(--text)}
-@media(max-width:768px){nav a{display:none}section{padding:60px 16px}}
-</style></head><body>
+:root{--bg:#070514;--text:#e0d8c8;--muted:#8a80a0;--accent:#d4a853;--accent2:#7c3aed;--success:#10b981;--card:rgba(255,255,255,.02)}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}
+html,body{background:var(--bg);color:var(--text);min-height:100dvh;overflow-x:hidden}
+body{display:flex;flex-direction:column}
 
-<nav>
-  <div class="brand">KA MOBILE</div>
-  <div>
-    <a href="#features">Fonctionnalités</a>
-    <a href="#privacy">Vie privée</a>
-    <a href="#pricing">Tarifs</a>
-    <a href="#cta" class="btn btn-primary" style="padding:8px 20px;font-size:.85em;margin-left:16px">Essayer</a>
+/* ─── SPLASH SCREEN ─── */
+#splash{
+  position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  animation:splashOut .6s ease 2.8s forwards;
+}
+@keyframes splashOut{to{opacity:0;pointer-events:none}}
+
+.logo-svg{width:80px;height:80px;margin-bottom:16px;animation:logoPulse 2s ease-in-out}
+@keyframes logoPulse{
+  0%{transform:scale(.8);opacity:0}
+  30%{transform:scale(1.05);opacity:1}
+  60%{transform:scale(.98)}
+  100%{transform:scale(1);opacity:1}
+}
+.logo-ring{
+  fill:none;stroke:var(--accent);stroke-width:3;
+  stroke-dasharray:283;stroke-dashoffset:283;
+  animation:drawRing 1.8s ease forwards;
+}
+@keyframes drawRing{to{stroke-dashoffset:0}}
+
+.splash-title{
+  font-size:1.6em;font-weight:900;background:linear-gradient(135deg,#d4a853,#a07030);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  animation:fadeUp .8s .6s both;
+}
+.splash-sub{font-size:.85em;color:var(--muted);margin-top:6px;animation:fadeUp .8s .8s both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── ÉCRAN D'ACCUEIL ─── */
+.screen{display:none;flex-direction:column;min-height:100dvh;padding:24px 20px}
+.screen.active{display:flex}
+
+.home-header{
+  text-align:center;padding:40px 0 32px;
+  animation:fadeUp .6s 3s both;
+}
+.home-avatar{
+  width:56px;height:56px;border-radius:50%;margin:0 auto 12px;
+  background:linear-gradient(135deg,rgba(212,168,83,.2),rgba(124,58,237,.1));
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;
+}
+.home-greeting{font-size:1.5em;font-weight:700;margin-bottom:4px}
+.home-sub{font-size:.9em;color:var(--muted);max-width:300px;margin:0 auto}
+
+/* ─── TUILES DE NAVIGATION ─── */
+.tiles{display:grid;gap:12px;padding:0 4px;animation:fadeUp .6s 3.2s both}
+
+.tile-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{
+  background:var(--card);border:1px solid rgba(255,255,255,.06);
+  border-radius:18px;padding:24px 16px;text-align:center;
+  cursor:pointer;transition:all .3s;text-decoration:none;color:var(--text);
+}
+.tile:hover{background:rgba(212,168,83,.04);border-color:rgba(212,168,83,.12);transform:translateY(-1px)}
+.tile-icon{font-size:32px;margin-bottom:8px}
+.tile-title{font-size:.95em;font-weight:600;margin-bottom:2px}
+.tile-desc{font-size:.75em;color:var(--muted)}
+.tile-full{grid-column:1/-1;display:flex;align-items:center;gap:16px;text-align:left;padding:16px 20px}
+.tile-full .tile-icon{font-size:28px;margin-bottom:0}
+.tile-badge{
+  display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;
+  background:rgba(16,185,129,.12);color:var(--success);margin-left:6px;font-weight:600;
+}
+
+/* ─── BOUTON EN BAS ─── */
+.home-footer{
+  margin-top:auto;padding:20px 0 12px;text-align:center;
+  font-size:.75em;color:var(--muted);animation:fadeUp .6s 3.4s both;
+}
+
+/* ─── ÉCRANS SECONDAIRES ─── */
+.screen-header{
+  display:flex;align-items:center;gap:12px;padding:8px 0 16px;
+}
+.screen-back{
+  width:36px;height:36px;border-radius:10px;
+  background:rgba(255,255,255,.04);border:none;color:var(--text);
+  font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;
+}
+.screen-back:hover{background:rgba(255,255,255,.08)}
+.screen-title{font-size:1.1em;font-weight:700;flex:1}
+.screen-content{flex:1;overflow-y:auto;padding-bottom:20px}
+
+/* ─── SECTION COMPRESSION (dans écran Stockage) ─── */
+.upload-zone{
+  border:2px dashed rgba(255,255,255,.1);border-radius:16px;
+  padding:24px;text-align:center;cursor:pointer;transition:all .3s;margin-bottom:16px;
+}
+.upload-zone:hover{border-color:rgba(212,168,83,.3);background:rgba(212,168,83,.02)}
+.upload-zone-icon{font-size:36px;margin-bottom:8px}
+.upload-zone-text{font-weight:600;font-size:.95em}
+.upload-zone-sub{font-size:.8em;color:var(--muted);margin-top:4px}
+
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.metric-card{
+  background:rgba(255,255,255,.02);border-radius:12px;padding:14px;text-align:center;
+}
+.metric-value{font-size:24px;font-weight:900}
+.metric-label{font-size:.7em;color:var(--muted);margin-top:2px}
+
+/* ─── GALERIE ─── */
+.gallery-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;
+}
+.gallery-item{
+  aspect-ratio:1;border-radius:10px;overflow:hidden;cursor:pointer;
+  background:rgba(255,255,255,.02);position:relative;
+}
+.gallery-item img{width:100%;height:100%;object-fit:cover;display:block}
+.gallery-badge{
+  position:absolute;top:4px;right:4px;
+  font-size:9px;padding:1px 6px;border-radius:10px;
+  background:rgba(16,185,129,.8);color:#fff;font-weight:600;
+}
+.gallery-empty{text-align:center;color:var(--muted);padding:40px 20px;font-size:.9em}
+
+/* ─── VISIONNEUSE ─── */
+.viewer{
+  position:fixed;top:0;left:0;right:0;bottom:0;z-index:9998;
+  background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center;
+}
+.viewer img,.viewer video{max-width:92%;max-height:88vh;border-radius:8px}
+.viewer-close{
+  position:absolute;top:16px;right:16px;
+  width:36px;height:36px;border-radius:50%;border:none;
+  background:rgba(255,255,255,.08);color:#fff;font-size:18px;cursor:pointer;
+}
+
+/* ─── ONBOARDING OVERLAY ─── */
+.onboarding-overlay{
+  position:fixed;top:0;left:0;right:0;bottom:0;z-index:9997;
+  background:rgba(7,5,20,.92);display:none;align-items:center;justify-content:center;
+  padding:24px;backdrop-filter:blur(8px);
+}
+.onboarding-card{
+  max-width:400px;width:100%;
+  background:linear-gradient(135deg,rgba(255,255,255,.03),rgba(255,255,255,.01));
+  border:1px solid rgba(255,255,255,.06);border-radius:24px;padding:28px 24px;text-align:center;
+}
+.onboarding-card h2{font-size:1.3em;margin-bottom:6px}
+.onboarding-card p{font-size:.85em;color:var(--muted);margin-bottom:16px}
+.onboarding-stat{display:flex;justify-content:space-between;font-size:.85em;padding:6px 0}
+.onboarding-stat span:last-child{font-weight:700}
+
+/* ─── SCROLLBAR ─── */
+.screen-content::-webkit-scrollbar{width:3px}
+.screen-content::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- ═══ SPLASH SCREEN ═══ -->
+<div id="splash">
+  <svg class="logo-svg" viewBox="0 0 100 100">
+    <circle class="logo-ring" cx="50" cy="50" r="45"/>
+    <text x="50" y="62" text-anchor="middle" font-size="36" font-weight="900" fill="#d4a853" opacity="0" style="animation:fadeUp .6s 1s forwards">φ</text>
+  </svg>
+  <div class="splash-title">KA MOBILE</div>
+  <div class="splash-sub">Votre compagnon harmonique</div>
+</div>
+
+<!-- ═══ VISIONNEUSE ═══ -->
+<div class="viewer" id="viewer" onclick="closeViewer()">
+  <button class="viewer-close" onclick="closeViewer()">✕</button>
+  <img id="viewer-img" style="display:none">
+  <video id="viewer-vid" style="display:none" controls autoplay></video>
+</div>
+
+<!-- ═══ ONBOARDING ═══ -->
+<div class="onboarding-overlay" id="onboarding-overlay">
+  <div class="onboarding-card">
+    <div style="font-size:40px;margin-bottom:8px">📱</div>
+    <h2>Bienvenue dans KA MOBILE</h2>
+    <p>Analysons votre stockage pour libérer de l'espace.<br><strong>Aucune photo ne sera perdue</strong> — les originaux sont conservés 7 jours.</p>
+    <div style="background:rgba(255,255,255,.02);border-radius:12px;padding:12px;margin-bottom:16px">
+      <div class="onboarding-stat"><span>📸 Fichiers trouvés</span><span id="onboarding-count">—</span></div>
+      <div class="onboarding-stat"><span>💾 Espace économisable</span><span id="onboarding-saved" style="color:#10b981">—</span></div>
+      <div class="onboarding-stat"><span>📊 Ratio moyen</span><span id="onboarding-ratio" style="color:#d4a853">—</span></div>
+    </div>
+    <button id="onboarding-btn" class="btn btn-primary" onclick="startCompression()" style="width:100%;padding:14px;border:none;border-radius:12px;font-weight:700;font-size:.95em;cursor:pointer;background:linear-gradient(135deg,#d4a853,#b89030);color:#070514">🚀 Compression rapide</button>
+    <button onclick="dismissOnboarding()" style="width:100%;margin-top:8px;padding:12px;border:none;border-radius:12px;font-size:.85em;cursor:pointer;background:transparent;color:var(--muted)">Me le rappeler plus tard</button>
+    <div style="font-size:10px;color:var(--muted);margin-top:10px">🔒 100% local — aucune donnée quitte votre appareil</div>
   </div>
-</nav>
+</div>
 
-<section class="hero">
-  <div class="tag">🚀 Lancement Beta — Juillet 2026</div>
-  <h1>L'Intelligence<br>qui ne ment pas.</h1>
-  <p class="sub">Le premier compagnon IA à interférence d'ondes. Zéro paramètre, zéro hallucination, 100% privé. Fonctionne entièrement sur votre téléphone — même sans connexion.</p>
-  <div>
-    <a href="#cta" class="btn btn-primary">Rejoindre la beta</a>
-    <a href="#how" class="btn btn-secondary">Comment ça marche</a>
+<!-- ═══ ÉCRAN D'ACCUEIL ═══ -->
+<div class="screen active" id="screen-home">
+  <div class="home-header">
+    <div class="home-avatar">φ</div>
+    <div class="home-greeting">Bonjour, comment puis-je vous accompagner ?</div>
+    <div class="home-sub">Stockage · Galerie · Intelligence personnelle</div>
   </div>
-</section>
 
-<section id="how">
-  <h2>Ni LLM, ni réseau de neurones.<br>Des ondes.</h2>
-  <p style="text-align:center;color:var(--muted);max-width:650px;margin:12px auto 32px">KA MOBILE encode la connaissance sous forme d'interférences d'ondes dans des hologrammes. Une question est une sonde ondulatoire. La réponse émerge. C'est déterministe — pas probabiliste.</p>
-  <div class="grid grid3">
-    <div class="card"><div class="icon">🔬</div><h3>Physique, pas statistique</h3><p style="color:var(--muted);font-size:.9em">L'interférence d'ondes est déterministe. Même question = même réponse. Toujours.</p></div>
-    <div class="card"><div class="icon">φ</div><h3>Nombre d'Or (φ=1,618)</h3><p style="color:var(--muted);font-size:.9em">Les concepts sont encodés avec des phases φ-distribuées pour une décorrélation maximale. Zéro collision sémantique.</p></div>
-    <div class="card"><div class="icon">📱</div><h3>4GB de RAM suffisent</h3><p style="color:var(--muted);font-size:.9em">Pas besoin de GPU à 40 000$. KA MOBILE tourne sur un téléphone à 80$. 100% local.</p></div>
+  <div class="tiles">
+    <div class="tile-row">
+      <div class="tile" onclick="showScreen('storage')">
+        <div class="tile-icon">💾</div>
+        <div class="tile-title">Stockage</div>
+        <div class="tile-desc">Compresser et libérer</div>
+      </div>
+      <div class="tile" onclick="showScreen('gallery')">
+        <div class="tile-icon">📸</div>
+        <div class="tile-title">Galerie</div>
+        <div class="tile-desc">Vos médias allégés</div>
+      </div>
+    </div>
+    <div class="tile-row">
+      <div class="tile" onclick="showScreen('stats')">
+        <div class="tile-icon">📊</div>
+        <div class="tile-title">Capacité</div>
+        <div class="tile-desc">Économies réalisées</div>
+      </div>
+      <div class="tile" onclick="alert('🧠 Intelligence personnelle — disponible dans la version Android native. Beta juillet 2026.')">
+        <div class="tile-icon">🧠</div>
+        <div class="tile-title">IA Personnelle</div>
+        <div class="tile-desc">Qui ne ment pas</div>
+      </div>
+    </div>
+    <div class="tile tile-full" onclick="alert('Paramètres à venir')">
+      <div class="tile-icon">⚙️</div>
+      <div>
+        <div class="tile-title">Paramètres</div>
+        <div class="tile-desc">Corbeille, chiffrement, préférences</div>
+      </div>
+    </div>
   </div>
-</section>
 
-<section id="features" style="background:rgba(255,255,255,.01)">
-  <h2>Ce que KA MOBILE fait — et que les autres ne font pas</h2>
-  <div class="table-wrap" style="max-width:800px;margin:24px auto">
-    <table>
-      <tr><th></th><th style="text-align:center">KA MOBILE</th><th style="text-align:center">ChatGPT</th><th style="text-align:center">Siri/Alexa</th></tr>
-      <tr><td>Zéro hallucination</td><td class="check">✅ Structurel</td><td class="cross">❌ 3-5%</td><td class="cross">❌</td></tr>
-      <tr><td>100% offline</td><td class="check">✅</td><td class="cross">❌</td><td class="cross">❌</td></tr>
-      <tr><td>Mémoire infinie</td><td class="check">✅ Holographique</td><td class="cross">❌ Limitée</td><td class="cross">❌</td></tr>
-      <tr><td>Vie privée</td><td class="check">✅ 100% locale</td><td class="cross">❌ Cloud</td><td class="cross">❌ Cloud</td></tr>
-      <tr><td>Compression photos</td><td class="check">✅ 40:1 HCV</td><td class="cross">❌</td><td class="cross">❌</td></tr>
-      <tr><td>Voix neuronale offline</td><td class="check">✅ Piper 48kHz</td><td class="cross">❌</td><td class="cross">❌</td></tr>
-      <tr><td>Apprentissage continu</td><td class="check">✅ O(1) sans oubli</td><td class="cross">❌</td><td class="cross">❌</td></tr>
-      <tr><td>Coût par requête</td><td class="check">✅ 0$</td><td>~0,0002$</td><td>0$</td></tr>
-    </table>
+  <div class="home-footer">
+    KA MOBILE · v4.0 · Compression HCV2 · 100% local
   </div>
-</section>
+</div>
 
-<section id="privacy">
-  <h2>Votre téléphone. Votre mémoire.<br>Rien dans le cloud.</h2>
-  <div class="compare" style="margin-top:24px">
-    <div class="vs-card"><h3 style="color:#ef4444">Les autres assistants</h3><ul style="color:var(--muted);font-size:.9em;padding-left:18px"><li>Conversations envoyées au cloud</li><li>Analysées pour la publicité</li><li>Accessibles aux gouvernements</li><li>Votre voix stockée indéfiniment</li></ul></div>
-    <div class="vs-card win"><h3 style="color:#10b981">KA MOBILE</h3><ul style="color:var(--muted);font-size:.9em;padding-left:18px"><li>Tout reste sur votre téléphone</li><li>Chiffré AES-GCM avec votre PIN</li><li>Zéro donnée accessible par un tiers</li><li>Droit à l'oubli natif</li></ul></div>
+<!-- ═══ ÉCRAN STOCKAGE ═══ -->
+<div class="screen" id="screen-storage">
+  <div class="screen-header">
+    <button class="screen-back" onclick="showScreen('home')">←</button>
+    <div class="screen-title">💾 Stockage</div>
   </div>
-</section>
+  <div class="screen-content">
+    <p style="font-size:.85em;color:var(--muted);margin-bottom:16px">
+      Compression harmonique ×1000 — déposez une photo ou vidéo pour la compresser.
+      En arrière-plan, tous vos nouveaux fichiers sont allégés automatiquement.
+    </p>
 
-<section id="compression" style="background:rgba(255,255,255,.01)">
-  <h2>HCV — Libérez votre stockage</h2>
-  <div class="grid grid2" style="max-width:700px;margin:24px auto">
-    <div class="card"><div class="icon">📸</div><h3>Photos 40:1</h3><p style="color:var(--muted)">1000 photos = l'espace de 25. Compression quasi-lossless par reconstruction harmonique.</p></div>
-    <div class="card"><div class="icon">🎬</div><h3>Vidéos 45:1</h3><p style="color:var(--muted)">100 Go de vidéos → 2,5 Go. Codec H264+SDI avec upscaling 720p→4K.</p></div>
+    <!-- Upload -->
+    <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+      <div class="upload-zone-icon">📤</div>
+      <div class="upload-zone-text">Déposer une photo ou vidéo</div>
+      <div class="upload-zone-sub">JPEG · PNG · MP4 · Jusqu'à 50 Mo</div>
+    </div>
+    <input type="file" id="file-input" style="display:none" accept="image/*,video/*">
+
+    <!-- Résultats -->
+    <div id="storage-result" style="display:none">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-value" id="result-ratio" style="color:#10b981">—</div>
+          <div class="metric-label">Ratio</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value" id="result-psnr" style="color:#d4a853">—</div>
+          <div class="metric-label">PSNR</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value" id="result-ssim" style="color:#a78bfa">—</div>
+          <div class="metric-label">SSIM</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value" id="result-size" style="color:var(--text)">—</div>
+          <div class="metric-label">Taille</div>
+        </div>
+      </div>
+      <div id="result-detail" style="font-size:.8em;color:var(--muted);text-align:center;margin-bottom:10px"></div>
+      <div id="result-preview" style="text-align:center;margin-bottom:10px"></div>
+      <button id="result-download" style="display:none;width:100%;padding:12px;border:none;border-radius:12px;font-weight:700;cursor:pointer;background:rgba(16,185,129,.1);color:#10b981">⬇️ Télécharger le fichier compressé</button>
+    </div>
+
+    <!-- Progression -->
+    <div id="storage-progress" style="display:none;margin-top:12px">
+      <div style="height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden">
+        <div id="progress-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#d4a853,#7c3aed);border-radius:2px;transition:width .3s"></div>
+      </div>
+      <div id="progress-text" style="font-size:.8em;color:var(--muted);margin-top:6px">Compression HCV2 Mobile en cours...</div>
+    </div>
+
+    <div style="font-size:.75em;color:var(--muted);margin-top:16px;padding:12px;background:rgba(255,255,255,.02);border-radius:12px;text-align:center">
+      🏆 Bat H.265 (×196), VP9 (×373), H.264 (×102) — à qualité visuelle équivalente
+    </div>
   </div>
-  <p style="text-align:center;color:var(--muted);font-size:.85em">HCV s'exécute en arrière-plan, uniquement en charge + WiFi. Rapport quotidien automatique.</p>
-</section>
+</div>
 
-<section id="pricing">
-  <h2>Tarifs simples</h2>
-  <div class="price-grid" style="margin-top:24px">
-    <div class="price-card"><h3>KA Free</h3><p style="color:var(--muted);font-size:.9em">Hologramme 64×64<br>1000 faits<br>HCV basique</p><div class="price">0€</div><div class="period">Gratuit pour toujours</div></div>
-    <div class="price-card featured"><div class="tag" style="background:rgba(212,168,83,.15);color:#d4a853">Recommandé</div><h3>KA Pro</h3><p style="color:var(--muted);font-size:.9em">Hologramme 256×256<br>Mémoire illimitée<br>HCV PRO<br>Voix HD 48kHz</p><div class="price">6,99€</div><div class="period">par mois</div></div>
-    <div class="price-card"><h3>KA Ultimate</h3><p style="color:var(--muted);font-size:.9em">Tout Pro +<br>Accès anticipé<br>Support prioritaire</p><div class="price">99€</div><div class="period">par an</div></div>
+<!-- ═══ ÉCRAN GALERIE ═══ -->
+<div class="screen" id="screen-gallery">
+  <div class="screen-header">
+    <button class="screen-back" onclick="showScreen('home')">←</button>
+    <div class="screen-title">📸 Galerie</div>
   </div>
-</section>
+  <div class="screen-content">
+    <p style="font-size:.8em;color:var(--muted);margin-bottom:12px">
+      Les fichiers sont automatiquement compressés en fond. À la lecture, la décompression est invisible.
+      <span style="color:var(--success)">●</span> = compressé HCV2
+    </p>
+    <div id="gallery-container">
+      <div class="gallery-empty">Chargement...</div>
+    </div>
+  </div>
+</div>
 
-<section id="cta" style="text-align:center;background:radial-gradient(ellipse at 50% 50%,rgba(124,58,237,.06) 0%,transparent 60%)">
-  <h2>Votre téléphone mérite<br>une intelligence qui ne ment pas.</h2>
-  <p style="color:var(--muted);margin:12px 0 24px">Beta fermée — 10 000 places. Android + PWA.</p>
-  <a href="mailto:beta@kamobile.ai" class="btn btn-primary" style="font-size:1.1em;padding:16px 40px">Rejoindre la beta →</a>
-</section>
+<!-- ═══ ÉCRAN CAPACITÉ ═══ -->
+<div class="screen" id="screen-stats">
+  <div class="screen-header">
+    <button class="screen-back" onclick="showScreen('home')">←</button>
+    <div class="screen-title">📊 Capacité</div>
+  </div>
+  <div class="screen-content">
+    <div class="metrics-grid">
+      <div class="metric-card"><div class="metric-value" id="stat-files">—</div><div class="metric-label">Fichiers compressés</div></div>
+      <div class="metric-card"><div class="metric-value" id="stat-saved" style="color:#10b981">—</div><div class="metric-label">Économisés</div></div>
+      <div class="metric-card"><div class="metric-value" id="stat-ratio" style="color:#d4a853">—</div><div class="metric-label">Ratio moyen</div></div>
+      <div class="metric-card"><div class="metric-value" id="stat-projection" style="color:#a78bfa">—</div><div class="metric-label">Photos possibles</div></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <div style="flex:1;background:rgba(255,255,255,.02);border-radius:10px;padding:12px;text-align:center;font-size:.8em">
+        <span style="color:var(--muted)">Original</span><br><span id="stat-original" style="font-weight:700">—</span>
+      </div>
+      <div style="flex:1;background:rgba(255,255,255,.02);border-radius:10px;padding:12px;text-align:center;font-size:.8em">
+        <span style="color:var(--muted)">Compressé</span><br><span id="stat-compressed" style="font-weight:700">—</span>
+      </div>
+      <div style="flex:1;background:rgba(255,255,255,.02);border-radius:10px;padding:12px;text-align:center;font-size:.8em">
+        <span style="color:var(--muted)">Libre</span><br><span id="stat-free" style="font-weight:700">—</span>
+      </div>
+    </div>
+    <div style="text-align:center">
+      <button class="screen-back" onclick="loadStats()" style="display:inline-flex;width:auto;padding:8px 16px;margin-top:4px">🔄 Actualiser</button>
+    </div>
+  </div>
+</div>
 
-<footer class="footer">
-  <p>KA MOBILE © 2026 — Tous droits réservés</p>
-  <p style="margin-top:4px">contact@kamobile.ai</p>
-</footer>
-</body></html>
+<script>
+// ─── NAVIGATION ───
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  if (id === 'gallery') loadGallery();
+  if (id === 'stats') loadStats();
+}
+
+// ─── SPLASH → ACCUEIL ───
+setTimeout(() => {
+  // Vérifier première visite
+  if (!localStorage.getItem('ka_mobile_onboarding_done')) {
+    setTimeout(showOnboarding, 600);
+  }
+}, 3200);
+
+// ─── ONBOARDING ───
+function showOnboarding() {
+  const overlay = document.getElementById('onboarding-overlay');
+  overlay.style.display = 'flex';
+  fetch('/api/hcv2/stats')
+    .then(r => r.json())
+    .then(s => {
+      document.getElementById('onboarding-count').textContent = s.files_count || '—';
+      document.getElementById('onboarding-saved').textContent = s.saved_mb ? s.saved_mb + ' Mo' : '—';
+      document.getElementById('onboarding-ratio').textContent = s.avg_ratio ? s.avg_ratio + '×' : '—';
+    });
+}
+
+function startCompression() {
+  const btn = document.getElementById('onboarding-btn');
+  btn.textContent = '⏳ Compression en cours...';
+  btn.disabled = true;
+  fetch('/api/hcv2/compress_now', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      btn.textContent = '✅ ' + d.processed + ' fichiers compressés !';
+      setTimeout(() => {
+        localStorage.setItem('ka_mobile_onboarding_done', 'true');
+        document.getElementById('onboarding-overlay').style.display = 'none';
+        showScreen('storage');
+        loadGallery();
+        loadStats();
+      }, 1500);
+    })
+    .catch(e => {
+      btn.textContent = '❌ Erreur, réessayer';
+      btn.disabled = false;
+    });
+}
+
+function dismissOnboarding() {
+  localStorage.setItem('ka_mobile_onboarding_done', 'true');
+  document.getElementById('onboarding-overlay').style.display = 'none';
+}
+
+// ─── COMPRESSION UPLOAD ───
+document.getElementById('file-input').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  const progress = document.getElementById('storage-progress');
+  const bar = document.getElementById('progress-bar');
+  const text = document.getElementById('progress-text');
+  const result = document.getElementById('storage-result');
+  result.style.display = 'none';
+  progress.style.display = 'block';
+  bar.style.width = '10%';
+  text.textContent = 'Compression de ' + file.name + '...';
+
+  const form = new FormData();
+  form.append('file', file);
+
+  fetch('/api/hcv2/mobile', { method: 'POST', body: form })
+    .then(r => { if (!r.ok) throw new Error('Erreur'); return r.json(); })
+    .then(d => {
+      bar.style.width = '100%';
+      text.textContent = '✅ Terminé !';
+      setTimeout(() => { progress.style.display = 'none'; bar.style.width = '0%'; }, 800);
+      result.style.display = 'block';
+      document.getElementById('result-ratio').textContent = (d.ratio || '—') + '×';
+      document.getElementById('result-psnr').textContent = (d.psnr || '—') + ' dB';
+      document.getElementById('result-ssim').textContent = d.ssim || '—';
+      document.getElementById('result-size').textContent = d.compressed_size ? (d.compressed_size / 1024).toFixed(1) + ' Ko' : '—';
+      
+      const details = [];
+      if (d.format) details.push(d.format);
+      if (d.dimensions) details.push(d.dimensions);
+      if (d.original_size) details.push('Original ' + (d.original_size / 1024).toFixed(1) + ' Ko');
+      document.getElementById('result-detail').textContent = details.join(' · ');
+
+      // Preview
+      const previewDiv = document.getElementById('result-preview');
+      previewDiv.innerHTML = '';
+      if (d.preview_video_b64 && d.preview_mime) {
+        const binary = atob(d.preview_video_b64);
+        const array = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
+        const blob = new Blob([array], { type: d.preview_mime });
+        const vid = document.createElement('video');
+        vid.src = URL.createObjectURL(blob);
+        vid.controls = true;
+        vid.style.maxWidth = '100%';
+        vid.style.maxHeight = '180px';
+        vid.style.borderRadius = '8px';
+        previewDiv.appendChild(vid);
+      }
+
+      // Download
+      fetch('/api/hcv2/mobile/download', { method: 'POST', body: form })
+        .then(r => r.json())
+        .then(dl => {
+          if (dl.download_b64) {
+            const binary = atob(dl.download_b64);
+            const array = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
+            const blob = new Blob([array]);
+            const a = document.getElementById('result-download');
+            a.style.display = 'block';
+            a.onclick = () => {
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = dl.download_name || 'compressed.hcv2';
+              link.click();
+            };
+          }
+        });
+    })
+    .catch(e => {
+      text.textContent = '❌ Erreur : ' + e.message;
+      bar.style.width = '0%';
+    });
+});
+
+// ─── GALERIE ───
+function loadGallery() {
+  const container = document.getElementById('gallery-container');
+  if (!container) return;
+  container.innerHTML = '<div class="gallery-empty">Chargement...</div>';
+  
+  fetch('/api/hcv2/gallery')
+    .then(r => r.json())
+    .then(g => {
+      if (!g.items || g.items.length === 0) {
+        container.innerHTML = '<div class="gallery-empty">📸 Aucun média pour le moment.<br>Ajoute des fichiers dans <code>ka_mobile_media</code> ou importe-en un depuis l\'écran Stockage.</div>';
+        return;
+      }
+      let html = '<div class="gallery-grid">';
+      g.items.forEach(item => {
+        const imgSrc = item.thumbnail || '/api/hcv2/view/' + item.path;
+        html += '<div class="gallery-item" onclick="viewMedia(\'' + item.path + '\',' + item.is_video + ')">';
+        html += '<img src="' + imgSrc + '" loading="lazy" onerror="this.style.display=\'none\'">';
+        if (item.compressed) html += '<div class="gallery-badge">HCV2</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    })
+    .catch(() => {
+      container.innerHTML = '<div class="gallery-empty">❌ Erreur de chargement</div>';
+    });
+}
+
+// ─── VISIONNEUSE ───
+function viewMedia(path, isVideo) {
+  const viewer = document.getElementById('viewer');
+  const img = document.getElementById('viewer-img');
+  const vid = document.getElementById('viewer-vid');
+  img.style.display = 'none';
+  vid.style.display = 'none';
+  vid.pause();
+  if (isVideo) {
+    vid.src = '/api/hcv2/view/' + path;
+    vid.style.display = 'block';
+    vid.play();
+  } else {
+    img.src = '/api/hcv2/view/' + path;
+    img.style.display = 'block';
+  }
+  viewer.style.display = 'flex';
+}
+
+function closeViewer() {
+  document.getElementById('viewer').style.display = 'none';
+  document.getElementById('viewer-vid').pause();
+}
+
+// ─── STATS ───
+function loadStats() {
+  fetch('/api/hcv2/stats')
+    .then(r => r.json())
+    .then(s => {
+      document.getElementById('stat-files').textContent = s.files_count || '0';
+      document.getElementById('stat-saved').textContent = s.saved_mb ? s.saved_mb + ' Mo' : '0 Mo';
+      document.getElementById('stat-ratio').textContent = s.avg_ratio ? s.avg_ratio + '×' : '—';
+      document.getElementById('stat-projection').textContent = s.projection && s.projection.photos_can_fit ? s.projection.photos_can_fit.toLocaleString() : '—';
+      document.getElementById('stat-original').textContent = s.total_original_mb ? s.total_original_mb + ' Mo' : '0 Mo';
+      document.getElementById('stat-compressed').textContent = s.total_compressed_mb ? s.total_compressed_mb + ' Mo' : '0 Mo';
+      document.getElementById('stat-free').textContent = s.free_space_gb ? s.free_space_gb + ' Go' : '—';
+    });
+}
+
+// ─── CHARGEMENT INITIAL ───
+window.addEventListener('load', function() {
+  if (localStorage.getItem('ka_mobile_onboarding_done')) {
+    loadGallery();
+    loadStats();
+  }
+});
+</script>
+</body>
+</html>

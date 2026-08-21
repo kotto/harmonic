@@ -102,27 +102,71 @@ body{background:var(--b);color:var(--t1);font-family:var(--font);-webkit-font-sm
 
   <!-- COMPRESS TAB -->
   <div id="tab-compress" style="display:none">
-    <h2 style="font-weight:300;font-size:20px;margin-bottom:12px">🗜️ Compresser un fichier</h2>
-    <div class="quality-selector">
-      <button class="quality-btn active" data-quality="archive" onclick="setQuality(this)">📦 Archive (373×)</button>
-      <button class="quality-btn" data-quality="lossless" onclick="setQuality(this)">🔒 Lossless (2,9×)</button>
-      <button class="quality-btn" data-quality="pro" onclick="setQuality(this)">🎬 Pro (259×)</button>
-      <button class="quality-btn" data-quality="max" onclick="setQuality(this)">🚀 Max (527×)</button>
+<h2 style="font-weight:300;font-size:20px;margin-bottom:12px">🗜️ Compression HCV2</h2>
+	    <div class="quality-selector">
+<button class="quality-btn active" data-quality="archive" onclick="setQuality(this)">📦 Archive</button>
+      <button class="quality-btn" data-quality="lossless" onclick="setQuality(this)">🔒 Lossless</button>
+      <button class="quality-btn" data-quality="mobile" onclick="setQuality(this)">📱 Mobile</button>
+      <button class="quality-btn" data-quality="pro" onclick="setQuality(this)">🎬 Pro + Upscale</button>
+      <button class="quality-btn" data-quality="max" onclick="setQuality(this)">🚀 Max (Extrême)</button>
     </div>
+    <div style="font-size:12px;color:var(--t3);margin-bottom:16px">
+      📦 Archive = bon ratio/qualité · 🔒 Lossless = bit-exact (∞ dB) · 📱 Mobile = max ratio à qualité visuelle identique<br>
+      🎬 Pro = upscale 2× + haute qualité (contenus déjà compressés) · 🚀 Max = ratio extrême
+	    </div>
     <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
       <div class="icon">📁</div>
-      <div class="text">Déposer un fichier ou cliquer pour choisir</div>
-      <div class="sub">DPX, TIFF, EXR, MOV, PNG, JPG — jusqu'à 2 Go</div>
+      <div class="text">Déposer une image ou une vidéo ou cliquer pour choisir</div>
+      <div class="sub">PNG, JPG, TIFF (images) · MP4, AVI, MOV, MKV (vidéos) — jusqu'à 100 Mo</div>
     </div>
-    <input type="file" id="fileInput" style="display:none" onchange="compressFile(this.files[0])">
+    <input type="file" id="fileInput" style="display:none" accept="image/*,video/*" onchange="handleUpload(this.files[0])">
     <div class="progress" id="progress">
       <div class="progress-bar"><div id="progress-fill"></div></div>
       <div class="text" id="progress-text">Compression en cours...</div>
     </div>
-    <div id="result" style="display:none;background:rgba(61,219,160,.08);border:1px solid rgba(61,219,160,.2);border-radius:16px;padding:20px;margin-bottom:20px">
-      <div style="font-size:18px;font-weight:600;color:var(--g)" id="result-ratio"></div>
-      <div style="font-size:13px;color:var(--t2);margin-top:4px" id="result-detail"></div>
-      <a id="result-download" style="display:inline-block;margin-top:12px;padding:10px 20px;background:var(--p);color:#fff;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none">⬇️ Télécharger</a>
+
+    <!-- AVANT/APRÈS -->
+    <div id="result" style="display:none;margin-top:20px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;text-align:center">
+          <div style="font-size:13px;color:var(--t3);margin-bottom:8px;font-weight:600">📥 ORIGINAL</div>
+          <img id="img-original" style="max-width:100%;max-height:300px;border-radius:8px;object-fit:contain;display:none">
+          <video id="vid-original" style="max-width:100%;max-height:300px;border-radius:8px;object-fit:contain;display:none" controls playsinline muted></video>
+          <div id="orig-size" style="font-size:12px;color:var(--t2);margin-top:6px"></div>
+        </div>
+        <div style="background:rgba(61,219,160,.04);border:1px solid rgba(61,219,160,.15);border-radius:16px;padding:16px;text-align:center">
+          <div style="font-size:13px;color:var(--g);margin-bottom:8px;font-weight:600">📤 COMPRESSÉ / DÉCOMPRESSÉ</div>
+          <img id="img-compressed" style="max-width:100%;max-height:300px;border-radius:8px;object-fit:contain;display:none">
+          <video id="vid-compressed" style="max-width:100%;max-height:300px;border-radius:8px;object-fit:contain;display:none" controls playsinline muted></video>
+          <div id="comp-size" style="font-size:12px;color:var(--t2);margin-top:6px"></div>
+        </div>
+      </div>
+
+      <!-- MÉTRIQUES -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+        <div class="stat-card">
+          <div class="val" id="result-ratio" style="font-size:22px">—</div>
+          <div class="lbl">Ratio de compression</div>
+        </div>
+        <div class="stat-card">
+          <div class="val purple" id="result-psnr" style="font-size:22px">—</div>
+          <div class="lbl">PSNR</div>
+        </div>
+        <div class="stat-card">
+          <div class="val gold" id="result-ssim" style="font-size:22px">—</div>
+          <div class="lbl">SSIM</div>
+        </div>
+        <div class="stat-card">
+          <div class="val" id="result-dims" style="font-size:22px">—</div>
+          <div class="lbl">Dimensions</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a id="result-download" style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:var(--p);color:#fff;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none">⬇️ Télécharger le fichier HCV2</a>
+        <span style="font-size:12px;color:var(--t3);align-self:center">Décompression en <span id="dec-time">—</span></span>
+      </div>
+      <div id="result-detail" style="display:none"></div>
     </div>
   </div>
 
@@ -171,6 +215,179 @@ function setQuality(btn) {
   currentQuality = btn.dataset.quality;
 }
 
+function handleUpload(file) {
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  const videoExts = ['mp4', 'avi', 'mov', 'mkv', 'webm', 'm4v', 'mpeg', 'mpg', 'wmv', 'flv'];
+  if (videoExts.includes(ext)) {
+    compressVideo(file);
+  } else {
+    compressImage(file);
+  }
+}
+
+function compressVideo(file) {
+  if (!file) return;
+  const progress = document.getElementById('progress');
+  const fill = document.getElementById('progress-fill');
+  const text = document.getElementById('progress-text');
+  const result = document.getElementById('result');
+  progress.style.display = 'block';
+  result.style.display = 'none';
+  fill.style.width = '10%';
+  text.textContent = 'Analyse de la vidéo ' + file.name + '...';
+
+  const form = new FormData();
+  form.append('file', file);
+  form.append('quality', currentQuality);
+
+  // Afficher la vidéo originale dans un lecteur vidéo
+  const videoUrl = URL.createObjectURL(file);
+  const origVid = document.getElementById('vid-original');
+  const origImg = document.getElementById('img-original');
+  origImg.style.display = 'none';
+  origVid.style.display = 'block';
+  origVid.src = videoUrl;
+  origVid.load();
+  document.getElementById('orig-size').textContent = (file.size / 1024 / 1024).toFixed(2) + ' Mo';
+
+  fill.style.width = '30%';
+  text.textContent = 'Compression vidéo HCV2 en cours...';
+
+  fetch('/api/compress_video', { method: 'POST', body: form })
+    .then(r => { if (!r.ok) throw new Error('Erreur ' + r.status); return r.json(); })
+    .then(d => {
+      fill.style.width = '100%';
+      text.textContent = '✅ Compression vidéo terminée !';
+      setTimeout(() => { progress.style.display = 'none'; fill.style.width = '0%'; }, 1500);
+
+      result.style.display = 'block';
+
+      // Afficher la vidéo décompressée
+      const compVid = document.getElementById('vid-compressed');
+      const compImg = document.getElementById('img-compressed');
+      compImg.style.display = 'none';
+      compVid.style.display = 'block';
+
+      if (d.preview_video_b64 && d.preview_mime) {
+        // Version MP4 complète
+        const binary = atob(d.preview_video_b64);
+        const array = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
+        const blob = new Blob([array], { type: d.preview_mime });
+        compVid.src = URL.createObjectURL(blob);
+      } else {
+        // Fallback : simple frame JPEG
+        compVid.src = 'data:image/jpeg;base64,' + d.compressed_b64;
+      }
+      compVid.load();
+      document.getElementById('comp-size').textContent = d.frames + ' frames · ' + (d.compressed_size / 1024).toFixed(1) + ' Ko';
+
+      document.getElementById('result-ratio').textContent = d.ratio + '×';
+      document.getElementById('result-psnr').textContent = d.psnr + ' dB';
+      document.getElementById('result-ssim').textContent = d.ssim;
+      document.getElementById('result-dims').textContent = d.dimensions + ' (' + d.frames + ' frames)';
+      document.getElementById('dec-time').textContent = d.decoding_time_ms + ' ms';
+
+      // Téléchargement
+      try {
+        const binary = atob(d.download_b64);
+        const array = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
+        const blob = new Blob([array]);
+        const dl = document.getElementById('result-download');
+        dl.href = URL.createObjectURL(blob);
+        dl.download = d.download_name;
+        dl.textContent = '⬇️ Télécharger le fichier ' + (d.format === 'ZIP+PNG' ? 'ZIP' : d.format);
+      } catch(e) {
+        console.error('Download error:', e);
+      }
+
+      loadStats();
+      loadJobs();
+    })
+    .catch(e => {
+      text.textContent = '❌ Erreur vidéo : ' + e.message;
+      progress.style.display = 'none';
+    });
+}
+
+function compressImage(file) {
+  if (!file) return;
+  const progress = document.getElementById('progress');
+  const fill = document.getElementById('progress-fill');
+  const text = document.getElementById('progress-text');
+  const result = document.getElementById('result');
+  progress.style.display = 'block';
+  result.style.display = 'none';
+  fill.style.width = '10%';
+  text.textContent = 'Analyse de ' + file.name + '...';
+
+  // Cacher les vidéos, montrer les images
+  document.getElementById('vid-original').style.display = 'none';
+  document.getElementById('vid-compressed').style.display = 'none';
+  document.getElementById('img-original').style.display = 'block';
+  document.getElementById('img-compressed').style.display = 'block';
+
+  const form = new FormData();
+  form.append('file', file);
+  form.append('quality', currentQuality);
+
+  // Afficher le preview original
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('img-original').src = e.target.result;
+    document.getElementById('orig-size').textContent = (file.size / 1024).toFixed(1) + ' Ko';
+  };
+  reader.readAsDataURL(file);
+
+  fill.style.width = '30%';
+  text.textContent = 'Compression HCV2 en cours...';
+
+  fetch('/api/compress_image', { method: 'POST', body: form })
+    .then(r => { if (!r.ok) throw new Error('Erreur ' + r.status); return r.json(); })
+    .then(d => {
+      fill.style.width = '100%';
+      text.textContent = '✅ Compression terminée !';
+      setTimeout(() => { progress.style.display = 'none'; fill.style.width = '0%'; }, 1500);
+
+      result.style.display = 'block';
+      // Afficher l'image decompressée
+      const compImg = document.getElementById('img-compressed');
+      compImg.src = 'data:image/png;base64,' + d.compressed_b64;
+      compImg.onload = function() { console.log('Compressed image loaded'); };
+      compImg.onerror = function() { console.error('Failed to load compressed image'); };
+      document.getElementById('comp-size').textContent = (d.compressed_size / 1024).toFixed(1) + ' Ko';
+
+      document.getElementById('result-ratio').textContent = d.ratio + '×';
+      document.getElementById('result-psnr').textContent = d.psnr + ' dB';
+      document.getElementById('result-ssim').textContent = d.ssim;
+      document.getElementById('result-dims').textContent = d.dimensions;
+      document.getElementById('dec-time').textContent = d.decoding_time_ms + ' ms';
+
+      // Téléchargement depuis base64
+      try {
+        const binary = atob(d.download_b64);
+        const array = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
+        const blob = new Blob([array]);
+        const dl = document.getElementById('result-download');
+        dl.href = URL.createObjectURL(blob);
+        dl.download = d.download_name;
+        dl.textContent = '⬇️ Télécharger le fichier ' + (d.format || 'HCVM');
+      } catch(e) {
+        console.error('Download error:', e);
+      }
+
+      loadStats();
+      loadJobs();
+    })
+    .catch(e => {
+      text.textContent = '❌ Erreur : ' + e.message;
+      progress.style.display = 'none';
+    });
+}
+
 function compressFile(file) {
   if (!file) return;
   const progress = document.getElementById('progress');
@@ -192,12 +409,12 @@ function compressFile(file) {
       const fmt = r.headers.get('X-Format') || '?';
       const time = r.headers.get('X-Time') || '?';
       fill.style.width = '100%';
-      text.textContent = `✅ Compression terminée : ${ratio}× (${fmt}) en ${time}s`;
+      text.textContent = '✅ Compression terminée : ' + ratio + '× (' + fmt + ') en ' + time + 's';
       setTimeout(() => { progress.style.display = 'none'; fill.style.width = '0%'; }, 2000);
       return r.blob().then(blob => {
         result.style.display = 'block';
-        document.getElementById('result-ratio').textContent = `${ratio}× — ${fmt}`;
-        document.getElementById('result-detail').textContent = `${(file.size / 1024 / 1024).toFixed(1)} Mo → ${(blob.size / 1024).toFixed(0)} Ko`;
+        document.getElementById('result-ratio').textContent = ratio + '× — ' + fmt;
+        document.getElementById('result-detail').textContent = (file.size / 1024 / 1024).toFixed(1) + ' Mo → ' + (blob.size / 1024).toFixed(0) + ' Ko';
         const dl = document.getElementById('result-download');
         dl.href = URL.createObjectURL(blob);
         dl.download = file.name.replace(/\.[^.]+$/, '.hcv2');
@@ -289,7 +506,7 @@ zone.addEventListener('drop', e => {
   e.preventDefault();
   zone.classList.remove('dragover');
   const file = e.dataTransfer.files[0];
-  if (file) compressFile(file);
+  if (file) handleUpload(file);
 });
 
 // Initialisation

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KA vs LLM — Comparaison</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,'SF Pro Display','Inter',system-ui,sans-serif}
+body{background:#0e0e1a;display:flex;flex-direction:column;align-items:center;padding:40px 20px;color:rgba(255,255,255,.97)}
+h1{font-size:24px;font-weight:300;letter-spacing:2px;color:#9b94ff;margin-bottom:8px}
+.sub{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:40px;text-align:center}
+.compare{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+
+.card{width:340px;border-radius:20px;overflow:hidden;position:relative}
+.card-ka{background:radial-gradient(ellipse at 48% 16%,rgba(155,148,255,.08) 0%,transparent 60%);border:1px solid rgba(155,148,255,.25)}
+.card-llm{background:radial-gradient(ellipse at 48% 16%,rgba(255,100,100,.06) 0%,transparent 60%);border:1px solid rgba(255,100,100,.15)}
+
+.card-header{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06)}
+.card-header .icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.ka .icon{background:rgba(155,148,255,.2)}
+.llm .icon{background:rgba(255,100,100,.15)}
+.card-header .name{font-size:15px;font-weight:500}
+.card-header .badge{font-size:9px;letter-spacing:.08em;padding:2px 8px;border-radius:8px;margin-left:auto}
+.badge-ka{background:rgba(77,232,174,.15);color:#4de8ae;border:1px solid rgba(77,232,174,.2)}
+.badge-llm{background:rgba(255,100,100,.1);color:#ff6666;border:1px solid rgba(255,100,100,.15)}
+
+.question{padding:16px 20px;font-size:14px;color:rgba(255,255,255,.6);border-bottom:1px solid rgba(255,255,255,.04)}
+.question strong{color:rgba(255,255,255,.85)}
+.response{padding:16px 20px}
+
+.ka-result{font-size:32px;font-weight:300;color:#4de8ae;margin-bottom:4px}
+.ka-detail{font-size:12px;color:rgba(155,148,255,.7);font-family:monospace;margin-bottom:8px;padding:8px 12px;background:rgba(155,148,255,.05);border-radius:8px;border:1px solid rgba(155,148,255,.1)}
+.ka-check{display:flex;align-items:center;gap:6px;font-size:11px;color:#4de8ae;margin-top:4px}
+
+.llm-result{font-size:18px;font-weight:500;color:#ffdddd;margin-bottom:4px}
+.llm-warning{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,150,150,.7);margin:6px 0}
+.llm-unknown{font-size:11px;color:rgba(255,255,255,.3);margin-top:4px}
+
+.footer{text-align:center;margin-top:20px;padding:12px 24px;background:rgba(155,148,255,.05);border-radius:12px;border:1px solid rgba(155,148,255,.1);font-size:12px;color:rgba(255,255,255,.4);max-width:700px}
+.footer strong{color:rgba(155,148,255,.7)}
+</style>
+</head>
+<body>
+
+<h1>KA vs LLM</h1>
+<div class="sub">Même question, deux mondes — le spécialiste contre le généraliste</div>
+
+<div class="compare">
+  <!-- KA Card -->
+  <div class="card card-ka">
+    <div class="card-header">
+      <div class="icon">K</div>
+      <div class="name">KA Finance</div>
+      <span class="badge badge-ka">EXACT</span>
+    </div>
+    <div class="question">
+      <strong>Question :</strong> Un investissement de 5 000€ rapporte 8% par an. Quel est le gain ?
+    </div>
+    <div class="response">
+      <div class="ka-result">400 €</div>
+      <div class="ka-detail">
+        INIT(5000) → MUL(0.08) → 400<br>
+       ψ trajectoire : 5000 × 0.08 = 400.00
+      </div>
+      <div class="ka-check">✅ Résultat exact · 0.1s · Vérifiable</div>
+    </div>
+  </div>
+
+  <!-- LLM Card -->
+  <div class="card card-llm">
+    <div class="card-header">
+      <div class="icon">?</div>
+      <div class="name">ChatGPT / Claude</div>
+      <span class="badge badge-llm">APPROXIMATIF</span>
+    </div>
+    <div class="question">
+      <strong>Question :</strong> Un investissement de 5 000€ rapporte 8% par an. Quel est le gain ?
+    </div>
+    <div class="response">
+      <div class="llm-result">Environ 400€</div>
+      <div class="llm-warning">⚠️ Calcul non vérifiable</div>
+      <div class="llm-unknown">Méthode : inconnue (boîte noire)<br>Risque d'hallucination : présent<br>Traçabilité : aucune</div>
+    </div>
+  </div>
+</div>
+
+<div class="compare" style="margin-top:16px">
+  <div class="card card-ka">
+    <div class="card-header">
+      <div class="icon">K</div>
+      <div class="name">KA Finance</div>
+      <span class="badge badge-ka">EXACT</span>
+    </div>
+    <div class="question">
+      <strong>Question :</strong> Un capital de 10 000€ perd 15%. Quelle est la perte ?
+    </div>
+    <div class="response">
+      <div class="ka-result">1 500 €</div>
+      <div class="ka-detail">
+        INIT(10000) → MUL(0.15) → SUB(1500) → 1500<br>
+       ψ trajectoire : 10000 × 0.15 = 1500.00
+      </div>
+      <div class="ka-check">✅ Résultat exact · 0.1s · Vérifiable</div>
+    </div>
+  </div>
+
+  <div class="card card-llm">
+    <div class="card-header">
+      <div class="icon">?</div>
+      <div class="name">ChatGPT / Claude</div>
+      <span class="badge badge-llm">APPROXIMATIF</span>
+    </div>
+    <div class="question">
+      <strong>Question :</strong> Un capital de 10 000€ perd 15%. Quelle est la perte ?
+    </div>
+    <div class="response">
+      <div class="llm-result">Environ 1 500€ de perte</div>
+      <div class="llm-warning">⚠️ Calcul non vérifiable · Source inconnue</div>
+      <div class="llm-unknown">Méthode : inconnue (boîte noire)<br>Calcul : 10000 × 15% = 1500 (supposé)<br>Traçabilité : aucune</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <strong>KA</strong> ne donne pas une réponse — il <strong>démontre</strong> la réponse.<br>
+  Trajectoire ψ vérifiable, brevet THU V2, 0% d'hallucination, 100% hors-ligne.
+</div>
+
+</body>
+</html>

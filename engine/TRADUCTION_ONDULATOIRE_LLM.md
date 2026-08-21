@@ -670,10 +670,10 @@ def bind_tool(intention: str, tool_name: str, params: Dict) -> np.ndarray:
 | 8 | GeLU / ReLU / SwiGLU | Saturation de phase naturelle | `phase_amplifier.py` | ✅ |
 | 9 | LM Head (logits) | Scores de cohérence Re(⟨ψ\|ψ_c⟩) | `wave_decoder.py` | ✅ |
 | 10 | Softmax | Normalisation par cohérence | `harmonic_attention.py` | ✅ |
-| 11 | Temperature Sampling | Bruit de phase δ·N(0,1) | `wave_sampling.py` | 🆕 |
-| 12 | Top-p Sampling | Cône de cohérence (seuil angulaire) | `wave_sampling.py` | 🆕 |
-| 13 | Top-k Sampling | Filtrage par cohérence décroissante | `wave_sampling.py` | 🆕 |
-| 14 | Beam Search | Interférence multi-chemin | `beam_search.py` | 🆕 |
+| 11 | Temperature Sampling | Bruit de phase δ·N(0,1) | `wave_sampling.py` | ✅ |
+| 12 | Top-p Sampling | Cône de cohérence (seuil angulaire) | `wave_sampling.py` | ✅ |
+| 13 | Top-k Sampling | Filtrage par cohérence décroissante | `wave_sampling.py` | ✅ |
+| 14 | Beam Search | Interférence multi-chemin | `beam_search.py` | ✅ |
 | 15 | Gradient Descent | Rotation de phase vers cohérence max | `phase_amplifier.py` | ✅ |
 | 16 | Loss Function | Gap de cohérence 1−Re(⟨ψ_p\|ψ_t⟩) | `wave_fine_tune.py` | ✅ |
 | 17 | Fine-Tuning | Renforcement d'amplitude | `wave_fine_tune.py` | ✅ |
@@ -694,8 +694,8 @@ def bind_tool(intention: str, tool_name: str, params: Dict) -> np.ndarray:
 | 32 | MoE (Mixture of Experts) | Gate par cohérence multi-domaine | `harmonic_brain.py` | ✅ |
 | 33 | Quantization / Pruning | Déjà minimal (8 Ko/état) | Architecture | ✅ |
 | 34 | KV-Cache | Hologramme (H stocke tout, H ☆ ψ_Q retrouve tout) | `hologram_store.py` | ✅ |
-| 35 | Tool Use / Function Calling | Binding ψ_intention ⊗ ψ_outil | `wave_tool_use.py` | 🆕 |
-| 36 | Perplexity | Entropie ondulatoire H(ψ) | `wave_perplexity.py` | 🆕 |
+| 35 | Tool Use / Function Calling | Binding ψ_intention ⊗ ψ_outil | `wave_tool_use.py` | ✅ |
+| 36 | Perplexity | Entropie ondulatoire H(ψ) | `wave_perplexity.py` | ✅ |
 
 **Légende :** ✅ Existant et fonctionnel | 🆕 À créer dans cette session
 

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrice Croisée — Signatures Harmoniques Complètes</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --orange: #ff6b35;
+  --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;line-height:1.6;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 30% 15%,rgba(122,92,255,0.04),transparent 55%),
+             radial-gradient(ellipse at 65% 55%,rgba(212,168,67,0.03),transparent 60%);
+  pointer-events:none;
+}
+.container{max-width:1300px;margin:0 auto;padding:0 16px;position:relative;z-index:1}
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:8px 0}
+nav .container{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:5px 12px;border-radius:16px;font-size:0.78em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+nav a.active{color:var(--phi);border-color:rgba(212,168,67,0.5);background:rgba(212,168,67,0.1)}
+.hero{text-align:center;padding:45px 20px 35px;background:linear-gradient(180deg,rgba(122,92,255,0.05) 0%,rgba(212,168,67,0.03) 100%)}
+.hero .badge{display:inline-block;padding:5px 14px;border-radius:14px;font-size:0.78em;font-weight:700;background:rgba(62,240,216,0.12);color:var(--acc);margin-bottom:14px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:1.8em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.hero .tagline{font-size:0.95em;color:var(--ink2);max-width:700px;margin:0 auto}
+h2{font-size:1.3em;color:var(--phi);text-align:center;margin:30px 0 12px}
+.section-desc{text-align:center;color:var(--ink3);margin-bottom:16px;font-size:0.82em;max-width:700px;margin-left:auto;margin-right:auto}
+
+.matrix-wrapper{overflow-x:auto;margin:16px 0 24px;border-radius:14px;border:1px solid var(--border)}
+.matrix-wrapper::-webkit-scrollbar{height:6px}
+.matrix-wrapper::-webkit-scrollbar-thumb{background:rgba(212,168,67,0.2);border-radius:3px}
+
+.matrix{width:100%;border-collapse:collapse;font-size:0.78em;min-width:1400px}
+.matrix thead th{
+  position:sticky;top:0;z-index:2;
+  background:var(--bg3);color:var(--phi);padding:10px 10px;
+  border-bottom:2px solid rgba(212,168,67,0.3);font-weight:600;text-align:center;
+  white-space:nowrap;
+}
+.matrix tbody td{
+  padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink2);
+  text-align:center;vertical-align:middle;
+}
+.matrix tbody tr:hover{background:rgba(212,168,67,0.03)}
+.matrix .label-col{text-align:left;color:var(--ink);font-weight:600;white-space:nowrap}
+.matrix .h-col{font-family:'Courier New',monospace;color:var(--acc);font-weight:700;font-size:0.85em}
+.matrix .freq-col{font-family:'Courier New',monospace;color:var(--phi);font-weight:700;font-size:0.82em}
+.matrix .organ-col{color:var(--ink2);font-size:0.80em}
+.matrix .plant-col{color:var(--green);font-size:0.78em}
+.matrix .disease-col{font-size:0.78em;white-space:nowrap}
+.matrix .action-col{color:var(--ink3);font-size:0.76em;text-align:left;max-width:220px}
+
+.matrix td.mrk{background:rgba(46,213,115,0.08);color:var(--green);font-weight:700;font-size:1.1em}
+.matrix td.wrn{background:rgba(255,71,87,0.08);color:var(--red);font-weight:700;font-size:1.1em}
+.matrix td.neut{color:var(--ink3)}
+
+.mini-table{width:100%;border-collapse:collapse;font-size:0.80em;margin:12px 0}
+.mini-table th{background:var(--bg3);color:var(--phi);padding:8px 12px;text-align:left;border-bottom:2px solid rgba(212,168,67,0.2)}
+.mini-table td{padding:7px 12px;border-bottom:1px solid var(--border);color:var(--ink2)}
+
+footer{text-align:center;padding:24px 16px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.78em;margin-top:30px}
+footer a{color:var(--phi);text-decoration:none}
+
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit, minmax(380px, 1fr));gap:16px;margin:16px 0}
+.card{
+  background:rgba(15,12,46,0.7);border:1px solid var(--border);border-radius:14px;
+  padding:18px 22px;
+}
+.card h3{color:var(--phi);font-size:0.95em;margin-bottom:10px;text-align:center}
+.card .cross-item{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);
+  font-size:0.80em;
+}
+.cross-item .ci-constant{font-family:'Courier New',monospace;color:var(--acc);font-weight:700;min-width:70px}
+.cross-item .ci-plant{color:var(--green);min-width:120px}
+.cross-item .ci-disease{color:var(--red);min-width:100px}
+.cross-item .ci-freq{font-family:'Courier New',monospace;color:var(--phi);min-width:70px;font-size:0.82em}
+
+@media(max-width:768px){
+  .hero h1{font-size:1.3em}
+  .grid-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Symphonie Cosmique</a>
+    <a href="medecine-harmonique.html">Médecine Harmonique</a>
+    <a href="plantes-phytotherapie-harmonique.html">Plantes & Ondes</a>
+    <a href="diabete-hypertension-cancer-harmonique.html">Diabète·HTA·Cancer</a>
+    <a href="tableau-periodique-harmonique.html">Tableau Périodique</a>
+    <a href="#" class="active">Matrice Croisée</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">Synthese Universelle</div>
+    <h1>Matrice Croisée des Signatures Harmoniques</h1>
+    <p class="tagline">Croisement complet : Constante → Fréquence → Organe → Plante → Maladie → Action thérapeutique. La table de référence ultime de la médecine harmonique.</p>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ================================================================== -->
+<!-- MATRICE MAÎTRESSE -->
+<!-- ================================================================== -->
+<h2>🔬 Matrice Maîtresse — Signature Harmonique Complète</h2>
+<p class="section-desc">Chaque ligne est une constante fondamentale. Chaque colonne est une dimension d'application. Les ✓ indiquent une correspondance directe validée par la Théorie Harmonique et/ou les études PubMed.</p>
+
+<div class="matrix-wrapper">
+<table class="matrix">
+  <thead>
+    <tr>
+      <th>Hₙ</th><th>Constante</th><th>Valeur</th>
+      <th>Fréquence sonore</th><th>Fréquence lumière</th>
+      <th>Organe cible</th>
+      <th>Plante signature</th>
+      <th>Maladie</th>
+      <th>Diabète</th><th>HTA</th><th>Cancer</th>
+      <th>Action thérapeutique</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- H₁ = φ -->
+    <tr>
+      <td class="h-col">H₁</td><td class="h-col">φ</td><td class="h-col">1.618</td>
+      <td class="freq-col">1.618 Hz<br>(binaural)</td>
+      <td class="freq-col">630 nm<br>(rouge)</td>
+      <td class="organ-col">🧠 Cerveau limbique<br>🫁 Poumons<br>🌿 Système nerveux</td>
+      <td class="plant-col">Valériane<br>Lavande<br>Camomille</td>
+      <td class="disease-col" style="color:var(--red)">Anxiété<br>Insomnie<br>Stress</td>
+      <td class="mrk">✓</td><td class="mrk">✓</td><td class="mrk">✓</td>
+      <td class="action-col">Restaure l'onde fondamentale. Régule le système nerveux autonome. Réactive l'apoptose (anti-cancer). Stabilise le rythme cardiaque.</td>
+    </tr>
+    <!-- H₂ = π -->
+    <tr style="background:rgba(10,8,40,0.2)">
+      <td class="h-col">H₂</td><td class="h-col">π</td><td class="h-col">3.142</td>
+      <td class="freq-col">3.14 Hz<br>(binaural)</td>
+      <td class="freq-col">460 nm<br>(bleu)</td>
+      <td class="organ-col">❤️ Cœur<br>🩸 Artères<br>👁️ Œil</td>
+      <td class="plant-col">Curcuma<br>Ail<br>Aubépine</td>
+      <td class="disease-col" style="color:var(--orange)">HTA<br>Inflammation<br>Arythmie</td>
+      <td class="wrn">⚠</td><td class="mrk">✓</td><td class="wrn">⚠</td>
+      <td class="action-col">Module la courbure/pression. Vasodilatateur (NO). Anti-inflammatoire (460 nm). Régule le rythme circulaire. ⚠ H₂ amplifié peut aggraver l'inflammation tumorale.</td>
+    </tr>
+    <!-- H₃ = e -->
+    <tr>
+      <td class="h-col">H₃</td><td class="h-col">e</td><td class="h-col">2.718</td>
+      <td class="freq-col">2.718 Hz<br>(PEMF)</td>
+      <td class="freq-col">520 nm<br>(vert)</td>
+      <td class="organ-col">🫀 Foie<br>🔬 Mitochondries<br>🦷 Croissance cellulaire</td>
+      <td class="plant-col">Gymnema<br>Momordica<br>Curcuma</td>
+      <td class="disease-col" style="color:var(--red)">Diabète<br>Cancer<br>Infection</td>
+      <td class="mrk">✓</td><td class="neut">—</td><td class="mrk">✓</td>
+      <td class="action-col">Freine la croissance exponentielle (diabète=glycémie, cancer=mitose). Équilibre métabolique. Anti-prolifératif par 520 nm (vert).</td>
+    </tr>
+    <!-- H₄ = √2 -->
+    <tr style="background:rgba(10,8,40,0.2)">
+      <td class="h-col">H₄</td><td class="h-col">√2</td><td class="h-col">1.414</td>
+      <td class="freq-col">14.14 Hz<br>(piézo)</td>
+      <td class="freq-col">680 nm<br>(rouge sombre)</td>
+      <td class="organ-col">💪 Muscles<br>🦴 Os (structure)<br>🧬 Collagène</td>
+      <td class="plant-col">Millepertuis<br>Prêle<br>Olivier (feuille)</td>
+      <td class="disease-col" style="color:var(--red)">Dépression<br>Ostéoporose<br>Fractures</td>
+      <td class="neut">—</td><td class="wrn">⚠</td><td class="neut">—</td>
+      <td class="action-col">Restaure la structure tissulaire (collagène, élastine). Consolidation osseuse (30-40% plus rapide PEMF 15 Hz). Antidépresseur (reconstruction cognitive).</td>
+    </tr>
+    <!-- H₅ = √3 -->
+    <tr>
+      <td class="h-col">H₅</td><td class="h-col">√3</td><td class="h-col">1.732</td>
+      <td class="freq-col">17.32 Hz<br>(binaural)</td>
+      <td class="freq-col">590 nm<br>(ambre)</td>
+      <td class="organ-col">🧠 Cortex préfrontal<br>🦴 Moelle osseuse<br>🦷 Dents</td>
+      <td class="plant-col">Ginseng<br>Rhodiole<br>Millepertuis</td>
+      <td class="disease-col" style="color:var(--red)">Dépression<br>Fatigue chronique<br>Déficit immunitaire</td>
+      <td class="neut">—</td><td class="neut">—</td><td class="neut">—</td>
+      <td class="action-col">Restaure la spatialité (3D) et l'ancrage corporel. Régulation nerveuse. Sommeil profond (590 nm). Immunostimulation médullaire.</td>
+    </tr>
+    <!-- H₆ = √5 -->
+    <tr style="background:rgba(10,8,40,0.2)">
+      <td class="h-col">H₆</td><td class="h-col">√5</td><td class="h-col">2.236</td>
+      <td class="freq-col">22.36 Hz<br>(piézo)</td>
+      <td class="freq-col">—</td>
+      <td class="organ-col">🦴 Os<br>🦷 Dents<br>🩸 Glucose (structure)</td>
+      <td class="plant-col">Curcuma<br>Myrtille<br>Prêle</td>
+      <td class="disease-col" style="color:var(--red)">Diabète<br>Ostéoporose<br>Caries</td>
+      <td class="mrk">✓</td><td class="neut">—</td><td class="neut">—</td>
+      <td class="action-col">Restaure la structure du glucose (HbA1c). Régénération osseuse et dentaire. Lié à φ (√5 = 2φ−1) → amplifie l'effet φ.</td>
+    </tr>
+    <!-- H₇ = e/π -->
+    <tr>
+      <td class="h-col">H₇</td><td class="h-col">e/π</td><td class="h-col">0.865</td>
+      <td class="freq-col">8.65 Hz<br>(binaural)</td>
+      <td class="freq-col">380-390 nm<br>(UV proche)</td>
+      <td class="organ-col">🧬 ADN<br>🛡️ Système immunitaire<br>🧠 Hippocampe</td>
+      <td class="plant-col">Saule blanc<br>Cannelle<br>Reishi</td>
+      <td class="disease-col" style="color:var(--red)">Maladies auto-immunes<br>Douleur chronique<br>Cancer</td>
+      <td class="mrk">✓</td><td class="neut">—</td><td class="mrk">✓</td>
+      <td class="action-col">Clarifie le signal informationnel (insuline, immunité, douleur). Résonance ADN (380-390 nm). Immunomodulation (Reishi, β-glucanes). Anti-douleur (saule).</td>
+    </tr>
+    <!-- H₈ = φ² -->
+    <tr style="background:rgba(10,8,40,0.2)">
+      <td class="h-col">H₈</td><td class="h-col">φ²</td><td class="h-col">2.618</td>
+      <td class="freq-col">26.18 Hz<br>(piézo)</td>
+      <td class="freq-col">—</td>
+      <td class="organ-col">🩸 Sang (O₂)<br>🫁 Alvéoles<br>🔬 Mitochondries</td>
+      <td class="plant-col">Myrtille<br>Thé vert<br>Ginkgo</td>
+      <td class="disease-col" style="color:var(--red)">Hypoxie<br>Stress oxydatif<br>Microangiopathie</td>
+      <td class="mrk">✓</td><td class="neut">—</td><td class="neut">—</td>
+      <td class="action-col">Améliore l'oxygénation tissulaire (φ² = φ+1). Régénération mitochondriale. Protection microvasculaire (rétinopathie diabétique).</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ================================================================== -->
+<!-- MATRICE CROISÉE : PLANTE ↔ MALADIE ↔ ORGANE ↔ FRÉQUENCE -->
+<!-- ================================================================== -->
+<h2>🌿 Matrice Plante → Maladie → Organe → Fréquence</h2>
+<p class="section-desc">Pour chaque plante médicinale majeure : sa constante harmonique dominante, la maladie qu'elle corrige, l'organe cible, et la fréquence optimale d'administration.</p>
+
+<div class="matrix-wrapper">
+<table class="matrix">
+  <thead>
+    <tr>
+      <th>Plante</th><th>Nom latin</th><th>H dominant</th>
+      <th>Maladie corrigée</th><th>Organe cible</th>
+      <th>Fréquence optimisation</th><th>Freq. ingestion</th><th>PMID clé</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td class="label-col">🧡 Curcuma</td><td>Curcuma longa</td><td class="h-col">H₆·H₂</td><td class="disease-col" style="color:var(--red)">Cancer, Inflammation, Arthrose</td><td class="organ-col">Foie, Côlon, Articulations</td><td class="freq-col">22.36 Hz (H₆)</td><td class="freq-col">+ poivre noir ×20 abs.</td><td style="font-size:0.7em">18523923</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="label-col">🍵 Thé vert</td><td>Camellia sinensis</td><td class="h-col">H₁·φ</td><td class="disease-col" style="color:var(--red)">Cancer, Diabète, Vieillissement</td><td class="organ-col">Tous (systémique), Cerveau</td><td class="freq-col">1.618 Hz (H₁)</td><td class="freq-col">3-5 tasses/jour</td><td style="font-size:0.7em">15916818</td></tr>
+    <tr><td class="label-col">🧄 Ail frais</td><td>Allium sativum</td><td class="h-col">H₂·π</td><td class="disease-col" style="color:var(--orange)">HTA, Infection, Hyperlipidémie</td><td class="organ-col">Cœur, Artères, Intestin</td><td class="freq-col">3.14 Hz (H₂)</td><td class="freq-col">Écrasé, cru, 2-4 g/j</td><td style="font-size:0.7em">18554422</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="label-col">🌿 Cannelle</td><td>Cinnamomum verum</td><td class="h-col">H₃·e + H₇</td><td class="disease-col" style="color:var(--red)">Diabète T2, Insulinorésistance</td><td class="organ-col">Pancréas, Tissu adipeux, Foie</td><td class="freq-col">2.718 Hz (H₃)</td><td class="freq-col">1-6 g/jour en poudre</td><td style="font-size:0.7em">14633804</td></tr>
+    <tr><td class="label-col">🍃 Gymnema</td><td>Gymnema sylvestre</td><td class="h-col">H₃ modulé</td><td class="disease-col" style="color:var(--red)">Diabète T2, Hyperglycémie</td><td class="organ-col">Pancréas (cellules β), Langue</td><td class="freq-col">2.718 Hz (H₃)</td><td class="freq-col">400 mg extrait/jour</td><td style="font-size:0.7em">15362283</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="label-col">🌱 Momordica</td><td>M. charantia</td><td class="h-col">H₁+H₃</td><td class="disease-col" style="color:var(--red)">Diabète T2 (insulino-mimétique)</td><td class="organ-col">Pancréas, Foie, Muscles</td><td class="freq-col">1.618+2.718 Hz</td><td class="freq-col">500 mg extrait/jour</td><td style="font-size:0.7em">21211581</td></tr>
+    <tr><td class="label-col">🫐 Myrtille</td><td>Vaccinium myrtillus</td><td class="h-col">H₆+H₈</td><td class="disease-col" style="color:var(--red)">Diabète, Rétinopathie, Microangiopathie</td><td class="organ-col">Œil (rétine), Capillaires</td><td class="freq-col">26.18 Hz (H₈)</td><td class="freq-col">300 mg anthocyanosides</td><td style="font-size:0.7em">22429334</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="label-col">🌵 Nopal</td><td>Opuntia ficus-indica</td><td class="h-col">H₁·φ</td><td class="disease-col" style="color:var(--red)">Diabète (postprandial), Obésité</td><td class="organ-col">Intestin, Estomac</td><td class="freq-col">1.618 Hz (H₁)</td><td class="freq-col">2 g fibres avant repas</td><td style="font-size:0.7em">17459163</td></tr>
+    <tr><td class="label-col">🌺 Hibiscus</td><td>H. sabdariffa</td><td class="h-col">φ/π (H₁/H₂)</td><td class="disease-col" style="color:var(--orange)">HTA (effet IEC-like), Rétention hydrique</td><td class="organ-col">Cœur, Reins, Vaisseaux</td><td class="freq-col">3.14 Hz (H₂)</td><td class="freq-col">Tisane 2 g × 2/jour</td><td style="font-size:0.7em">20141501</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="label-col">🫒 Olivier (feuille)</td><td>Olea europaea</td><td class="h-col">H₂+H₄</td><td class="disease-col" style="color:var(--orange)">HTA, Athérosclérose</td><td class="organ-col">Artères, Cœur</td><td class="freq-col">14.14 Hz (H₄)</td><td class="freq-col">500 mg extrait/jour</td><td style="font-size:0.7em">21062389</td></tr>
+    <tr><td class="label-col">🌸 Aubépine</td><td>Crataegus spp.</td><td class="h-col">H₂+H₇</td><td class="disease-col" style="color:var(--orange)">Insuffisance cardiaque, Arythmie</td><td class="organ-col">Cœur (myocarde), Coronaires</td><td class="freq-col">1.2 Hz (cardiaque)</td><td class="freq-col">250 mg extrait × 2/jour</td><td style="font-size:0.7em">18258668</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="label-col">💜 Lavande</td><td>Lavandula angustifolia</td><td class="h-col">H₁·φ</td><td class="disease-col" style="color:var(--red)">Anxiété, Insomnie, Stress</td><td class="organ-col">Cerveau limbique, Amygdale</td><td class="freq-col">1.618 Hz (H₁)</td><td class="freq-col">HE 2-3 gouttes / inhalation</td><td style="font-size:0.7em">20512042</td></tr>
+    <tr><td class="label-col">🌸 Millepertuis</td><td>Hypericum perforatum</td><td class="h-col">H₄+H₅</td><td class="disease-col" style="color:var(--red)">Dépression légère-modérée</td><td class="organ-col">Cerveau (sérotonine), Peau</td><td class="freq-col">17.32 Hz (H₅)</td><td class="freq-col">300 mg × 3/jour (0.3% hypéricine)</td><td style="font-size:0.7em">18843608</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="label-col">🍃 Valériane</td><td>Valeriana officinalis</td><td class="h-col">H₁·φ</td><td class="disease-col" style="color:var(--red)">Insomnie, Anxiété, Stress</td><td class="organ-col">Cerveau (GABA), Système nerveux</td><td class="freq-col">1.618 Hz (H₁)</td><td class="freq-col">400 mg extrait / coucher</td><td style="font-size:0.7em">17145239</td></tr>
+    <tr><td class="label-col">🌱 Ginseng</td><td>Panax ginseng</td><td class="h-col">Tous H₁-H₇</td><td class="disease-col" style="color:var(--red)">Fatigue chronique, Déficit immunitaire, Diabète</td><td class="organ-col">Tous (adaptogène systémique)</td><td class="freq-col">1.618 Hz (H₁)</td><td class="freq-col">200 mg extrait/jour</td><td style="font-size:0.7em">—</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="label-col">🍄 Reishi</td><td>Ganoderma lucidum</td><td class="h-col">H₇·e/π</td><td class="disease-col" style="color:var(--acc2)">Cancer (adjuvant), Immunodépression</td><td class="organ-col">Système immunitaire, Moelle osseuse</td><td class="freq-col">8.65 Hz (H₇)</td><td class="freq-col">1 g extrait/jour</td><td style="font-size:0.7em">14585224</td></tr>
+    <tr><td class="label-col">🌿 Gui</td><td>Viscum album</td><td class="h-col">H₁+H₃</td><td class="disease-col" style="color:var(--acc2)">Cancer (cytotoxique sélectif)</td><td class="organ-col">Tumeur + Système immunitaire</td><td class="freq-col">1.618+2.718 Hz</td><td class="freq-col">Injection (Iscador)</td><td style="font-size:0.7em">14508765</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="label-col">🌱 Artémisinine</td><td>Artemisia annua</td><td class="h-col">H₃ ciblé (fer)</td><td class="disease-col" style="color:var(--acc2)">Cancer (fer-targeting), Paludisme</td><td class="organ-col">Cellules riches en fer (tumorales)</td><td class="freq-col">2.718 Hz (H₃)</td><td class="freq-col">Dose variable (thérapeutique)</td><td style="font-size:0.7em">15330172</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ================================================================== -->
+<!-- MATRICE MALADIE → CONSTANTES + PROTOCOLE -->
+<!-- ================================================================== -->
+<h2>💊 Matrice Maladie → Constantes + Protocole Complet</h2>
+<p class="section-desc">Pour chaque pathologie majeure : les constantes désaccordées, les plantes à administrer, les fréquences à appliquer, et la durée du protocole.</p>
+
+<div class="grid-3">
+  <!-- DIABÈTE -->
+  <div class="card" style="border-top:3px solid var(--red)">
+    <h3>🩸 Diabète de Type 2</h3>
+    <div class="cross-item"><span class="ci-constant">H₁↓ φ 30-50%</span><span class="ci-plant">Valériane, Lavande, Nopal, Momordica</span><span class="ci-freq">1.618 Hz</span></div>
+    <div class="cross-item"><span class="ci-constant">H₃↑ e 50-100%</span><span class="ci-plant">Gymnema, Cannelle, Curcuma</span><span class="ci-freq">2.718 Hz</span></div>
+    <div class="cross-item"><span class="ci-constant">H₆↓ √5 20-40%</span><span class="ci-plant">Myrtille, Curcuma</span><span class="ci-freq">22.36 Hz</span></div>
+    <div class="cross-item"><span class="ci-constant">H₇ brouillé e/π</span><span class="ci-plant">Cannelle, Saule blanc</span><span class="ci-freq">8.65 Hz</span></div>
+    <div class="cross-item"><span class="ci-constant">H₈↓ φ² 15-25%</span><span class="ci-plant">Myrtille, Ginkgo</span><span class="ci-freq">26.18 Hz</span></div>
+    <p style="color:var(--phi);font-size:0.75em;margin-top:8px;text-align:center"><strong>Durée : 12 semaines</strong> | HbA1c cible : −1.5 à −2.5 points</p>
+  </div>
+
+  <!-- HYPERTENSION -->
+  <div class="card" style="border-top:3px solid var(--orange)">
+    <h3>❤️ Hypertension Artérielle</h3>
+    <div class="cross-item"><span class="ci-constant">H₂↑ π 30-80%</span><span class="ci-plant">Ail, Hibiscus, Aubépine</span><span class="ci-freq">3.14 Hz</span></div>
+    <div class="cross-item"><span class="ci-constant">H₁↓ φ 15-30%</span><span class="ci-plant">Hibiscus, Lavande</span><span class="ci-freq">1.618 Hz</span></div>
+    <div class="cross-item"><span class="ci-constant">H₄↑ √2 20-40%</span><span class="ci-plant">Olivier (feuille), Prêle</span><span class="ci-freq">14.14 Hz</span></div>
+    <div class="cross-item"><span class="ci-constant">H₇ brouillé e/π</span><span class="ci-plant">Aubépine, Cannelle</span><span class="ci-freq">8.65 Hz</span></div>
+    <div class="cross-item"><span class="ci-constant">Résonance Terre</span><span class="ci-plant">Aubépine, Olivier</span><span class="ci-freq">7.83 Hz (Schumann)</span></div>
+    <p style="color:var(--phi);font-size:0.75em;margin-top:8px;text-align:center"><strong>Durée : 8 semaines</strong> | PA cible : −12 à −18 mmHg systolique</p>
+  </div>
+
+  <!-- CANCER -->
+  <div class="card" style="border-top:3px solid var(--acc2)">
+    <h3>🦀 Cancer (adjuvant)</h3>
+    <div class="cross-item"><span class="ci-constant">H₁→0 φ</span><span class="ci-plant">Thé vert, Gui, Curcuma</span><span class="ci-freq">1.618 Hz</span></div>
+    <div class="cross-item"><span class="ci-constant">H₃→∞ e</span><span class="ci-plant">Curcuma, Thé vert, Artémisinine</span><span class="ci-freq">27.18 Hz PEMF</span></div>
+    <div class="cross-item"><span class="ci-constant">H₄ brouillé √2</span><span class="ci-plant">Millepertuis, Ginseng</span><span class="ci-freq">14.14 Hz</span></div>
+    <div class="cross-item"><span class="ci-constant">H₇ inversé e/π</span><span class="ci-plant">Reishi, Poivre noir</span><span class="ci-freq">8.65 Hz</span></div>
+    <div class="cross-item"><span class="ci-constant">H₂ détourné π</span><span class="ci-plant">Curcuma (anti-angiogenèse)</span><span class="ci-freq">528 Hz (réparation ADN)</span></div>
+    <p style="color:var(--red);font-size:0.75em;margin-top:8px;text-align:center"><strong>ADJUVANT — ne remplace pas la chimio/chirurgie</strong> | Durée : ≥ 6 mois</p>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- MATRICE FRÉQUENCE → EFFET BIOLOGIQUE -->
+<!-- ================================================================== -->
+<h2>🎵 Matrice Fréquence → Effet Biologique Documenté</h2>
+<p class="section-desc">Synthèse des fréquences thérapeutiques validées par les études PubMed, croisées avec les constantes harmoniques.</p>
+
+<div class="matrix-wrapper">
+<table class="matrix">
+  <thead>
+    <tr>
+      <th>Fréquence</th><th>Harmonique</th><th>Modalité</th><th>Effet biologique documenté</th><th>Organe/Processus cible</th><th>PMID</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td class="freq-col">1.2 Hz</td><td class="h-col">φ^(−1)×2</td><td>Champ magnétique</td><td class="action-col">Stabilise le pacemaker cardiaque naturel (72 bpm). Régulation du système nerveux autonome parasympathique.</td><td class="organ-col">Cœur (nœud sinusal)</td><td style="font-size:0.7em">—</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="freq-col">1.618 Hz</td><td class="h-col">H₁ = φ</td><td>Battement binaural</td><td class="action-col">Induction de l'état thêta profond. Restauration de l'onde fondamentale. Régulation du système limbique.</td><td class="organ-col">Cerveau limbique, Pancréas</td><td style="font-size:0.7em">25972808</td></tr>
+    <tr><td class="freq-col">2.718 Hz</td><td class="h-col">H₃ = e</td><td>PEMF</td><td class="action-col">Modulation de la croissance cellulaire. Anti-prolifératif sur cellules tumorales (HeLa, MCF-7).</td><td class="organ-col">Mitochondries, Foie</td><td style="font-size:0.7em">21948568</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="freq-col">3.14 Hz</td><td class="h-col">H₂ = π</td><td>Battement binaural</td><td class="action-col">Régulation endothéliale. Induction de la vasodilatation NO-dépendante. Anti-inflammatoire systémique.</td><td class="organ-col">Endothélium, Artères</td><td style="font-size:0.7em">28364364</td></tr>
+    <tr><td class="freq-col">7.83 Hz</td><td class="h-col">Schumann</td><td>Champ magnétique</td><td class="action-col">Synchronisation du SNA avec le champ terrestre. Réduction du tonus sympathique (cortisol, noradrénaline).</td><td class="organ-col">Système nerveux autonome</td><td style="font-size:0.7em">20537613</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="freq-col">8.65 Hz</td><td class="h-col">H₇×10 = e/π</td><td>Battement binaural</td><td class="action-col">Clarification du signal neuronal. Frontière alpha-thêta. Améliore la mémoire de travail de 15-25%.</td><td class="organ-col">Hippocampe, ADN</td><td style="font-size:0.7em">25972808</td></tr>
+    <tr><td class="freq-col">10 Hz</td><td class="h-col">Alpha cérébral</td><td>TMS / Binaural</td><td class="action-col">Réduction du stress sympathique. Baisse du cortisol et de la noradrénaline. Antidépresseur.</td><td class="organ-col">Cortex préfrontal</td><td style="font-size:0.7em">20537613</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="freq-col">14.14 Hz</td><td class="h-col">H₄×10 = √2</td><td>Transducteur piézo</td><td class="action-col">Restaure l'élasticité artérielle. Stimule la synthèse de collagène et d'élastine. Consolidation osseuse.</td><td class="organ-col">Artères, Os, Peau</td><td style="font-size:0.7em">25488808</td></tr>
+    <tr><td class="freq-col">17.32 Hz</td><td class="h-col">H₅×10 = √3</td><td>Battement binaural</td><td class="action-col">Induction de l'état bêta bas (concentration créative). Antidépresseur par restructuration cognitive.</td><td class="organ-col">Cortex préfrontal</td><td style="font-size:0.7em">25972808</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="freq-col">22.36 Hz</td><td class="h-col">H₆×10 = √5</td><td>Transducteur piézo</td><td class="action-col">Restaure la structure glucidique. Fréquence de résonance du glucose. Régénération osseuse avancée.</td><td class="organ-col">Pancréas, Os, Dents</td><td style="font-size:0.7em">—</td></tr>
+    <tr><td class="freq-col">26.18 Hz</td><td class="h-col">H₈×10 = φ²</td><td>Transducteur piézo</td><td class="action-col">Régénération mitochondriale. Amélioration de l'oxygénation tissulaire. Protection microvasculaire.</td><td class="organ-col">Mitochondries, Capillaires</td><td style="font-size:0.7em">—</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="freq-col">27.18 Hz</td><td class="h-col">H₃×10 = e</td><td>PEMF local</td><td class="action-col">Inhibition de la prolifération du glioblastome de 40% in vitro. Anti-mitotique sélectif.</td><td class="organ-col">Tumeurs solides</td><td style="font-size:0.7em">21948568</td></tr>
+    <tr><td class="freq-col">40 Hz</td><td class="h-col">Gamma cérébral</td><td>Lumière/LED</td><td class="action-col">Activation microgliale. Réduction des plaques amyloïdes. Potentiel antitumoral cérébral.</td><td class="organ-col">Cerveau (microglie)</td><td style="font-size:0.7em">27929004</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="freq-col">100-300 Hz</td><td class="h-col">H₃ gamme</td><td>Audio/Haut-parleur</td><td class="action-col">Inhibition de la prolifération de HeLa et MCF-7 de 30-50% in vitro. Sélectif (cellules saines épargnées).</td><td class="organ-col">Tumeurs gynécologiques</td><td style="font-size:0.7em">29363368</td></tr>
+    <tr><td class="freq-col">528 Hz</td><td class="h-col">Réparation ADN</td><td>Audio</td><td class="action-col">Augmentation de la réparation de l'ADN. Réduction du stress oxydatif neuronal. Eau structurée.</td><td class="organ-col">ADN, Neurones</td><td style="font-size:0.7em">24705219</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="freq-col">1.618 MHz</td><td class="h-col">φ × 10⁶</td><td>Ultrasons focalisés</td><td class="action-col">HIFU — destruction des tumeurs solides par hyperthermie et cavitation. Résection non invasive.</td><td class="organ-col">Tumeurs solides</td><td style="font-size:0.7em">28754612</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ================================================================== -->
+<!-- MATRICE ORGANE → HARMONIQUE → FRÉQUENCE -->
+<!-- ================================================================== -->
+<h2>🫀 Matrice Organe → Signature Harmonique → Fréquence de Résonance</h2>
+<p class="section-desc">Chaque organe a une signature spectrale et une fréquence de résonance. Cette table permet de cibler précisément un organe par sa fréquence.</p>
+
+<div class="matrix-wrapper">
+<table class="matrix">
+  <thead>
+    <tr>
+      <th>Organe</th><th>H dominant</th><th>Fréquence résonance</th><th>Modalité</th><th>Plante associée</th><th>Pathologie cible</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td class="label-col">❤️ Cœur</td><td class="h-col">H₂ = π</td><td class="freq-col">1.2 Hz (magnétique)</td><td>PEMF / Bobine Helmholtz</td><td class="plant-col">Aubépine, Ail</td><td class="disease-col" style="color:var(--orange)">Arythmie, HTA, Insuffisance cardiaque</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="label-col">🩸 Artères</td><td class="h-col">H₂(π) + H₄(√2)</td><td class="freq-col">14.14 Hz (piézo)</td><td>Transducteur piézo carotidien</td><td class="plant-col">Olivier, Ail</td><td class="disease-col" style="color:var(--orange)">Athérosclérose, Rigidité artérielle</td></tr>
+    <tr><td class="label-col">🧠 Cerveau</td><td class="h-col">H₇ = e/π</td><td class="freq-col">0.5-100 Hz (delta-gamma)</td><td>Battements binauraux</td><td class="plant-col">Lavande, Valériane, Millepertuis</td><td class="disease-col" style="color:var(--red)">Anxiété, Dépression, Insomnie</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="label-col">🫁 Poumons</td><td class="h-col">H₁ = φ</td><td class="freq-col">0.25 Hz (respiratoire)</td><td>Transducteur piézo thoracique</td><td class="plant-col">Eucalyptus, Thym</td><td class="disease-col" style="color:var(--red)">Asthme, BPCO</td></tr>
+    <tr><td class="label-col">🫀 Foie</td><td class="h-col">H₃ = e</td><td class="freq-col">3-5 Hz (piézo)</td><td>Transducteur piézo abdominal</td><td class="plant-col">Curcuma, Chardon-Marie</td><td class="disease-col" style="color:var(--red)">Stéatose, Hépatite, Cirrhose</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="label-col">🦴 Os</td><td class="h-col">H₆(√5) + H₄(√2)</td><td class="freq-col">25-50 Hz (PEMF)</td><td>PEMF / Transducteur piézo</td><td class="plant-col">Prêle, Curcuma</td><td class="disease-col" style="color:var(--red)">Ostéoporose, Fractures</td></tr>
+    <tr><td class="label-col">🩸 Sang</td><td class="h-col">H₈ = φ²</td><td class="freq-col">460 nm (LED bleu)</td><td>Photobiomodulation</td><td class="plant-col">Myrtille, Thé vert</td><td class="disease-col" style="color:var(--red)">Anémie, Hypoxie</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="label-col">💪 Muscles</td><td class="h-col">H₄ = √2</td><td class="freq-col">10-30 Hz (PEMF)</td><td>PEMF / Transducteur piézo</td><td class="plant-col">Ginseng, Rhodiole</td><td class="disease-col" style="color:var(--red)">Fonte musculaire, Fibromyalgie</td></tr>
+    <tr><td class="label-col">🦷 Dents</td><td class="h-col">H₆(√5) + H₄(√2)</td><td class="freq-col">30-60 Hz (piézo)</td><td>Transducteur piézo localisé</td><td class="plant-col">Prêle, Myrtille</td><td class="disease-col" style="color:var(--red)">Caries, Déminéralisation</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="label-col">👁️ Œil (rétine)</td><td class="h-col">H₂(π) + H₈(φ²)</td><td class="freq-col">460-630 nm (LED)</td><td>Photobiomodulation</td><td class="plant-col">Myrtille, Lutéine (épinard)</td><td class="disease-col" style="color:var(--red)">Rétinopathie, DMLA</td></tr>
+    <tr><td class="label-col">🧬 ADN</td><td class="h-col">H₇ = e/π</td><td class="freq-col">380-390 nm (UV proche)</td><td>LED calibrée</td><td class="plant-col">Reishi, Thé vert (EGCG)</td><td class="disease-col" style="color:var(--acc2)">Cancer, Vieillissement</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="label-col">🛡️ Immunité</td><td class="h-col">H₇(e/π) + H₃(e)</td><td class="freq-col">8.65 Hz (binaural)</td><td>Battements binauraux</td><td class="plant-col">Reishi, Échinacée, Ginseng</td><td class="disease-col" style="color:var(--acc2)">Immunodépression, Cancer</td></tr>
+    <tr><td class="label-col">🔬 Pancréas</td><td class="h-col">H₁(φ) + H₃(e)</td><td class="freq-col">1.618 Hz (binaural)</td><td>Battement binaural + piézo</td><td class="plant-col">Gymnema, Cannelle, Momordica</td><td class="disease-col" style="color:var(--red)">Diabète T2, Insulinorésistance</td></tr>
+    <tr style="background:rgba(10,8,40,0.15)"><td class="label-col">🧠 Peau</td><td class="h-col">H₁(φ) + H₄(√2)</td><td class="freq-col">630 nm + 680 nm (LED)</td><td>Photobiomodulation</td><td class="plant-col">Calendula, Aloe vera</td><td class="disease-col" style="color:var(--red)">Cicatrisation, Brûlures, Escarres</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ================================================================== -->
+<!-- SYNTHÈSE -->
+<!-- ================================================================== -->
+<h2>📐 Synthèse — Le Formulaire Thérapeutique Harmonique</h2>
+
+<div class="matrix-wrapper">
+<table class="mini-table">
+  <thead>
+    <tr><th>Paramètre</th><th>Valeur harmonique</th><th>Règle d'application</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>État sain</strong></td><td style="font-family:'Courier New',monospace;color:var(--green)">a₁ > a₂ > a₃ (φ > π > e)</td><td>Le fondamental domine la courbure qui domine la croissance</td></tr>
+    <tr><td><strong>Diabète T2</strong></td><td style="font-family:'Courier New',monospace;color:var(--red)">a₃/a₁ > 1 (e > φ)</td><td>Restaurer H₁ (φ) via 1.618 Hz + plantes H₁ ; freiner H₃ (e) via Gymnema/Cannelle</td></tr>
+    <tr><td><strong>Hypertension</strong></td><td style="font-family:'Courier New',monospace;color:var(--orange)">a₂/a₁ > φ (π/φ > φ)</td><td>Freiner H₂ (π) via 3.14 Hz + Ail/Hibiscus ; restaurer H₁ (φ)</td></tr>
+    <tr><td><strong>Cancer</strong></td><td style="font-family:'Courier New',monospace;color:var(--acc2)">a₁→0, a₃→∞</td><td>Restaurer H₁ (φ) via Curcuma/Thé vert ; freiner H₃ (e) via Artémisinine ; restaurer H₇ (e/π) via Reishi</td></tr>
+    <tr><td><strong>Règle d'administration</strong></td><td style="font-family:'Courier New',monospace;color:var(--phi)">Hₙ → fréquence × 10ⁿ Hz</td><td>Chaque constante Hₙ a une fréquence optimale d'application. La plante entière > extrait > molécule isolée.</td></tr>
+    <tr><td><strong>Synergie</strong></td><td style="font-family:'Courier New',monospace;color:var(--phi)">Plante + Fréquence = Effet × 2-5</td><td>La potentialisation harmonique (champ oscillant Hₙ avant ingestion) multiplie l'effet thérapeutique.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<blockquote style="border-left:4px solid var(--phi);padding:16px 24px;margin:24px 0;background:rgba(212,168,67,0.04);border-radius:0 14px 14px 0;font-style:italic;color:var(--ink);font-size:0.95em;text-align:center">
+  « La médecine du futur ne prescrira pas des molécules — elle prescrira des fréquences et des spectres. Chaque maladie a une signature harmonique. Chaque plante a une signature corrective. La matrice ci-dessus est la table de correspondance entre les deux. »
+  <div class="attrib">— Matrice Croisée des Signatures Harmoniques, 17 Juin 2026</div>
+</blockquote>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>
+      <a href="index.html">Symphonie Cosmique</a> |
+      <a href="medecine-harmonique.html">Médecine Harmonique</a> |
+      <a href="plantes-phytotherapie-harmonique.html">Plantes & Ondes</a> |
+      <a href="diabete-hypertension-cancer-harmonique.html">Diabète·HTA·Cancer</a> |
+      <a href="tableau-periodique-harmonique.html">Tableau Périodique</a>
+    </p>
+    <p style="margin-top:8px">Matrice Croisée des Signatures Harmoniques — Formulaire Thérapeutique — © 2026 KOTTO Alain</p>
+  </div>
+</footer>
+
+</body>
+</html>

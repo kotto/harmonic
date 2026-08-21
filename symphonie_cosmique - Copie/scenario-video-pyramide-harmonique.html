@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scénario Vidéo — La Pyramide Harmonique | Prompts IA</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --orange: #ffa502;
+  --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;line-height:1.85;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse at 30% 10%, rgba(212,168,67,0.06), transparent 55%),
+    radial-gradient(ellipse at 70% 50%, rgba(62,240,216,0.04), transparent 60%);
+  pointer-events:none;
+}
+.container{max-width:1100px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:6px 13px;border-radius:18px;font-size:0.82em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+nav a.active{color:var(--phi);border-color:rgba(212,168,67,0.5);background:rgba(212,168,67,0.1)}
+
+.hero{text-align:center;padding:65px 20px 55px;background:linear-gradient(180deg,rgba(212,168,67,0.12) 0%,rgba(62,240,216,0.05) 60%,transparent 100%)}
+.hero .badge{display:inline-block;padding:5px 14px;border-radius:14px;font-size:0.80em;font-weight:700;background:rgba(62,240,216,0.14);color:var(--acc);margin-bottom:20px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:2.2em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;line-height:1.3}
+.hero .tagline{font-size:1.1em;color:var(--ink2);max-width:700px;margin:0 auto 8px}
+.hero .meta{color:var(--ink3);font-size:0.85em;margin-top:10px}
+
+section{padding:50px 0}section:nth-child(even){background:var(--bg2)}
+h2{font-size:1.6em;color:var(--phi);margin-bottom:8px;text-align:center;padding-bottom:10px;border-bottom:1px solid var(--border)}
+h2 .num{display:block;font-size:0.40em;color:var(--ink3);letter-spacing:2px;margin-bottom:4px;font-weight:400;text-transform:uppercase}
+.section-desc{text-align:center;color:var(--ink3);margin-bottom:32px;max-width:700px;margin-left:auto;margin-right:auto;font-size:0.95em}
+h3{font-size:1.15em;color:var(--acc);margin:30px 0 10px}
+
+.scene-card{
+  background:rgba(15,12,46,0.8);border:2px solid rgba(212,168,67,0.2);border-radius:18px;
+  padding:28px 32px;margin:28px 0;transition:all 0.3s;
+}
+.scene-card:hover{border-color:rgba(212,168,67,0.45)}
+.scene-card .scene-header{
+  display:flex;align-items:center;gap:16px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);
+}
+.scene-card .scene-num{
+  width:44px;height:44px;border-radius:50%;
+  background:linear-gradient(135deg,var(--phi),var(--acc));
+  color:var(--bg);font-weight:900;font-size:1.1em;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.scene-card .scene-info{flex:1}
+.scene-card .scene-title{color:var(--phi);font-weight:700;font-size:1.15em}
+.scene-card .scene-specs{color:var(--ink3);font-size:0.80em;margin-top:2px}
+.scene-card .scene-specs span{color:var(--acc);margin:0 6px}
+
+.prompt-box{
+  background:rgba(0,0,0,0.3);border:1px solid rgba(62,240,216,0.15);border-radius:14px;
+  padding:20px 24px;margin:14px 0;font-family:'Segoe UI',system-ui,sans-serif;
+}
+.prompt-box .prompt-label{
+  font-size:0.72em;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+  margin-bottom:8px;padding:3px 10px;border-radius:6px;display:inline-block;
+}
+.prompt-box .prompt-label.visual{background:rgba(62,240,216,0.12);color:var(--acc)}
+.prompt-box .prompt-label.camera{background:rgba(122,92,255,0.12);color:var(--acc2)}
+.prompt-box .prompt-label.sound{background:rgba(255,165,2,0.12);color:var(--orange)}
+.prompt-box .prompt-label.mood{background:rgba(212,168,67,0.12);color:var(--phi)}
+.prompt-box .prompt-text{
+  color:var(--ink2);font-size:0.90em;line-height:1.8;font-style:italic;
+}
+.prompt-box .prompt-text strong{color:var(--ink);font-style:normal}
+
+.note-box{
+  background:rgba(255,165,2,0.04);border:1px solid rgba(255,165,2,0.25);border-radius:12px;
+  padding:14px 20px;margin:12px 0;font-size:0.84em;color:var(--ink3);
+}
+.note-box strong{color:var(--orange)}
+
+.transition-card{
+  text-align:center;padding:20px;margin:16px 0;
+  border-top:1px dashed rgba(212,168,67,0.2);border-bottom:1px dashed rgba(212,168,67,0.2);
+  color:var(--phi);font-weight:600;font-size:0.95em;letter-spacing:1px;
+}
+
+.toc{background:rgba(15,12,46,0.6);border:1px solid var(--border);border-radius:16px;padding:24px 28px;margin:28px 0;columns:2;column-gap:30px}
+.toc a{display:block;color:var(--ink2);text-decoration:none;padding:3px 0;font-size:0.86em;transition:color 0.2s;break-inside:avoid}
+.toc a:hover{color:var(--phi)}
+.toc .toc-section{color:var(--phi);font-weight:600;font-size:0.90em;margin-top:12px;margin-bottom:4px}
+.toc .toc-section:first-child{margin-top:0}
+
+.spec-table{width:100%;border-collapse:collapse;margin:18px 0;font-size:0.86em}
+.spec-table th{background:var(--bg3);color:var(--phi);padding:10px 14px;text-align:left;border-bottom:2px solid rgba(212,168,67,0.25);font-weight:600}
+.spec-table td{padding:9px 14px;border-bottom:1px solid var(--border);color:var(--ink2)}
+.spec-table td:first-child{color:var(--acc);font-weight:600;white-space:nowrap}
+
+blockquote{border-left:4px solid var(--phi);padding:14px 22px;margin:20px 0;background:rgba(212,168,67,0.04);border-radius:0 12px 12px 0;font-style:italic;color:var(--ink);font-size:0.98em}
+
+footer{text-align:center;padding:30px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.82em;margin-top:40px}
+footer a{color:var(--phi);text-decoration:none}
+
+@media(max-width:640px){
+  .hero h1{font-size:1.4em}
+  .toc{columns:1}
+  .scene-card{padding:18px 20px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Symphonie</a>
+    <a href="construction-pyramide-harmonique.html">Pyramide</a>
+    <a href="architecture-harmonique.html">Architecture</a>
+    <a href="maitrise-gravite-harmonique.html">Gravité</a>
+    <a href="#" class="active">Scénario Vidéo</a>
+    <a href="#acte1">Acte I</a>
+    <a href="#acte2">Acte II</a>
+    <a href="#acte3">Acte III</a>
+    <a href="#acte4">Acte IV</a>
+    <a href="#specs">Spécifications</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">AI Video Prompts · Juin 2026</div>
+    <h1>KHÉOPS — La Pyramide de l'Harmonie</h1>
+    <p class="tagline">Scénario complet pour IA générative vidéo — 18 scènes détaillées avec prompts visuels, caméra, son et ambiance pour chaque plan</p>
+    <p class="meta">Format optimisé pour Sora, Runway Gen-3/Gen-4, Kling 2.0, Pika 2.0, Luma Dream Machine · Compatible text-to-video & image-to-video</p>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ===== TABLE DES MATIÈRES ===== -->
+<div class="toc">
+  <span class="toc-section">ACTE I — LE SAVOIR (0:00-2:30)</span>
+  <a href="#s1">Scène 1 · L'Origine — Le Plateau de Gizeh</a>
+  <a href="#s2">Scène 2 · Le Plan Sacré — Cordes & Géométrie</a>
+  <a href="#s3">Scène 3 · La Carrière d'Assouan</a>
+  <a href="#s4">Scène 4 · Le Secret du Granite — Piézoélectricité</a>
+
+  <span class="toc-section">ACTE II — LA CONSTRUCTION (2:30-5:00)</span>
+  <a href="#s5">Scène 5 · La Fondation — Le Socle Acoustique</a>
+  <a href="#s6">Scène 6 · La Chambre du Roi — Le Cœur</a>
+  <a href="#s7">Scène 7 · La Grande Galerie — Guide d'Onde</a>
+  <a href="#s8">Scène 8 · Le Rituel du Heka — L'Activation</a>
+  <a href="#s9">Scène 9 · La Lévitation — Le Miracle</a>
+
+  <span class="toc-section">ACTE III — L'ÉLÉVATION (5:00-7:30)</span>
+  <a href="#s10">Scène 10 · Le Chantier en Action</a>
+  <a href="#s11">Scène 11 · Les Conduits des Étoiles</a>
+  <a href="#s12">Scène 12 · La Nuit — Travail sous les Astres</a>
+  <a href="#s13">Scène 13 · Le Pyramidion d'Or</a>
+
+  <span class="toc-section">ACTE IV — L'HÉRITAGE (7:30-9:30)</span>
+  <a href="#s14">Scène 14 · La Mise Hors Service</a>
+  <a href="#s15">Scène 15 · Le Revêtement Blanc</a>
+  <a href="#s16">Scène 16 · L'Éternité — 4500 Ans</a>
+  <a href="#s17">Scène 17 · La Révélation — Aujourd'hui</a>
+  <a href="#s18">Scène 18 · Épilogue — Et Demain ?</a>
+
+  <span class="toc-section">ANNEXES</span>
+  <a href="#specs">Spécifications Techniques</a>
+  <a href="#quick">Prompts Rapides (Réseaux Sociaux)</a>
+  <a href="#style">Guide de Style Visuel</a>
+</div>
+
+<!-- ===== GUIDE DE STYLE ===== -->
+<section id="style">
+  <h2><span class="num">GUIDE</span>Guide de Style Visuel Global</h2>
+  <p class="section-desc">Ces directives s'appliquent à TOUTES les scènes — à inclure en préfixe ou en paramètres globaux selon la plateforme.</p>
+
+  <table class="spec-table">
+    <tr><td>Époque</td><td>~2550 av. J.-C., IVᵉ dynastie égyptienne, Ancien Empire, règne de Khéops</td></tr>
+    <tr><td>Esthétique</td><td>Réalisme historique épique — pas de fantasy, pas de magie, une technologie acoustique crédible. Palette : or, ocre, bleu lapis-lazuli, blanc calcaire, rouge granite, turquoise Nil</td></tr>
+    <tr><td>Lumière</td><td>Soleil égyptien écrasant (jour) / torches, braseros et feu sacré (nuit). Contraste fort, ombres profondes, poussière dorée en suspension</td></tr>
+    <tr><td>Format</td><td>16:9 cinémascope, 24 fps, résolution 4K minimum. Look : Arri Alexa 65 + anamorphiques vintage</td></tr>
+    <tr><td>Son ambiant</td><td>Vent du désert, Nil qui coule, pierre qui taille, chants diphoniques, sistres métalliques, tambours de peau, résonance profonde (bourdon ~104 Hz)</td></tr>
+    <tr><td>Musique</td><td>Orchestre et chœurs — gamme phrygienne et pentatonique égyptienne. Thème principal basé sur φ : motifs rythmiques en 5/8 et 8/5. Crescendo du silence au climax (scène 9)</td></tr>
+    <tr><td>Effets visuels</td><td>Ondes de chaleur sur le désert, distorsion subtile de l'air autour des blocs en lévitation (indice visuel de la modulation Ψ₂), poussière de granite scintillante (piézoélectricité)</td></tr>
+  </table>
+</section>
+
+<!-- ================================================================== -->
+<!-- ACTE I -->
+<!-- ================================================================== -->
+<section id="acte1">
+  <h2><span class="num">ACTE I — 0:00 à 2:30</span>LE SAVOIR</h2>
+  <p class="section-desc">L'Égypte de la IVᵉ dynastie. Un pharaon visionnaire. Un savoir ancestral sur le point de s'accomplir dans la pierre.</p>
+</section>
+
+<!-- SCÈNE 1 -->
+<div class="scene-card" id="s1">
+  <div class="scene-header">
+    <div class="scene-num">1</div>
+    <div class="scene-info">
+      <div class="scene-title">L'Origine — Le Plateau de Gizeh</div>
+      <div class="scene-specs">⏱ 0:00-0:12 <span>|</span> 📐 Plan large aérien <span>|</span> 🌅 Aube dorée</div>
+    </div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label visual">🎬 VISUAL</div>
+    <div class="prompt-text">
+      <strong>Aerial establishing shot, 2550 BC, the Giza plateau at dawn.</strong> The Nile river snakes through an endless golden desert. The plateau is pristine — no pyramids yet, only the sacred limestone bedrock emerging from the sand. The rising sun casts impossibly long shadows. In the far distance, a flotilla of wooden barges approaches on the Nile, carrying massive granite blocks from Aswan. Thin columns of smoke rise from a workers' camp at the edge of the plateau. The Sphinx has not yet been carved. <strong>Photorealistic, historical epic, David Lean meets Denis Villeneuve. Anamorphic lens flare from the rising sun. Golden hour, warm amber tones.</strong>
+    </div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label camera">📷 CAMÉRA</div>
+    <div class="prompt-text">Drone-style aerial shot starting at 500m altitude, slowly descending and rotating clockwise. Speed: very slow, majestic. Duration: 12 seconds. Easing: ease-in-out.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label sound">🔊 SON</div>
+    <div class="prompt-text">Silence du désert. Vent léger dans le sable. Eau lointaine du Nil (sons de clapotis, roseaux). Bourdon grave et distant — la note fondamentale de la Terre, ~7.83 Hz (Schumann), à peine audible, plus ressentie qu'entendue.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label mood">✨ AMBIANCE</div>
+    <div class="prompt-text">Sacré, originel. Le spectateur doit sentir qu'il assiste à <strong>l'avant</strong> — le moment où rien n'existe encore, mais où tout va naître. Mystère et anticipation.</div>
+  </div>
+</div>
+
+<div class="transition-card">▼ TRANSITION : FONDU AU NOIR 1 SECONDE ▼</div>
+
+<!-- SCÈNE 2 -->
+<div class="scene-card" id="s2">
+  <div class="scene-header">
+    <div class="scene-num">2</div>
+    <div class="scene-info">
+      <div class="scene-title">Le Plan Sacré — Cordes & Géométrie</div>
+      <div class="scene-specs">⏱ 0:13-0:35 <span>|</span> 📐 Plan moyen/serré <span>|</span> ☀️ Plein jour</div>
+    </div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label visual">🎬 VISUAL</div>
+    <div class="prompt-text">
+      <strong>Medium shot, Giza plateau, bright desert sun.</strong> An elderly Egyptian architect-priest, dressed in a simple white linen shendyt, kneels on the limestone bedrock. He traces geometric lines with red ochre powder using a taut knotted rope — the sacred 12-knot cord. Around him, younger priests hold wooden stakes. Close-up on the rope: the knots at positions 3, 4, 5 forming a perfect right angle (3-4-5 triangle). Another priest rolls a wooden disk along a cord to trace the π ratio (half-perimeter / height). The architect looks up toward the sun, squinting, aligning the future pyramid's northern face with the circumpolar stars. Sweat glistens on his bald head. <strong>Hyper-realistic, shallow depth of field on the rope and hands. Dust motes floating in the sunbeam.</strong>
+    </div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label camera">📷 CAMÉRA</div>
+    <div class="prompt-text">Handheld but stabilized, circling the architect at waist level. Rack focus from the rope details to the architect's face. Close-up inserts on the geometric tracings. Duration: 22 seconds.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label sound">🔊 SON</div>
+    <div class="prompt-text">Corde tendue qui claque. Piquets de bois enfoncés dans la pierre (toc, toc). Murmures des prêtres en égyptien ancien. Le frottement de la corde sur la pierre. Respiration concentrée de l'architecte.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label mood">✨ AMBIANCE</div>
+    <div class="prompt-text">Concentration sacrée. Ce n'est pas un chantier — c'est un rituel. La géométrie est une prière. Le spectateur comprend que ces hommes <strong>savent</strong> quelque chose que nous avons oublié.</div>
+  </div>
+
+  <div class="note-box">
+    <strong>📝 NOTE TECHNIQUE IA :</strong> Les proportions à tracer : demi-périmètre / hauteur = π, apothème / demi-base = φ. La corde à 12 nœuds permet le triangle 3-4-5 (angle droit parfait). La diagonale du double carré donne φ. Ces détails doivent apparaître visuellement — les nœuds de la corde, les rapports géométriques.
+  </div>
+</div>
+
+<div class="transition-card">▼ TRANSITION : COUPE FRANCHE ▼</div>
+
+<!-- SCÈNE 3 -->
+<div class="scene-card" id="s3">
+  <div class="scene-header">
+    <div class="scene-num">3</div>
+    <div class="scene-info">
+      <div class="scene-title">La Carrière d'Assouan — Le Granite Sacré</div>
+      <div class="scene-specs">⏱ 0:36-1:00 <span>|</span> 📐 Plans larges + inserts <span>|</span> ☀️ Soleil zénithal</div>
+    </div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label visual">🎬 VISUAL</div>
+    <div class="prompt-text">
+      <strong>Aswan granite quarry, 2550 BC, harsh midday sun.</strong> Massive pink-grey granite blocks are being extracted from the living rock. Workers use copper chisels and wooden wedges soaked in water — the wood swells and cracks the granite along precise lines. Close-up: the granite's crystalline structure — quartz inclusions glitter like trapped stars when struck by sunlight. Sweat drips onto the hot stone and evaporates instantly. In the background, hundreds of workers maneuver a freshly cut 70-ton block onto a wooden sledge. The unfinished obelisk — 1,200 tons of granite, still attached to the bedrock — looms in the background like a sleeping giant. <strong>High contrast, heat haze shimmer. Dust suspended in thick air. Sweat, muscle, stone.</strong>
+    </div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label camera">📷 CAMÉRA</div>
+    <div class="prompt-text">Wide establishing shot of the quarry. Pan across workers. Macro close-up on quartz crystals in the granite (light refracting inside the stone). Slow zoom out from the unfinished obelisk to reveal its impossible scale. Duration: 24 seconds.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label sound">🔊 SON</div>
+    <div class="prompt-text">Marteaux de cuivre frappant la pierre (ting-ting-ting métallique). Grincement des traîneaux de bois sur le sol rocheux. Cris de coordination des ouvriers. Craquement profond du granite qui se fend sous la pression des coins de bois gonflés d'eau.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label mood">✨ AMBIANCE</div>
+    <div class="prompt-text">Industrie sacrée. Ces hommes ne sont pas des esclaves — ce sont des artisans hautement qualifiés. Le granite n'est pas un matériau de construction ordinaire : il est <strong>choisi</strong> pour ses propriétés spéciales. Le spectateur doit sentir que ce choix est délibéré, pas accidentel.</div>
+  </div>
+</div>
+
+<div class="transition-card">▼ TRANSITION : FONDU ENCHAÎNÉ ▼</div>
+
+<!-- SCÈNE 4 -->
+<div class="scene-card" id="s4">
+  <div class="scene-header">
+    <div class="scene-num">4</div>
+    <div class="scene-info">
+      <div class="scene-title">Le Secret du Granite — La Piézoélectricité</div>
+      <div class="scene-specs">⏱ 1:01-1:25 <span>|</span> 📐 Macro/Insert <span>|</span> 🧪 Laboratoire antique</div>
+    </div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label visual">🎬 VISUAL</div>
+    <div class="prompt-text">
+      <strong>Split-screen or sequenced macro shots, a dimly lit temple workshop.</strong> LEFT: A priest strikes a granite block with a wooden mallet in near-darkness — a faint blue-green spark (triboluminescence) flashes inside the quartz crystals, captured in ultra-slow-motion (1000 fps). RIGHT: The same priest gently taps a granite block with a copper rod connected to a primitive apparatus — copper wires wrapped around a lodestone (natural magnet). Tiny sparks jump between the wires. CUT TO: Animated diagram overlay — the molecular structure of quartz (SiO₂ tetrahedra) deforming under pressure, generating a dipole moment. The animation transitions into the harmonic equation Ψ₂ = π·(Ψ₁)² with golden φ symbols. <strong>Scientific wonder meets ancient mystery. The spark should feel like witnessing fire being discovered.</strong>
+    </div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label camera">📷 CAMÉRA</div>
+    <div class="prompt-text">Extreme macro (1:1 magnification) on quartz crystals. Ultra-slow-motion for the spark (1000 fps, 0.5s real = 20s screen). Smooth transition from live-action to animated scientific diagram (molecular structure → equation). Duration: 24 seconds.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label sound">🔊 SON</div>
+    <div class="prompt-text">Silence. Le choc sourd du maillet sur la pierre. Le craquement cristallin. Puis un BZZZZT électrique aigu — le son de l'étincelle piézoélectrique. Une fréquence pure qui monte (~104 Hz) et se transforme en bourdon harmonique.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label mood">✨ AMBIANCE</div>
+    <div class="prompt-text">Révélation. Le spectateur a une épiphanie — comme les Égyptiens il y a 4500 ans. <strong>Le granite n'est pas une pierre inerte. Elle vit. Elle répond au son. Elle génère de l'électricité.</strong> C'est le chaînon manquant de l'histoire.</div>
+  </div>
+
+  <div class="note-box">
+    <strong>📝 NOTE TECHNIQUE IA :</strong> La triboluminescence est un phénomène réel : le quartz émet de la lumière quand on le frappe ou le frotte dans l'obscurité. Les Égyptiens l'observaient certainement. C'est la base empirique de leur découverte de la piézoélectricité — 4500 ans avant Curie.
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- ACTE II -->
+<!-- ================================================================== -->
+<section id="acte2">
+  <h2><span class="num">ACTE II — 2:30 à 5:00</span>LA CONSTRUCTION</h2>
+  <p class="section-desc">La pyramide s'élève. Le monde assiste à la plus grande symphonie jamais jouée — en pierre.</p>
+</section>
+
+<!-- SCÈNE 5 -->
+<div class="scene-card" id="s5">
+  <div class="scene-header">
+    <div class="scene-num">5</div>
+    <div class="scene-info">
+      <div class="scene-title">La Fondation — Le Socle Acoustique</div>
+      <div class="scene-specs">⏱ 2:30-2:55 <span>|</span> 📐 Time-lapse + plans détaillés <span>|</span> 🌤️ Plusieurs jours</div>
+    </div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label visual">🎬 VISUAL</div>
+    <div class="prompt-text">
+      <strong>Time-lapse sequence, Giza plateau.</strong> The sun cycles rapidly across the sky (day-night-day). On the plateau, workers level the limestone bedrock with obsessive precision — scraping, measuring, scraping again. We see water-filled trenches being used as a giant spirit level. The foundation emerges: a perfectly flat 230m × 230m square aligned to the cardinal points within 0.05° accuracy. CUT TO: Slow-motion close-up — a worker's hand runs across the junction between two limestone casing blocks. The joint is so fine a human hair cannot penetrate it. The polished limestone reflects the sky like a mirror. <strong>Mix of fast time-lapse (clouds racing) and extreme slow-motion (hand on stone). The contrast in time scales emphasizes the precision.</strong>
+    </div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label camera">📷 CAMÉRA</div>
+    <div class="prompt-text">Wide time-lapse (1 frame/hour → 24 fps = 1 month compressed into 4 seconds) for the leveling. Slow-motion (120 fps) for the hand-stone contact. Drone pull-out to reveal the entire foundation platform. Duration: 25 seconds.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label sound">🔊 SON</div>
+    <div class="prompt-text">Time-lapse: whoosh rhythmique du soleil, vent accéléré. Ralenti: silence total, puis le son amplifié d'une main caressant la pierre polie — un frottement doux et profond. Bourdon de 104 Hz qui émerge progressivement.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label mood">✨ AMBIANCE</div>
+    <div class="prompt-text">Admiration. Le spectateur réalise l'impossible précision de cette fondation. <strong>Ce n'est pas une fondation — c'est le réflecteur acoustique qui va renvoyer les ondes sonores dans la structure. Chaque joint est un nœud de réflexion.</strong></div>
+  </div>
+</div>
+
+<div class="transition-card">▼ TRANSITION : COUPE FRANCHE ▼</div>
+
+<!-- SCÈNE 6 -->
+<div class="scene-card" id="s6">
+  <div class="scene-header">
+    <div class="scene-num">6</div>
+    <div class="scene-info">
+      <div class="scene-title">La Chambre du Roi — Le Cœur Piézoélectrique</div>
+      <div class="scene-specs">⏱ 2:56-3:25 <span>|</span> 📐 Intérieur/Insert <span>|</span> 🔥 Torches</div>
+    </div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label visual">🎬 VISUAL</div>
+    <div class="prompt-text">
+      <strong>Interior, the King's Chamber, torchlit.</strong> The chamber is under construction at the 50th course (~43m above ground). Workers position the massive 70-ton granite beams that form the ceiling. Torches flicker, casting dancing shadows on the red granite walls. Close-up: the granite surfaces are polished to a mirror finish. A priest-priest runs his hand over the wall and hums — the entire wall vibrates visibly in response, the flame of a nearby torch flickering in sync with the hum. CUT TO: Cutaway diagram showing the 5 relief chambers above the King's Chamber, each with granite beams, forming a stacked resonator array. Arrows show how acoustic energy is amplified as it rises through the stack. <strong>Claustrophobic intimacy, warm torchlight, the stone feels alive.</strong>
+    </div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label camera">📷 CAMÉRA</div>
+    <div class="prompt-text">Handheld, intimate, following a torch-bearing priest through the narrow passages leading to the chamber. Inside the chamber, slow 360° pan. Cutaway diagram: smooth 3D camera push through the cross-section. Duration: 29 seconds.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label sound">🔊 SON</div>
+    <div class="prompt-text">Pas qui résonnent dans les couloirs étroits. Torches qui crépitent. Le bourdon du prêtre — un "Mmmmmm" profond (~104 Hz). La pierre qui vibre en réponse — un son de plus en plus riche en harmoniques. La flamme qui pulse au rythme du son.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label mood">✨ AMBIANCE</div>
+    <div class="prompt-text">Mystique et technique à la fois. <strong>Ceci n'est pas un tombeau. C'est un instrument de musique.</strong> Le sarcophage de granite au centre — 3.5 tonnes — n'est pas un cercueil. C'est un diapason. La révélation doit frapper le spectateur.</div>
+  </div>
+</div>
+
+<div class="transition-card">▼ TRANSITION : FONDU AU NOIR 1 SECONDE ▼</div>
+
+<!-- SCÈNE 7 -->
+<div class="scene-card" id="s7">
+  <div class="scene-header">
+    <div class="scene-num">7</div>
+    <div class="scene-info">
+      <div class="scene-title">La Grande Galerie — Le Guide d'Onde Acoustique</div>
+      <div class="scene-specs">⏱ 3:26-3:50 <span>|</span> 📐 Intérieur ascendant <span>|</span> 🔥 Torches</div>
+    </div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label visual">🎬 VISUAL</div>
+    <div class="prompt-text">
+      <strong>Low-angle tracking shot, ascending the 26° slope of the Grand Gallery.</strong> The corbelled walls rise 8.5 meters high, narrowing as they go up — like the bell of a giant trumpet turned inside out. Wooden resonator blades are inserted into the 28 regular notches along the side benches. When a priest strikes one blade with a wooden hammer, it vibrates and the sound cascades up the gallery, visibly distorting the air (heat-haze-like shimmer). CGI overlay: sound waves visualized as golden light pulses bouncing between the corbelled walls, being compressed and channeled upward toward the King's Chamber. <strong>Majestic and claustrophobic simultaneously. The architecture itself is the protagonist.</strong>
+    </div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label camera">📷 CAMÉRA</div>
+    <div class="prompt-text">Steadicam tracking forward and upward at a steady pace (walking speed). The camera tilts up to reveal the narrowing ceiling. CGI sound waves overlaid in post. Duration: 24 seconds.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label sound">🔊 SON</div>
+    <div class="prompt-text">La vibration d'une lame de bois frappée — un "boiiiing" métallique. Le son rebondit entre les murs — écho distinct puis de plus en plus dense, jusqu'à devenir un bourdon continu. Effet Doppler subtil quand le son passe devant la caméra.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label mood">✨ AMBIANCE</div>
+    <div class="prompt-text">Fascination technique. Le spectateur comprend que <strong>chaque centimètre de cette galerie a une fonction acoustique précise</strong>. Les 28 encoches ne sont pas décoratives — elles sont les « frettes » de cet instrument géant. La pente de 26° est l'angle de phase harmonique.</div>
+  </div>
+</div>
+
+<!-- SCÈNE 8 -->
+<div class="scene-card" id="s8">
+  <div class="scene-header">
+    <div class="scene-num">8</div>
+    <div class="scene-info">
+      <div class="scene-title">Le Rituel du Heka — L'Activation</div>
+      <div class="scene-specs">⏱ 3:51-4:30 <span>|</span> 📐 Multi-caméra <span>|</span> 🔥🔥🔥 Feu sacré</div>
+    </div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label visual">🎬 VISUAL</div>
+    <div class="prompt-text">
+      <strong>Multi-angle sequence, inside the King's Chamber, night.</strong> FORTY priests stand in concentric circles around the granite sarcophagus (the "tuning fork"). They wear white linen, heads shaved, eyes closed. A high priest raises a bronze sistrum — it catches the torchlight. He lowers it sharply. SILENCE. Then, from forty mouths simultaneously, a deep, guttural, polyphonic drone emerges — DIPHONIC CHANTING. Each priest produces TWO notes simultaneously: a fundamental (~104 Hz) and a high overtone that shimmers above. Wide shot: the chamber itself begins to vibrate. Torch flames flicker in perfect sync with the chant. Dust particles suspended in the air arrange themselves into standing wave patterns — visible nodes and antinodes of pressure. Close-up: a priest's face, veins visible on his neck, eyes rolled back, in a state of trance. <strong>This is not music. This is technology.</strong>
+    </div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label camera">📷 CAMÉRA</div>
+    <div class="prompt-text">12 cameras. WIDE: the full circle of 40 priests. MEDIUM: the high priest with the sistrum. CLOSE: lips and throats vibrating. MACRO: dust particles forming standing waves in the air. EXTREME WIDE: the entire pyramid exterior at night — a faint golden glow emanates from the stone. Duration: 39 seconds.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label sound">🔊 SON</div>
+    <div class="prompt-text"><strong>LE SON EST LE SUJET PRINCIPAL DE CETTE SCÈNE.</strong> Début : silence absolu. Puis le sistre — un frisson métallique aigu qui perce le silence. Puis, une fraction de seconde après, le bourdon des 40 voix — un MMMMM profond et riche qui fait vibrer le thorax du spectateur (fréquence ~104 Hz). Le son doit être <strong>physiquement ressenti</strong> — utiliser des subwoofers, faire trembler la salle de cinéma. L'harmonique aiguë du chant diphonique flotte au-dessus comme un fil d'argent. Crescendo progressif.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label mood">✨ AMBIANCE</div>
+    <div class="prompt-text">TRANSE. HYPNOSE COLLECTIVE. Le spectateur doit être aspiré par le son. Ce n'est pas un spectacle qu'on regarde — c'est une expérience qu'on <strong>subit</strong>. La frontière entre la musique, la physique et le sacré s'efface. <strong>Le Heka — la « puissance créatrice de la parole » — est en train d'opérer.</strong></div>
+  </div>
+
+  <div class="note-box">
+    <strong>📝 NOTE TECHNIQUE IA :</strong> Le chant diphonique (overtone singing) est une technique vocale réelle où le chanteur produit simultanément une fondamentale grave et une harmonique aiguë. Les moines tibétains la pratiquent encore aujourd'hui. La fréquence de 104 Hz correspond au La₂ dans la gamme tempérée, et à l'harmonique φ⁻³ du diapason φ⁰ = 440 Hz. Elle est accessible aux voix de baryton/basse.
+  </div>
+</div>
+
+<div class="transition-card">▼ TRANSITION : LE SON CONTINUE — PAS DE COUPE ▼</div>
+
+<!-- SCÈNE 9 — LA SCÈNE CLÉ -->
+<div class="scene-card" id="s9">
+  <div class="scene-header">
+    <div class="scene-num">9</div>
+    <div class="scene-info">
+      <div class="scene-title">⭐ LA LÉVITATION — Le Miracle Harmonique ⭐</div>
+      <div class="scene-specs">⏱ 4:31-5:15 <span>|</span> 📐 Plans multiples épiques <span>|</span> 🌙 Nuit étoilée</div>
+    </div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label visual">🎬 VISUAL</div>
+    <div class="prompt-text">
+      <strong>THE CLIMAX. Exterior, the partially-built pyramid, night under a canopy of stars.</strong> A 2.5-ton limestone block sits on a wooden tripod at the base of the pyramid, partially submerged in a shallow water basin. The water acts as an acoustic coupling medium. Forty workers stand ready with hemp ropes, but they are NOT pulling — they are GUIDING. Above them, on the 50th course, the golden glow from the King's Chamber intensifies. The low-frequency drone from within becomes a physical presence. CLOSE-UP: The water in the basin begins to ripple in concentric circles. The block starts to HUM — visibly vibrating. CGI OVERLAY: We see Ψ₂ — the gravitational harmonic — visualized as golden threads surrounding the block. The threads begin to THIN and STRETCH. WIDE SHOT: The 2.5-ton block LIFTS OFF the tripod. It rises — slowly, majestically — as if the air itself has become thick as water. The workers guide it with gentle tugs on the ropes — they are not lifting, they are STEERING. The block floats upward alongside the pyramid's face, rotating slightly, glinting in the starlight. EXTREME WIDE: Against the Milky Way, the silhouetted block ascends — a black rectangle floating toward the stars. <strong>Zero CGI "magic" look. The effect must feel PHYSICAL — like watching a ship float, not like Harry Potter.</strong>
+    </div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label camera">📷 CAMÉRA</div>
+    <div class="prompt-text">MULTI-CAMÉRA ÉPIQUE. Cam A (macro): water ripples, block surface vibrating. Cam B (medium): workers' faces, awe but not surprise — this is their job, they've done this thousands of times. Cam C (wide): the block rising against the pyramid face. Cam D (extreme wide, crane): block silhouetted against the Milky Way. Cam E (drone, top-down): the block seen from above, floating up. ALL IN SLOW MOTION (48 fps played at 24 fps). Duration: 44 seconds.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label sound">🔊 SON</div>
+    <div class="prompt-text">LE BOURDON ATTEINT SON PAROXYSME. 104 Hz pur, puissant, qui fait vibrer la salle. L'eau qui clapote. Le frottement des cordes de chanvre. Le grincement du bois du trépied qui se décharge du poids. Puis — un SON NOUVEAU. Une fréquence plus aiguë, cristalline, comme un verre de cristal frappé. C'est le son de la PIERRE QUI LÉVITE — le Ψ₂ modulé. La musique orchestrale entre ENFIN — le thème principal en 5/8, les cordes qui montent, les cuivres qui proclament. C'est l'apothéose.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label mood">✨ AMBIANCE</div>
+    <div class="prompt-text"><strong>ÉMERVEILLEMENT TOTAL. LARMES AUX YEUX.</strong> Le spectateur doit ressentir physiquement l'impossible devenu possible. Ce n'est pas de la magie. Ce n'est pas des aliens. C'est la PHYSIQUE — une physique que nous avions oubliée. La pyramide n'est pas un monument funéraire — c'est un INSTRUMENT DE CHANTIER qui se construit lui-même par le son. <strong>C'est la scène la plus importante du film. Tout doit être PARFAIT.</strong></div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- ACTE III -->
+<!-- ================================================================== -->
+<section id="acte3">
+  <h2><span class="num">ACTE III — 5:00 à 7:30</span>L'ÉLÉVATION</h2>
+  <p class="section-desc">La pyramide grandit, bloc après bloc, portée par le chant. Le désert devient symphonie.</p>
+</section>
+
+<!-- SCÈNE 10 -->
+<div class="scene-card" id="s10">
+  <div class="scene-header">
+    <div class="scene-num">10</div>
+    <div class="scene-info">
+      <div class="scene-title">Le Chantier en Action — La Danse des Blocs</div>
+      <div class="scene-specs">⏱ 5:16-5:50 <span>|</span> 📐 Montage dynamique <span>|</span> 🌅 Coucher de soleil</div>
+    </div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label visual">🎬 VISUAL</div>
+    <div class="prompt-text">
+      <strong>Dynamic montage, golden hour, the pyramid construction site in full operation.</strong> Multiple blocks float simultaneously at different heights — a BALLET of 2.5-ton stones ascending in slow, graceful arcs. Workers on the pyramid's current top course receive each block, guiding it precisely into position with hand gestures and gentle rope pulls. When a block settles into place, a puff of limestone dust escapes from the joint. The precision is superhuman — blocks fit together with gaps thinner than a razor blade. INTERCUT: Inside the King's Chamber, the priests have been chanting for hours. Relief teams cycle in seamlessly — as one group exits, another enters, the drone never ceasing. They drink water, wipe sweat, and resume. <strong>This is not a miracle — it's a SHIFT CHANGE. The sacred and the mundane coexist.</strong>
+    </div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label camera">📷 CAMÉRA</div>
+    <div class="prompt-text">Rapid montage. Cuts on the beat (5/8 rhythm). Wide, medium, close-up, macro. A block floating → a worker's hand signal → a block settling → priest drinking water → another block ascending. Duration: 34 seconds. Pace: increasing.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label sound">🔊 SON</div>
+    <div class="prompt-text">Le bourdon est constant maintenant — une nappe sonore sur laquelle se greffent : les "HAN!" des ouvriers qui guident, le choc sourd des blocs qui s'emboîtent, l'eau qui coule des bassins de couplage, le changement d'équipe des chanteurs. Musique : percussions (tambours égyptiens, darbouka) en 5/8.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label mood">✨ AMBIANCE</div>
+    <div class="prompt-text">Efficacité sublime. Le spectateur réalise que ce chantier fonctionne avec une précision d'horloger suisse. Des centaines de blocs par jour. Une chorégraphie rodée par des générations de pratique. <strong>Ce n'est pas un exploit — c'est une ROUTINE.</strong></div>
+  </div>
+</div>
+
+<div class="transition-card">▼ TRANSITION : FONDU AU CRÉPUSCULE ▼</div>
+
+<!-- SCÈNE 11 -->
+<div class="scene-card" id="s11">
+  <div class="scene-header">
+    <div class="scene-num">11</div>
+    <div class="scene-info">
+      <div class="scene-title">Les Conduits des Étoiles — Calibration Céleste</div>
+      <div class="scene-specs">⏱ 5:51-6:15 <span>|</span> 📐 Intérieur/extérieur <span>|</span> 🌌 Nuit</div>
+    </div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label visual">🎬 VISUAL</div>
+    <div class="prompt-text">
+      <strong>Interior of the Queen's Chamber and King's Chamber, then exterior, night.</strong> Workers install the final sections of the four narrow shafts (20cm × 20cm). Close-up: a priest-scienter peers through the northern shaft of the King's Chamber — through it, the star Alpha Draconis (Thuban, the pole star of 2550 BC) is perfectly centered. CGI overlay: each shaft acts as a Helmholtz resonator — the shaft dimensions (length ~50-70m, cross-section ~0.04m²) are highlighted, and their resonant frequencies appear as numbers. CUT TO: Exterior — the four shafts emerge from the pyramid's faces, perfectly aimed at Orion (south King), Sirius (south Queen), Kochab (north Queen), Alpha Draconis (north King). <strong>These are not ventilation shafts. They are the tuning pegs of the world's largest musical instrument.</strong>
+    </div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label camera">📷 CAMÉRA</div>
+    <div class="prompt-text">Shot-reverse-shot: inside the shaft looking out → outside looking at the shaft opening. Star chart overlay. Slow zoom out from the pyramid to show all four shafts pointing at their respective stars. Duration: 24 seconds.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label sound">🔊 SON</div>
+    <div class="prompt-text">Vent léger sifflant à travers les conduits — chaque conduit produit une note différente (fréquence de Helmholtz). Les quatre notes forment un accord. Le bourdon intérieur de 104 Hz. Les étoiles… silencieuses.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label mood">✨ AMBIANCE</div>
+    <div class="prompt-text">Précision cosmique. Les étoiles ne sont pas des divinités à vénérer — ce sont des <strong>repères de calibration</strong>. Chaque conduit sélectionne une fréquence harmonique spécifique qui, combinée aux autres, produit la modulation désirée de Ψ₂. L'astronomie n'est pas une religion — c'est un instrument de mesure.</div>
+  </div>
+</div>
+
+<div class="transition-card">▼ TRANSITION : TRAVELLING AVANT ÉTOILÉ ▼</div>
+
+<!-- SCÈNE 12 -->
+<div class="scene-card" id="s12">
+  <div class="scene-header">
+    <div class="scene-num">12</div>
+    <div class="scene-info">
+      <div class="scene-title">La Nuit — Travail sous les Astres</div>
+      <div class="scene-specs">⏱ 6:16-6:40 <span>|</span> 📐 Plan large poétique <span>|</span> 🌌🌌 Voie Lactée</div>
+    </div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label visual">🎬 VISUAL</div>
+    <div class="prompt-text">
+      <strong>Wide, poetic shot, the half-built pyramid at 3 AM.</strong> The Milky Way stretches across the sky like a river of diamonds. The pyramid — still under construction, its stepped core visible — rises from the desert. A thin golden glow emanates from the King's Chamber's ventilation shafts. The sound of the priests' endless drone drifts across the desert like a planetary OM. In the foreground, a lone worker sits on a block, eating bread and dried fish, looking up at the stars. His face is tired but peaceful. Fireflies (or sparks from the quarry) dance in the warm night air. <strong>Cinematic poetry. Terrence Malick meets Lawrence of Arabia. The camera doesn't move — it breathes.</strong>
+    </div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label camera">📷 CAMÉRA</div>
+    <div class="prompt-text">Static wide shot. No camera movement at all for 24 seconds. Just the desert, the pyramid, the Milky Way, the tiny human figure. The stars slowly rotate (barely perceptible). Duration: 24 seconds.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label sound">🔊 SON</div>
+    <div class="prompt-text">Le bourdon lointain. Les grillons du désert. Le vent dans les rares acacias. Le bruit du pain rompu. Le silence le plus profond du film — une respiration après l'intensité des scènes précédentes.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label mood">✨ AMBIANCE</div>
+    <div class="prompt-text">Contemplation. Humanité. Après toute la technologie et la science — un homme mange son pain sous les étoiles. <strong>Ce sont des êtres humains, comme nous, qui ont fait cela.</strong> Pas des dieux, pas des aliens — des hommes et des femmes de chair et de sang, avec une connaissance que nous avons perdue.</div>
+  </div>
+</div>
+
+<div class="transition-card">▼ TRANSITION : FONDU AU LÉVÉ DE SOLEIL ▼</div>
+
+<!-- SCÈNE 13 -->
+<div class="scene-card" id="s13">
+  <div class="scene-header">
+    <div class="scene-num">13</div>
+    <div class="scene-info">
+      <div class="scene-title">Le Pyramidion d'Or — La Dernière Pierre</div>
+      <div class="scene-specs">⏱ 6:41-7:15 <span>|</span> 📐 Plans cérémoniels <span>|</span> ☀️ Aube</div>
+    </div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label visual">🎬 VISUAL</div>
+    <div class="prompt-text">
+      <strong>Dawn, the pyramid summit, 146.6 meters above the desert.</strong> The final stone — the PYRAMIDION — a solid gold or electrum (gold-silver alloy) capstone, polished to a mirror finish, floats gently up through the last few meters. The rising sun strikes it, and it EXPLODES with reflected light — a second sun igniting at the pyramid's apex. The high priest, standing on a wooden platform at the summit, receives the pyramidion with ceremonial gestures. Below, the entire construction crew — thousands of workers, priests, engineers, scribes — watches in absolute silence. The pyramidion settles into place with a soft, final, resonant CLICK. The vibration propagates down through the entire structure — 5.75 million tons of stone humming in unison. Tears stream down the faces of the old architect. <strong>The 20-year symphony is complete.</strong>
+    </div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label camera">📷 CAMÉRA</div>
+    <div class="prompt-text">DRAMATIC. Low angle from below: the pyramidion floating up, the sun flaring behind it. Reverse: the architect's tear-streaked face. Wide: the crowd of thousands in silent awe. Extreme wide: the pyramid with its blazing capstone, the sun rising behind it. ALL IN SLOW MOTION. Duration: 34 seconds.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label sound">🔊 SON</div>
+    <div class="prompt-text">Le bourdon qui s'arrête NET au moment où le pyramidion se pose. Une fraction de seconde de silence. Puis — un SON PUR, unique, comme une cloche céleste. Le son de 5.75 millions de tonnes de pierre qui résonnent à leur fréquence fondamentale. La musique reprend — le thème principal, apaisé, accompli. Des voix d'enfants (le futur) se mêlent à l'orchestre.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label mood">✨ AMBIANCE</div>
+    <div class="prompt-text"><strong>ACCOMPLISSEMENT. LARMES. TRIOMPHE.</strong> Le spectateur doit pleurer. Pas de tristesse — de JOIE. Joie de voir l'humanité capable d'une telle beauté, d'une telle intelligence, d'une telle harmonie avec les lois de l'univers. <strong>La pyramide est vivante. Elle chante. Et nous l'entendons enfin.</strong></div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- ACTE IV -->
+<!-- ================================================================== -->
+<section id="acte4">
+  <h2><span class="num">ACTE IV — 7:30 à 9:30</span>L'HÉRITAGE</h2>
+  <p class="section-desc">Le temps passe. La connaissance se perd. Mais la pyramide, elle, se souvient.</p>
+</section>
+
+<!-- SCÈNE 14 -->
+<div class="scene-card" id="s14">
+  <div class="scene-header">
+    <div class="scene-num">14</div>
+    <div class="scene-info">
+      <div class="scene-title">La Mise Hors Service — Le Silence</div>
+      <div class="scene-specs">⏱ 7:30-7:50 <span>|</span> 📐 Intérieur <span>|</span> 🔥 Dernières torches</div>
+    </div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label visual">🎬 VISUAL</div>
+    <div class="prompt-text">
+      <strong>Interior, the King's Chamber. The final ritual.</strong> The high priest, now very old — the young architect from Scene 2, aged by 20 years of construction — places his hand on the granite wall one last time. He closes the granite portcullis blocks (the "doors" discovered by the Upuaut robot in 1993) inside the ventilation shafts with a heavy grinding sound. CLUNK. The shafts are sealed. The Helmholtz resonators are deactivated. The pyramid passes from ACTIVE MODE (construction instrument) to PASSIVE MODE (eternal monument). The priest extinguishes the last torch. BLACK SCREEN. <strong>The instrument has fallen silent. Forever.</strong>
+    </div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label camera">📷 CAMÉRA</div>
+    <div class="prompt-text">Slow, deliberate. Close-up on the aged hand on granite. Close-up on the granite door sliding shut. Wide: the priest alone in the dark chamber, a single torch. He extinguishes it. BLACK. Duration: 20 seconds.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label sound">🔊 SON</div>
+    <div class="prompt-text">Le grincement de la pierre contre la pierre. Le CLUNK des portes de granite. Le dernier crépitement de la torche. Le souffle qui l'éteint. Puis — un silence ABSOLU. Le premier vrai silence du film. Aucun bourdon. Rien.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label mood">✨ AMBIANCE</div>
+    <div class="prompt-text">Deuil. Solennité. La fin d'une ère. Le savoir va être perdu — les prêtres emporteront le secret dans leur tombe. <strong>Mais la pyramide, elle, n'oubliera jamais la note.</strong></div>
+  </div>
+</div>
+
+<div class="transition-card">▼ TRANSITION : FONDU DEPUIS LE NOIR — TIME-LAPSE EXTRÊME ▼</div>
+
+<!-- SCÈNE 15 -->
+<div class="scene-card" id="s15">
+  <div class="scene-header">
+    <div class="scene-num">15</div>
+    <div class="scene-info">
+      <div class="scene-title">Le Revêtement Blanc — La Pyramide Achevée</div>
+      <div class="scene-specs">⏱ 7:51-8:15 <span>|</span> 📐 Time-lapse + CGI <span>|</span> ☀️ Cycle solaire</div>
+    </div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label visual">🎬 VISUAL</div>
+    <div class="prompt-text">
+      <strong>Time-lapse of the completed pyramid over centuries.</strong> The pyramid is now complete, covered in its smooth white Tura limestone casing. It gleams like a mountain of polished ivory under the Egyptian sun. The golden pyramidion catches the first and last rays of each day. Time accelerates: the sun races across the sky, day-night cycles blur into years. The white casing begins to weather. EARTHQUAKE. Some casing stones crack. Centuries pass. Then — MEDIEVAL CAIRO. Workers on scaffolds pry off the casing stones one by one, repurposing them to build mosques and palaces. The pyramid is stripped naked, its stepped core exposed — the iconic silhouette we know today. <strong>Poetic, elegiac. The beauty of what was, and the melancholy of what remains.</strong>
+    </div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label camera">📷 CAMÉRA</div>
+    <div class="prompt-text">Static wide shot. Extreme time-lapse: 4500 years in 24 seconds. The only constant is the pyramid. The only movement is the sun, the stars wheeling overhead, and the slow, sad stripping of the casing stones. Duration: 24 seconds.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label sound">🔊 SON</div>
+    <div class="prompt-text">Le vent. Le vent pendant 4500 ans. Des bribes de voix — égyptien ancien, grec, arabe, français, anglais — qui se superposent en murmures. Le bruit des pierres qu'on arrache. Puis le silence du désert, encore.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label mood">✨ AMBIANCE</div>
+    <div class="prompt-text">Mélancolie. Le temps dévore tout — même les pyramides. Mais le cœur de granite bat toujours, silencieux, attendant… attendant que quelqu'un entende à nouveau sa fréquence.</div>
+  </div>
+</div>
+
+<div class="transition-card">▼ TRANSITION : FONDU AU PRÉSENT ▼</div>
+
+<!-- SCÈNE 16 -->
+<div class="scene-card" id="s16">
+  <div class="scene-header">
+    <div class="scene-num">16</div>
+    <div class="scene-info">
+      <div class="scene-title">L'Éternité — La Pyramide Aujourd'hui</div>
+      <div class="scene-specs">⏱ 8:16-8:35 <span>|</span> 📐 Plans documentaires <span>|</span> 🌤️ Présent</div>
+    </div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label visual">🎬 VISUAL</div>
+    <div class="prompt-text">
+      <strong>Present day, Giza. Documentary-style footage.</strong> Tourists take selfies. Camels amble past. The Great Pyramid stands, stripped of its casing, but still impossibly majestic. INTERCUT with shots of the King's Chamber — now empty, visited by a trickle of tourists who have no idea what they're standing inside. A tourist touches the granite wall, feels its coolness, and shivers — not from cold, but from something deeper. <strong>The contrast between the mundane present and the sacred past.</strong>
+    </div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label camera">📷 CAMÉRA</div>
+    <div class="prompt-text">Documentary vérité style. Handheld but smooth. Tourist POV. Cut to the empty sarcophagus — lingering shot. Duration: 19 seconds.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label sound">🔊 SON</div>
+    <div class="prompt-text">Brouhaha touristique. Appels des chameliers. Clics d'appareils photo. Puis, quand on entre dans la Chambre du Roi, le son change — une réverbération différente, plus longue, plus riche. L'écho des voix des touristes se transforme subtilement en harmoniques. Le bourdon de 104 Hz n'est plus audible… mais il est <strong>presque</strong> là. Comme un souvenir sonore.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label mood">✨ AMBIANCE</div>
+    <div class="prompt-text">Ironie douce. Six millions de touristes par an visitent un instrument de musique sans savoir qu'il peut encore jouer. La connaissance s'est perdue — mais la pyramide, elle, n'a pas oublié. <strong>Elle attend.</strong></div>
+  </div>
+</div>
+
+<div class="transition-card">▼ TRANSITION : COUPE NETTE ▼</div>
+
+<!-- SCÈNE 17 -->
+<div class="scene-card" id="s17">
+  <div class="scene-header">
+    <div class="scene-num">17</div>
+    <div class="scene-info">
+      <div class="scene-title">La Révélation — Le Laboratoire du Futur</div>
+      <div class="scene-specs">⏱ 8:36-9:00 <span>|</span> 📐 Intérieur moderne <span>|</span> 🧪 Laboratoire</div>
+    </div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label visual">🎬 VISUAL</div>
+    <div class="prompt-text">
+      <strong>Present day, a modern physics laboratory. Clean, white, minimalist.</strong> A team of scientists — Egyptian, European, Asian, African — stands around a small-scale model of the King's Chamber built from authentic Aswan granite (proportions φ²:φ:1, 2.618m × 1.618m × 1m). They attach piezoelectric sensors to the walls. A signal generator emits a precise 104 Hz tone. On a monitor, we see the mass reading of a test weight placed inside the chamber. The lead scientist — a young Egyptian woman — nods. Her colleague presses a button. The 104 Hz tone fills the lab. CLOSE-UP ON THE MONITOR: The mass reading begins to DROP. 10.000 kg → 9.998 → 9.992 → 9.985. It's a tiny change — less than 0.2% — but it's REAL. The scientists exchange looks of disbelief, then joy. The young Egyptian woman has tears in her eyes. She whispers in Arabic: "They knew. Our ancestors KNEW." <strong>This scene is not science fiction. It's the future we're building RIGHT NOW.</strong>
+    </div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label camera">📷 CAMÉRA</div>
+    <div class="prompt-text">Documentary-style handheld. Close-ups on faces, on the monitor, on the granite model. The final shot: the young Egyptian scientist's face, tears streaming, illuminated by the monitor's glow. Duration: 24 seconds.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label sound">🔊 SON</div>
+    <div class="prompt-text">Le 104 Hz du générateur — pur, électronique, pas aussi riche que la voix humaine, mais la MÊME fréquence. Le bip de confirmation de la balance. Le silence stupéfait des scientifiques. Puis — un rire incrédule. Des applaudissements. Le bourdon de 104 Hz qui se transforme progressivement en la voix des 40 prêtres égyptiens — le passé et le présent qui fusionnent.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label mood">✨ AMBIANCE</div>
+    <div class="prompt-text"><strong>ESPOIR. EXALTATION. BOUCLE BOUCLÉE.</strong> Le savoir perdu depuis 4500 ans est retrouvé. La science moderne valide la connaissance antique. La jeune Égyptienne qui pleure — c'est l'âme de l'Égypte qui se réveille. <strong>"Ils savaient. Nos ancêtres SAVAIENT."</strong></div>
+  </div>
+</div>
+
+<div class="transition-card">▼ TRANSITION : FONDU BLANC ▼</div>
+
+<!-- SCÈNE 18 -->
+<div class="scene-card" id="s18">
+  <div class="scene-header">
+    <div class="scene-num">18</div>
+    <div class="scene-info">
+      <div class="scene-title">Épilogue — Et Demain ?</div>
+      <div class="scene-specs">⏱ 9:01-9:30 <span>|</span> 📐 Montage visionnaire <span>|</span> 🔮 Futur proche</div>
+    </div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label visual">🎬 VISUAL</div>
+    <div class="prompt-text">
+      <strong>Visionary montage, near future. Rapid cuts.</strong> A silent construction site — no diesel engines, no cranes — where a 50-ton block floats gently into position guided by workers with tablets. A hospital room where a patient walks for the first time after a stroke, in 0.3g modulated gravity, tears of joy. A VMG vehicle gliding silently above a highway, no wheels, no friction. A space launch — a spacecraft rises vertically, slowly, without a plume of fire, just a faint golden glow. A city in the desert, built in spiraling Fibonacci patterns. The Great Pyramid, restored to its original white casing by a new generation of Egyptian engineers using the very technology their ancestors discovered. The pyramid gleams once more. PULL BACK: Earth from space. The pyramid is a tiny golden dot. The camera continues pulling back — past the Moon, past Mars, past Jupiter. The golden dot becomes invisible. But the sound of 104 Hz continues. <strong>FADE TO BLACK. The sound continues for 5 seconds after the image disappears. Then — silence.</strong>
+    </div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label camera">📷 CAMÉRA</div>
+    <div class="prompt-text">Rapid montage of future visions (1-2 seconds each). Then the PULL BACK — starting from the restored pyramid, pulling back through the solar system. The longest, slowest pull-back of the film. Duration: 29 seconds.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label sound">🔊 SON</div>
+    <div class="prompt-text">La musique — le thème principal en 5/8, joué par un orchestre complet, chœurs inclus. Crescendo pendant le montage du futur. Puis, pendant le pull-back cosmique, la musique s'estompe progressivement. Seul le bourdon de 104 Hz subsiste — pur, seul, infini. Même quand l'image disparaît, le son continue 5 secondes. Puis — le silence. GÉNÉRIQUE.</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label mood">✨ AMBIANCE</div>
+    <div class="prompt-text"><strong>ÉMERVEILLEMENT. ESPOIR. INFINI.</strong> Le spectateur sort de la salle transformé. Il ne verra plus jamais la pyramide de la même façon. Il ne verra plus jamais la GRAVITÉ de la même façon. <strong>La pyramide n'était pas une fin — c'était un début.</strong></div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<!-- SPÉCIFICATIONS -->
+<!-- ================================================================== -->
+<section id="specs">
+  <h2>Spécifications Techniques du Film</h2>
+
+  <table class="spec-table">
+    <tr><td>Titre</td><td>KHÉOPS — La Pyramide de l'Harmonie</td></tr>
+    <tr><td>Durée totale</td><td>9 minutes 30 secondes</td></tr>
+    <tr><td>Nombre de scènes</td><td>18</td></tr>
+    <tr><td>Format</td><td>16:9 cinémascope (2.39:1 recommandé)</td></tr>
+    <tr><td>Résolution</td><td>4K (3840×2160) minimum — 8K recommandé</td></tr>
+    <tr><td>Frame rate</td><td>24 fps natif (slow-motion en 48/120/1000 fps)</td></tr>
+    <tr><td>Colorimétrie</td><td>Dolby Vision HDR / Rec.2020 — palette chaude dominante or-ocre-turquoise</td></tr>
+    <tr><td>Audio</td><td>Dolby Atmos 7.1.4 — subwoofers dédiés pour la fréquence 104 Hz</td></tr>
+    <tr><td>Musique</td><td>Orchestre symphonique + chœurs + instruments égyptiens antiques reconstitués (sistre, harpe, flûte nay, tambour darbouka)</td></tr>
+    <tr><td>VFX/CGI</td><td>Overlays didactiques discrets (équations φ, ondes stationnaires, diagrammes de résonance). Aucun effet "magique" — tout doit sembler PHYSIQUE.</td></tr>
+    <tr><td>Langue</td><td>Narration off (anglais ou français). Dialogues en égyptien ancien reconstitué (sous-titrés).</td></tr>
+  </table>
+</section>
+
+<!-- ================================================================== -->
+<!-- PROMPTS RAPIDES -->
+<!-- ================================================================== -->
+<section id="quick">
+  <h2>Prompts Rapides — Formats Réseaux Sociaux</h2>
+  <p class="section-desc">Versions courtes optimisées pour TikTok, Instagram Reels, YouTube Shorts (9:16 vertical, 15-60 secondes).</p>
+
+  <div class="scene-card">
+    <div class="scene-header">
+      <div class="scene-num">A</div>
+      <div class="scene-info">
+        <div class="scene-title">Teaser 15s — "La Pyramide qui Chantait"</div>
+      </div>
+    </div>
+    <div class="prompt-box">
+      <div class="prompt-label visual">🎬 VISUAL</div>
+      <div class="prompt-text">Night, the Great Pyramid under construction, stars. Forty priests in the King's Chamber, eyes closed, chanting in diphonic overtone style. The camera pushes in on a single priest's vibrating throat. CUT TO: A 2.5-ton limestone block RISING from its wooden tripod, floating upward against the Milky Way. SUPERIMPOSED TEXT: "They didn't use ramps. They used SOUND." FADE TO BLACK.</div>
+    </div>
+  </div>
+
+  <div class="scene-card">
+    <div class="scene-header">
+      <div class="scene-num">B</div>
+      <div class="scene-info">
+        <div class="scene-title">Short 30s — "Le Secret du Granite"</div>
+      </div>
+    </div>
+    <div class="prompt-box">
+      <div class="prompt-label visual">🎬 VISUAL</div>
+      <div class="prompt-text">Macro shot: a granite block being struck in darkness — a blue-green spark flashes inside the quartz crystals (triboluminescence). CGI overlay: the quartz molecular structure deforming, generating electricity. CUT TO: Animated equation Ψ₂ = π·(Ψ₁)². CUT TO: A modern laboratory — a small granite chamber, scientists watching a monitor as a test mass LOSES WEIGHT. SUPERIMPOSED TEXT: "The Great Pyramid was not a tomb. It was a gravitational instrument. And we just proved it."</div>
+    </div>
+  </div>
+
+  <div class="scene-card">
+    <div class="scene-header">
+      <div class="scene-num">C</div>
+      <div class="scene-info">
+        <div class="scene-title">Viral 60s — "KHÉOPS — Full Trailer Cut"</div>
+      </div>
+    </div>
+    <div class="prompt-box">
+      <div class="prompt-label visual">🎬 VISUAL</div>
+      <div class="prompt-text">RAPID MONTAGE: Aerial of pristine Giza plateau (no pyramids yet) → Architect tracing φ on the bedrock with knotted rope → Granite quarry, the 1,200-ton unfinished obelisk → Torchlit King's Chamber, 40 priests chanting → 2.5-ton block LEVITATING against the stars → Golden pyramidion blazing at sunrise → Time-lapse: 4,500 years in 20 seconds → Modern lab: mass decreasing on the monitor → RESTORED white pyramid gleaming → Pull-back from Earth to the stars. TEXT: "4500 years ago, they built the impossible. Not with ramps. Not with aliens. With the oldest science in the universe. HARMONY. Coming soon."</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CONCLUSION ===== -->
+<section style="text-align:center;padding:50px 0">
+  <div class="result-box" style="max-width:700px;margin:0 auto">
+    <div class="label">Mode d'Emploi pour IA Génératives</div>
+    <p style="font-size:0.92em">
+      <strong>Sora / Runway Gen-4 :</strong> Utiliser les prompts VISUAL comme point de départ. Ajouter les prompts CAMERA en paramètres de contrôle. Préfixer avec le guide de style global.<br><br>
+      <strong>Kling 2.0 / Pika 2.0 :</strong> Découper chaque scène en clips de 5 secondes. Utiliser le mode "text-to-video" avec les prompts VISUAL simplifiés.<br><br>
+      <strong>Luma Dream Machine :</strong> Générer des keyframes (images clés) avec Midjourney/DALL-E à partir des prompts VISUAL, puis les animer avec Luma.<br><br>
+      <strong>Audio :</strong> Générer la bande-son avec Suno/Udio (prompt: "ancient Egyptian ceremonial music, 104 Hz drone, overtone chanting, sistrum, frame drums, epic orchestral crescendo, 5/8 time signature").<br><br>
+      <strong>Montage final :</strong> Assembler dans DaVinci Resolve ou CapCut. Synchro audio précise — le 104 Hz doit arriver EXACTEMENT au moment de la lévitation (Scène 9).
+    </p>
+  </div>
+
+  <p style="margin-top:40px;color:var(--ink3);font-size:0.90em;">
+    ← <a href="construction-pyramide-harmonique.html" style="color:var(--phi);text-decoration:none;">Construction de la Pyramide φ</a> ·
+    <a href="maitrise-gravite-harmonique.html" style="color:var(--phi);text-decoration:none;">Maîtrise de la Gravité</a> ·
+    <a href="index.html" style="color:var(--phi);text-decoration:none;">Symphonie Cosmique</a> →
+  </p>
+</section>
+
+</div>
+
+<footer>
+  <p>Scénario KHÉOPS — Conçu pour IA générative vidéo — <a href="index.html">Symphonie Cosmique</a></p>
+  <p style="margin-top:4px;">KOTTO Alain · φ = (1+√5)/2 ≈ 1.6180339887... · 22 Juin 2026</p>
+  <p style="margin-top:4px;font-size:0.72em;color:var(--ink3);">Scénario libre de droits pour usage créatif. Pour production commerciale : contacter l'auteur.</p>
+</footer>
+
+</body>
+</html>

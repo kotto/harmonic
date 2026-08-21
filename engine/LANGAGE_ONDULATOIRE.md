@@ -134,8 +134,14 @@ Pour tout problème P :
 
 2. ENCODER chaque entité en ψ
    → Trouver la fonction encode_P() : entité → ℂ⁵¹²
-   → Règle : l'encodeur doit préserver la similarité sémantique
-     (deux entités proches → ψ proches)
+   → Règle (THU V2 — exclusion X3) : encode() est un FILTRE
+     ANTI-COLLISION. Le φ-spacing garantit l'unicité des ψ
+     (1/φ = l'adverbe, dans l'agencement) — il ne porte PAS la
+     sémantique (X3 : AUC = 0,4985, indistinguable du hasard,
+     p = 0,523).
+   → Le spectre sémantique s'apprend, ne se postule pas (X3) :
+     la similarité entre entités se mesure sur les données avec
+     un noyau appris (frontière F6) — jamais sur le hash FNV-1a.
 
 3. EXPRIMER la structure du problème en opérations ψ
    → Relations → binding
@@ -151,6 +157,20 @@ Pour tout problème P :
 5. DÉCODER le résultat
    → decode_P() : ψ → solution
 ```
+
+### Note de compatibilité THU V2 (refondation 2026)
+
+- **T7** — les opérations (`bind`, `superpose`, `resonate`, `rotate`,
+  `diffract`) sont l'alphabet du langage source de la THU V2 :
+  Fourier = la grammaire, e^{iθ} = le verbe, gaussienne = l'agrégation.
+  ✅ formes vérifiées.
+- **X3** — l'encodage φ-spacing ne transporte pas de sémantique
+  (AUC = 0,4985 ≈ hasard) : il est un filtre anti-collision. La
+  sémantique s'apprend (noyau appris — frontière F6), elle ne se
+  postule pas.
+- **X1** — φ n'est pas dans les mots : il est dans leur agencement
+  (l'adverbe). C'est exactement le rôle de `rotate` et `phase_shift`
+  dans le pipeline.
 
 ---
 

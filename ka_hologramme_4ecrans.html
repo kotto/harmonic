@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KA Hologramme — Maquette 4 écrans</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;font-family:-apple-system,"SF Pro Display","Inter",system-ui,sans-serif}
+:root{
+  --void:#0e0e1a;--soul:#9b94ff;--soul-l:#c4bfff;--soul-d:rgba(155,148,255,.22);--soul-g:rgba(155,148,255,.42);
+  --life:#4de8ae;--life-d:rgba(77,232,174,.18);--life-g:rgba(77,232,174,.35);
+  --wisdom:#f5cc6a;--wisdom-d:rgba(245,204,106,.18);--wisdom-g:rgba(245,204,106,.35);
+  --rose:#f2a8c4;--sky:#96c8f5;--coral:#f07040;
+  --g1:rgba(255,255,255,.07);--g2:rgba(255,255,255,.11);--g3:rgba(255,255,255,.17);
+  --b1:rgba(255,255,255,.10);--b2:rgba(255,255,255,.16);--b3:rgba(255,255,255,.24);
+  --t1:rgba(255,255,255,.97);--t2:rgba(255,255,255,.78);--t3:rgba(255,255,255,.52);--t4:rgba(255,255,255,.30);
+}
+body{background:#000;display:flex;flex-wrap:wrap;gap:30px;padding:40px;justify-content:center;align-items:flex-start}
+
+/* ═══ SPLASH SCREEN ═══ */
+.splash{
+  width:375px;height:750px;border-radius:48px;border:1px solid rgba(255,255,255,.12);
+  background:radial-gradient(ellipse at 48% 16%,#2a2048 0%,#18163a 42%,var(--void) 100%);
+  overflow:hidden;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  box-shadow:0 56px 108px rgba(0,0,0,.95),0 0 0 .5px rgba(255,255,255,.14) inset;
+  animation:splashFade 4s ease-in-out forwards
+}
+@keyframes splashFade{
+  0%{opacity:1} 70%{opacity:1} 100%{opacity:0;pointer-events:none}
+}
+.splash .orb-lg{
+  position:absolute;width:400px;height:400px;top:50%;left:50%;transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(155,148,255,.15) 0%,transparent 68%);
+  animation:pulse 3s ease-in-out infinite
+}
+@keyframes pulse{
+  0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.6}
+  50%{transform:translate(-50%,-50%) scale(1.15);opacity:1}
+}
+.splash .logo{
+  position:relative;z-index:2;animation:logoReveal 2.5s ease-out forwards;opacity:0
+}
+@keyframes logoReveal{
+  0%{opacity:0;transform:scale(.8);filter:blur(8px)}
+  40%{opacity:1;transform:scale(1);filter:blur(0)}
+  100%{opacity:1}
+}
+.splash .logo svg{width:80px;height:80px}
+.splash .tagline{
+  position:relative;z-index:2;font-size:11px;letter-spacing:6px;text-transform:uppercase;
+  color:var(--t3);margin-top:16px;animation:tagReveal 3s ease-out forwards;opacity:0
+}
+@keyframes tagReveal{
+  0%{opacity:0;transform:translateY(12px)}
+  60%{opacity:1;transform:translateY(0)}
+  100%{opacity:1}
+}
+.splash .status{
+  position:absolute;bottom:50px;z-index:2;display:flex;align-items:center;gap:8px;
+  font-size:11px;color:var(--t4);animation:statusReveal 3.5s ease-out forwards;opacity:0
+}
+@keyframes statusReveal{
+  0%{opacity:0} 70%{opacity:0} 100%{opacity:1}
+}
+.splash .dots{display:flex;gap:4px}
+.splash .dot{width:4px;height:4px;border-radius:50%;background:var(--soul-g);animation:dotPulse 1.2s ease-in-out infinite}
+.splash .dot:nth-child(2){animation-delay:.2s}
+.splash .dot:nth-child(3){animation-delay:.4s}
+@keyframes dotPulse{
+  0%,100%{opacity:.3} 50%{opacity:1}
+}
+
+.dv{width:375px;height:750px;background:radial-gradient(ellipse at 48% 16%,#2a2048 0%,#18163a 42%,var(--void) 100%);border-radius:48px;border:1px solid rgba(255,255,255,.12);overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 56px 108px rgba(0,0,0,.95),0 0 0 .5px rgba(255,255,255,.14) inset}
+
+/* Orbs */
+.orb{position:absolute;border-radius:50%;pointer-events:none}
+.o1{width:300px;height:300px;top:-90px;left:-70px;background:radial-gradient(circle,rgba(155,148,255,.18) 0%,transparent 68%)}
+.o2{width:240px;height:240px;bottom:260px;right:-80px;background:radial-gradient(circle,rgba(77,232,174,.12) 0%,transparent 68%)}
+.o3{width:180px;height:180px;top:240px;right:-30px;background:radial-gradient(circle,rgba(245,204,106,.10) 0%,transparent 68%)}
+
+/* Status bar */
+.sb{display:flex;justify-content:space-between;align-items:center;padding:16px 28px 10px;flex-shrink:0;position:relative;z-index:10}
+.sb__t{font-size:15.5px;font-weight:500;color:var(--t1);letter-spacing:-.015em}
+.sb__r{display:flex;gap:5px;align-items:center;font-size:12px;color:var(--t3)}
+
+/* Bottom nav */
+.nav{display:flex;justify-content:space-around;align-items:center;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));flex-shrink:0;border-top:1px solid rgba(255,255,255,.06);position:relative;z-index:10;margin-top:auto}
+.nav__item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border:none;background:none;color:var(--t4);font-size:10px;letter-spacing:.02em;padding:4px 12px;border-radius:12px;transition:all .15s}
+.nav__item--on{color:var(--soul)}
+.nav__item svg{width:22px;height:22px;fill:currentColor}
+.nav__item--on svg{fill:var(--soul);filter:drop-shadow(0 0 6px rgba(155,148,255,.5))}
+
+/* Labels */
+.label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t4);margin-bottom:6px}
+.value{font-size:18px;font-weight:600;color:var(--t1)}
+.card{background:var(--g1);border:.5px solid var(--b1);border-radius:16px;padding:16px}
+
+/* ── SCREEN 1 : HOME ── */
+.sc1{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;padding:0 20px}
+.sc1__header{text-align:center;padding:16px 0 8px}
+.sc1__header h1{font-size:22px;font-weight:300;color:var(--t1);letter-spacing:-.02em}
+.sc1__header p{font-size:12px;color:var(--t4);margin-top:2px}
+.sc1__create{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;background:var(--soul-d);border:.5px solid var(--soul-g);border-radius:16px;color:var(--soul);font-size:14px;font-weight:500;cursor:pointer;margin:8px 0;transition:all .15s}
+.sc1__create:active{transform:scale(.97)}
+.sc1__grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1;overflow-y:auto;padding-bottom:8px;scrollbar-width:none}
+.sc1__grid::-webkit-scrollbar{display:none}
+.hcard{background:var(--g1);border:.5px solid var(--b1);border-radius:16px;padding:14px;cursor:pointer;transition:all .15s}
+.hcard:active{transform:scale(.96)}
+.hcard__icon{font-size:24px;margin-bottom:6px}
+.hcard__name{font-size:13px;font-weight:500;color:var(--t1)}
+.hcard__meta{font-size:10px;color:var(--t4);margin-top:2px}
+.hcard__badge{display:inline-block;font-size:8px;letter-spacing:.08em;padding:2px 8px;border-radius:10px;margin-top:6px}
+.hcard__badge--ready{background:var(--life-d);color:var(--life);border:.5px solid var(--life-g)}
+.hcard__badge--draft{background:var(--wisdom-d);color:var(--wisdom);border:.5px solid var(--wisdom-g)}
+.hcard--add{display:flex;flex-direction:column;align-items:center;justify-content:center;border:1.5px dashed var(--b3);background:transparent;min-height:100px}
+.hcard--add span{font-size:28px;color:var(--t4);margin-bottom:4px}
+.hcard--add .hcard__name{color:var(--t4)}
+
+/* ── SCREEN 2 : CREATE ── */
+.sc2{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;padding:0 20px;display:none}
+.sc2__header{padding:12px 0 8px;display:flex;justify-content:space-between;align-items:center}
+.sc2__header h2{font-size:17px;font-weight:500;color:var(--t1)}
+.sc2__header span{font-size:11px;color:var(--t4)}
+.sc2__ex{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 0;scrollbar-width:none}
+.sc2__ex::-webkit-scrollbar{display:none}
+.ex{background:var(--g1);border:.5px solid var(--b1);border-radius:12px;padding:12px;font-size:13px}
+.ex__q{color:var(--t2);margin-bottom:4px}
+.ex__r{color:var(--life);font-weight:500;font-size:12px}
+.ex--input{background:rgba(155,148,255,.06);border:.5px solid var(--soul-g)}
+.ex--input .ex__q{color:var(--soul)}
+.sc2__add{display:flex;align-items:center;gap:8px;padding:12px 14px;background:var(--g1);border:.5px dashed var(--b3);border-radius:12px;color:var(--t4);font-size:13px;cursor:pointer;margin:4px 0;flex-shrink:0}
+.sc2__add:active{background:var(--g2)}
+.sc2__train{width:100%;padding:14px;background:var(--soul-d);border:.5px solid var(--soul-g);border-radius:16px;color:var(--soul);font-size:14px;font-weight:500;text-align:center;cursor:pointer;margin:8px 0;flex-shrink:0}
+.sc2__train:active{transform:scale(.97)}
+.sc2__progress{height:4px;background:var(--g1);border-radius:2px;margin:8px 0;overflow:hidden}
+.sc2__progress .fill{height:100%;background:var(--soul);border-radius:2px;transition:width .3s}
+.sc2__status{text-align:center;font-size:11px;color:var(--t4);margin-top:4px}
+
+/* ── SCREEN 3 : CHAT ── */
+.sc3{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;padding:0 20px;display:none}
+.sc3__header{padding:12px 0 8px;display:flex;justify-content:space-between;align-items:center}
+.sc3__header h2{font-size:17px;font-weight:500;color:var(--t1)}
+.sc3__header .hname{font-size:12px;color:var(--soul)}
+.sc3__msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:8px 0;scrollbar-width:none}
+.sc3__msgs::-webkit-scrollbar{display:none}
+.bubble{border-radius:18px;padding:12px 16px;font-size:14px;line-height:1.45;max-width:280px;animation:fadeIn .25s ease-out}
+.bubble--q{background:var(--g2);border:.5px solid var(--b2);color:var(--t1);border-bottom-left-radius:4px;align-self:flex-end}
+.bubble--r{background:var(--soul-d);border:.5px solid var(--soul-g);color:var(--t1);border-bottom-right-radius:4px;align-self:flex-start}
+.bubble .val{font-size:28px;font-weight:300;color:var(--life);margin:4px 0}
+.bubble .traj{font-size:11px;color:var(--t4);margin-top:6px;letter-spacing:.02em}
+.bubble .psi{font-size:10px;color:var(--soul-g);margin-top:4px;font-family:monospace}
+.sc3__input{display:flex;align-items:center;gap:8px;padding:8px 0;flex-shrink:0;margin-top:auto}
+.sc3__input input{flex:1;padding:12px 16px;background:var(--g1);border:.5px solid var(--b1);border-radius:24px;color:var(--t1);font-size:14px;outline:none}
+.sc3__input input::placeholder{color:var(--t4)}
+.sc3__input button{width:44px;height:44px;border-radius:50%;background:var(--soul-d);border:.5px solid var(--soul-g);color:var(--soul);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px}
+.sc3__input button:active{transform:scale(.92)}
+
+/* ── SCREEN 4 : PROFILE ── */
+.sc4{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;padding:0 20px;display:none}
+.sc4__header{padding:16px 0 12px;text-align:center}
+.sc4__header h2{font-size:20px;font-weight:300;color:var(--t1)}
+.sc4__header p{font-size:12px;color:var(--t4);margin-top:2px}
+.sc4__stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.stat{background:var(--g1);border:.5px solid var(--b1);border-radius:12px;padding:12px;text-align:center}
+.stat__n{font-size:20px;font-weight:600;color:var(--t1)}
+.stat__l{font-size:9px;color:var(--t4);margin-top:2px;letter-spacing:.08em}
+.sc4__list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;scrollbar-width:none}
+.sc4__list::-webkit-scrollbar{display:none}
+.hitem{display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--g1);border:.5px solid var(--b1);border-radius:12px;cursor:pointer;transition:all .15s}
+.hitem:active{transform:scale(.97)}
+.hitem__l{display:flex;flex-direction:column;gap:2px}
+.hitem__n{font-size:14px;font-weight:500;color:var(--t1)}
+.hitem__m{font-size:10px;color:var(--t4)}
+.hitem__r{font-size:11px;color:var(--life)}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<!-- ═══ SPLASH SCREEN ═══ -->
+<div class="splash">
+  <div class="orb-lg"></div>
+  <div class="logo">
+    <svg viewBox="0 0 100 100">
+      <defs><linearGradient id="kg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#9b94ff"/><stop offset="100%" stop-color="#c4bfff"/></linearGradient></defs>
+      <circle cx="50" cy="50" r="48" fill="none" stroke="url(#kg)" stroke-width="1" opacity=".3"/>
+      <circle cx="50" cy="50" r="35" fill="none" stroke="url(#kg)" stroke-width=".8" opacity=".5"/>
+      <text x="50" y="58" text-anchor="middle" fill="url(#kg)" font-size="36" font-weight="300" letter-spacing="2">K</text>
+      <line x1="68" y1="32" x2="88" y2="68" stroke="#9b94ff" stroke-width="2" opacity=".8"/>
+      <line x1="68" y1="68" x2="88" y2="32" stroke="#9b94ff" stroke-width="2" opacity=".8"/>
+    </svg>
+  </div>
+  <div class="tagline">Votre spécialiste harmonique</div>
+  <div class="status">
+    <span>Initialisation</span>
+    <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+  </div>
+</div>
+
+<!-- ═══ SCREEN 1 : HOME ═══ -->
+<div class="dv" style="position:relative">
+  <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+  <div class="sb">
+    <span class="sb__t">9:41</span>
+    <span class="sb__r">KA</span>
+  </div>
+
+  <div class="sc1">
+    <div class="sc1__header">
+      <h1>Mes hologrammes</h1>
+      <p>Vos experts personnels, créés par vous</p>
+    </div>
+
+    <!-- KA manifestation indicator -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 0;font-size:10px;color:var(--t4);letter-spacing:.04em">
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--life);animation:pulse 2s ease-in-out infinite;display:inline-block"></span>
+      KA présent · Mode vocal activé
+      <span style="opacity:.5;cursor:pointer">✕</span>
+    </div>
+
+    <div class="sc1__create">
+      <span>+</span> Créer un hologramme
+    </div>
+
+    <div class="sc1__grid">
+      <div class="hcard">
+        <div class="hcard__icon">💰</div>
+        <div class="hcard__name">Finance</div>
+        <div class="hcard__meta">12 exemples · 95%</div>
+        <span class="hcard__badge hcard__badge--ready">PRÊT</span>
+      </div>
+      <div class="hcard">
+        <div class="hcard__icon">⚖️</div>
+        <div class="hcard__name">Droit contrats</div>
+        <div class="hcard__meta">8 exemples · 88%</div>
+        <span class="hcard__badge hcard__badge--ready">PRÊT</span>
+      </div>
+      <div class="hcard">
+        <div class="hcard__icon">🏥</div>
+        <div class="hcard__name">Diagnostic</div>
+        <div class="hcard__meta">5 exemples · 72%</div>
+        <span class="hcard__badge hcard__badge--draft">EN COURS</span>
+      </div>
+      <div class="hcard">
+        <div class="hcard__icon">🏠</div>
+        <div class="hcard__name">Couverture</div>
+        <div class="hcard__meta">4 exemples · 100%</div>
+        <span class="hcard__badge hcard__badge--ready">PRÊT</span>
+      </div>
+      <div class="hcard hcard--add">
+        <span>+</span>
+        <div class="hcard__name">Nouveau</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom nav -->
+  <div class="nav">
+    <button class="nav__item nav__item--on">
+      <svg viewBox="0 0 24 24"><path d="M3 13h1v7c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-7h1a1 1 0 0 0 .7-1.7l-9-8.5a1 1 0 0 0-1.4 0l-9 8.5A1 1 0 0 0 3 13z"/></svg>
+      Accueil
+    </button>
+    <button class="nav__item">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+      Chat
+    </button>
+    <button class="nav__item">
+      <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      Profil
+    </button>
+  </div>
+</div>
+
+<!-- ═══ SCREEN 2 : CREATE ═══ -->
+<div class="dv" style="position:relative">
+  <div class="orb o1"></div><div class="orb o2"></div>
+  <div class="sb">
+    <span class="sb__t">9:41</span>
+    <span class="sb__r">Création</span>
+  </div>
+
+  <div class="sc2" style="display:flex">
+    <div class="sc2__header">
+      <h2>Expert Couverture</h2>
+      <span>4 / 5 exemples</span>
+    </div>
+
+    <div class="sc2__ex">
+      <div class="ex ex--input">
+        <div class="ex__q">"100m² de toiture → combien de tuiles ?"</div>
+        <div class="ex__r">→ INIT(100) MUL(12) = 1200 tuiles</div>
+      </div>
+      <div class="ex ex--input">
+        <div class="ex__q">"150m² avec pente 30° → tuiles ?"</div>
+        <div class="ex__r">→ INIT(150) MUL(12) MUL(1.15) = 2070</div>
+      </div>
+      <div class="ex ex--input">
+        <div class="ex__q">"Budget 5000€, marge 15% → coût ?"</div>
+        <div class="ex__r">→ INIT(5000) MUL(0.85) = 4250</div>
+      </div>
+      <div class="ex ex--input">
+        <div class="ex__q">"Surface 200m², tuiles 12/m² → total ?"</div>
+        <div class="ex__r">→ INIT(200) MUL(12) = 2400</div>
+      </div>
+      <div class="ex ex--input">
+        <div class="ex__q">"Toit 75m², 10% perte → tuiles ?"</div>
+        <div class="ex__r">→ INIT(75) MUL(12) MUL(1.1) = 990</div>
+      </div>
+    </div>
+
+    <div class="sc2__progress"><div class="fill" style="width:100%"></div></div>
+    <div class="sc2__status">✓ Hologramme prêt · 5 exemples · 2 min 03s</div>
+    <div class="sc2__train" style="background:var(--life-d);border-color:var(--life-g);color:var(--life)">Tester l'hologramme →</div>
+  </div>
+
+  <div class="nav">
+    <button class="nav__item"><svg viewBox="0 0 24 24"><path d="M3 13h1v7c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-7h1a1 1 0 0 0 .7-1.7l-9-8.5a1 1 0 0 0-1.4 0l-9 8.5A1 1 0 0 0 3 13z"/></svg>Accueil</button>
+    <button class="nav__item nav__item--on"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>Chat</button>
+    <button class="nav__item"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>Profil</button>
+  </div>
+</div>
+
+<!-- ═══ SCREEN 3 : CHAT ═══ -->
+<div class="dv" style="position:relative">
+  <div class="orb o1"></div><div class="orb o3"></div>
+  <div class="sb">
+    <span class="sb__t">9:41</span>
+    <span class="sb__r">Couverture</span>
+  </div>
+
+  <div class="sc3" style="display:flex">
+    <div class="sc3__header">
+      <h2>🏠 Couverture</h2>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--life);display:inline-block;animation:pulse 2s ease-in-out infinite"></span>
+        <span class="hname">KA présent</span>
+      </div>
+    </div>
+
+    <div class="sc3__msgs">
+      <div class="bubble bubble--q">
+        Combien de tuiles pour un toit de 130m² ?
+      </div>
+      <div class="bubble bubble--r">
+        <div class="val">1 560 tuiles</div>
+        <div class="traj">INIT(130) × MUL(12) = 1560</div>
+        <div class="psi">ψ trajectoire vérifiable · 0.1s</div>
+      </div>
+      <div class="bubble bubble--q">
+        Et avec une pente à 30° ?
+      </div>
+      <div class="bubble bubble--r">
+        <div class="val">1 794 tuiles</div>
+        <div class="traj">INIT(130) × MUL(12) × MUL(1.15) = 1794</div>
+        <div class="psi">Facteur pente 30° = ×1.15 intégré</div>
+      </div>
+    </div>
+
+    <div class="sc3__input">
+      <input type="text" placeholder="Posez votre question...">
+      <button>→</button>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="nav__item"><svg viewBox="0 0 24 24"><path d="M3 13h1v7c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-7h1a1 1 0 0 0 .7-1.7l-9-8.5a1 1 0 0 0-1.4 0l-9 8.5A1 1 0 0 0 3 13z"/></svg>Accueil</button>
+    <button class="nav__item nav__item--on"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>Chat</button>
+    <button class="nav__item"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>Profil</button>
+  </div>
+</div>
+
+<!-- ═══ SCREEN 4 : PROFILE ═══ -->
+<div class="dv" style="position:relative">
+  <div class="orb o2"></div><div class="orb o3"></div>
+  <div class="sb">
+    <span class="sb__t">9:41</span>
+    <span class="sb__r">Profil</span>
+  </div>
+
+  <div class="sc4" style="display:flex">
+    <div class="sc4__header">
+      <h2>Vos hologrammes</h2>
+      <p>4 experts · 29 exemples · 91% moyen</p>
+    </div>
+
+    <div class="sc4__stats">
+      <div class="stat"><div class="stat__n">4</div><div class="stat__l">HOLOGRAMMES</div></div>
+      <div class="stat"><div class="stat__n">29</div><div class="stat__l">EXEMPLES</div></div>
+      <div class="stat"><div class="stat__n">91%</div><div class="stat__l">PRÉCISION</div></div>
+    </div>
+
+    <div class="sc4__list">
+      <div class="hitem">
+        <div class="hitem__l">
+          <div class="hitem__n">💰 Finance</div>
+          <div class="hitem__m">12 exemples · 95% · 3 min</div>
+        </div>
+        <div class="hitem__r">ACTIF</div>
+      </div>
+      <div class="hitem">
+        <div class="hitem__l">
+          <div class="hitem__n">⚖️ Droit contrats</div>
+          <div class="hitem__m">8 exemples · 88% · 2 min</div>
+        </div>
+        <div class="hitem__r">ACTIF</div>
+      </div>
+      <div class="hitem">
+        <div class="hitem__l">
+          <div class="hitem__n">🏥 Diagnostic</div>
+          <div class="hitem__m">5 exemples · 72% · 1 min</div>
+        </div>
+        <div class="hitem__r" style="color:var(--wisdom)">EN COURS</div>
+      </div>
+      <div class="hitem">
+        <div class="hitem__l">
+          <div class="hitem__n">🏠 Couverture</div>
+          <div class="hitem__m">4 exemples · 100% · 2 min</div>
+        </div>
+        <div class="hitem__r">ACTIF</div>
+      </div>
+    </div>
+
+    <!-- KA Settings -->
+    <div class="card" style="margin:8px 0">
+      <div style="font-size:11px;color:var(--t3);letter-spacing:.08em;margin-bottom:8px">MANIFESTATION KA</div>
+      <div style="display:flex;gap:8px">
+        <div style="flex:1;padding:10px;text-align:center;border-radius:10px;background:var(--soul-d);border:.5px solid var(--soul-g);cursor:pointer">
+          <span style="font-size:16px">🎤</span>
+          <div style="font-size:10px;color:var(--soul);margin-top:4px">Vocal</div>
+        </div>
+        <div style="flex:1;padding:10px;text-align:center;border-radius:10px;background:var(--g1);border:.5px solid var(--b1);cursor:pointer;opacity:.5">
+          <span style="font-size:16px">🔇</span>
+          <div style="font-size:10px;color:var(--t4);margin-top:4px">Silencieux</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compression (discrete) -->
+    <details style="margin-top:4px">
+      <summary style="font-size:10px;color:var(--t4);letter-spacing:.08em;cursor:pointer;padding:4px">⚡ Compression HCV</summary>
+      <div style="padding:8px 0;font-size:11px;color:var(--t3);line-height:1.5">
+        Compression harmonique ×213, bit-exact. Technologie brevetée THU V2.
+        <div style="margin-top:6px;display:flex;gap:6px">
+          <div class="stat" style="flex:1;padding:8px">
+            <div class="stat__n" style="font-size:14px">213×</div>
+            <div class="stat__l">RATIO</div>
+          </div>
+          <div class="stat" style="flex:1;padding:8px">
+            <div class="stat__n" style="font-size:14px">49s</div>
+            <div class="stat__l">4K/FRAME</div>
+          </div>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="nav">
+    <button class="nav__item"><svg viewBox="0 0 24 24"><path d="M3 13h1v7c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-7h1a1 1 0 0 0 .7-1.7l-9-8.5a1 1 0 0 0-1.4 0l-9 8.5A1 1 0 0 0 3 13z"/></svg>Accueil</button>
+    <button class="nav__item"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>Chat</button>
+    <button class="nav__item nav__item--on"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>Profil</button>
+  </div>
+</div>
+
+<div style="width:100%;text-align:center;color:rgba(255,255,255,.3);font-size:12px;padding:20px">
+  KA Hologramme · Thème v2 (NVOTHEME) · 4 écrans · Design système harmonique
+</div>
+</body>
+</html>

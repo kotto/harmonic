@@ -1,11 +1,16 @@
 """
-KA Server — Routes Enterprise
-==============================
-Endpoints Enterprise: ingestion, conformité, audit, déploiement.
+KA Server — Routes Enterprise (Post-RAG Platform)
+=================================================
+Endpoints Enterprise : ingestion → hologrammes, conformité, audit,
+déploiement, manifeste Post-RAG, démo déterministe.
 Nécessitent authentification API Key.
+
+Positionnement : les hologrammes remplacent le RAG, les données
+restent on-premise, le raisonnement est déterministe (0% hallucination).
 """
 
 import logging
+import time as _time
 from functools import wraps
 from flask import request, jsonify, g, current_app
 
@@ -442,6 +447,263 @@ def register_enterprise_routes(app, services):
             'next_invoice': '2025-02-01',
         })
 
+    # ────────────────────────────────────────────────────────────────────────
+    #  POST-RAG PLATFORM — le positionnement produit (PUBLIC, fr/en)
+    #  Ces endpoints sont publics : ce sont des contenus marketing, pas des
+    #  données sensibles. La console et la landing page les consomment.
+    # ────────────────────────────────────────────────────────────────────────
+
+    @app.route('/api/v2/enterprise/manifesto', methods=['GET', 'OPTIONS'])
+    def api_enterprise_manifesto():
+        """Manifeste Post-RAG — PUBLIC (marketing), localisé fr/en (?lang=).
+
+        Pourquoi le RAG échoue, nos piliers. La landing page et la console
+        le consomment — c'est la source de vérité du narrative produit.
+        """
+        if request.method == 'OPTIONS':
+            return '', 200
+        lang = request.args.get('lang', 'fr')
+        L = _manifesto_content(lang)
+        return jsonify({'success': True, 'lang': lang, **L})
+
+    @app.route('/api/v2/enterprise/compare', methods=['GET', 'OPTIONS'])
+    def api_enterprise_compare():
+        """Comparaison chiffrée RAG vs Hologramme — PUBLIC, localisé fr/en."""
+        if request.method == 'OPTIONS':
+            return '', 200
+        lang = request.args.get('lang', 'fr')
+        return jsonify({
+            'success': True,
+            'lang': lang,
+            'comparison': [
+                {
+                    'criteria': _pick(c['criteria'], lang),
+                    'rag': _pick(c['rag'], lang),
+                    'hologram': _pick(c['hologram'], lang),
+                }
+                for c in _COMPARE
+            ],
+        })
+
+    @app.route('/api/v2/enterprise/pricing', methods=['GET', 'OPTIONS'])
+    def api_enterprise_pricing():
+        """Grille tarifaire — PUBLIC, localisé fr/en.
+
+        4 offres annuelles, 100% on-premise. Licence forfaitaire (budget
+        prévisible) : pas de coût par token, pas de facturation GPU.
+        Les montants sont éditables ici — source de vérité pour la console.
+        """
+        if request.method == 'OPTIONS':
+            return '', 200
+        lang = request.args.get('lang', 'fr')
+        return jsonify({
+            'success': True,
+            'lang': lang,
+            'currency': 'EUR',
+            'period': _pick({'fr': 'annual', 'en': 'annual'}, lang),
+            'plans': [_plan_localized(p, lang) for p in _PRICING_PLANS],
+        })
+
+    @app.route('/api/v2/enterprise/demo/ask', methods=['POST', 'OPTIONS'])
+    @_require_enterprise_auth
+    def api_enterprise_demo_ask():
+        """Démo en direct : question → réponse déterministe + provenance.
+
+        C'est la preuve du positionnement Post-RAG dans la console. Pipeline
+        identique à /api/chat — chaque étape est déterministe :
+          1. Arithmétique émergente (codec ψ v3) — « 7 × 6 » → 42, sans RAG
+          2. Memory-first — le fait stocké répond (avec provenance), sinon refus calibré
+          3. Consensus holographique M4 + raisonnement — le domaine vote, la
+             réponse cite ses faits sources (0% hallucination)
+
+        Body: {"question": "combien font 7 multiplié par 6 ?"}
+        """
+        if request.method == 'OPTIONS':
+            return '', 200
+
+        data = request.get_json() or {}
+        question = (data.get('question') or '').strip()
+        if not question:
+            return jsonify({'error': 'Question requise', 'code': 'MISSING_QUESTION'}), 400
+
+        t0 = _time.time()
+
+        # ── Étape 1 : arithmétique émergente (aucun RAG, aucun LLM) ──
+        try:
+            from ka_server.services.harmonic_v3 import detect_and_solve_math
+            math_result = detect_and_solve_math(question)
+            if math_result.get('handled'):
+                return jsonify({
+                    'success': True,
+                    'answer': math_result['explanation'],
+                    'result': math_result.get('result'),
+                    'method': math_result['method'],
+                    'source': 'harmonic_v3',
+                    'best_domain': None,
+                    'consensus_facts_count': 0,
+                    'facts': [],
+                    'latency_ms': round((_time.time() - t0) * 1000),
+                    'deterministic': True,
+                    'note': 'Arithmétique émergente — résultat calculé, pas généré. 0% hallucination.',
+                })
+        except Exception as e:
+            log.debug(f"Demo arithmetic failed: {e}")
+
+        # ── Étape 2 : memory-first (le fait stocké répond, sinon refus) ──
+        try:
+            from ka_server.services.memory_first import ask as memory_first_ask
+            mf = memory_first_ask(question)
+            if not mf.get('refused'):
+                return jsonify({
+                    'success': True,
+                    'answer': mf['answer'],
+                    'method': 'memory-first',
+                    'source': 'memory_first',
+                    'best_domain': None,
+                    'consensus_facts_count': 0,
+                    'facts': [list(p.values()) for p in mf.get('provenance', [])][:5],
+                    'confidence': mf.get('confidence'),
+                    'latency_ms': round((_time.time() - t0) * 1000),
+                    'deterministic': True,
+                    'note': 'Memory-first — le fait stocké répond avec sa provenance, jamais une fabrication.',
+                })
+        except Exception as e:
+            log.debug(f"Demo memory-first failed: {e}")
+
+        # ── Étape 3 : consensus holographique M4 + raisonnement du codec ψ ──
+        best_domain = None
+        consensus_facts = []
+        try:
+            from ka_server.services import holographic_consensus_recall
+            consensus_facts, best_domain = holographic_consensus_recall(question)
+        except Exception as e:
+            log.warning(f"Demo holographic recall error: {e}")
+
+        answer = None
+        source = 'unavailable'
+        try:
+            from ka_server.services import get_brain, get_harmonic_ai
+            brain = get_brain()
+            ai = get_harmonic_ai()
+
+            if brain is not None and hasattr(brain, 'ask'):
+                try:
+                    answer = brain.ask(question)
+                    source = 'harmonic_brain'
+                except Exception:
+                    pass
+            if answer is None and ai is not None and hasattr(ai, 'ask'):
+                try:
+                    result = ai.ask(question)
+                    answer = result.get('answer', '') if isinstance(result, dict) else str(result)
+                    source = 'harmonic_ai'
+                except Exception:
+                    pass
+        except Exception as e:
+            log.warning(f"Demo harmonic ask error: {e}")
+
+        if not answer:
+            return jsonify({
+                'error': 'Moteur harmonique indisponible',
+                'code': 'HARMONIC_UNAVAILABLE',
+            }), 503
+
+        latency_ms = round((_time.time() - t0) * 1000)
+
+        return jsonify({
+            'success': True,
+            'answer': answer,
+            'source': source,
+            'best_domain': best_domain,
+            'consensus_facts_count': len(consensus_facts) if consensus_facts else 0,
+            'facts': [list(f) for f in consensus_facts[:5]] if consensus_facts else [],
+            'latency_ms': latency_ms,
+            'deterministic': True,
+            'note': 'Consensus holographique M4 — les faits cités sont la provenance de la réponse. 0% hallucination.',
+        })
+
+    # ────────────────────────────────────────────────────────────────────────
+    #  SQL QUERIER — interroger des données structurées par langage naturel
+    #  Text-to-SQL déterministe : pattern matching, pas de LLM.
+    #  Base exemple : ventes, produits, régions, employés (500 lignes).
+    # ────────────────────────────────────────────────────────────────────────
+
+    @app.route('/api/v2/enterprise/query/schema', methods=['GET', 'OPTIONS'])
+    @_require_enterprise_auth
+    def api_enterprise_schema():
+        """Retourne le schéma des tables disponibles pour le SQL Querier."""
+        if request.method == 'OPTIONS':
+            return '', 200
+        try:
+            from ka_server.services.sql_querier import get_demo_schema, get_friendly_schema
+            return jsonify({
+                'success': True,
+                'tables': get_demo_schema(),
+                'description': get_friendly_schema(),
+                'example_questions': [
+                    'quel est le CA du mois dernier ?',
+                    'moyenne des ventes par région',
+                    'top 5 produits par chiffre d\'affaires',
+                    'CA par catégorie',
+                    'nombre d\'employés par département',
+                    'quel est le total des ventes par pays ?',
+                ],
+            })
+        except Exception as e:
+            return jsonify({'error': str(e), 'code': 'SCHEMA_UNAVAILABLE'}), 503
+
+    @app.route('/api/v2/enterprise/query/sql', methods=['POST', 'OPTIONS'])
+    @_require_enterprise_auth
+    def api_enterprise_query_sql():
+        """Text-to-SQL déterministe — interroger des données structurées.
+
+        Body: {"question": "quel est le CA du mois dernier ?"}
+        Le service utilise du pattern matching (pas de LLM) pour générer
+        et exécuter une requête SQL sur la base exemple.
+
+        Intentions supportées :
+          • Agrégations : SUM, AVG, COUNT, MAX, MIN
+          • Groupes : par région, catégorie, produit, mois, département
+          • Filtres temporels : ce mois, mois dernier, cette année
+          • Ordre : top N, meilleur/pire
+        """
+        if request.method == 'OPTIONS':
+            return '', 200
+
+        data = request.get_json() or {}
+        question = (data.get('question') or '').strip()
+
+        if not question:
+            return jsonify({'error': 'Question requise', 'code': 'MISSING_QUESTION'}), 400
+        if len(question) > 300:
+            return jsonify({'error': 'Question trop longue (max 300 caractères)'}), 400
+
+        try:
+            from ka_server.services.sql_querier import detect_and_solve_sql, get_demo_schema, get_friendly_schema
+            result = detect_and_solve_sql(question)
+
+            if not result['handled']:
+                return jsonify({
+                    'error': 'Question non SQL-requêtable',
+                    'code': 'NOT_SQL_QUERY',
+                    'hint': 'Exemples : ' + ', '.join([
+                        'CA du mois dernier', 'moyenne ventes par région',
+                        'top 5 produits', 'nombre employés par département'
+                    ]),
+                }), 400
+
+            return jsonify({
+                'success': True,
+                'sql': result['sql'],
+                'result': result['result'],
+                'columns': result['columns'],
+                'row_count': result['row_count'],
+                'explanation': result['explanation'],
+                'error': result.get('error'),
+            })
+        except Exception as e:
+            return jsonify({'error': str(e), 'code': 'SQL_QUERY_FAILED'}), 500
+
 
 def _check_compliance(text: str, regulations: list) -> list:
     """Vérification conformité basique."""
@@ -535,6 +797,256 @@ def _generate_api_key() -> str:
     """Génère une clé API sécurisée."""
     import secrets
     return f"ka_ent_{secrets.token_urlsafe(32)}"
+
+
+# ────────────────────────────────────────────────────────────────────────────
+#  CONTENU POST-RAG LOCALISÉ (fr/en) — source de vérité marketing
+#  Consommé par la landing page publique et la console d'administration.
+# ────────────────────────────────────────────────────────────────────────────
+
+def _pick(item: dict, lang: str):
+    """Choisit la valeur fr ou en d'un item localisé."""
+    if isinstance(item, dict) and 'fr' in item and 'en' in item:
+        return item.get('en') if lang == 'en' else item.get('fr')
+    return item
+
+
+# Table comparative RAG vs Hologramme (10 critères, fr/en)
+_COMPARE = [
+    {'criteria': {'fr': 'Stockage', 'en': 'Storage'},
+     'rag': {'fr': 'Vector DB (€€€, complexe)', 'en': 'Vector DB (€€€, complex)'},
+     'hologram': {'fr': '1 fichier de 2 Mo', 'en': 'One 2 MB file'}},
+    {'criteria': {'fr': 'Requête', 'en': 'Query'},
+     'rag': {'fr': 'Similarité cosinus (approximation)', 'en': 'Cosine similarity (approximation)'},
+     'hologram': {'fr': 'Rappel déterministe (certitude)', 'en': 'Deterministic recall (certainty)'}},
+    {'criteria': {'fr': 'Contexte', 'en': 'Context'},
+     'rag': {'fr': 'Limité aux chunks retrievés', 'en': 'Limited to retrieved chunks'},
+     'hologram': {'fr': 'Domaine complet', 'en': 'Full domain'}},
+    {'criteria': {'fr': 'Hallucination', 'en': 'Hallucination'},
+     'rag': {'fr': '3–27% (le LLM ignore le contexte)', 'en': '3–27% (LLM ignores context)'},
+     'hologram': {'fr': '0% (codec ψ déterministe)', 'en': '0% (deterministic ψ codec)'}},
+    {'criteria': {'fr': 'Mise à jour', 'en': 'Updates'},
+     'rag': {'fr': 'Ré-indexer tout le corpus', 'en': 'Re-index entire corpus'},
+     'hologram': {'fr': 'Ajout / édition instantanée', 'en': 'Instant add / edit'}},
+    {'criteria': {'fr': 'Privacy', 'en': 'Privacy'},
+     'rag': {'fr': 'Données → API externe', 'en': 'Data → external API'},
+     'hologram': {'fr': '100% sur site', 'en': '100% on-site'}},
+    {'criteria': {'fr': 'Coût', 'en': 'Cost'},
+     'rag': {'fr': 'GPU + Vector DB + Tokens API', 'en': 'GPU + Vector DB + API tokens'},
+     'hologram': {'fr': '1 serveur CPU', 'en': 'One CPU server'}},
+    {'criteria': {'fr': 'Matériel', 'en': 'Hardware'},
+     'rag': {'fr': 'GPU requis (A100, H100…)', 'en': 'GPU required (A100, H100…)'},
+     'hologram': {'fr': 'CPU standard (n\'importe quel serveur)', 'en': 'Standard CPU (any server)'}},
+    {'criteria': {'fr': 'Conformité', 'en': 'Compliance'},
+     'rag': {'fr': 'Difficile (données hors site)', 'en': 'Difficult (data off-site)'},
+     'hologram': {'fr': 'RGPD · AI Act · HIPAA · SOX intégrés', 'en': 'GDPR · AI Act · HIPAA · SOX built-in'}},
+    {'criteria': {'fr': 'Explicabilité', 'en': 'Explainability'},
+     'rag': {'fr': 'Boîte noire (le LLM ne cite rien)', 'en': 'Black box (LLM cites nothing)'},
+     'hologram': {'fr': 'Trajectoire ψ vérifiable + faits cités', 'en': 'Verifiable ψ trajectory + cited facts'}},
+]
+
+# Grille tarifaire — 4 offres (montants non localisés, descriptions fr/en)
+_PRICING_PLANS = [
+    {
+        'id': 'essentials', 'price': 2500, 'highlight': False,
+        'name': {'fr': 'Essentials', 'en': 'Essentials'},
+        'description': {
+            'fr': 'Pour les PME qui veulent une IA fiable sans envoyer leurs données.',
+            'en': 'For SMBs that want reliable AI without sending their data anywhere.',
+        },
+        'features': [
+            {'fr': '1 instance Docker on-premise', 'en': '1 on-premise Docker instance'},
+            {'fr': 'Moteur de compression HCV (ratio ×213)', 'en': 'HCV compression engine (×213 ratio)'},
+            {'fr': 'Codec ψ — raisonnement déterministe, 0% hallucination', 'en': 'ψ codec — deterministic reasoning, 0% hallucination'},
+            {'fr': 'Jusqu\'à 10 hologrammes spécialisés', 'en': 'Up to 10 specialized holograms'},
+            {'fr': '5 utilisateurs (admin / viewer / auditor)', 'en': '5 users (admin / viewer / auditor)'},
+            {'fr': 'Journal d\'audit', 'en': 'Audit log'},
+        ],
+    },
+    {
+        'id': 'pro', 'price': 9500, 'highlight': True,
+        'name': {'fr': 'Pro', 'en': 'Pro'},
+        'description': {
+            'fr': 'Pour les ETI qui veulent remplacer leur RAG par des hologrammes.',
+            'en': 'For mid-size companies that want to replace RAG with holograms.',
+        },
+        'features': [
+            {'fr': 'Tout dans Essentials +', 'en': 'Everything in Essentials +'},
+            {'fr': 'Hologrammes illimités', 'en': 'Unlimited holograms'},
+            {'fr': 'Suite de conformité (RGPD, AI Act, HIPAA, SOX)', 'en': 'Compliance suite (GDPR, AI Act, HIPAA, SOX)'},
+            {'fr': 'Création d\'hologrammes depuis documents (no-code)', 'en': 'No-code hologram creation from documents'},
+            {'fr': 'Rappel structurel — hiérarchie documentaire préservée', 'en': 'Structural recall — document hierarchy preserved'},
+            {'fr': 'Déploiement edge / cloud / onprem / mobile', 'en': 'Edge / cloud / onprem / mobile deployment'},
+            {'fr': 'Support prioritaire', 'en': 'Priority support'},
+        ],
+    },
+    {
+        'id': 'ultimate', 'price': 25000, 'highlight': False,
+        'name': {'fr': 'Ultimate', 'en': 'Ultimate'},
+        'description': {
+            'fr': 'Pour les grands comptes avec des besoins spécifiques.',
+            'en': 'For large accounts with specific needs.',
+        },
+        'features': [
+            {'fr': 'Tout dans Pro +', 'en': 'Everything in Pro +'},
+            {'fr': 'Instance dédiée', 'en': 'Dedicated instance'},
+            {'fr': 'Développement d\'hologrammes sur mesure', 'en': 'Custom hologram development'},
+            {'fr': 'SLA 99.9%', 'en': '99.9% SLA'},
+            {'fr': 'Intégrations personnalisées (API sur mesure)', 'en': 'Custom integrations (bespoke API)'},
+            {'fr': 'Formation des équipes', 'en': 'Team training'},
+        ],
+    },
+    {
+        'id': 'airgap', 'price': 50000, 'highlight': False,
+        'name': {'fr': 'Air-Gap', 'en': 'Air-Gap'},
+        'description': {
+            'fr': 'Pour la défense, l\'énergie, les infrastructures critiques.',
+            'en': 'For defense, energy, critical infrastructure.',
+        },
+        'features': [
+            {'fr': 'Tout dans Ultimate +', 'en': 'Everything in Ultimate +'},
+            {'fr': 'Aucune connexion réseau requise', 'en': 'No network connection required'},
+            {'fr': 'Appliance matérielle optionnelle', 'en': 'Optional hardware appliance'},
+            {'fr': 'Sécurité de niveau militaire', 'en': 'Military-grade security'},
+            {'fr': 'Déploiement sur site par nos équipes', 'en': 'On-site deployment by our teams'},
+        ],
+    },
+]
+
+
+def _plan_localized(plan: dict, lang: str) -> dict:
+    """Localise un plan tarifaire (name, description, features)."""
+    return {
+        'id': plan['id'],
+        'price': plan['price'],
+        'highlight': plan['highlight'],
+        'name': _pick(plan['name'], lang),
+        'description': _pick(plan['description'], lang),
+        'features': [_pick(f, lang) for f in plan['features']],
+    }
+
+
+def _manifesto_content(lang: str) -> dict:
+    """Construit le manifeste Post-RAG dans la langue demandée."""
+    en = lang == 'en'
+    return {
+        'title': (
+            'RAG is a hack. Holograms are the solution.'
+            if en else
+            'Le RAG est un bricolage. Les hologrammes sont la solution.'
+        ),
+        'subtitle': (
+            'Why RAG fails — and how we replace it.'
+            if en else
+            'Pourquoi le RAG échoue — et comment nous le remplaçons.'
+        ),
+        'pain_points': [
+            {
+                'title': ('Irreducible hallucinations' if en else 'Hallucinations irréductibles'),
+                'stat': '3–27%',
+                'description': (
+                    'LLMs invent 3–27% of their answers. RAG fixes nothing: the LLM can ignore '
+                    'the retrieved context and generate a false answer with total confidence. In '
+                    'regulated sectors (finance, healthcare, legal), a single invented answer can '
+                    'cost millions.'
+                    if en else
+                    'Les LLMs inventent 3 à 27% de leurs réponses. Le RAG ne corrige rien : le LLM '
+                    'peut ignorer le contexte retrievé et générer une réponse fausse avec une '
+                    'confiance totale. Dans les secteurs régulés (finance, santé, droit), une seule '
+                    'réponse inventée peut coûter des millions.'
+                ),
+            },
+            {
+                'title': ('Data exfiltrated to the cloud' if en else 'Données exfiltrées vers le cloud'),
+                'stat': '100%',
+                'description': (
+                    'Every RAG request sends the context — your confidential documents — to the '
+                    'LLM provider (OpenAI, Anthropic, Google). GDPR, HIPAA, AI Act violations. '
+                    '“On-premise RAG” remains an illusion: the LLM itself lives in the cloud.'
+                    if en else
+                    'Chaque requête RAG envoie le contexte — donc vos documents confidentiels — au '
+                    'fournisseur LLM (OpenAI, Anthropic, Google). Violation RGPD, HIPAA, AI Act. '
+                    'Le « RAG on-premise » reste une illusion : le LLM lui-même est dans le cloud.'
+                ),
+            },
+            {
+                'title': ('Inefficient RAG management' if en else 'Gestion RAG inefficace'),
+                'stat': '≈ 5%',
+                'description': (
+                    'Chunking destroys document structure, vector embeddings are an approximation, '
+                    'updates require re-indexing the whole corpus, and context is limited to '
+                    'retrieved chunks. An expensive infrastructure for mediocre results.'
+                    if en else
+                    'Le chunking détruit la structure des documents, les embeddings vectoriels sont '
+                    'une approximation, la mise à jour exige de ré-indexer tout le corpus, et le '
+                    'contexte est limité aux chunks retrievés. Une infrastructure coûteuse pour un '
+                    'résultat médiocre.'
+                ),
+            },
+        ],
+        'pillars': [
+            {
+                'title': ('Deterministic reasoning' if en else 'Raisonnement déterministe'),
+                'stat': ('0% hallucination' if en else '0% hallucination'),
+                'description': (
+                    'The ψ codec scores 88.4% on GSM8K with 0% hallucination. Every answer is '
+                    'traceable, verifiable, identically reproducible — a fundamental requirement of '
+                    'regulated sectors.'
+                    if en else
+                    'Le codec ψ atteint 88.4% sur GSM8K avec 0% d\'hallucination. Chaque réponse '
+                    'est traçable, vérifiable, reproductible à l\'identique — exigence fondamentale '
+                    'des secteurs régulés.'
+                ),
+            },
+            {
+                'title': ('Sovereign data' if en else 'Données souveraines'),
+                'stat': ('100% on-premise' if en else '100% on-premise'),
+                'description': (
+                    'Zero data leaves the network. HCV compression (×213 ratio) shrinks storage and '
+                    'everything stays encrypted (AES-GCM-256). Privacy is not a promise — it is an '
+                    'architecture.'
+                    if en else
+                    'Zéro donnée ne quitte le réseau. La compression HCV (ratio ×213) réduit le '
+                    'stockage et tout reste chiffré (AES-GCM-256). La privacy n\'est pas une '
+                    'promesse : c\'est une architecture.'
+                ),
+            },
+            {
+                'title': ('Holograms instead of RAG' if en else 'Hologrammes au lieu du RAG'),
+                'stat': ('2 MB per domain' if en else '2 Mo par domaine'),
+                'description': (
+                    'A hologram captures the full knowledge of a domain (finance, HR, legal…) in a '
+                    '2 MB file. No vector DB, no chunking, no embeddings. Instant updates.'
+                    if en else
+                    'Un hologramme capture la connaissance complète d\'un domaine (finance, RH, '
+                    'juridique…) en un fichier de 2 Mo. Pas de vector DB, pas de chunking, pas '
+                    'd\'embeddings. Mise à jour instantanée.'
+                ),
+            },
+            {
+                'title': ('Zero GPU required' if en else 'Zéro GPU requis'),
+                'stat': ('1 CPU is enough' if en else '1 CPU suffit'),
+                'description': (
+                    'Our harmonic AI runs on any enterprise server. No €100k GPU, no cluster, no '
+                    'per-token inference cost.'
+                    if en else
+                    'Notre IA harmonique tourne sur n\'importe quel serveur d\'entreprise. Pas de '
+                    'GPU à 100 000 €, pas de cluster, pas de coût d\'inférence par token.'
+                ),
+            },
+            {
+                'title': ('Total traceability' if en else 'Traçabilité totale'),
+                'stat': ('built-in audit' if en else 'audit intégré'),
+                'description': (
+                    'Every answer cites its source facts (hologram domain + used triplets). '
+                    'Complete audit trail for internal and regulatory audits.'
+                    if en else
+                    'Chaque réponse cite ses faits sources (domaine hologramme + triplets utilisés). '
+                    'Journal d\'audit complet pour vos audits internes et réglementaires.'
+                ),
+            },
+        ],
+    }
 
 
 import re  # Pour compliance check

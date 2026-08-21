@@ -104,34 +104,35 @@ def _grain_seed(t: int) -> int:
     return int((t + 1) * PHI * (1 << 24)) % (1 << 32)
 
 
-def encode_video(frames, use_memory=True, grain=True):
-    """Frames RGB (T, H, W, 3) → dict .hcv2. La mémoire d'or prédit, le
-    résidu est soit compressé par le codec modal (grain=False), soit —
-    GRAIN PRINCIÉ (P4, l'inspiration SDI/GRAIN_SYNTH) — réduit à sa
-    statistique (σ par canal + graine dorée) et RÉGÉNÉRÉ au décodage."""
+def encode_video(frames, use_memory=True, grain=True, mag_dtype=np.float32,
+                 predictor='golden', threshold_scale=1.0):
+    """Frames RGB (T, H, W, 3) → dict .hcv2.
+    predictor : 'golden' (mémoire K(t)) ou 'markov' (t−1, meilleur
+    pour contenu rapide). threshold_scale < 1 garde + de coefficients."""
     ycbcr = np.stack([_to_ycbcr(f.astype(np.float64)) for f in frames])
     T, H, W, C = ycbcr.shape
     w_gold = golden_weights(DEPTH)
     blob_parts, masses, grains = [], [], []
     for c in range(C):
         ch = ycbcr[:, :, :, c]
-        head = [_encode_channel(ch[t]) for t in range(DEPTH)]
+        head = [_encode_channel(ch[t], threshold_scale=threshold_scale) for t in range(DEPTH)]
         if use_memory:
-            rest = _predict(ch, w_gold)
+            if predictor == 'markov':
+                rest = np.stack([ch[t - 1] for t in range(DEPTH, T)])
+            else:
+                rest = _predict(ch, w_gold)
             if grain:
-                # ✨ LE GRAIN PRINCIÉ : la prédiction dorée a retiré le
-                # signal persistant — le résidu EST le grain ; la mémoire
-                # l'oublie (Zeno t^{1,236}) : on stocke σ et une graine
-                # dorée (~16 o/frame), le décodeur le régénère.
+                # ✨ LE GRAIN PRINCIÉ
                 for i, t in enumerate(range(DEPTH, T)):
                     resid = ch[t] - rest[i]
                     grains.append((float(resid.std()), _grain_seed(t)))
                 tail = []
             else:
-                tail = [_encode_channel(ch[t] - rest[i], mag_dtype=np.float32)
+                tail = [_encode_channel(ch[t] - rest[i], mag_dtype=mag_dtype,
+                                        threshold_scale=threshold_scale)
                         for i, t in enumerate(range(DEPTH, T))]
         else:
-            tail = [_encode_channel(ch[t]) for t in range(DEPTH, T)]
+            tail = [_encode_channel(ch[t], threshold_scale=threshold_scale) for t in range(DEPTH, T)]
         masses.extend(p[5] for p in head + tail)
         blob_parts.append(_pack(head))
         blob_parts.append(_pack(tail))
@@ -142,12 +143,14 @@ def encode_video(frames, use_memory=True, grain=True):
     return {'blob': header + b''.join(blob_parts) + grain_blob,
             'mass_kept': float(np.mean(masses)) if masses else 0.0,
             'use_memory': use_memory, 'grain': grain,
+            'predictor': predictor,
             'T': T, 'H': H, 'W': W}
 
 
-def decode_video(enc):
+def decode_video(enc, predictor='golden'):
     """Le vrai décodeur : boucle fermée — la prédiction se fait sur les
-    frames DÉCODÉES (le passé du décodeur, jamais les originales)."""
+    frames DÉCODÉES (le passé du décodeur, jamais les originales).
+    predictor : doit correspondre à encode_video (golden ou markov)."""
     T, H, W, use_memory = np.frombuffer(enc['blob'][:16], np.uint32)
     lengths = np.frombuffer(enc['blob'][16:40], np.uint32)
     w_gold = golden_weights(DEPTH)
@@ -168,10 +171,15 @@ def decode_video(enc):
         for t in range(DEPTH):
             ycbcr[t, :, :, c] = _decode_channel(head[t], (H, W))
         for i, t in enumerate(range(DEPTH, T)):
-            past = np.stack([ycbcr[t - d, :, :, c] for d in range(1, DEPTH + 1)])
-            pred = np.tensordot(w_gold / w_gold.sum(), past, axes=(0, 0))
+            if use_memory and predictor == 'markov':
+                # Markov : prédiction = frame précédente décodée
+                pred = ycbcr[t - 1, :, :, c].copy()
+            elif use_memory:
+                past = np.stack([ycbcr[t - d, :, :, c] for d in range(1, DEPTH + 1)])
+                pred = np.tensordot(w_gold / w_gold.sum(), past, axes=(0, 0))
+            else:
+                pred = 0.0
             if enc.get('grain'):
-                # ✨ le grain RÉGÉNÉRÉ (déterministe, sa statistique stockée)
                 sigma, seed = grain_params[i * 3 + c]
                 ycbcr[t, :, :, c] = pred + _golden_grain(H, W, sigma, seed)
             else:

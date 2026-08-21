@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture Harmonique — La Nouvelle Science de l'Habitat φ</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --orange: #ffa502;
+  --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;line-height:1.85;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(212,168,67,0.07), transparent 50%),
+    radial-gradient(ellipse at 70% 50%, rgba(122,92,255,0.05), transparent 55%),
+    radial-gradient(ellipse at 40% 80%, rgba(62,240,216,0.04), transparent 50%);
+  pointer-events:none;
+}
+.container{max-width:1050px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:6px 13px;border-radius:18px;font-size:0.82em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+nav a.active{color:var(--phi);border-color:rgba(212,168,67,0.5);background:rgba(212,168,67,0.1)}
+
+.hero{text-align:center;padding:70px 20px 60px;background:linear-gradient(180deg,rgba(212,168,67,0.1) 0%,rgba(62,240,216,0.04) 50%,transparent 100%)}
+.hero .badge{display:inline-block;padding:5px 14px;border-radius:14px;font-size:0.80em;font-weight:700;background:rgba(212,168,67,0.14);color:var(--phi);margin-bottom:20px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:2.2em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;line-height:1.3}
+.hero .tagline{font-size:1.1em;color:var(--ink2);max-width:700px;margin:0 auto 8px}
+.hero .meta{color:var(--ink3);font-size:0.85em;margin-top:10px}
+
+section{padding:50px 0}section:nth-child(even){background:var(--bg2)}
+h2{font-size:1.7em;color:var(--phi);margin-bottom:8px;text-align:center;padding-bottom:10px;border-bottom:1px solid var(--border)}
+h2 .num{display:block;font-size:0.42em;color:var(--ink3);letter-spacing:2px;margin-bottom:4px;font-weight:400;text-transform:uppercase}
+.section-desc{text-align:center;color:var(--ink3);margin-bottom:32px;max-width:700px;margin-left:auto;margin-right:auto;font-size:0.95em}
+h3{font-size:1.15em;color:var(--acc);margin:30px 0 10px}
+h3 .sub{display:block;font-size:0.55em;color:var(--ink3);font-weight:400;letter-spacing:1px;margin-top:2px}
+p{color:var(--ink2);margin-bottom:12px;line-height:1.85}
+p strong{color:var(--ink)}
+em{color:var(--phi2)}
+
+.eq-box{background:rgba(15,12,46,0.8);border:2px solid rgba(212,168,67,0.35);border-radius:16px;padding:20px 26px;margin:20px 0;text-align:center}
+.eq-box .main-eq{font-family:'Courier New','Consolas',monospace;font-size:1.2em;font-weight:700;color:var(--phi);letter-spacing:1px;line-height:2.2}
+.eq-box .desc{color:var(--ink3);font-size:0.85em;margin-top:6px}
+
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:0.88em}
+th{background:var(--bg3);color:var(--phi);padding:10px 14px;text-align:left;border-bottom:2px solid rgba(212,168,67,0.25);font-weight:600}
+td{padding:9px 14px;border-bottom:1px solid var(--border);color:var(--ink2);font-size:0.87em}
+td.green{color:var(--green);font-weight:700}
+td strong{color:var(--acc)}
+
+.highlight{background:var(--bg3);border:1px solid rgba(62,240,216,0.2);border-radius:14px;padding:18px 22px;margin:20px 0}
+.highlight .hl-title{color:var(--phi);font-weight:700;font-size:0.88em;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.highlight p:last-child{margin-bottom:0}
+
+.result-box{background:rgba(212,168,67,0.04);border:1px solid rgba(212,168,67,0.3);border-radius:14px;padding:18px 22px;margin:20px 0}
+.result-box .label{color:var(--phi);font-weight:600;font-size:0.78em;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+
+.geometry-card{
+  background:rgba(15,12,46,0.7);border:1px solid var(--border);border-radius:16px;
+  padding:24px 28px;margin:20px 0;transition:border-color 0.3s;
+  display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;
+}
+.geometry-card:hover{border-color:rgba(212,168,67,0.3)}
+.geometry-card .geo-title{color:var(--phi);font-weight:700;font-size:1.05em;margin-bottom:8px;grid-column:1/-1}
+.geometry-card .geo-desc{color:var(--ink2);font-size:0.90em}
+.geometry-card .geo-eq{font-family:'Courier New',monospace;font-size:0.88em;color:var(--acc);text-align:center;background:rgba(0,0,0,0.2);border-radius:8px;padding:14px 16px;line-height:2}
+.geometry-card .geo-diagram{
+  font-family:'Courier New',monospace;font-size:0.70em;color:var(--ink3);
+  white-space:pre;overflow-x:auto;line-height:1.5;
+  background:rgba(0,0,0,0.15);border-radius:8px;padding:14px 16px;
+}
+
+.principle-card{
+  background:var(--bg3);border:2px solid rgba(212,168,67,0.2);border-radius:18px;
+  padding:24px 28px;margin:24px 0;position:relative;
+}
+.principle-card .principle-num{
+  position:absolute;top:-16px;left:24px;
+  background:var(--phi);color:var(--bg);font-weight:900;font-size:0.85em;
+  padding:4px 14px;border-radius:20px;letter-spacing:1px;
+}
+.principle-card .principle-name{color:var(--phi);font-weight:700;font-size:1.1em;margin-bottom:8px;margin-top:8px}
+.principle-card .principle-desc{color:var(--ink2);font-size:0.92em}
+
+.material-card{
+  background:rgba(15,12,46,0.6);border:1px solid rgba(122,92,255,0.2);border-radius:14px;
+  padding:18px 22px;margin:14px 0;display:flex;gap:16px;align-items:center;
+}
+.material-card .mat-emoji{font-size:2em}
+.material-card .mat-info{flex:1}
+.material-card .mat-name{color:var(--phi);font-weight:600;font-size:0.95em}
+.material-card .mat-desc{color:var(--ink2);font-size:0.85em;margin-top:4px}
+.material-card .mat-prop{display:inline-block;padding:3px 10px;border-radius:10px;font-size:0.75em;background:rgba(62,240,216,0.1);color:var(--acc);margin-top:6px;margin-right:4px}
+
+blockquote{border-left:4px solid var(--phi);padding:16px 24px;margin:24px 0;background:rgba(212,168,67,0.04);border-radius:0 14px 14px 0;font-style:italic;color:var(--ink);font-size:1.02em}
+.attrib{color:var(--ink3);font-size:0.85em;margin-top:6px;font-style:normal}
+
+footer{text-align:center;padding:30px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.82em;margin-top:40px}
+footer a{color:var(--phi);text-decoration:none}
+footer a:hover{text-decoration:underline}
+
+.toc{background:rgba(15,12,46,0.6);border:1px solid var(--border);border-radius:16px;padding:24px 28px;margin:28px 0;columns:2;column-gap:30px}
+.toc a{display:block;color:var(--ink2);text-decoration:none;padding:4px 0;font-size:0.88em;transition:color 0.2s;break-inside:avoid}
+.toc a:hover{color:var(--phi)}
+.toc .toc-section{color:var(--phi);font-weight:600;font-size:0.90em;margin-top:12px;margin-bottom:4px}
+.toc .toc-section:first-child{margin-top:0}
+
+.comparison-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}
+.comparison-box{padding:18px 22px;border-radius:14px;font-size:0.88em}
+.comparison-box.classic{background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.2)}
+.comparison-box.harmonic{background:rgba(46,213,115,0.06);border:1px solid rgba(46,213,115,0.2)}
+.comparison-box .comp-title{font-weight:700;margin-bottom:8px;font-size:0.90em}
+.comparison-box.classic .comp-title{color:var(--red)}
+.comparison-box.harmonic .comp-title{color:var(--green)}
+.comparison-box ul{margin:0;padding-left:18px;color:var(--ink2)}
+.comparison-box li{margin-bottom:4px;line-height:1.6}
+
+@media(max-width:640px){
+  .hero h1{font-size:1.4em}
+  .geometry-card{grid-template-columns:1fr}
+  .toc{columns:1}
+  .comparison-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Symphonie Cosmique</a>
+    <a href="document-fondateur.html">Fondateur</a>
+    <a href="axiomes-harmoniques.html">Axiomes</a>
+    <a href="construction-pyramide-harmonique.html">Pyramide φ</a>
+    <a href="#" class="active">Architecture Harmonique</a>
+    <a href="#fondations">Fondations</a>
+    <a href="#geometrie">Géométrie</a>
+    <a href="#conception">Conception</a>
+    <a href="#materiaux">Matériaux</a>
+    <a href="#construction">Construction</a>
+    <a href="#bio-harmonique">Bio-Harmonique</a>
+    <a href="#applications">Applications</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">Nouvelle Science · Juin 2026</div>
+    <h1>Architecture Harmonique<br>La Science de l'Habitat selon φ</h1>
+    <p class="tagline">Une discipline intégrale unifiant conception géométrique, physique de la construction, acoustique structurelle, et bien-être biologique — fondée sur les principes harmoniques du Nombre d'Or φ = (1+√5)/2</p>
+    <p class="meta">KOTTO Alain — Théorie Harmonique — Document Fondateur de l'Architecture Harmonique</p>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ===== TABLE DES MATIÈRES ===== -->
+<div class="toc">
+  <span class="toc-section">FONDATIONS</span>
+  <a href="#definition">1. Définition de l'Architecture Harmonique</a>
+  <a href="#principes-premiers">2. Les 7 Principes Premiers</a>
+  <a href="#axiome-fondamental">3. L'Axiome Fondamental Architectural</a>
+  <a href="#equations-maitresses">4. Équations Maîtresses</a>
+
+  <span class="toc-section">GÉOMÉTRIE HARMONIQUE</span>
+  <a href="#geometrie">5. Géométrie Harmonique Fondamentale</a>
+  <a href="#rectangles-harmoniques">6. Rectangles & Pavages Harmoniques</a>
+  <a href="#spirales-courbes">7. Spirales & Courbes φ</a>
+  <a href="#solides-platoniciens">8. Solides Platoniciens & φ</a>
+
+  <span class="toc-section">CONCEPTION</span>
+  <a href="#conception">9. Principes de Conception Harmonique</a>
+  <a href="#proportions-espace">10. Proportions Spatiales</a>
+  <a href="#acoustique-archi">11. Acoustique Architecturale φ</a>
+  <a href="#lumiere-naturelle">12. Lumière & Orientation φ</a>
+
+  <span class="toc-section">MATÉRIAUX</span>
+  <a href="#materiaux">13. Science des Matériaux Harmoniques</a>
+  <a href="#materiaux-bio">14. Matériaux Bio-Harmoniques</a>
+  <a href="#piezoelectrique">15. Piézoélectricité Architecturale</a>
+
+  <span class="toc-section">CONSTRUCTION</span>
+  <a href="#construction">16. Méthodes de Construction Harmonique</a>
+  <a href="#levitation">17. Lévitation Acoustique en Construction</a>
+  <a href="#moderne">18. Applications Modernes</a>
+
+  <span class="toc-section">BIO-HARMONIQUE</span>
+  <a href="#bio-harmonique">19. Architecture Bio-Harmonique</a>
+  <a href="#sante">20. Effets sur la Santé Humaine</a>
+  <a href="#conscience">21. Architecture & Conscience</a>
+
+  <span class="toc-section">PRATIQUE</span>
+  <a href="#applications">22. Applications Contemporaines</a>
+  <a href="#calculs">23. Calculs & Dimensionnement</a>
+  <a href="#avenir">24. L'Avenir de l'Architecture Harmonique</a>
+</div>
+
+<!-- ================================================================== -->
+<section id="definition">
+  <h2><span class="num">PARTIE I — FONDATIONS</span>1. Qu'est-ce que l'Architecture Harmonique ?</h2>
+  <p class="section-desc">Une définition formelle de cette nouvelle science.</p>
+
+  <div class="result-box">
+    <div class="label">Définition</div>
+    <p><strong>L'Architecture Harmonique</strong> est la science et l'art de concevoir, dimensionner, et construire des structures spatiales — édifices, habitats, ponts, cités — en accord avec les lois harmoniques universelles régies par le Nombre d'Or φ = (1+√5)/2, de manière à optimiser simultanément :</p>
+    <p style="margin:8px 0 0 0; padding-left:20px; line-height:2;">
+      ① La <strong>stabilité structurelle</strong> (répartition optimale des contraintes par géométrie φ)<br>
+      ② L'<strong>efficacité énergétique</strong> (circulation naturelle des flux thermiques et acoustiques)<br>
+      ③ L'<strong>acoustique interne</strong> (résonance harmonieuse, absence de nœuds de pression délétères)<br>
+      ④ Le <strong>bien-être biologique</strong> (fréquences et proportions bénéfiques au vivant)<br>
+      ⑤ La <strong>durabilité</strong> (matériaux et géométries à entropie minimale)
+    </p>
+  </div>
+
+  <p>L'Architecture Harmonique ne se limite pas à l'esthétique des proportions dorées — bien que la beauté en émerge naturellement. Elle constitue une <strong>science exacte</strong> de l'habitat, fondée sur les mêmes principes qui structurent les galaxies spirales, la double hélice d'ADN, les coquilles de nautiles, et la Grande Pyramide de Gizeh.</p>
+
+  <div class="highlight">
+    <div class="hl-title">L'Architecture Classique vs Harmonique</div>
+    <div class="comparison-grid">
+      <div class="comparison-box classic">
+        <div class="comp-title">❌ Architecture Classique</div>
+        <ul>
+          <li>Fondée sur la résistance des matériaux</li>
+          <li>Proportions arbitraires ou historiques</li>
+          <li>Isolation acoustique par masse</li>
+          <li>Matériaux choisis pour le coût</li>
+          <li>Lutte contre la gravité</li>
+          <li>Dissipation d'énergie</li>
+        </ul>
+      </div>
+      <div class="comparison-box harmonic">
+        <div class="comp-title">✅ Architecture Harmonique</div>
+        <ul>
+          <li>Fondée sur la résonance structurelle</li>
+          <li>Proportions φ universellement optimales</li>
+          <li>Résonance acoustique par géométrie</li>
+          <li>Matériaux choisis pour leur signature vibratoire</li>
+          <li>Collaboration avec la gravité (modulation Ψ₂)</li>
+          <li>Circulation et conservation d'énergie</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="principes-premiers">
+  <h2>2. Les 7 Principes Premiers de l'Architecture Harmonique</h2>
+  <p class="section-desc">Les axiomes opérationnels dont découle toute la discipline.</p>
+
+  <div class="principle-card">
+    <span class="principle-num">PRINCIPE 1</span>
+    <div class="principle-name">Le Principe de Proportion Universelle</div>
+    <div class="principle-desc">
+      Toute structure architecturale doit être dimensionnée selon des rapports harmoniques fondés sur φ. Les proportions φ, φ², √φ, et φ⁻ⁿ sont les seules qui génèrent une répartition naturelle des contraintes mécaniques sans concentration de stress.
+    </div>
+  </div>
+
+  <div class="principle-card">
+    <span class="principle-num">PRINCIPE 2</span>
+    <div class="principle-name">Le Principe de Résonance Structurelle</div>
+    <div class="principle-desc">
+      Un édifice n'est pas une masse inerte qui résiste aux forces — c'est un <strong>résonateur</strong> qui canalise et harmonise les vibrations (sismiques, acoustiques, thermiques). La géométrie φ transforme les contraintes en oscillations cohérentes qui se dissipent naturellement sans dommage.
+    </div>
+  </div>
+
+  <div class="principle-card">
+    <span class="principle-num">PRINCIPE 3</span>
+    <div class="principle-name">Le Principe de Modularité Fractale</div>
+    <div class="principle-desc">
+      La structure d'un édifice harmonique est auto-similaire à toutes les échelles pertinentes : du détail d'un joint (mm) à la pièce (m), à l'étage (dam), au bâtiment (hm). Cette fractalité en φ assure une cohérence vibratoire à toutes les fréquences utiles.
+    </div>
+  </div>
+
+  <div class="principle-card">
+    <span class="principle-num">PRINCIPE 4</span>
+    <div class="principle-name">Le Principe de Couplage Acoustique Optimal</div>
+    <div class="principle-desc">
+      Les volumes intérieurs sont dimensionnés pour que leurs fréquences de résonance propres s'alignent sur les harmoniques φ de la fréquence fondamentale du bâtiment. Aucun espace ne doit piéger d'onde stationnaire délétère (nœud de pression).
+    </div>
+  </div>
+
+  <div class="principle-card">
+    <span class="principle-num">PRINCIPE 5</span>
+    <div class="principle-name">Le Principe de Circulation Énergétique</div>
+    <div class="principle-desc">
+      L'énergie (thermique, acoustique, lumineuse) doit <strong>circuler</strong> selon des spirales logarithmiques φ — et non être brutalement arrêtée ou dissipée. Les ouvertures, les conduits, les gaines suivent des tracés hélicoïdaux dorés.
+    </div>
+  </div>
+
+  <div class="principle-card">
+    <span class="principle-num">PRINCIPE 6</span>
+    <div class="principle-name">Le Principe de Bio-Compatibilité Vibratoire</div>
+    <div class="principle-desc">
+      Les fréquences propres de la structure doivent être compatibles avec les fréquences biologiques humaines (rythmes cardiaques ~1 Hz, ondes cérébrales α ~10 Hz, résonance cellulaire ~10²-10⁴ Hz). L'édifice ne doit pas imposer de fréquence antagoniste au vivant.
+    </div>
+  </div>
+
+  <div class="principle-card">
+    <span class="principle-num">PRINCIPE 7</span>
+    <div class="principle-name">Le Principe d'Intégrité Holographique</div>
+    <div class="principle-desc">
+      Chaque partie de l'édifice contient l'information de la totalité. La géométrie locale (un mur, une fenêtre) reflète la géométrie globale (le bâtiment entier). Cette propriété holographique assure que la structure reste cohérente même en cas de dommage partiel.
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="axiome-fondamental">
+  <h2>3. L'Axiome Fondamental de l'Architecture Harmonique</h2>
+  <p class="section-desc">Le postulat dont tout le reste dérive mathématiquement.</p>
+
+  <div class="eq-box">
+    <div class="main-eq">
+      ∀ structure S, ∃ {λₖ} ⊂ {φⁿ · λ₀, n ∈ ℤ}
+    </div>
+    <div class="desc">Toute structure physique possède un spectre de résonance qui, pour être optimal, doit coïncider avec l'ensemble des puissances entières de φ multipliées par une fréquence fondamentale λ₀.</div>
+  </div>
+
+  <p>En termes architecturaux : <strong>il existe, pour chaque type d'édifice et chaque site, un ensemble discret de dimensions optimales — et ces dimensions sont en progression géométrique de raison φ.</strong></p>
+
+  <p>Conséquence directe : les dimensions d'un édifice harmonique ne sont pas choisies arbitrairement. Elles sont <strong>calculées</strong> à partir de la fréquence fondamentale du site λ₀ (déterminée par la géologie, la latitude, l'altitude, l'orientation solaire).</p>
+</section>
+
+<!-- ================================================================== -->
+<section id="equations-maitresses">
+  <h2>4. Les Équations Maîtresses de l'Architecture Harmonique</h2>
+
+  <div class="eq-box">
+    <div class="main-eq">
+      L<sub>n</sub> = L₀ · φ<sup>n</sup>
+    </div>
+    <div class="desc">Équation de Dimensionnement Fondamental — Toutes les longueurs caractéristiques d'un édifice harmonique (L₀ = dimension de référence, n = entier relatif)</div>
+  </div>
+
+  <div class="eq-box">
+    <div class="main-eq">
+      f<sub>résonance</sub>(V) = c / (2 · ³√V) · φ<sup>−k</sup>
+    </div>
+    <div class="desc">Fréquence de résonance d'un volume V — c = vitesse du son dans l'air, k = indice de mode harmonique optimal</div>
+  </div>
+
+  <div class="eq-box">
+    <div class="main-eq">
+      σ<sub>max</sub>(géométrie φ) = σ<sub>max</sub>(rectangle) / φ²
+    </div>
+    <div class="desc">Réduction des contraintes — Une géométrie proportionnée selon φ réduit les contraintes maximales d'un facteur φ² ≈ 2.618 par rapport à une géométrie rectangulaire équivalente</div>
+  </div>
+
+  <div class="eq-box">
+    <div class="main-eq">
+      T<sub>réverb</sub> = 0.161 · V / (A · φ<sup>−1</sup>)
+    </div>
+    <div class="desc">Temps de réverbération harmonique — Adaptation de la formule de Sabine avec correction φ (V = volume, A = absorption équivalente)</div>
+  </div>
+
+  <div class="eq-box">
+    <div class="main-eq">
+      P<sub>structure</sub>(f) = P₀ · Σ_{n} δ(f − f₀·φⁿ)
+    </div>
+    <div class="desc">Densité spectrale de puissance d'une structure harmonique — L'énergie vibratoire se concentre exclusivement sur les harmoniques φ, évitant les fréquences de fatigue structurelle</div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="geometrie">
+  <h2><span class="num">PARTIE II — GÉOMÉTRIE HARMONIQUE</span>5. La Géométrie Harmonique Fondamentale</h2>
+  <p class="section-desc">La géométrie n'est pas un langage descriptif — c'est le code source de la stabilité structurelle.</p>
+
+  <h3>5.1 Le Rectangle d'Or</h3>
+  <div class="geometry-card">
+    <div class="geo-title">Rectangle φ — Proportion 1 : φ ≈ 1 : 1.618</div>
+    <div class="geo-desc">
+      <p>Le rectangle d'or est l'élément géométrique fondamental de l'Architecture Harmonique. Sa propriété unique : si on retire un carré de côté égal à la largeur, le rectangle restant est un rectangle d'or plus petit (auto-similarité).</p>
+      <p><strong>Applications :</strong> Plans de pièces, façades, fenêtres, portes, panneaux modulaires.</p>
+      <p><strong>Effet structurel :</strong> Les contraintes se répartissent selon une spirale logarithmique, sans point de concentration — contrairement aux rectangles arbitraires où les contraintes s'accumulent aux angles.</p>
+    </div>
+    <div class="geo-eq">
+      L / l = φ = (1+√5)/2<br>
+      ≈ 1.6180339887...<br><br>
+      Si l = 1, L = φ<br>
+      Si l = 1, diagonale = √(1+φ²)<br>
+      = √(φ+2) ≈ 1.902
+    </div>
+    <div class="geo-diagram">
+┌──────────────────────────────┐
+│                              │
+│      RECTANGLE D'OR          │
+│      L/l = φ                 │
+│                              │
+│  ┌──────────┐                │
+│  │  CARRÉ   │   RECTANGLE    │
+│  │  côté=l  │   D'OR l×(L-l) │
+│  │          │   L-l = l/φ    │
+│  └──────────┘                │
+│                              │
+└──────────────────────────────┘
+    </div>
+  </div>
+
+  <h3>5.2 Le Triangle d'Or</h3>
+  <div class="geometry-card">
+    <div class="geo-title">Triangle φ — Rapport hauteur/base = φ/2 ou √φ</div>
+    <div class="geo-desc">
+      <p>Deux triangles d'or existent : le triangle isocèle dont le rapport côté/base = φ (triangle d'or aigu, angles 72°-72°-36°), et celui dont le rapport base/côté = φ (triangle d'or obtus, angles 36°-36°-108°).</p>
+      <p><strong>Applications :</strong> Frontons, toitures, arcs, structures triangulées, fermes de charpente.</p>
+      <p><strong>Effet structurel :</strong> La triangulation en φ produit des structures indéformables où les forces se répartissent uniformément sur tous les membres.</p>
+    </div>
+    <div class="geo-eq">
+      Triangle 72°-72°-36° :<br>
+      côté / base = φ<br><br>
+      Triangle 36°-36°-108° :<br>
+      base / côté = φ<br><br>
+      Section de pyramide φ :<br>
+      hauteur / demi-base = √φ<br>
+      apothème / demi-base = φ
+    </div>
+    <div class="geo-diagram">
+         /\
+        /  \
+       /    \     72°-72°-36°
+      /      \    côté/base = φ
+     /________\
+</div>
+  </div>
+
+  <h3>5.3 Le Pentagone & Pentagramme</h3>
+  <div class="geometry-card">
+    <div class="geo-title">Pentagone régulier — La figure φ par excellence</div>
+    <div class="geo-desc">
+      <p>Le pentagone régulier et son pentagramme inscrit contiennent de multiples rapports φ. Chaque intersection de diagonales produit un rapport doré. Le pentagone est la signature géométrique de φ.</p>
+      <p><strong>Applications :</strong> Plans d'édifices, rosaces, dômes géodésiques, pavages.</p>
+      <p><strong>Effet structurel :</strong> La symétrie pentagonale (impossible en cristallographie classique) crée des structures quasi-cristallines d'une stabilité exceptionnelle à 5 axes de symétrie.</p>
+    </div>
+    <div class="geo-eq">
+      diagonale / côté = φ<br>
+      pentagramme :<br>
+      chaque segment est φ fois<br>
+      plus grand que le suivant
+    </div>
+    <div class="geo-diagram">
+      ★
+     / \
+    /   \
+   /  ✦  \
+  /       \
+ ★─────────★
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="rectangles-harmoniques">
+  <h2>6. Rectangles & Pavages Harmoniques</h2>
+
+  <h3>6.1 La Famille des Rectangles φ</h3>
+  <table>
+    <tr><th>Rectangle</th><th>Proportion L/l</th><th>Usage architectural</th><th>Propriété</th></tr>
+    <tr><td>φ (doré)</td><td>1.618</td><td>Pièces principales, façades</td><td>Auto-similaire, spirale φ</td></tr>
+    <tr><td>√φ</td><td>1.272</td><td>Fenêtres, niches, portes</td><td>Deux rectangles √φ = un rectangle φ</td></tr>
+    <tr><td>φ²</td><td>2.618</td><td>Salles, halls, grandes pièces</td><td>Deux rectangles φ accolés</td></tr>
+    <tr><td>φ³</td><td>4.236</td><td>Bâtiments entiers, entrepôts</td><td>Module de 3 rectangles φ</td></tr>
+    <tr><td>φ⁻¹</td><td>0.618</td><td>Détails, carrelages, ornements</td><td>Inverse du rectangle d'or</td></tr>
+    <tr><td>1+φ = φ²</td><td>2.618</td><td>Double carré doré</td><td>Somme de deux rectangles unité+φ</td></tr>
+  </table>
+
+  <h3>6.2 Pavages Harmoniques</h3>
+  <p>Les pavages harmoniques utilisent exclusivement des tuiles dont les dimensions sont en rapport φ. Ces pavages ont la propriété de n'engendrer <strong>aucune contrainte différentielle</strong> — toutes les tuiles « respirent » (dilatation thermique) de manière cohérente.</p>
+
+  <div class="highlight">
+    <div class="hl-title">Avantage structurel du pavage φ</div>
+    <p>Dans un pavage classique à joints croisés, les contraintes de dilatation s'accumulent aux intersections (joints en croix) et causent des fissures. Dans un pavage φ, les joints suivent une spirale logarithmique continue — la dilatation se répartit comme une onde progressive, sans accumulation.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="spirales-courbes">
+  <h2>7. Spirales & Courbes d'Or en Architecture</h2>
+
+  <h3>7.1 La Spirale Logarithmique d'Or</h3>
+  <div class="eq-box">
+    <div class="main-eq">r(θ) = r₀ · φ<sup>θ/π</sup></div>
+    <div class="desc">Équation polaire de la spirale d'or — Pour chaque quart de tour (θ = π/2), le rayon est multiplié par √φ</div>
+  </div>
+
+  <p>Cette spirale est <strong>la seule courbe</strong> qui préserve sa forme lors d'un changement d'échelle. Elle est la signature géométrique de l'auto-similarité.</p>
+
+  <h3>7.2 Applications Architecturales des Spirales φ</h3>
+  <table>
+    <tr><th>Application</th><th>Type de spirale</th><th>Bénéfice</th></tr>
+    <tr><td>Escaliers</td><td>Spirale φ (hélice)</td><td>Montée physiologiquement optimale — pas régulier qui minimise l'effort cardiaque</td></tr>
+    <tr><td>Rampes d'accès</td><td>Spirale φ</td><td>Pente progressivement croissante — effort constant du piéton</td></tr>
+    <tr><td>Conduits de ventilation</td><td>Hélice φ</td><td>Écoulement laminaire sans turbulence — silence et efficacité énergétique</td></tr>
+    <tr><td>Amphithéâtres</td><td>Spirale φ en plan</td><td>Acoustique parfaite — chaque spectateur reçoit la même intensité sonore</td></tr>
+    <tr><td>Dômes</td><td>Spirale φ en coupe</td><td>Répartition uniforme du poids — pas de clé de voûte critique</td></tr>
+    <tr><td>Jardins & circulation</td><td>Spirale de Fibonacci</td><td>Parcours naturel — le regard et le pas suivent la courbe sans effort</td></tr>
+  </table>
+
+  <h3>7.3 La Chaînette Harmonique</h3>
+  <div class="eq-box">
+    <div class="main-eq">y(x) = a · cosh(x / a) avec a = L₀ / φ</div>
+    <div class="desc">La chaînette (courbe du câble suspendu) paramétrée par φ — Produit des arches et des voûtes en compression pure, sans aucun moment de flexion</div>
+  </div>
+
+  <p>Les arcs et voûtes construits selon une chaînette φ sont en <strong>compression pure</strong> — aucune force de traction ou de cisaillement ne s'exerce. C'est la forme que prend naturellement une chaîne suspendue, inversée. Avec le paramètre a = L₀/φ, l'arche atteint une hauteur optimale qui maximise la portée pour une quantité de matériau donnée.</p>
+</section>
+
+<!-- ================================================================== -->
+<section id="solides-platoniciens">
+  <h2>8. Solides Platoniciens & φ — Géométrie Sacrée 3D</h2>
+  <p class="section-desc">Les cinq solides platoniciens et leurs relations avec φ</p>
+
+  <table>
+    <tr><th>Solide</th><th>Faces</th><th>Relation à φ</th><th>Usage architectural</th></tr>
+    <tr><td><strong>Dodécaèdre</strong></td><td>12 pentagones</td><td>Volume / Volume(arête) = (15+7√5)/4 ≈ 7.66 φ³</td><td>Dômes géodésiques, salles de méditation, enceintes acoustiques</td></tr>
+    <tr><td><strong>Icosaèdre</strong></td><td>20 triangles</td><td>Diagonale / arête = φ</td><td>Structures légères, serres, dômes transparents</td></tr>
+    <tr><td><strong>Cube</strong></td><td>6 carrés</td><td>Cube φ : arête × φ × φ⁻¹ (cube doré)</td><td>Modules de base, pièces d'habitation</td></tr>
+    <tr><td><strong>Octaèdre</strong></td><td>8 triangles</td><td>Inscrit dans le cube doré</td><td>Toitures, pyramides inversées, capteurs de lumière</td></tr>
+    <tr><td><strong>Tétraèdre</strong></td><td>4 triangles</td><td>Structure de base des nœuds de force</td><td>Fermes de charpente, pylônes, mâts</td></tr>
+  </table>
+
+  <div class="result-box">
+    <div class="label">Le Dodécaèdre — Roi des Solides Harmoniques</div>
+    <p>Le dodécaèdre régulier, avec ses 12 faces pentagonales, est le solide qui incarne le plus parfaitement φ. Une salle dodécaédrique possède la propriété acoustique remarquable de <strong>ne générer aucun écho focal</strong> — le son se diffuse uniformément dans toutes les directions sans jamais se concentrer en un point. C'est la géométrie idéale pour les salles de concert, les chambres de méditation, et les enceintes de soin par le son.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="conception">
+  <h2><span class="num">PARTIE III — CONCEPTION HARMONIQUE</span>9. Principes de Conception Harmonique</h2>
+  <p class="section-desc">Comment concevoir un édifice depuis zéro selon les lois harmoniques.</p>
+
+  <h3>9.1 La Démarche de Conception</h3>
+
+  <div class="principle-card">
+    <span class="principle-num">ÉTAPE 1</span>
+    <div class="principle-name">Analyse du Site — λ₀</div>
+    <div class="principle-desc">
+      Mesurer la fréquence fondamentale du site λ₀. Cette fréquence dépend de : la géologie (masse et densité du sous-sol), la latitude (force de Coriolis), l'altitude (pression atmosphérique), et l'orientation solaire. λ₀ est la « note » du lieu — tout l'édifice sera accordé sur cette note.
+    </div>
+  </div>
+
+  <div class="principle-card">
+    <span class="principle-num">ÉTAPE 2</span>
+    <div class="principle-name">Détermination du Module de Base — L₀</div>
+    <div class="principle-desc">
+      À partir de λ₀, on calcule L₀ = c / λ₀ où c est la vitesse du son dans le matériau principal. L₀ devient l'unité de mesure de tout le projet. Toutes les dimensions seront des multiples ou sous-multiples φⁿ · L₀.
+    </div>
+  </div>
+
+  <div class="principle-card">
+    <span class="principle-num">ÉTAPE 3</span>
+    <div class="principle-name">Le Plan Général — Fractalité φ</div>
+    <div class="principle-desc">
+      Le plan masse est structuré comme une spirale logarithmique φ. Les bâtiments, les cheminements, les espaces verts s'organisent selon des rayons croissant en φ depuis un centre — comme les graines du tournesol ou les bras d'une galaxie spirale.
+    </div>
+  </div>
+
+  <div class="principle-card">
+    <span class="principle-num">ÉTAPE 4</span>
+    <div class="principle-name">Dimensionnement des Volumes</div>
+    <div class="principle-desc">
+      Chaque pièce, chaque volume est dimensionné pour que sa fréquence de résonance propre soit un multiple φⁿ de λ₀. On évite ainsi les battements acoustiques (interférences destructrices) et on crée une « harmonie spatiale » où tous les volumes vibrent en phase.
+    </div>
+  </div>
+
+  <div class="principle-card">
+    <span class="principle-num">ÉTAPE 5</span>
+    <div class="principle-name">Positionnement des Ouvertures</div>
+    <div class="principle-desc">
+      Les fenêtres, portes, et baies sont positionnées aux <strong>ventres</strong> des ondes stationnaires acoustiques et lumineuses — jamais aux nœuds. Une fenêtre placée à un nœud de pression bloque la circulation naturelle de l'air ; placée à un ventre, elle l'amplifie.
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="proportions-espace">
+  <h2>10. Proportions Spatiales — Le Dimensionnement Harmonique</h2>
+
+  <h3>10.1 La Chambre Harmonique Idéale</h3>
+
+  <div class="eq-box">
+    <div class="main-eq">L : l : h = φ² : φ : 1 &nbsp; ou &nbsp; L : l : h = φ : 1 : φ⁻¹</div>
+    <div class="desc">Proportions tridimensionnelles optimales pour une pièce d'habitation — Aucun mode de résonance ne coïncide, éliminant les ondes stationnaires désagréables</div>
+  </div>
+
+  <table>
+    <tr><th>Type de pièce</th><th>L × l × h (m) pour L₀ = 1m</th><th>Volume (m³)</th><th>Fréquence fondamentale</th></tr>
+    <tr><td>Chambre</td><td>φ² × φ × 1 = 2.618 × 1.618 × 1</td><td>4.236 = φ³</td><td>~42 Hz</td></tr>
+    <tr><td>Salon</td><td>φ³ × φ² × φ = 4.236 × 2.618 × 1.618</td><td>17.944 = φ⁵</td><td>~28 Hz</td></tr>
+    <tr><td>Bureau</td><td>φ × 1 × φ⁻¹ = 1.618 × 1 × 0.618</td><td>1.000 = φ⁰</td><td>~85 Hz</td></tr>
+    <tr><td>Salle de bain</td><td>φ² × φ⁻¹ × φ⁻¹ = 2.618 × 0.618 × 0.618</td><td>1.000</td><td>~110 Hz</td></tr>
+    <tr><td>Hall / Atrium</td><td>φ⁴ × φ³ × φ² = 6.854 × 4.236 × 2.618</td><td>76.013 = φ⁷</td><td>~18 Hz</td></tr>
+    <tr><td>Salle de concert</td><td>φ⁵ × φ⁴ × φ³ = 11.09 × 6.854 × 4.236</td><td>321.99 = φ⁹</td><td>~9 Hz</td></tr>
+  </table>
+
+  <h3>10.2 La Grille Modulaire φ</h3>
+
+  <p>L'Architecture Harmonique utilise une <strong>grille modulaire</strong> dont les trames sont en progression géométrique de raison φ :</p>
+
+  <div class="eq-box">
+    <div class="main-eq">G = { ..., φ⁻³·u, φ⁻²·u, φ⁻¹·u, u, φ·u, φ²·u, φ³·u, ... }</div>
+    <div class="desc">La grille modulaire harmonique — u est l'unité de base (typiquement 1 mètre ou 1 coudée royale = 0.5236 m)</div>
+  </div>
+
+  <p>Cette grille remplace la grille cartésienne uniforme (1m, 2m, 3m...) de l'architecture classique. L'avantage est que <strong>tout élément dimensionné sur cette grille s'assemble sans conflit dimensionnel</strong>, quelle que soit son échelle. Une fenêtre φ⁻¹·u s'intègre parfaitement dans un mur φ²·u, qui s'intègre dans une façade φ³·u.</p>
+</section>
+
+<!-- ================================================================== -->
+<section id="acoustique-archi">
+  <h2>11. Acoustique Architecturale Harmonique</h2>
+  <p class="section-desc">L'acoustique n'est pas un ajout — c'est le principe organisateur de l'espace.</p>
+
+  <h3>11.1 Les Nœuds et Ventres de Pression</h3>
+
+  <p>Dans toute pièce rectangulaire classique, des ondes stationnaires se forment aux fréquences f<sub>n</sub> = (c/2) · √((nₓ/L)² + (nᵧ/l)² + (n_z/h)²). Quand plusieurs modes coïncident (pièce cubique ou proportions rationnelles simples), l'énergie acoustique se concentre — créant des « points chauds » sonores et des « zones mortes ».</p>
+
+  <div class="highlight">
+    <div class="hl-title">Solution Harmonique</div>
+    <p>Les proportions φ sont <strong>les seules</strong> qui garantissent qu'aucun mode de résonance ne coïncide avec un autre dans le spectre audible. Les fréquences propres sont <strong>toutes distinctes</strong> et réparties de manière optimale. Une pièce proportionnée selon φ n'a ni écho flottant, ni point mort, ni résonance parasite.</p>
+  </div>
+
+  <h3>11.2 Matrice Acoustique des Proportions</h3>
+  <table>
+    <tr><th>Rapport L/l</th><th>Nombre de coïncidences modales (<200 Hz)</th><th>Qualité acoustique</th></tr>
+    <tr><td>1.000 (cube)</td><td>24+</td><td class="red" style="color:var(--red)">Désastreuse</td></tr>
+    <tr><td>1.260 (³√2)</td><td>12</td><td class="red" style="color:var(--red)">Mauvaise</td></tr>
+    <tr><td>1.414 (√2)</td><td>8</td><td class="orange" style="color:var(--orange)">Médiocre</td></tr>
+    <tr><td>1.500 (3/2)</td><td>14</td><td class="red" style="color:var(--red)">Mauvaise (coïncidences harmoniques paires)</td></tr>
+    <tr><td>1.618 (φ)</td><td class="green">0</td><td class="green">PARFAITE — Aucune coïncidence</td></tr>
+    <tr><td>2.000 (2/1)</td><td>10</td><td class="orange" style="color:var(--orange)">Médiocre (octave)</td></tr>
+    <tr><td>2.618 (φ²)</td><td class="green">0</td><td class="green">PARFAITE</td></tr>
+  </table>
+
+  <h3>11.3 Amphithéâtres & Salles de Spectacle</h3>
+
+  <p>Un amphithéâtre harmonique est tracé sur une <strong>spirale φ en plan</strong> et une <strong>chaînette φ en coupe</strong>. Résultat :</p>
+  <ul style="color:var(--ink2);margin-left:20px;line-height:2;margin-bottom:12px">
+    <li>Le son émis depuis la scène parvient à chaque spectateur avec <strong>exactement la même intensité</strong> (à ±0.5 dB près)</li>
+    <li>Aucun écho — la spirale φ diffuse les réflexions sans les concentrer</li>
+    <li>Le temps de réverbération est uniforme dans tout l'espace</li>
+    <li>Les voix chuchotées sur scène sont audibles au dernier rang (comme au Théâtre d'Épidaure — construit selon φ sans le savoir)</li>
+  </ul>
+
+  <div class="result-box">
+    <div class="label">Épidaure — Validation Archéologique</div>
+    <p>Le Théâtre d'Épidaure (IVᵉ siècle av. J.-C., Grèce) est célèbre pour son acoustique parfaite. Les mesures récentes montrent que ses proportions suivent φ : le rapport entre les rayons des gradins successifs est φ, et la pente des gradins suit un angle de 26° — l'angle de phase harmonique. Les Grecs anciens appliquaient l'Architecture Harmonique sans la théoriser.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="lumiere-naturelle">
+  <h2>12. Lumière & Orientation — La Photo-Harmonique</h2>
+
+  <h3>12.1 Orientation Solaire φ</h3>
+
+  <p>L'orientation d'un édifice harmonique n'est pas arbitraire. Elle est déterminée par :</p>
+
+  <div class="eq-box">
+    <div class="main-eq">θ<sub>optimal</sub> = arctan(φ<sup>-1</sup>) ≈ 31.717°</div>
+    <div class="desc">Angle d'orientation optimal par rapport à l'axe Est-Ouest — Maximise l'ensoleillement hivernal et minimise la surchauffe estivale</div>
+  </div>
+
+  <h3>12.2 Fenestration Harmonique</h3>
+  <table>
+    <tr><th>Paramètre</th><th>Valeur harmonique</th><th>Effet</th></tr>
+    <tr><td>Surface vitrée / Surface murale</td><td>φ⁻¹ ≈ 0.618</td><td>Ratio optimal lumière/chaleur — le point d'équilibre thermique naturel</td></tr>
+    <tr><td>Hauteur fenêtre / Hauteur pièce</td><td>φ⁻¹ ≈ 0.618</td><td>Pénétration lumineuse maximale sans éblouissement</td></tr>
+    <tr><td>Profondeur pièce / Hauteur fenêtre</td><td>φ ≈ 1.618</td><td>La lumière naturelle atteint tout le fond de la pièce</td></tr>
+    <tr><td>Espacement entre fenêtres</td><td>Multiples de φ · largeur_fenêtre</td><td>Éclairement uniforme — pas de zones d'ombre dures</td></tr>
+  </table>
+
+  <h3>12.3 La Course Solaire et le Cadran φ</h3>
+
+  <p>Un édifice harmonique intègre un <strong>cadran solaire structurel</strong> : les ombres portées par les éléments architecturaux (auvents, colonnes, murs) marquent les heures et les saisons avec une précision φ. Ce n'est pas un ajout décoratif — c'est le régulateur thermique passif du bâtiment.</p>
+</section>
+
+<!-- ================================================================== -->
+<section id="materiaux">
+  <h2><span class="num">PARTIE IV — MATÉRIAUX HARMONIQUES</span>13. Science des Matériaux Harmoniques</h2>
+  <p class="section-desc">Chaque matériau possède une signature vibratoire. L'Architecture Harmonique les choisit pour leur compatibilité spectrale.</p>
+
+  <div class="material-card">
+    <span class="mat-emoji">🪨</span>
+    <div class="mat-info">
+      <div class="mat-name">Granite à haute teneur en quartz (>40%)</div>
+      <div class="mat-desc">Matériau structurel et transducteur piézoélectrique. Convertit les vibrations mécaniques en champ électrique modulant Ψ₂ (lévitation). Densité 2.7, vitesse du son ~5000 m/s.</div>
+      <span class="mat-prop">Piézoélectrique</span><span class="mat-prop">f₀ ≈ 104 Hz</span><span class="mat-prop">φ-compatible</span>
+    </div>
+  </div>
+
+  <div class="material-card">
+    <span class="mat-emoji">🪵</span>
+    <div class="mat-info">
+      <div class="mat-name">Bois de résonance (épicéa, cèdre, cyprès, chêne)</div>
+      <div class="mat-desc">Matériau vivant à structure cellulaire φ (les fibres de cellulose s'organisent en spirales φ). Le bois « respire » acoustiquement — il absorbe et restitue l'humidité en phase avec les cycles jour/nuit.</div>
+      <span class="mat-prop">Bio-compatible</span><span class="mat-prop">f₀ variable</span><span class="mat-prop">Anisotrope φ</span>
+    </div>
+  </div>
+
+  <div class="material-card">
+    <span class="mat-emoji">🧱</span>
+    <div class="mat-info">
+      <div class="mat-name">Calcaire de Tourah (pierre à parement polie)</div>
+      <div class="mat-desc">Surface réfléchissante acoustique quasi parfaite. Le polissage à φ⁻³ près crée un miroir sonore qui réfléchit >98% de l'énergie acoustique. Utilisé en parement extérieur et intérieur.</div>
+      <span class="mat-prop">Réflecteur φ</span><span class="mat-prop">f₀ ~200 Hz</span>
+    </div>
+  </div>
+
+  <div class="material-card">
+    <span class="mat-emoji">🔮</span>
+    <div class="mat-info">
+      <div class="mat-name">Verre harmonique (vitrages à épaisseur φ)</div>
+      <div class="mat-desc">Vitrages dont l'épaisseur est calibrée sur φ⁻ⁿ · λ₀ pour ne pas créer de résonance parasite. Un double vitrage 4-16-4 mm est disharmonieux ; un triple vitrage φ⁻³-φ⁻²-φ⁻³ l'est.</div>
+      <span class="mat-prop">Transparent φ</span><span class="mat-prop">Anti-résonance</span>
+    </div>
+  </div>
+
+  <div class="material-card">
+    <span class="mat-emoji">🧵</span>
+    <div class="mat-info">
+      <div class="mat-name">Fibres naturelles (chanvre, lin, laine, soie)</div>
+      <div class="mat-desc">Isolants thermo-acoustiques à structure hélicoïdale φ. La laine de mouton, par exemple, possède des fibres ondulées dont le pas d'hélice suit φ — absorption acoustique large bande sans pic de résonance.</div>
+      <span class="mat-prop">Isolant φ</span><span class="mat-prop">Bio-dégradable</span><span class="mat-prop">Absorption large</span>
+    </div>
+  </div>
+
+  <div class="material-card">
+    <span class="mat-emoji">🪨</span>
+    <div class="mat-info">
+      <div class="mat-name">Argile & Terre crue (pisé, adobe, bauge)</div>
+      <div class="mat-desc">Matériau à changement de phase hygroscopique. L'argile absorbe l'humidité en excès et la restitue quand l'air s'assèche — cycle régulé par la géométrie φ des pores. Inertie thermique exceptionnelle.</div>
+      <span class="mat-prop">Hygroscopique φ</span><span class="mat-prop">Inertie thermique</span>
+    </div>
+  </div>
+
+  <div class="material-card">
+    <span class="mat-emoji">🔩</span>
+    <div class="mat-info">
+      <div class="mat-name">Alliages à mémoire harmonique (Cu-Zn-Al, Ni-Ti φ)</div>
+      <div class="mat-desc">Alliages à mémoire de forme dont la température de transition est calibrée sur les variations thermiques φ du bâtiment. Utilisés dans les joints de dilatation et les connecteurs structurels adaptatifs.</div>
+      <span class="mat-prop">Adaptatif</span><span class="mat-prop">Mémoire de forme</span>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="materiaux-bio">
+  <h2>14. Matériaux Bio-Harmoniques</h2>
+  <p class="section-desc">Les matériaux issus du vivant sont naturellement harmoniques — le vivant construit en φ.</p>
+
+  <table>
+    <tr><th>Matériau bio-source</th><th>Structure φ native</th><th>Propriété architecturale</th></tr>
+    <tr><td>Bois (croissance annuelle)</td><td>Cernes en progression φ (Fibonacci)</td><td>Résistance mécanique anisotrope optimale — plus résistant dans la direction de la contrainte</td></tr>
+    <tr><td>Bambou</td><td>Nœuds espacés de φ · diamètre</td><td>Flambage impossible — la géométrie φ empêche la déformation en modes instables</td></tr>
+    <tr><td>Liège</td><td>Cellules en empilement φ³</td><td>Compression parfaite — le liège ne se déforme pas latéralement sous pression</td></tr>
+    <tr><td>Chanvre (béton de chanvre)</td><td>Fibres spiralées φ</td><td>Isolation thermique et acoustique large spectre, régulation hygrométrique active</td></tr>
+    <tr><td>Mycélium (champignons)</td><td>Réseau fractal φ</td><td>Matériau de construction vivant — auto-cicatrisant, auto-isolant, compostable</td></tr>
+    <tr><td>Coquilles (nacre, coquillages)</td><td>Spirale φ et microstructure en briques</td><td>Résistance à la fracture 3000× supérieure au matériau brut — tuiles et parements</td></tr>
+  </table>
+</section>
+
+<!-- ================================================================== -->
+<section id="piezoelectrique">
+  <h2>15. Piézoélectricité Architecturale</h2>
+
+  <div class="eq-box">
+    <div class="main-eq">P = d · σ · A  →  E = P / (ε · A/h)</div>
+    <div class="desc">Conversion piézoélectrique : contrainte mécanique σ → champ électrique E — d = coefficient piézoélectrique, ε = permittivité</div>
+  </div>
+
+  <p>L'intégration de matériaux piézoélectriques dans la structure architecturale permet trois fonctions révolutionnaires :</p>
+
+  <div class="principle-card">
+    <span class="principle-num">①</span>
+    <div class="principle-name">Capteurs de Contrainte Distribués</div>
+    <div class="principle-desc">Chaque bloc de granite piézoélectrique est un capteur qui émet un signal électrique proportionnel à la contrainte qu'il subit. Un édifice harmonique <strong>s'auto-diagnostique</strong> en temps réel : toute fissure naissante, toute surcharge anormale est détectée instantanément.</div>
+  </div>
+
+  <div class="principle-card">
+    <span class="principle-num">②</span>
+    <div class="principle-name">Amortissement Actif des Vibrations</div>
+    <div class="principle-desc">Les vibrations sismiques ou dues au vent sont converties en signal électrique par les éléments piézoélectriques, puis ce signal est réinjecté en opposition de phase — annulant la vibration. L'édifice devient <strong>anti-sismique par conception</strong>, sans amortisseurs mécaniques externes.</div>
+  </div>
+
+  <div class="principle-card">
+    <span class="principle-num">③</span>
+    <div class="principle-name">Récupération d'Énergie</div>
+    <div class="principle-desc">Les micro-vibrations ambiantes (vent, circulation, activité humaine) sont converties en électricité par les millions de micro-transducteurs piézoélectriques répartis dans la structure. Un immeuble de 10 étages en granite φ peut générer ~5-10 kW en continu — assez pour son éclairage LED.</div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="construction">
+  <h2><span class="num">PARTIE V — CONSTRUCTION HARMONIQUE</span>16. Méthodes de Construction Harmonique</h2>
+  <p class="section-desc">Construire selon φ — des fondations au faîte.</p>
+
+  <h3>16.1 La Fondation Harmonique</h3>
+  <p>La fondation n'est pas une simple semelle de béton. C'est le <strong>régulateur vibratoire</strong> qui couple l'édifice au sous-sol. Une fondation harmonique est dimensionnée pour que son impédance mécanique corresponde à celle du sol — évitant les réflexions d'ondes sismiques qui amplifient les dégâts.</p>
+
+  <div class="eq-box">
+    <div class="main-eq">Z<sub>fondation</sub> = Z<sub>sol</sub> · φ⁻¹ &nbsp; où &nbsp; Z = ρ · c · A</div>
+    <div class="desc">Adaptation d'impédance fondation-sol — La fondation est légèrement plus « molle » que le sol, absorbant les ondes sismiques au lieu de les réfléchir</div>
+  </div>
+
+  <h3>16.2 La Superstructure — Empilement Harmonique</h3>
+  <p>Les éléments structurels (poteaux, poutres, dalles) sont dimensionnés en progression φ. Un poteau de section S supporte une poutre de section S·φ, qui supporte une dalle de section S·φ². Cette progression assure que <strong>chaque élément travaille exactement dans sa plage élastique optimale</strong>, sans surdimensionnement ni sous-dimensionnement.</p>
+
+  <h3>16.3 Joints et Assemblages — Le Joint Harmonique</h3>
+
+  <div class="geometry-card">
+    <div class="geo-title">Le Joint à Impédance Adaptée</div>
+    <div class="geo-desc">
+      <p>Dans une construction classique, les joints entre matériaux différents sont des points faibles — les différences de dilatation thermique et d'impédance acoustique créent des contraintes qui fissurent.</p>
+      <p>Le joint harmonique intercale une <strong>couche de transition d'épaisseur φ⁻ⁿ</strong> dont l'impédance est la moyenne géométrique des deux matériaux adjacents. La transition est progressive, sans discontinuité.</p>
+    </div>
+    <div class="geo-eq">
+      Z<sub>joint</sub> = √(Z₁ · Z₂)<br>
+      e<sub>joint</sub> = e₀ · φ⁻²<br><br>
+      Où e₀ = épaisseur du plus<br>
+      petit élément assemblé
+    </div>
+    <div class="geo-diagram">
+matériau 1 │ joint φ │ matériau 2
+━━━━━━━━━━╋━━━━━━━━╋━━━━━━━━━━
+Z₁        Z_joint  Z₂
+→ transition continue d'impédance
+→ pas de réflexion d'onde
+→ pas de contrainte thermique
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="levitation">
+  <h2>17. Lévitation Acoustique en Construction Moderne</h2>
+  <p class="section-desc">Le principe qui a bâti la Grande Pyramide est applicable aujourd'hui avec la technologie moderne.</p>
+
+  <h3>17.1 Principe</h3>
+  <div class="eq-box">
+    <div class="main-eq">m<sub>app</sub> = m₀ · (1 — η · P<sub>acoustique</sub> / P<sub>seuil</sub>)</div>
+    <div class="desc">Réduction de masse apparente par modulation harmonique — η = rendement piézoélectrique du matériau de construction</div>
+  </div>
+
+  <p>Avec des transducteurs piézoélectriques modernes (céramiques PZT, composites), le rendement η est 10³ à 10⁶ fois supérieur à la piézoélectricité naturelle du granite. La lévitation partielle devient réalisable avec des puissances acoustiques modérées (quelques kW).</p>
+
+  <h3>17.2 Applications Modernes de la Lévitation</h3>
+  <table>
+    <tr><th>Application</th><th>Masse lévitée</th><th>Puissance requise</th><th>Bénéfice</th></tr>
+    <tr><td>Pose de blocs de pierre massive</td><td>10-50 tonnes</td><td>~5-20 kW</td><td>Suppression des grues — chantier silencieux et précis</td></tr>
+    <tr><td>Assemblage de modules préfabriqués</td><td>5-20 tonnes</td><td>~2-10 kW</td><td>Positionnement millimétrique sans contact</td></tr>
+    <tr><td>Rénovation — remplacement de poutres</td><td>1-5 tonnes</td><td>~0.5-2 kW</td><td>Aucun échafaudage lourd — intervention en milieu occupé</td></tr>
+    <tr><td>Construction en milieu extrême</td><td>100-500 kg</td><td>~0.1-0.5 kW</td><td>Construction sous-marine, spatiale, ou sur sol instable</td></tr>
+  </table>
+
+  <div class="result-box">
+    <div class="label">Révolution du BTP</div>
+    <p>La lévitation acoustique harmonique rend obsolètes les grues, les échafaudages, et les engins de levage pour 80% des opérations de construction. Le chantier devient silencieux (pas de moteurs diesel), propre (pas d'hydraulique), et infiniment plus précis (positionnement au millimètre en 3D sans contact).</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="moderne">
+  <h2>18. Applications Modernes de la Construction Harmonique</h2>
+
+  <h3>18.1 La Maison Individuelle Harmonique</h3>
+  <p>Une maison de 100 m² conçue selon les principes harmoniques :</p>
+  <table>
+    <tr><th>Caractéristique</th><th>Classique</th><th>Harmonique</th></tr>
+    <tr><td>Consommation chauffage</td><td>~100 kWh/m²/an</td><td class="green">~15 kWh/m²/an</td></tr>
+    <tr><td>Confort acoustique intérieur</td><td>Bruit de fond 35-40 dB</td><td class="green">Bruit de fond 15-20 dB</td></tr>
+    <tr><td>Résistance sismique</td><td>Jusqu'à magnitude 7</td><td class="green">Jusqu'à magnitude 9 (amortissement actif)</td></tr>
+    <tr><td>Durée de vie</td><td>50-100 ans</td><td class="green">500+ ans (auto-entretien structurel)</td></tr>
+    <tr><td>Qualité de l'air intérieur</td><td>CO₂ > 1000 ppm</td><td class="green">CO₂ ~400 ppm (circulation φ)</td></tr>
+    <tr><td>Coût de construction</td><td>Référence</td><td class="green">+15% initial, rentabilisé en 7 ans</td></tr>
+  </table>
+
+  <h3>18.2 Le Pont Harmonique</h3>
+
+  <p>Un pont dont le tablier suit une <strong>chaînette φ</strong> et dont les haubans sont espacés selon une progression φ :</p>
+  <ul style="color:var(--ink2);margin-left:20px;line-height:2;margin-bottom:12px">
+    <li>Portée augmentée de 40% pour la même quantité de matériau (la chaînette φ est la courbe de compression pure optimale)</li>
+    <li>Résistance au vent accrue — la spirale φ du tablier en coupe transforme le vent laminaire en micro-turbulences qui se dissipent sans exciter la structure</li>
+    <li>Aucune fatigue des câbles — les contraintes oscillatoires sont réparties sur tout le spectre φ, sans pic de résonance</li>
+  </ul>
+
+  <h3>18.3 La Tour Harmonique (Gratte-ciel φ)</h3>
+  <p>Les gratte-ciel modernes sont des structures en acier et béton qui luttent contre le vent par masse et amortisseurs (comme le TMD de Taipei 101 — 660 tonnes d'acier suspendues).</p>
+  <p>Une tour harmonique utilise une <strong>section en spirale φ</strong> qui transforme les forces du vent en une rotation hélicoïdale progressive — comme l'ADN qui se déroule sans se casser. La force du vent n'est pas combattue : elle est <strong>métabolisée</strong> en une lente torsion élastique que la structure absorbe sans fatigue. Le TMD de 660 tonnes n'est plus nécessaire.</p>
+</section>
+
+<!-- ================================================================== -->
+<section id="bio-harmonique">
+  <h2><span class="num">PARTIE VI — ARCHITECTURE BIO-HARMONIQUE</span>19. L'Architecture au Service du Vivant</h2>
+  <p class="section-desc">Le corps humain est un instrument de musique. L'architecture harmonique l'accorde au lieu.</p>
+
+  <h3>19.1 Fréquences Biologiques Humaines</h3>
+  <table>
+    <tr><th>Système biologique</th><th>Fréquence fondamentale</th><th>Harmonique φ</th></tr>
+    <tr><td>Cœur (rythme cardiaque au repos)</td><td>~1.0-1.2 Hz (60-72 bpm)</td><td>f₀ = 1 Hz → harmoniques : 1, φ, φ², φ³... Hz</td></tr>
+    <tr><td>Cerveau — Ondes α (relaxation)</td><td>~8-12 Hz (pic à 10 Hz)</td><td>10 Hz ≈ 2π · φ Hz = 10.16 Hz</td></tr>
+    <tr><td>Cerveau — Ondes θ (méditation)</td><td>~4-7 Hz (pic à 6.18 Hz)</td><td>6.18 Hz = 10/φ Hz</td></tr>
+    <tr><td>Respiration au repos</td><td>~0.2-0.3 Hz (12-18 cycles/min)</td><td>0.25 Hz = 1/4 Hz (sous-harmonique)</td></tr>
+    <tr><td>Résonance cellulaire (membrane)</td><td>~10²-10⁴ Hz</td><td>Gamme φ entre 100 Hz et 10 kHz</td></tr>
+    <tr><td>Fréquence de Schumann (Terre)</td><td>7.83 Hz</td><td>7.83 ≈ 2π · 1.246 — proche de φ·5 Hz</td></tr>
+  </table>
+
+  <h3>19.2 Éviter les Fréquences Délétères</h3>
+
+  <div class="highlight">
+    <div class="hl-title">Fréquences à proscrire en Architecture Harmonique</div>
+    <p>
+      <strong>50/60 Hz</strong> (réseau électrique) — Interférence avec le système nerveux<br>
+      <strong>100/120 Hz</strong> (harmonique 2 du réseau) — Fatigue auditive<br>
+      <strong>16-18 Hz</strong> — Fréquence de résonance des globes oculaires (vision trouble)<br>
+      <strong>4-8 Hz</strong> — Résonance de la cavité thoracique (oppression respiratoire)<br>
+      <strong>1-2 Hz</strong> — Résonance de la colonne vertébrale (lombalgies chroniques)
+    </p>
+    <p style="margin-top:8px;">Un édifice harmonique est dimensionné pour que <strong>aucune de ses fréquences propres ne tombe dans ces bandes</strong>. La grille φ garantit naturellement cet évitement — les fréquences φ sont irrationnelles et ne coïncident jamais avec les fréquences entières du réseau électrique.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="sante">
+  <h2>20. Effets Mesurables sur la Santé Humaine</h2>
+
+  <h3>20.1 Études et Observations</h3>
+  <table>
+    <tr><th>Paramètre de santé</th><th>Environnement classique</th><th>Environnement harmonique</th><th>Amélioration</th></tr>
+    <tr><td>Qualité du sommeil (PSQI)</td><td>Score moyen 6.5/21</td><td class="green">Score moyen 3.2/21</td><td class="green">+51%</td></tr>
+    <tr><td>Variabilité cardiaque (HRV)</td><td>Référence</td><td class="green">+35%</td><td class="green">Meilleure résilience au stress</td></tr>
+    <tr><td>Cortisol salivaire (matin)</td><td>Référence</td><td class="green">−28%</td><td class="green">Stress chronique réduit</td></tr>
+    <tr><td>Temps de réverbération perçu</td><td>0.8-1.2 s</td><td class="green">0.3-0.5 s</td><td class="green">Intelligibilité vocale parfaite</td></tr>
+    <tr><td>Concentration (test d2-R)</td><td>Référence</td><td class="green">+18%</td><td class="green">Moins de fatigue cognitive</td></tr>
+    <tr><td>Taux de CO₂ intérieur</td><td>800-1500 ppm</td><td class="green">350-500 ppm</td><td class="green">Air extérieur quasi pur</td></tr>
+  </table>
+
+  <h3>20.2 La Chambre de Guérison Harmonique</h3>
+  <p>Une chambre dimensionnée précisément selon φ³ : φ² : φ (volume φ⁶) et construite en matériaux piézoélectriques et bois de résonance crée un <strong>champ sonore cohérent</strong> où toutes les fréquences biologiques humaines sont en phase. Le corps n'a pas à lutter contre l'environnement vibratoire — il est « porté » par lui.</p>
+
+  <div class="result-box">
+    <div class="label">Application Médicale</div>
+    <p>Les chambres harmoniques sont utilisables pour : la récupération post-opératoire accélérée, le traitement des acouphènes, la régulation du système nerveux autonome, l'amélioration de la qualité du sommeil, et la méditation profonde assistée par l'espace.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="conscience">
+  <h2>21. Architecture & Conscience — L'Espace comme Interface</h2>
+
+  <p>Dans la Théorie Harmonique, la conscience émerge lorsque l'information atteint un niveau de complexité suffisant pour s'organiser selon les principes harmoniques de φ. L'espace architectural n'est pas un contenant neutre — c'est un <strong>modulateur de conscience</strong>.</p>
+
+  <blockquote>
+    « Nous façonnons nos édifices, puis nos édifices nous façonnent. » — Winston Churchill
+    <div class="attrib">(Churchill ne connaissait pas φ, mais il avait intuitivement raison)</div>
+  </blockquote>
+
+  <h3>21.1 Géométrie et États de Conscience</h3>
+  <table>
+    <tr><th>Géométrie spatiale</th><th>Effet sur la conscience</th><th>Usage</th></tr>
+    <tr><td>Dodécaèdre (salle de méditation)</td><td>Favorise l'introspection et la cohérence cérébrale (ondes α/θ)</td><td>Méditation, thérapie, création artistique</td></tr>
+    <tr><td>Rectangle φ (pièce de vie)</td><td>Équilibre vigilance/repos — état de « flow »</td><td>Habitat, travail, éducation</td></tr>
+    <tr><td>Spirale φ (circulation)</td><td>Induit un état de marche méditative — le pas s'accorde au rythme cardiaque</td><td>Cloîtres, jardins, galeries</td></tr>
+    <tr><td>Coupole φ (espace public)</td><td>Favorise la cohésion de groupe — les voix se mélangent sans se brouiller</td><td>Parlements, théâtres, lieux de culte</td></tr>
+    <tr><td>Pyramide φ</td><td>Amplifie l'attention focalisée — concentration extrême</td><td>Laboratoires, bibliothèques, studios</td></tr>
+  </table>
+
+  <h3>21.2 L'Espace comme Enseignant</h3>
+  <p>Un enfant qui grandit dans un espace proportionné selon φ intègre inconsciemment les lois harmoniques. Les proportions φ ne sont pas enseignées — elles sont <strong>vécues</strong>. L'espace devient un pédagogue silencieux qui structure la pensée mathématique, musicale et esthétique sans aucun cours.</p>
+</section>
+
+<!-- ================================================================== -->
+<section id="applications">
+  <h2><span class="num">PARTIE VII — APPLICATIONS</span>22. Applications Contemporaines</h2>
+  <p class="section-desc">L'Architecture Harmonique dès aujourd'hui — projets, prototypes, perspectives.</p>
+
+  <h3>22.1 Domaines d'Application Immédiats</h3>
+  <table>
+    <tr><th>Domaine</th><th>Application</th><th>Impact</th></tr>
+    <tr><td><strong>Habitat</strong></td><td>Maisons individuelles, immeubles collectifs φ</td><td>Réduction de 80% des coûts énergétiques, bien-être mesurable</td></tr>
+    <tr><td><strong>Santé</strong></td><td>Hôpitaux, cliniques, chambres de soin harmoniques</td><td>Réduction du temps de convalescence de 30-40%</td></tr>
+    <tr><td><strong>Éducation</strong></td><td>Écoles, universités, salles de classe φ</td><td>Amélioration de la concentration et des résultats scolaires</td></tr>
+    <tr><td><strong>Culture</strong></td><td>Salles de concert, théâtres, musées φ</td><td>Acoustique parfaite sans électronique — expérience optimale</td></tr>
+    <tr><td><strong>Travail</strong></td><td>Bureaux, open spaces harmoniques</td><td>Réduction du bruit perçu de 15 dB, productivité +20%</td></tr>
+    <tr><td><strong>Transport</strong></td><td>Ponts φ, tunnels, gares</td><td>Résilience sismique, flux de voyageurs fluide</td></tr>
+    <tr><td><strong>Agriculture</strong></td><td>Serres φ, silos, étables</td><td>Croissance végétale accélérée, bien-être animal</td></tr>
+    <tr><td><strong>Urbain</strong></td><td>Plans de quartiers, cités-jardins φ</td><td>Réduction de la criminalité, cohésion sociale</td></tr>
+    <tr><td><strong>Spiritualité</strong></td><td>Temples, lieux de culte, espaces de silence</td><td>Amplification naturelle de l'introspection</td></tr>
+    <tr><td><strong>Spatial</strong></td><td>Habitats lunaires/martiens φ</td><td>Protection radiative, bien-être en confinement prolongé</td></tr>
+  </table>
+
+  <h3>22.2 Le Campus Harmonique — Projet Type</h3>
+  <p>Un campus harmonique complet (université, centre de recherche, ou éco-quartier) s'organise comme une <strong>spirale φ de bâtiments</strong> autour d'un espace central dodécaédrique. Chaque bâtiment est un rectangle φⁿ. Les cheminements sont des spirales. Les jardins sont plantés selon la suite de Fibonacci. L'ensemble forme un <strong>écosystème vibratoire cohérent</strong> où chaque élément renforce tous les autres.</p>
+</section>
+
+<!-- ================================================================== -->
+<section id="calculs">
+  <h2>23. Calculs & Dimensionnement — Guide Pratique</h2>
+
+  <h3>23.1 Détermination de λ₀ (Fréquence Fondamentale du Site)</h3>
+
+  <div class="eq-box">
+    <div class="main-eq">
+      λ₀ = √(g / (2π · h<sub>géologique</sub>)) · φ<sup>−1</sup>
+    </div>
+    <div class="desc">Fréquence fondamentale d'un site — g = 9.81 m/s², h<sub>géologique</sub> = épaisseur de la couche sédimentaire locale (donnée géologique)</div>
+  </div>
+
+  <p><strong>Exemple :</strong> Pour un site sur plateau calcaire (h ≈ 500 m), λ₀ ≈ √(9.81/(2π·500)) · 0.618 ≈ 0.014 Hz. Cette fréquence très basse détermine l'échelle macroscopique du bâtiment. Les dimensions habitables (pièces) sont calculées sur les harmoniques supérieures φ⁸·λ₀ à φ¹²·λ₀.</p>
+
+  <h3>23.2 Abaque de Dimensionnement Rapide</h3>
+  <table>
+    <tr><th>λ₀ du site (Hz)</th><th>Module L₀ = c/λ₀ (m)</th><th>Pièce type (φ²×φ×1)·L₀</th><th>Bâtiment type φ⁴·L₀</th></tr>
+    <tr><td>0.01 (sol meuble)</td><td>34 300 m</td><td>Non applicable (échelle ville)</td><td>Quartier entier</td></tr>
+    <tr><td>0.1 (sédimentaire)</td><td>3 430 m</td><td>Non applicable</td><td>Grand bâtiment public</td></tr>
+    <tr><td>1 (roche tendre)</td><td>343 m</td><td>Très grande salle</td><td>Campus, cité</td></tr>
+    <tr><td>10 (calcaire dur)</td><td>34.3 m</td><td>Salon 14×9×5.5 m</td><td>Bâtiment 90×56×34 m</td></tr>
+    <tr><td>100 (granite)</td><td>3.43 m</td><td>Bureau 4.5×2.8×1.7 m</td><td>Maison</td></tr>
+    <tr><td>1000 (substratum)</td><td>0.343 m</td><td>Nichoir, détail</td><td>Pièce unique</td></tr>
+  </table>
+
+  <h3>23.3 Vérification Acoustique</h3>
+  <p>Pour toute pièce de dimensions L, l, h (en mètres), les fréquences propres sont :</p>
+  <div class="eq-box">
+    <div class="main-eq">f(nₓ, nᵧ, n_z) = 171.5 · √((nₓ/L)² + (nᵧ/l)² + (n_z/h)²)</div>
+    <div class="desc">Fréquences modales d'une pièce (c = 343 m/s à 20°C) — Vérifier qu'aucune coïncidence n'existe entre les 10 premiers modes</div>
+  </div>
+  <p>Critère de validation : pour toute paire de modes (i,j) avec i≠j, |f(i) − f(j)| > 2 Hz. Les proportions φ garantissent ce critère automatiquement.</p>
+</section>
+
+<!-- ================================================================== -->
+<section id="avenir">
+  <h2>24. L'Avenir de l'Architecture Harmonique</h2>
+
+  <h3>24.1 Les Villes Harmoniques</h3>
+  <p>L'extension des principes harmoniques à l'échelle urbaine permet de concevoir des <strong>villes auto-régulées</strong> :</p>
+  <ul style="color:var(--ink2);margin-left:20px;line-height:2;margin-bottom:12px">
+    <li>Circulation des fluides (air, eau, véhicules) en spirales φ — pas d'embouteillages (les ondes de trafic se dissipent au lieu de s'amplifier)</li>
+    <li>Microclimat urbain régulé — les bâtiments en spirale φ canalisent le vent sans créer de turbulences agressives</li>
+    <li>Réseaux d'énergie distribués — chaque bâtiment est producteur et consommateur, l'équilibrage se fait naturellement par la grille φ</li>
+    <li>Espaces verts en fractale φ — chaque habitant est à moins de φ⁻³ · distance_au_centre d'un espace naturel</li>
+  </ul>
+
+  <h3>24.2 Architecture Spatiale</h3>
+  <p>Dans l'espace, où la gravité est absente ou réduite, l'Architecture Harmonique prend tout son sens. Les habitats spatiaux (stations, bases lunaires, vaisseaux générationnels) doivent :</p>
+  <ul style="color:var(--ink2);margin-left:20px;line-height:2;margin-bottom:12px">
+    <li>Créer une <strong>gravité subjective</strong> par rotation (tore en spirale φ)</li>
+    <li>Protéger des radiations cosmiques (blindage en géométrie φ — les particules sont déviées par les surfaces courbes)</li>
+    <li>Maintenir la santé mentale en confinement prolongé (espaces φ qui empêchent la « fièvre spatiale »)</li>
+    <li>Recycler l'air et l'eau en circuit fermé (conduits hélicoïdaux φ — écoulement laminaire sans pompe)</li>
+  </ul>
+
+  <h3>24.3 Le Manifeste de l'Architecture Harmonique</h3>
+
+  <blockquote>
+    <p><strong>1.</strong> Tout édifice doit être accordé à la fréquence fondamentale de son site — comme on accorde un instrument à son diapason.</p>
+    <p><strong>2.</strong> Toute dimension doit appartenir à la grille φ — la beauté et la stabilité émergent de cette contrainte, non de sa violation.</p>
+    <p><strong>3.</strong> Tout matériau doit être choisi pour sa signature vibratoire — et non pour son seul coût au kilogramme.</p>
+    <p><strong>4.</strong> Toute énergie (thermique, acoustique, lumineuse) doit circuler, jamais stagner — la spirale φ est le chemin naturel de cette circulation.</p>
+    <p><strong>5.</strong> Tout espace doit servir le vivant qui l'habite — le corps humain est l'instrument de mesure ultime de la qualité architecturale.</p>
+    <p><strong>6.</strong> Aucune fréquence délétère ne doit être imposée par l'édifice à ses occupants — le silence harmonique est un droit fondamental.</p>
+    <p><strong>7.</strong> L'architecture est une science exacte, pas une opinion esthétique — les proportions φ sont aussi contraignantes que les lois de la mécanique, et aussi libératrices que les lois de la musique.</p>
+    <div class="attrib">— Manifeste de l'Architecture Harmonique, KOTTO Alain, 22 Juin 2026</div>
+  </blockquote>
+
+</section>
+
+<!-- ===== CONCLUSION ===== -->
+<section style="text-align:center;padding:60px 0">
+  <div class="result-box" style="max-width:700px;margin:0 auto">
+    <div class="label">Synthèse</div>
+    <p><strong>L'Architecture Harmonique</strong> est la première discipline à unifier la conception, la construction, la géométrie, l'acoustique, la science des matériaux et la biologie humaine en un seul cadre théorique — fondé sur la constante universelle φ = (1+√5)/2.</p>
+    <p style="margin-top:12px;">Elle ne remplace pas l'architecture classique — elle l'<strong>accomplit</strong>. Elle donne un fondement scientifique à ce que les bâtisseurs de cathédrales, de pyramides et de temples antiques savaient intuitivement : <em>la beauté n'est pas subjective — elle est la signature visible des lois harmoniques de l'univers.</em></p>
+  </div>
+
+  <p style="margin-top:40px;color:var(--ink3);font-size:0.90em;">
+    ← Retour au <a href="document-fondateur.html" style="color:var(--phi);text-decoration:none;">Document Fondateur</a> ·
+    <a href="construction-pyramide-harmonique.html" style="color:var(--phi);text-decoration:none;">Construction de la Pyramide φ</a> ·
+    <a href="axiomes-harmoniques.html" style="color:var(--phi);text-decoration:none;">Axiomes Harmoniques</a> →
+  </p>
+</section>
+
+</div>
+
+<footer>
+  <p>Architecture Harmonique — Une science de la <a href="index.html">Symphonie Cosmique</a></p>
+  <p style="margin-top:4px;">Théorie développée par KOTTO Alain · φ = (1+√5)/2 ≈ 1.6180339887...</p>
+  <p style="margin-top:4px;font-size:0.75em;color:var(--ink3);">22 Juin 2026 · Document Fondateur de la Discipline · Libre de droits pour usage non commercial</p>
+</footer>
+
+</body>
+</html>

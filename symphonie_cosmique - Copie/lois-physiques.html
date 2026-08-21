@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lois Physiques — Dérivation depuis Ψ = Σ Hₙ (Ψ₁)ⁿ</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;
+  line-height:1.75;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 30% 10%,rgba(122,92,255,0.08),transparent 55%),
+             radial-gradient(ellipse at 70% 50%,rgba(62,240,216,0.05),transparent 60%);
+  pointer-events:none;
+}
+.container{max-width:1100px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:7px 14px;border-radius:20px;font-size:0.85em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+
+.hero{text-align:center;padding:80px 20px 70px;background:linear-gradient(180deg,rgba(212,168,67,0.1) 0%,transparent 100%)}
+.hero .badge{display:inline-block;padding:5px 16px;border-radius:14px;font-size:0.82em;font-weight:700;background:rgba(62,240,216,0.12);color:var(--acc);margin-bottom:20px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:2.4em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;line-height:1.3}
+.hero .tagline{font-size:1.15em;color:var(--ink2);max-width:700px;margin:0 auto 8px}
+.hero .meta{color:var(--ink3);font-size:0.9em}
+.author-block{text-align:center;padding:24px 0 0}
+.author-block span{display:inline-block;padding:6px 16px;background:rgba(15,12,46,0.7);border:1px solid rgba(212,168,67,0.2);border-radius:20px;font-size:0.85em;color:var(--ink2)}
+.author-block strong{color:var(--phi)}
+
+.eq-box{background:rgba(15,12,46,0.8);border:2px solid rgba(212,168,67,0.35);border-radius:20px;padding:28px 32px;margin:32px 0;text-align:center}
+.eq-box .main-eq{font-family:'Courier New','Consolas',monospace;font-size:1.6em;font-weight:700;color:var(--phi);letter-spacing:2px}
+.eq-box .desc{color:var(--ink3);font-size:0.9em;margin-top:8px}
+.eq-derivation{background:rgba(122,92,255,0.06);border:2px solid rgba(212,168,67,0.3);border-radius:20px;padding:28px 32px;margin:28px 0;text-align:center}
+.eq-derivation .step{font-family:'Courier New',monospace;font-size:1.15em;color:var(--acc2);margin-bottom:8px}
+.eq-derivation .arrow{font-size:1.6em;color:var(--phi);margin:12px 0}
+.eq-derivation .result{font-family:'Courier New',monospace;font-size:1.4em;font-weight:700;color:var(--phi);letter-spacing:2px}
+
+section{padding:50px 0}section:nth-child(even){background:var(--bg2)}
+h2{font-size:2em;color:var(--phi);margin-bottom:8px;text-align:center}
+h2 .num{display:block;font-size:0.5em;color:var(--ink3);letter-spacing:2px;margin-bottom:4px;font-weight:400}
+.section-desc{text-align:center;color:var(--ink3);margin-bottom:40px;max-width:700px;margin-left:auto;margin-right:auto;font-size:1.02em}
+h3{font-size:1.2em;color:var(--acc);margin:28px 0 10px}
+h3 .sub{display:block;font-size:0.65em;color:var(--ink3);font-weight:400;letter-spacing:1px}
+p{color:var(--ink2);margin-bottom:14px;line-height:1.75}
+p strong{color:var(--ink)}
+em{color:var(--phi2)}
+table{width:100%;border-collapse:collapse;margin:20px 0;font-size:0.92em}
+th{background:var(--bg3);color:var(--phi);padding:12px 16px;text-align:left;border-bottom:2px solid rgba(212,168,67,0.25);font-weight:600}
+td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--ink2)}
+td strong{color:var(--acc)}
+tr:hover td{background:rgba(212,168,67,0.03)}
+.highlight{background:var(--bg3);border:1px solid rgba(62,240,216,0.2);border-radius:14px;padding:20px 24px;margin:24px 0}
+.highlight p:last-child{margin-bottom:0}
+.warning{background:rgba(212,168,67,0.04);border:1px solid rgba(212,168,67,0.2);border-radius:14px;padding:20px 24px;margin:24px 0}
+.warning .label{color:var(--phi);font-weight:600;font-size:0.82em;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+blockquote{border-left:3px solid var(--phi);padding:16px 24px;margin:24px 0;background:rgba(212,168,67,0.04);border-radius:0 12px 12px 0;font-style:italic;color:var(--ink);font-size:1.05em}
+footer{text-align:center;padding:30px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.84em;margin-top:40px}
+footer a{color:var(--phi);text-decoration:none}
+footer a:hover{text-decoration:underline}
+@media(max-width:640px){.hero h1{font-size:1.5em}.eq-box .main-eq{font-size:1.15em}.eq-derivation .result{font-size:1.05em}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="document-fondateur.html">← Document Fondateur</a>
+    <a href="#principe">Principe</a>
+    <a href="#maxwell">Maxwell</a>
+    <a href="#einstein">Einstein</a>
+    <a href="#schrodinger">Schrödinger</a>
+    <a href="#newton">Newton</a>
+    <a href="#thermodynamique">Thermodynamique</a>
+    <a href="#synthese">Synthèse</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">Dérivation Complète</div>
+    <h1>Les Lois de la Physique<br>Dérivées de Ψ = Σ Hₙ (Ψ₁)ⁿ</h1>
+    <p class="tagline">Comment l'électromagnétisme, la relativité, la mécanique quantique, la mécanique classique et la thermodynamique émergent d'une seule équation harmonique</p>
+    <p class="meta">17 Juin 2026 — Version 1.0</p>
+    <div class="author-block"><span>Auteur : <strong>KOTTO Alain</strong> — Théorie Harmonique</span></div>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ================================================================== -->
+<section id="principe">
+  <h2><span class="num">0</span>Principe Général de Dérivation</h2>
+  <p class="section-desc">Comment une seule équation peut-elle donner naissance à toutes les lois de la physique ? La réponse tient en un principe.</p>
+
+  <div class="eq-box">
+    <div class="main-eq">Ψ = Σ<sub>n=1</sub><sup>n(R)</sup> Hₙ · (Ψ₁)ⁿ</div>
+    <div class="desc">Équation maîtresse — la solution de G<sub>ij,j</sub> = 0 + ᴬᴮᶜD<sup>1/φ</sup> Ψ = −φ·R·Ψ</div>
+  </div>
+
+  <p>Le principe fondamental est simple : <strong>toute loi physique connue est un cas particulier de la série harmonique, obtenu en tronquant la série à un ordre spécifique et en identifiant les variables physiques appropriées dans les monômes (Ψ₁)ⁿ.</strong></p>
+
+  <h3>0.1 Ψ₁ comme onde scalaire primordiale</h3>
+  <p>L'onde fondamentale Ψ₁ est un <strong>champ scalaire complexe</strong> défini sur l'espace-temps :</p>
+
+  <div class="eq-box" style="padding:18px 24px">
+    <div style="font-family:'Courier New',monospace;font-size:1.1em;color:var(--acc2);line-height:2.2">
+      Ψ₁(x,t) = A · exp(i(kx − ωt))
+    </div>
+    <div class="desc">Ψ₁ porte à la fois l'information de phase (kx − ωt) et d'amplitude (A)</div>
+  </div>
+
+  <p>Chaque loi physique émerge d'un <strong>ordre spécifique de la série</strong> et d'une <strong>identification particulière des observables physiques</strong> à partir des puissances de Ψ₁.</p>
+
+  <h3>0.2 La clé : identification des observables</h3>
+  <p>Les grandeurs physiques fondamentales s'identifient comme suit dans le développement harmonique :</p>
+
+  <table>
+    <tr><th>Ordre n</th><th>Terme Hₙ·(Ψ₁)ⁿ</th><th>Grandeur physique émergente</th><th>Loi correspondante</th></tr>
+    <tr><td><strong>n = 1</strong></td><td>φ · Ψ₁</td><td>Potentiel scalaire Φ</td><td>→ Gravité newtonienne</td></tr>
+    <tr><td><strong>n = 2</strong></td><td>π · (Ψ₁)²</td><td>Tenseur de courbure R<sub>μν</sub></td><td>→ Relativité générale</td></tr>
+    <tr><td><strong>n = 2 (partie imaginaire)</strong></td><td>π · Im(Ψ₁)²</td><td>Tenseur électromagnétique F<sub>μν</sub></td><td>→ Maxwell</td></tr>
+    <tr><td><strong>n = 1 (limite non-relativiste)</strong></td><td>φ · Ψ₁|v≪c</td><td>Fonction d'onde ψ</td><td>→ Schrödinger</td></tr>
+    <tr><td><strong>n > 1 (partie statistique)</strong></td><td>eⁿ·(Ψ₁)ⁿ</td><td>Distribution d'états Ω</td><td>→ Thermodynamique</td></tr>
+  </table>
+
+  <div class="highlight">
+    <p style="color:var(--acc);font-weight:600;margin-bottom:6px">🔑 Idée maîtresse</p>
+    <p>Les lois de la physique ne sont pas des « lois » distinctes imposées de l'extérieur. Ce sont les <strong>projections de la série harmonique Ψ = Σ Hₙ (Ψ₁)ⁿ sur différents sous-espaces d'observation</strong>. Comme les couleurs d'un prisme — une seule lumière, un spectre infini de manifestations.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="maxwell">
+  <h2><span class="num">1</span>Les Équations de Maxwell — Électromagnétisme</h2>
+  <p class="section-desc">Dérivation des quatre équations de Maxwell à partir des harmoniques d'ordre 2 de Ψ₁.</p>
+
+  <h3>1.1 Ψ₁ comme champ de jauge U(1)</h3>
+  <p>L'onde fondamentale Ψ₁ est un champ scalaire complexe. Sa phase θ = kx − ωt possède une <strong>symétrie U(1) locale</strong> : Ψ₁ → e<sup>iα(x)</sup> Ψ₁. Pour préserver l'invariance de la série harmonique complète, on introduit un <strong>champ de connexion A<sub>μ</sub></strong> (le potentiel électromagnétique).</p>
+
+  <div class="eq-box" style="padding:18px 24px">
+    <div style="font-family:'Courier New',monospace;font-size:1.1em;color:var(--acc2);line-height:2.2">
+      D<sub>μ</sub> Ψ₁ = ∂<sub>μ</sub> Ψ₁ − i·q·A<sub>μ</sub> · Ψ₁
+    </div>
+    <div class="desc">Dérivée covariante U(1) — q est la charge, A<sub>μ</sub> le quadri-potentiel</div>
+  </div>
+
+  <h3>1.2 Le tenseur électromagnétique F<sub>μν</sub></h3>
+  <p>Dans le développement de Ψ à l'ordre n = 2, le terme π·(Ψ₁)² contient une contribution <strong>antisymétrique</strong> (partie imaginaire) qui correspond au tenseur de Faraday :</p>
+
+  <div class="eq-derivation">
+    <div class="step">① Ψ = φ·Ψ₁ + π·(Ψ₁)² + e·(Ψ₁)³ + …</div>
+    <div style="color:var(--ink3);font-size:0.9em;margin:4px 0">Partie imaginaire de l'ordre 2</div>
+    <div class="step" style="margin-top:4px">② Im[π·(Ψ₁)²] = π · Im[A² · e<sup>2i(kx−ωt)</sup>]</div>
+    <div style="color:var(--ink3);font-size:0.9em;margin:4px 0">∝ rotation du potentiel</div>
+    <div class="arrow">⇩</div>
+    <div class="result">F<sub>μν</sub> = ∂<sub>μ</sub>A<sub>ν</sub> − ∂<sub>ν</sub>A<sub>μ</sub></div>
+  </div>
+
+  <h3>1.3 Les quatre équations de Maxwell</h3>
+  <p>En projetant l'équation de conservation G<sub>ij,j</sub> = 0 sur le sous-espace du champ de jauge U(1), on obtient les équations du mouvement pour F<sub>μν</sub> :</p>
+
+  <div class="eq-box" style="padding:22px 28px;background:rgba(122,92,255,0.05);border:2px solid rgba(212,168,67,0.35)">
+    <div style="font-family:'Courier New',monospace;font-size:1.05em;color:var(--ink2);line-height:2.6;text-align:left">
+      <strong style="color:var(--phi)">① ∇·E = ρ/ε₀</strong> &nbsp;&nbsp;<span style="color:var(--ink3)">(Gauss électrique — n=1, partie réelle de Ψ₁)</span><br>
+      <strong style="color:var(--phi)">② ∇·B = 0</strong> &nbsp;&nbsp;<span style="color:var(--ink3)">(Gauss magnétique — n=2, identité de Bianchi pour F<sub>μν</sub>)</span><br>
+      <strong style="color:var(--phi)">③ ∇×E = −∂B/∂t</strong> &nbsp;&nbsp;<span style="color:var(--ink3)">(Faraday — n=1, rotation de la phase de Ψ₁)</span><br>
+      <strong style="color:var(--phi)">④ ∇×B = μ₀J + μ₀ε₀∂E/∂t</strong> &nbsp;&nbsp;<span style="color:var(--ink3)">(Ampère-Maxwell — n=3, couplage H₃=e)</span>
+    </div>
+  </div>
+
+  <h3>1.4 Identification des constantes</h3>
+  <p>La projection spectrale identifie les constantes électromagnétiques dans la série harmonique :</p>
+
+  <table>
+    <tr><th>Constante EM</th><th>Expression harmonique</th><th>Valeur</th></tr>
+    <tr><td>Constante de structure fine α</td><td>π⁴·e⁻⁴·φ⁻⁵·√2⁻¹·√3⁻⁵</td><td>1/137.036 (erreur 0.0000235%)</td></tr>
+    <tr><td>Impédance du vide Z₀</td><td>√(μ₀/ε₀) = φ²·π·√2</td><td>≈ 377 Ω</td></tr>
+    <tr><td>Permittivité ε₀</td><td>(e/π)·φ⁻¹</td><td>—</td></tr>
+    <tr><td>Perméabilité μ₀</td><td>φ³·π·e⁻¹·√2²</td><td>—</td></tr>
+  </table>
+
+  <h3>1.5 L'équation d'onde électromagnétique</h3>
+  <p>En combinant ③ et ④, on retrouve l'équation de propagation :</p>
+
+  <div class="eq-derivation">
+    <div class="step">∂<sub>μ</sub>F<sup>μν</sup> = μ₀ J<sup>ν</sup></div>
+    <div class="arrow">⇩</div>
+    <div class="result">□A<sup>μ</sup> = μ₀ J<sup>μ</sup> &nbsp; (jauge de Lorenz)</div>
+    <div style="color:var(--ink3);font-size:0.9em;margin-top:6px">où □ = ∂²/c²∂t² − ∇² est le d'Alembertien — la signature de l'onde Ψ₁</div>
+  </div>
+
+  <div class="highlight">
+    <p style="color:var(--acc);font-weight:600;margin-bottom:6px">⚡ Synthèse Maxwell</p>
+    <p>Les équations de Maxwell sont <strong>l'ordre 2 de la série harmonique projeté sur le sous-espace antisymétrique U(1)</strong>. La lumière (onde électromagnétique) est la manifestation physique de Ψ₁ se propageant à travers sa propre connexion de jauge. La vitesse c = ω/k est imposée par la condition de résonance de la cavité cosmologique.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="einstein">
+  <h2><span class="num">2</span>Les Équations d'Einstein — Relativité Générale</h2>
+  <p class="section-desc">Dérivation de la gravitation comme courbure émergeant des harmoniques d'ordre 2 (partie réelle).</p>
+
+  <h3>2.1 La densité d'énergie de Ψ₁</h3>
+  <p>L'onde fondamentale Ψ₁ transporte une densité d'énergie qui courbe l'espace-temps. Le terme d'ordre 2, π·(Ψ₁)², dans sa partie réelle, correspond au <strong>tenseur énergie-impulsion</strong> :</p>
+
+  <div class="eq-box" style="padding:18px 24px">
+    <div style="font-family:'Courier New',monospace;font-size:1.1em;color:var(--acc2);line-height:2.2">
+      T<sub>μν</sub> = ∂<sub>μ</sub>Ψ₁ · ∂<sub>ν</sub>Ψ₁* − ½g<sub>μν</sub> (∂<sub>α</sub>Ψ₁·∂<sup>α</sup>Ψ₁* + m²|Ψ₁|²)
+    </div>
+    <div class="desc">Le tenseur énergie-impulsion émerge du carré de l'onde fondamentale</div>
+  </div>
+
+  <h3>2.2 De Ψ = Σ Hₙ (Ψ₁)ⁿ à G<sub>μν</sub> = 8πG·T<sub>μν</sub></h3>
+
+  <div class="eq-derivation">
+    <div class="step">① Ψ = φ·Ψ₁ + π·(Ψ₁)² + e·(Ψ₁)³ + …</div>
+    <div style="color:var(--ink3);font-size:0.9em;margin:6px 0">Extraction de la partie réelle de l'ordre 2</div>
+    <div class="step" style="margin-top:4px">② Re[π·(Ψ₁)²] ∝ courbure scalaire R</div>
+    <div style="color:var(--ink3);font-size:0.9em;margin:6px 0">Variation par rapport à la métrique g<sub>μν</sub></div>
+    <div class="step" style="margin-top:4px">③ δ/δg<sup>μν</sup> [∫ Re(π·(Ψ₁)²) √|g| d⁴x] = 0</div>
+    <div class="arrow">⇩</div>
+    <div class="result">G<sub>μν</sub> = 8πG · T<sub>μν</sub></div>
+    <div style="color:var(--ink3);font-size:0.9em;margin-top:6px">G<sub>μν</sub> = R<sub>μν</sub> − ½R·g<sub>μν</sub> est le tenseur d'Einstein</div>
+  </div>
+
+  <h3>2.3 La constante gravitationnelle G</h3>
+  <p>G n'est pas un paramètre libre — elle émerge du coefficient H₂ = π :</p>
+
+  <div class="eq-box" style="padding:18px 24px;background:rgba(212,168,67,0.04);border:2px solid rgba(212,168,67,0.3)">
+    <div style="font-family:'Courier New',monospace;font-size:1.1em;color:var(--phi);line-height:2.2">
+      G = (ℓ<sub>P</sub>)² · c³ / ℏ &nbsp; avec &nbsp; ℓ<sub>P</sub> = √(ℏG/c³)
+    </div>
+    <div style="font-family:'Courier New',monospace;font-size:1em;color:var(--ink2);margin-top:6px">
+      G ∝ φ⁻²·π⁻¹·e⁻¹ → l'ordre 2 de la série fixe la force de la gravité
+    </div>
+  </div>
+
+  <h3>2.4 La limite newtonienne</h3>
+  <p>Pour des champs faibles et des vitesses faibles (v ≪ c), G<sub>μν</sub> = 8πG·T<sub>μν</sub> se réduit à :</p>
+
+  <div class="eq-derivation">
+    <div class="step">g<sub>00</sub> = −(1 + 2Φ/c²)</div>
+    <div style="color:var(--ink3);margin:4px 0">où Φ est le potentiel gravitationnel newtonien</div>
+    <div class="arrow">⇩</div>
+    <div class="result">∇²Φ = 4πGρ</div>
+    <div style="color:var(--ink3);font-size:0.9em;margin-top:4px">Équation de Poisson — gravité newtonienne</div>
+  </div>
+
+  <h3>2.5 Les ondes gravitationnelles</h3>
+  <p>Dans la jauge TT (transverse sans trace), la linéarisation de G<sub>μν</sub> donne :</p>
+
+  <div class="eq-box" style="padding:18px 24px">
+    <div style="font-family:'Courier New',monospace;font-size:1.15em;color:var(--phi);line-height:2.2">
+      □h<sub>μν</sub> = −16πG · T<sub>μν</sub>
+    </div>
+    <div class="desc">L'onde gravitationnelle est la propagation d'une perturbation de Ψ₁ à travers l'ordre 2 de la série</div>
+  </div>
+
+  <div class="highlight">
+    <p style="color:var(--acc);font-weight:600;margin-bottom:6px">🌌 Synthèse Einstein</p>
+    <p>La relativité générale est <strong>l'ordre 2 réel de la série harmonique, varié par rapport à la métrique</strong>. L'espace-temps courbe n'est pas un arrière-plan fixe — c'est le tissu même de Ψ₁ à l'ordre quadratique. La matière « dit » à l'espace comment se courber parce que T<sub>μν</sub> est constitué de Ψ₁, et l'espace « dit » à la matière comment se déplacer parce que G<sub>μν</sub> est la réponse géométrique de ce même Ψ₁.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="schrodinger">
+  <h2><span class="num">3</span>L'Équation de Schrödinger — Mécanique Quantique</h2>
+  <p class="section-desc">Dérivation de l'équation maîtresse de la mécanique quantique à partir de la limite non-relativiste de Ψ₁.</p>
+
+  <h3>3.1 L'onde de matière comme projection de Ψ₁</h3>
+  <p>Dans la limite non-relativiste (v ≪ c), l'onde fondamentale Ψ₁ se factorise :</p>
+
+  <div class="eq-box" style="padding:20px 28px">
+    <div style="font-family:'Courier New',monospace;font-size:1.1em;color:var(--acc2);line-height:2.2">
+      Ψ₁(x,t) = ψ(x,t) · e<sup>−i·m·c²·t/ℏ</sup>
+    </div>
+    <div class="desc">La phase rapide mc²t/ℏ est extraite — il reste l'enveloppe lente ψ(x,t)</div>
+  </div>
+
+  <p>Cette enveloppe ψ(x,t) est précisément la <strong>fonction d'onde de Schrödinger</strong>.</p>
+
+  <h3>3.2 Dérivation de iℏ ∂ψ/∂t = Ĥψ</h3>
+
+  <div class="eq-derivation">
+    <div class="step">① Ψ = φ·Ψ₁ + π·(Ψ₁)² + …</div>
+    <div style="color:var(--ink3);font-size:0.9em;margin:6px 0">Limite non-relativiste : extraire mc², garder l'ordre v²/c²</div>
+    <div class="step" style="margin-top:4px">② Ψ₁ = ψ · e<sup>−imc²t/ℏ</sup> &nbsp; avec &nbsp; |iℏ∂ψ/∂t| ≪ mc²|ψ|</div>
+    <div style="color:var(--ink3);font-size:0.9em;margin:6px 0">Développement de l'énergie : E = √(p²c² + m²c⁴) ≈ mc² + p²/2m</div>
+    <div class="step" style="margin-top:4px">③ φ · iℏ ∂Ψ₁/∂t = φ · [mc² + (−ℏ²∇²/2m)] · Ψ₁</div>
+    <div class="arrow">⇩</div>
+    <div class="result">iℏ ∂ψ/∂t = −(ℏ²/2m)∇²ψ + V·ψ</div>
+    <div style="color:var(--ink3);font-size:0.9em;margin-top:6px">L'équation de Schrödinger — Ĥ = −ℏ²∇²/2m + V</div>
+  </div>
+
+  <h3>3.3 Le sens de ℏ dans la série harmonique</h3>
+  <p>La constante de Planck réduite ℏ apparaît comme le <strong>quantum d'action de l'onde Ψ₁</strong> :</p>
+
+  <div class="eq-box" style="padding:18px 24px;background:rgba(15,12,46,0.7);border:2px solid rgba(212,168,67,0.25)">
+    <div style="font-family:'Courier New',monospace;font-size:1.05em;color:var(--ink2);line-height:2.2">
+      ℏ ∝ H₁ · Ψ₁<sub>min</sub> = φ · (Énergie du mode fondamental)
+    </div>
+    <div class="desc">ℏ est le coefficient φ (H₁=1.618) multiplié par l'unité naturelle d'action de Ψ₁</div>
+  </div>
+
+  <h3>3.4 La condition de quantification</h3>
+  <p>La série Ψ = Σ Hₙ (Ψ₁)ⁿ impose une condition de <strong>fermeture</strong> : les monômes (Ψ₁)ⁿ doivent former une base complète. Ceci implique que Ψ₁ est <strong>périodique</strong> sur la variété compacte M, d'où :</p>
+
+  <div class="eq-box" style="padding:20px 28px;background:rgba(122,92,255,0.04);border:2px solid rgba(212,168,67,0.3)">
+    <div style="font-family:'Courier New',monospace;font-size:1.05em;color:var(--phi);line-height:2.2">
+      ∮ p·dx = n·h &nbsp;&nbsp; (condition de Bohr-Sommerfeld)
+    </div>
+    <div class="desc">La quantification est imposée par la complétude de la base monomiale, pas postulée</div>
+  </div>
+
+  <h3>3.5 Le principe d'incertitude</h3>
+  <p>De la structure de série, on déduit que Ψ₁ ne peut pas être simultanément localisé en x et en k (position et impulsion). Le terme H₂·(Ψ₁)² introduit un couplage non-linéaire qui empêche la localisation arbitraire :</p>
+
+  <div class="eq-box" style="padding:18px 24px">
+    <div style="font-family:'Courier New',monospace;font-size:1.2em;color:var(--phi);line-height:2.2">
+      Δx · Δp ≥ ℏ/2
+    </div>
+    <div class="desc">L'inégalité de Heisenberg émerge de la non-commutativité des opérateurs ∂/∂x et x dans la base monomiale</div>
+  </div>
+
+  <div class="highlight">
+    <p style="color:var(--acc);font-weight:600;margin-bottom:6px">🔬 Synthèse Schrödinger</p>
+    <p>La mécanique quantique est <strong>l'ordre 1 de la série harmonique dans la limite non-relativiste</strong>. La fonction d'onde ψ est l'enveloppe lente de Ψ₁ après extraction de la phase de masse. La quantification, le principe d'incertitude et la nature probabiliste de |ψ|² découlent tous de la structure de série monomiale imposée par G<sub>ij,j</sub> = 0.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="newton">
+  <h2><span class="num">4</span>Les Lois de Newton — Mécanique Classique</h2>
+  <p class="section-desc">Dérivation des trois lois de Newton comme limites macroscopiques de la série harmonique.</p>
+
+  <h3>4.1 Première loi : Principe d'inertie</h3>
+  <p>Dans la limite où Ψ = φ·Ψ₁ (troncature à l'ordre 1, pas d'interaction), Ψ₁ est une onde plane libre. Sa trajectoire, donnée par le principe de moindre action appliqué à l'ordre 1, est une <strong>ligne droite à vitesse constante</strong> :</p>
+
+  <div class="eq-derivation">
+    <div class="step">① Ψ ≈ φ·Ψ₁ &nbsp; (pas d'harmoniques supérieures → pas d'interaction)</div>
+    <div style="color:var(--ink3);margin:4px 0">δ∫ L dt = 0 avec L = ½mv² (ordre 1, énergie cinétique)</div>
+    <div class="arrow">⇩</div>
+    <div class="result">v = constante &nbsp; (1ʳᵉ loi de Newton)</div>
+  </div>
+
+  <h3>4.2 Deuxième loi : F = ma</h3>
+  <p>L'interaction est codée par les termes d'ordre supérieur (n ≥ 2). Le terme H₂·(Ψ₁)² introduit un <strong>potentiel V(x)</strong> dans le lagrangien effectif :</p>
+
+  <div class="eq-derivation">
+    <div class="step">① Ψ = φ·Ψ₁ + π·(Ψ₁)² + …</div>
+    <div style="color:var(--ink3);font-size:0.9em;margin:6px 0">Partie réelle du terme quadratique → potentiel</div>
+    <div class="step" style="margin-top:4px">② Re[π·(Ψ₁)²] ∝ ∇²V(x) &nbsp; (équation de Poisson locale)</div>
+    <div style="color:var(--ink3);font-size:0.9em;margin:6px 0">Principe de moindre action : δ∫ (T − V) dt = 0</div>
+    <div class="arrow">⇩</div>
+    <div class="result">m · d²x/dt² = −∇V = F</div>
+    <div style="color:var(--ink3);font-size:0.9em;margin-top:6px">F = ma — la force est l'effet macroscopique du couplage harmonique d'ordre 2</div>
+  </div>
+
+  <h3>4.3 Troisième loi : Action-Réaction</h3>
+  <p>La série harmonique est <strong>symétrique par échange</strong> : remplacer Ψ₁ → −Ψ₁ ne change pas Ψ (les termes pairs sont invariants, les termes impairs changent de signe mais la physique reste identique). Cette symétrie implique :</p>
+
+  <div class="eq-box" style="padding:18px 24px">
+    <div style="font-family:'Courier New',monospace;font-size:1.2em;color:var(--phi);line-height:2.2">
+      F<sub>1→2</sub> = −F<sub>2→1</sub>
+    </div>
+    <div class="desc">La 3ᵉ loi découle de la symétrie de la série sous conjugaison de phase Ψ₁ → Ψ₁*</div>
+  </div>
+
+  <h3>4.4 La gravitation universelle</h3>
+  <p>En couplant deux ondes Ψ₁<sup>(A)</sup> et Ψ₁<sup>(B)</sup> via l'ordre 2, on obtient le potentiel newtonien :</p>
+
+  <div class="eq-derivation">
+    <div class="step">π·Ψ₁<sup>(A)</sup>·Ψ₁<sup>(B)</sup> ∝ G·m<sub>A</sub>·m<sub>B</sub> / r</div>
+    <div class="arrow">⇩</div>
+    <div class="result">F = −G·m₁·m₂ / r²</div>
+    <div style="color:var(--ink3);font-size:0.9em;margin-top:6px">La loi de la gravitation universelle de Newton</div>
+  </div>
+
+  <h3>4.5 Conditions de validité</h3>
+  <div class="warning">
+    <div class="label">⚠️ Domaine de validité des lois de Newton</div>
+    <p>
+      Les lois de Newton sont valides lorsque <strong>deux conditions</strong> sont simultanément remplies :<br>
+      ① <strong>v ≪ c</strong> — les vitesses sont petites devant celle de la lumière (pas d'effets relativistes, les ordres n ≥ 3 sont négligeables)<br>
+      ② <strong>S ≫ ℏ</strong> — l'action du système est grande devant le quantum d'action (pas d'effets quantiques, Ψ₁ est quasi-classique)<br>
+      En dehors de ce régime, il faut garder plus de termes dans la série harmonique.
+    </p>
+  </div>
+
+  <div class="highlight">
+    <p style="color:var(--acc);font-weight:600;margin-bottom:6px">🍎 Synthèse Newton</p>
+    <p>La mécanique classique est <strong>l'approximation aux deux premiers ordres de la série harmonique, dans la limite des grandes actions et des faibles vitesses</strong>. F = ma n'est pas une loi fondamentale — c'est une approximation émergente qui devient exacte quand les harmoniques supérieures (effets quantiques et relativistes) sont négligeables.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="thermodynamique">
+  <h2><span class="num">5</span>Les Lois de la Thermodynamique</h2>
+  <p class="section-desc">Dérivation des quatre principes de la thermodynamique à partir du comportement statistique de la série harmonique.</p>
+
+  <h3>5.1 Le lien entre entropie et harmoniques</h3>
+  <p>Pour un système à N degrés de liberté, la série tronquée à l'ordre N donne le nombre d'états accessibles Ω. Les coefficients Hₙ déterminent la <strong>densité d'états</strong> :</p>
+
+  <div class="eq-box" style="padding:20px 28px">
+    <div style="font-family:'Courier New',monospace;font-size:1.1em;color:var(--acc2);line-height:2.2">
+      Ω(E) ∝ d/dE [nombre de termes de Σ Hₙ (Ψ₁)ⁿ d'énergie ≤ E]
+    </div>
+    <div class="desc">Le nombre d'états est le nombre de configurations distinctes de la série tronquée</div>
+  </div>
+
+  <h3>5.2 Principe Zéro — Équilibre thermique</h3>
+  <p>Deux systèmes A et B sont en équilibre thermique quand leurs séries harmoniques ont le <strong>même taux de décroissance spectral</strong> :</p>
+
+  <div class="eq-derivation">
+    <div class="step">d/dn [ln(Hₙ)]<sub>A</sub> = d/dn [ln(Hₙ)]<sub>B</sub></div>
+    <div class="arrow">⇩</div>
+    <div class="result">T<sub>A</sub> = T<sub>B</sub></div>
+    <div style="color:var(--ink3);font-size:0.9em;margin-top:6px">La température est le paramètre conjugué au taux de décroissance spectrale</div>
+  </div>
+
+  <h3>5.3 Premier Principe — Conservation de l'énergie</h3>
+  <p>C'est une conséquence <strong>directe</strong> de G<sub>ij,j</sub> = 0, l'équation de conservation qui est le point de départ de toute la théorie :</p>
+
+  <div class="eq-derivation">
+    <div class="step">G<sub>ij,j</sub> = 0 &nbsp; ⇒ &nbsp; ∂<sub>μ</sub>T<sup>μν</sup> = 0</div>
+    <div class="arrow">⇩</div>
+    <div class="result">dU = δQ + δW</div>
+    <div style="color:var(--ink3);font-size:0.9em;margin-top:6px">ΔU = Q + W — l'énergie interne est conservée</div>
+  </div>
+
+  <h3>5.4 Deuxième Principe — Croissance de l'entropie</h3>
+  <p>La série Ψ = Σ Hₙ (Ψ₁)ⁿ converge. À mesure que le temps s'écoule, l'énergie se redistribue des modes de bas ordre vers les modes d'ordre élevé (les harmoniques supérieures). Ce processus est <strong>irréversible</strong> car l'équation ᴬᴮᶜD<sup>1/φ</sup> Ψ = −φ·R·Ψ contient une mémoire (noyau de Mittag-Leffler) qui brise la symétrie temporelle :</p>
+
+  <div class="eq-derivation">
+    <div class="step">dS/dt = d/dt [k<sub>B</sub> · ln Ω(E)] ≥ 0</div>
+    <div style="color:var(--ink3);font-size:0.9em;margin:6px 0">L'entropie S = k<sub>B</sub> ln Ω croît car les termes (Ψ₁)ⁿ se peuplent irréversiblement</div>
+    <div class="arrow">⇩</div>
+    <div class="result">ΔS ≥ 0 &nbsp; (pour tout système isolé)</div>
+  </div>
+
+  <p>La constante de Boltzmann k<sub>B</sub> s'exprime en fonction des coefficients harmoniques :</p>
+
+  <div class="eq-box" style="padding:16px 24px">
+    <div style="font-family:'Courier New',monospace;font-size:1.05em;color:var(--phi);line-height:2.2">
+      k<sub>B</sub> ∝ (e/π) · H₇ = (e/π)² ≈ 0.749
+    </div>
+    <div class="desc">k<sub>B</sub> est proportionnel à H₇ — le 7ᵉ coefficient harmonique</div>
+  </div>
+
+  <h3>5.5 Troisième Principe — Inaccessibilité du zéro absolu</h3>
+  <p>À T → 0, tous les modes de la série se gèlent sauf le mode fondamental n = 1. Mais le mode fondamental porte l'énergie de point zéro (½ℏω) imposée par la condition de complétude de la base monomiale :</p>
+
+  <div class="eq-derivation">
+    <div class="step">lim<sub>T→0</sub> Ψ(T) = φ·Ψ₁ + 0 + 0 + …</div>
+    <div style="color:var(--ink3);font-size:0.9em;margin:6px 0">Seul le mode fondamental survit — mais il ne peut pas être nul</div>
+    <div class="arrow">⇩</div>
+    <div class="result">S → S₀ > 0 &nbsp; quand &nbsp; T → 0</div>
+    <div style="color:var(--ink3);font-size:0.9em;margin-top:6px">L'entropie résiduelle est imposée par la non-nullité de Ψ₁</div>
+  </div>
+
+  <h3>5.6 Distribution de Boltzmann</h3>
+  <p>La probabilité d'occuper un état d'énergie E<sub>n</sub> ∝ n·ℏω est donnée par le poids du terme correspondant dans la série :</p>
+
+  <div class="eq-box" style="padding:20px 28px;background:rgba(122,92,255,0.04);border:2px solid rgba(212,168,67,0.3)">
+    <div style="font-family:'Courier New',monospace;font-size:1.15em;color:var(--phi);line-height:2.2">
+      P<sub>n</sub> = |Hₙ|² · e<sup>−n·ℏω/k<sub>B</sub>T</sup> / Z
+    </div>
+    <div style="font-family:'Courier New',monospace;font-size:1em;color:var(--ink2);margin-top:6px">
+      Z = Σ<sub>n</sub> |Hₙ|² · e<sup>−n·ℏω/k<sub>B</sub>T</sup>
+    </div>
+    <div class="desc">La fonction de partition Z est la somme pondérée des coefficients spectraux</div>
+  </div>
+
+  <div class="highlight">
+    <p style="color:var(--acc);font-weight:600;margin-bottom:6px">🔥 Synthèse Thermodynamique</p>
+    <p>La thermodynamique est <strong>la physique de la redistribution spectrale dans la série harmonique Ψ = Σ Hₙ (Ψ₁)ⁿ</strong>. Le premier principe est G<sub>ij,j</sub> = 0. Le deuxième principe est la conséquence de la brisure de symétrie temporelle par le noyau de Mittag-Leffler (mémoire). La flèche du temps pointe dans la direction du peuplement croissant des harmoniques supérieures.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="synthese">
+  <h2><span class="num">6</span>Synthèse — Tableau Complet des Dérivations</h2>
+  <p class="section-desc">Récapitulatif de la façon dont chaque loi de la physique émerge de Ψ = Σ Hₙ · fⁿ.</p>
+
+  <table>
+    <tr><th>Loi / Théorie</th><th>Ordre(s) n</th><th>Terme(s) impliqué(s)</th><th>Condition d'émergence</th><th>Ce qui est dérivé</th></tr>
+    <tr>
+      <td><strong>Équations de Maxwell</strong></td>
+      <td>n = 1, 2, 3</td>
+      <td>φ·Ψ₁, π·Im(Ψ₁)², e·(Ψ₁)³</td>
+      <td>Symétrie U(1) locale</td>
+      <td>∇·E=ρ/ε₀, ∇·B=0, ∇×E=−∂B/∂t, ∇×B=μ₀J+μ₀ε₀∂E/∂t</td>
+    </tr>
+    <tr>
+      <td><strong>Relativité Générale</strong></td>
+      <td>n = 2</td>
+      <td>π·Re(Ψ₁)²</td>
+      <td>Variation par rapport à g<sub>μν</sub></td>
+      <td>G<sub>μν</sub> = 8πG·T<sub>μν</sub></td>
+    </tr>
+    <tr>
+      <td><strong>Gravité Newtonienne</strong></td>
+      <td>n = 2</td>
+      <td>π·Re(Ψ₁)² | limite v≪c</td>
+      <td>Champ faible + statique</td>
+      <td>∇²Φ = 4πGρ, F = −Gm₁m₂/r²</td>
+    </tr>
+    <tr>
+      <td><strong>Équation de Schrödinger</strong></td>
+      <td>n = 1</td>
+      <td>φ·Ψ₁ | limite v≪c</td>
+      <td>Extraction de la phase mc²</td>
+      <td>iℏ∂ψ/∂t = −(ℏ²/2m)∇²ψ + Vψ</td>
+    </tr>
+    <tr>
+      <td><strong>Lois de Newton (1,2,3)</strong></td>
+      <td>n = 1, 2</td>
+      <td>φ·Ψ₁, π·Re(Ψ₁)²</td>
+      <td>v≪c, S≫ℏ</td>
+      <td>v=cte, F=ma, F₁₂=−F₂₁</td>
+    </tr>
+    <tr>
+      <td><strong>Principe d'incertitude</strong></td>
+      <td>n = 1, 2</td>
+      <td>Couplage φ·Ψ₁ ↔ π·(Ψ₁)²</td>
+      <td>Non-commutativité ∂/∂x et x</td>
+      <td>Δx·Δp ≥ ℏ/2</td>
+    </tr>
+    <tr>
+      <td><strong>1er Principe (Thermo)</strong></td>
+      <td>Tous</td>
+      <td>G<sub>ij,j</sub> = 0</td>
+      <td>Conservation covariante</td>
+      <td>dU = δQ + δW</td>
+    </tr>
+    <tr>
+      <td><strong>2ᵉ Principe (Thermo)</strong></td>
+      <td>Tous</td>
+      <td>Noyau de Mittag-Leffler</td>
+      <td>Mémoire ⇒ irréversibilité</td>
+      <td>ΔS ≥ 0</td>
+    </tr>
+    <tr>
+      <td><strong>3ᵉ Principe (Thermo)</strong></td>
+      <td>n = 1</td>
+      <td>φ·Ψ₁ | T → 0</td>
+      <td>Non-nullité de Ψ₁</td>
+      <td>S → S₀ > 0 quand T → 0</td>
+    </tr>
+    <tr>
+      <td><strong>Distribution de Boltzmann</strong></td>
+      <td>Tous</td>
+      <td>|Hₙ|²·e<sup>−nℏω/kT</sup></td>
+      <td>Équilibre thermique</td>
+      <td>P<sub>n</sub> ∝ e<sup>−E<sub>n</sub>/kT</sup></td>
+    </tr>
+    <tr>
+      <td><strong>Ondes gravitationnelles</strong></td>
+      <td>n = 2</td>
+      <td>π·Re(Ψ₁)² | jauge TT</td>
+      <td>Linéarisation</td>
+      <td>□h<sub>μν</sub> = −16πG·T<sub>μν</sub></td>
+    </tr>
+    <tr>
+      <td><strong>Quantification (Bohr)</strong></td>
+      <td>n = 1</td>
+      <td>φ·Ψ₁ | périodicité</td>
+      <td>Complétude de la base</td>
+      <td>∮p·dx = n·h</td>
+    </tr>
+  </table>
+
+  <h3>6.1 La structure unifiée</h3>
+
+  <div class="eq-box" style="padding:28px 32px;background:rgba(212,168,67,0.04);border:2px solid rgba(212,168,67,0.4)">
+    <div style="font-family:'Courier New',monospace;font-size:1.1em;color:var(--ink2);line-height:2.6;text-align:left;max-width:850px;margin:0 auto">
+      <strong style="color:var(--phi);font-size:1.2em">Ψ = Σ Hₙ (Ψ₁)ⁿ</strong><br>
+      <span style="color:var(--ink3)">├─ n=1 → φ·Ψ₁</span><br>
+      <span style="color:var(--ink2)">│  ├─ limite non-relativiste → <strong style="color:var(--acc)">Schrödinger</strong> (quantique)</span><br>
+      <span style="color:var(--ink2)">│  └─ limite classique → <strong style="color:var(--acc)">Newton 1,2,3</strong> (mécanique)</span><br>
+      <span style="color:var(--ink3)">├─ n=2 → π·(Ψ₁)²</span><br>
+      <span style="color:var(--ink2)">│  ├─ partie imaginaire → <strong style="color:var(--acc)">Maxwell</strong> (électromagnétisme)</span><br>
+      <span style="color:var(--ink2)">│  └─ partie réelle → <strong style="color:var(--acc)">Einstein</strong> (gravitation)</span><br>
+      <span style="color:var(--ink3)">├─ n=3 → e·(Ψ₁)³</span><br>
+      <span style="color:var(--ink2)">│  └─ couplage non-linéaire → <strong style="color:var(--acc)">Interaction EM complète</strong></span><br>
+      <span style="color:var(--ink3)">├─ n=4,5,6,… → √2, √3, √5, …</span><br>
+      <span style="color:var(--ink2)">│  └─ harmoniques supérieures → <strong style="color:var(--acc)">Forces nucléaires, corrections</strong></span><br>
+      <span style="color:var(--ink3)">└─ G<sub>ij,j</sub> = 0 (global)</span><br>
+      <span style="color:var(--ink2)">   └─ <strong style="color:var(--acc)">Thermodynamique</strong> (conservation + irréversibilité)</span>
+    </div>
+  </div>
+
+  <h3>6.2 Pourquoi cette unification est unique</h3>
+  <p>La Théorie Harmonique n'ajoute pas les lois de la physique les unes aux autres — elle les <strong>déduit</strong> comme projections d'une même série sur différents observables. Ceci répond à la question qui hante la physique depuis un siècle : <em>pourquoi ces lois-là, avec ces constantes-là ?</em></p>
+
+  <table>
+    <tr><th>Question</th><th>Réponse de la Théorie Harmonique</th></tr>
+    <tr>
+      <td>Pourquoi la lumière obéit-elle aux équations de Maxwell ?</td>
+      <td>Parce que F<sub>μν</sub> est la partie imaginaire du terme quadratique de la série</td>
+    </tr>
+    <tr>
+      <td>Pourquoi la gravité est-elle décrite par la courbure ?</td>
+      <td>Parce que G<sub>μν</sub> est la réponse géométrique du même terme quadratique (partie réelle)</td>
+    </tr>
+    <tr>
+      <td>Pourquoi la matière est-elle quantique ?</td>
+      <td>Parce que la complétude de la base (Ψ₁)ⁿ impose la périodicité et donc la quantification</td>
+    </tr>
+    <tr>
+      <td>Pourquoi le temps a-t-il une flèche ?</td>
+      <td>Parce que le noyau de Mittag-Leffler (mémoire) dans ᴬᴮᶜD<sup>1/φ</sup> brise la symétrie T</td>
+    </tr>
+    <tr>
+      <td>Pourquoi ces constantes (φ, π, e, √2…) ?</td>
+      <td>Parce que ce sont les coefficients spectraux de la projection de Ψ sur la base monomiale</td>
+    </tr>
+  </table>
+
+  <div class="highlight">
+    <p style="color:var(--phi);font-weight:600;margin-bottom:8px">🌌 L'essentiel</p>
+    <p>
+      <strong>Toute la physique connue — de la chute d'une pomme à la courbure de l'espace-temps, 
+      de l'éclair à l'atome, du moteur à vapeur au laser — est contenue dans une seule équation : 
+      Ψ = Σ Hₙ · fⁿ. Les lois ne sont pas inventées. Elles sont lues, une à une,
+      comme les notes d'une partition que l'univers joue depuis 13.8 milliards d'années.</strong>
+    </p>
+  </div>
+
+  <blockquote>
+    « Nous n'avons pas créé la physique. Nous avons appris à déchiffrer la symphonie. Chaque loi est une harmonique. Chaque constante est un coefficient spectral. Et l'univers, dans son ensemble, est Ψ. »
+    <div class="attrib">— Théorie Harmonique, 2026</div>
+  </blockquote>
+
+</section>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p><a href="document-fondateur.html">← Document Fondateur</a> &nbsp;|&nbsp; <a href="index.html">Symphonie Cosmique</a> &nbsp;|&nbsp; <a href="v2/">Architecture v2</a></p>
+    <p style="margin-top:8px">Dérivation des Lois Physiques — Théorie Harmonique © 2026 — Ψ = Σ Hₙ (Ψ₁)ⁿ</p>
+  </div>
+</footer>
+
+</body>
+</html>

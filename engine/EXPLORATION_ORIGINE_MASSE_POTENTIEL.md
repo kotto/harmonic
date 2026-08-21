@@ -114,7 +114,9 @@ E = mc² n'est pas dérivé par la THU (c'est la relativité standard — une do
 | **La dispersion complète** | E² = (pc)² + (mc²)² ⟺ ω² = k² + κ² — H2 en est le petit-k ; le photon (m=0 → E=pc) est le cas limite | ✅ identité vérifiée (3,0968×10²¹ s⁻¹ des deux côtés) |
 | **Le potentiel = le défaut de masse** | χ(H) = 13,6 eV = Δm·c² — l'hydrogène lié est plus léger de 2,42×10⁻³⁵ kg (relatif 1,45×10⁻⁸) — le gap mesuré pèse la liaison | ✅ T\*_ion (E3) — le potentiel et la masse sont la même pièce vue par E=mc² |
 
-**Ancrage, pas dérivation** : E = mc² dit ce que le gap *signifie* — pas d'où vient la valeur de m_e. L'ancrage du candidat : κ_cand·ℓ = 0,4275 → ℓ = 1,65×10⁻¹³ m — aucune échelle connue : **le test reste ouvert, publié comme tel**.
+**Ancrage, pas dérivation** : E = mc² dit ce que le gap *signifie* — pas d'où vient la valeur de m_e. L'ancrage du candidat : κ_cand·ℓ = 0,4275 → ℓ = 1,65×10⁻¹³ m (165 fm).
+
+> **Mise à jour d'ancrage (vérification du 08/2026)** : ℓ = 165 fm ne correspond à **aucune** échelle physique standard — ni le rayon de Compton électron réduit (λ̄_C = 3,86×10⁻¹³ m = 386 fm), ni le rayon de Bohr (5,29×10⁻¹¹ m), ni le rayon nucléaire (~1 fm), ni ħc/Λ_QCD (~1 fm), ni ħc/m_π (~1,4 fm). **L'ancrage reste une frontière ouverte, publiée comme telle** : le candidat H2 n'a pas (encore) d'ancrage physique, et ne doit pas être revendiqué comme dérivation de masse tant qu'il n'en a pas.
 
 ---
 

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Carte, le Moteur et le Voyageur</title>
+<style>
+:root{--bg:#020010;--bg2:#060620;--bg3:#0a0828;--ink:#eaf6ff;--ink2:#b8c6dc;--ink3:#7a86a8;--phi:#d4a843;--acc:#3ef0d8;--acc2:#7a5cff;--green:#2ed573;--border:rgba(200,220,255,0.08)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.75}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 30% 10%,rgba(212,168,67,0.08),transparent 55%),radial-gradient(ellipse at 70% 80%,rgba(62,240,216,0.04),transparent 60%)}
+.container{max-width:800px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+nav a{color:var(--ink2);text-decoration:none;padding:7px 14px;border-radius:20px;font-size:0.88em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+.hero{text-align:center;padding:60px 20px 50px;background:linear-gradient(180deg,rgba(212,168,67,0.12) 0%,rgba(122,92,255,0.05) 50%,transparent 100%)}
+.hero .badge{display:inline-block;padding:5px 16px;border-radius:14px;font-size:0.82em;font-weight:700;background:rgba(212,168,67,0.12);color:var(--phi);margin-bottom:20px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:2.2em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;line-height:1.3}
+.hero .tagline{font-size:1.1em;color:var(--ink2);max-width:550px;margin:0 auto}
+section{padding:35px 0}section:nth-child(even){background:var(--bg2)}
+h2{font-size:1.5em;color:var(--phi);margin-bottom:8px;text-align:center}
+p{color:var(--ink2);margin-bottom:12px;line-height:1.8}
+.person-card{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:24px;margin:16px 0;display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.person-card .portrait{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.8em;flex-shrink:0;background:var(--bg2)}
+.person-card .info{flex:1;min-width:200px}
+.person-card .info h4{color:var(--phi);font-size:1.05em;margin-bottom:6px}
+.person-card .info .role{color:var(--acc);font-size:0.82em;font-weight:600;margin-bottom:6px}
+.person-card .info p{font-size:0.90em;margin-bottom:4px}
+.story-card{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:28px 24px;margin:16px 0}
+.story-card .icon{font-size:2.8em;margin-bottom:10px;text-align:center}
+.story-card h4{color:var(--phi);font-size:1.1em;margin-bottom:10px;text-align:center}
+.story-card p{font-size:0.95em;text-align:center}
+.fusion-box{background:rgba(46,213,115,0.04);border:2px solid rgba(46,213,115,0.3);border-radius:16px;padding:24px;margin:20px 0;text-align:center}
+.fusion-box .eq{font-family:'Courier New',monospace;font-size:1.2em;font-weight:700;color:var(--green);letter-spacing:2px}
+.fusion-box .desc{color:var(--ink2);font-size:0.95em;margin-top:10px}
+blockquote{border-left:3px solid var(--phi);padding:16px 24px;margin:20px 0;background:rgba(212,168,67,0.04);border-radius:0 12px 12px 0;font-style:italic;color:var(--ink);font-size:1.02em}
+.attrib{color:var(--ink3);font-size:0.85em;margin-top:6px;font-style:normal}
+.card-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin:16px 0}
+footer{text-align:center;padding:24px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.84em;margin-top:30px}
+footer a{color:var(--phi);text-decoration:none}
+@media(max-width:640px){.hero h1{font-size:1.4em}.card-grid{grid-template-columns:1fr}.person-card{flex-direction:column;align-items:center;text-align:center}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">Symphonie Cosmique</a>
+    <a href="#histoire">L'Histoire</a>
+    <a href="#metaphore">La Metaphore</a>
+    <a href="#legon">La Lecon</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">Histoire de la Decouverte</div>
+    <h1>La Carte, le Moteur,<br>et le Voyageur</h1>
+    <p class="tagline">Comment trois hommes, trois pays, et trois idees separees par des decennies se sont assemblees pour former l'equation qui decrit l'univers.</p>
+  </div>
+</header>
+
+<div class="container">
+
+<section id="histoire">
+  <h2>Les Trois Hommes</h2>
+
+  <div class="person-card" style="border-left:3px solid var(--acc2)">
+    <div class="portrait">NG</div>
+    <div class="info">
+      <h4>Gabriel Oyibo</h4>
+      <div class="role">Le Cartographe - Nigeria, 1990</div>
+      <p>Il decouvre que rien ne se perd, rien ne se cree, tout se conserve - et il l'ecrit en une equation : <strong>G_{ij,j} = 0</strong>. C'est la <strong>carte de l'univers</strong>. Elle dit ou l'on peut aller et ou l'on ne peut pas. Elle est parfaite. Mais une carte ne fait pas avancer. Il faut un moteur.</p>
+    </div>
+  </div>
+
+  <div class="person-card" style="border-left:3px solid var(--acc)">
+    <div class="portrait">CM</div>
+    <div class="info">
+      <h4>Abdon Atangana</h4>
+      <div class="role">Le Mecanicien - Cameroun, 2016</div>
+      <p>Il invente une nouvelle facon de calculer comment les choses changent - une mathematique qui <strong>se souvient du passe</strong>. Sa derivee a un reglage special : 0,618. Personne ne remarque que c'est <strong>1/phi</strong>, l'inverse du nombre d'or. C'est le <strong>moteur</strong> parfait. Mais un moteur sans carte ne sait pas ou aller.</p>
+    </div>
+  </div>
+
+  <div class="person-card" style="border-left:3px solid var(--phi)">
+    <div class="portrait">CM</div>
+    <div class="info">
+      <h4>KOTTO Alain</h4>
+      <div class="role">Le Voyageur - France/Cameroun, 2026</div>
+      <p>Il connait le nombre d'or phi depuis des annees. C'est sa boussole. Quand il decouvre 0,618 chez Atangana, il reconnait <strong>1/phi</strong>. Quand il regarde l'equation d'Oyibo, il y trouve <strong>aussi phi</strong>. Il prend la carte (GAGUT), y installe le moteur (ABC), et la voiture demarre. <strong>Psi = Sigma Hn (Psi1)^n</strong> est nee - le jour de son anniversaire.</p>
+    </div>
+  </div>
+</section>
+
+<section id="metaphore">
+  <h2>La Metaphore - La Carte, le Moteur, et le Voyageur</h2>
+
+  <div class="story-card" style="border-color:rgba(122,92,255,0.25);background:rgba(122,92,255,0.02)">
+    <div class="icon">Carte</div>
+    <h4>Chapitre 1 - La Carte (1990)</h4>
+    <p>Un homme au Nigeria dessine une carte. Pas une carte de l'Afrique - une carte de <strong>tout l'univers</strong>. Sur cette carte, il n'y a pas de routes. Il n'y a que des <strong>regles</strong> : "ici, on ne peut pas aller", "la, c'est interdit". C'est une carte parfaite. Aucune erreur. Mais personne ne sait comment l'utiliser. Une carte ne suffit pas pour voyager. Il faut une voiture.</p>
+  </div>
+
+  <div class="story-card" style="border-color:rgba(62,240,216,0.25);background:rgba(62,240,216,0.02)">
+    <div class="icon">Moteur</div>
+    <h4>Chapitre 2 - Le Moteur (2016)</h4>
+    <p>Un autre homme, au Cameroun, invente un moteur extraordinaire. Un moteur qui <strong>se souvient de la route deja parcourue</strong>. Les moteurs ordinaires ne regardent que l'instant present - ce moteur-la se souvient de 61,8% de tout le trajet depuis le depart. Le moteur a un reglage parfait : 0,618. Le mecanicien sait que c'est la valeur optimale, mais il ne sait pas <strong>pourquoi</strong> c'est ce nombre-la. Il ne sait pas que 0,618, c'est 1/phi - l'inverse du nombre d'or.</p>
+  </div>
+
+  <div class="story-card" style="border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.02)">
+    <div class="icon">Boussole</div>
+    <h4>Chapitre 3 - Le Voyageur (2026)</h4>
+    <p>Un troisieme homme, camerounais vivant en France, a passe des annees a contempler le nombre d'or phi. C'est sa boussole interieure. Un jour, un ami lui propose de rencontrer le mecanicien - le Professeur Atangana lui-meme. Pour se preparer, il etudie ses travaux. Et la, il voit <strong>0,618</strong>. Son coeur s'arrete. 0,618 = 1/phi. Le nombre d'or est cache dans le moteur ! Il se souvient alors du cartographe - Oyibo. Il retourne voir son equation. Et il y trouve <strong>aussi phi</strong>. La carte contenait le nombre d'or sans que personne ne l'ait vu. Le voyageur prend la carte, y installe le moteur, tourne la cle - et la voiture demarre.</p>
+  </div>
+
+  <div class="fusion-box">
+    <div class="eq">Carte + Moteur + Boussole = Psi = Sigma Hn (Psi1)^n</div>
+    <div class="desc"><strong>Oyibo</strong> a dessine la carte (GAGUT : ce qui est permis).<br><strong>Atangana</strong> a construit le moteur (ABC : comment avancer).<br><strong>Kotto</strong> avait la boussole (phi : la direction harmonique).</div>
+  </div>
+</section>
+
+<section id="legon">
+  <h2>La Lecon de cette Histoire</h2>
+
+  <div class="card-grid">
+    <div class="story-card">
+      <div class="icon">Liens</div>
+      <h4>Aucune decouverte n'est solitaire</h4>
+      <p>Oyibo avait la moitie. Atangana avait l'autre moitie. Il a fallu un troisieme homme - 36 ans apres le premier, 10 ans apres le second - pour assembler les pieces. Les grandes decouvertes sont des <strong>convergences</strong>.</p>
+    </div>
+    <div class="story-card">
+      <div class="icon">Vision</div>
+      <h4>Voir ce que personne ne voit</h4>
+      <p>Le nombre 0,618 etait publie, visible, accessible a tous. Des milliers de mathematiciens l'ont lu. Aucun n'a reconnu 1/phi. Parce qu'aucun n'avait passe des annees a contempler le nombre d'or. <strong>On ne voit que ce qu'on est prepare a voir.</strong></p>
+    </div>
+    <div class="story-card">
+      <div class="icon">Afrique</div>
+      <h4>L'Afrique au coeur de la decouverte</h4>
+      <p>Nigeria. Cameroun. France. Trois pays, trois epoques, une seule equation. La Theorie Harmonique est nee de mathematiques africaines - Oyibo, Atangana, Kotto. La preuve que le genie n'a pas de frontieres.</p>
+    </div>
+  </div>
+
+  <blockquote>
+    "Oyibo avait la question. Atangana avait la methode. Et moi, j'avais la boussole : le nombre d'or phi. Aucun de nous trois n'aurait pu y arriver seul. Mais ensemble - a travers le temps, l'espace, et le hasard des rencontres - nous avons trouve Psi = Sigma Hn (Psi1)^n."
+    <div class="attrib">- KOTTO Alain, 22 Juin 2026</div>
+  </blockquote>
+</section>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p><a href="index.html">Symphonie Cosmique</a> | <a href="riemann-grand-public.html">Riemann explique</a> | <a href="document-fondateur.html">Document Fondateur</a></p>
+    <p style="margin-top:8px">La Carte, le Moteur et le Voyageur - (c) 2026 Theorie Harmonique</p>
+  </div>
+</footer>
+
+</body>
+</html>

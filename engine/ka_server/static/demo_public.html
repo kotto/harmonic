@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Démo — HARMONIC AI · IA déterministe</title>
+<link rel="icon" type="image/svg+xml" href="/brand/ka.svg">
+<meta name="description" content="Démo publique HARMONIC AI : posez une question, obtenez une réponse déterministe avec provenance. 0% hallucination, arithmétique émergente, rappel holographique.">
+<style>
+:root{
+  --void:#06060f;--soul:#8b83ff;--soul-l:#b8b2ff;--soul-d:rgba(139,131,255,.18);--soul-g:rgba(139,131,255,.32);
+  --life:#3ddba0;--life-d:rgba(61,219,160,.15);--life-g:rgba(61,219,160,.28);
+  --wisdom:#f0c060;--wisdom-d:rgba(240,192,96,.15);--wisdom-g:rgba(240,192,96,.28);
+  --rose:#ed93b1;--rose-d:rgba(212,83,126,.15);--rose-g:rgba(212,83,126,.28);
+  --sky:#85b7eb;--g1:rgba(255,255,255,.04);--g2:rgba(255,255,255,.075);--g3:rgba(255,255,255,.13);
+  --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.1);--b3:rgba(255,255,255,.16);
+  --t1:rgba(255,255,255,.92);--t2:rgba(255,255,255,.62);--t3:rgba(255,255,255,.36);--t4:rgba(255,255,255,.18);
+  --font:-apple-system,"SF Pro Display","Inter",system-ui,sans-serif;
+  --mono:"SF Mono","JetBrains Mono",Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--void);color:var(--t1);font-family:var(--font);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;line-height:1.55}
+a{color:var(--soul-l);text-decoration:none}a:hover{color:#fff}
+.btn{display:inline-block;font-weight:700;font-size:13px;padding:10px 18px;border-radius:10px;border:1px solid transparent;transition:transform .12s}
+.btn:hover{transform:translateY(-1px)}
+.btn--soul{background:linear-gradient(135deg,var(--soul),#6a5cff);color:#fff}
+.btn--life{background:linear-gradient(135deg,var(--life),#1fae7c);color:#04261a}
+.btn--ghost{background:var(--g2);color:var(--t1);border-color:var(--b2)}
+.btn--xs{padding:6px 14px;font-size:11.5px;border-radius:999px;border:1px solid var(--b2);background:var(--g1);color:var(--t2);cursor:pointer}
+.btn--xs:hover{background:var(--g2);color:var(--t1);border-color:var(--soul-g)}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;letter-spacing:.03em}
+.badge--life{background:var(--life-d);color:var(--life);border:1px solid var(--life-g)}
+.badge--soul{background:var(--soul-d);color:var(--soul-l);border:1px solid var(--soul-g)}
+.badge--gold{background:var(--wisdom-d);color:var(--wisdom);border:1px solid var(--wisdom-g)}
+.badge--gray{background:var(--g2);color:var(--t3);border:1px solid var(--b1)}
+.hidden{display:none!important}
+.wrap{max-width:800px;margin:0 auto;padding:0 20px;width:100%}
+
+/* HEADER */
+header{border-bottom:1px solid var(--b1);padding:14px 0}
+header .wrap{display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14px;letter-spacing:.02em}
+.brand img.mark{width:27px;height:27px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));transition:transform .3s}
+.brand:hover img.mark{transform:scale(1.08) rotate(-4deg)}
+.brand b{color:var(--soul-l)}
+header .links{display:flex;gap:12px;align-items:center;font-size:12px;font-weight:600}
+header .links a{color:var(--t2)}header .links a:hover{color:#fff}
+
+/* MAIN */
+main{flex:1;padding:50px 0 30px}
+main .wrap{text-align:center}
+main h1{font-size:clamp(24px,3.8vw,36px);font-weight:900;letter-spacing:-.015em;margin-bottom:6px}
+main h1 .grad{background:linear-gradient(120deg,var(--soul-l),var(--sky));-webkit-background-clip:text;background-clip:text;color:transparent}
+main p.sub{color:var(--t3);font-size:13.5px;margin-bottom:30px;max-width:500px;margin-left:auto;margin-right:auto}
+
+/* INPUT AREA */
+.input-area{max-width:640px;margin:0 auto 16px}
+.input-area textarea{width:100%;background:#0d0d1c;border:1px solid var(--b2);border-radius:14px;color:var(--t1);font-family:var(--font);font-size:16px;padding:16px 18px;resize:none;outline:none;transition:border-color .2s;min-height:70px}
+.input-area textarea:focus{border-color:var(--soul-g)}
+.input-area .q-row{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.input-area .q-row .btn{flex-shrink:0}
+.input-area .hint{font-size:11px;color:var(--t4);margin-left:auto}
+
+/* SUGGESTIONS */
+.suggestions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:30px;max-width:640px;margin-left:auto;margin-right:auto}
+
+/* RESPONSE */
+#response{max-width:680px;margin:0 auto;text-align:left}
+.answer-card{border:1px solid var(--life-g);border-radius:16px;padding:20px;background:var(--life-d);margin-bottom:14px}
+.answer-card .label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--life);margin-bottom:8px}
+.answer-card .text{font-size:14px;line-height:1.65;color:var(--t1);white-space:pre-wrap}
+.answer-card .result{border-top:1px solid var(--life-g);margin-top:12px;padding-top:10px;font-size:12px;color:var(--t2)}
+.provenance{border:1px solid var(--b1);border-radius:14px;padding:14px;background:var(--g1)}
+.provenance .tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.provenance .note{font-size:11px;color:var(--t4);padding-top:8px;border-top:1px solid var(--b1)}
+.provenance .facts{font-family:var(--mono);font-size:11px;color:var(--t3);padding:10px;background:rgba(0,0,0,.3);border-radius:8px;margin-top:8px;max-height:160px;overflow:auto;line-height:1.7}
+
+/* LOADING */
+.loading-dots{display:inline-flex;gap:4px;align-items:center;margin:10px 0 14px;color:var(--t3);font-size:13px}
+.loading-dots .dot{width:7px;height:7px;border-radius:50%;background:var(--soul);animation:blink 1.2s infinite}
+.loading-dots .dot:nth-child(2){animation-delay:.2s}
+.loading-dots .dot:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* ERROR */
+.error-msg{background:var(--rose-d);border:1px solid var(--rose-g);border-radius:12px;padding:14px 18px;color:var(--rose);font-size:13px;margin-top:10px}
+
+/* FOOTER */
+footer{border-top:1px solid var(--b1);padding:24px 0;color:var(--t3);font-size:11px;text-align:center}
+footer a{color:var(--t3)}footer a:hover{color:var(--t1)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="/harmonic-ai"><img class="mark" src="/brand/ka.svg" alt="HARMONIC AI">HARMONIC <b>AI</b></a>
+    <div class="links">
+      <a href="/harmonic-ai" data-i18n="site">Site</a>
+      <a href="/enterprise/console" data-i18n="console">Enterprise</a>
+      <span style="color:var(--t3)">·</span>
+      <span id="lang-fr" style="cursor:pointer;font-weight:700;color:var(--soul-l)" onclick="setLang('fr')">FR</span>
+      <span style="color:var(--t3)">/</span>
+      <span id="lang-en" style="cursor:pointer;color:var(--t3)" onclick="setLang('en')">EN</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <h1><span class="grad" data-i18n="title">Posez votre question.</span><br><span data-i18n="sub">Réponse déterministe. 0% hallucination.</span></h1>
+    <p class="sub" data-i18n="hint">Arithmétique émergente, connaissance holographique, provenance traçable.</p>
+
+    <div class="input-area">
+      <textarea id="q" rows="2" placeholder="Ex: combien font 17 multiplié par 13 ?" data-i18n-fr="Ex: combien font 17 multiplié par 13 ?" data-i18n-en="Ex: what is 17 times 13 ?"></textarea>
+      <div class="q-row">
+        <button class="btn btn--soul" onclick="ask()" data-i18n="ask">Poser la question</button>
+        <div class="hint" data-i18n="rate">8 req / 5 min</div>
+      </div>
+    </div>
+
+    <div class="suggestions" id="suggestions">
+      <button class="btn btn--xs" data-q="17 * 13">17 × 13</button>
+      <button class="btn btn--xs" data-q="sqrt(144)">√144</button>
+      <button class="btn btn--xs" data-q="15% de 200">15% de 200</button>
+      <button class="btn btn--xs" data-q="première loi de Newton">1ʳᵉ loi de Newton</button>
+      <button class="btn btn--xs" data-q="que vaut PI">Que vaut π ?</button>
+      <button class="btn btn--xs" data-q="loi de l'attraction universelle">Loi gravitation</button>
+    </div>
+
+    <div id="loading" class="hidden">
+      <div class="loading-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span> <span data-i18n="loading">Émergence en cours…</span></div>
+    </div>
+
+    <div id="response" class="hidden"></div>
+    <div id="error" class="hidden"></div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span data-i18n="foot1">HARMONIC AI — L'IA qui calcule au lieu de générer.</span>
+    <br>
+    <a href="/harmonic-ai" data-i18n="foot2">Site institutionnel</a> · <a href="/enterprise/console" data-i18n="foot3">Console Enterprise</a> · <a href="mailto:contact@harmonic-ai.com">contact@harmonic-ai.com</a>
+  </div>
+</footer>
+
+<script>
+'use strict';
+var API = (function () {
+  var host = location.hostname;
+  var isLocal = host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.');
+  return isLocal ? location.protocol + '//' + host + ':8767' : '';
+})();
+
+var LANG = 'fr';
+try { if (localStorage.getItem('demo_lang') === 'en') LANG = 'en'; } catch (e) {}
+
+// ─── i18n minimal ───
+var I18N = {
+  fr: {
+    'site': 'Site', 'console': 'Enterprise', 'title': 'Posez votre question.', 'sub': 'Réponse déterministe. 0% hallucination.',
+    'hint': 'Arithmétique émergente, connaissance holographique, provenance traçable.',
+    'ph': 'Ex: combien font 17 multiplié par 13 ?', 'ask': 'Poser la question', 'rate': '8 req / 5 min',
+    'loading': 'Émergence en cours…',
+    'foot1': 'HARMONIC AI — L\'IA qui calcule au lieu de générer.',
+    'foot2': 'Site institutionnel', 'foot3': 'Console Enterprise',
+    'ans': 'Réponse déterministe', 'result': 'Résultat', 'method': 'méthode', 'domain': 'domaine', 'facts': 'faits',
+    'provenance': 'Provenance', 'deterministic': 'Réponse déterministe — reproductible à l\'identique. 0% hallucination.',
+    'err_rate': 'Trop de requêtes. Réessayez dans 5 minutes.',
+    'err_engine': 'Le moteur harmonique est indisponible. Réessayez dans un instant.',
+    'err_other': 'Erreur'
+  },
+  en: {
+    'site': 'Site', 'console': 'Enterprise', 'title': 'Ask your question.', 'sub': 'Deterministic answer. 0% hallucination.',
+    'hint': 'Emergent arithmetic, holographic knowledge, traceable provenance.',
+    'ph': 'Ex: what is 17 times 13 ?', 'ask': 'Ask', 'rate': '8 req / 5 min',
+    'loading': 'Emergence in progress…',
+    'foot1': 'HARMONIC AI — The AI that computes instead of generating.',
+    'foot2': 'Institutional site', 'foot3': 'Enterprise Console',
+    'ans': 'Deterministic answer', 'result': 'Result', 'method': 'method', 'domain': 'domain', 'facts': 'facts',
+    'provenance': 'Provenance', 'deterministic': 'Deterministic answer — identically reproducible. 0% hallucination.',
+    'err_rate': 'Too many requests. Try again in 5 minutes.',
+    'err_engine': 'The harmonic engine is unavailable. Try again shortly.',
+    'err_other': 'Error'
+  }
+};
+function i18n(k) { return (I18N[LANG] && I18N[LANG][k]) || k; }
+
+function setLang(l) {
+  LANG = l;
+  try { localStorage.setItem('demo_lang', l); } catch (e) {}
+  document.documentElement.lang = l;
+  document.querySelectorAll('[data-i18n]').forEach(function (el) {
+    var v = i18n(el.getAttribute('data-i18n'));
+    if (v) el.textContent = v;
+  });
+  // Placeholder avec data-i18n-fr/en
+  var ta = document.getElementById('q');
+  ta.placeholder = ta.getAttribute('data-i18n-' + l) || i18n('ph');
+  document.getElementById('lang-fr').style.color = l === 'fr' ? 'var(--soul-l)' : 'var(--t3)';
+  document.getElementById('lang-fr').style.fontWeight = l === 'fr' ? '700' : '400';
+  document.getElementById('lang-en').style.color = l === 'en' ? 'var(--soul-l)' : 'var(--t3)';
+  document.getElementById('lang-en').style.fontWeight = l === 'en' ? '700' : '400';
+}
+
+// ─── Questions suggérées ───
+document.querySelectorAll('.suggestions .btn').forEach(function (b) {
+  b.addEventListener('click', function () {
+    document.getElementById('q').value = this.getAttribute('data-q');
+    ask();
+  });
+});
+
+// ─── Enter → submit ───
+document.getElementById('q').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); }
+});
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function ask() {
+  var q = document.getElementById('q').value.trim();
+  if (!q) return;
+  document.getElementById('error').classList.add('hidden');
+  document.getElementById('response').classList.add('hidden');
+  document.getElementById('loading').classList.remove('hidden');
+
+  fetch(API + '/api/demo/ask', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question: q })
+  })
+  .then(function (r) { return r.json().then(function (d) { d._status = r.status; return d; }); })
+  .then(function (d) {
+    document.getElementById('loading').classList.add('hidden');
+    if (d._status === 429) {
+      document.getElementById('error').textContent = i18n('err_rate');
+      document.getElementById('error').classList.remove('hidden');
+      return;
+    }
+    if (d.error) {
+      document.getElementById('error').textContent = (d.code === 'HARMONIC_UNAVAILABLE' ? i18n('err_engine') : i18n('err_other')) + ' : ' + d.error;
+      document.getElementById('error').classList.remove('hidden');
+      return;
+    }
+    // Réponse
+    var html = '<div class="answer-card"><div class="label">' + i18n('ans') + '</div>'
+      + '<div class="text">' + escapeHtml(d.answer) + '</div>';
+    if (d.result !== undefined) {
+      html += '<div class="result"><b>' + i18n('result') + ' :</b> ' + d.result + '</div>';
+    }
+    html += '</div>';
+
+    // Provenance
+    html += '<div class="provenance"><div class="tags">'
+      + '<span class="badge badge--life">' + escapeHtml(d.source || '—') + '</span>'
+      + (d.method ? '<span class="badge badge--gold">' + i18n('method') + ' : ' + escapeHtml(d.method) + '</span>' : '')
+      + (d.best_domain ? '<span class="badge badge--soul">' + i18n('domain') + ' : ' + escapeHtml(d.best_domain) + '</span>' : '')
+      + '<span class="badge badge--gold">' + (d.consensus_facts_count || 0) + ' ' + i18n('facts') + '</span>'
+      + '<span class="badge badge--gray">' + (d.latency_ms || 0) + ' ms</span>'
+      + '</div>';
+    if (d.facts && d.facts.length) {
+      html += '<div class="facts">' + d.facts.map(function (f) {
+        return '• ' + escapeHtml(String(f[0] || '')) + ' → ' + escapeHtml(String(f[1] || '')) + ' → ' + escapeHtml(String(f[2] || ''));
+      }).join('<br>') + '</div>';
+    }
+    html += '<div class="note">🔒 ' + i18n('deterministic') + '</div></div>';
+
+    document.getElementById('response').innerHTML = html;
+    document.getElementById('response').classList.remove('hidden');
+  })
+  .catch(function (e) {
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('error').textContent = i18n('err_other') + ' : ' + e.message;
+    document.getElementById('error').classList.remove('hidden');
+  });
+}
+
+// Init
+setLang(LANG);
+</script>
+</body>
+</html>

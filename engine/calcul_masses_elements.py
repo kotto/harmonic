@@ -6,9 +6,13 @@ calcul_masses_elements.py — LES MASSES DES 118 ÉLÉMENTS
 Suite de la génération du tableau périodique : les MASSES.
 
 HONNÊTETÉ MÉTHODOLOGIQUE (déclarée) :
-  · Les modèles « harmoniques » antérieurs de masses (Haramein-Oyibo 6π⁵,
-    m = m_Planck/H_Z²) ont été RÉFUTÉS par le protocole (A1.3 : p = 0,70 ;
-    treillis : les coefficients SEMF ne sont pas dérivables de φ/π/e — A1.5).
+  · La FORMULE DE MASSE « harmonique » antérieure (6π⁵, m = m_Planck/H_Z²,
+    attribuée à Haramein/Oyibo) a été RÉFUTÉE par le protocole (A1.3 : p = 0,70,
+    coïncidence banale ; les coefficients SEMF ne sont pas dérivables de φ/π/e).
+  · [RECTIFICATION] Cette réfutation porte UNIQUEMENT sur la formule de masse.
+    Elle n'invalide PAS l'apport propre d'Oyibo — l'invariance d'échelle fractale
+    F(λx)=λ^{-1/φ}F(x) — qui est reconnu et corroboré par le noyau ABC
+    (voir `RECONSIDERATION_OYIBO.md` et `oyibo-precurseur.html`).
   · La base utilisée ici est la PHYSIQUE STANDARD : la formule de masse
     semi-empirique de Weizsäcker (coefficients empiriques documentés).
   · L'apport de la refondation est la LECTURE : la surface de masse EST le

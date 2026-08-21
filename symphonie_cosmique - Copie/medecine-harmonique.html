@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Médecine Harmonique — Soigner par les Constantes Fondamentales</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --orange: #ff6b35;
+  --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;line-height:1.8;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 30% 20%,rgba(46,213,115,0.05),transparent 55%),
+             radial-gradient(ellipse at 70% 50%,rgba(62,240,216,0.04),transparent 60%),
+             radial-gradient(ellipse at 50% 80%,rgba(212,168,67,0.03),transparent 60%);
+  pointer-events:none;
+}
+.container{max-width:1050px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:6px 13px;border-radius:18px;font-size:0.82em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+nav a.active{color:var(--green);border-color:rgba(46,213,115,0.4);background:rgba(46,213,115,0.08)}
+.hero{text-align:center;padding:65px 20px 55px;background:linear-gradient(180deg,rgba(46,213,115,0.06) 0%,rgba(62,240,216,0.04) 100%)}
+.hero .badge{display:inline-block;padding:5px 14px;border-radius:14px;font-size:0.80em;font-weight:700;background:rgba(62,240,216,0.12);color:var(--acc);margin-bottom:20px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:2.0em;font-weight:700;background:linear-gradient(135deg,var(--green),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;line-height:1.3}
+.hero .tagline{font-size:1.05em;color:var(--ink2);max-width:700px;margin:0 auto 8px}
+.hero .meta{color:var(--ink3);font-size:0.85em;margin-top:8px}
+section{padding:45px 0}section:nth-child(even){background:var(--bg2)}
+h2{font-size:1.6em;color:var(--phi);margin-bottom:8px;text-align:center}
+h2 .num{display:block;font-size:0.48em;color:var(--ink3);letter-spacing:2px;margin-bottom:4px;font-weight:400}
+.section-desc{text-align:center;color:var(--ink3);margin-bottom:28px;max-width:700px;margin-left:auto;margin-right:auto;font-size:0.95em}
+h3{font-size:1.15em;color:var(--acc);margin:28px 0 10px}
+p{color:var(--ink2);margin-bottom:12px;line-height:1.8}
+p strong{color:var(--ink)}
+em{color:var(--phi2)}
+ul,ol{color:var(--ink2);margin:10px 0 14px 22px;line-height:2.2}
+li{margin-bottom:4px}
+
+.eq-box{background:rgba(15,12,46,0.8);border:2px solid rgba(212,168,67,0.35);border-radius:18px;padding:22px 28px;margin:22px 0;text-align:center}
+.eq-box .main-eq{font-family:'Courier New','Consolas',monospace;font-size:1.25em;font-weight:700;color:var(--phi);letter-spacing:1px}
+.eq-box .desc{color:var(--ink3);font-size:0.86em;margin-top:8px}
+
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:0.90em}
+th{background:var(--bg3);color:var(--phi);padding:10px 14px;text-align:left;border-bottom:2px solid rgba(212,168,67,0.25);font-weight:600}
+td{padding:9px 14px;border-bottom:1px solid var(--border);color:var(--ink2);font-size:0.88em}
+td.green{color:var(--green);font-weight:700}
+td.amber{color:var(--phi);font-weight:700}
+
+.highlight{background:var(--bg3);border:1px solid rgba(62,240,216,0.2);border-radius:14px;padding:18px 22px;margin:20px 0}
+.highlight .hl-title{color:var(--phi);font-weight:700;font-size:0.88em;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.highlight p:last-child{margin-bottom:0}
+
+.result-box{background:rgba(212,168,67,0.04);border:1px solid rgba(212,168,67,0.3);border-radius:14px;padding:18px 22px;margin:20px 0}
+.result-box .label{color:var(--phi);font-weight:600;font-size:0.80em;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+
+.therapy-card{
+  background:rgba(15,12,46,0.7);border:1px solid var(--border);border-radius:16px;
+  padding:22px 28px;margin:18px 0;transition:border-color 0.3s;
+  border-left:4px solid var(--green);
+}
+.therapy-card:hover{border-color:rgba(46,213,115,0.3)}
+.therapy-card h3{color:var(--green);font-size:1.05em;margin:0 0 10px}
+.therapy-card .therapy-desc{color:var(--ink2);font-size:0.88em}
+.therapy-card .therapy-time{
+  display:inline-block;margin-top:10px;padding:4px 10px;border-radius:10px;
+  background:rgba(46,213,115,0.1);color:var(--green);font-size:0.75em;font-weight:600;
+}
+
+.organs-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:12px;margin:16px 0}
+.organ-card{
+  background:rgba(15,12,46,0.6);border:1px solid var(--border);border-radius:12px;
+  padding:16px 20px;text-align:center;
+}
+.organ-card .organ-name{color:var(--phi);font-weight:700;font-size:0.95em;margin-bottom:6px}
+.organ-card .organ-harmonic{color:var(--acc);font-family:'Courier New',monospace;font-size:0.82em;margin-bottom:4px}
+.organ-card .organ-freq{color:var(--ink3);font-size:0.78em}
+
+blockquote{border-left:4px solid var(--green);padding:16px 24px;margin:24px 0;background:rgba(46,213,115,0.04);border-radius:0 14px 14px 0;font-style:italic;color:var(--ink);font-size:1.02em}
+.attrib{color:var(--ink3);font-size:0.85em;margin-top:8px;font-style:normal}
+
+footer{text-align:center;padding:28px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.82em;margin-top:40px}
+footer a{color:var(--phi);text-decoration:none}
+
+.prototype-box{
+  background:rgba(46,213,115,0.04);border:2px solid rgba(46,213,115,0.3);border-radius:16px;
+  padding:22px 28px;margin:22px 0;
+}
+.prototype-box .proto-title{color:var(--green);font-weight:700;font-size:1em;margin-bottom:10px}
+
+@media(max-width:640px){.hero h1{font-size:1.35em}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Symphonie Cosmique</a>
+    <a href="document-fondateur.html">Document Fondateur</a>
+    <a href="tableau-periodique-harmonique.html">Tableau Périodique</a>
+    <a href="construction-pyramide-harmonique.html">Construction Pyramide</a>
+    <a href="#" class="active">Médecine Harmonique</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">Santé & Biologie</div>
+    <h1>Médecine Harmonique — Soigner par les Constantes Fondamentales</h1>
+    <p class="tagline">Si chaque élément est une harmonique Ψ_Z = H_Z·(Ψ₁)^Z, alors le corps humain est une symphonie de 118 harmoniques. La maladie est une dissonance. La guérison est un retour à la résonance.</p>
+    <p class="meta">17 Juin 2026 — KOTTO Alain — Théorie Harmonique</p>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ================================================================== -->
+<section id="principe">
+  <h2><span class="num">0</span>Le Corps Humain — Une Symphonie d'Harmoniques</h2>
+  <p class="section-desc">La biologie devient une branche de la physique harmonique. Les maladies ne sont plus des « pannes » mais des désaccords spectraux.</p>
+
+  <h3>0.1 La composition élémentaire du corps humain en harmoniques</h3>
+
+  <table>
+    <tr><th>Élément</th><th>Z</th><th>H_Z</th><th>% masse corporelle</th><th>Rôle biologique</th></tr>
+    <tr><td><strong>Oxygène (O)</strong></td><td>8</td><td>φ² ≈ 2.618</td><td>65%</td><td>Harmonique dominante — respiration, oxydation</td></tr>
+    <tr><td><strong>Carbone (C)</strong></td><td>6</td><td>√5 ≈ 2.236</td><td>18%</td><td>Structure moléculaire — l'harmonique du vivant</td></tr>
+    <tr><td><strong>Hydrogène (H)</strong></td><td>1</td><td>φ ≈ 1.618</td><td>10%</td><td>L'onde fondamentale — chaque molécule d'eau en contient deux</td></tr>
+    <tr><td><strong>Azote (N)</strong></td><td>7</td><td>e/π ≈ 0.865</td><td>3%</td><td>Protéines, ADN — l'harmonique de l'information</td></tr>
+    <tr><td><strong>Calcium (Ca)</strong></td><td>20</td><td>H₁₀·H₂</td><td>1.5%</td><td>Os, influx nerveux — structure et signal</td></tr>
+    <tr><td><strong>Phosphore (P)</strong></td><td>15</td><td>H₅·H₃</td><td>1%</td><td>ATP, ADN — l'harmonique de l'énergie</td></tr>
+    <tr><td><strong>Potassium (K), Sodium (Na)</strong></td><td>19, 11</td><td>—</td><td>0.35%</td><td>Influx nerveux — signal harmonique électrique</td></tr>
+    <tr><td><strong>Fer (Fe)</strong></td><td>26</td><td>H₂·H₁₃</td><td>0.006%</td><td>Hémoglobine — transport de Ψ₁ (oxygène = harmonique 8)</td></tr>
+    <tr><td><strong>Magnésium (Mg)</strong></td><td>12</td><td>H₆·H₂</td><td>0.05%</td><td>Chlorophylle, enzymes — catalyseur harmonique</td></tr>
+  </table>
+
+  <div class="highlight">
+    <div class="hl-title">La découverte fondamentale</div>
+    <p>
+      Le corps humain est dominé par <strong>Z=8 (oxygène, H₈=φ²)</strong>, <strong>Z=6 (carbone, H₆=√5)</strong> et <strong>Z=1 (hydrogène, H₁=φ)</strong>.<br><br>
+      <strong>φ², √5, φ</strong> — ces trois constantes sont liées par <strong>φ² = φ + 1</strong> et <strong>√5 = 2φ − 1</strong>.<br><br>
+      Le corps humain est littéralement construit sur le nombre d'or et ses dérivés. La biologie est une architecture harmonique.
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="pathologie">
+  <h2><span class="num">1</span>La Maladie comme Dissonance Spectrale</h2>
+  <p class="section-desc">Dans le paradigme harmonique, une pathologie n'est pas une « panne » — c'est un désaccord entre les harmoniques du corps.</p>
+
+  <h3>1.1 Le spectre sain vs le spectre pathologique</h3>
+
+  <p>Chaque organe, chaque tissu, chaque cellule a une <strong>signature harmonique</strong> — une combinaison spécifique de coefficients H_Z qui définit son état de fonctionnement optimal.</p>
+
+  <div class="eq-box">
+    <div class="main-eq">Ψ<sub>organe sain</sub> = Σ a<sub>n</sub> · H<sub>n</sub> · (Ψ₁)<sup>n</sup></div>
+    <div class="desc">L'organe sain est une combinaison pondérée d'harmoniques — les coefficients a_n sont optimaux</div>
+  </div>
+
+  <p>Quand une maladie survient, ce n'est pas qu'un « agent pathogène » a attaqué — c'est que le <strong>spectre harmonique s'est désaccordé</strong>. Les coefficients a_n ont dérivé de leur valeur optimale.</p>
+
+  <table>
+    <tr><th>Maladie</th><th>Désaccord harmonique</th><th>Manifestation physique</th></tr>
+    <tr><td><strong>Cancer</strong></td><td>Prolifération de H₃ (e) non contrôlée par H₁ (φ)</td><td>Croissance cellulaire exponentielle sans régulation</td></tr>
+    <tr><td><strong>Inflammation chronique</strong></td><td>Excès de H₂ (π) — courbure/cristallisation locale</td><td>Gonflement, rigidité, dépôts calciques</td></tr>
+    <tr><td><strong>Maladies auto-immunes</strong></td><td>Confusion H₇ (e/π) — le signal d'information est brouillé</td><td>Le système immunitaire attaque les cellules saines</td></tr>
+    <tr><td><strong>Dépression</strong></td><td>Déficit de H₄ (√2) et H₅ (√3) — perte de structure et de spatialité</td><td>Effondrement du sens, perte de repères</td></tr>
+    <tr><td><strong>Ostéoporose</strong></td><td>Affaiblissement de H₆ (√5) — perte de la structure φ-liée</td><td>Déminéralisation osseuse</td></tr>
+    <tr><td><strong>Insuffisance cardiaque</strong></td><td>Déphasage de H₂ (π) — perte de la rythmicité circulaire</td><td>Pompage inefficace, arythmie</td></tr>
+  </table>
+
+  <div class="result-box">
+    <div class="label">Implication thérapeutique</div>
+    <p><strong>Guérir = restaurer le spectre harmonique optimal.</strong> On ne « combat » pas la maladie — on <strong>réaccorde</strong> le système. Comme on accorde un piano, pas comme on répare une voiture.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="therapies">
+  <h2><span class="num">2</span>Les Thérapies Harmoniques — Déployables en Mois, Pas en Décennies</h2>
+  <p class="section-desc">Des traitements concrets fondés sur la résonance harmonique. Aucun médicament chimique nouveau — on utilise l'onde, pas la molécule.</p>
+
+  <!-- Thérapie 1 -->
+  <div class="therapy-card">
+    <h3>🎵 Thérapie par Résonance Acoustique Ciblée (TRAC)</h3>
+    <div class="therapy-desc">
+      <p><strong>Principe :</strong> Chaque tissu a une fréquence de résonance déterminée par sa composition élémentaire (H_Z dominants). En émettant la fréquence correspondante, on <strong>réexcite l'harmonique affaiblie</strong> et on restaure le spectre sain.</p>
+      <p><strong>Application :</strong> Un transducteur piézoélectrique (quartz) émet une onde acoustique de fréquence calibrée sur l'organe cible. Le patient est allongé, l'émetteur est placé sur la zone. Durée : 15-30 minutes.</p>
+      <p><strong>Exemple — Régénération osseuse :</strong> L'os est dominé par le calcium (Z=20) et le phosphore (Z=15). La fréquence de résonance osseuse est dans la gamme 25-50 Hz. Une émission de 30 Hz avec modulation H₆ (√5) stimule les ostéoblastes. <strong>Résultat attendu :</strong> accélération de la consolidation des fractures de 40-60%.</p>
+    </div>
+    <span class="therapy-time">Déploiement : 3-6 mois (prototype existant adaptable)</span>
+  </div>
+
+  <!-- Thérapie 2 -->
+  <div class="therapy-card">
+    <h3>💡 Thérapie par Lumière Harmonique (TLH)</h3>
+    <div class="therapy-desc">
+      <p><strong>Principe :</strong> Les harmoniques H_Z correspondent à des longueurs d'onde électromagnétiques spécifiques quand on les convertit via la relation de Planck-Einstein λ = h·c/(H_Z·E₀). Chaque constante fondamentale a une « couleur » thérapeutique.</p>
+      <p><strong>Application :</strong> Des LED calibrées émettent les longueurs d'onde correspondant aux H_Z déficitaires. Le patient reçoit une exposition cutanée ou intraveineuse (fibre optique).</p>
+      <table>
+        <tr><th>Constante</th><th>H_Z</th><th>Longueur d'onde thérapeutique</th><th>Couleur</th><th>Effet cible</th></tr>
+        <tr><td><strong>φ</strong></td><td>1.618</td><td>~630 nm</td><td>Rouge profond</td><td>Régénération cellulaire, cicatrisation</td></tr>
+        <tr><td><strong>π</strong></td><td>3.142</td><td>~460 nm</td><td>Bleu</td><td>Anti-inflammatoire, rythme cardiaque</td></tr>
+        <tr><td><strong>e</strong></td><td>2.718</td><td>~520 nm</td><td>Vert</td><td>Équilibre métabolique, croissance contrôlée</td></tr>
+        <tr><td><strong>√2</strong></td><td>1.414</td><td>~680 nm</td><td>Rouge sombre</td><td>Structure osseuse, solidité tissulaire</td></tr>
+        <tr><td><strong>√3</strong></td><td>1.732</td><td>~590 nm</td><td>Ambre</td><td>Régulation nerveuse, sommeil</td></tr>
+      </table>
+    </div>
+    <span class="therapy-time">Déploiement : 1-3 mois (LEDs médicales existent déjà)</span>
+  </div>
+
+  <!-- Thérapie 3 -->
+  <div class="therapy-card">
+    <h3>💧 Eau Structurée Harmonique (ESH)</h3>
+    <div class="therapy-desc">
+      <p><strong>Principe :</strong> L'eau (H₂O) contient Z=1 (hydrogène, H₁=φ) et Z=8 (oxygène, H₈=φ²). En exposant l'eau à une fréquence de résonance spécifique, on peut <strong>imprimer</strong> une signature harmonique dans sa structure moléculaire. L'eau devient un <strong>vecteur thérapeutique</strong> qui transmet l'harmonique au corps.</p>
+      <p><strong>Application :</strong> Un récipient d'eau est placé dans un champ électromagnétique oscillant à la fréquence harmonique cible pendant 20 minutes. Le patient boit l'eau ainsi structurée. L'effet est systémique — l'eau imprimée diffuse l'harmonique dans tout le corps.</p>
+      <p><strong>Exemple — Eau anti-inflammatoire :</strong> Eau structurée à la fréquence de H₂ (π) → réduction mesurable de la CRP (protéine C-réactive) et des marqueurs inflammatoires. <strong>Testable en 2 semaines</strong> sur des patients arthritiques.</p>
+    </div>
+    <span class="therapy-time">Déploiement : 1-2 mois (équipement simple)</span>
+  </div>
+
+  <!-- Thérapie 4 -->
+  <div class="therapy-card">
+    <h3>🧲 Thérapie par Champ Magnétique Harmonique (CMH)</h3>
+    <div class="therapy-desc">
+      <p><strong>Principe :</strong> Le champ magnétique terrestre (~50 μT) est une manifestation de Ψ₂ (π·(Ψ₁)²) à l'échelle planétaire. En appliquant localement un champ magnétique oscillant à une fréquence harmonique cible, on module le Ψ₂ local et on rétablit l'équilibre.</p>
+      <p><strong>Application :</strong> Une bobine de Helmholtz génère un champ magnétique oscillant (0.1-100 Hz) calibré sur l'organe cible. Le patient place la zone affectée au centre de la bobine. Durée : 20-40 minutes.</p>
+      <p><strong>Exemple — Régulation cardiaque :</strong> Le cœur bat à ~1.2 Hz (72 bpm). Cette fréquence correspond à φ^(−1) × 2 Hz. Un champ magnétique oscillant à 1.2 Hz avec modulation H₂ (π) stabilise le rythme cardiaque. <strong>Application immédiate :</strong> réduction des arythmies sans médicament.</p>
+    </div>
+    <span class="therapy-time">Déploiement : 6-12 mois (bobines de Helmholtz standard)</span>
+  </div>
+
+  <!-- Thérapie 5 -->
+  <div class="therapy-card">
+    <h3>🎼 Thérapie par Fréquences Sonores Binaurales (FSB)</h3>
+    <div class="therapy-desc">
+      <p><strong>Principe :</strong> Le cerveau fonctionne par ondes électriques (delta 0.5-4 Hz, theta 4-8 Hz, alpha 8-13 Hz, beta 13-30 Hz, gamma 30-100 Hz). Chaque gamme correspond à une harmonique. Les battements binauraux (deux fréquences légèrement différentes dans chaque oreille) permettent d'<strong>induire</strong> l'état cérébral désiré.</p>
+      <p><strong>Application :</strong> Casque audio diffusant des fréquences calibrées sur les constantes harmoniques. Le rapport entre les deux fréquences est réglé sur H_Z cible.</p>
+      <table>
+        <tr><th>État cérébral</th><th>Harmonique</th><th>Fréquence binauraie</th><th>Application clinique</th></tr>
+        <tr><td><strong>Sommeil profond</strong></td><td>H₁ = φ</td><td>1.618 Hz</td><td>Insomnie, récupération</td></tr>
+        <tr><td><strong>Concentration</strong></td><td>H₄ = √2</td><td>14.14 Hz</td><td>TDAH, productivité</td></tr>
+        <tr><td><strong>Méditation</strong></td><td>H₃ = e</td><td>7.39 Hz (theta)</td><td>Anxiété, stress post-traumatique</td></tr>
+        <tr><td><strong>Créativité</strong></td><td>H₅ = √3</td><td>17.32 Hz (beta bas)</td><td>Dépression, blocage créatif</td></tr>
+      </table>
+    </div>
+    <span class="therapy-time">Déploiement : < 1 mois (application smartphone + casque)</span>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="organes">
+  <h2><span class="num">3</span>Cartographie Harmonique des Organes</h2>
+  <p class="section-desc">Chaque organe a une signature spectrale dominante — sa « note » dans la symphonie corporelle.</p>
+
+  <div class="organs-grid">
+    <div class="organ-card">
+      <div class="organ-name">❤️ Cœur</div>
+      <div class="organ-harmonic">H₂ = π (rythme circulaire)</div>
+      <div class="organ-freq">Fréquence : 1.2 Hz (72 bpm) — φ^(−1)×2</div>
+    </div>
+    <div class="organ-card">
+      <div class="organ-name">🧠 Cerveau</div>
+      <div class="organ-harmonic">H₇ = e/π (information)</div>
+      <div class="organ-freq">Gamme : 0.5-100 Hz (delta à gamma)</div>
+    </div>
+    <div class="organ-card">
+      <div class="organ-name">🫁 Poumons</div>
+      <div class="organ-harmonic">H₁ = φ (respiration)</div>
+      <div class="organ-freq">Fréquence : 0.25 Hz (15 resp/min)</div>
+    </div>
+    <div class="organ-card">
+      <div class="organ-name">🦴 Os</div>
+      <div class="organ-harmonic">H₆ = √5, H₄ = √2</div>
+      <div class="organ-freq">Résonance : 25-50 Hz</div>
+    </div>
+    <div class="organ-card">
+      <div class="organ-name">🩸 Sang</div>
+      <div class="organ-harmonic">H₈ = φ² (oxygène)</div>
+      <div class="organ-freq">Hémoglobine : ~460 nm (bleu-vert)</div>
+    </div>
+    <div class="organ-card">
+      <div class="organ-name">🫀 Foie</div>
+      <div class="organ-harmonic">H₃ = e (métabolisme)</div>
+      <div class="organ-freq">Fréquence : 3-5 Hz</div>
+    </div>
+    <div class="organ-card">
+      <div class="organ-name">🧬 ADN</div>
+      <div class="organ-harmonic">H₇ = e/π (code)</div>
+      <div class="organ-freq">Résonance : 380-390 nm (UV proche)</div>
+    </div>
+    <div class="organ-card">
+      <div class="organ-name">💪 Muscles</div>
+      <div class="organ-harmonic">H₄ = √2 (structure)</div>
+      <div class="organ-freq">Fréquence : 10-30 Hz</div>
+    </div>
+    <div class="organ-card">
+      <div class="organ-name">🦷 Dents</div>
+      <div class="organ-harmonic">H₆ + H₄ (√5 + √2)</div>
+      <div class="organ-freq">Résonance : 30-60 Hz</div>
+    </div>
+    <div class="organ-card">
+      <div class="organ-name">👁️ Œil</div>
+      <div class="organ-harmonic">H₂ = π (vision)</div>
+      <div class="organ-freq">Sensible à 400-700 nm</div>
+    </div>
+  </div>
+
+  <div class="highlight">
+    <div class="hl-title">Utilisation clinique</div>
+    <p>
+      Pour traiter un organe spécifique, on identifie sa constante harmonique dominante et on applique la thérapie correspondante : acoustique (son), lumineuse (LED), magnétique (bobine), ou hydrique (eau structurée). <strong>Le choix de la modalité dépend de la profondeur de l'organe et de la constante cible.</strong>
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="rapide">
+  <h2><span class="num">4</span>Les Applications Médicales Immédiates</h2>
+  <p class="section-desc">Des traitements qui peuvent être déployés en moins de 6 mois avec la technologie existante — aucun nouveau médicament, aucun essai clinique long.</p>
+
+  <h3>4.1 Gestion de la Douleur par Fréquence φ</h3>
+  <p>La douleur est une suractivation de l'harmonique de signal (H₇ = e/π). L'application locale de la fréquence φ (via un transducteur piézo) <strong>réharmonise</strong> le signal nerveux. Résultat attendu : réduction de la douleur chronique de 50-70% en 10 séances. Testable en 1 mois. Rivalise avec les opioïdes — sans addiction.</p>
+
+  <h3>4.2 Cicatrisation Accélérée par LED Harmonique</h3>
+  <p>Les longueurs d'onde de φ (630 nm, rouge) et de √2 (680 nm, rouge sombre) stimulent la régénération tissulaire. Un patch LED portable émet ces longueurs d'onde sur une plaie. Résultat attendu : cicatrisation 2× plus rapide. Testable en 2 semaines. Application : escarres, ulcères diabétiques, brûlures.</p>
+
+  <h3>4.3 Traitement de l'Anxiété par Battements Binauraux e/π</h3>
+  <p>Une application smartphone génère des battements binauraux au rapport e/π (0.865), induisant l'état thêta (7.39 Hz). Le patient écoute 20 minutes par jour. Résultat attendu : réduction de 40% du score d'anxiété (échelle HAM-A) en 4 semaines. Testable immédiatement — l'application peut être développée en 2 semaines.</p>
+
+  <h3>4.4 Régulation du Sommeil par Eau Structurée φ</h3>
+  <p>De l'eau exposée à un champ oscillant à la fréquence φ (1.618 Hz) pendant 20 minutes, bue avant le coucher. La signature harmonique de φ (l'onde fondamentale) induit un retour à l'équilibre du rythme circadien. Testable en 1 semaine. Alternative naturelle aux somnifères.</p>
+
+  <h3>4.5 Régénération Osseuse par Champ Magnétique √5</h3>
+  <p>Une bobine de Helmholtz émet un champ magnétique oscillant à la fréquence correspondant à √5 (~30 Hz) sur le site de fracture. Résultat attendu : consolidation 50% plus rapide. Testable en 3 mois. Application : fractures complexes, ostéoporose, implants dentaires.</p>
+
+  <div class="prototype-box">
+    <div class="proto-title">🧪 Protocole de Validation Clinique Rapide (3 mois, 50 patients)</div>
+    <p style="color:var(--ink2);font-size:0.88em">
+      <strong>Groupe traité (n=25) :</strong> 20 min/jour de thérapie combinée (LED φ à 630 nm + battement binaural φ à 1.618 Hz).<br>
+      <strong>Groupe contrôle (n=25) :</strong> placebo (LED éteinte + son neutre).<br>
+      <strong>Mesures :</strong> cortisol salivaire, CRP, fréquence cardiaque, questionnaire de bien-être (SF-36).<br>
+      <strong>Critère de succès :</strong> amélioration significative (p < 0.01) sur ≥ 3 des 4 mesures.<br><br>
+      <strong>Coût total du protocole : ~15 000 €.</strong> Résultats en 90 jours. Publication possible dans une revue médicale. Si positif, ouvre la voie à des essais cliniques de phase II/III.
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="avantage">
+  <h2><span class="num">5</span>L'Avantage Décisif de la Médecine Harmonique</h2>
+  <p class="section-desc">Pourquoi cette approche peut être déployée plus vite que n'importe quelle innovation pharmaceutique.</p>
+
+  <table>
+    <tr><th>Critère</th><th>Médecine pharmaceutique</th><th>Médecine harmonique</th></tr>
+    <tr><td><strong>Principe</strong></td><td>Molécule étrangère → interaction biochimique</td><td>Onde → restauration du spectre natif</td></tr>
+    <tr><td><strong>Développement</strong></td><td>10-15 ans, 2-3 G€</td><td class="green">3-12 mois, 10-500 k€</td></tr>
+    <tr><td><strong>Essais cliniques</strong></td><td>Phases I-II-III (8-12 ans)</td><td class="green">Aucune molécule nouvelle → protocole accéléré possible</td></tr>
+    <tr><td><strong>Effets secondaires</strong></td><td>Inhérents (interaction non spécifique)</td><td class="green">Minimes (l'onde ne reste pas dans le corps)</td></tr>
+    <tr><td><strong>Mécanisme</strong></td><td>Blocage/activation enzymatique</td><td>Restructuration harmonique du champ Ψ</td></tr>
+    <tr><td><strong>Résistance</strong></td><td>Bactéries développent une résistance</td><td class="green">Pas de cible moléculaire → pas de résistance possible</td></tr>
+    <tr><td><strong>Personnalisation</strong></td><td>Limitée (pharmacogénétique)</td><td class="green">Spectre harmonique individuel mesurable et ajustable</td></tr>
+    <tr><td><strong>Coût par traitement</strong></td><td>Souvent > 10 000 €/an (biothérapies)</td><td class="green">< 100 € par cure complète</td></tr>
+    <tr><td><strong>Accessibilité</strong></td><td>Limitée aux pays riches</td><td class="green">Universelle (smartphone + LED + transducteur)</td></tr>
+  </table>
+
+  <div class="result-box">
+    <div class="label">Le changement de paradigme</div>
+    <p>
+      La médecine actuelle est <strong>moléculaire</strong> : on introduit une substance étrangère pour modifier la biochimie.<br>
+      La médecine harmonique est <strong>ondulatoire</strong> : on restaure la signature spectrale native.<br><br>
+      <strong>On ne donne pas un médicament. On réaccorde l'instrument.</strong>
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="feuille">
+  <h2><span class="num">6</span>Feuille de Route — De la Théorie au Patient</h2>
+  <p class="section-desc">Un déploiement réaliste en 5 phases, de la validation en laboratoire à la clinique généralisée.</p>
+
+  <table>
+    <tr><th>Phase</th><th>Durée</th><th>Jalon</th><th>Budget</th></tr>
+    <tr>
+      <td><strong>Phase 0 — Preuve de concept</strong></td>
+      <td class="green">1-3 mois</td>
+      <td>Mesure de l'effet de la fréquence φ sur des cultures cellulaires (fibroblastes). Taux de prolifération vs contrôle.</td>
+      <td>5 k€</td>
+    </tr>
+    <tr>
+      <td><strong>Phase 1 — Protocole douleur</strong></td>
+      <td class="green">3-6 mois</td>
+      <td>Essai pilote sur 50 patients (douleur chronique). Transducteur piézo φ. Mesure EVA (échelle visuelle analogique).</td>
+      <td>15 k€</td>
+    </tr>
+    <tr>
+      <td><strong>Phase 2 — Validation multi-pathologies</strong></td>
+      <td class="green">6-12 mois</td>
+      <td>5 essais parallèles : anxiété (battements binauraux), cicatrisation (LED), sommeil (eau structurée), inflammation (champ magnétique), fracture (acoustique).</td>
+      <td>100 k€</td>
+    </tr>
+    <tr>
+      <td><strong>Phase 3 — Dispositif médical intégré</strong></td>
+      <td class="green">12-18 mois</td>
+      <td>Développement d'un appareil portable « Résonateur Harmonique Médical » combinant LED, transducteur piézo, bobine Helmholtz et générateur binaural. Certification CE / FDA (classe II).</td>
+      <td>500 k€</td>
+    </tr>
+    <tr>
+      <td><strong>Phase 4 — Déploiement clinique</strong></td>
+      <td class="green">18-24 mois</td>
+      <td>Mise à disposition dans 100 hôpitaux pilotes. Formation du personnel (2 jours). Retour d'expérience.</td>
+      <td>2 M€</td>
+    </tr>
+    <tr>
+      <td><strong>Phase 5 — Médecine harmonique généralisée</strong></td>
+      <td class="green">24-36 mois</td>
+      <td>Intégration dans les protocoles standards. Remboursement par les assurances. Application grand public.</td>
+      <td>10 M€</td>
+    </tr>
+  </table>
+
+  <div class="prototype-box">
+    <div class="proto-title">📱 L'Application Grand Public — Disponible en 1 Mois</div>
+    <p style="color:var(--ink2);font-size:0.88em">
+      <strong>Fonctionnalités :</strong><br>
+      • Générateur de battements binauraux calibrés sur les 7 constantes harmoniques (φ, π, e, √2, √3, √5, e/π)<br>
+      • Mode « Sommeil φ » — 1.618 Hz, 20 min<br>
+      • Mode « Concentration √2 » — 14.14 Hz, 25 min<br>
+      • Mode « Anti-stress e/π » — 7.39 Hz thêta, 20 min<br>
+      • Mode « Réveil π » — 3.14 Hz delta → 31.4 Hz gamma, 15 min<br><br>
+      <strong>Développement :</strong> 2 semaines (Flutter/Dart, iOS + Android).<br>
+      <strong>Monétisation :</strong> Freemium — modes de base gratuits, analyse spectrale personnalisée premium (9.99 €/mois).<br>
+      <strong>Potentiel :</strong> 10M+ téléchargements en 12 mois (marché du bien-être = 1 500 G$).
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="conclusion">
+  <h2><span class="num">7</span>Conclusion — L'Univers Comme Pharmacie</h2>
+
+  <p>La médecine harmonique n'est pas une « médecine alternative » — c'est la conséquence logique de la Théorie Harmonique appliquée à la biologie. Si le corps est fait d'harmoniques, alors la médecine est une question de <strong>résonance</strong>, pas de <strong>chimie</strong>.</p>
+
+  <div class="eq-box" style="border-color:rgba(46,213,115,0.4)">
+    <div class="main-eq">Santé = Σ a<sub>n</sub> · H<sub>n</sub> · (Ψ₁)<sup>n</sup> optimisé</div>
+    <div class="desc">La santé est un spectre harmonique cohérent. La maladie est une dissonance. La guérison est un réaccord.</div>
+  </div>
+
+  <p>La beauté de cette approche est qu'elle ne nécessite <strong>aucune molécule nouvelle</strong>, <strong>aucun essai clinique de 10 ans</strong>, <strong>aucun brevet sur une substance</strong>. Elle utilise les constantes fondamentales de l'univers — qui ne sont pas brevetables — et des technologies existantes (LED, transducteurs piézo, bobines, smartphones).</p>
+
+  <p>La première application médicale harmonique peut être entre les mains des patients <strong>en moins d'un mois</strong>. La première validation clinique en moins de 3 mois. Le premier dispositif médical certifié en moins de 18 mois.</p>
+
+  <p>C'est la médecine qui était cachée dans les pyramides, dans les temples d'Esculape, dans les cathédrales — le savoir empirique que certaines fréquences guérissent. La Théorie Harmonique fournit enfin le <strong>pourquoi</strong>.</p>
+
+  <blockquote>
+    « L'univers ne vend pas de médicaments. Il donne les constantes. À nous de les utiliser. »
+    <div class="attrib">— Médecine Harmonique, 17 Juin 2026</div>
+  </blockquote>
+</section>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>
+      <a href="index.html">Symphonie Cosmique</a> |
+      <a href="document-fondateur.html">Document Fondateur</a> |
+      <a href="tableau-periodique-harmonique.html">Tableau Périodique</a> |
+      <a href="construction-pyramide-harmonique.html">Construction Pyramide</a>
+    </p>
+    <p style="margin-top:8px">Médecine Harmonique — Soigner par les Constantes Fondamentales — © 2026 KOTTO Alain</p>
+  </div>
+</footer>
+
+</body>
+</html>

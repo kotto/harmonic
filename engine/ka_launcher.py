@@ -123,12 +123,14 @@ Exemples:
     # Démarrer le serveur
     print(f"🚀 Démarrage de {config.name} sur http://{config.host}:{config.port} ...\n")
     
-    # Importer et lancer ka_server.py avec la config active
-    import ka_server
-    
-    # Le serveur va lire get_active_config() pour s'adapter
-    ka_server.port = config.port
-    ka_server.app.run(
+    # Importer et lancer ka_server avec la config active (nouveau package modulaire)
+    import os
+    os.environ['KA_PRODUCT'] = config.product
+    os.environ['KA_PORT'] = str(config.port)
+    os.environ['KA_HOST'] = config.host
+    from ka_server import create_app
+    app = create_app()
+    app.run(
         host=config.host,
         port=config.port,
         debug=config.debug,

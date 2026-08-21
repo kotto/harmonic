@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="fr" data-lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KA Enterprise — Le RAG est un bricolage. Les hologrammes sont la solution.</title>
+<link rel="icon" type="image/svg+xml" href="/brand/enterprise.svg">
+<meta name="description" content="KA Enterprise Post-RAG : remplacez votre RAG par des hologrammes déterministes. Zéro hallucination, données 100% on-premise, zéro GPU. 88.4% GSM8K, 0% hallucination.">
+<meta name="keywords" content="IA entreprise, RAG, post-RAG, hallucination IA, IA on-premise, hologrammes IA, données souveraines, RGPD, codec psi">
+<style>
+:root{
+  --void:#07070f;--soul:#8b83ff;--soul-l:#b8b2ff;--soul-d:rgba(139,131,255,.18);--soul-g:rgba(139,131,255,.32);
+  --life:#3ddba0;--life-d:rgba(61,219,160,.15);--life-g:rgba(61,219,160,.28);
+  --wisdom:#f0c060;--wisdom-d:rgba(240,192,96,.15);--wisdom-g:rgba(240,192,96,.28);
+  --rose:#ed93b1;--rose-d:rgba(212,83,126,.15);--rose-g:rgba(212,83,126,.28);
+  --sky:#85b7eb;--sky-d:rgba(133,183,235,.15);--sky-g:rgba(133,183,235,.28);
+  --g1:rgba(255,255,255,.04);--g2:rgba(255,255,255,.075);--g3:rgba(255,255,255,.13);
+  --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.1);--b3:rgba(255,255,255,.16);
+  --t1:rgba(255,255,255,.92);--t2:rgba(255,255,255,.62);--t3:rgba(255,255,255,.36);--t4:rgba(255,255,255,.18);
+  --font:-apple-system,"SF Pro Display","Inter",system-ui,sans-serif;
+  --mono:"SF Mono","JetBrains Mono",Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--void);color:var(--t1);font-family:var(--font);-webkit-font-smoothing:antialiased;font-size:15px;line-height:1.6;min-height:100vh}
+a{color:var(--soul-l);text-decoration:none}
+a:hover{color:#fff}
+button{font-family:var(--font);cursor:pointer}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--b3);border-radius:9px}
+::-webkit-scrollbar-track{background:transparent}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+
+/* NAV */
+header{position:sticky;top:0;z-index:50;background:rgba(7,7,15,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--b1)}
+.nav{display:flex;align-items:center;justify-content:space-between;height:64px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:15px}
+.brand img.mark{width:32px;height:32px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));transition:transform .3s}
+.brand:hover img.mark{transform:scale(1.08) rotate(-4deg)}
+.brand b{color:var(--soul-l)}
+.nav-links{display:flex;align-items:center;gap:18px}
+.nav-links a{color:var(--t2);font-size:13px;font-weight:600}
+.nav-links a:hover{color:#fff}
+.btn{display:inline-block;font-weight:700;font-size:13.5px;padding:10px 20px;border-radius:10px;border:1px solid transparent;transition:transform .12s,box-shadow .12s}
+.btn:hover{transform:translateY(-1px)}
+.btn--soul{background:linear-gradient(135deg,var(--soul),#6a5cff);color:#fff}
+.btn--life{background:linear-gradient(135deg,var(--life),#1fae7c);color:#04261a}
+.btn--ghost{background:var(--g2);color:var(--t1);border-color:var(--b2)}
+.btn--xl{padding:15px 30px;font-size:15px;border-radius:12px}
+.btn--lg{padding:12px 26px;font-size:14.5px;border-radius:12px}
+.lang-btn{background:none;border:1px solid var(--b2);color:var(--t2);font-size:12px;font-weight:700;padding:6px 10px;border-radius:8px}
+.lang-btn.active{background:var(--soul-d);color:var(--soul-l);border-color:var(--soul-g)}
+
+/* HERO */
+.hero{padding:110px 0 90px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background:
+  radial-gradient(ellipse 60% 45% at 50% 0%,rgba(139,131,255,.16) 0%,transparent 70%),
+  radial-gradient(ellipse 40% 35% at 75% 30%,rgba(61,219,160,.07) 0%,transparent 70%);
+  pointer-events:none}
+.hero .wrap{position:relative}
+.hero .badge-line{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--life-g);background:var(--life-d);color:var(--life);border-radius:999px;padding:5px 14px;font-size:12px;font-weight:700;margin-bottom:26px}
+.hero .badge-line .dot{width:7px;height:7px;border-radius:50%;background:var(--life);box-shadow:0 0 10px var(--life)}
+.hero h1{font-size:clamp(34px,5.2vw,58px);font-weight:900;line-height:1.12;letter-spacing:-.02em;margin-bottom:18px}
+.hero h1 span.grad{background:linear-gradient(120deg,var(--soul-l),var(--sky));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p.sub{font-size:clamp(15px,1.9vw,19px);color:var(--t2);max-width:720px;margin:0 auto 34px}
+.hero .ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:26px}
+.hero .proof{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;font-size:12px;color:var(--t3)}
+
+/* STATS BAND */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:0 0 70px}
+.stat{background:linear-gradient(180deg,var(--g1),transparent);border:1px solid var(--b1);border-radius:14px;padding:20px 22px;text-align:center}
+.stat .v{font-size:27px;font-weight:800;margin-bottom:4px}
+.stat .v.soul{color:var(--soul-l)} .stat .v.life{color:var(--life)} .stat .v.gold{color:var(--wisdom)} .stat .v.rose{color:var(--rose)}
+.stat .l{font-size:12px;color:var(--t3)}
+
+/* SECTIONS */
+.section{padding:0 0 80px}
+.section-head{text-align:center;margin-bottom:40px}
+.section-head .kicker{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--soul-l);margin-bottom:10px}
+.section-head h2{font-size:clamp(26px,3.4vw,38px);font-weight:900;letter-spacing:-.015em;margin-bottom:12px}
+.section-head p{color:var(--t2);max-width:640px;margin:0 auto;font-size:14.5px}
+
+/* PAIN POINTS */
+.pains{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
+.pain{background:linear-gradient(180deg,var(--g1),transparent);border:1px solid var(--b1);border-radius:14px;padding:24px}
+.pain .p-stat{font-size:22px;font-weight:800;color:var(--rose);margin-bottom:8px}
+.pain h3{font-size:15.5px;font-weight:800;margin-bottom:10px}
+.pain p{font-size:13px;color:var(--t2);line-height:1.6}
+
+/* INSIGHT BANNER */
+.insight{margin-bottom:80px;border:1px solid var(--soul-g);border-radius:18px;padding:40px 36px;background:linear-gradient(135deg,var(--soul-d),var(--g1) 60%)}
+.insight h2{font-size:clamp(22px,3vw,32px);font-weight:900;margin-bottom:10px}
+.insight h2 span{color:var(--soul-l)}
+.insight p{color:var(--t2);font-size:14.5px;max-width:760px;margin-bottom:18px}
+.insight ul{list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.insight li{font-size:13px;color:var(--t1);padding:10px 14px;background:rgba(255,255,255,.04);border:1px solid var(--b1);border-radius:10px;font-weight:600}
+.insight li::before{content:"◆ ";color:var(--soul-l);font-size:10px;vertical-align:2px}
+
+/* COMPARE */
+table{width:100%;border-collapse:collapse;font-size:13px;background:linear-gradient(180deg,var(--g1),transparent);border:1px solid var(--b1);border-radius:14px;overflow:hidden}
+th{text-align:left;color:var(--t3);font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.07em;padding:14px 16px;border-bottom:1px solid var(--b2)}
+th.ka{color:var(--soul-l)}
+td{padding:12px 16px;border-bottom:1px solid var(--b1);color:var(--t2)}
+tr:last-child td{border-bottom:none}
+td.crit{font-weight:700;color:var(--t1)}
+td.ka{color:var(--soul-l);font-weight:600}
+tr:hover td{background:var(--g1)}
+.badge-win{display:inline-block;font-size:10px;font-weight:800;background:var(--life-d);color:var(--life);border:1px solid var(--life-g);border-radius:999px;padding:2px 8px;margin-left:8px;vertical-align:1px}
+
+/* PILLARS */
+.pillars{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.pillar{background:linear-gradient(180deg,var(--g1),transparent);border:1px solid var(--b1);border-radius:14px;padding:24px}
+.pillar .p-stat{display:inline-block;font-size:12px;font-weight:800;background:var(--soul-d);color:var(--soul-l);border:1px solid var(--soul-g);border-radius:999px;padding:4px 12px;margin-bottom:12px}
+.pillar h3{font-size:15.5px;font-weight:800;margin-bottom:10px}
+.pillar p{font-size:13px;color:var(--t2);line-height:1.6}
+
+/* PRICING */
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:14px}
+.plan{background:linear-gradient(180deg,var(--g1),transparent);border:1px solid var(--b1);border-radius:16px;padding:26px;display:flex;flex-direction:column}
+.plan.hot{background:linear-gradient(180deg,var(--life-d),var(--g1));border-color:var(--life-g)}
+.plan .p-name{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:16px;margin-bottom:4px}
+.plan .p-price{font-size:26px;font-weight:800;margin-bottom:4px}
+.plan .p-price.hot{color:var(--life)}
+.plan .p-price em{font-size:12px;color:var(--t3);font-style:normal;font-weight:500}
+.plan .p-desc{font-size:12.5px;color:var(--t3);margin-bottom:16px;min-height:38px}
+.plan ul{list-style:none;margin:0 0 20px;flex:1}
+.plan li{font-size:12.5px;color:var(--t2);padding:5px 0;border-bottom:1px solid var(--g1)}
+.plan li::before{content:"✓ ";color:var(--life);font-weight:800}
+.plan .btn{text-align:center;width:100%}
+.reco{font-size:10px;font-weight:800;background:var(--life);color:#04261a;border-radius:999px;padding:3px 10px;text-transform:uppercase;letter-spacing:.05em}
+
+/* CTA FINAL */
+.final{padding:80px 0;text-align:center;border-top:1px solid var(--b1);position:relative;overflow:hidden}
+.final::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 50% 60% at 50% 100%,rgba(139,131,255,.12) 0%,transparent 70%);pointer-events:none}
+.final .wrap{position:relative}
+.final h2{font-size:clamp(26px,3.6vw,40px);font-weight:900;margin-bottom:14px}
+.final p{color:var(--t2);max-width:560px;margin:0 auto 28px}
+.final .cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+/* FOOTER */
+footer{border-top:1px solid var(--b1);padding:36px 0;color:var(--t3);font-size:12px}
+footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+footer .tip{font-family:var(--mono);font-size:11px;color:var(--t4)}
+
+/* RESPONSIVE */
+@media(max-width:720px){
+  .nav-links a.hide-m{display:none}
+  .hero{padding:80px 0 60px}
+  .section{padding:0 0 60px}
+}
+.loading{color:var(--t3);text-align:center;padding:30px;font-size:13px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- ══ NAV ══ -->
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="/enterprise"><img class="mark" src="/brand/enterprise.svg" alt="KA Enterprise">KA <b>Enterprise</b></a>
+    <nav class="nav-links">
+      <a href="#problème" class="hide-m" data-i18n="nav.problem">Le problème</a>
+      <a href="#comparaison" data-i18n="nav.compare">RAG vs Hologramme</a>
+      <a href="#deploiement" data-i18n="nav.deploy">Feuille de route</a>
+      <a href="#tarifs" data-i18n="nav.pricing">Tarifs</a>
+      <button class="lang-btn" id="lang-fr" onclick="setLang('fr')">FR</button>
+      <button class="lang-btn" id="lang-en" onclick="setLang('en')">EN</button>
+      <a class="btn btn--soul btn--lg" href="/enterprise/console" data-i18n="nav.console">Console →</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ══ HERO ══ -->
+<section class="hero">
+  <div class="wrap">
+    <div class="badge-line"><span class="dot"></span><span data-i18n="hero.badge">88.4% GSM8K · 0% hallucination · 100% on-premise</span></div>
+    <h1><span data-i18n="hero.h1a">Le RAG est un bricolage.</span><br><span class="grad" data-i18n="hero.h1b">Les hologrammes sont la solution.</span></h1>
+    <p class="sub" data-i18n="hero.sub">Le RAG a été inventé pour masquer les hallucinations des LLMs — il ne les corrige pas. KA Enterprise remplace le RAG par des hologrammes déterministes : chaque réponse est calculée, traçable et reproductible. Vos données ne quittent jamais vos serveurs.</p>
+    <div class="ctas">
+      <a class="btn btn--soul btn--xl" href="/enterprise/console" data-i18n="hero.cta1">Voir la démo en direct</a>
+      <a class="btn btn--ghost btn--xl" href="#tarifs" data-i18n="hero.cta2">Découvrir les offres</a>
+    </div>
+    <div class="proof"><span data-i18n="proof1">🌀 Hologrammes 2 Mo</span> · <span data-i18n="proof2">⚡ 1 CPU suffit</span> · <span data-i18n="proof3">🔒 AES-GCM-256</span> · <span data-i18n="proof4">📜 Audit intégré</span></div>
+  </div>
+</section>
+
+<!-- ══ STATS ══ -->
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><div class="v life">0%</div><div class="l" data-i18n="stat1">hallucination · codec ψ</div></div>
+    <div class="stat"><div class="v soul">88.4%</div><div class="l" data-i18n="stat2">GSM8K · raisonnement vérifiable</div></div>
+    <div class="stat"><div class="v gold">×213</div><div class="l" data-i18n="stat3">compression HCV sans perte</div></div>
+    <div class="stat"><div class="v rose">2 Mo</div><div class="l" data-i18n="stat4">par hologramme · pas de vector DB</div></div>
+  </div>
+</div>
+
+<!-- ══ LE PROBLÈME ══ -->
+<section class="section" id="problème">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker" data-i18n="problem.kicker">Pourquoi le RAG échoue</div>
+      <h2 data-i18n="problem.title">Trois failles que les fournisseurs d'IA ne vous montrent pas</h2>
+      <p data-i18n="problem.sub">Votre IA a des hallucinations. Vos données fuient. Votre RAG est une infrastructure coûteuse au résultat médiocre.</p>
+    </div>
+    <div class="pains" id="pains"><div class="loading">…</div></div>
+  </div>
+</section>
+
+<!-- ══ INSIGHT ══ -->
+<section class="section">
+  <div class="wrap">
+    <div class="insight">
+      <h2 data-i18n="insight.a">Ne connectez pas votre IA à vos données.</h2>
+      <h2><span data-i18n="insight.b">Amenez votre IA *dans* vos données.</span></h2>
+      <p data-i18n="insight.p">Chaque document d'entreprise devient un hologramme de 2 Mo — une capture déterministe de la connaissance du domaine. L'IA raisonne *à partir de* l'hologramme, sur votre réseau, sans jamais envoyer un octet à l'extérieur.</p>
+      <ul>
+        <li data-i18n="i1">Pas de chunking destructeur</li>
+        <li data-i18n="i2">Pas d'embeddings ni de vector DB</li>
+        <li data-i18n="i3">Pas de contexte limité aux chunks</li>
+        <li data-i18n="i4">Mise à jour instantanée</li>
+        <li data-i18n="i5">Chaque réponse cite ses faits sources</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ══ COMPARAISON ══ -->
+<section class="section" id="comparaison">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker" data-i18n="compare.kicker">La preuve</div>
+      <h2 data-i18n="compare.title">RAG vs Hologramme — critère par critère</h2>
+      <p data-i18n="compare.sub">10 critères. Un seul gagnant. Les chiffres parlent.</p>
+    </div>
+    <table>
+      <thead><tr><th style="width:150px" data-i18n="crit">Critère</th><th data-i18n="rag">RAG classique</th><th class="ka" data-i18n="ka">🌀 Hologramme KA</th></tr></thead>
+      <tbody id="compare-tbody"><tr><td colspan="3" class="loading">…</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ══ PILIERS ══ -->
+<section class="section" id="solution">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker" data-i18n="pillars.kicker">La solution</div>
+      <h2 data-i18n="pillars.title">Cinq piliers, zéro compromis</h2>
+      <p data-i18n="pillars.sub">La privacy n'est pas une promesse : c'est une architecture.</p>
+    </div>
+    <div class="pillars" id="pillars"><div class="loading">…</div></div>
+  </div>
+</section>
+
+<!-- ══ DÉPLOIEMENT ══ -->
+<section class="section" id="deploiement" style="background:linear-gradient(180deg,transparent,rgba(61,219,160,.04))">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker" data-i18n="deploy.kicker">Feuille de route</div>
+      <h2 data-i18n="deploy.title">Déployez l'IA harmonique par étapes</h2>
+      <p data-i18n="deploy.sub">Pas besoin de tout changer en un jour. Chaque phase produit de la valeur mesurable et prépare la suivante.</p>
+    </div>
+    <style>
+    .roadmap{display:flex;flex-direction:column;gap:0;position:relative;margin-top:24px}
+    .roadmap::before{content:"";position:absolute;left:23px;top:0;bottom:0;width:2px;background:linear-gradient(180deg,var(--soul-g),var(--life-g))}
+    .rm-step{display:flex;gap:18px;padding:18px 0;position:relative}
+    .rm-step .num{width:44px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;position:relative;z-index:2}
+    .rm-step .num.p1{background:var(--soul-d);color:var(--soul-l);border:2px solid var(--soul-g)}
+    .rm-step .num.p2{background:var(--life-d);color:var(--life);border:2px solid var(--life-g)}
+    .rm-step .num.p3{background:var(--wisdom-d);color:var(--wisdom);border:2px solid var(--wisdom-g)}
+    .rm-step .num.p4{background:var(--rose-d);color:var(--rose);border:2px solid var(--rose-g)}
+    .rm-step .num.p5{background:var(--sky-d);color:var(--sky);border:2px solid var(--sky-g)}
+    .rm-step .body{flex:1;padding-top:3px}
+    .rm-step .body h3{font-size:16px;font-weight:800;margin-bottom:4px}
+    .rm-step .body p{font-size:13px;color:var(--t2);margin:0;line-height:1.5}
+    .rm-step .body .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    .rm-step .body .tags span{font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid var(--b1);color:var(--t3)}
+    </style>
+    <div class="roadmap">
+      <div class="rm-step">
+        <div class="num p1">1</div>
+        <div class="body">
+          <h3 data-i18n="rm1t">Fondations — 1 hologramme métier</h3>
+          <p data-i18n="rm1p">Déploiement Docker du codec ψ, premier hologramme (finance, RH ou juridique), audit intégré, compression HCV. Valeur : 0% hallucination sur 1 domaine critique, données on-premise.</p>
+          <div class="tags"><span data-i18n="rm1t1">Docker</span><span data-i18n="rm1t2">Codec ψ</span><span data-i18n="rm1t3">1 hologramme</span><span data-i18n="rm1t4">Audit</span></div>
+        </div>
+      </div>
+      <div class="rm-step">
+        <div class="num p2">2</div>
+        <div class="body">
+          <h3 data-i18n="rm2t">Connaissance documentaire</h3>
+          <p data-i18n="rm2p">Ingestion structurée de tous les documents internes (procédures, contrats, PV). Hologrammes illimités, rappel hiérarchique avec préservation de la structure. Valeur : recherche documentaire déterministe, zéro hallucination.</p>
+          <div class="tags"><span data-i18n="rm2t1">Ingestion</span><span data-i18n="rm2t2">Hologrammes illimités</span><span data-i18n="rm2t3">Rappel structurel</span></div>
+        </div>
+      </div>
+      <div class="rm-step">
+        <div class="num p3">3</div>
+        <div class="body">
+          <h3 data-i18n="rm3t">Génération &amp; Rapports</h3>
+          <p data-i18n="rm3p">Hologrammes + Phraseur + SQL Querier. Génération de rapports, graphiques, exports structurés. Décisions assistées avec provenance traçable. Valeur : les chiffres sont calculés, pas devinés.</p>
+          <div class="tags"><span data-i18n="rm3t1">SQL Querier</span><span data-i18n="rm3t2">Rapports</span><span data-i18n="rm3t3">Export</span></div>
+        </div>
+      </div>
+      <div class="rm-step">
+        <div class="num p4">4</div>
+        <div class="body">
+          <h3 data-i18n="rm4t">Relationnel transversal</h3>
+          <p data-i18n="rm4p">Hologrammes interconnectés par les 41 primitives transverticales. Analyse croisée entre domaines (ex. : performance commerciale vs trésorerie vs RH). Valeur : l'IA relie ce que les silos séparent.</p>
+          <div class="tags"><span data-i18n="rm4t1">Transversalité</span><span data-i18n="rm4t2">41 primitives</span><span data-i18n="rm4t3">Analyse croisée</span></div>
+        </div>
+      </div>
+      <div class="rm-step">
+        <div class="num p5">5</div>
+        <div class="body">
+          <h3 data-i18n="rm5t">Actions &amp; Intégrations</h3>
+          <p data-i18n="rm5p">Connecteurs d'écriture vers CRM, ERP, outils métier. Mise à jour de données, création de tickets, envoi de rapports — avec validation humaine. Valeur : l'IA agit, pas seulement répond.</p>
+          <div class="tags"><span data-i18n="rm5t1">Connecteurs</span><span data-i18n="rm5t2">Actions</span><span data-i18n="rm5t3">Validation</span><span data-i18n="rm5t4">Edge</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ TARIFS ══ -->
+<section class="section" id="tarifs">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker" data-i18n="pricing.kicker">Modèle simple</div>
+      <h2 data-i18n="pricing.title">Une licence annuelle. Budget prévisible.</h2>
+      <p data-i18n="pricing.sub">Pas de coût par token, pas de facturation GPU, pas de surprise. Tout on-premise.</p>
+    </div>
+    <div class="plans" id="plans"><div class="loading">…</div></div>
+  </div>
+</section>
+
+<!-- ══ CTA FINAL ══ -->
+<section class="final">
+  <div class="wrap">
+    <h2 data-i18n="final.title">Prêt à remplacer votre RAG ?</h2>
+    <p data-i18n="final.sub">Accédez à la console, posez une question, et regardez une IA qui ne peut pas mentir — parce qu'elle calcule au lieu de générer.</p>
+    <div class="cta-row">
+      <a class="btn btn--soul btn--xl" href="/enterprise/console" data-i18n="final.cta">Ouvrir la console →</a>
+      <a class="btn btn--ghost btn--xl" href="/corporation" data-i18n="final.cta2">Voir la vision KA</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 KA Enterprise · Post-RAG Platform · <span data-i18n="foot">IA harmonique · 0 GPU · données souveraines</span></span>
+    <span class="tip" data-i18n="foot.tip">codec ψ · HCV ×213 · AES-GCM-256</span>
+  </div>
+</footer>
+
+<script>
+'use strict';
+// ─── API publique (aucune clé requise) ───
+var API = (function () {
+  var host = location.hostname;
+  var isLocal = host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.');
+  return isLocal ? location.protocol + '//' + host + ':8767' : '';
+})();
+
+var LANG = 'fr';
+try { if (localStorage.getItem('ka_land_lang') === 'en') LANG = 'en'; } catch (e) {}
+
+// ─── Traductions statiques (nav, hero, section-heads…) ───
+var I18N = {
+  fr: {
+    'nav.problem': 'Le problème', 'nav.compare': 'RAG vs Hologramme', 'nav.deploy': 'Feuille de route', 'nav.pricing': 'Tarifs', 'nav.console': 'Console →',
+    'hero.badge': '88.4% GSM8K · 0% hallucination · 100% on-premise',
+    'hero.h1a': 'Le RAG est un bricolage.', 'hero.h1b': 'Les hologrammes sont la solution.',
+    'hero.sub': "Le RAG a été inventé pour masquer les hallucinations des LLMs — il ne les corrige pas. KA Enterprise remplace le RAG par des hologrammes déterministes : chaque réponse est calculée, traçable et reproductible. Vos données ne quittent jamais vos serveurs.",
+    'hero.cta1': 'Voir la démo en direct', 'hero.cta2': 'Découvrir les offres',
+    'stat1': 'hallucination · codec ψ', 'stat2': 'GSM8K · raisonnement vérifiable', 'stat3': 'compression HCV sans perte', 'stat4': 'par hologramme · pas de vector DB',
+    'problem.kicker': 'Pourquoi le RAG échoue', 'problem.title': "Trois failles que les fournisseurs d'IA ne vous montrent pas",
+    'problem.sub': 'Votre IA a des hallucinations. Vos données fuient. Votre RAG est une infrastructure coûteuse au résultat médiocre.',
+    'insight.a': 'Ne connectez pas votre IA à vos données.', 'insight.b': 'Amenez votre IA *dans* vos données.',
+    'insight.p': "Chaque document d'entreprise devient un hologramme de 2 Mo — une capture déterministe de la connaissance du domaine. L'IA raisonne à partir de l'hologramme, sur votre réseau, sans jamais envoyer un octet à l'extérieur.",
+    'i1': 'Pas de chunking destructeur', 'i2': "Pas d'embeddings ni de vector DB", 'i3': 'Pas de contexte limité aux chunks', 'i4': 'Mise à jour instantanée', 'i5': 'Chaque réponse cite ses faits sources',
+    'compare.kicker': 'La preuve', 'compare.title': 'RAG vs Hologramme — critère par critère', 'compare.sub': '10 critères. Un seul gagnant. Les chiffres parlent.',
+    'crit': 'Critère', 'rag': 'RAG classique', 'ka': '🌀 Hologramme KA',
+    'pillars.kicker': 'La solution', 'pillars.title': 'Cinq piliers, zéro compromis', 'pillars.sub': "La privacy n'est pas une promesse : c'est une architecture.",
+    'pricing.kicker': 'Modèle simple', 'pricing.title': 'Une licence annuelle. Budget prévisible.', 'pricing.sub': 'Pas de coût par token, pas de facturation GPU, pas de surprise. Tout on-premise.',
+    'final.title': 'Prêt à remplacer votre RAG ?', 'final.sub': "Accédez à la console, posez une question, et regardez une IA qui ne peut pas mentir — parce qu'elle calcule au lieu de générer.",
+    'final.cta': 'Ouvrir la console →', 'final.cta2': 'Voir la vision KA',
+    'foot': 'IA harmonique · 0 GPU · données souveraines', 'foot.tip': 'codec ψ · HCV ×213 · AES-GCM-256',
+    'per.an': '/an', 'recommande': 'recommandé',
+    'proof1': '🌀 Hologrammes 2 Mo', 'proof2': '⚡ 1 CPU suffit', 'proof3': '🔒 AES-GCM-256', 'proof4': '📜 Audit intégré',
+    'deploy.kicker': 'Feuille de route', 'deploy.title': "Déployez l'IA harmonique par étapes", 'deploy.sub': 'Pas besoin de tout changer en un jour. Chaque phase produit de la valeur mesurable et prépare la suivante.',
+    'rm1t': 'Fondations — 1 hologramme métier', 'rm1p': 'Déploiement Docker du codec ψ, premier hologramme (finance, RH ou juridique), audit intégré, compression HCV. Valeur : 0% hallucination sur 1 domaine critique, données on-premise.',
+    'rm1t1': 'Docker', 'rm1t2': 'Codec ψ', 'rm1t3': '1 hologramme', 'rm1t4': 'Audit',
+    'rm2t': 'Connaissance documentaire', 'rm2p': 'Ingestion structurée de tous les documents internes (procédures, contrats, PV). Hologrammes illimités, rappel hiérarchique avec préservation de la structure. Valeur : recherche documentaire déterministe, zéro hallucination.',
+    'rm2t1': 'Ingestion', 'rm2t2': 'Hologrammes illimités', 'rm2t3': 'Rappel structurel',
+    'rm3t': 'Génération & Rapports', 'rm3p': 'Hologrammes + Phraseur + SQL Querier. Génération de rapports, graphiques, exports structurés. Valeur : les chiffres sont calculés, pas devinés.',
+    'rm3t1': 'SQL Querier', 'rm3t2': 'Rapports', 'rm3t3': 'Export',
+    'rm4t': 'Relationnel transversal', 'rm4p': 'Hologrammes interconnectés par les 41 primitives transverticales. Analyse croisée entre domaines (ex. : performance commerciale vs trésorerie vs RH). Valeur : l\'IA relie ce que les silos séparent.',
+    'rm4t1': 'Transversalité', 'rm4t2': '41 primitives', 'rm4t3': 'Analyse croisée',
+    'rm5t': 'Actions & Intégrations', 'rm5p': 'Connecteurs d\'écriture vers CRM, ERP, outils métier. Mise à jour de données, création de tickets, envoi de rapports — avec validation humaine. Valeur : l\'IA agit, pas seulement répond.',
+    'rm5t1': 'Connecteurs', 'rm5t2': 'Actions', 'rm5t3': 'Validation', 'rm5t4': 'Edge'
+  },
+  en: {
+    'nav.problem': 'The problem', 'nav.compare': 'RAG vs Hologram', 'nav.pricing': 'Pricing', 'nav.console': 'Console →',
+    'hero.badge': '88.4% GSM8K · 0% hallucination · 100% on-premise',
+    'hero.h1a': 'RAG is a hack.', 'hero.h1b': 'Holograms are the solution.',
+    'hero.sub': 'RAG was invented to mask LLM hallucinations — it does not fix them. KA Enterprise replaces RAG with deterministic holograms: every answer is computed, traceable and reproducible. Your data never leaves your servers.',
+    'hero.cta1': 'Watch the live demo', 'hero.cta2': 'See the plans',
+    'stat1': 'hallucination · ψ codec', 'stat2': 'GSM8K · verifiable reasoning', 'stat3': 'lossless HCV compression', 'stat4': 'per hologram · no vector DB',
+    'problem.kicker': 'Why RAG fails', 'problem.title': 'Three flaws your AI vendors are not showing you',
+    'problem.sub': 'Your AI hallucinates. Your data leaks. Your RAG is an expensive infrastructure with mediocre results.',
+    'insight.a': 'Do not connect your AI to your data.', 'insight.b': 'Bring your AI *into* your data.',
+    'insight.p': 'Every business document becomes a 2 MB hologram — a deterministic capture of domain knowledge. The AI reasons *from* the hologram, on your network, without ever sending a single byte outside.',
+    'i1': 'No destructive chunking', 'i2': 'No embeddings or vector DB', 'i3': 'No context limited to chunks', 'i4': 'Instant updates', 'i5': 'Every answer cites its source facts',
+    'compare.kicker': 'The proof', 'compare.title': 'RAG vs Hologram — criterion by criterion', 'compare.sub': '10 criteria. One winner. The numbers speak.',
+    'crit': 'Criterion', 'rag': 'Classic RAG', 'ka': '🌀 KA Hologram',
+    'pillars.kicker': 'The solution', 'pillars.title': 'Five pillars, zero compromise', 'pillars.sub': "Privacy is not a promise — it's an architecture.",
+    'pricing.kicker': 'Simple model', 'pricing.title': 'Annual license. Predictable budget.', 'pricing.sub': 'No per-token cost, no GPU billing, no surprises. Everything on-premise.',
+    'final.title': 'Ready to replace your RAG?', 'final.sub': 'Open the console, ask a question, and watch an AI that cannot lie — because it computes instead of generating.',
+    'final.cta': 'Open the console →', 'final.cta2': 'See the KA vision',
+    'foot': 'Harmonic AI · 0 GPU · sovereign data', 'foot.tip': 'ψ codec · HCV ×213 · AES-GCM-256',
+    'per.an': '/year', 'recommande': 'recommended',
+    'proof1': '🌀 2 MB holograms', 'proof2': '⚡ One CPU is enough', 'proof3': '🔒 AES-GCM-256', 'proof4': '📜 Built-in audit',
+    'deploy.kicker': 'Roadmap', 'deploy.title': 'Deploy harmonic AI step by step', 'deploy.sub': 'No need to change everything at once. Each phase delivers measurable value and prepares the next.',
+    'rm1t': 'Foundation — 1 business hologram', 'rm1p': 'Docker deployment of ψ codec, first hologram (finance, HR or legal), built-in audit, HCV compression. Value: 0% hallucination on 1 critical domain, on-premise data.',
+    'rm1t1': 'Docker', 'rm1t2': 'Codec ψ', 'rm1t3': '1 hologram', 'rm1t4': 'Audit',
+    'rm2t': 'Document knowledge', 'rm2p': 'Structured ingestion of all internal documents (procedures, contracts, meeting notes). Unlimited holograms, hierarchical recall with structure preservation. Value: deterministic document search, zero hallucination.',
+    'rm2t1': 'Ingestion', 'rm2t2': 'Unlimited holograms', 'rm2t3': 'Structural recall',
+    'rm3t': 'Generation & Reports', 'rm3p': 'Holograms + Phraser + SQL Querier. Report generation, charts, structured exports. Value: numbers are computed, not guessed.',
+    'rm3t1': 'SQL Querier', 'rm3t2': 'Reports', 'rm3t3': 'Export',
+    'rm4t': 'Cross-domain relations', 'rm4p': 'Holograms interconnected through 41 transvertical primitives. Cross-analysis between domains (e.g., sales performance vs treasury vs HR). Value: AI connects what silos separate.',
+    'rm4t1': 'Transversality', 'rm4t2': '41 primitives', 'rm4t3': 'Cross-analysis',
+    'rm5t': 'Actions & Integrations', 'rm5p': 'Write connectors to CRM, ERP, business tools. Data updates, ticket creation, report sending — with human validation. Value: AI acts, not just answers.',
+    'rm5t1': 'Connectors', 'rm5t2': 'Actions', 'rm5t3': 'Validation', 'rm5t4': 'Edge'
+  }
+};
+
+function i18n(key) { return (I18N[LANG] && I18N[LANG][key]) || (I18N.fr[key] || key); }
+
+function applyI18n() {
+  document.documentElement.lang = LANG;
+  document.documentElement.setAttribute('data-lang', LANG);
+  var all = document.querySelectorAll('[data-i18n]');
+  all.forEach(function (el) {
+    // Sauter les éléments qui contiennent des enfants [data-i18n]
+    // (ex. h1 avec <br><span>) — leurs feuilles seront traduites individuellement.
+    if (el.querySelector('[data-i18n]')) return;
+    var k = el.getAttribute('data-i18n');
+    var v = I18N[LANG] && I18N[LANG][k];
+    if (v) el.textContent = v;
+  });
+  document.getElementById('lang-fr').classList.toggle('active', LANG === 'fr');
+  document.getElementById('lang-en').classList.toggle('active', LANG === 'en');
+}
+
+function setLang(l) {
+  LANG = l;
+  try { localStorage.setItem('ka_land_lang', l); } catch (e) {}
+  applyI18n();
+  loadAll();
+}
+
+function fetchJSON(url) {
+  return fetch(url).then(function (r) { return r.json(); });
+}
+
+// ─── Chargement des contenus API publics ───
+function loadAll() {
+  var q = '?lang=' + LANG;
+  fetchJSON(API + '/api/v2/enterprise/manifesto' + q).then(function (d) {
+    // Pain points
+    document.getElementById('pains').innerHTML = (d.pain_points || []).map(function (p) {
+      return '<div class="pain"><div class="p-stat">' + p.stat + '</div><h3>' + p.title + '</h3><p>' + p.description + '</p></div>';
+    }).join('');
+    // Pillars
+    document.getElementById('pillars').innerHTML = (d.pillars || []).map(function (p) {
+      return '<div class="pillar"><span class="p-stat">' + p.stat + '</span><h3>' + p.title + '</h3><p>' + p.description + '</p></div>';
+    }).join('');
+  }).catch(function () {
+    document.getElementById('pains').innerHTML = '<div class="loading">—</div>';
+    document.getElementById('pillars').innerHTML = '<div class="loading">—</div>';
+  });
+
+  fetchJSON(API + '/api/v2/enterprise/compare' + q).then(function (d) {
+    document.getElementById('compare-tbody').innerHTML = (d.comparison || []).map(function (c) {
+      return '<tr><td class="crit">' + c.criteria + '</td><td>' + c.rag + '</td>'
+        + '<td class="ka">' + c.hologram + '<span class="badge-win">✓</span></td></tr>';
+    }).join('');
+  }).catch(function () {
+    document.getElementById('compare-tbody').innerHTML = '<tr><td colspan="3" class="loading">—</td></tr>';
+  });
+
+  fetchJSON(API + '/api/v2/enterprise/pricing' + q).then(function (d) {
+    document.getElementById('plans').innerHTML = (d.plans || []).map(function (p) {
+      var hot = p.highlight ? ' plan hot' : '';
+      var reco = p.highlight ? '<span class="reco">' + i18n('recommande') + '</span>' : '';
+      return '<div class="plan' + hot + '">'
+        + '<div class="p-name">' + p.name + reco + '</div>'
+        + '<div class="p-price' + (p.highlight ? ' hot' : '') + '">' + Number(p.price).toLocaleString('fr-FR') + ' € <em>' + i18n('per.an') + '</em></div>'
+        + '<div class="p-desc">' + p.description + '</div>'
+        + '<ul>' + p.features.map(function (f) { return '<li>' + f + '</li>'; }).join('') + '</ul>'
+        + '<a class="btn ' + (p.highlight ? 'btn--life' : 'btn--ghost') + '" href="/enterprise/console">' + i18n('nav.console') + '</a>'
+        + '</div>';
+    }).join('');
+  }).catch(function () {
+    document.getElementById('plans').innerHTML = '<div class="loading">—</div>';
+  });
+}
+
+applyI18n();
+loadAll();
+</script>
+</body>
+</html>

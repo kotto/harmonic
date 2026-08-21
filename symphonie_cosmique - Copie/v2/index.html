@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌊 Symphonie Cosmique V2 — Moteur Granulaire — Ψ = Σ Hₙ (Ψ₁)ⁿ</title>
+<style>
+:root {
+  --bg: #010008;
+  --phi: #d4a843;
+  --acc: #3ef0d8;
+  --panel-bg: rgba(8,6,28,0.94);
+  --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);
+  color:#eaf6ff;
+  font-family:'Segoe UI',system-ui,sans-serif;
+  overflow:hidden;
+  height:100vh;
+  user-select:none;
+}
+canvas#universe{
+  position:fixed;inset:0;z-index:0;
+}
+
+/* Equation */
+.eq-display{
+  position:fixed;top:16px;left:50%;transform:translateX(-50%);
+  z-index:10;
+  padding:10px 24px;
+  background:rgba(8,4,32,0.85);
+  backdrop-filter:blur(14px);
+  border:1px solid rgba(212,168,67,0.2);
+  border-radius:28px;
+  font-family:'Courier New',monospace;
+  font-size:1.2em;font-weight:700;
+  color:var(--phi);letter-spacing:2px;
+  text-align:center;
+}
+.eq-display .small{font-size:0.5em;color:#7a86a8;display:block;margin-top:1px}
+
+/* Panel */
+.panel{
+  position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+  z-index:10;width:min(920px,95vw);
+  background:var(--panel-bg);
+  backdrop-filter:blur(22px);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:18px 22px 14px;
+  display:flex;flex-direction:column;gap:12px;
+  box-shadow:0 8px 44px rgba(0,0,0,0.55);
+}
+
+.panel-header{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:8px;
+}
+.panel-header .title{
+  font-size:1.15em;font-weight:700;
+  background:linear-gradient(135deg,var(--phi),var(--acc));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.panel-header .subtitle{
+  font-size:0.7em;color:#7a86a8;font-family:'Courier New',monospace;
+}
+
+/* Layer compact */
+.layers-scroll{display:flex;gap:6px;overflow-x:auto;padding:4px 0;flex-wrap:nowrap}
+.layer-chip{
+  flex-shrink:0;min-width:100px;
+  padding:10px 12px;
+  background:rgba(12,10,38,0.6);
+  border:1px solid rgba(200,220,255,0.05);
+  border-radius:12px;
+  cursor:pointer;transition:all 0.3s;
+  text-align:center;
+}
+.layer-chip:hover{border-color:rgba(212,168,67,0.2);background:rgba(12,10,38,0.9)}
+.layer-chip.active{border-color:var(--phi);background:rgba(212,168,67,0.08)}
+.layer-chip .chip-n{font-size:0.75em;color:var(--acc);font-weight:700}
+.layer-chip .chip-h{font-size:0.62em;color:#7a86a8;font-family:'Courier New',monospace}
+.layer-chip .chip-grains{font-size:0.55em;color:#5a6698}
+.layer-chip .chip-bar{height:3px;background:rgba(255,255,255,0.05);border-radius:2px;margin-top:4px;overflow:hidden}
+.layer-chip .chip-bar-fill{height:100%;border-radius:2px;transition:width 1.5s}
+
+/* Buttons */
+.controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.btn{
+  padding:9px 18px;border-radius:22px;border:1px solid var(--border);
+  background:rgba(12,10,38,0.7);color:#eaf6ff;
+  font-size:0.82em;cursor:pointer;transition:all 0.25s;
+  font-family:inherit;
+}
+.btn:hover{background:rgba(212,168,67,0.08);border-color:rgba(212,168,67,0.3)}
+.btn.primary{
+  background:linear-gradient(135deg,var(--phi),#7a5cff);
+  border:none;color:#fff;font-weight:600;
+}
+.btn.primary:hover{opacity:0.85;transform:scale(1.02)}
+.btn.danger{border-color:rgba(255,71,87,0.25);color:#ff6b7a}
+.btn.danger:hover{background:rgba(255,71,87,0.08)}
+.btn.gold{border-color:rgba(212,168,67,0.35);color:var(--phi)}
+.btn.gold:hover{background:rgba(212,168,67,0.1)}
+.btn.small{padding:6px 12px;font-size:0.72em}
+
+/* Info */
+.info-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:0.65em;color:#5a6698;font-family:'Courier New',monospace;
+  flex-wrap:wrap;gap:4px;
+}
+
+/* Tooltip */
+.cosmic-note{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:5;pointer-events:none;
+  font-size:2.5em;font-weight:700;
+  background:linear-gradient(135deg,var(--phi),var(--acc));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  opacity:0;transition:all 1.5s;
+  text-align:center;line-height:1.2;
+}
+.cosmic-note.show{opacity:0.75;font-size:3.5em}
+.cosmic-note .sub{font-size:0.35em;display:block;color:#b8c6dc;-webkit-text-fill-color:#b8c6dc}
+
+.layers-scroll::-webkit-scrollbar{height:3px}
+.layers-scroll::-webkit-scrollbar-thumb{background:rgba(212,168,67,0.15);border-radius:2px}
+
+@media(max-width:640px){
+  .panel{padding:12px 14px;gap:8px}
+  .panel-header .title{font-size:1em}
+  .eq-display{font-size:0.95em;padding:8px 16px}
+  .layer-chip{min-width:75px;padding:8px}
+}
+</style>
+</head>
+<body>
+
+<canvas id="universe"></canvas>
+
+<div class="eq-display">
+  Ψ = Σ H<sub>n</sub> (Ψ<sub>1</sub>)<sup>n</sup>
+  <span class="small">V2 · Moteur Granulaire · Ψ₁ = 7.83 Hz</span>
+</div>
+
+<div class="cosmic-note" id="cosmicNote"></div>
+
+<div class="panel" id="panel">
+  <div class="panel-header">
+    <span class="title">🌌 Univers Granulaire</span>
+    <span class="subtitle" id="statusLabel">PRÊT</span>
+  </div>
+
+  <div class="layers-scroll" id="layerChips"></div>
+
+  <div class="controls">
+    <button class="btn primary" onclick="playAll()">▶ Tout</button>
+    <button class="btn gold" onclick="cosmicBirth()">🌌 Naissance cosmique</button>
+    <button class="btn" onclick="revealLayers()">✨ Révélation</button>
+    <button class="btn small" onclick="triggerTransient()">⚡ Transitoire</button>
+    <button class="btn danger" onclick="stopAll()">⏹ Silence</button>
+  </div>
+
+  <div class="info-bar" id="infoBar">
+    <span id="infoGrains">0 grains actifs</span>
+    <span id="infoFreq">Ψ₁ = 7.83 Hz</span>
+    <span id="infoBeat">—</span>
+  </div>
+</div>
+
+<script>
+// ==================== CONSTANTES ====================
+const HARMONIC_LAYERS = [
+  { n:1, h:'H₁', constant:'φ',  value:1.618, name:'Nombre d\'or',   role:'Anti-résonance',    color:'#d4a843', grains:10 },
+  { n:2, h:'H₂', constant:'π',  value:3.142, name:'Pi',             role:'Périodicité',       color:'#3ef0d8', grains:12 },
+  { n:3, h:'H₃', constant:'e',  value:2.718, name:'Base naturelle', role:'Amortissement',     color:'#7a5cff', grains:14 },
+  { n:4, h:'H₄', constant:'√2', value:1.414, name:'Racine de 2',    role:'Symétrie planaire', color:'#ff6b7a', grains:16 },
+  { n:5, h:'H₅', constant:'√3', value:1.732, name:'Racine de 3',    role:'Symétrie volumique',color:'#f0c96e', grains:18 },
+  { n:6, h:'H₆', constant:'√5', value:2.236, name:'Racine de 5',    role:'Textures fines',    color:'#2ed573', grains:20 },
+  { n:7, h:'H₇', constant:'e/π',value:0.865, name:'Rapport e/pi',   role:'Spirale synthèse',  color:'#ffa502', grains:15 },
+];
+
+const BASE_FREQ = 7.83;
+const PHI = 1.6180339887;
+
+// ==================== GRANULAR ENGINE ====================
+let audioCtx = null;
+let masterGain = null;
+let reverbNode = null;
+let noiseSource = null;
+let noiseGain = null;
+
+// Each layer has an array of Grain objects
+const layerGrains = {}; // { n: [Grain, Grain, ...] }
+const layerActive = {}; // { n: bool }
+
+HARMONIC_LAYERS.forEach(l => {
+  layerGrains[l.n] = [];
+  layerActive[l.n] = false;
+});
+
+let isPlaying = false;
+
+// Global modulation LFOs for organic movement
+let globalLFO1 = null, globalLFO2 = null, globalLFO3 = null;
+let globalLFOGain1 = null, globalLFOGain2 = null;
+
+function getNominalFreq(n) {
+  const base = BASE_FREQ * n;
+  const phiShift = Math.pow(PHI, (n-1)/14);
+  return base * phiShift;
+}
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const sr = audioCtx.sampleRate;
+
+    // Master chain
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.35;
+
+    // Global saturation for warmth
+    const saturator = audioCtx.createWaveShaper();
+    const curve = new Float32Array(256);
+    for (let i = 0; i < 256; i++) {
+      const x = (i - 128) / 128;
+      curve[i] = Math.tanh(x * 2.5) * 0.85;
+    }
+    saturator.curve = curve;
+
+    // Reverb — longer, richer
+    reverbNode = audioCtx.createConvolver();
+    const revLen = sr * 5.5;
+    const impulse = audioCtx.createBuffer(2, revLen, sr);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = impulse.getChannelData(ch);
+      for (let i = 0; i < revLen; i++) {
+        const t = i / sr;
+        const env = Math.exp(-t * 0.9) * (0.5 + 0.5 * Math.sin(t * 2.3 + ch));
+        d[i] = (Math.random() * 2 - 1) * env * 0.6;
+      }
+    }
+    reverbNode.buffer = impulse;
+
+    const dryGain = audioCtx.createGain();
+    dryGain.gain.value = 0.5;
+    const wetGain = audioCtx.createGain();
+    wetGain.gain.value = 0.5;
+
+    masterGain.connect(saturator);
+    saturator.connect(dryGain);
+    saturator.connect(reverbNode);
+    reverbNode.connect(wetGain);
+
+    // Noise source for organic texture
+    noiseSource = audioCtx.createBufferSource();
+    const noiseLen = sr * 4;
+    const noiseBuf = audioCtx.createBuffer(1, noiseLen, sr);
+    const noiseData = noiseBuf.getChannelData(0);
+    // Brown-ish noise (softer, more cosmic)
+    let acc = 0;
+    for (let i = 0; i < noiseLen; i++) {
+      acc += (Math.random() * 2 - 1) * 0.03;
+      acc *= 0.995;
+      noiseData[i] = acc * 3;
+    }
+    noiseSource.buffer = noiseBuf;
+    noiseSource.loop = true;
+    noiseGain = audioCtx.createGain();
+    noiseGain.gain.value = 0;
+    noiseSource.connect(noiseGain);
+    noiseGain.connect(saturator);
+    noiseSource.start();
+
+    // Global modulation LFOs (ultra-slow, cosmic breathing)
+    globalLFO1 = audioCtx.createOscillator();
+    globalLFO2 = audioCtx.createOscillator();
+    globalLFO3 = audioCtx.createOscillator();
+    globalLFOGain1 = audioCtx.createGain();
+    globalLFOGain2 = audioCtx.createGain();
+
+    globalLFO1.frequency.value = 0.04; // 25s cycle
+    globalLFO2.frequency.value = 0.063; // ~16s cycle (related by φ)
+    globalLFO3.frequency.value = 0.102; // ~10s cycle (φ²)
+    globalLFOGain1.gain.value = 0.15;
+    globalLFOGain2.gain.value = 0.1;
+
+    globalLFO1.connect(globalLFOGain1);
+    globalLFO2.connect(globalLFOGain2);
+    globalLFO3.connect(globalLFOGain2); // LFO3 modulates LFO2's depth
+    globalLFOGain1.connect(masterGain.gain);
+    globalLFO1.start();
+    globalLFO2.start();
+    globalLFO3.start();
+
+    const merger = audioCtx.createChannelMerger(2);
+    dryGain.connect(merger, 0, 0);
+    wetGain.connect(merger, 0, 0);
+    dryGain.connect(merger, 0, 1);
+    wetGain.connect(merger, 0, 1);
+    merger.connect(audioCtx.destination);
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+// ==================== GRAIN CLASS ====================
+class Grain {
+  constructor(layer, index) {
+    this.layer = layer;
+    this.index = index;
+    this.nominalFreq = getNominalFreq(layer.n);
+
+    // Gaussian detuning: each grain is slightly off
+    const detuneRange = 0.015 + layer.n * 0.008; // wider for higher harmonics
+    this.freqOffset = gaussianRandom() * detuneRange * this.nominalFreq;
+    this.freq = this.nominalFreq + this.freqOffset;
+
+    // Random phase
+    this.phase = Math.random() * Math.PI * 2;
+
+    // Amplitude envelope — random walk
+    this.baseAmp = (layer.value / 3.142) * 0.12 / layer.grains;
+    this.currentAmp = 0;
+    this.targetAmp = this.baseAmp;
+    this.ampSmooth = 0.95 + Math.random() * 0.04;
+
+    // Modulation params
+    this.modDepth = 0.03 + Math.random() * 0.06;
+    this.modRate = 0.1 + Math.random() * 0.4 + layer.n * 0.07;
+    this.modPhase = Math.random() * Math.PI * 2;
+
+    // Pan position (spread within layer's stereo zone)
+    const basePan = ((layer.n - 1) / 6) * 2 - 1;
+    this.pan = basePan + (Math.random() - 0.5) * 0.3;
+
+    // Random walk drift
+    this.driftTarget = 0;
+    this.driftCurrent = 0;
+    this.driftSpeed = 0.005 + Math.random() * 0.02;
+
+    // Oscillator
+    this.osc = audioCtx.createOscillator();
+    this.osc.type = this.pickWaveform();
+    this.osc.frequency.value = this.freq;
+
+    this.gain = audioCtx.createGain();
+    this.gain.gain.value = 0;
+
+    this.panner = audioCtx.createStereoPanner();
+    this.panner.pan.value = this.pan;
+
+    // Individual LFO for tremolo
+    this.lfo = audioCtx.createOscillator();
+    this.lfoGain = audioCtx.createGain();
+    this.lfo.frequency.value = this.modRate;
+    this.lfoGain.gain.value = this.modDepth * this.baseAmp;
+    this.lfo.connect(this.lfoGain);
+    this.lfoGain.connect(this.gain.gain);
+
+    this.osc.connect(this.gain);
+    this.gain.connect(this.panner);
+    this.panner.connect(masterGain);
+
+    this.osc.start();
+    this.lfo.start();
+
+    // Fade in
+    this.gain.gain.setTargetAtTime(this.baseAmp, audioCtx.currentTime + 0.08, 0.3);
+    this.currentAmp = this.baseAmp;
+  }
+
+  pickWaveform() {
+    // Mix of waveforms for richness
+    const r = Math.random();
+    const n = this.layer.n;
+    if (n === 1) return r < 0.7 ? 'sine' : 'triangle';
+    if (n <= 3) return r < 0.4 ? 'sine' : r < 0.8 ? 'triangle' : 'sawtooth';
+    if (n <= 5) return r < 0.5 ? 'sine' : r < 0.75 ? 'triangle' : 'sawtooth';
+    return 'sine'; // higher harmonics stay purer to avoid harshness
+  }
+
+  // Organic drift: frequency and amplitude wander slowly
+  update() {
+    if (!audioCtx) return;
+
+    // Frequency drift (random walk)
+    this.driftCurrent += (this.driftTarget - this.driftCurrent) * 0.01;
+    if (Math.random() < 0.002) { // occasional retarget
+      this.driftTarget = gaussianRandom() * 0.6;
+    }
+    const driftHz = this.driftCurrent * (0.01 * this.layer.n);
+    this.osc.frequency.setTargetAtTime(this.freq + driftHz, audioCtx.currentTime, 2.0);
+
+    // Amplitude micro-fluctuation
+    const microVar = 1 + Math.sin(Date.now() * 0.001 * this.modRate + this.modPhase) * this.modDepth;
+    const noiseAmp = this.baseAmp * microVar;
+    this.targetAmp = noiseAmp;
+  }
+
+  // Respond to intermodulation from other layers
+  applyIntermodulation(otherFreqs, otherAmps) {
+    if (!audioCtx || otherFreqs.length === 0) return;
+    const t = audioCtx.currentTime;
+
+    let modSum = 0;
+    for (let i = 0; i < otherFreqs.length; i++) {
+      const diff = Math.abs(this.freq - otherFreqs[i]);
+      if (diff > 0.5 && diff < 200) {
+        // Subtle amplitude modulation at difference frequency
+        modSum += otherAmps[i] * 0.04 * Math.exp(-diff / 150);
+      }
+    }
+    // Apply as tiny gain modulation (capped)
+    const extraAmp = Math.min(modSum, this.baseAmp * 0.3);
+    this.gain.gain.setTargetAtTime(
+      Math.max(0, this.currentAmp + extraAmp),
+      t, 0.5
+    );
+  }
+
+  stop() {
+    const t = audioCtx.currentTime;
+    this.gain.gain.setTargetAtTime(0, t + 0.02, 0.08);
+    setTimeout(() => {
+      try { this.osc.stop(); this.lfo.stop(); } catch(e) {}
+    }, 400);
+  }
+}
+
+function gaussianRandom() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+// ==================== LAYER MANAGEMENT ====================
+function createGrainsForLayer(layer) {
+  if (layerGrains[layer.n].length > 0) return; // already created
+  const count = layer.grains;
+  for (let i = 0; i < count; i++) {
+    const grain = new Grain(layer, i);
+    layerGrains[layer.n].push(grain);
+  }
+}
+
+function startLayer(n) {
+  initAudio();
+  const layer = HARMONIC_LAYERS.find(l => l.n === n);
+  if (!layer) return;
+  if (layerActive[n]) return;
+
+  createGrainsForLayer(layer);
+  layerActive[n] = true;
+
+  // Fade in noise slightly
+  noiseGain.gain.setTargetAtTime(0.03 * countActiveLayers(), audioCtx.currentTime, 1.5);
+  updateUI();
+}
+
+function stopLayer(n) {
+  if (!layerActive[n]) return;
+  layerActive[n] = false;
+
+  layerGrains[n].forEach(g => g.stop());
+  layerGrains[n] = [];
+
+  noiseGain.gain.setTargetAtTime(0.03 * countActiveLayers(), audioCtx.currentTime, 1.5);
+  updateUI();
+}
+
+function stopAll() {
+  HARMONIC_LAYERS.forEach(l => {
+    if (layerActive[l.n]) {
+      layerActive[l.n] = false;
+      layerGrains[l.n].forEach(g => g.stop());
+      layerGrains[l.n] = [];
+    }
+  });
+  isPlaying = false;
+  noiseGain.gain.setTargetAtTime(0, audioCtx.currentTime, 1.0);
+  document.getElementById('statusLabel').textContent = 'SILENCE';
+  document.getElementById('statusLabel').style.color = '#7a86a8';
+  updateUI();
+  showNote('', '');
+}
+
+function playAll() {
+  initAudio();
+  HARMONIC_LAYERS.forEach(l => startLayer(l.n));
+  isPlaying = true;
+  document.getElementById('statusLabel').textContent = '🌌 GRANULAIRE';
+  document.getElementById('statusLabel').style.color = '#3ef0d8';
+  updateUI();
+  showNote('Ψ', 'Univers granulaire');
+}
+
+function countActiveLayers() {
+  return HARMONIC_LAYERS.filter(l => layerActive[l.n]).length;
+}
+
+// ==================== INTERMODULATION ENGINE ====================
+function computeIntermodulation() {
+  const activeLayers = HARMONIC_LAYERS.filter(l => layerActive[l.n]);
+  if (activeLayers.length < 2) return;
+
+  // Collect representative frequencies and amplitudes from each active layer
+  const freqs = activeLayers.map(l => getNominalFreq(l.n));
+  const amps = activeLayers.map(l => l.value / 3.142);
+
+  // For each active layer, compute intermodulation from all other layers
+  activeLayers.forEach(layer => {
+    const otherFreqs = [];
+    const otherAmps = [];
+    activeLayers.forEach(other => {
+      if (other.n !== layer.n) {
+        otherFreqs.push(getNominalFreq(other.n));
+        otherAmps.push(other.value / 3.142);
+      }
+    });
+
+    // Apply to each grain
+    if (layerGrains[layer.n]) {
+      layerGrains[layer.n].forEach(g => g.applyIntermodulation(otherFreqs, otherAmps));
+    }
+  });
+}
+
+// ==================== TRANSIENT EVENTS ====================
+let transientTimeout = null;
+
+function triggerTransient() {
+  if (!audioCtx || countActiveLayers() === 0) return;
+
+  const t = audioCtx.currentTime;
+  const active = HARMONIC_LAYERS.filter(l => layerActive[l.n]);
+
+  // Brief amplitude spike on all active layers, cascading upward
+  active.forEach(layer => {
+    const delay = layer.n * 0.04; // cascade: lower harmonics first
+    layerGrains[layer.n].forEach(g => {
+      const spikeAmp = g.baseAmp * (2.5 + Math.random() * 3);
+      g.gain.gain.setTargetAtTime(spikeAmp, t + delay, 0.02);
+      g.gain.gain.setTargetAtTime(g.baseAmp, t + delay + 0.15, 0.4);
+    });
+  });
+
+  // Noise burst
+  noiseGain.gain.setTargetAtTime(0.12, t, 0.01);
+  noiseGain.gain.setTargetAtTime(0.03 * countActiveLayers(), t + 0.3, 0.6);
+
+  showNote('⚡', 'Transitoire cosmique');
+}
+
+function scheduleTransients() {
+  if (!isPlaying) return;
+  const delay = 8000 + Math.random() * 20000; // 8-28s between transients
+  transientTimeout = setTimeout(() => {
+    if (isPlaying) triggerTransient();
+    if (isPlaying) scheduleTransients();
+  }, delay);
+}
+
+// ==================== COSMIC BIRTH SEQUENCE ====================
+async function cosmicBirth() {
+  initAudio();
+  stopAll();
+  isPlaying = true;
+
+  document.getElementById('statusLabel').textContent = '🌌 NAISSANCE...';
+  document.getElementById('statusLabel').style.color = '#d4a843';
+
+  // Phase 1: Ψ₁ alone — the primordial pulse (2.5s)
+  startLayer(1);
+  showNote('Ψ₁ = 7.83 Hz', 'L\'onde primordiale');
+  await sleep(3000);
+
+  // Phase 2: π enters — patterns
+  startLayer(2);
+  showNote('π', 'Les motifs émergent');
+  await sleep(2200);
+
+  // Phase 3: e enters — warmth
+  startLayer(3);
+  showNote('e', 'La chaleur naît');
+  await sleep(2200);
+
+  // Phase 4-7: Geometry
+  for (let n = 4; n <= 7; n++) {
+    startLayer(n);
+    const sym = n === 4 ? '√2' : n === 5 ? '√3' : n === 6 ? '√5' : 'e/π';
+    showNote(sym, 'La géométrie se déploie');
+    await sleep(2000);
+  }
+
+  document.getElementById('statusLabel').textContent = '🌌 UNIVERS VIVANT';
+  document.getElementById('statusLabel').style.color = '#f0c96e';
+  showNote('Ψ', 'Symphonie granulaire');
+
+  scheduleTransients();
+}
+
+// ==================== REVELATION SEQUENCE ====================
+async function revealLayers() {
+  initAudio();
+  stopAll();
+  isPlaying = true;
+
+  for (const layer of HARMONIC_LAYERS) {
+    startLayer(layer.n);
+    showNote(layer.constant, layer.name);
+    document.getElementById('statusLabel').textContent = `✨ ${layer.n}/7 — ${layer.name}`;
+    await sleep(2500);
+  }
+
+  document.getElementById('statusLabel').textContent = '✨ UNIVERS COMPLET';
+  document.getElementById('statusLabel').style.color = '#3ef0d8';
+  showNote('Ψ = Σ Hₙ (Ψ₁)ⁿ', 'Granulaire · Vivant · Infini');
+  scheduleTransients();
+}
+
+// ==================== UI ====================
+function buildUI() {
+  const container = document.getElementById('layerChips');
+  container.innerHTML = '';
+
+  HARMONIC_LAYERS.forEach(layer => {
+    const chip = document.createElement('div');
+    chip.className = 'layer-chip';
+    chip.id = `chip-${layer.n}`;
+    chip.onclick = () => toggleLayer(layer.n);
+    chip.innerHTML = `
+      <div class="chip-n">n=${layer.n}</div>
+      <div class="chip-h">${layer.h}=${layer.constant}</div>
+      <div class="chip-grains">${layer.grains} grains</div>
+      <div class="chip-bar"><div class="chip-bar-fill" id="bar-${layer.n}" style="width:${Math.round(layer.value/3.142*100)}%;background:${layer.color}"></div></div>
+    `;
+    container.appendChild(chip);
+  });
+}
+
+function toggleLayer(n) {
+  if (layerActive[n]) {
+    stopLayer(n);
+  } else {
+    startLayer(n);
+    if (countActiveLayers() >= 2 && !isPlaying) {
+      isPlaying = true;
+      scheduleTransients();
+    }
+  }
+}
+
+function updateUI() {
+  HARMONIC_LAYERS.forEach(layer => {
+    const chip = document.getElementById(`chip-${layer.n}`);
+    if (chip) {
+      if (layerActive[layer.n]) chip.classList.add('active');
+      else chip.classList.remove('active');
+    }
+  });
+
+  const active = countActiveLayers();
+  const totalGrains = HARMONIC_LAYERS.reduce((s, l) => s + (layerActive[l.n] ? l.grains : 0), 0);
+  document.getElementById('infoGrains').textContent = `${totalGrains} grains · ${active}/7 couches`;
+  document.getElementById('infoFreq').textContent = `Ψ₁ = ${BASE_FREQ} Hz`;
+
+  // Show beating info if multiple layers active
+  if (active >= 2) {
+    const activeFreqs = HARMONIC_LAYERS.filter(l => layerActive[l.n]).map(l => getNominalFreq(l.n));
+    const beats = [];
+    for (let i = 0; i < activeFreqs.length; i++) {
+      for (let j = i+1; j < activeFreqs.length; j++) {
+        const diff = Math.abs(activeFreqs[i] - activeFreqs[j]);
+        if (diff < 30 && diff > 0.1) beats.push(diff.toFixed(1));
+      }
+    }
+    document.getElementById('infoBeat').textContent = beats.length > 0 ? `Battements: ${beats.join(', ')} Hz` : '';
+  } else {
+    document.getElementById('infoBeat').textContent = '';
+  }
+}
+
+function showNote(text, sub) {
+  const el = document.getElementById('cosmicNote');
+  if (noteTimeout) clearTimeout(noteTimeout);
+  if (!text) { el.classList.remove('show'); return; }
+  el.innerHTML = `${text}<span class="sub">${sub}</span>`;
+  el.classList.add('show');
+  noteTimeout = setTimeout(() => el.classList.remove('show'), 3000);
+}
+let noteTimeout = null;
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ==================== GRAIN UPDATE LOOP ====================
+function updateGrains() {
+  if (!audioCtx) { requestAnimationFrame(updateGrains); return; }
+
+  // Update each active grain with organic drift
+  HARMONIC_LAYERS.forEach(layer => {
+    if (layerActive[layer.n]) {
+      layerGrains[layer.n].forEach(g => g.update());
+    }
+  });
+
+  // Compute intermodulation between layers
+  computeIntermodulation();
+
+  requestAnimationFrame(updateGrains);
+}
+
+// ==================== VISUALIZATION ====================
+const canvas = document.getElementById('universe');
+const ctx = canvas.getContext('2d');
+let w, h;
+
+function resize() {
+  w = canvas.width = window.innerWidth;
+  h = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+const particles = [];
+const NUM_PARTICLES = 250;
+for (let i = 0; i < NUM_PARTICLES; i++) {
+  particles.push({
+    x: Math.random() * w, y: Math.random() * h,
+    baseX: Math.random() * w, baseY: Math.random() * h,
+    size: Math.random() * 2.5 + 0.4,
+    layer: Math.floor(Math.random() * 7) + 1,
+    phase: Math.random() * Math.PI * 2,
+    speed: Math.random() * 0.02 + 0.004,
+    color: ['#d4a843','#3ef0d8','#7a5cff','#ff6b7a','#f0c96e','#2ed573','#ffa502'][Math.floor(Math.random()*7)],
+    brightness: 0,
+  });
+}
+
+function drawVisualization(time) {
+  ctx.fillStyle = 'rgba(1,0,8,0.3)';
+  ctx.fillRect(0, 0, w, h);
+
+  const activeLayers = HARMONIC_LAYERS.map(l => layerActive[l.n] ? 1 : 0);
+  const activeCount = activeLayers.reduce((a,b)=>a+b, 0);
+
+  // Draw spiral
+  if (activeCount > 0) {
+    const cx = w/2, cy = h/2;
+    ctx.beginPath();
+    for (let i = 0; i < 900; i++) {
+      const angle = i * 0.14 + time * 0.08;
+      const r = i * 0.6 * (0.4 + activeCount * 0.1);
+      const x = cx + Math.cos(angle * PHI) * r;
+      const y = cy + Math.sin(angle * PHI) * r * 0.65;
+      i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle = `rgba(212,168,67,${0.06 + activeCount * 0.04})`;
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+  }
+
+  // Particles
+  particles.forEach(p => {
+    const influence = activeLayers[p.layer-1] || 0;
+    const waveX = Math.sin(time * p.speed * 8 + p.phase) * 50 * influence;
+    const waveY = Math.cos(time * p.speed * 6 + p.phase + 1.2) * 50 * influence;
+    const spiralR = Math.sin(time * 0.25 + p.layer * PHI) * 30 * influence;
+    const spiralA = time * 0.15 + p.layer * PHI;
+
+    p.x = p.baseX + waveX + Math.cos(spiralA) * spiralR;
+    p.y = p.baseY + waveY + Math.sin(spiralA) * spiralR;
+
+    // Wrap
+    if (p.x < -30) p.x = w + 30;
+    if (p.x > w + 30) p.x = -30;
+    if (p.y < -30) p.y = h + 30;
+    if (p.y > h + 30) p.y = -30;
+
+    p.brightness = 0.15 + 0.85 * influence;
+
+    // Glow
+    const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 4);
+    grad.addColorStop(0, p.color);
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.globalAlpha = p.brightness * 0.5;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * 4, 0, Math.PI*2);
+    ctx.fill();
+
+    // Core
+    ctx.globalAlpha = p.brightness * 0.9;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+
+  // Interference lines
+  if (activeCount >= 2) {
+    for (let i = 0; i < particles.length; i += 5) {
+      for (let j = i + 1; j < particles.length; j += 5) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 80) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `rgba(122,92,255,${(1-dist/80)*0.05*activeCount})`;
+          ctx.lineWidth = 0.3;
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  // Active rings
+  if (activeCount > 0) {
+    HARMONIC_LAYERS.forEach(layer => {
+      if (layerActive[layer.n]) {
+        const r = 50 + layer.n * 30;
+        ctx.beginPath();
+        ctx.arc(w/2, h/2, r + Math.sin(time * 1.8 + layer.n) * 10, 0, Math.PI*2);
+        ctx.strokeStyle = `${layer.color}${Math.floor(10+layer.n*4).toString(16)}`;
+        ctx.lineWidth = 0.5;
+        ctx.setLineDash([3, 10]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    });
+  }
+}
+
+function animate(timestamp) {
+  drawVisualization(timestamp * 0.001);
+  requestAnimationFrame(animate);
+}
+
+// ==================== INIT ====================
+buildUI();
+requestAnimationFrame(animate);
+requestAnimationFrame(updateGrains);
+
+document.addEventListener('click', () => {
+  if (!audioCtx) initAudio();
+}, { once: false });
+
+console.log('🌊 Symphonie Cosmique V2 — Moteur Granulaire');
+console.log('   Ψ₁ = 7.83 Hz — Résonance de Schumann');
+console.log('   Chaque couche = nuage de grains sonores');
+console.log('   Intermodulation, battements, bruit stochastique, transitoires');
+console.log('   105 grains au total quand toutes les couches sont actives');
+console.log('   🌌 Naissance cosmique pour l\'expérience complète');
+</script>
+</body>
+</html>

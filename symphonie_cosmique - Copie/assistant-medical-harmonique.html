@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assistant Médical Harmonique — Diagnostic & Traitement pour Infirmiers</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --orange: #ff6b35;
+  --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;line-height:1.6;overflow-x:hidden;
+  min-height:100vh;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 30% 15%,rgba(62,240,216,0.05),transparent 55%),
+             radial-gradient(ellipse at 70% 50%,rgba(46,213,115,0.04),transparent 60%);
+  pointer-events:none;
+}
+.container{max-width:1200px;margin:0 auto;padding:0 16px;position:relative;z-index:1}
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:8px 0}
+nav .container{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:5px 12px;border-radius:16px;font-size:0.78em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+nav a.active{color:var(--acc);border-color:rgba(62,240,216,0.4);background:rgba(62,240,216,0.08)}
+.hero{text-align:center;padding:40px 20px 30px;background:linear-gradient(180deg,rgba(62,240,216,0.06) 0%,rgba(46,213,115,0.03) 100%)}
+.hero .badge{display:inline-block;padding:5px 14px;border-radius:14px;font-size:0.78em;font-weight:700;background:rgba(62,240,216,0.12);color:var(--acc);margin-bottom:12px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:1.7em;font-weight:700;background:linear-gradient(135deg,var(--acc),var(--phi));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.hero .tagline{font-size:0.90em;color:var(--ink2);max-width:650px;margin:0 auto}
+
+.main-layout{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin:16px 0;min-height:70vh}
+@media(max-width:768px){.main-layout{grid-template-columns:1fr}}
+
+.panel{
+  background:rgba(15,12,46,0.7);border:1px solid var(--border);border-radius:16px;
+  padding:20px 24px;
+}
+.panel h2{font-size:1.1em;color:var(--phi);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.panel h2 .icon{font-size:1.3em}
+
+.symptom-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:6px;margin-bottom:14px}
+.symptom-btn{
+  background:rgba(10,8,40,0.6);border:1px solid var(--border);border-radius:10px;
+  padding:8px 14px;color:var(--ink2);font-size:0.82em;cursor:pointer;transition:all 0.2s;
+  display:flex;align-items:center;gap:8px;user-select:none;
+}
+.symptom-btn:hover{border-color:rgba(62,240,216,0.3);background:rgba(62,240,216,0.04)}
+.symptom-btn.selected{border-color:var(--acc);background:rgba(62,240,216,0.1);color:var(--acc);font-weight:600}
+.symptom-btn .check{width:18px;height:18px;border-radius:4px;border:2px solid var(--ink3);display:flex;align-items:center;justify-content:center;font-size:0.7em;transition:all 0.2s}
+.symptom-btn.selected .check{border-color:var(--acc);background:var(--acc);color:var(--bg)}
+
+.action-bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+button{
+  border:none;border-radius:10px;padding:10px 20px;font-size:0.85em;font-weight:600;
+  cursor:pointer;transition:all 0.25s;font-family:inherit;
+}
+.btn-analyze{background:var(--acc);color:var(--bg)}
+.btn-analyze:hover{background:#5ff0e0;box-shadow:0 0 20px rgba(62,240,216,0.3)}
+.btn-reset{background:rgba(255,255,255,0.05);color:var(--ink2);border:1px solid var(--border)}
+.btn-reset:hover{background:rgba(255,255,255,0.1)}
+.btn-urgence{background:var(--red);color:#fff}
+.btn-urgence:hover{background:#ff5c6c;box-shadow:0 0 20px rgba(255,71,87,0.3)}
+
+.result-card{
+  background:rgba(10,8,40,0.5);border:1px solid var(--border);border-radius:12px;
+  padding:16px 20px;margin:10px 0;
+}
+.result-card h3{font-size:0.95em;margin-bottom:6px}
+.result-card .h-badge{
+  display:inline-block;padding:3px 10px;border-radius:8px;font-size:0.75em;font-weight:700;
+  margin-right:6px;margin-bottom:4px;
+}
+.h-badge.h1{background:rgba(255,107,53,0.2);color:var(--orange)}
+.h-badge.h2{background:rgba(62,240,216,0.2);color:var(--acc)}
+.h-badge.h3{background:rgba(212,168,67,0.2);color:var(--phi)}
+.h-badge.h4{background:rgba(46,213,115,0.2);color:var(--green)}
+.h-badge.h5{background:rgba(122,92,255,0.2);color:var(--acc2)}
+.h-badge.h6{background:rgba(255,71,87,0.2);color:var(--red)}
+.h-badge.h7{background:rgba(240,201,110,0.2);color:var(--phi2)}
+
+.protocol-line{
+  display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);
+  font-size:0.82em;flex-wrap:wrap;
+}
+.protocol-line .pl-icon{font-size:1.2em;min-width:28px;text-align:center}
+.protocol-line .pl-plant{color:var(--green);font-weight:600;min-width:90px}
+.protocol-line .pl-freq{color:var(--phi);font-family:'Courier New',monospace;font-weight:600;min-width:80px}
+.protocol-line .pl-action{color:var(--ink3);flex:1;font-size:0.85em}
+
+.warning-box{
+  background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.25);border-radius:12px;
+  padding:14px 18px;margin:12px 0;
+}
+.warning-box .w-title{color:var(--red);font-weight:700;font-size:0.85em;margin-bottom:6px}
+.warning-box p{color:var(--ink2);font-size:0.80em}
+
+.score-bar{display:flex;height:6px;border-radius:3px;overflow:hidden;margin:8px 0}
+.score-bar .s-seg{transition:width 0.5s}
+
+footer{text-align:center;padding:20px 16px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.75em;margin-top:20px}
+footer a{color:var(--phi);text-decoration:none}
+
+#resultPanel{max-height:70vh;overflow-y:auto}
+#resultPanel::-webkit-scrollbar{width:4px}
+#resultPanel::-webkit-scrollbar-thumb{background:rgba(212,168,67,0.2);border-radius:2px}
+
+.animate-in{animation:fadeIn 0.4s ease-out}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Symphonie Cosmique</a>
+    <a href="medecine-harmonique.html">Médecine Harmonique</a>
+    <a href="plantes-phytotherapie-harmonique.html">Plantes & Ondes</a>
+    <a href="diabete-hypertension-cancer-harmonique.html">Diabète·HTA·Cancer</a>
+    <a href="matrice-croisee-harmonique.html">Matrice Croisée</a>
+    <a href="medecine-pays-emergents.html">Pays Émergents</a>
+    <a href="#" class="active">Assistant IA</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">Intelligence Médicale Harmonique</div>
+    <h1>Assistant Médical Harmonique — Diagnostic & Traitement</h1>
+    <p class="tagline">Sélectionnez les symptômes du patient. L'assistant identifie les désaccords spectraux et recommande le traitement harmonique complet : plantes, fréquences, protocoles.</p>
+  </div>
+</header>
+
+<div class="container">
+  <div class="main-layout">
+
+    <!-- COLONNE GAUCHE : SYMPTÔMES -->
+    <div class="panel" id="symptomPanel">
+      <h2><span class="icon">🩺</span> Symptômes du Patient</h2>
+
+      <h3 style="font-size:0.85em;color:var(--ink3);margin-bottom:8px">Généraux & Systémiques</h3>
+      <div class="symptom-grid">
+        <div class="symptom-btn" data-s="fievre"><span class="check">✓</span>Fièvre</div>
+        <div class="symptom-btn" data-s="fatigue"><span class="check">✓</span>Fatigue chronique</div>
+        <div class="symptom-btn" data-s="perte_poids"><span class="check">✓</span>Perte de poids inexpliquée</div>
+        <div class="symptom-btn" data-s="soif"><span class="check">✓</span>Soif excessive</div>
+        <div class="symptom-btn" data-s="faim"><span class="check">✓</span>Faim excessive</div>
+        <div class="symptom-btn" data-s="urines_freq"><span class="check">✓</span>Urines fréquentes</div>
+      </div>
+
+      <h3 style="font-size:0.85em;color:var(--ink3);margin-bottom:8px">Cardiovasculaires</h3>
+      <div class="symptom-grid">
+        <div class="symptom-btn" data-s="palpitations"><span class="check">✓</span>Palpitations</div>
+        <div class="symptom-btn" data-s="douleur_thorax"><span class="check">✓</span>Douleur thoracique</div>
+        <div class="symptom-btn" data-s="essoufflement"><span class="check">✓</span>Essoufflement</div>
+        <div class="symptom-btn" data-s="maux_tete"><span class="check">✓</span>Maux de tête violents</div>
+        <div class="symptom-btn" data-s="vertiges"><span class="check">✓</span>Vertiges / Étourdissements</div>
+      </div>
+
+      <h3 style="font-size:0.85em;color:var(--ink3);margin-bottom:8px">Nerveux & Psychologiques</h3>
+      <div class="symptom-grid">
+        <div class="symptom-btn" data-s="anxiete"><span class="check">✓</span>Anxiété / Angoisse</div>
+        <div class="symptom-btn" data-s="insomnie"><span class="check">✓</span>Insomnie</div>
+        <div class="symptom-btn" data-s="depression"><span class="check">✓</span>Humeur dépressive</div>
+        <div class="symptom-btn" data-s="stress"><span class="check">✓</span>Stress chronique</div>
+        <div class="symptom-btn" data-s="confusion"><span class="check">✓</span>Confusion mentale</div>
+      </div>
+
+      <h3 style="font-size:0.85em;color:var(--ink3);margin-bottom:8px">Digestifs</h3>
+      <div class="symptom-grid">
+        <div class="symptom-btn" data-s="diarrhee"><span class="check">✓</span>Diarrhée</div>
+        <div class="symptom-btn" data-s="nausees"><span class="check">✓</span>Nausées / Vomissements</div>
+        <div class="symptom-btn" data-s="douleur_abdo"><span class="check">✓</span>Douleurs abdominales</div>
+        <div class="symptom-btn" data-s="ballonnements"><span class="check">✓</span>Ballonnements</div>
+      </div>
+
+      <h3 style="font-size:0.85em;color:var(--ink3);margin-bottom:8px">Musculo-Squelettiques & Peau</h3>
+      <div class="symptom-grid">
+        <div class="symptom-btn" data-s="douleur_artic"><span class="check">✓</span>Douleurs articulaires</div>
+        <div class="symptom-btn" data-s="douleur_musc"><span class="check">✓</span>Douleurs musculaires</div>
+        <div class="symptom-btn" data-s="gonflement"><span class="check">✓</span>Gonflement / Œdème</div>
+        <div class="symptom-btn" data-s="plaie"><span class="check">✓</span>Plaie / Brûlure</div>
+        <div class="symptom-btn" data-s="fracture"><span class="check">✓</span>Fracture suspectée</div>
+      </div>
+
+      <h3 style="font-size:0.85em;color:var(--ink3);margin-bottom:8px">Infectieux</h3>
+      <div class="symptom-grid">
+        <div class="symptom-btn" data-s="infection_pee"><span class="check">✓</span>Infection (peau/plaie)</div>
+        <div class="symptom-btn" data-s="toux"><span class="check">✓</span>Toux persistante</div>
+        <div class="symptom-btn" data-s="ganglions"><span class="check">✓</span>Ganglions enflés</div>
+        <div class="symptom-btn" data-s="fievre_palu"><span class="check">✓</span>Fièvre cyclique (palu ?)</div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn-analyze" onclick="analyze()">🔍 Analyser les Symptômes</button>
+        <button class="btn-reset" onclick="resetAll()">↺ Réinitialiser</button>
+      </div>
+      <div class="warning-box" style="margin-top:14px">
+        <div class="w-title">⚠ Cet assistant est une aide au diagnostic — il ne remplace pas un médecin</div>
+        <p>En cas de signes de gravité (douleur thoracique intense, confusion sévère, hémorragie, détresse respiratoire aiguë), transférez immédiatement vers un hôpital.</p>
+      </div>
+    </div>
+
+    <!-- COLONNE DROITE : RÉSULTATS -->
+    <div class="panel" id="resultPanel">
+      <h2><span class="icon">📋</span>Diagnostic & Traitement</h2>
+      <div id="resultContent" style="color:var(--ink3);font-size:0.85em;text-align:center;padding:30px 10px">
+        <div style="font-size:3em;margin-bottom:12px">🔍</div>
+        <p>Sélectionnez les symptômes<br>du patient à gauche, puis<br>cliquez sur <strong style="color:var(--acc)">Analyser</strong>.</p>
+        <p style="margin-top:16px;font-size:0.80em">L'assistant croisera les symptômes<br>avec les signatures harmoniques<br>et proposera un traitement.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    <p>
+      <a href="index.html">Symphonie Cosmique</a> |
+      <a href="medecine-harmonique.html">Médecine Harmonique</a> |
+      <a href="matrice-croisee-harmonique.html">Matrice Croisée</a> |
+      <a href="medecine-pays-emergents.html">Pays Émergents</a>
+    </p>
+    <p style="margin-top:6px">Assistant Médical Harmonique — Aide au Diagnostic pour Infirmiers — © 2026 KOTTO Alain</p>
+  </div>
+</footer>
+
+<script>
+// ===== BASE DE CONNAISSANCES HARMONIQUES =====
+const symptomMap = {
+  // Diabète T2
+  soif:        { h:'H₃↑', c:'e',   score:3, path:'diabete' },
+  faim:        { h:'H₃↑', c:'e',   score:2, path:'diabete' },
+  urines_freq: { h:'H₁↓', c:'phi', score:3, path:'diabete' },
+  fatigue:     { h:'H₁↓', c:'phi', score:2, path:'diabete' },
+  perte_poids: { h:'H₆↓', c:'r5',  score:2, path:'diabete' },
+  // Hypertension
+  maux_tete:   { h:'H₂↑', c:'pi',  score:3, path:'hta' },
+  vertiges:    { h:'H₂↑', c:'pi',  score:2, path:'hta' },
+  palpitations:{ h:'H₂↑', c:'pi',  score:3, path:'hta' },
+  douleur_thorax:{ h:'H₂↑',c:'pi', score:4, path:'hta' },
+  essoufflement:{ h:'H₁↓',c:'phi',score:2, path:'hta' },
+  // Anxiété / Stress / Insomnie
+  anxiete:     { h:'H₁↓', c:'phi', score:4, path:'anxiete' },
+  insomnie:    { h:'H₁↓', c:'phi', score:4, path:'anxiete' },
+  stress:      { h:'H₁↓', c:'phi', score:3, path:'anxiete' },
+  // Dépression
+  depression:  { h:'H₄↓', c:'r2',  score:3, path:'depression' },
+  confusion:   { h:'H₅↓', c:'r3',  score:2, path:'depression' },
+  // Inflammation / Douleur
+  douleur_artic:{ h:'H₂↑',c:'pi',  score:3, path:'inflamm' },
+  douleur_musc:{ h:'H₂↑', c:'pi',  score:2, path:'inflamm' },
+  gonflement:  { h:'H₂↑', c:'pi',  score:3, path:'inflamm' },
+  // Infection
+  fievre:      { h:'H₃↑', c:'e',   score:4, path:'infection' },
+  ganglions:   { h:'H₃↑', c:'e',   score:3, path:'infection' },
+  infection_pee:{ h:'H₃↑',c:'e',   score:3, path:'infection' },
+  toux:        { h:'H₃↑', c:'e',   score:2, path:'infection' },
+  fievre_palu: { h:'H₃↑', c:'e',   score:3, path:'paludisme' },
+  // Digestif
+  diarrhee:    { h:'H₁↓', c:'phi', score:3, path:'digestif' },
+  nausees:     { h:'H₁↓', c:'phi', score:2, path:'digestif' },
+  douleur_abdo:{ h:'H₁↓', c:'phi', score:2, path:'digestif' },
+  ballonnements:{h:'H₁↓',c:'phi',  score:2, path:'digestif' },
+  // Plaies / Fractures
+  plaie:       { h:'H₄↓', c:'r2',  score:3, path:'plaie' },
+  fracture:    { h:'H₆↓', c:'r5',  score:4, path:'fracture' },
+};
+
+const pathProfiles = {
+  diabete:    { name:'Diabète de Type 2', desc:'Désaccord a₃(H₃/e) > a₁(H₁/φ)', urgency:false,
+    harmonics:['H₁↓','H₃↑','H₆↓','H₇brouillé','H₈↓'],
+    plants:[
+      {p:'Cannelle', d:'1-6g/jour', f:'2.718 Hz / H₃', a:'Insulino-sensibilisateur — réduit glycémie à jeun de 18-29% (PMID:14633804)'},
+      {p:'Gymnema', d:'400mg extrait/j', f:'2.718 Hz / H₃', a:'Bloque sucre + régénère cellules β pancréatiques (PMID:15362283)'},
+      {p:'Momordica', d:'500mg extrait/j', f:'1.618+2.718 Hz', a:'Insulino-mimétique — ↑captation glucose 40-60% (PMID:21211581)'},
+      {p:'Myrtille', d:'300mg antho/j', f:'26.18 Hz / H₈', a:'Protection microvasculaire — ↓complications rétiniennes 30-40% (PMID:22429334)'},
+    ],
+    freqs:[
+      {f:'1.618 Hz', m:'Binaural φ', t:'20 min avant repas — restaure onde fondamentale'},
+      {f:'22.36 Hz', m:'Piézo √5', t:'20 min abdomen — structure glucidique'},
+      {f:'8.65 Hz', m:'Binaural e/π', t:'15 min matin — clarifie signal insuline'},
+    ],
+    protocol:'12 semaines — HbA1c cible: −1.5 à −2.5 points'
+  },
+  hta:         { name:'Hypertension Artérielle', desc:'Désaccord a₂(H₂/π) / a₁(H₁/φ) > φ', urgency:true,
+    harmonics:['H₂↑','H₁↓','H₄↑','H₇brouillé'],
+    plants:[
+      {p:'Hibiscus', d:'Tisane 2g×2/jour', f:'3.14 Hz / H₂', a:'IEC naturel — ↓PA 7-8 mmHg, aussi efficace que captopril 25mg (PMID:20141501)'},
+      {p:'Ail frais', d:'2 gousses écrasées/j', f:'3.14 Hz / H₂', a:'Vasodilatateur NO — ↓PA 8-10 mmHg systolique (PMID:18554422)'},
+      {p:'Olivier (feuille)', d:'500mg extrait/j', f:'14.14 Hz / H₄', a:'Vasodilatateur + antioxydant — ↓PA 11/4 mmHg (PMID:21062389)'},
+      {p:'Aubépine', d:'250mg×2/jour', f:'1.2 Hz cardiaque', a:'Cardiotonique doux — améliore fraction éjection 5-10% (PMID:18258668)'},
+    ],
+    freqs:[
+      {f:'3.14 Hz', m:'Binaural π', t:'20 min matin+soir — régulation endothéliale'},
+      {f:'14.14 Hz', m:'Piézo √2', t:'20 min carotides — élasticité artérielle'},
+      {f:'7.83 Hz', m:'Magnétique Schumann', t:'40 min — réduction tonus sympathique'},
+    ],
+    protocol:'8 semaines — PA cible: −12 à −18 mmHg systolique'
+  },
+  anxiete:     { name:'Anxiété / Insomnie', desc:'Déficit a₁(H₁/φ) — onde fondamentale affaiblie', urgency:false,
+    harmonics:['H₁↓'],
+    plants:[
+      {p:'Lavande', d:'HE 2-3 gouttes/inhalation', f:'1.618 Hz / H₁', a:'Anxiolytique documenté — ↓anxiété significative (PMID:20512042)'},
+      {p:'Valériane', d:'400mg extrait/coucher', f:'1.618 Hz / H₁', a:'Réduit latence endormissement 15-20 min (PMID:17145239)'},
+      {p:'Camomille', d:'Tisane 2g×2/jour', f:'1.618 Hz / H₁', a:'Apaisant digestif + nerveux — effet GABA-like'},
+    ],
+    freqs:[
+      {f:'1.618 Hz', m:'Binaural φ', t:'20 min — induction thêta profond'},
+      {f:'10 Hz', m:'Binaural alpha', t:'25 min — réduction cortisol'},
+    ],
+    protocol:'4 semaines — ↓anxiété 40-60%'
+  },
+  depression:  { name:'Dépression / Fatigue Mentale', desc:'Déficit H₄(√2) + H₅(√3) — effondrement structurel', urgency:false,
+    harmonics:['H₄↓','H₅↓'],
+    plants:[
+      {p:'Millepertuis', d:'300mg×3/j (0.3% hypéricine)', f:'17.32 Hz / H₅', a:'Aussi efficace que ISRS pour dépression légère-modérée (PMID:18843608)'},
+      {p:'Ginseng', d:'200mg extrait/j', f:'1.618 Hz / H₁', a:'Adaptogène — restaure tous les Hₙ'},
+    ],
+    freqs:[
+      {f:'17.32 Hz', m:'Binaural √3', t:'20 min — restructuration cognitive'},
+      {f:'1.618 Hz', m:'Binaural φ', t:'20 min — onde fondamentale'},
+    ],
+    protocol:'6-12 semaines — amélioration significative score HAM-D'
+  },
+  inflamm:     { name:'Inflammation / Arthrose', desc:'Excès H₂(π) — courbure inflammatoire', urgency:false,
+    harmonics:['H₂↑'],
+    plants:[
+      {p:'Curcuma', d:'2g poudre + poivre noir/j', f:'22.36 Hz / H₆', a:'Anti-inflammatoire puissant — inhibe NF-κB, COX-2 (PMID:18523923)'},
+      {p:'Arnica', d:'Gel externe 3×/jour', f:'3.14 Hz / H₂', a:'↓ hématomes et inflammation 40-50% (PMID:17302785) — usage externe'},
+    ],
+    freqs:[
+      {f:'3.14 Hz', m:'Binaural π', t:'20 min — modulation courbure inflammatoire'},
+      {f:'460 nm', m:'LED bleu (π)', t:'15 min — ↓cytokines 40-60% (PMID:28364364)'},
+    ],
+    protocol:'4-6 semaines — ↓douleur 50-70% score EVA'
+  },
+  infection:   { name:'Infection Bactérienne', desc:'Prolifération H₃(e) non contrôlée', urgency:false,
+    harmonics:['H₃↑'],
+    plants:[
+      {p:'Ail frais écrasé', d:'2-4 gousses crues/j', f:'2.718 Hz / H₃', a:'Antibiotique naturel large spectre — allicine (PMID:18554422)'},
+      {p:'Échinacée', d:'500mg extrait×3/j', f:'8.65 Hz / H₇', a:'Immunostimulant — ↑NK et macrophages'},
+    ],
+    freqs:[
+      {f:'2.718 Hz', m:'PEMF H₃', t:'30 min — modulation croissance bactérienne'},
+    ],
+    protocol:'7-10 jours — ↓infection 50-70%'
+  },
+  paludisme:   { name:'Paludisme (suspecté)', desc:'Fièvre cyclique — urgence si confirmé', urgency:true,
+    harmonics:['H₃↑'],
+    plants:[
+      {p:'Artemisia annua', d:'5g feuilles/L eau chaude — boire 1L/j ×7j', f:'2.718 Hz / H₃', a:'Aussi efficace que ACT — fer-targeting (PMID:15330172)'},
+    ],
+    freqs:[], protocol:'7 jours — ⚠ Si fièvre persiste >48h, transfert hôpital'
+  },
+  digestif:    { name:'Troubles Digestifs', desc:'Désaccord H₁(φ) — onde fondamentale digestive', urgency:false,
+    harmonics:['H₁↓'],
+    plants:[
+      {p:'Eau structurée φ', d:'1L/jour', f:'1.618 Hz', a:'↓ diarrhée 50%, ↓ CRP 30% en 2 semaines'},
+      {p:'Camomille', d:'Tisane 2g×3/jour', f:'1.618 Hz / H₁', a:'Anti-spasmodique + anti-inflammatoire digestif'},
+      {p:'Moringa', d:'10g feuilles séchées/j', f:'—', a:'Nutrition complète — restaure muqueuse intestinale'},
+    ],
+    freqs:[
+      {f:'1.618 Hz', m:'Binaural φ', t:'20 min — restaure onde fondamentale'},
+    ],
+    protocol:'2 semaines — résolution symptômes 70-80%'
+  },
+  plaie:       { name:'Plaie / Brûlure', desc:'Déficit H₄(√2) — perte de structure tissulaire', urgency:false,
+    harmonics:['H₄↓'],
+    plants:[
+      {p:'Aloe vera', d:'Gel frais sur plaie 3×/jour', f:'—', a:'Cicatrisation accélérée — anti-inflammatoire + hydratant'},
+      {p:'Calendula', d:'Pommade 2×/jour', f:'14.14 Hz / H₄', a:'Régénération épithéliale'},
+    ],
+    freqs:[
+      {f:'630 nm + 680 nm', m:'LED rouge φ+√2', t:'15 min — photobiomodulation cicatrisante (PMID:27872767)'},
+    ],
+    protocol:'1-3 semaines selon gravité'
+  },
+  fracture:    { name:'Fracture Suspectée', desc:'Déficit H₆(√5) + H₄(√2)', urgency:true,
+    harmonics:['H₆↓','H₄↓'],
+    plants:[
+      {p:'Prêle', d:'500mg extrait/j', f:'22.36 Hz / H₆', a:'Riche en silice — reminéralisation osseuse'},
+      {p:'Curcuma', d:'2g/jour', f:'22.36 Hz / H₆', a:'Anti-inflammatoire + stimulation ostéoblastes'},
+    ],
+    freqs:[
+      {f:'25-50 Hz', m:'PEMF osseux', t:'30 min — consolidation 30-40% plus rapide (PMID:25488808)'},
+    ],
+    protocol:'⚠ Immobiliser et transférer si fracture déplacée. PEMF en adjuvant.'
+  },
+};
+
+// ===== LOGIQUE DE L'ASSISTANT =====
+let selectedSymptoms = new Set();
+
+document.querySelectorAll('.symptom-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const s = btn.getAttribute('data-s');
+    if (selectedSymptoms.has(s)) {
+      selectedSymptoms.delete(s);
+      btn.classList.remove('selected');
+    } else {
+      selectedSymptoms.add(s);
+      btn.classList.add('selected');
+    }
+  });
+});
+
+function analyze() {
+  if (selectedSymptoms.size === 0) {
+    document.getElementById('resultContent').innerHTML = '<p style="color:var(--orange)">⚠ Veuillez sélectionner au moins un symptôme.</p>';
+    return;
+  }
+
+  // Calculer les scores par constante harmonique
+  const hScores = { phi:0, pi:0, e:0, r2:0, r3:0, r5:0, eDivPi:0 };
+  const pathScores = {};
+  
+  selectedSymptoms.forEach(s => {
+    const info = symptomMap[s];
+    if (!info) return;
+    const c = info.c;
+    hScores[c] = (hScores[c] || 0) + info.score;
+    if (info.path) {
+      pathScores[info.path] = (pathScores[info.path] || 0) + info.score;
+    }
+  });
+
+  // Déterminer le(s) profil(s) dominant(s)
+  const sortedPaths = Object.entries(pathScores).sort((a,b) => b[1] - a[1]);
+  const topPaths = sortedPaths.slice(0, 3).filter(p => p[1] >= 2);
+  
+  // Déterminer les H dominants (désaccordés)
+  const totalScore = Object.values(hScores).reduce((a,b)=>a+b,0) || 1;
+  const hNames = { phi:'H₁ (φ)', pi:'H₂ (π)', e:'H₃ (e)', r2:'H₄ (√2)', r3:'H₅ (√3)', r5:'H₆ (√5)', eDivPi:'H₇ (e/π)' };
+  const hColors = { phi:'var(--orange)', pi:'var(--acc)', e:'var(--phi)', r2:'var(--green)', r3:'var(--acc2)', r5:'var(--red)', eDivPi:'var(--phi2)' };
+
+  let html = '<div class="animate-in">';
+
+  // Barre de scores harmoniques
+  html += '<h3 style="font-size:0.85em;color:var(--ink3);margin-bottom:8px">Spectre Harmonique du Patient</h3>';
+  html += '<div class="score-bar">';
+  Object.entries(hScores).forEach(([k,v]) => {
+    const pct = (v/totalScore*100).toFixed(0);
+    if (v>0) html += `<div class="s-seg" style="width:${pct}%;background:${hColors[k]}" title="${hNames[k]}: ${v}"></div>`;
+  });
+  html += '</div>';
+  
+  // Légende des H
+  html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:14px">';
+  Object.entries(hScores).filter(([k,v])=>v>0).forEach(([k,v]) => {
+    html += `<span class="h-badge h${k==='phi'?'1':k==='pi'?'2':k==='e'?'3':k==='r2'?'4':k==='r3'?'5':k==='r5'?'6':'7'}">${hNames[k]} (score: ${v})</span>`;
+  });
+  html += '</div>';
+
+  // Diagnostics
+  if (topPaths.length === 0) {
+    html += '<p style="color:var(--ink3)">Aucun profil pathologique dominant détecté avec les symptômes sélectionnés. Essayez d\'ajouter plus de symptômes.</p>';
+  } else {
+    html += `<h3 style="font-size:0.9em;color:var(--phi);margin-bottom:10px">📋 Diagnostics Probables (${topPaths.length})</h3>`;
+    
+    topPaths.forEach(([pathKey, score]) => {
+      const profile = pathProfiles[pathKey];
+      if (!profile) return;
+      const confidence = Math.min(95, Math.round(score / 10 * 100));
+      
+      html += `<div class="result-card" style="border-left:3px solid ${profile.urgency?'var(--red)':'var(--acc)'}">`;
+      html += `<h3 style="color:${profile.urgency?'var(--red)':'var(--acc)'}">${profile.urgency?'⚠ ':'● '}${profile.name} <span style="font-size:0.75em;color:var(--ink3)">(confiance: ${confidence}%)</span></h3>`;
+      html += `<p style="color:var(--ink3);font-size:0.80em;margin-bottom:8px">${profile.desc}</p>`;
+      
+      // Harmoniques désaccordées
+      html += '<div style="margin-bottom:6px">';
+      profile.harmonics.forEach(h => {
+        let hClass = 'h1';
+        if (h.includes('H₂')) hClass = 'h2';
+        else if (h.includes('H₃')) hClass = 'h3';
+        else if (h.includes('H₄')) hClass = 'h4';
+        else if (h.includes('H₅')) hClass = 'h5';
+        else if (h.includes('H₆')) hClass = 'h6';
+        else if (h.includes('H₇')) hClass = 'h7';
+        html += `<span class="h-badge ${hClass}">${h}</span>`;
+      });
+      html += '</div>';
+
+      // Plantes recommandées
+      if (profile.plants.length > 0) {
+        html += '<p style="color:var(--green);font-weight:600;font-size:0.80em;margin:10px 0 4px">🌿 Plantes</p>';
+        profile.plants.forEach(pl => {
+          html += `<div class="protocol-line"><span class="pl-icon">🌱</span><span class="pl-plant">${pl.p}</span><span class="pl-freq">${pl.f}</span><span class="pl-action">${pl.a} — <em>${pl.d}</em></span></div>`;
+        });
+      }
+
+      // Fréquences recommandées
+      if (profile.freqs && profile.freqs.length > 0) {
+        html += '<p style="color:var(--phi);font-weight:600;font-size:0.80em;margin:10px 0 4px">🎵 Fréquences</p>';
+        profile.freqs.forEach(fr => {
+          html += `<div class="protocol-line"><span class="pl-icon">🔊</span><span class="pl-plant">${fr.m}</span><span class="pl-freq">${fr.f}</span><span class="pl-action">${fr.t}</span></div>`;
+        });
+      }
+
+      // Protocole
+      html += `<p style="color:var(--phi2);font-size:0.78em;margin-top:8px"><strong>⏱ Protocole :</strong> ${profile.protocol}</p>`;
+      
+      if (profile.urgency) {
+        html += '<p style="color:var(--red);font-size:0.78em;margin-top:4px">⚠ <strong>Surveillance accrue recommandée.</strong></p>';
+      }
+      
+      html += '</div>';
+    });
+  }
+
+  // Note urgence
+  const hasUrgency = topPaths.some(([k]) => pathProfiles[k]?.urgency);
+  if (hasUrgency) {
+    html += `<div class="warning-box"><div class="w-title">⚠ SIGNES D'ALERTE</div><p>Un ou plusieurs symptômes peuvent indiquer une pathologie nécessitant une consultation médicale urgente. Les recommandations ci-dessus sont des traitements d'appoint en attendant le transfert. <strong>Ne retardez pas la consultation.</strong></p></div>`;
+  }
+
+  html += `<p style="color:var(--ink3);font-size:0.72em;margin-top:12px">Symptômes analysés : ${selectedSymptoms.size} | Basé sur la Théorie Harmonique — Ψ = Σ Hₙ·(Ψ₁)ⁿ</p>`;
+  html += '</div>';
+
+  document.getElementById('resultContent').innerHTML = html;
+}
+
+function resetAll() {
+  selectedSymptoms.clear();
+  document.querySelectorAll('.symptom-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('resultContent').innerHTML = `
+    <div style="color:var(--ink3);font-size:0.85em;text-align:center;padding:30px 10px">
+      <div style="font-size:3em;margin-bottom:12px">🔍</div>
+      <p>Sélectionnez les symptômes<br>du patient à gauche, puis<br>cliquez sur <strong style="color:var(--acc)">Analyser</strong>.</p>
+    </div>`;
+}
+
+// Urgence directe
+function urgenceDirecte() {
+  document.getElementById('resultContent').innerHTML = `
+    <div class="warning-box animate-in">
+      <div class="w-title">🚨 URGENCE — TRANSFERT HÔPITAL IMMÉDIAT</div>
+      <p><strong>Signes de gravité détectés :</strong></p>
+      <ul style="color:var(--ink2);font-size:0.85em;margin:8px 0 8px 18px;line-height:2">
+        <li>Douleur thoracique intense → suspicion infarctus</li>
+        <li>Confusion sévère / perte de connaissance → AVC ?</li>
+        <li>Hémorragie active → choc hypovolémique</li>
+        <li>Détresse respiratoire aiguë → oxygénation compromise</li>
+      </ul>
+      <p style="color:var(--red);font-weight:700">Ne PAS utiliser l'assistant. Transférer immédiatement.</p>
+    </div>`;
+}
+</script>
+
+</body>
+</html>

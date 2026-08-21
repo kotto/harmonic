@@ -195,13 +195,21 @@ class VoiceEngine:
             log.info(f"  🎤 Téléchargement modèle Piper: {voice_id}")
             model_path.parent.mkdir(parents=True, exist_ok=True)
             
-            # URL Hugging Face
-            base_url = f'https://huggingface.co/rhasspy/piper-voices/resolve/main/{voice_id.replace("_", "/")}'
+            # URL Hugging Face (structure: lang/lang_code/voice_name/quality/voice_id.onnx)
+            # Ex: fr/fr_FR/siwis/medium/fr_FR-siwis-medium.onnx
+            # voice_id = 'fr_FR-siwis-medium'
+            parts = voice_id.split('-')  # ['fr_FR', 'siwis', 'medium']
+            lang_code = parts[0]          # 'fr_FR'
+            lang = lang_code.split('_')[0]  # 'fr'
+            voice_name = parts[1] if len(parts) > 1 else 'siwis'  # 'siwis'
+            quality = parts[2] if len(parts) > 2 else 'medium'     # 'medium'
+            vpath = f'{lang}/{lang_code}/{voice_name}/{quality}/{voice_id}'
+            base_url = f'https://huggingface.co/rhasspy/piper-voices/resolve/main/{vpath}'
             
             try:
                 import urllib.request
-                urllib.request.urlretrieve(f'{base_url}/{voice_id}.onnx', model_path)
-                urllib.request.urlretrieve(f'{base_url}/{voice_id}.onnx.json', config_path)
+                urllib.request.urlretrieve(f'{base_url}.onnx', model_path)
+                urllib.request.urlretrieve(f'{base_url}.onnx.json', config_path)
                 log.info(f"  🎤 Modèle Piper téléchargé: {voice_id}")
                 return model_path
             except Exception as e:

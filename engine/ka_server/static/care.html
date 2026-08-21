@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KA Care — Diagnostic IA pour l'Afrique</title>
+<link rel="icon" type="image/svg+xml" href="/brand/care.svg">
+<meta name="description" content="KA Care : intelligence artificielle pour le diagnostic médical en Afrique. 82.9% top-1, 97.4% top-3, AUC 0.957. Hors-ligne, zéro cloud, zéro hallucination.">
+<style>
+:root{--void:#06060f;--soul:#8b83ff;--soul-l:#b8b2ff;--soul-g:rgba(139,131,255,.32);--life:#3ddba0;--life-d:rgba(61,219,160,.15);--life-g:rgba(61,219,160,.28);--wisdom:#f0c060;--wisdom-d:rgba(240,192,96,.15);--wisdom-g:rgba(240,192,96,.28);--rose:#ed93b1;--rose-d:rgba(212,83,126,.15);--rose-g:rgba(212,83,126,.28);--sky:#85b7eb;--g1:rgba(255,255,255,.04);--g2:rgba(255,255,255,.075);--g3:rgba(255,255,255,.13);--b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.1);--t1:rgba(255,255,255,.92);--t2:rgba(255,255,255,.62);--t3:rgba(255,255,255,.36);--font:-apple-system,"SF Pro Display","Inter",system-ui,sans-serif;--mono:"SF Mono","JetBrains Mono",Consolas,monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--void);color:var(--t1);font-family:var(--font);-webkit-font-smoothing:antialiased;overflow-x:hidden;line-height:1.6}
+a{color:var(--soul-l);text-decoration:none}a:hover{color:#fff}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+h1{font-size:clamp(30px,4.8vw,48px);font-weight:900;letter-spacing:-.02em;line-height:1.1}
+h2{font-size:clamp(22px,3.2vw,34px);font-weight:800;letter-spacing:-.01em;margin-bottom:12px}
+p.sub{color:var(--t2);font-size:15px;max-width:640px;line-height:1.65}
+nav{position:sticky;top:0;z-index:50;background:rgba(6,6,15,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--b1)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14px}
+.brand img.mark{width:28px;height:28px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));transition:transform .3s}
+.brand:hover img.mark{transform:scale(1.08) rotate(-4deg)}
+.brand b{color:var(--soul-l)}
+nav .links{display:flex;gap:14px;font-size:12px;font-weight:600}
+nav .links a{color:var(--t2)}nav .links a:hover{color:#fff}
+.chip{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:5px 14px;border-radius:999px;margin-bottom:14px}
+.chip--soul{background:var(--soul-d);color:var(--soul-l);border:1px solid var(--soul-g)}
+.chip--life{background:var(--life-d);color:var(--life);border:1px solid var(--life-g)}
+.chip--gold{background:var(--wisdom-d);color:var(--wisdom);border:1px solid var(--wisdom-g)}
+.btn{display:inline-block;font-weight:700;font-size:14px;padding:12px 24px;border-radius:10px;border:1px solid transparent;transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn--soul{background:linear-gradient(135deg,var(--soul),#6a5cff);color:#fff}
+.btn--life{background:linear-gradient(135deg,var(--life),#1fae7c);color:#04261a}
+.btn--ghost{background:var(--g2);color:var(--t1);border-color:var(--b2)}
+.btn--xl{padding:15px 30px;font-size:15px}
+.section{padding:70px 0}
+.section-head{text-align:center;margin-bottom:32px}
+.section-head .kicker{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--soul-l);margin-bottom:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:20px 0}
+.card{background:linear-gradient(180deg,var(--g1),transparent);border:1px solid var(--b1);border-radius:14px;padding:22px;transition:border-color .2s,transform .2s}
+.card:hover{border-color:var(--soul-g);transform:translateY(-2px)}
+.card .ico{font-size:24px;margin-bottom:8px}
+.card h3{font-size:15px;font-weight:700;margin-bottom:6px}
+.card p{font-size:13px;color:var(--t2)}
+.card .metric{font-size:28px;font-weight:800;margin:6px 0 2px}
+.card .metric.life{color:var(--life)}.card .metric.soul{color:var(--soul-l)}.card .metric.gold{color:var(--wisdom)}.card .metric.rose{color:var(--rose)}
+.card .m-label{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em}
+footer{border-top:1px solid var(--b1);padding:36px 0;color:var(--t3);font-size:12px;text-align:center}
+footer a{color:var(--t2)}footer a:hover{color:#fff}
+@media(max-width:720px){.section{padding:50px 0}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="/care"><img class="mark" src="/brand/care.svg" alt="KA Care">KA <b>Care</b></a>
+    <div class="links">
+      <a href="#metrics">Résultats</a>
+      <a href="#mission">Mission</a>
+      <a href="#features">Fonctionnalités</a>
+      <a href="/demo">Démo</a>
+      <a href="/harmonic-ai">HARMONIC AI</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero" style="min-height:88vh;display:flex;align-items:center;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% -10%,#1a1435 0%,#0d0b1e 45%,var(--void) 100%)">
+  <div class="wrap" style="position:relative;z-index:2">
+    <span class="chip chip--life">Intelligence artificielle médicale</span>
+    <h1>Diagnostic assisté.<br><span style="background:linear-gradient(120deg,var(--soul-l),var(--sky));-webkit-background-clip:text;background-clip:text;color:transparent">Précision clinique, zéro hallucination.</span></h1>
+    <p class="sub" style="margin-top:14px">82.9% de diagnostic exact en top-1 sur 100 000 cas cliniques réels. 97.4% en top-3. AUC 0.957. Temps de réponse &lt; 150 ms. <b>100% hors-ligne. 0% hallucination.</b></p>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:24px">
+      <a class="btn btn--soul btn--xl" href="#metrics">Voir les résultats</a>
+      <a class="btn btn--ghost btn--xl" href="/demo">Essayer la démo</a>
+    </div>
+  </div>
+</header>
+
+<!-- METRICS -->
+<section class="section" id="metrics" style="background:linear-gradient(180deg,transparent,rgba(61,219,160,.04))">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">Preuves cliniques</div>
+      <h2>Benchmark sur 100 000 cas réels</h2>
+      <p class="sub" style="margin:0 auto">Chiffres issus de DDXPlus, un jeu de données de diagnostic différentiel contenant 100 000 cas cliniques réels. Résultats mesurés, pas prédits.</p>
+    </div>
+    <div class="grid">
+      <div class="card" style="text-align:center">
+        <div class="metric life">82.9%</div><div class="m-label">Top-1 — Diagnostic exact</div>
+        <p>Sur 100 000 cas, le diagnostic principal proposé par KA Care est le bon dans 82.9% des cas, sans aucune hallucination.</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="metric soul">97.4%</div><div class="m-label">Top-3 — Dans les 3 premiers</div>
+        <p>Dans 97.4% des cas, le bon diagnostic figure parmi les trois propositions — un taux comparable aux meilleurs systèmes avec GPU.</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="metric gold">0.957</div><div class="m-label">AUC — Aire sous la courbe ROC</div>
+        <p>L'AUC mesure la capacité à discriminer les diagnostics. 0.957 est excellent, au niveau des meilleurs modèles cliniques.</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="metric rose">79%</div><div class="m-label">Urgences vitales détectées</div>
+        <p>KA Care identifie 79% des urgences vitales (AVC, infarctus, sepsis) dans les 5 premiers diagnostics — crucial pour les régions sans accès immédiat à un spécialiste.</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="metric life">&lt;150 ms</div><div class="m-label">Temps de réponse</div>
+        <p>Inférence en moins de 150 millisecondes sur un simple CPU — pas de GPU, pas de cloud, pas d'attente.</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="metric soul">0%</div><div class="m-label">Hallucination</div>
+        <p>Le moteur est déterministe : il ne génère pas de diagnostic, il le calcule. Impossible d'inventer une maladie qui n'existe pas dans les données.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MISSION -->
+<section class="section" id="mission">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">Notre raison d'être</div>
+      <h2>La santé pour tous, partout</h2>
+      <p class="sub" style="margin:0 auto">En Afrique, le ratio médecin-patient peut atteindre 1 pour 50 000 habitants. KA Care met un assistant de diagnostic <b>hors-ligne et gratuit</b> dans la poche de chaque professionnel de santé.</p>
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+      <div class="card"><div class="ico">🩺</div><h3>Diagnostic différentiel</h3><p>À partir des symptômes, antécédents et signes cliniques, KA Care propose une liste de diagnostics possibles classés par probabilité — le tout en 150 ms sur un smartphone bas de gamme.</p></div>
+      <div class="card"><div class="ico">📴</div><h3>100% hors-ligne</h3><p>Aucune connexion réseau nécessaire. Le moteur et sa base de connaissances tiennent dans 50 Mo. Idéal pour les zones rurales, les dispensaires isolés, les missions humanitaires.</p></div>
+      <div class="card"><div class="ico">🔒</div><h3>Données patients souveraines</h3><p>Aucune donnée de santé ne quitte l'appareil. Pas de cloud, pas de fuite possible. Conforme aux réglementations les plus strictes.</p></div>
+      <div class="card"><div class="ico">🧠</div><h3>Apprentissage continu</h3><p>Les hologrammes médicaux peuvent être mis à jour avec les protocoles locaux, les épidémies régionales, les données épidémiologiques africaines.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SONIC ID — Empreinte sonore patient -->
+<section class="section" id="sonic-id" style="background:rgba(108,99,255,.03);border-top:1px solid rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04)">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">🎵 Identité sonore patient</div>
+      <h2>Un dossier, une mélodie</h2>
+      <p class="sub" style="margin:0 auto">Chaque patient reçoit une <b>signature sonore unique</b> générée à partir de son identifiant. Le personnel soignant peut ainsi identifier un dossier en un coup d'oreille —<br>pratique dans les dispensaires à fort volume, et rassurant pour le patient.</p>
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin-top:10px">
+      <div class="card" style="text-align:center">
+        <div class="ico">🔐</div>
+        <h3>Déterministe & privé</h3>
+        <p>Le son est généré depuis le SHA-256 de l'identifiant. Impossible de remonter au patient depuis le son. <b>Zéro donnée partagée.</b></p>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="ico">🎼</div>
+        <h3>Agréable & distinct</h3>
+        <p>Gamme pentatonique majeure ou mineure selon le contexte, tempo lent et timbre doux — deux dossiers ne produisent jamais le même air.</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="ico">📱</div>
+        <h3>Prêt à intégrer</h3>
+        <p>API <code style="background:rgba(108,99,255,.15);padding:2px 6px;border-radius:4px;font-size:13px">GET&nbsp;/api/sonic-id/{id}?variant=care</code> retourne un fichier WAV à lire sur votre application.</p>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:24px">
+      <a class="btn btn--ghost" href="/sonic-id" style="display:inline-flex;align-items:center;gap:8px">
+        🎧 Essayer un identifiant patient →
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="section" id="contact" style="text-align:center">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">Contact</div>
+      <h2>Vous êtes professionnel de santé ?<br>Vous êtes une ONG ?</h2>
+      <p class="sub" style="margin:0 auto">KA Care est gratuit pour les professionnels de santé en Afrique. Contactez-nous pour un accès prioritaire.</p>
+      <div style="margin-top:20px">
+        <a class="btn btn--soul btn--xl" href="mailto:care@harmonic-ai.com">care@harmonic-ai.com</a>
+        <a class="btn btn--ghost btn--xl" href="/demo" style="margin-left:10px">Essayer la démo</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>KA Care by <a href="/harmonic-ai">HARMONIC AI</a> — diagnostic IA pour l'Afrique · 82.9% top-1 · 0% hallucination · 100% hors-ligne</span>
+  </div>
+</footer>
+
+</body>
+</html>

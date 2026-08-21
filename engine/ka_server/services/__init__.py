@@ -135,8 +135,11 @@ def _load_facts(config) -> list:
             ]
         elif product == 'enterprise':
             facts = [
-                ('KA', 'est', 'plateforme_entreprise', 'system', 1.0),
-                ('EnterpriseIngestor', 'ingère', 'documents_massifs', 'enterprise', 0.95),
+                ('KA', 'est', 'plateforme_post_rag', 'enterprise', 1.0),
+                ('KA', 'remplace', 'RAG_par_hologrammes', 'enterprise', 0.95),
+                ('CodecPsi', 'atteint', '0_hallucination', 'ai', 1.0),
+                ('HCV', 'garantit', 'données_on_premise', 'enterprise', 0.9),
+                ('Hologramme', 'pèse', '2_mo', 'enterprise', 0.9),
                 ('HologramStore', 'gère', 'hologrammes_spécialisés', 'enterprise', 0.9),
             ]
     

@@ -48,6 +48,21 @@ def register_voice_routes(app, services):
             if not audio_data:
                 return jsonify({'error': 'Synthèse échouée', 'code': 'TTS_FAILED'}), 500
             
+            # Post-filtre φ-harmonique (optionnel, activé par défaut)
+            if data.get('phi_enhance', True):
+                try:
+                    import numpy as np
+                    import sys
+                    sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent.parent.parent))
+                    from thu.phi_post_filter import PhiPostFilter
+                    sr = 22050  # fréquence Piper par défaut
+                    audio_np = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
+                    pf = PhiPostFilter(sample_rate=sr, strength=0.35)
+                    enhanced = pf.process(audio_np)
+                    audio_data = (np.clip(enhanced * 32768, -32768, 32767).astype(np.int16)).tobytes()
+                except Exception as e:
+                    log.warning(f"Phi post-filter skipped: {e}")
+            
             if return_base64:
                 b64 = base64.b64encode(audio_data).decode('utf-8')
                 return jsonify({
@@ -182,3 +197,92 @@ def register_voice_routes(app, services):
         except Exception as e:
             log.error(f"Stream TTS error: {e}")
             return jsonify({'error': str(e)}), 500
+
+    # ── Endpoints pour le client mobile KA MOBILE (vital_ka_voice.js) ──
+    # Ces endpoints sont appelés par le module vocal côté client (port 8420).
+    # Compatibilité avec l'interface attendue par vital_ka_voice.js.
+
+    @app.route('/api/voice/offline/caps', methods=['GET', 'OPTIONS'])
+    def api_voice_offline_caps():
+        """Capacités du moteur TTS hors-ligne (appelé par KA MOBILE)."""
+        if request.method == 'OPTIONS':
+            return '', 200
+
+        piper_ready = False
+        piper_info = None
+
+        if voice_engine:
+            try:
+                status = voice_engine.get_status()
+                piper_info = status.get('tts', {})
+                if isinstance(piper_info, dict):
+                    piper_ready = piper_info.get('available', False)
+                elif isinstance(piper_info, bool):
+                    piper_ready = piper_info
+            except Exception:
+                pass
+
+        return jsonify({
+            'offline_ready': piper_ready,
+            'engines': {
+                'piper': {
+                    'available': piper_ready,
+                    'voices': voice_engine.list_voices() if voice_engine else [],
+                    'sample_rate': 22050,
+                    'format': 'wav',
+                }
+            },
+            'enhancements': {
+                'harmonic_post_processor': False,
+            },
+            'server': {
+                'backend': 'ka_server',
+                'version': '4.0',
+                'port': request.host.split(':')[-1] if ':' in request.host else '8767',
+            }
+        })
+
+    @app.route('/api/voice/offline', methods=['POST', 'OPTIONS'])
+    def api_voice_offline():
+        """Synthèse vocale hors-ligne (appelé par KA MOBILE).
+
+        Body: { "text": "bonjour", "voice": "fr_FR", "speed": 1.0, "enhanced": false, "hd": false }
+        Retourne un fichier WAV (comme /api/voice/tts).
+        """
+        if request.method == 'OPTIONS':
+            return '', 200
+
+        data = request.get_json(silent=True) or {}
+        text = data.get('text', '').strip()
+        voice = data.get('voice', 'fr_FR')
+        speed = float(data.get('speed', 1.0))
+        enhanced = data.get('enhanced', False)
+        hd = data.get('hd', False)
+
+        if not text:
+            return jsonify({'error': 'Texte requis', 'code': 'MISSING_TEXT'}), 400
+        if len(text) > 5000:
+            return jsonify({'error': 'Texte trop long', 'code': 'TEXT_TOO_LONG'}), 413
+        if not voice_engine:
+            return jsonify({
+                'error': 'Moteur vocal non disponible',
+                'code': 'VOICE_UNAVAILABLE',
+                'fallback_supported': True,
+            }), 503
+
+        try:
+            audio_data = voice_engine.synthesize(text, voice=voice, speed=speed)
+            if not audio_data:
+                return jsonify({'error': 'Synthèse échouée', 'code': 'TTS_FAILED'}), 500
+
+            output = io.BytesIO(audio_data)
+            output.seek(0)
+            return send_file(
+                output,
+                mimetype='audio/wav',
+                as_attachment=True,
+                download_name=f'offline_{voice}.wav'
+            )
+        except Exception as e:
+            log.error(f"Offline TTS error: {e}")
+            return jsonify({'error': str(e), 'code': 'TTS_ERROR'}), 500

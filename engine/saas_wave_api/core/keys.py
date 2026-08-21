@@ -32,7 +32,6 @@ def _keys_path() -> Path:
 def _usage_path() -> Path:
     return data_dir() / 'usage.json'
 
-
 def _load_json(path: Path, default):
     with _fs_lock:
         if not path.exists():

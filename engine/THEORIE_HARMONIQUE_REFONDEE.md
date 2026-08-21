@@ -78,11 +78,11 @@ Les théorèmes sont les survivants **dérivés** — chacun vérifié machine, 
 | **T2** | **λ = φ** — le taux du noyau ABC | λ = α/(1−α) avec T1 — exact | ✅ Violet A |
 | **T3** | **La chaîne de coefficients** c_k = 1/Γ(k/φ+1) | La solution de D^{1/φ}[Ψ] = G[Ψ] est E_{1/φ}(−φ·t^{1/φ}) ; ses coefficients sont les Γ-réciproques | ✅ FFT 2,22×10⁻¹⁶ · mpmath 1e-13 |
 | **T4** | **π et e sont des constantes de normalisation dérivées** | Intégrale gaussienne (π^{−1/4}, π^{−1/2}) ; enveloppes exponentielles (e^{−βℏω}, e^{−|α|²/2}) | ✅ Violet B — 4/4 |
-| **T5** | **La famille des températures dorées** — pour tout gap quantique ΔE, e^{−ΔE/k_BT} = 1/φ ⟺ T\* = ΔE/(k_B·ln φ) | **T5a** (oscillateur) : p_{n+1}/p_n = 1/φ ⟺ T\* = 2,078087·ℏω/k_B — ✅ 1,1×10⁻¹⁶ · **T5b** (ionisation) : Boltzmann = 1/φ ⟺ T\*_ion = χ·24115 K/eV — ✅ machine, 23 éléments (H : 327 918 K) | ✅ famille vérifiée — dépôt E3 v2 |
+| **T5** | **La famille des températures dorées** — pour tout gap quantique ΔE, e^{−ΔE/k_BT} = 1/φ ⟺ T\* = ΔE/(k_B·ln φ) | **A4 + Hurwitz (co-dérivé avec T1)** : le même principe d'irrationalité maximale qui donne α = 1/φ donne aussi q = 1/φ (voir `DERIVATION_TSTAR_IRRATIONNALITE_MAXIMALE.md`) · **T5a** (oscillateur) : p_{n+1}/p_n = 1/φ ⟺ T\* = 2,078087·ℏω/k_B — ✅ 1,1×10⁻¹⁶ · **T5b** (ionisation) : Boltzmann = 1/φ ⟺ T\*_ion = χ·24115 K/eV — ✅ machine, 23 éléments (H : 327 918 K) | ✅ co-dérivé de A4 — famille vérifiée — dépôt E3 v2 |
 | **T6** | **La gravité est le survivant du secteur n=2** | Fierz-Pauli → Deser (1970) : la seule théorie cohérente du spin-2 auto-interactif est la RG | ✅ 4 vérifications machine (□h̄=1,2e-15, G^lin=6e-16…) |
 | **T7** | **L'alphabet du langage source** | e^{iθ} (le verbe — survit à la rotation) · ℕ/Γ (le comptage — survit à la quantification) · gaussienne (l'agrégation — point fixe du TCL) · Fourier (la grammaire) — et **1/φ comme adverbe** (la non-répétition, dans l'agencement, pas dans les mots) | ✅ formes vérifiées — √2, √3 ⚠️ frontière |
 
-**T5 est le premier théorème de la refondation** : il n'a été ni postulé ni cherché — il est sorti de la chaîne dérivée (T1→T2→T3) appliquée aux états quantiques. L'exploration du tableau périodique a révélé sa **généralisation** : le squelette est le même pour tout gap (oscillateur ℏω, ionisation χ) — la famille T\* = ΔE/(k_B·ln φ), déposée dans E3 v2 avec ses 24 instances (1 oscillateur + 23 éléments). C'est le comportement attendu d'une théorie de filtres : les survivants se manifestent aux endroits précis où le filtre opère.
+**T5 est le premier théorème de la refondation** : il n'a été ni postulé ni cherché — il est **co-dérivé de l'axiome A4 avec T1** par le même principe d'irrationalité maximale (Hurwitz, 1891). Là où T1 applique ce principe à l'ordre de la mémoire α ∈ (0,1], T5 l'applique au ratio thermique q = e^{−βℏω} ∈ (0,1) : dans les deux cas, l'unique valeur stable est 1/φ. La dérivation complète est dans `DERIVATION_TSTAR_IRRATIONNALITE_MAXIMALE.md`. L'exploration du tableau périodique a révélé sa **généralisation** : le squelette est le même pour tout gap (oscillateur ℏω, ionisation χ) — la famille T\* = ΔE/(k_B·ln φ), déposée dans E3 v2 avec ses 24 instances (1 oscillateur + 23 éléments). C'est le comportement attendu d'une théorie de filtres : les survivants se manifestent aux endroits précis où le filtre opère.
 
 ---
 
@@ -111,7 +111,7 @@ Les constantes {φ, π, e, √2, √3, √5, e/π} restent dans la théorie **co
 | **π** | ✅ **dérivé** — normalisation gaussienne (π^{−1/4}, π^{−1/2}) | T4 — acquis |
 | **e** | ✅ **dérivé** — Boltzmann, enveloppes (e^{−βℏω}) | T4 — acquis |
 | **√5** | ✅ **dérivé** — √5 = 2φ − 1 ; constante de Hurwitz 1/√5 | acquis — fille de φ |
-| **√2, √3** | ⚠️ postulés — « diagonales » de l'espace euclidien | F5 : spécifier les symétries minimales (carré, cube, réseaux) et calculer leur spectre |
+| **√2, √3** | ✅ **partiellement dérivés** — √2 = diagonale du carré (survivant géométrique 2D/SU(2)), √3 = √(√2² + 1²) (dérivé de √2 par principe holographique — Maldacena/Bekenstein). Exposants : √2⁻¹ universel (spin 1/2), √3^{-(n+4)} pour niveau n de la tour (vérifié n=1 : √3⁻⁵ dans α_EM). | F5 : fermé pour √3 = √(√2²+1²) + exposants — ⏳ mécanisme des « 5 canaux » de √3⁻⁵ |
 | **e/π** | ❌ non privilégié (X4) | retiré des revendications |
 
 ### 5.2 Les portes ouvertes
@@ -122,7 +122,8 @@ Les constantes {φ, π, e, √2, √3, √5, e/π} restent dans la théorie **co
 | **F2 (E2)** | Reproduire une prédiction quantique à ≥ 10⁻¹⁰ | Chiffre publié avec intervalle | ⏳ ouvert |
 | **F3 (E3)** | Déposer la prédiction T\* datée et signée | Protocole P3.2 : dépôt avant test | ✅ **DÉPOSÉ v2 le 09/08/2026** — famille T\* (oscillateur + 23 éléments d'ionisation) — `DEPOT_E3_PREDICTION_TSTAR.md` — en attente de test |
 | **F4** | Chaînon « persistance ∝ 1/μ(α) » | Monte-Carlo sur α ou preuve analytique | ⏳ ouvert |
-| **F5** | √2, √3 comme survivants géométriques | Symétries minimales → spectre calculé | ⏳ ouvert |
+| **F4b** | Chaînon « récurrence thermique ∝ 1/μ(q) » — extension de F4 au ratio thermique q = e^{−βℏω} (co-dérivation T1↔T5) | Monte-Carlo sur q ou preuve analytique | ✅ supporté numériquement (`tstar_maximal_irrationalite.py`) — ⏳ preuve analytique |
+| **F5** | √2, √3 comme survivants géométriques : √2 = diagonale du carré (filtre A1-A4 3D), √3 = √(√2² + 1²) (holographie Maldacena/Bekenstein). Exposants √2⁻¹ (spin universel) et √3^{-(n+4)} (dilution spatiale, vérifié n=1). | ✅ filtre géométrique + holographie — ⏳ mécanisme des « 5 canaux » de √3⁻⁵ |
 | **F6** | Le noyau appris (RFF) pour l'IA | AUC(appris) − AUC(φ) > 0,05 avec p < 0,01 | ⏳ ouvert |
 | **F7** | Λ dérivable | La QFT échoue à 120 ordres — porte d'entrée | ⏳ ouvert |
 

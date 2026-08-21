@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>KA Enterprise — Console d'administration</title>
-<meta name="description" content="Console d'administration KA Enterprise : ingestion structurée, hologrammes spécialisés, rappel structurel, clés API, audit, conformité, déploiement.">
+<title>KA Enterprise — Plateforme Post-RAG</title>
+<link rel="icon" type="image/svg+xml" href="/brand/enterprise.svg">
+<meta name="description" content="KA Enterprise Post-RAG : les hologrammes remplacent le RAG, les données restent on-premise, le raisonnement est déterministe (0% hallucination). Console d'administration : ingestion structurée, hologrammes, démo, conformité, audit.">
 <style>
 :root{
   --void:#07070f;--soul:#8b83ff;--soul-l:#b8b2ff;--soul-d:rgba(139,131,255,.18);--soul-g:rgba(139,131,255,.32);
@@ -55,7 +56,7 @@ textarea{resize:vertical;line-height:1.5}
 .sidebar{width:224px;flex-shrink:0;background:#0a0a16;border-right:1px solid var(--b1);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
 .sidebar .brand{display:flex;align-items:center;gap:10px;padding:18px 20px;border-bottom:1px solid var(--b1);font-weight:800;font-size:15px;letter-spacing:.02em}
 .sidebar .brand b{color:var(--soul-l)}
-.sidebar .brand .logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--soul),var(--sky));display:flex;align-items:center;justify-content:center;font-size:15px}
+.sidebar .brand .logo{width:30px;height:30px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
 .sidebar nav{padding:12px 10px;flex:1}
 .sidebar nav a{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;color:var(--t2);font-size:13px;font-weight:600;margin-bottom:2px;border:1px solid transparent}
 .sidebar nav a:hover{background:var(--g1);color:var(--t1)}
@@ -132,7 +133,7 @@ td.mono{font-family:var(--mono);font-size:11.5px;color:var(--soul-l)}
 #login{display:none;position:fixed;inset:0;z-index:100;background:radial-gradient(ellipse at 50% 0%,#1e1630 0%,#0e0d1c 45%,var(--void) 100%);align-items:center;justify-content:center}
 #login.on{display:flex}
 .login-card{width:min(420px,92vw);background:rgba(13,13,28,.9);border:1px solid var(--b2);border-radius:18px;padding:34px;backdrop-filter:blur(14px)}
-.login-card .logo{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,var(--soul),var(--sky));display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 16px}
+.login-card .logo{width:64px;height:64px;margin:0 auto 16px;filter:drop-shadow(0 6px 20px rgba(139,131,255,.35))}
 .login-card h2{text-align:center;font-size:19px;margin-bottom:6px}
 .login-card p{text-align:center;color:var(--t3);font-size:12.5px;margin-bottom:22px}
 .hidden{display:none!important}
@@ -143,7 +144,7 @@ td.mono{font-family:var(--mono);font-size:11.5px;color:var(--soul-l)}
 <!-- ═══ LOGIN ═══ -->
 <div id="login">
   <div class="login-card">
-    <div class="logo">🏢</div>
+    <img class="logo" src="/brand/enterprise.svg" alt="KA Enterprise">
     <h2>KA Enterprise</h2>
     <p>Console d'administration · entrez votre clé API</p>
     <div class="form-row">
@@ -158,19 +159,22 @@ td.mono{font-family:var(--mono);font-size:11.5px;color:var(--soul-l)}
 <!-- ═══ LAYOUT ═══ -->
 <div class="app">
   <aside class="sidebar">
-    <div class="brand"><div class="logo">🏢</div>KA <b>Enterprise</b></div>
+    <div class="brand"><img class="logo" src="/brand/enterprise.svg" alt="KA Enterprise">KA <b>Enterprise</b></div>
     <nav id="nav">
-      <a data-v="dashboard" class="active" onclick="show('dashboard')"><span class="ico">📊</span> Dashboard</a>
+      <a data-v="postrag" class="active" onclick="show('postrag')"><span class="ico">🌀</span> Post-RAG</a>
+      <a data-v="demo" onclick="show('demo')"><span class="ico">🧪</span> Démo</a>
       <a data-v="ingest" onclick="show('ingest')"><span class="ico">📥</span> Ingestion</a>
       <a data-v="documents" onclick="show('documents');loadDocuments()"><span class="ico">📄</span> Documents</a>
-      <a data-v="holograms" onclick="show('holograms');loadHolograms()"><span class="ico">🌀</span> Hologrammes</a>
+      <a data-v="holograms" onclick="show('holograms');loadHolograms()"><span class="ico">🧩</span> Hologrammes</a>
+      <a data-v="deploy" onclick="show('deploy')"><span class="ico">🚀</span> Déploiement</a>
+      <a data-v="compliance" onclick="show('compliance')"><span class="ico">🛡️</span> Conformité</a>
+      <div style="padding:16px 12px 4px;font-size:10px;color:var(--t4);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Administration</div>
+      <a data-v="dashboard" onclick="show('dashboard')"><span class="ico">📊</span> Dashboard</a>
       <a data-v="keys" onclick="show('keys');loadKeys()"><span class="ico">🔑</span> Clés API</a>
       <a data-v="users" onclick="show('users');loadUsers()"><span class="ico">👤</span> Utilisateurs</a>
       <a data-v="audit" onclick="show('audit');loadAudit()"><span class="ico">📜</span> Audit</a>
-      <a data-v="compliance" onclick="show('compliance')"><span class="ico">🛡️</span> Conformité</a>
-      <a data-v="deploy" onclick="show('deploy')"><span class="ico">🚀</span> Déploiement</a>
     </nav>
-    <div class="side-foot">KA Enterprise v4.0 · IA ondulatoire<br>0 GPU · données souveraines</div>
+    <div class="side-foot">KA Enterprise v4.0 · Post-RAG Platform<br>0 GPU · 0% hallucination · 100% on-premise<br><a href="/enterprise" style="color:var(--t3)">← Retour au site</a></div>
   </aside>
 
   <div class="main">
@@ -189,10 +193,10 @@ td.mono{font-family:var(--mono);font-size:11.5px;color:var(--soul-l)}
       <!-- ═══ DASHBOARD ═══ -->
       <section id="v-dashboard">
         <div class="kpis" id="kpis">
-          <div class="kpi"><div class="label">Appels API (mois)</div><div class="value soul" id="k-api">—</div><div class="hint" id="k-api-hint">quota 1 000 000</div></div>
-          <div class="kpi"><div class="label">Hologrammes actifs</div><div class="value life" id="k-holo">—</div><div class="hint" id="k-holo-hint">spécialisés + starter</div></div>
-          <div class="kpi"><div class="label">Stockage</div><div class="value gold" id="k-sto">—</div><div class="hint" id="k-sto-hint">quota 100 Go</div></div>
-          <div class="kpi"><div class="label">Requêtes harmoniques</div><div class="value rose" id="k-har">—</div><div class="hint">émergence · 0 GPU</div></div>
+          <div class="kpi"><div class="label">Requêtes déterministes</div><div class="value soul" id="k-api">—</div><div class="hint" id="k-api-hint">0% hallucination · 88.4% GSM8K</div></div>
+          <div class="kpi"><div class="label">Hologrammes actifs</div><div class="value life" id="k-holo">—</div><div class="hint" id="k-holo-hint">post-RAG · 2 Mo chacun</div></div>
+          <div class="kpi"><div class="label">Données on-premise</div><div class="value gold" id="k-sto">—</div><div class="hint" id="k-sto-hint">compression HCV ×213 · zéro cloud</div></div>
+          <div class="kpi"><div class="label">Raisonnement harmonique</div><div class="value rose" id="k-har">—</div><div class="hint">codec ψ · 0 GPU · CPU only</div></div>
         </div>
         <div class="charts">
           <div class="chart-box"><div class="title">Appels — 24 dernières heures</div><canvas id="chart-hourly"></canvas></div>
@@ -200,7 +204,7 @@ td.mono{font-family:var(--mono);font-size:11.5px;color:var(--soul-l)}
           <div class="chart-box"><div class="title">Répartition par endpoint (top 10)</div><canvas id="chart-endpoints"></canvas></div>
         </div>
         <div class="card">
-          <h3>Quotas <span class="sub">consommation du mois</span></h3>
+          <h3>Quotas <span class="sub">consommation · tout reste sur site</span></h3>
           <div id="quota-bars"></div>
         </div>
         <div class="card">
@@ -209,10 +213,73 @@ td.mono{font-family:var(--mono);font-size:11.5px;color:var(--soul-l)}
         </div>
       </section>
 
+      <!-- ═══ POST-RAG ═══ -->
+      <section id="v-postrag">
+        <!-- Hero -->
+        <div class="card" style="border-color:var(--soul-g);background:linear-gradient(135deg,var(--soul-d),var(--g1))">
+          <div style="font-size:26px;font-weight:800;color:var(--t1);margin-bottom:8px">🌀 Le RAG est un bricolage.</div>
+          <div style="font-size:20px;font-weight:700;color:var(--soul-l);margin-bottom:16px">Les hologrammes sont la solution.</div>
+          <p style="color:var(--t2);max-width:700px;font-size:13.5px;line-height:1.6;margin-bottom:4px">
+            Le RAG (Retrieval-Augmented Generation) a été inventé pour pallier les hallucinations des LLMs.
+            Mais il ne résout rien : les données fuient vers le cloud, le chunking détruit la structure,
+            la similarité cosinus est une approximation, et le LLM peut toujours ignorer le contexte retrievé.
+          </p>
+          <p style="color:var(--t1);font-weight:700;font-size:13.5px"><b>KA Enterprise remplace le RAG par des hologrammes déterministes. 100% on-premise. 0% hallucination.</b></p>
+        </div>
+
+        <!-- Pain points -->
+        <div class="kpis" id="pain-points">
+          <div class="kpi">
+            <div class="label">🔮 Hallucinations</div>
+            <div class="value rose">3–27%</div>
+            <div class="hint">des réponses LLM sont inventées. Inacceptable pour la décision critique.</div>
+          </div>
+          <div class="kpi">
+            <div class="label">☁️ Données sur le cloud</div>
+            <div class="value gold">100%</div>
+            <div class="hint">des données passent chez OpenAI / Anthropic. RGPD, HIPAA, AI Act violés.</div>
+          </div>
+          <div class="kpi">
+            <div class="label">🧩 RAG inefficace</div>
+            <div class="value soul">×213</div>
+            <div class="hint">Compression HCV ×213 vs. Vector DB coûteuse. 1 fichier de 2 Mo vs. base entière.</div>
+          </div>
+        </div>
+
+        <!-- Compare table -->
+        <div class="card">
+          <h3>RAG vs Hologramme <span class="sub">pourquoi nous gagnons — 10 critères</span></h3>
+          <table>
+            <thead><tr><th>Critère</th><th>RAG classique</th><th style="color:var(--soul-l)">🌀 Hologramme KA</th></tr></thead>
+            <tbody id="compare-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Pricing -->
+        <div class="card">
+          <h3>Offres Enterprise <span class="sub">tarifs annuels, tout on-premise · montants éditables</span></h3>
+          <div class="grid2" id="pricing-cards"></div>
+        </div>
+      </section>
+
+      <!-- ═══ DÉMO ═══ -->
+      <section id="v-demo" class="hidden">
+        <div class="card">
+          <h3>🧪 Démo — Posez votre question <span class="sub">réponse déterministe · 0% hallucination · traçable</span></h3>
+          <div class="form-row">
+            <label>Votre question</label>
+            <input id="demo-query" placeholder="Ex: quelle est la racine carrée de 144 ?" style="font-size:15px;padding:12px 16px">
+          </div>
+          <button class="btn btn--soul" onclick="demoAsk()">🧪 Poser la question</button>
+          <div class="msg" id="demo-msg"></div>
+          <div id="demo-result" class="hidden" style="margin-top:16px"></div>
+        </div>
+      </section>
+
       <!-- ═══ INGESTION ═══ -->
       <section id="v-ingest" class="hidden">
         <div class="card">
-          <h3>Ingestion de documents <span class="sub">→ hologramme spécialisé</span></h3>
+          <h3>Ingestion — documents → hologramme <span class="sub">remplacez votre pipeline RAG</span></h3>
           <div class="tabs">
             <button class="active" onclick="ingestTab('struct')">📐 Structurel (Docling)</button>
             <button onclick="ingestTab('json')">🧩 JSON</button>
@@ -396,7 +463,8 @@ function show(v) {
   document.querySelectorAll('#nav a').forEach(function (a) {
     a.classList.toggle('active', a.dataset.v === v);
   });
-  var titles = { dashboard: 'Dashboard', ingest: 'Ingestion', documents: 'Documents structurés',
+  var titles = { postrag: 'Post-RAG', demo: 'Démo',
+    dashboard: 'Dashboard', ingest: 'Ingestion', documents: 'Documents structurés',
     holograms: 'Hologrammes', keys: 'Clés API', users: 'Utilisateurs', audit: 'Audit',
     compliance: 'Conformité', deploy: 'Déploiement' };
   document.getElementById('page-title').textContent = titles[v];
@@ -529,10 +597,91 @@ function logout() {
 
 // ═══ DASHBOARD ═══
 function init() {
-  loadUsage();
-  loadServices();
-  drawCharts();
+  loadUsage();      // préchargement dashboard
+  loadServices();   // préchargement dashboard
+  drawCharts();     // préchargement dashboard
+  loadCompare();    // vue Post-RAG
+  loadPricing();    // vue Post-RAG
+  show('postrag');  // vue par défaut
 }
+
+// ═══ POST-RAG : COMPARAISON & TARIFS ═══
+function loadCompare() {
+  fetch(API + '/api/v2/enterprise/compare', { headers: hdr() })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var rows = d.comparison || [];
+      document.getElementById('compare-tbody').innerHTML = rows.map(function (c) {
+        return '<tr><td style="font-weight:700;color:var(--t1)">' + escapeHtml(c.criteria) + '</td>'
+          + '<td>' + escapeHtml(c.rag) + '</td>'
+          + '<td style="color:var(--soul-l);font-weight:600">' + escapeHtml(c.hologram) + '</td></tr>';
+      }).join('') || '<tr><td colspan="3"><div class="empty">comparaison indisponible</div></td></tr>';
+    })
+    .catch(function () { document.getElementById('compare-tbody').innerHTML = '<tr><td colspan="3"><div class="empty">erreur de chargement</div></td></tr>'; });
+}
+
+function loadPricing() {
+  fetch(API + '/api/v2/enterprise/pricing', { headers: hdr() })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var plans = d.plans || [];
+      document.getElementById('pricing-cards').innerHTML = plans.map(function (p) {
+        return '<div style="border:1px solid ' + (p.highlight ? 'var(--life-g)' : 'var(--b1)') + ';border-radius:14px;padding:18px;background:linear-gradient(180deg,' + (p.highlight ? 'var(--life-d)' : 'var(--g1)') + ',transparent)">'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+          + '<div style="font-weight:800;font-size:15px;color:var(--t1)">' + escapeHtml(p.name) + '</div>'
+          + (p.highlight ? '<span class="badge badge--life">recommandé</span>' : '')
+          + '</div>'
+          + '<div style="font-size:22px;font-weight:800;color:' + (p.highlight ? 'var(--life)' : 'var(--soul-l)') + ';margin-bottom:2px">' + Number(p.price).toLocaleString('fr-FR') + ' €<span style="font-size:12px;color:var(--t3);font-weight:500"> /an</span></div>'
+          + '<div style="font-size:12px;color:var(--t3);margin-bottom:10px">' + escapeHtml(p.description) + '</div>'
+          + '<ul style="list-style:none;padding:0;margin:0">' + p.features.map(function (f) {
+            return '<li style="font-size:12px;color:var(--t2);padding:3px 0;border-bottom:1px solid var(--g1)">✓ ' + escapeHtml(f) + '</li>';
+          }).join('') + '</ul></div>';
+      }).join('') || '<div class="empty">tarifs indisponibles</div>';
+    })
+    .catch(function () { document.getElementById('pricing-cards').innerHTML = '<div class="empty">erreur de chargement</div>'; });
+}
+
+// ═══ DÉMO ═══
+function demoAsk() {
+  var q = document.getElementById('demo-query').value.trim();
+  if (!q) { msg('demo-msg', 'Question requise', 'err'); return; }
+  document.getElementById('demo-result').classList.add('hidden');
+  fetch(API + '/api/v2/enterprise/demo/ask', {
+    method: 'POST', headers: hdr(), body: JSON.stringify({ question: q })
+  }).then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d.error) { msg('demo-msg', d.error, 'err'); return; }
+      document.getElementById('demo-result').classList.remove('hidden');
+      var html = '<div style="border:1px solid var(--life-g);border-radius:14px;padding:18px;background:var(--life-d);margin-bottom:14px">'
+        + '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--life);margin-bottom:8px">Réponse déterministe'
+        + (d.result !== undefined ? ' · résultat : <b style="font-size:14px">' + d.result + '</b>' : '')
+        + '</div>'
+        + '<div style="font-size:14px;line-height:1.65;color:var(--t1);white-space:pre-wrap">' + escapeHtml(d.answer) + '</div>'
+        + '</div>'
+        + '<div style="border:1px solid var(--b1);border-radius:14px;padding:14px;background:var(--g1)">'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'
+        + '<span class="badge badge--life">source: ' + escapeHtml(d.source || '—') + '</span>'
+        + (d.method ? '<span class="badge badge--gold">méthode: ' + escapeHtml(d.method) + '</span>' : '')
+        + (d.best_domain ? '<span class="badge badge--soul">domaine: ' + escapeHtml(d.best_domain) + '</span>' : '')
+        + '<span class="badge badge--gold">' + (d.consensus_facts_count || 0) + ' faits</span>'
+        + '<span class="badge badge--gray">' + (d.latency_ms || 0) + ' ms</span>'
+        + '</div>'
+        + '<div style="font-size:11px;color:var(--t4);padding-top:8px;border-top:1px solid var(--b1)">'
+        + '🔒 Réponse déterministe · reproductible à l\'identique · 0% hallucination'
+        + '</div></div>';
+      if (d.facts && d.facts.length) {
+        html += '<div style="margin-top:12px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px">Faits cités (provenance)</div>'
+          + '<div style="font-family:var(--mono);font-size:11px;color:var(--t3);border:1px solid var(--b1);border-radius:10px;padding:12px;max-height:180px;overflow:auto;background:var(--g1)">'
+          + d.facts.map(function (f) {
+            return '• ' + escapeHtml(String(f[0] || '')) + ' → ' + escapeHtml(String(f[1] || '')) + ' → ' + escapeHtml(String(f[2] || ''));
+          }).join('<br>') + '</div></div>';
+      }
+      document.getElementById('demo-result').innerHTML = html;
+      msg('demo-msg', '✅ Réponse générée' + (d.note ? ' — ' + d.note : ''), 'ok');
+    })
+    .catch(function (e) { msg('demo-msg', 'Erreur : ' + e.message, 'err'); });
+}
+
 function loadUsage() {
   fetch(API + '/api/v2/enterprise/usage', { headers: hdr() })
     .then(function (r) { return r.json(); })
@@ -544,8 +693,8 @@ function loadUsage() {
       var bars = '';
       var q = d.quotas || {};
       var items = [
-        ['Appels API', d.api_calls, q.api_calls_limit, ''],
-        ['Stockage', d.storage_gb || 0, q.storage_limit_gb, 'Go'],
+        ['Requêtes déterministes', d.api_calls, q.api_calls_limit, ''],
+        ['Données on-premise', d.storage_gb || 0, q.storage_limit_gb, 'Go'],
         ['Bande passante', d.bandwidth_gb || 0, q.bandwidth_limit_gb, 'Go']
       ];
       items.forEach(function (it) {

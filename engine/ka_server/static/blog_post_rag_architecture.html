@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Architecture IA Enterprise : l'article vs HARMONIC AI</title>
+<link rel="icon" type="image/svg+xml" href="/brand/ka.svg">
+<meta name="description" content="Analyse comparative : l'architecture IA d'entreprise au-delà du RAG proposée par l'article, et comment HARMONIC AI va encore plus loin — sans LLM, avec un moteur déterministe.">
+<style>
+:root{
+  --void:#06060f;--soul:#8b83ff;--soul-l:#b8b2ff;--soul-d:rgba(139,131,255,.18);--soul-g:rgba(139,131,255,.32);
+  --life:#3ddba0;--life-d:rgba(61,219,160,.15);--life-g:rgba(61,219,160,.28);
+  --wisdom:#f0c060;--wisdom-d:rgba(240,192,96,.15);--wisdom-g:rgba(240,192,96,.28);
+  --rose:#ed93b1;--rose-d:rgba(212,83,126,.15);--rose-g:rgba(212,83,126,.28);
+  --sky:#85b7eb;--g1:rgba(255,255,255,.04);--g2:rgba(255,255,255,.075);--g3:rgba(255,255,255,.13);
+  --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.1);--b3:rgba(255,255,255,.16);
+  --t1:rgba(255,255,255,.92);--t2:rgba(255,255,255,.62);--t3:rgba(255,255,255,.36);--t4:rgba(255,255,255,.18);
+  --font:-apple-system,"SF Pro Display","Inter",system-ui,sans-serif;
+  --mono:"SF Mono","JetBrains Mono",Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--void);color:var(--t1);font-family:var(--font);-webkit-font-smoothing:antialiased;line-height:1.65;overflow-x:hidden}
+a{color:var(--soul-l);text-decoration:none}a:hover{color:#fff}
+.wrap{max-width:820px;margin:0 auto;padding:0 24px}
+h1{font-size:clamp(28px,4vw,42px);font-weight:900;letter-spacing:-.02em;line-height:1.12;margin-bottom:10px}
+h2{font-size:clamp(22px,2.8vw,30px);font-weight:800;margin:48px 0 16px;letter-spacing:-.01em}
+h2 .anchor{color:var(--soul-l)}h2.has-line{border-bottom:1px solid var(--b1);padding-bottom:12px}
+h3{font-size:18px;font-weight:700;margin:24px 0 10px}
+p{color:var(--t2);font-size:15px;margin-bottom:14px;max-width:720px}
+p b{color:var(--t1)}
+ul,ol{color:var(--t2);font-size:15px;margin:0 0 18px 20px;line-height:1.7}
+li{margin-bottom:6px}
+code{font-family:var(--mono);font-size:13px;background:var(--g1);border:1px solid var(--b1);padding:2px 7px;border-radius:6px;color:var(--soul-l)}
+pre{font-family:var(--mono);font-size:13px;background:var(--g1);border:1px solid var(--b1);border-radius:12px;padding:18px;overflow-x:auto;line-height:1.55;margin:14px 0}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:50;background:rgba(6,6,15,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--b1)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:58px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14px}
+.brand img.mark{width:26px;height:26px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+.brand b{color:var(--soul-l)}
+nav .links{display:flex;gap:14px;font-size:12px;font-weight:600}
+nav .links a{color:var(--t2)}nav .links a:hover{color:#fff}
+
+/* HERO */
+.hero{text-align:center;padding:80px 0 50px;position:relative}
+.hero .meta{font-size:12px;color:var(--t3);margin-bottom:20px}
+.hero .meta span{display:inline-block;background:var(--g1);border:1px solid var(--b1);padding:4px 12px;border-radius:999px;margin:0 4px}
+.hero .badge-article{display:inline-block;font-size:11px;font-weight:800;background:var(--wisdom-d);color:var(--wisdom);border:1px solid var(--wisdom-g);border-radius:999px;padding:5px 14px;margin-bottom:18px;letter-spacing:.05em}
+
+/* CARDS */
+.card{border:1px solid var(--b1);border-radius:14px;padding:20px;margin-bottom:16px;background:linear-gradient(180deg,var(--g1),transparent)}
+.card .label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:4px}
+.card .big{font-size:24px;font-weight:800;margin-bottom:4px}
+.card .big.soul{color:var(--soul-l)}.card .big.life{color:var(--life)}.card .big.gold{color:var(--wisdom)}.card .big.rose{color:var(--rose)}
+
+/* COMPARE TABLE */
+.tbl-compare{border:1px solid var(--b1);border-radius:14px;overflow:hidden;margin:20px 0}
+.tbl-compare table{width:100%;border-collapse:collapse;font-size:13px}
+.tbl-compare th{text-align:left;color:var(--t3);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.07em;padding:12px 14px;border-bottom:1px solid var(--b2)}
+.tbl-compare td{padding:12px 14px;border-bottom:1px solid var(--b1);color:var(--t2);vertical-align:top}
+.tbl-compare td:first-child{color:var(--t1);font-weight:700;width:120px}
+.tbl-compare .article-col{color:var(--wisdom)}
+.tbl-compare .our-col{color:var(--soul-l);font-weight:600}
+.tbl-compare tr:last-child td{border-bottom:none}
+.tbl-compare .vs{color:var(--t3);font-size:11px;display:inline-block;margin:0 6px}
+
+/* QUOTE */
+.quote{border-left:3px solid var(--life);padding:6px 0 6px 20px;margin:24px 0;color:var(--t2);font-style:italic;font-size:14.5px;max-width:680px}
+.quote .ref{font-style:normal;font-size:11px;color:var(--t3);display:block;margin-top:6px}
+
+/* CONCLUSION */
+.conclusion-card{border:2px solid var(--life-g);border-radius:16px;padding:28px;background:linear-gradient(135deg,var(--life-d),var(--g1) 70%);margin:30px 0}
+.conclusion-card .stat{font-size:32px;font-weight:900;color:var(--life);margin-bottom:4px}
+.conclusion-card .sub{color:var(--t2);font-size:13px}
+
+/* FOOTER */
+footer{border-top:1px solid var(--b1);padding:30px 0;text-align:center;color:var(--t3);font-size:12px}
+footer a{color:var(--t2)}footer a:hover{color:#fff}
+@media(max-width:720px){.hero{padding:60px 0 30px}h2{margin:36px 0 12px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="/harmonic-ai"><img class="mark" src="/brand/ka.svg" alt="HARMONIC AI">HARMONIC <b>AI</b></a>
+    <div class="links">
+      <a href="/harmonic-ai">Site</a>
+      <a href="/demo">Démo</a>
+      <a href="/enterprise/console">Enterprise</a>
+    </div>
+  </div>
+</nav>
+
+<article class="wrap">
+<div class="hero">
+  <span class="badge-article">📘 Analyse &amp; Positionnement</span>
+  <h1>Architecture IA Enterprise :<br>l'article vs HARMONIC AI</h1>
+  <div class="meta">
+    <span>16 août 2026</span>
+    <span>~15 min de lecture</span>
+    <span>Post-RAG · Architecture · Comparaison</span>
+  </div>
+  <p style="font-size:16px;max-width:680px;margin:0 auto;color:var(--t3)">
+    Un article récent décrit l'architecture IA d'entreprise « au-delà du RAG classique ».
+    Voici pourquoi leurs conclusions valident notre approche — et pourquoi nous allons plus loin.
+  </p>
+</div>
+
+<!-- ═══ INTRODUCTION ═══ -->
+<h2 id="intro" class="has-line">📋 L'article en résumé</h2>
+<p>
+  L'article <b>«Écosystème IA d'entreprise — au-delà du RAG classique»</b> part du même constat que nous :
+  <b>le RAG + LLM ne suffit pas</b> pour les besoins réels de l'entreprise. Il identifie cinq limites :
+</p>
+<ol>
+  <li><b>Données structurées</b> (ERP, CRM, Excel) : le RAG vectoriel les détruit en les chunkant</li>
+  <li><b>Temps réel</b> : un index vectoriel se périme, la synchro est permanente</li>
+  <li><b>Actions</b> : générer un Excel, mettre à jour un CRM ne sort pas d'un prompt</li>
+  <li><b>Traçabilité</b> : le RAG « boîte noire » ne dit pas quelle donnée a été utilisée</li>
+  <li><b>Précision numérique</b> : un LLM ne doit jamais calculer une TVA tout seul</li>
+</ol>
+<p>
+  Sa solution : une <b>architecture en 5 couches</b> (Interface → Orchestration LLM → Outils → Retrieval hybride → Données)
+  avec gouvernance transverse. Le LLM y est orchestrateur, pas source de vérité.
+  Les outils (Text-to-SQL, générateur Excel, graphe de connaissances) font le travail exact.
+</p>
+
+<!-- ═══ POINTS D'ACCORD ═══ -->
+<h2 id="validation" class="has-line">✅ Ce que l'article valide de notre approche</h2>
+<p>
+  L'article est une <b>validation externe précieuse</b> de notre positionnement. Point par point :
+</p>
+
+<div class="card"><div class="big life">« Le RAG vectoriel ne passe pas à l'échelle enterprise »</div>
+<p>C'est exactement notre manifeste « Le RAG est un bricolage. Les hologrammes sont la solution. » L'article
+confirme que les données structurées, la précision numérique, la traçabilité et l'action sont des besoins que
+le RAG+LLM classique ne peut pas satisfaire.</p></div>
+
+<div class="card"><div class="big soul">« Le LLM n'est pas la source de vérité, c'est un orchestrateur »</div>
+<p>Nous allons plus loin : <b>le codec ψ n'est même pas un LLM</b>. C'est un moteur de raisonnement déterministe
+qui calcule au lieu de générer. Pas d'hallucination possible — même sur l'orchestration.</p></div>
+
+<div class="card"><div class="big gold">« Séparation raisonnement / exécution »</div>
+<p>Notre architecture fait la même séparation, mais sans LLM : le codec ψ raisonne (déterministe),
+les hologrammes encapsulent la connaissance, la compression HCV garantit la souveraineté des données.</p></div>
+
+<!-- ═══ TABLEAU COMPARATIF ═══ -->
+<h2 id="compare" class="has-line">🔬 Comparaison couche par couche</h2>
+<p>Voici comment l'architecture de l'article se compare à celle de HARMONIC AI :</p>
+
+<div class="tbl-compare">
+<table>
+  <tr><th>Couche</th><th class="article-col">Article — RAG+LLM avancé</th><th class="our-col">🌀 HARMONIC AI — Post-RAG</th></tr>
+  <tr>
+    <td>Interface</td>
+    <td class="article-col">Chat interne, plugins Office, dashboards, API</td>
+    <td class="our-col">Console Enterprise, Démo publique, API REST</td>
+  </tr>
+  <tr>
+    <td>Orchestration</td>
+    <td class="article-col"><b>LLM local</b> (7B–30B) — comprend l'intention, sélectionne les outils. <span class="vs">↕</span> Risque d'hallucination sur le plan d'exécution</td>
+    <td class="our-col"><b>Codec ψ</b> — moteur déterministe. 0% hallucination, 88.4% GSM8K. Aucune stochasticité</td>
+  </tr>
+  <tr>
+    <td>Outils</td>
+    <td class="article-col">Text-to-SQL, générateur Excel/PDF, graphiques, règles métier. <span class="vs">↕</span> Complexe : chaque outil est un module séparé</td>
+    <td class="our-col"><b>Hologrammes</b> — 2 Mo par domaine. Stockage + requêtage + spécialisation en un seul mécanisme</td>
+  </tr>
+  <tr>
+    <td>Retrieval</td>
+    <td class="article-col"><b>Hybride</b> : RAG vectoriel + Text-to-SQL + graphe de connaissances + BM25. <span class="vs">↕</span> 4 systèmes à maintenir</td>
+    <td class="our-col"><b>Hologrammes unifiés</b> — remplacent RAG, SQL, graphe ET BM25. Un seul mécanisme déterministe</td>
+  </tr>
+  <tr>
+    <td>Données</td>
+    <td class="article-col">Data warehouse, ERP/CRM APIs, fichiers, documents — indexés séparément</td>
+    <td class="our-col">Compression HCV + Hologrammes. Données on-premise, chiffrées (AES-GCM-256), ratio ×213</td>
+  </tr>
+  <tr>
+    <td>Gouvernance</td>
+    <td class="article-col">RBAC, masquage, bac à sable d'exécution, traçabilité — à implémenter (feuille de route Phase 1→4)</td>
+    <td class="our-col"><b>Dès le jour 1</b> : audit intégré, RBAC, provenance des faits, chiffrement AES-GCM-256</td>
+  </tr>
+  <tr>
+    <td>🧮 Précision numérique</td>
+    <td class="article-col">Déléguée à Text-to-SQL / pandas — le LLM ne calcule pas, mais il <b>génère</b> la requête (risque d'erreur)</td>
+    <td class="our-col"><b>Émergence arithmétique</b> — 7 × 6 = 42 en 49 ms, sans SQL, sans LLM, sans RAG. Calculé, pas généré</td>
+  </tr>
+  <tr>
+    <td>💸 Infrastructure</td>
+    <td class="article-col">LLM 7B–30B local (GPU recommandé), Vector DB, 4 systèmes de retrieval</td>
+    <td class="our-col"><b>1 CPU serveur standard</b> — pas de GPU, pas de Vector DB, pas de base tierce</td>
+  </tr>
+  <tr>
+    <td>🔒 Privacy</td>
+    <td class="article-col">LLM on-premise, mais données « filtrées avant le contexte » — pas verrouillé par architecture</td>
+    <td class="our-col"><b>Privacy par architecture</b> — impossible d'exfiltrer une donnée. Pas de cloud, pas de fuite possible</td>
+  </tr>
+</table>
+</div>
+
+<!-- ═══ ANALYSE ═══ -->
+<h2 id="analysis" class="has-line">🧠 Pourquoi nous sommes en avance</h2>
+<p>L'article décrit une architecture intelligente — mais elle reste <b>centrée sur un LLM</b>. Nous avons sauté cette étape :</p>
+
+<h3>1. Le LLM orchestrateur peut encore halluciner</h3>
+<p>
+  L'article dit « le LLM ne sait rien par cœur, il interroge des systèmes de vérité ». C'est juste. Mais le <b>plan d'exécution</b>
+  — la séquence d'outils à appeler — est lui-même <b>généré par le LLM</b>. Si le LLM choisit le mauvais outil, ou l'appelle avec
+  les mauvais paramètres, il hallucine sur le plan. Le codec ψ ne génère pas de plan : il applique une trajectoire déterministe
+  vérifiable.
+</p>
+
+<h3>2. Quatre systèmes de retrieval ≠ unifié</h3>
+<p>
+  L'article propose RAG vectoriel + Text-to-SQL + graphe de connaissances + BM25 = 4 systèmes à maintenir, synchroniser, sécuriser.
+  <b>Les hologrammes remplacent tout cela</b> : un fichier de 2 Mo capture la connaissance complète d'un domaine (structure + relations + contenu).
+  Pas de base vectorielle, pas de graphe dédié, pas d'index BM25 séparé.
+</p>
+
+<h3>3. La précision numérique ne peut pas être déléguée à un générateur de SQL</h3>
+<p>
+  L'article dit « le LLM génère une requête SQL vérifiable ». Mais si le LLM génère une requête <b>fausse</b> (colonne inexistante,
+  mauvaise jointure, agrégation erronée) ? Notre <b>émergence arithmétique</b> calcule les résultats sans générer de code —
+  c'est un phénomène mathématique, pas une prédiction.
+</p>
+
+<h3>4. La gouvernance après-coup vs dès la conception</h3>
+<p>
+  L'article propose d'ajouter la gouvernance « dans chaque couche ». Nous l'avons <b>dès le départ</b> : audit intégré,
+  provenance de chaque fait, chiffrement AES-GCM, RBAC par hologramme. Ce n'est pas une couche — c'est le <b>fonctionnement même</b>
+  du système.
+</p>
+
+<h3>5. L'infrastructure : GPU vs CPU</h3>
+<p>
+  L'article recommande un LLM 7B–30B + Vector DB + moteur de graphe = GPU recommandé. <b>Nous : 1 CPU standard.</b>
+  Pour une PME/ETI qui veut une IA fiable sans investir 50 000 € en hardware, la différence est décisive.
+</p>
+
+<!-- ═══ SCHÉMA ═══ -->
+<h2 id="schema" class="has-line">🏗️ Ce que notre architecture remplace</h2>
+<p>L'article propose 5 couches + 1 transverse. Voici le diagramme fonctionnel de l'architecture HARMONIC AI :</p>
+
+<style>
+.arch-diagram{margin:24px 0;display:flex;flex-direction:column;gap:2px;border-radius:16px;overflow:hidden;border:1px solid var(--b1)}
+.arch-layer{display:grid;grid-template-columns:140px 1fr;align-items:center;padding:14px 18px;gap:16px;font-size:13px}
+.arch-layer .al-label{font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.05em;opacity:.8}
+.arch-layer .al-content{font-weight:600;line-height:1.4}
+.arch-layer.l1{background:#1e1640;border-bottom:1px solid rgba(139,131,255,.2)}
+.arch-layer.l1 .al-label{color:var(--soul-l)}
+.arch-layer.l1 .al-content{color:var(--soul-l)}
+.arch-layer.l2{background:#162a18;border-bottom:1px solid rgba(61,219,160,.2)}
+.arch-layer.l2 .al-label{color:var(--life)}
+.arch-layer.l2 .al-content{color:var(--life)}
+.arch-layer.l3{background:#1e1c0a;border-bottom:1px solid rgba(240,192,96,.2)}
+.arch-layer.l3 .al-label{color:var(--wisdom)}
+.arch-layer.l3 .al-content{color:var(--wisdom)}
+.arch-layer.l4{background:#1e0c14;border-bottom:1px solid rgba(237,147,177,.2)}
+.arch-layer.l4 .al-label{color:var(--rose)}
+.arch-layer.l4 .al-content{color:var(--rose)}
+.arch-layer.l5{background:#0a1620;border-bottom:1px solid rgba(133,183,235,.2)}
+.arch-layer.l5 .al-label{color:var(--sky)}
+.arch-layer.l5 .al-content{color:var(--sky)}
+.arch-layer.gov{background:rgba(61,219,160,.06);border-top:2px dashed var(--life-g)}
+.arch-layer.gov .al-label{color:var(--life)}
+.arch-layer.gov .al-content{color:var(--t2);font-weight:500}
+.arch-arrow{text-align:center;padding:6px 0;color:var(--t3);font-size:18px;letter-spacing:4px}
+</style>
+
+<div class="arch-diagram">
+  <div class="arch-layer l1">
+    <div class="al-label">🌀 Interface</div>
+    <div class="al-content">Console Enterprise · Démo publique · API REST · Plug-ins</div>
+  </div>
+  <div class="arch-arrow">⬇ ⬆</div>
+  <div class="arch-layer l2">
+    <div class="al-label">🧠 Raisonnement</div>
+    <div class="al-content">Codec ψ — déterministe · 88.4% GSM8K · 0% hallucination · Consensus M4</div>
+  </div>
+  <div class="arch-arrow">⬇ ⬆</div>
+  <div class="arch-layer l3">
+    <div class="al-label">🧩 Connaissance</div>
+    <div class="al-content">Hologrammes (2 Mo par domaine) · SQL Querier · Rappel structurel · 41 transverticales</div>
+  </div>
+  <div class="arch-arrow">⬇ ⬆</div>
+  <div class="arch-layer l4">
+    <div class="al-label">⚡ Calcul &amp; Données</div>
+    <div class="al-content">Émergence arithmétique · Compression HCV (×213) · Chiffrement AES-GCM-256 · Cache local</div>
+  </div>
+  <div class="arch-arrow">⬇ ⬆</div>
+  <div class="arch-layer l5">
+    <div class="al-label">🔌 Infrastructure</div>
+    <div class="al-content">1 CPU standard · 0 GPU · 0 cloud · On-premise ou air-gap · Docker</div>
+  </div>
+  <div class="arch-layer gov">
+    <div class="al-label">🛡️ Gouvernance (transverse)</div>
+    <div class="al-content">Audit intégré · Provenance des faits · RBAC · Traçabilité complète · Conformité RGPD/AI Act/HIPAA</div>
+  </div>
+</div>
+
+<p>Chaque flèche représente un échange déterministe : la question descend, la réponse remonte, chaque étape est traçable.</p>
+
+<h3 style="margin-top:24px">Comparaison : 4 systèmes de retrieval ≠ 1 hologramme</h3>
+<p>L'article propose 4 moteurs de retrieval distincts. HARMONIC AI les remplace par un seul mécanisme :</p>
+
+<style>
+.comp-blocks{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;margin:16px 0;align-items:center}
+.comp-blocks h4{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:8px;text-align:center}
+.comp-side{display:flex;flex-direction:column;gap:6px}
+.comp-box{background:var(--g1);border:1px solid var(--b1);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--t2);text-align:center;line-height:1.3}
+.comp-box b{color:var(--wisdom);display:block}
+.comp-vs{font-size:28px;font-weight:900;color:var(--t3);text-align:center}
+.comp-our{display:flex;flex-direction:column;justify-content:center;gap:6px}
+.comp-our-box{background:var(--soul-d);border:1px solid var(--soul-g);border-radius:12px;padding:14px;text-align:center;font-size:14px;font-weight:700;color:var(--soul-l);line-height:1.4}
+</style>
+
+<div class="comp-blocks">
+  <div class="comp-side">
+    <h4>Article — 4 systèmes</h4>
+    <div class="comp-box"><b>RAG vectoriel</b>Qdrant · embeddings · chunks</div>
+    <div class="comp-box"><b>Text-to-SQL</b>LLM génère la requête</div>
+    <div class="comp-box"><b>Graphe de connaissances</b>Neo4j · relations</div>
+    <div class="comp-box"><b>BM25 lexical</b>Recherche exacte</div>
+  </div>
+  <div class="comp-vs">→</div>
+  <div class="comp-our">
+    <h4>🌀 HARMONIC AI — 1 mécanisme</h4>
+    <div class="comp-our-box">Hologrammes (2 Mo)<br>Connaissance + requêtage + relations<br>Déterministe · 0 système tiers</div>
+  </div>
+</div>
+
+<!-- ═══ EXEMPLE SORTIE ═══ -->
+<h2 id="output" class="has-line">📋 Exemple de sortie formatée — SQL Querier</h2>
+<p>Notre moteur Text-to-SQL (<b>déterministe, pas de LLM</b>) interroge les données structurées et retourne des résultats formatés avec provenance :</p>
+
+<style>
+.output-demo{background:var(--g1);border:1px solid var(--b1);border-radius:16px;padding:20px;margin:16px 0;font-size:13px}
+.output-demo .q{font-size:14px;font-weight:700;color:var(--t1);margin-bottom:12px}
+.output-demo .q .arrow{color:var(--life);margin:0 6px}
+.output-demo .sql-box{font-family:var(--mono);font-size:11.5px;background:#0a0a18;border:1px solid var(--b2);border-radius:8px;padding:10px 14px;margin-bottom:12px;color:var(--soul-l);overflow-x:auto;white-space:nowrap}
+.output-demo .sql-box .label{color:var(--t3);font-weight:400;margin-right:8px}
+.output-demo .result-table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12px}
+.output-demo .result-table th{text-align:left;color:var(--t3);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.07em;padding:8px 10px;border-bottom:1px solid var(--b2)}
+.output-demo .result-table td{padding:7px 10px;border-bottom:1px solid var(--b1);color:var(--t2)}
+.output-demo .result-table tr:last-child td{border-bottom:none}
+.output-demo .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid var(--b1)}
+.output-demo .meta .badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--g2);color:var(--t3);border:1px solid var(--b1)}
+.output-demo .meta .badge.life{background:var(--life-d);color:var(--life);border-color:var(--life-g)}
+.output-demo .meta .badge.soul{background:var(--soul-d);color:var(--soul-l);border-color:var(--soul-g)}
+</style>
+
+<div class="output-demo">
+  <div class="q">🗣️ «<span class="arrow">quel est le CA du mois dernier ?</span>»</div>
+  <div class="sql-box"><span class="label">SQL généré :</span> SELECT SUM(ventes.montant) AS valeur FROM ventes WHERE date_vente >= '2026-08-01' AND date_vente <= '2026-08-16';</div>
+  <table class="result-table">
+    <tr><th>Indicateur</th><th>Valeur</th></tr>
+    <tr><td style="font-weight:600;color:var(--life)">Chiffre d'affaires (mois en cours)</td><td style="font-weight:800;font-size:16px;color:var(--t1)">163 840,99 €</td></tr>
+  </table>
+  <div class="meta">
+    <span class="badge life">🔒 Déterministe</span>
+    <span class="badge">📊 1 ligne · 0 hallucination</span>
+    <span class="badge soul">⏱️ 7 ms</span>
+    <span class="badge">🧩 Source : base ventes (500 enregistrements)</span>
+  </div>
+</div>
+
+<div class="output-demo">
+  <div class="q">🗣️ «<span class="arrow">moyenne des ventes par région</span>»</div>
+  <div class="sql-box"><span class="label">SQL généré :</span> SELECT regions.nom AS groupe, AVG(ventes.montant) AS valeur FROM ventes JOIN regions ON ventes.region_id = regions.id GROUP BY regions.nom ORDER BY valeur DESC;</div>
+  <table class="result-table">
+    <tr><th>Région</th><th>Moyenne (€)</th></tr>
+    <tr><td>🧿 Zurich</td><td>20 542,10</td></tr>
+    <tr><td>🧿 Flanders</td><td>18 321,45</td></tr>
+    <tr><td>🧿 Vaud</td><td>15 876,22</td></tr>
+    <tr><td>…</td><td style="color:var(--t3)">… 15 autres régions</td></tr>
+  </table>
+  <div class="meta">
+    <span class="badge life">🔒 Déterministe</span>
+    <span class="badge">📊 18 lignes · 0 hallucination</span>
+    <span class="badge soul">⏱️ 12 ms</span>
+    <span class="badge">🧩 Source : ventes × régions (jointure)</span>
+  </div>
+</div>
+
+<div class="output-demo">
+  <div class="q">🗣️ «<span class="arrow">nombre d'employés par département</span>»</div>
+  <div class="sql-box"><span class="label">SQL généré :</span> SELECT employes.departement AS groupe, COUNT(employes.salaire) AS valeur FROM employes GROUP BY employes.departement;</div>
+  <table class="result-table">
+    <tr><th>Département</th><th>Effectif</th></tr>
+    <tr><td>💼 Finance</td><td>4</td></tr>
+    <tr><td>💻 Informatique</td><td>5</td></tr>
+    <tr><td>🎯 Marketing</td><td>3</td></tr>
+    <tr><td>👥 RH</td><td>4</td></tr>
+  </table>
+  <div class="meta">
+    <span class="badge life">🔒 Déterministe</span>
+    <span class="badge">📊 4 lignes · 0 hallucination</span>
+    <span class="badge soul">⏱️ 3 ms</span>
+    <span class="badge">🧩 Source : table employés</span>
+  </div>
+</div>
+
+<p style="color:var(--t3);font-size:13px;font-style:italic">
+  Chaque résultat est accompagné de sa provenance : SQL généré, source des données, temps d'exécution, nombre de lignes.
+  Aucun LLM n'a été consulté — le calcul est <b>déterministe</b>.
+</p>
+
+<!-- ═══ CONCLUSION ═══ -->
+<h2 id="conclusion" class="has-line">💡 Conclusion : N+1 vs N+2</h2>
+<p>
+  L'article décrit l'<b>étape N+1</b> : un LLM orchestrateur + des outils spécialisés + une gouvernance à ajouter.
+  C'est une amélioration significative du RAG classique — mais ça reste une architecture centrée sur un LLM, avec
+  ses fragilités (hallucination sur le plan, coût d'infrastructure, complexité multi-systèmes).
+</p>
+<p>
+  <b>HARMONIC AI est à N+2.</b> Nous avons supprimé le LLM du centre et le remplaçons par un moteur de
+  raisonnement déterministe. Pas d'hallucination possible — ni dans la réponse, ni dans l'orchestration,
+  ni dans le calcul. Les hologrammes remplacent 4 systèmes de retrieval par un seul fichier de 2 Mo.
+  La gouvernance est dans l'architecture, pas ajoutée après.
+</p>
+
+<div class="conclusion-card">
+  <div class="stat">L'article décrit l'avenir de l'IA enterprise.</div>
+  <div class="sub" style="margin-top:8px;font-size:16px;color:var(--t1);font-weight:700">
+    HARMONIC AI a déjà construit cet avenir — sans LLM, sans GPU, sans compromis.
+  </div>
+  <div style="margin-top:16px">
+    <a class="btn btn--soul" href="/demo" style="display:inline-block;font-weight:700;font-size:14px;padding:11px 22px;border-radius:10px;background:linear-gradient(135deg,var(--soul),#6a5cff);color:#fff;border:none;margin-right:8px">🧪 Essayer la démo</a>
+    <a class="btn btn--ghost" href="/enterprise/console" style="display:inline-block;font-weight:700;font-size:14px;padding:11px 22px;border-radius:10px;background:var(--g2);color:var(--t1);border:1px solid var(--b2)">🏢 Voir la console Enterprise</a>
+  </div>
+</div>
+
+</article>
+
+<footer>
+  <div class="wrap">
+    <p>© 2026 HARMONIC AI — <a href="/harmonic-ai">Site institutionnel</a> · <a href="/demo">Démo publique</a> · <a href="/enterprise">KA Enterprise</a></p>
+  </div>
+</footer>
+
+</body>
+</html>

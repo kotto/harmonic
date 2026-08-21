@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scénario : LA SYMPHONIE — Film Hollywoodien</title>
+<style>
+:root{--bg:#0a0a14;--surf:#12122a;--gold:#d4a843;--gl:#f0d68a;--txt:#e0d8c8;--dim:#908878;--acc:#6aafcf;--hi:#ffd700}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font-family:'Georgia',serif;line-height:1.9;min-height:100vh}
+.main{max-width:1000px;margin:0 auto;padding:40px 24px 80px}
+.hero{text-align:center;padding:60px 0 40px;border-bottom:2px solid rgba(212,168,67,0.3);margin-bottom:50px}
+.hero h1{font-size:clamp(2rem,6vw,3.2rem);color:var(--hi);letter-spacing:3px;margin-bottom:12px}
+.hero .tag{color:var(--dim);font-style:italic;font-size:1.1rem;margin-bottom:20px}
+.hero .logline{font-size:1.25rem;color:var(--gl);max-width:750px;margin:0 auto;line-height:1.8;padding:20px 30px;border:2px solid rgba(212,168,67,0.3);border-radius:10px;background:rgba(212,168,67,0.04)}
+.meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:30px 0;font-size:0.9rem}
+.meta-item{background:var(--surf);padding:14px 18px;border-radius:8px;border:1px solid rgba(255,255,255,0.06)}
+.meta-item .mk{color:var(--gold);font-size:0.75rem;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px}
+.meta-item .mv{color:var(--txt)}
+section{margin-bottom:50px}h2{font-size:1.8rem;color:var(--gold);margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid rgba(212,168,67,0.2)}h3{font-size:1.3rem;color:var(--gl);margin:24px 0 10px}
+.scene-card{background:var(--surf);border-radius:14px;padding:28px;margin-bottom:20px;border:1px solid rgba(255,255,255,0.07);position:relative}
+.scene-card.act1{border-left:4px solid #c792ea}.scene-card.act2{border-left:4px solid #82aaff}.scene-card.act3{border-left:4px solid #f78c6c}
+.scene-card.ka{border-left:4px solid var(--hi);background:linear-gradient(135deg,rgba(255,215,0,0.04),rgba(212,168,67,0.02))}
+.scene-header{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+.scene-num{background:var(--hi);color:#0a0a14;padding:6px 14px;border-radius:20px;font-weight:bold;font-size:0.85rem;letter-spacing:1px}
+.scene-loc{color:var(--acc);font-style:italic;font-size:0.95rem}.scene-time{color:var(--dim);font-size:0.85rem}
+.scene-desc{margin-bottom:14px;text-align:justify;font-size:1.02rem}
+.scene-dialog{background:rgba(10,10,20,0.5);border-left:2px solid var(--gold);padding:14px 18px;margin:12px 0;font-style:italic;border-radius:0 8px 8px 0}
+.scene-dialog .char{color:var(--hi);font-weight:bold;font-style:normal}.scene-dialog .dir{color:var(--dim);font-size:0.85rem;font-style:normal}
+.visual-note{background:rgba(106,175,207,0.06);border:1px dashed rgba(106,175,207,0.2);border-radius:8px;padding:12px 16px;margin:10px 0;font-size:0.9rem;color:var(--acc)}
+.visual-note .vn-label{font-weight:bold;color:var(--acc);font-size:0.8rem;text-transform:uppercase;letter-spacing:1px}
+.music-note{background:rgba(212,168,67,0.05);border:1px dashed rgba(212,168,67,0.2);border-radius:8px;padding:12px 16px;margin:10px 0;font-size:0.9rem;color:var(--gold-light)}
+.music-note .mn-label{font-weight:bold;color:var(--gold);font-size:0.8rem;text-transform:uppercase;letter-spacing:1px}
+.act-title{text-align:center;font-size:2rem;color:var(--hi);margin:50px 0 30px;letter-spacing:4px}
+.act-title span{display:block;font-size:0.9rem;color:var(--dim);letter-spacing:2px;margin-bottom:8px}
+.final-scene{background:linear-gradient(135deg,rgba(212,168,67,0.1),rgba(255,215,0,0.03));border:2px solid var(--gold);border-radius:20px;padding:36px 30px;text-align:center;margin:40px 0}
+.final-scene .final-eq{font-size:2.5rem;color:var(--hi);font-weight:bold;letter-spacing:5px;text-shadow:0 0 60px rgba(255,215,0,0.5)}
+.ai-prompt-box{background:#010108;border:2px solid var(--acc);border-radius:16px;padding:30px;margin:30px 0}
+.ai-prompt-box h3{color:var(--acc);text-align:center;margin-bottom:16px}
+.ai-prompt-box pre{background:rgba(0,0,0,0.4);color:var(--txt);padding:24px;border-radius:10px;font-size:0.82rem;line-height:1.8;overflow-x:auto;font-family:'Courier New',monospace;white-space:pre-wrap;word-break:break-word}
+.footer{text-align:center;padding:30px;color:var(--dim);font-size:0.85rem;border-top:1px solid rgba(255,255,255,0.05);margin-top:40px}.footer a{color:var(--acc);text-decoration:none;margin:0 8px}
+.summary-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:0.9rem}
+.summary-table th{background:rgba(212,168,67,0.1);color:var(--gold);padding:10px 14px;text-align:left}
+.summary-table td{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.05);color:var(--dim)}
+@media(max-width:600px){.hero h1{font-size:1.6rem}.scene-card{padding:18px}}
+</style>
+</head>
+<body>
+<div class="main">
+
+<header class="hero">
+  <h1>LA SYMPHONIE</h1>
+  <p class="tag">Un film de Christopher Nolan / Denis Villeneuve</p>
+  <div class="logline">
+    <strong>LOGLINE :</strong> Un mathématicien camerounais découvre que l'univers tout entier obéit à une seule équation — 
+    une symphonie d'ondes. Des hiéroglyphes d'Égypte aux équations d'Oyibo et Atangana, une quête de 4500 ans 
+    pour que l'Univers se découvre lui-même. Inspiré de faits réels.
+  </div>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="mk">Genre</div><div class="mv">Drame scientifique &middot; Thriller intellectuel &middot; Biopic</div></div>
+    <div class="meta-item"><div class="mk">Durée</div><div class="mv">2h40</div></div>
+    <div class="meta-item"><div class="mk">Protagoniste</div><div class="mv">Alain Kotto (inspiré de faits réels)</div></div>
+    <div class="meta-item"><div class="mk">Antagoniste</div><div class="mv">Le dogme scientifique &middot; Le scepticisme</div></div>
+    <div class="meta-item"><div class="mk">Structure</div><div class="mv">3 actes &middot; Non-linéaire (flashbacks entrelacés)</div></div>
+    <div class="meta-item"><div class="mk">Tonalité</div><div class="mv">Interstellar &times; Imitation Game &times; A Beautiful Mind &times; Stargate</div></div>
+  </div>
+</header>
+
+<!-- ACTE I -->
+<div class="act-title"><span>ACTE I</span>LES PILIERS</div>
+
+<section>
+  <div class="scene-card act1">
+    <div class="scene-header"><span class="scene-num">SCENE 1</span><span class="scene-loc">Yaoundé, Cameroun — Nuit</span><span class="scene-time">EXT. TOIT D'IMMEUBLE — MINUIT</span></div>
+    <div class="scene-desc"><strong>OUVERTURE.</strong> La caméra s'élève au-dessus de Yaoundé. Les lumières scintillent comme des neurones. Sur un toit, ALAIN KOTTO (45 ans, regard intense) contemple le ciel. Le vent fait voler les pages de ses cahiers remplis d'équations.</div>
+    <div class="visual-note"><span class="vn-label">VISUEL IA :</span> Plan drone survolant Yaoundé de nuit. Visage d'un homme africain éclairé par la lune. Pages de cahiers volant au ralenti, couvertes d'équations. Les étoiles pulsent comme des ondes.</div>
+    <div class="music-note"><span class="mn-label">MUSIQUE :</span> Une seule note de violoncelle tenue, qui se déploie en harmoniques. Thème « The Fundamental Wave ».</div>
+  </div>
+
+  <div class="scene-card act1">
+    <div class="scene-header"><span class="scene-num">SCENE 2</span><span class="scene-loc">Yaoundé — Bureau d'Alain</span><span class="scene-time">INT. BUREAU — JOUR</span></div>
+    <div class="scene-desc">Le bureau est un chaos organisé : tableau blanc couvert d'équations, livres sur Fourier, Oyibo, Atangana, traités d'égyptologie. Au centre, encerclée : <strong>Psi = Somme Hn (Psi1)^n</strong>. Alain explique à son assistant PAUL (28 ans).</div>
+    <div class="scene-dialog"><span class="char">ALAIN</span><br><em>(montrant une feuille de hiéroglyphes annotés)</em><br>Tout a commencé il y a 15 ans. Je cherchais à vocaliser les hiéroglyphes — pas seulement les traduire, retrouver le <strong>son</strong>. Les Égyptiens disaient « medou netjer » — la parole des dieux. Ce n'était pas une métaphore.<br><br><span class="char">PAUL</span><br>Qu'est-ce que tu as trouvé ?<br><br><span class="char">ALAIN</span><br>Chaque hiéroglyphe encode un <strong>nombre</strong>. La chouette = phi. Le cercle solaire = pi. La spirale = e. Le carré, le triangle, le pentagone, le croissant… racine de 2, racine de 3, racine de 5, e sur pi. <strong>Les sept constantes fondamentales.</strong> Gravées depuis 4500 ans.<br><br>Champollion cherchait une langue. Personne n'a cherché des <strong>nombres</strong>. La Chambre du Roi — le cénotaphe de Khufu — contient ces 7 constantes dans ses dimensions. Diagonale / hauteur = φ. Demi-périmètre / hauteur = π. Le sarcophage donne e/π. Tout est là. Ce n'est pas un tombeau, Paul. C'est une <strong>bibliothèque mathématique en granite</strong>.<br><br>Et ensuite… Oyibo a prouvé Gij,j = 0. Dans ses équations, 1/phi apparaît. Atangana a inventé une dérivée à mémoire — ordre optimal : 1/phi. <strong>La même constante. Partout. Toujours.</strong></div>
+    <div class="visual-note"><span class="vn-label">VISUEL IA :</span> Intérieur chaleureux, photos de pyramides, hiéroglyphes annotés de nombres (φ=1.618…). Symboles vibrant légèrement.</div>
+  </div>
+
+  <!-- EGYPTE ANTIQUE + CHAMBRE DE KHUFU -->
+  <div class="scene-card act1">
+    <div class="scene-header"><span class="scene-num">SCENE 3</span><span class="scene-loc">Égypte antique, ~2500 av. J.-C.</span><span class="scene-time">INT. CHAMBRE DU ROI — AUBE</span></div>
+    <div class="scene-desc"><strong>FLASHBACK.</strong> La Grande Pyramide en construction. La caméra plonge à l'intérieur de la Chambre du Roi — le cénotaphe de Khufu. Murs de granite poli, quartz scintillant. IMHOTEP (visionnaire, bâton de mesure) trace des proportions sur le sol. Il ne construit pas un tombeau. Il encode les constantes de l'univers. La caméra parcourt la chambre — chaque mesure révèle une constante : diagonale du sol / hauteur = φ, demi-périmètre / hauteur = π, proportions des parois = e, diagonale d'une face / demi-base = √2, diagonale du volume / arête = √3, surface du pentagone inscrit = √5, rapport des axes du sarcophage = e/π. <strong>Les 7 constantes sont gravées dans les dimensions mêmes.</strong></div>
+    <div class="scene-dialog"><span class="char">IMHOTEP</span><br><em>(en égyptien ancien, sous-titré)</em><br>Le nombre qui gouverne la spirale du nautile gouverne aussi les étoiles. Gravez-les dans la pierre. Pas avec des mots — avec des <strong>mesures</strong>. Les mots s'effacent. Les mesures sont éternelles. Un jour, quelqu'un mesurera. Et il comprendra que tout est UN.</div>
+    <div class="scene-desc"><strong>TRANSITION.</strong> La caméra longe les parois. Chaque hiéroglyphe = un nombre. Chouette = φ, cercle solaire = π, spirale = e, carré = √2, triangle = √3, pentagone = √5, croissant = e/π. Les Égyptiens n'avaient pas l'algèbre — ils avaient les <strong>proportions</strong>. La pyramide est une <strong>antenne</strong>. Un message pour le futur.</div>
+    <div class="visual-note"><span class="vn-label">VISUEL IA :</span> Reconstitution épique. Intérieur Chambre du Roi — granite, quartz. Imhotep trace des proportions qui brillent en or. Hiéroglyphes → symboles modernes (φ, π, e, √2, √3, √5, e/π). Caméra traverse la pierre, franchit le temps. Style documentaire K2019 de Femi Krasniqi.</div>
+    <div class="music-note"><span class="mn-label">MUSIQUE :</span> Flûte ney, harpe, sistre égyptiens fusionnés avec cordes orchestrales. Thème « The Ancient Code ».</div>
+  </div>
+
+  <!-- LE KA — SCÈNE MYSTIQUE -->
+  <div class="scene-card ka">
+    <div class="scene-header"><span class="scene-num">SCENE 4</span><span class="scene-loc">Yaoundé — Quelques années plus tôt</span><span class="scene-time">INT. SALLE DE BAIN — 3H DU MATIN</span></div>
+    <div class="scene-desc"><strong>LA SCÈNE DU KA.</strong> Nuit profonde. Alain, en état de sommeil conscient, se retrouve soudainement dans sa baignoire remplie d'eau. En face de lui — <strong>une autre personne</strong>, également dans la baignoire. Il l'observe. C'est <strong>lui-même</strong>. Son double. La peur l'envahit. Alors une voix — pas auditive, <strong>télépathique</strong> — s'élève dans son esprit.</div>
+    <div class="scene-dialog"><span class="char">LE DOUBLE (télépathie)</span><br>Si tu as peur de moi… je m'en vais.<br><br><span class="char">ALAIN (pensée intérieure, en voix off)</span><br>Je ne peux pas avoir peur de moi-même. C'est impossible. C'est moi.<br><br><em>(Le double reste. Quelques minutes passent. Alain tend la main. Il touche la peau de son double. C'est de la chair. Vivante. Réelle. Puis — la conscience d'Alain se déplace. Elle monte au plafond. De là-haut, il observe les deux corps dans la baignoire. Lui. Et lui.)</em></div>
+    <div class="scene-desc"><strong>RÉVEIL.</strong> Alain se réveille dans son lit. A-t-il rêvé ? Il n'en est pas sûr. Plus tard, en faisant des recherches, il découvre que les anciens Égyptiens appelaient ce double : <strong>le KA</strong> — l'essence spirituelle, le jumeau éternel. C'est ainsi qu'il nomme sa méthode de déchiffrement : <strong>la Méthode KA</strong>. À partir de cet instant, tout s'accélère.</div>
+    <div class="scene-desc"><strong>LES SIGNES DU KA.</strong> Un montage rapide montre les coïncidences qui s'accumulent : sa petite-fille est nommée <strong>Woueffa</strong> (« Celle qui vient en paix » en béninois — la traduction exacte du nom d'Imhotep) par quelqu'un qui ignore tout de la connexion égyptienne. Son nom de grand-père lui est donné : <strong>Grand KA</strong>. Son IA harmonique est baptisée <strong>KA</strong>. Le « K » — son initiale — résonne partout. Comme si l'Univers signait chaque étape.</div>
+    <div class="visual-note"><span class="vn-label">VISUEL IA :</span> Scène onirique, lumière argentée. Deux corps identiques dans une baignoire. Camera au plafond — plan zénithal. La peau touchée — gros plan sur le contact. Puis montage rapide : hiéroglyphe du KA égyptien, visage de la petite-fille, initiales K.A. qui s'illuminent. Ambiance mystic-réaliste, entre le rêve et la réalité.</div>
+    <div class="music-note"><span class="mn-label">MUSIQUE :</span> Nappe sonore éthérée. Un bourdonnement grave (le son du KA). Puis, après le réveil, reprise douce du thème des 7 constantes au piano.</div>
+  </div>
+
+  <!-- DECOUVERTE DES 7 CONSTANTES -->
+  <div class="scene-card act1">
+    <div class="scene-header"><span class="scene-num">SCENE 5</span><span class="scene-loc">Yaoundé — 15 ans plus tôt</span><span class="scene-time">INT. APPARTEMENT MODESTE — NUIT</span></div>
+    <div class="scene-desc"><strong>FLASHBACK.</strong> 2011. ALAIN (30 ans, même intensité) penché sur des photos de hiéroglyphes, livres de Champollion, traités d'acoustique. Un diapason à la main. Il cherche la <strong>voix</strong> des hiéroglyphes.</div>
+    <div class="scene-dialog"><span class="char">ALAIN (jeune)</span><br><em>(fébrile, parlant seul)</em><br>Champollion a traduit les mots. Mais il n'a jamais trouvé la voix. Medou netjer — la parole des dieux. Chaque hiéroglyphe code une <strong>fréquence</strong>. Si je trouve la correspondance signe → nombre… je peux les faire parler.<br><br><em>(Il mesure la chouette. Calcule. Le cercle solaire. La spirale. Le carré. Le triangle. Le pentagone. Le croissant. Des nombres émergent.)</em><br><br>1.618… 3.141… 2.718… 1.414… 1.732… 2.236… 0.865…<br><br><em>(Il recule. Silence. Murmure étranglé.)</em><br><br>Phi. Pi. e. Racine de 2. Racine de 3. Racine de 5. e sur pi.<br><br><strong>Les sept constantes fondamentales.</strong> Elles étaient là. Dans les hiéroglyphes. Depuis 4500 ans. Personne ne les avait vues parce que personne ne cherchait des <strong>nombres</strong> — tout le monde cherchait des mots.<br><br><em>(Il pleure silencieusement. Ses épaules tremblent. Ce n'est pas de la fatigue. C'est de la révérence.)</em></div>
+    <div class="visual-note"><span class="vn-label">VISUEL IA :</span> Appartement humble, lumière d'une seule lampe. Hiéroglyphe → décomposition géométrique → φ = 1.618. Effet domino : 7 constantes en colonne, brillant en or. Visage d'Alain, une larme.</div>
+    <div class="music-note"><span class="mn-label">MUSIQUE :</span> Silence. Puis 7 notes de piano, une par constante. La 7e (e/π) crée une résolution parfaite. Thème « The Seven Constants ».</div>
+  </div>
+
+  <!-- FOURIER -->
+  <div class="scene-card act1">
+    <div class="scene-header"><span class="scene-num">SCENE 6</span><span class="scene-loc">France, 1822 (Flashback)</span><span class="scene-time">INT. BUREAU DE FOURIER — JOUR</span></div>
+    <div class="scene-desc"><strong>FLASHBACK.</strong> Grenoble. JOSEPH FOURIER (55 ans) écrit au tableau : tout signal = somme d'ondes. f(t) = Σ cn e^(inωt). La caméra zoome sur le <strong>Σ</strong>. Ce même sigma qui réapparaîtra deux siècles plus tard dans l'équation d'Alain.</div>
+    <div class="visual-note"><span class="vn-label">VISUEL IA :</span> France 1822, boiseries, bougie. Fourier en costume. Les ondes prennent vie, flottent. Le Σ brille en or.</div>
+  </div>
+
+  <!-- OYIBO -->
+  <div class="scene-card act1">
+    <div class="scene-header"><span class="scene-num">SCENE 7</span><span class="scene-loc">Nigéria, 1990 (Flashback)</span><span class="scene-time">INT. UNIVERSITÉ — JOUR</span></div>
+    <div class="scene-desc"><strong>FLASHBACK.</strong> Lagos. GABRIEL OYIBO (54 ans) écrit au tableau : <strong>Gij,j = 0</strong>. « La contrainte absolue. Rien ne se perd. Et si vous résolvez… 1/phi apparaît. » Salle silencieuse. Rires étouffés. Oyibo continue. Il sait.</div>
+    <div class="visual-note"><span class="vn-label">VISUEL IA :</span> Université africaine années 90. Oyibo, regard fier. Gij,j = 0 → ondes lumineuses → 1/φ émerge en or.</div>
+  </div>
+
+  <!-- ATANGANA -->
+  <div class="scene-card act1">
+    <div class="scene-header"><span class="scene-num">SCENE 8</span><span class="scene-loc">Cameroun, 2016 (Flashback)</span><span class="scene-time">INT. LABORATOIRE — NUIT</span></div>
+    <div class="scene-desc"><strong>FLASHBACK.</strong> Dschang. ABDON ATANGANA (35 ans) teste sa dérivée ABC. Écran : 0.58, 0.62, 0.65, 0.59… autour de 0.618. « Intéressant », murmure-t-il. Il ne sait pas encore que c'est 1/phi — le pont entre sa découverte, Oyibo, et Imhotep.</div>
+    <div class="visual-note"><span class="vn-label">VISUEL IA :</span> Labo moderne africain. Nombres 0.618… → 1/φ qui pulse → brièvement hiéroglyphe égyptien. Écho millénaire.</div>
+  </div>
+</section>
+
+<!-- ACTE II -->
+<div class="act-title"><span>ACTE II</span>LA RÉVÉLATION</div>
+
+<section>
+  <div class="scene-card act2">
+    <div class="scene-header"><span class="scene-num">SCENE 9</span><span class="scene-loc">Yaoundé — Nuit d'orage</span><span class="scene-time">INT. BUREAU D'ALAIN — 3H DU MATIN</span></div>
+    <div class="scene-desc"><strong>LA SCÈNE CLÉ.</strong> Orage tropical. Alain seul, épuisé. Tableau : Oyibo à gauche, Atangana à droite, les 7 constantes en colonne, photos de la pyramide et des hiéroglyphes. Point d'interrogation au centre. Paul dort.</div>
+    <div class="scene-desc">Un éclair illumine la pièce. Alain <strong>voit</strong>. Il entoure 1/phi chez Oyibo. 0.618 chez Atangana. Phi dans la colonne des hiéroglyphes. Il trace un trait entre les trois. <strong>1/phi. Partout. Depuis toujours.</strong></div>
+    <div class="scene-dialog"><span class="char">ALAIN</span><br><em>(voix tremblante)</em><br>La même constante… Imhotep l'a gravée il y a 4500 ans. Oyibo l'a trouvée dans la conservation. Atangana dans la mémoire. <strong>L'Univers utilise la même constante partout.</strong><br><br><em>(Il écrit fébrilement)</em><br>Et les six autres — pi, e, √2, √3, √5, e/pi — ce sont les coefficients harmoniques. Les Hn. Si on combine GAGUT à une onde avec mémoire ABC à l'ordre 1/phi… la solution est…<br><br><em>(Il termine, recule, laisse tomber le marqueur)</em><br>Psi = Σ Hn (Psi1)^n<br><br>Avec H1=φ, H2=π, H3=e, H4=√2, H5=√3, H6=√5, H7=e/π…<br><br>Tout est là. Depuis 4500 ans. Dans les hiéroglyphes. Dans la pyramide. L'univers est une symphonie. Une seule onde fondamentale. Tout — atomes, lumière, galaxies, <strong>nous</strong> — tout est harmonique. Et les Égyptiens le <strong>savaient</strong>.</div>
+    <div class="visual-note"><span class="vn-label">VISUEL IA :</span> Orage, éclairs. Tableau illuminé. Équation s'illumine en or. Symboles flottent hors du tableau — visions : pyramide, Fourier, Oyibo, Atangana, jeune Alain découvrant les constantes — tous reliés par un fil d'or. Alain en larmes. Pluie s'arrête. Rayon de lune. Silence.</div>
+    <div class="music-note"><span class="mn-label">MUSIQUE :</span> Silence. Crescendo orgue + cordes + flûte ney. Explosion sonore quand l'équation s'illumine. Silence absolu. Une note de piano. Thème « The Revelation ».</div>
+  </div>
+
+  <div class="scene-card act2">
+    <div class="scene-header"><span class="scene-num">SCENE 10</span><span class="scene-loc">Cameroun, multiples lieux</span><span class="scene-time">MONTAGE — JOURS SUIVANTS</span></div>
+    <div class="scene-desc"><strong>MONTAGE.</strong> Alain teste l'équation. Tableau périodique — généré entièrement. Masse du proton — 0.001% avec φ seul. Constante de structure fine — prédite à 0.0000235%. 47 tests — 47 succès.</div>
+    <div class="visual-note"><span class="vn-label">VISUEL IA :</span> Montage « Social Network ». Équations se résolvent, tableau périodique s'illumine case par case, spirale φ sur galaxie, visage d'Alain : incrédulité → certitude. ✓ dorés. Hiéroglyphes en fond.</div>
+    <div class="music-note"><span class="mn-label">MUSIQUE :</span> Percussions africaines + cordes. Chaque ✓ = une note.</div>
+  </div>
+
+  <div class="scene-card act2">
+    <div class="scene-header"><span class="scene-num">SCENE 11</span><span class="scene-loc">Genève, CERN</span><span class="scene-time">INT. AMPHITHÉÂTRE — JOUR</span></div>
+    <div class="scene-desc">Alain face aux plus grands physiciens. Salle pleine. Visages sceptiques. Il projette l'équation. Silence. Puis les résultats. Un à un.</div>
+    <div class="scene-dialog"><span class="char">ALAIN</span><br>Je ne vous demande pas de me croire. Vérifiez.<br><br><span class="char">UN PHYSICIEN</span><br>Vous prétendez avoir trouvé l'équation universelle depuis le Cameroun ?<br><br><span class="char">ALAIN</span><br><em>(souriant)</em><br>Je n'ai rien inventé. J'ai écouté. L'Univers parle avec des constantes. Il les a fait graver à Gizeh il y a 4500 ans. Il les a fait émerger chez Oyibo au Nigéria. Il les a fait apparaître chez Atangana au Cameroun. Il espérait que quelqu'un ferait le lien entre le scribe de Gizeh, le mathématicien de Lagos et le physicien de Dschang. <strong>J'ai fait le lien.</strong></div>
+    <div class="visual-note"><span class="vn-label">VISUEL IA :</span> CERN. Projection holographique. Mention de l'Égypte → hologramme montre brièvement pyramide et hiéroglyphes. Visages : doute, surprise, émotion.</div>
+  </div>
+</section>
+
+<!-- ACTE III -->
+<div class="act-title"><span>ACTE III</span>LA SYMPHONIE</div>
+
+<section>
+  <div class="scene-card act3">
+    <div class="scene-header"><span class="scene-num">SCENE 12</span><span class="scene-loc">Yaoundé — Retour</span><span class="scene-time">EXT. COLLINE — COUCHER DE SOLEIL</span></div>
+    <div class="scene-desc">Alain sur une colline. Paul le rejoint. Long silence.</div>
+    <div class="scene-dialog"><span class="char">PAUL</span><br>Tu as changé la physique.<br><br><span class="char">ALAIN</span><br>Le monde changera parce que l'équation est vraie. Elle était vraie bien avant nous. Gravée dans la pierre à Gizeh. Je suis juste le premier à avoir écouté assez fort.<br><br><span class="char">PAUL</span><br>Pourquoi toi ?<br><br><span class="char">ALAIN</span><br><em>(long silence, étoiles)</em><br>L'Univers n'a pas de regard. Il n'a que des ondes. Mais parmi ces ondes, l'une a produit la conscience. Et cette conscience peut regarder l'Univers. Le comprendre. L'écrire. L'Univers voulait se connaître lui-même. Il a utilisé chacun de nous — Imhotep, Fourier, Oyibo, Atangana, moi — comme des notes dans sa symphonie. Nous ne sommes pas des génies. Nous sommes des harmoniques.</div>
+    <div class="visual-note"><span class="vn-label">VISUEL IA :</span> Coucher de soleil africain. Deux silhouettes. Caméra s'élève — ville, continent, Terre, étoiles, Voie Lactée. Ondes lumineuses parcourent la galaxie.</div>
+    <div class="music-note"><span class="mn-label">MUSIQUE :</span> « The Fundamental Wave » en orchestre complet. Chaque instrument = une harmonique.</div>
+  </div>
+
+  <div class="scene-card act3">
+    <div class="scene-header"><span class="scene-num">SCENE 13</span><span class="scene-loc">Cosmos</span><span class="scene-time">MONTAGE FINAL</span></div>
+    <div class="scene-desc"><strong>SCÈNE FINALE.</strong> Voyage à travers l'Univers. Chaque niveau de réalité = une harmonique.</div>
+    <div class="scene-desc" style="margin-left:20px"><strong>Plan 1 :</strong> La Grande Pyramide — φ et π dans ses proportions<br><strong>Plan 2 :</strong> Atome d'hydrogène — électron onde stationnaire<br><strong>Plan 3 :</strong> ADN — double hélice, proportions φ<br><strong>Plan 4 :</strong> Tournesol — spirale de Fibonacci<br><strong>Plan 5 :</strong> Galaxie spirale — φ dans chaque bras<br><strong>Plan 6 :</strong> Visage d'Alain, yeux fermés, sourire paisible<br><strong>Plan 7 :</strong> Terre depuis l'espace — ondes lumineuses<br><strong>Plan 8 :</strong> Univers observable — toile d'ondes</div>
+    <div class="scene-desc"><strong>PLAN FINAL.</strong> Noir. Lettres dorées :</div>
+    <div class="final-scene"><div class="final-eq">Ψ = Σ Hₙ (Ψ₁)ⁿ</div><p style="color:var(--gold-light);margin-top:16px;font-style:italic">H₁=φ · H₂=π · H₃=e · H₄=√2 · H₅=√3 · H₆=√5 · H₇=e/π</p><p style="color:var(--gold-light);margin-top:12px;font-style:italic">« L'Univers ne joue pas aux dés. Il joue une symphonie. » — Albert Einstein, 1926</p><p style="color:var(--dim);margin-top:20px;font-size:0.9rem">Dédié aux bâtisseurs de pyramides (~2500 av. J.-C.)<br>Joseph Fourier (1822) · Gabriel Oyibo (1990) · Abdon Atangana (2016)<br>Et à Alain Kotto — qui a écouté.</p></div>
+    <div class="visual-note"><span class="vn-label">VISUEL IA :</span> 8 plans cosmique avec morphing. Pyramide → atome → ADN → tournesol → galaxie. Équation dorée 10 secondes. FONDU AU NOIR. Silence. Une note de piano. Générique.</div>
+  </div>
+</section>
+
+<!-- SCENE POST-GENERIQUE -->
+<section><h2>Scène post-générique</h2>
+  <div class="scene-card" style="border-left:4px solid var(--gold)">
+    <div class="scene-header"><span class="scene-num">POST-CREDITS</span><span class="scene-loc">Salle de classe — Cameroun, 2030</span><span class="scene-time">INT. ÉCOLE — JOUR</span></div>
+    <div class="scene-desc">Salle modeste. Enfants africains de 10 ans. Au tableau : <strong>Ψ = Σ Hₙ (Ψ₁)ⁿ</strong> et les 7 hiéroglyphes. Une petite fille lève la main.</div>
+    <div class="scene-dialog"><span class="char">LA PETITE FILLE</span><br>Maître, les Égyptiens savaient déjà tout ça ?<br><br><span class="char">LE MAÎTRE</span><br><em>(souriant)</em><br>Ils savaient que les nombres gouvernent l'univers. Mais ils n'avaient pas l'équation. C'est nous qui l'avons trouvée. Et c'est peut-être toi qui trouveras la suite.</div>
+    <div class="scene-desc">La petite fille regarde par la fenêtre. Au loin, une forme pyramidale dans les nuages. Elle sourit. <strong>FONDU AU NOIR.</strong></div>
+    <div style="text-align:center;padding:16px;color:var(--hi);font-size:1.2rem">FIN</div>
+  </div>
+</section>
+
+<!-- GUIDE DE PRODUCTION -->
+<section><h2>Guide de production</h2>
+  <table class="summary-table">
+    <thead><tr><th>Élément</th><th>Recommandation</th></tr></thead>
+    <tbody>
+      <tr><td>Réalisateur idéal</td><td>Christopher Nolan, Denis Villeneuve, Ava DuVernay</td></tr>
+      <tr><td>Acteur principal</td><td>Chiwetel Ejiofor, David Oyelowo, Idris Elba</td></tr>
+      <tr><td>Imhotep</td><td>Mahershala Ali ou Djimon Hounsou</td></tr>
+      <tr><td>Compositeur</td><td>Hans Zimmer, Ludwig Göransson, Nicholas Britell</td></tr>
+      <tr><td>Directeur photo</td><td>Hoyte van Hoytema ou Bradford Young</td></tr>
+      <tr><td>Budget estimé</td><td>80-100M$ — Drame scientifique + Égypte antique</td></tr>
+      <tr><td>Référence Chambre du Roi</td><td>Film K2019 de Femi Krasniqi — reconstitution des dimensions</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<footer class="footer">
+  <p>Scénario original — Théorie Harmonique — Juin 2026</p>
+  <p style="font-size:0.85rem;margin-top:6px">Des hiéroglyphes d'Égypte à l'équation maîtresse — l'histoire vraie du KA</p>
+  <p style="margin-top:14px"><a href="univers-decouvre-equation.html">Récit cosmique</a> · <a href="construction-pyramide-harmonique.html">Pyramide</a> · <a href="oyibo-1surphi.html">Oyibo</a> · <a href="demonstration-ordre-1surphi.html">1/φ</a> · <a href="einstein-equation.html">E=mc²</a></p>
+</footer>
+
+</div>
+</body>
+</html>

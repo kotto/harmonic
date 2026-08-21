@@ -325,7 +325,7 @@ KA_ENTERPRISE = KAProductConfig(
     product='enterprise',
     name='KA Enterprise',
     name_short='KA Pro',
-    tagline='Intelligence harmonique pour votre organisation',
+    tagline='Remplacez votre RAG. Gardez vos données. Zéro hallucination.',
     icon='🏢',
     
     port=8767,

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KA Hologramme — Assets visuels</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #030303; font-family: 'Inter', sans-serif; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
+  .container { max-width: 1200px; width: 100%; }
+  h1 { color: #00F2FF; font-size: 32px; margin-bottom: 8px; font-weight: 300; letter-spacing: 4px; text-transform: uppercase; }
+  h2 { color: #FFB300; font-size: 18px; font-weight: 400; margin-bottom: 40px; letter-spacing: 2px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; margin-bottom: 60px; }
+  
+  /* Téléphone mockup */
+  .phone {
+    background: #0a0a1a;
+    border: 1px solid rgba(0,242,255,0.2);
+    border-radius: 40px;
+    padding: 20px 12px;
+    width: 340px;
+    margin: 0 auto;
+    box-shadow: 0 0 60px rgba(0,242,255,0.05), inset 0 0 60px rgba(0,0,0,0.5);
+    position: relative;
+  }
+  .phone .notch {
+    width: 120px; height: 24px;
+    background: #030303;
+    border-radius: 0 0 16px 16px;
+    margin: -20px auto 16px;
+  }
+  .phone .screen {
+    background: #07070f;
+    border-radius: 4px;
+    min-height: 600px;
+    padding: 16px;
+    font-size: 13px;
+  }
+  
+  /* Éléments d'interface KA */
+  .hud-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid rgba(0,242,255,0.1);
+    margin-bottom: 16px;
+  }
+  .hud-header .logo { color: #00F2FF; font-weight: 600; font-size: 16px; letter-spacing: 2px; }
+  .hud-header .time { color: rgba(0,242,255,0.4); font-size: 12px; }
+  
+  .card {
+    background: rgba(0,242,255,0.04);
+    border: 1px solid rgba(0,242,255,0.1);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .card-amber { border-color: rgba(255,179,0,0.2); }
+  .card-amber .label { color: #FFB300; }
+  
+  .label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: rgba(0,242,255,0.5); margin-bottom: 8px; }
+  .value { font-size: 20px; font-weight: 600; color: #fff; }
+  .value.cyan { color: #00F2FF; }
+  .value.amber { color: #FFB300; }
+  .value.green { color: #00ff88; }
+  
+  .stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(0,242,255,0.05); }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { color: rgba(255,255,255,0.5); font-size: 12px; }
+  .stat-value { color: #00F2FF; font-size: 12px; }
+  
+  .btn {
+    display: block; width: 100%; padding: 12px;
+    background: rgba(0,242,255,0.1);
+    border: 1px solid rgba(0,242,255,0.3);
+    border-radius: 8px;
+    color: #00F2FF; font-size: 14px; font-weight: 600;
+    text-align: center; cursor: pointer;
+    transition: all 0.3s;
+  }
+  .btn:hover { background: rgba(0,242,255,0.2); }
+  .btn-amber { background: rgba(255,179,0,0.1); border-color: rgba(255,179,0,0.3); color: #FFB300; }
+  
+  .progress-bar {
+    height: 4px; background: rgba(0,242,255,0.1); border-radius: 2px;
+    margin: 12px 0; overflow: hidden;
+  }
+  .progress-bar .fill {
+    height: 100%; background: #00F2FF; border-radius: 2px;
+    animation: progress 2s ease-in-out;
+  }
+  @keyframes progress { from { width: 0; } to { width: 100%; } }
+  
+  .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+  .badge-cyan { background: rgba(0,242,255,0.1); color: #00F2FF; border: 1px solid rgba(0,242,255,0.2); }
+  .badge-green { background: rgba(0,255,136,0.1); color: #00ff88; border: 1px solid rgba(0,255,136,0.2); }
+  .badge-amber { background: rgba(255,179,0,0.1); color: #FFB300; border: 1px solid rgba(255,179,0,0.2); }
+  
+  .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .comparison .side { padding: 12px; border-radius: 8px; }
+  .comparison .side.chatgpt { background: rgba(255,0,0,0.05); border: 1px solid rgba(255,0,0,0.2); }
+  .comparison .side.ka { background: rgba(0,255,136,0.05); border: 1px solid rgba(0,255,136,0.2); }
+  .side .title { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
+  .side.chatgpt .title { color: #ff4444; }
+  .side.ka .title { color: #00ff88; }
+  .side .response { font-size: 12px; line-height: 1.5; }
+  .side .time { font-size: 10px; margin-top: 8px; opacity: 0.5; }
+  
+  .hologram-list { margin-top: 12px; }
+  .hologram-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px; border-bottom: 1px solid rgba(0,242,255,0.05);
+  }
+  .hologram-item:last-child { border-bottom: none; }
+  .hologram-item .name { color: #fff; font-size: 14px; }
+  .hologram-item .meta { color: rgba(255,255,255,0.3); font-size: 11px; }
+  .hologram-item .status { font-size: 10px; letter-spacing: 1px; }
+  
+  /* Logo animation */
+  .logo-ka {
+    display: flex; align-items: center; justify-content: center;
+    width: 80px; height: 80px;
+    margin: 0 auto 20px;
+  }
+  .logo-ka svg { width: 100%; height: 100%; }
+  
+  .section-title { color: #FFB300; font-size: 14px; letter-spacing: 3px; text-transform: uppercase; margin: 40px 0 20px; text-align: center; }
+  
+  .tv-analogy { text-align: center; padding: 30px; }
+  .tv-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; max-width: 320px; margin: 20px auto; }
+  .tv-channel { aspect-ratio: 1; border-radius: 2px; background: rgba(0,242,255,0.1); }
+  .tv-channel.active { background: #00F2FF; box-shadow: 0 0 8px rgba(0,242,255,0.5); }
+  .tv-channel.inactive { background: rgba(255,255,255,0.05); }
+  .tv-label { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<h1>KA Hologramme</h1>
+<h2>ASSETS VISUELS — PRODUCTION VIDÉO</h2>
+
+<!-- Scène 5 : Création d'hologramme -->
+<div class="section-title">📱 Scène 5 — Création d'un hologramme</div>
+<div class="grid">
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="screen">
+      <div class="hud-header">
+        <span class="logo">KA</span>
+        <span class="time">HOLOGRAMME</span>
+      </div>
+      <div class="card">
+        <div class="label">Nouvel hologramme</div>
+        <div class="value" style="font-size:16px; margin-bottom:12px;">Expert couverture</div>
+        <div class="label">Exemples (5 minimum)</div>
+        <div style="background:rgba(0,242,255,0.05); border-radius:4px; padding:8px; font-size:11px; color:rgba(255,255,255,0.6); margin-bottom:8px;">
+          ✓ "100m² → 1200 tuiles"<br>
+          ✓ "150m² → 1800 tuiles"<br>
+          ✓ "200m² → 2400 tuiles"<br>
+          ✓ "Pente 30° → ×1.15"<br>
+          ✓ "Marge 15% → ×0.85"
+        </div>
+        <div class="label">Progression</div>
+        <div class="progress-bar"><div class="fill" style="width:100%"></div></div>
+        <div style="text-align:right; font-size:11px; color:rgba(0,242,255,0.5);">2 min 03s</div>
+      </div>
+      <div style="text-align:center; margin-top:8px;">
+        <span class="badge badge-green">✓ Hologramme prêt</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scène 6 : Hologramme créé -->
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="screen">
+      <div class="hud-header">
+        <span class="logo">KA</span>
+        <span class="time">MES HOLOGRAMMES</span>
+      </div>
+      <div class="hologram-list">
+        <div class="hologram-item">
+          <div>
+            <div class="name">🏠 Couverture toiture</div>
+            <div class="meta">5 exemples · 2 min · 100%</div>
+          </div>
+          <span class="badge badge-green" style="font-size:9px;">ACTIF</span>
+        </div>
+        <div class="hologram-item">
+          <div>
+            <div class="name">💰 Finance personnelle</div>
+            <div class="meta">12 exemples · 3 min · 95%</div>
+          </div>
+          <span class="badge badge-cyan" style="font-size:9px;">PRÊT</span>
+        </div>
+        <div class="hologram-item">
+          <div>
+            <div class="name">⚖️ Droit des contrats</div>
+            <div class="meta">8 exemples · 2 min · 100%</div>
+          </div>
+          <span class="badge badge-cyan" style="font-size:9px;">PRÊT</span>
+        </div>
+        <div class="hologram-item">
+          <div>
+            <div class="name">🏥 Diagnostic médical</div>
+            <div class="meta">15 exemples · 4 min · 90%</div>
+          </div>
+          <span class="badge badge-amber" style="font-size:9px;">EN COURS</span>
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn">+ Créer un hologramme</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scène 7-8 : Comparaison ChatGPT vs KA -->
+<div class="section-title">⚖️ Scène 7-8 — Comparaison ChatGPT vs KA</div>
+<div class="grid">
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="screen">
+      <div class="hud-header">
+        <span class="logo" style="color:#ff4444;">CHATGPT</span>
+        <span class="time">GÉNÉRALISTE</span>
+      </div>
+      <div style="padding:8px 0; font-size:12px; color:rgba(255,255,255,0.7); margin-bottom:12px;">
+        Combien de tuiles pour 150m² ?
+      </div>
+      <div class="card" style="border-color:rgba(255,0,0,0.2); background:rgba(255,0,0,0.03);">
+        <div class="label" style="color:#ff4444;">RÉPONSE</div>
+        <div style="font-size:13px; line-height:1.6; color:rgba(255,255,255,0.6);">
+          "Environ 18 000 tuiles, mais cela dépend du type de tuile, de la pente, de la région, du fabricant..."
+        </div>
+        <div style="text-align:right; font-size:10px; color:#ff4444; margin-top:8px;">
+          ⏱ 3.2 secondes · ❌ Approximatif
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="screen">
+      <div class="hud-header">
+        <span class="logo" style="color:#00ff88;">KA</span>
+        <span class="time">HOLOGRAMME COUVERTURE</span>
+      </div>
+      <div style="padding:8px 0; font-size:12px; color:rgba(255,255,255,0.7); margin-bottom:12px;">
+        Combien de tuiles pour 150m² ?
+      </div>
+      <div class="card" style="border-color:rgba(0,255,136,0.2); background:rgba(0,255,136,0.03);">
+        <div class="label" style="color:#00ff88;">RÉPONSE</div>
+        <div style="font-size:20px; font-weight:600; color:#00ff88;">
+          1 800 tuiles
+        </div>
+        <div style="font-size:11px; color:rgba(255,255,255,0.3); margin-top:4px;">
+          INIT(150) MUL(12) = 1800
+        </div>
+        <div style="text-align:right; font-size:10px; color:#00ff88; margin-top:8px;">
+          ⏱ 0.1 seconde · ✅ Exact · 🔗 Trajectoire ψ vérifiable
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scène 10 : Analogie 500 chaînes -->
+<div class="section-title">📺 Scène 10 — Analogie 500 chaînes</div>
+<div class="grid">
+  <div style="background:rgba(0,242,255,0.02); border:1px solid rgba(0,242,255,0.1); border-radius:16px; padding:30px; text-align:center;">
+    <div style="font-size:12px; color:rgba(255,255,255,0.3); letter-spacing:2px; margin-bottom:16px;">LLMs = 500 CHAÎNES</div>
+    <div class="tv-grid">
+      <div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div>
+      <div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel active"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div>
+      <div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div>
+      <div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel active"></div><div class="tv-channel inactive"></div>
+      <div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div>
+      <div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div>
+      <div class="tv-channel active"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div>
+      <div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div>
+      <div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel active"></div>
+      <div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div><div class="tv-channel inactive"></div>
+    </div>
+    <div class="tv-label">Vous en regardez 4-5. Les 496 autres, vous ne les utilisez pas.</div>
+    <div style="margin-top:20px; padding-top:20px; border-top:1px solid rgba(0,242,255,0.1);">
+      <div style="font-size:12px; color:#00F2FF; letter-spacing:2px; margin-bottom:12px;">KA = VOS 4-5 CHAÎNES PRÉFÉRÉES</div>
+      <div style="display:flex; gap:8px; justify-content:center;">
+        <span class="badge badge-cyan">FINANCE</span>
+        <span class="badge badge-cyan">SANTÉ</span>
+        <span class="badge badge-cyan">DROIT</span>
+        <span class="badge badge-cyan">MÉTIER</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scène 11 : 3 produits -->
+<div class="section-title">🏢 Scène 11 — Les 3 produits</div>
+<div class="grid">
+  <div class="card" style="text-align:center; padding:30px;">
+    <div style="font-size:40px; margin-bottom:12px;">📱</div>
+    <div class="value" style="font-size:18px;">KA MOBILE</div>
+    <div style="color:rgba(255,255,255,0.4); font-size:12px; margin:8px 0;">Votre expert dans votre poche</div>
+    <div style="font-size:11px; color:rgba(0,242,255,0.5);">Gratuit · Hors-ligne · Privé</div>
+  </div>
+  <div class="card card-amber" style="text-align:center; padding:30px;">
+    <div style="font-size:40px; margin-bottom:12px;">🏢</div>
+    <div class="value" style="font-size:18px; color:#FFB300;">KA ENTERPRISE</div>
+    <div style="color:rgba(255,255,255,0.4); font-size:12px; margin:8px 0;">Votre expert sur votre serveur</div>
+    <div style="font-size:11px; color:rgba(255,179,0,0.5);">On-premise · RGPD · Audit</div>
+  </div>
+  <div class="card" style="text-align:center; padding:30px;">
+    <div style="font-size:40px; margin-bottom:12px;">🔌</div>
+    <div class="value" style="font-size:18px;">KA API</div>
+    <div style="color:rgba(255,255,255,0.4); font-size:12px; margin:8px 0;">Votre expert dans vos apps</div>
+    <div style="font-size:11px; color:rgba(0,242,255,0.5);">SDK · REST · 0.1ms</div>
+  </div>
+</div>
+
+<!-- Logo KA -->
+<div class="section-title">🎯 Logo KA — Animation</div>
+<div style="text-align:center; padding:30px;">
+  <div class="logo-ka">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#00F2FF"/>
+          <stop offset="100%" stop-color="#0088FF"/>
+        </linearGradient>
+      </defs>
+      <circle cx="50" cy="50" r="45" fill="none" stroke="url(#g)" stroke-width="2" opacity="0.3"/>
+      <circle cx="50" cy="50" r="30" fill="none" stroke="url(#g)" stroke-width="1.5" opacity="0.5"/>
+      <text x="50" y="58" text-anchor="middle" fill="url(#g)" font-size="32" font-weight="700" font-family="Inter, sans-serif">K</text>
+      <line x1="65" y1="35" x2="85" y2="65" stroke="#00F2FF" stroke-width="2" opacity="0.8"/>
+      <line x1="65" y1="65" x2="85" y2="35" stroke="#00F2FF" stroke-width="2" opacity="0.8"/>
+    </svg>
+  </div>
+  <div style="font-size:24px; letter-spacing:8px; color:#00F2FF; font-weight:300;">KA</div>
+  <div style="font-size:11px; color:rgba(255,255,255,0.3); letter-spacing:3px; margin-top:4px;">VOTRE SPÉCIALISTE</div>
+</div>
+
+<!-- Palette couleurs -->
+<div class="section-title">🎨 Palette graphique KA</div>
+<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:16px; margin-bottom:40px;">
+  <div style="background:#030303; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px; text-align:center;">
+    <div style="width:40px; height:40px; border-radius:8px; background:#030303; border:1px solid rgba(255,255,255,0.1); margin:0 auto 8px;"></div>
+    <div style="font-size:12px; color:#fff;">bg.void</div>
+    <div style="font-size:10px; color:rgba(255,255,255,0.3);">#030303</div>
+  </div>
+  <div style="background:#0a0a1a; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px; text-align:center;">
+    <div style="width:40px; height:40px; border-radius:8px; background:#0a0a1a; margin:0 auto 8px;"></div>
+    <div style="font-size:12px; color:#fff;">bg.surface</div>
+    <div style="font-size:10px; color:rgba(255,255,255,0.3);">#0a0a1a</div>
+  </div>
+  <div style="background:#0a0a1a; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px; text-align:center;">
+    <div style="width:40px; height:40px; border-radius:8px; background:#00F2FF; margin:0 auto 8px;"></div>
+    <div style="font-size:12px; color:#fff;">accent.cyan</div>
+    <div style="font-size:10px; color:rgba(255,255,255,0.3);">#00F2FF</div>
+  </div>
+  <div style="background:#0a0a1a; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px; text-align:center;">
+    <div style="width:40px; height:40px; border-radius:8px; background:#FFB300; margin:0 auto 8px;"></div>
+    <div style="font-size:12px; color:#fff;">accent.amber</div>
+    <div style="font-size:10px; color:rgba(255,255,255,0.3);">#FFB300</div>
+  </div>
+  <div style="background:#0a0a1a; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px; text-align:center;">
+    <div style="width:40px; height:40px; border-radius:8px; background:#00ff88; margin:0 auto 8px;"></div>
+    <div style="font-size:12px; color:#fff;">success</div>
+    <div style="font-size:10px; color:rgba(255,255,255,0.3);">#00ff88</div>
+  </div>
+  <div style="background:#0a0a1a; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px; text-align:center;">
+    <div style="width:40px; height:40px; border-radius:8px; background:#ff4444; margin:0 auto 8px;"></div>
+    <div style="font-size:12px; color:#fff;">error</div>
+    <div style="font-size:10px; color:rgba(255,255,255,0.3);">#ff4444</div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

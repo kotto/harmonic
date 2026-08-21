@@ -1,0 +1,115 @@
+# HPU Core — Émulateur de l'Ordinateur Harmonique V2
+# Zéro paramètre. Zéro GPU. Calcul par résonance.
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copie des fichiers essentiels
+COPY hpu_v2_complet.py .
+COPY hpu_v2.py .
+COPY wave_lang.py .
+COPY wave_ir.py .
+COPY wave_compiler.py .
+COPY wave_math.py .
+COPY wave_logic.py .
+COPY wave_sampling.py .
+COPY wave_code.py .
+COPY wave_code_memory.py .
+COPY wave_emit.py .
+COPY wave_decoder.py .
+COPY wave_pipeline.py .
+COPY wave_reasoning.py .
+COPY wave_reasoning_v2.py .
+COPY wave_response.py .
+COPY wave_synthesizer.py .
+COPY wave_styler.py .
+COPY wave_style_engine.py .
+COPY wave_narrative.py .
+COPY wave_poetry.py .
+COPY wave_music.py .
+COPY wave_domains.py .
+COPY wave_bridge.py .
+COPY wave_graph.py .
+COPY wave_algorithms.py .
+COPY wave_tool_use.py .
+COPY wave_conversation.py .
+COPY wave_perplexity.py .
+COPY wave_fine_tune.py .
+COPY wave_debugger_v6.py .
+COPY wave_explainer_v2.py .
+COPY wave_phase.py .
+COPY wave_code_generator.py .
+COPY wave_math.py .
+COPY wave_phase.py .
+COPY wave_ir.py .
+COPY wave_compiler.py .
+COPY ppwave.py .
+COPY ppwave_fast.py .
+COPY demo_zero_hallucination.py .
+COPY demo_phi_optimality.py .
+COPY harmonic_ai.py .
+COPY harmonic_ai_v2.py .
+COPY harmonic_transformer.py .
+COPY harmonic_attention.py .
+COPY conscious_engine.py .
+COPY conscious_creator.py .
+COPY conscious_critic.py .
+COPY conscious_intelligence.py .
+COPY semantic_wave_embedding.py .
+COPY apprentissage_v2.py .
+COPY apprentissage_par_repétition.py .
+COPY validation_coeff_quantiques.py .
+COPY verification_coherence.py .
+COPY verification_valeurs.py .
+COPY verif_xeb_harmonique.py .
+COPY constante_physiques_thu.py .
+COPY generation_physique_quantique.py .
+COPY verif_hamiltonien_tour.py .
+COPY generation_tableau_periodique.py .
+COPY calcul_masses_elements.py .
+COPY depot_e3_tstar.py .
+COPY gw_memoire_ligo.py .
+COPY derivation_observables.py .
+COPY renomalisation_toutes_boucles.py .
+COPY thu_vs_qft.py .
+COPY observables_thu.py .
+COPY matiere_noire_thu.py .
+COPY alpha_derivation_thu.py .
+COPY alpha_deser_em.py .
+COPY alpha_landau_thu.py .
+COPY alpha_self_energy.py .
+COPY dirac_thu.py .
+COPY e1_fractionnal_schrodinger.py .
+COPY unification_qm_rg.py .
+COPY fractalite_oyibo_thu.py .
+COPY laplacien_fractionnaire.py .
+COPY fock_fractionnaire.py .
+COPY fermions_spineurs.py .
+COPY r3_quantification_spin2.py .
+COPY exploration_secteur_n2.py .
+COPY exploration_force_em.py .
+COPY exploration_masse_paquets_ondes.py .
+COPY exploration_masse_potentiel.py .
+COPY exploration_piste6_frft.py .
+COPY exploration_piste5_entropie.py .
+COPY elements_119_plus.py .
+COPY index.html .
+COPY THEORIE_HARMONIQUE_UNIVERSELLE.md .
+COPY TABLEAU_PERIODIQUE_PARTICULES_THU.md .
+COPY THEOREME_T6_MODULO7.md .
+
+# Installer les dépendances
+RUN pip install --no-cache-dir numpy scipy mpmath fastapi uvicorn
+
+# Créer les répertoires de données
+RUN mkdir -p /data/memory /data/holograms /data/benchmarks
+
+# Port de l'API
+EXPOSE 9100
+
+# Santé
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD python -c "from hpu_v2_complet import HPU_V2; h=HPU_V2(); h.etat()" || exit 1
+
+# Lancement
+CMD ["uvicorn", "--host", "0.0.0.0", "--port", "9100", "--app-dir", "/app"]

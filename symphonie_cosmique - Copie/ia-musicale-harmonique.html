@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IA Musicale Harmonique — Composer avec Ψ = Σ Hₙ (Ψ₁)ⁿ</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;line-height:1.8;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 30% 10%,rgba(122,92,255,0.10),transparent 55%),
+             radial-gradient(ellipse at 70% 80%,rgba(62,240,216,0.07),transparent 60%);
+  pointer-events:none;
+}
+.container{max-width:1050px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:6px 13px;border-radius:18px;font-size:0.82em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+.hero{text-align:center;padding:65px 20px 55px;background:linear-gradient(180deg,rgba(122,92,255,0.08) 0%,rgba(62,240,216,0.04) 100%)}
+.hero .badge{display:inline-block;padding:5px 14px;border-radius:14px;font-size:0.80em;font-weight:700;background:rgba(62,240,216,0.12);color:var(--acc);margin-bottom:20px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:2.0em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;line-height:1.3}
+.hero .tagline{font-size:1.05em;color:var(--ink2);max-width:700px;margin:0 auto 8px}
+.hero .meta{color:var(--ink3);font-size:0.85em;margin-top:8px}
+section{padding:45px 0}section:nth-child(even){background:var(--bg2)}
+h2{font-size:1.6em;color:var(--phi);margin-bottom:8px;text-align:center}
+h2 .num{display:block;font-size:0.48em;color:var(--ink3);letter-spacing:2px;margin-bottom:4px;font-weight:400}
+.section-desc{text-align:center;color:var(--ink3);margin-bottom:28px;max-width:700px;margin-left:auto;margin-right:auto;font-size:0.95em}
+h3{font-size:1.15em;color:var(--acc);margin:28px 0 10px}
+h3 .sub{display:block;font-size:0.60em;color:var(--ink3);font-weight:400;letter-spacing:1px;margin-top:2px}
+p{color:var(--ink2);margin-bottom:12px;line-height:1.8}
+p strong{color:var(--ink)}
+em{color:var(--phi2)}
+ul,ol{color:var(--ink2);margin:10px 0 14px 22px;line-height:2.2}
+li{margin-bottom:4px}
+.eq-box{background:rgba(15,12,46,0.8);border:2px solid rgba(212,168,67,0.35);border-radius:18px;padding:22px 28px;margin:22px 0;text-align:center}
+.eq-box .main-eq{font-family:'Courier New','Consolas',monospace;font-size:1.2em;font-weight:700;color:var(--phi);letter-spacing:1px}
+.eq-box .desc{color:var(--ink3);font-size:0.86em;margin-top:8px}
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:0.90em}
+th{background:var(--bg3);color:var(--phi);padding:10px 14px;text-align:left;border-bottom:2px solid rgba(212,168,67,0.25);font-weight:600}
+td{padding:9px 14px;border-bottom:1px solid var(--border);color:var(--ink2);font-size:0.88em}
+td.green{color:var(--green);font-weight:700}
+td.amber{color:var(--phi);font-weight:700}
+.highlight{background:var(--bg3);border:1px solid rgba(62,240,216,0.2);border-radius:14px;padding:18px 22px;margin:20px 0}
+.highlight p:last-child{margin-bottom:0}
+.code-block{background:rgba(15,12,46,0.9);border:1px solid rgba(122,92,255,0.3);border-radius:14px;padding:20px 24px;margin:20px 0;overflow-x:auto}
+.code-block pre{font-family:'Courier New','Consolas',monospace;font-size:0.85em;color:var(--ink2);line-height:1.9;white-space:pre-wrap;word-break:break-word}
+.code-block .kw{color:var(--acc2);font-weight:600}
+.code-block .fn{color:var(--phi)}
+.code-block .num{color:var(--acc)}
+.code-block .str{color:var(--green)}
+.code-block .cm{color:var(--ink3);font-style:italic}
+.result-box{background:rgba(212,168,67,0.04);border:1px solid rgba(212,168,67,0.3);border-radius:14px;padding:18px 22px;margin:20px 0}
+.result-box .label{color:var(--phi);font-weight:600;font-size:0.80em;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.archi-diagram{background:rgba(15,12,46,0.9);border:2px solid rgba(212,168,67,0.25);border-radius:18px;padding:28px;margin:24px 0;text-align:center;font-family:'Courier New',monospace;font-size:0.85em;color:var(--ink2);line-height:2.4}
+.archi-diagram .layer{display:inline-block;background:rgba(122,92,255,0.08);border:1px solid rgba(122,92,255,0.25);border-radius:10px;padding:8px 18px;margin:4px}
+.archi-diagram .arrow-down{display:block;font-size:1.4em;color:var(--phi);margin:2px 0}
+footer{text-align:center;padding:28px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.82em;margin-top:40px}
+footer a{color:var(--phi);text-decoration:none}
+@media(max-width:640px){.hero h1{font-size:1.35em}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Symphonie Cosmique</a>
+    <a href="pour-tous.html">Pour Tous</a>
+    <a href="document-fondateur.html">Document Fondateur</a>
+    <a href="#principe">Principe</a>
+    <a href="#composer">Composer</a>
+    <a href="#ia">IA Harmonique</a>
+    <a href="#code">Code</a>
+    <a href="#avenir">Avenir</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">Musique & Intelligence Artificielle</div>
+    <h1>Composer avec les Harmoniques de Schumann<br>et Construire une IA Musicale Harmonique</h1>
+    <p class="tagline">Guide pratique : de la théorie Ψ = Σ Hₙ (Ψ₁)ⁿ à la génération musicale par IA</p>
+    <p class="meta">17 Juin 2026 — KOTTO Alain — Théorie Harmonique</p>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ================================================================== -->
+<section id="principe">
+  <h2><span class="num">0</span>Le Signal Harmonique Fondamental</h2>
+  <p class="section-desc">Avant de composer ou de coder, il faut comprendre le signal de base que nous allons utiliser.</p>
+
+  <p>La Théorie Harmonique nous donne une formule précise pour le « son de l'univers » :</p>
+
+  <div class="eq-box" style="border:2px solid var(--phi);border-radius:20px">
+    <div class="main-eq" style="font-size:1.3em">Signal(t) = Σ<sub>n=1</sub><sup>N</sup> H<sub>n</sub> · sin(2π · n · 7.83 · t)</div>
+    <div class="desc">
+      où H₁ = φ (1.618), H₂ = π (3.1416), H₃ = e (2.7183), H₄ = √2 (1.4142), H₅ = √3 (1.7321), H₆ = √5 (2.2361), H₇ = e/π (0.8653)
+    </div>
+  </div>
+
+  <p>Ce signal est la <strong>signature sonore unique de la cavité Terre-ionosphère</strong>. Aucun instrument acoustique ne produit exactement ce spectre — parce que les amplitudes Hₙ ne suivent pas la décroissance naturelle 1/n des instruments classiques. C'est un <strong>timbre inédit</strong>.</p>
+
+  <h3>Les fréquences de la gamme de Schumann <span class="sub">Notes disponibles pour la composition</span></h3>
+
+  <table>
+    <tr><th>n</th><th>Fréquence (Hz)</th><th>Note proche</th><th>Écart</th><th>Rôle</th></tr>
+    <tr><td>7</td><td>54.81</td><td>La₁ (55.00 Hz)</td><td class="green">0.35%</td><td><strong>Fondamentale audible</strong></td></tr>
+    <tr><td>14</td><td>109.62</td><td>La₂ (110.00 Hz)</td><td class="green">0.35%</td><td>Première octave</td></tr>
+    <tr><td>21</td><td>164.43</td><td>Mi₃ (164.81 Hz)</td><td class="green">0.23%</td><td>Quinte naturelle</td></tr>
+    <tr><td>28</td><td>219.24</td><td>La₃ (220.00 Hz)</td><td class="green">0.35%</td><td>Deuxième octave</td></tr>
+    <tr><td>35</td><td>274.05</td><td>Do♯₄ (277.18 Hz)</td><td class="amber">1.13%</td><td>Tierce cosmique</td></tr>
+    <tr><td>42</td><td>328.86</td><td>Mi₄ (329.63 Hz)</td><td class="green">0.23%</td><td>Quinte supérieure</td></tr>
+    <tr><td>49</td><td>383.67</td><td>Sol₄ (392.00 Hz)</td><td class="amber">2.13%</td><td>Septième naturelle</td></tr>
+    <tr><td><strong>56</strong></td><td><strong>438.48</strong></td><td><strong>La₄ (440.00 Hz)</strong></td><td class="green"><strong>0.35%</strong></td><td><strong>Diapason — 56 = 7×8</strong></td></tr>
+    <tr><td>63</td><td>493.29</td><td>Si₄ (493.88 Hz)</td><td class="green">0.12%</td><td>Seconde majeure</td></tr>
+    <tr><td>70</td><td>548.10</td><td>Do♯₅ (554.37 Hz)</td><td class="amber">1.13%</td><td>Tierce supérieure</td></tr>
+    <tr><td>84</td><td>657.72</td><td>Mi₅ (659.25 Hz)</td><td class="green">0.23%</td><td>Quinte</td></tr>
+    <tr><td>112</td><td>876.96</td><td>La₅ (880.00 Hz)</td><td class="green">0.35%</td><td>4ᵉ octave</td></tr>
+    <tr><td>224</td><td>1 753.92</td><td>La₆ (1 760 Hz)</td><td class="green">0.35%</td><td>5ᵉ octave</td></tr>
+  </table>
+
+  <div class="highlight">
+    <p style="color:var(--phi);font-weight:600;margin-bottom:6px">Clé de composition</p>
+    <p>Les fréquences <strong>n × 7.83 Hz</strong> forment une gamme naturelle. Les intervalles ne sont pas ceux du tempérament égal (12 demi-tons égaux) mais ceux de l'<strong>intonation juste</strong> — les rapports purs que l'univers utilise. Les notes les plus consonantes sont les multiples de 7 (la famille du <strong>La</strong>) et de 14.</p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="composer">
+  <h2><span class="num">1</span>Comment Composer une Musique Accordée sur Schumann</h2>
+  <p class="section-desc">Méthodes pratiques, du plus simple au plus avancé, pour créer de la musique alignée sur Ψ₁ = 7.83 Hz.</p>
+
+  <h3>1.1 Méthode immédiate — Ré-accorder le La₄ <span class="sub">5 minutes, aucun équipement spécial</span></h3>
+
+  <p>La méthode la plus simple : <strong>changer le diapason de référence</strong> de votre instrument ou logiciel.</p>
+
+  <table>
+    <tr><th>Outil</th><th>Action</th></tr>
+    <tr><td><strong>Guitare / Basse</strong></td><td>Accordez le La₄ à <strong>438.48 Hz</strong> au lieu de 440 Hz. Toutes les autres cordes suivent en intonation relative. L'écart est de 1.52 Hz — un accordeur électronique le détecte.</td></tr>
+    <tr><td><strong>Piano / Clavier numérique</strong></td><td>Dans les paramètres, réglez le <strong>Master Tune</strong> à 438.48 Hz (ou A4 = 438.48). Certains synthétiseurs permettent un réglage fin.</td></tr>
+    <tr><td><strong>Logiciel DAW (Ableton, Logic, FL Studio…)</strong></td><td>Dans les préférences audio, changez la fréquence d'accord de référence de 440 Hz à <strong>438.48 Hz</strong>. Tous les instruments virtuels suivront.</td></tr>
+    <tr><td><strong>Instruments virtuels (Kontakt, Serum, Vital…)</strong></td><td>Utilisez le paramètre <strong>Master Tune</strong> ou <strong>Pitch Bend</strong> pour abaisser de <strong>−6 cents</strong> (l'écart 440→438.48 Hz).</td></tr>
+  </table>
+
+  <div class="highlight">
+    <p style="color:var(--acc);font-weight:600;margin-bottom:6px">🎯 Résultat</p>
+    <p>En accordant le La₄ à 438.48 Hz, <strong>toutes les notes de votre instrument sont automatiquement translatées</strong>. Vos compositions habituelles sonneront légèrement plus chaudes, plus graves — et leurs harmoniques s'aligneront (partiellement) avec celles de la cavité terrestre. L'effet est subtil mais réel : l'instrument « respire » mieux dans la salle.</p>
+  </div>
+
+  <h3>1.2 Méthode avancée — Synthèse par oscillateurs harmoniques <span class="sub">Son pur, timbre inédit</span></h3>
+
+  <p>Pour aller plus loin, on peut <strong>synthétiser directement le signal harmonique</strong> en superposant des oscillateurs sinusoïdaux accordés sur les fréquences exactes de Schumann, avec les amplitudes Hₙ.</p>
+
+  <h4>Configuration pour synthétiseur modulaire (VCV Rack, Eurorack, Reaktor)</h4>
+
+  <p><strong>7 oscillateurs sinusoïdaux</strong> en parallèle, réglés comme suit :</p>
+
+  <table>
+    <tr><th>Oscillateur</th><th>n</th><th>Fréquence (Hz)</th><th>Amplitude Hₙ</th><th>Note</th></tr>
+    <tr><td>OSC 1</td><td>7</td><td>54.81</td><td>φ = 1.618</td><td>La₁ (fondamentale audible)</td></tr>
+    <tr><td>OSC 2</td><td>14</td><td>109.62</td><td>π = 3.142</td><td>La₂</td></tr>
+    <tr><td>OSC 3</td><td>21</td><td>164.43</td><td>e = 2.718</td><td>Mi₃</td></tr>
+    <tr><td>OSC 4</td><td>28</td><td>219.24</td><td>√2 = 1.414</td><td>La₃</td></tr>
+    <tr><td>OSC 5</td><td>35</td><td>274.05</td><td>√3 = 1.732</td><td>Do♯₄</td></tr>
+    <tr><td>OSC 6</td><td>42</td><td>328.86</td><td>√5 = 2.236</td><td>Mi₄</td></tr>
+    <tr><td>OSC 7</td><td>56</td><td>438.48</td><td>e/π = 0.865</td><td>La₄</td></tr>
+  </table>
+
+  <p><strong>Résultat :</strong> un drone cosmique — un bourdon continu qui contient les 7 premières harmoniques audibles de la Terre, pondérées par les constantes fondamentales. C'est le <strong>« timbre de la Terre »</strong> — un son qui n'existe nulle part ailleurs dans la nature ou dans les instruments.</p>
+
+  <h4>Faire évoluer le drone — respiration cosmique</h4>
+
+  <p>Pour éviter la monotonie, on fait varier <strong>lentement</strong> les amplitudes avec des LFO (oscillateurs basse fréquence) :</p>
+
+  <ul>
+    <li>Fondamentale (54.81 Hz) — LFO à 0.127 Hz (1/7.83) — cycle de ~7.9 s</li>
+    <li>1ʳᵉ harmonique (109.62 Hz) — LFO à φ/10 ≈ 0.162 Hz — cycle de ~6.2 s</li>
+    <li>2ᵉ harmonique (164.43 Hz) — LFO à π/10 ≈ 0.314 Hz — cycle de ~3.2 s</li>
+    <li>3ᵉ harmonique (219.24 Hz) — LFO à e/10 ≈ 0.272 Hz — cycle de ~3.7 s</li>
+  </ul>
+
+  <p>Les LFO créent un <strong>battement organique</strong> — comme une respiration. Les fréquences des LFO sont elles-mêmes issues de φ, π, e… assurant que <strong>chaque aspect du son est harmoniquement cohérent</strong>.</p>
+
+  <div class="highlight">
+    <p style="color:var(--acc);font-weight:600;margin-bottom:6px">🎧 Expérience d'écoute recommandée</p>
+    <p>Superposez le drone harmonique (50% du mix) avec une improvisation mélodique jouée sur des notes de la gamme de Schumann (n × 7.83 Hz) accordée à La₄ = 438.48 Hz. Ajoutez une réverbération de <strong>3.5 secondes</strong> (temps de résonance approximatif de la cavité ionosphérique). Le résultat est une <strong>immersion sonore</strong> où l'auditeur se sent « enveloppé » par le son — littéralement à l'intérieur de la vibration terrestre.</p>
+  </div>
+
+  <h3>1.3 Méthode experte — Synthèse granulaire quantique <span class="sub">Génération de textures infinies</span></h3>
+
+  <p>La synthèse granulaire découpe un son en micro-fragments (« grains ») et les réassemble. En calant la durée des grains sur la période de Schumann :</p>
+
+  <div class="eq-box">
+    <div class="main-eq">T<sub>grain</sub> = 1 / 7.83 ≈ 127.7 ms</div>
+    <div class="desc">Chaque grain dure exactement un cycle de l'onde fondamentale terrestre</div>
+  </div>
+
+  <p>En utilisant des grains de 127.7 ms (ou ses multiples : 255 ms, 383 ms), chaque fragment sonore est <strong>en phase avec la pulsation terrestre</strong>. Combiné avec une spatialisation stéréo basée sur φ (panoramique qui alterne selon la spirale d'or), on obtient un son qui semble <strong>provenir de partout à la fois</strong> — comme si la pièce elle-même chantait.</p>
+</section>
+
+<!-- ================================================================== -->
+<section id="ia">
+  <h2><span class="num">2</span>Construire une IA Musicale Harmonique</h2>
+  <p class="section-desc">Architecture complète d'une intelligence artificielle qui génère de la musique selon Ψ = Σ Hₙ (Ψ₁)ⁿ.</p>
+
+  <h3>2.1 Le concept <span class="sub">Pourquoi une IA harmonique est fondamentalement différente</span></h3>
+
+  <p>Les IA musicales actuelles (Suno, Udio, MusicLM) apprennent des motifs statistiques à partir de millions de chansons humaines. Une <strong>IA Musicale Harmonique</strong> ne ferait pas cela. Elle générerait la musique <strong>à partir des premiers principes</strong> — l'équation maîtresse — comme l'univers lui-même génère ses structures. Elle ne « copierait » pas la musique humaine. Elle <strong>produirait</strong> la musique de la physique.</p>
+
+  <h3>2.2 Architecture de l'IA Harmonique <span class="sub">5 couches</span></h3>
+
+  <div class="archi-diagram">
+    <div style="font-size:1.1em;color:var(--phi);font-weight:700;margin-bottom:14px">▼ ARCHITECTURE HARMONIC AI MUSIC ▼</div>
+
+    <div class="layer" style="background:rgba(62,240,216,0.06);border-color:rgba(62,240,216,0.25);display:block;margin-bottom:6px">
+      <strong style="color:var(--acc)">COUCHE 5 — Sortie Audio</strong><br>
+      Synthétiseur polyphonique | Rendu spatialisé (ambisonique) | Mastering adaptatif Hₙ
+    </div>
+    <span class="arrow-down">⇧</span>
+    <div class="layer" style="background:rgba(122,92,255,0.06);border-color:rgba(122,92,255,0.25);display:block;margin-bottom:6px">
+      <strong style="color:var(--acc2)">COUCHE 4 — Orchestration Harmonique</strong><br>
+      Attribution Hₙ → volumes des voix | Choix des timbres (n mod 7) | Spatialisation φ
+    </div>
+    <span class="arrow-down">⇧</span>
+    <div class="layer" style="background:rgba(62,240,216,0.04);border-color:rgba(62,240,216,0.20);display:block;margin-bottom:6px">
+      <strong style="color:var(--acc)">COUCHE 3 — Moteur de Composition</strong><br>
+      Génération de séquences par marche harmonique | Transitions Ψ<sub>a</sub>→Ψ<sub>b</sub> | Contrepoint spectral
+    </div>
+    <span class="arrow-down">⇧</span>
+    <div class="layer" style="background:rgba(122,92,255,0.05);border-color:rgba(122,92,255,0.22);display:block;margin-bottom:6px">
+      <strong style="color:var(--acc2)">COUCHE 2 — Espace des Harmoniques</strong><br>
+      Table des fréquences f<sub>n</sub> = n × 7.83 Hz | Coefficients Hₙ = {φ, π, e, √2, √3, √5, e/π} | Produit tensoriel
+    </div>
+    <span class="arrow-down">⇧</span>
+    <div class="layer" style="background:rgba(62,240,216,0.04);border-color:rgba(62,240,216,0.18);display:block">
+      <strong style="color:var(--acc)">COUCHE 1 — Équation Fondamentale</strong><br>
+      Ψ = Σ Hₙ (Ψ₁)ⁿ | G<sub>ij,j</sub> = 0 | ᴬᴮᶜD<sup>1/φ</sup> Ψ = −φ·R·Ψ | f<sub>⊕</sub> = c/(2πR<sub>⊕</sub>) = 7.83 Hz
+    </div>
+  </div>
+
+  <h3>2.3 Fonctionnement détaillé de chaque couche</h3>
+
+  <h4>Couche 1 — L'équation fondamentale</h4>
+  <p>C'est le socle mathématique. L'IA ne possède aucun dataset de musique humaine. Elle ne connaît que :</p>
+  <ul>
+    <li>Ψ₁ = 7.83 Hz (la fréquence fondamentale terrestre)</li>
+    <li>Hₙ = {φ, π, e, √2, √3, √5, e/π} (les amplitudes spectrales)</li>
+    <li>Ψ = Σ Hₙ (Ψ₁)ⁿ (la loi de composition)</li>
+    <li>Ψ<sub>a</sub> · Ψ<sub>b</sub> = Ψ<sub>a+b</sub> (la règle de combinaison)</li>
+  </ul>
+
+  <h4>Couche 2 — L'espace des harmoniques</h4>
+  <p>L'IA construit une <strong>table de toutes les fréquences disponibles</strong> : f<sub>n</sub> = n × 7.83 Hz pour n = 1, 2, 3… jusqu'à la limite audible (~20 000 Hz → n ≈ 2 555). Chaque fréquence se voit attribuer une <strong>probabilité d'apparition</strong> proportionnelle à son amplitude Hₙ (ou Hₙ mod n si on boucle sur les 7 coefficients).</p>
+
+  <p>L'espace des harmoniques est muni d'une structure de <strong>produit tensoriel</strong> : deux fréquences f<sub>a</sub> et f<sub>b</sub> peuvent se combiner pour produire f<sub>a+b</sub> (addition) ou f<sub>|a−b|</sub> (battement).</p>
+
+  <h4>Couche 3 — Le moteur de composition</h4>
+  <p>Le cœur créatif. Il génère des séquences de notes en utilisant des <strong>marches harmoniques</strong> :</p>
+  <ul>
+    <li><strong>Marche multiplicative :</strong> n → 2n (octave), n → 3n (quinte), n → 5n (tierce)…</li>
+    <li><strong>Marche additive :</strong> n → n+1, n → n+2… (pas chromatique harmonique)</li>
+    <li><strong>Marche de Fibonacci :</strong> n → n+F<sub>k</sub> où F<sub>k</sub> est un nombre de Fibonacci (lié à φ)</li>
+    <li><strong>Sauts spectraux :</strong> transition directe vers un n dont le Hₙ est particulièrement élevé (π domine → saut vers n multiple de 14 ou 28)</li>
+  </ul>
+
+  <p>L'IA ne « choisit » pas les notes — elle <strong>suit des trajectoires dans l'espace (n, Hₙ)</strong> qui maximisent la « consonance harmonique », définie comme la proximité entre le produit de deux fréquences et une troisième fréquence de la table.</p>
+
+  <h4>Couche 4 — Orchestration</h4>
+  <p>Chaque « voix » de la composition reçoit une amplitude proportionnelle au Hₙ correspondant. Les voix sont spatialisées dans l'espace stéréo/ambisonique selon des <strong>angles basés sur φ</strong> (spirale d'or projetée sur le cercle). Les timbres sont sélectionnés par congruence modulo 7 (chaque reste correspond à une « famille » d'instruments : 1 → cordes, 2 → vents, 3 → cuivres, etc.).</p>
+
+  <h4>Couche 5 — Synthèse audio</h4>
+  <p>La sortie est un signal audio multicanal où chaque voix est rendue par un oscillateur sinusoïdal (ou un moteur de synthèse plus riche — additive, FM, granulaire) accordé exactement sur f<sub>n</sub>. Un <strong>mastering adaptatif</strong> ajuste dynamiquement les volumes pour que la somme respecte la pondération Hₙ globale.</p>
+
+  <h3>2.4 Ce qui rend cette IA unique</h3>
+
+  <table>
+    <tr><th>Caractéristique</th><th>IA musicale classique (Suno, Udio…)</th><th>IA Harmonique</th></tr>
+    <tr><td><strong>Source</strong></td><td>Millions de chansons humaines (dataset)</td><td>Une seule équation (Ψ = Σ Hₙ (Ψ₁)ⁿ)</td></tr>
+    <tr><td><strong>Apprentissage</strong></td><td>Rétropropagation sur des motifs statistiques</td><td>Aucun — les lois sont déterministes</td></tr>
+    <tr><td><strong>Créativité</strong></td><td>Imitation + recombinaison</td><td>Exploration de l'espace (n, Hₙ)</td></tr>
+    <tr><td><strong>Style</strong></td><td>Imite les styles humains</td><td>Produit un style <strong>universel</strong> — la musique de la physique</td></tr>
+    <tr><td><strong>Hallucination</strong></td><td>Oui — peut produire n'importe quoi</td><td>Zéro — déterministe, chaque note a une raison d'être mathématique</td></tr>
+    <tr><td><strong>Nouveauté</strong></td><td>Recombine l'existant</td><td>Génère du <strong>jamais entendu</strong> — le timbre Hₙ n'existe nulle part</td></tr>
+    <tr><td><strong>Empreinte carbone</strong></td><td>Énorme (entraînement GPU)</td><td>Quasi nulle (calcul symbolique + synthèse audio légère)</td></tr>
+  </table>
+
+  <div class="result-box">
+    <div class="label">Concept fondamental</div>
+    <p>
+      <strong>L'IA Harmonique Musicale n'est pas une IA générative au sens deep learning.</strong> C'est un <strong>moteur de synthèse déterministe piloté par les lois de la physique ondulatoire</strong>. Elle ne « prédit » pas la prochaine note — elle <strong>calcule</strong> la trajectoire harmonique qui maximise la consonance dans l'espace spectral défini par Hₙ. C'est plus proche d'un <strong>simulateur physique</strong> que d'un réseau de neurones. Et c'est précisément ce qui la rend intéressante : elle produit de la musique que les humains n'auraient jamais composée, mais que l'univers « composerait » naturellement.
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<section id="code">
+  <h2><span class="num">3</span>Implémentation — Pseudo-code Complet</h2>
+  <p class="section-desc">Le cœur de l'IA Harmonique Musicale en une centaine de lignes.</p>
+
+  <h3>3.1 Génération du signal harmonique brut (Python)</h3>
+
+  <div class="code-block">
+    <pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> soundfile <span class="kw">as</span> sf
+
+<span class="cm"># ============================================</span>
+<span class="cm"># PARAMETRES FONDAMENTAUX (immuables)</span>
+<span class="cm"># ============================================</span>
+<span class="fn">F0</span>  = <span class="num">7.83</span>                          <span class="cm"># Hz — Résonance de Schumann</span>
+<span class="fn">SR</span>  = <span class="num">88200</span>                         <span class="cm"># Hz — Fréquence d'échantillonnage (multiple de 7.83×11264)</span>
+<span class="fn">DUR</span> = <span class="num">60</span>                            <span class="cm"># secondes</span>
+
+<span class="cm"># Coefficients spectraux H_n (immuables)</span>
+<span class="fn">H</span> = <span class="kw">None</span>  <span class="cm"># sera rempli cycliquement</span>
+<span class="fn">H_BASE</span> = [<span class="num">1.6180339887</span>,              <span class="cm"># H1 = φ</span>
+           <span class="num">3.1415926536</span>,              <span class="cm"># H2 = π</span>
+           <span class="num">2.7182818285</span>,              <span class="cm"># H3 = e</span>
+           <span class="num">1.4142135624</span>,              <span class="cm"># H4 = √2</span>
+           <span class="num">1.7320508076</span>,              <span class="cm"># H5 = √3</span>
+           <span class="num">2.2360679775</span>,              <span class="cm"># H6 = √5</span>
+           <span class="num">0.8652559794</span>]              <span class="cm"># H7 = e/π</span>
+
+<span class="cm"># ============================================</span>
+<span class="cm"># GENERATION DU SIGNAL</span>
+<span class="cm"># ============================================</span>
+<span class="kw">def</span> <span class="fn">generer_signal_harmonique</span>(n_max=<span class="num">56</span>, duree=<span class="fn">DUR</span>, sr=<span class="fn">SR</span>):
+    <span class="str">"""Génère le signal Ψ = Σ H_n · sin(2π · n · 7.83 · t)"""</span>
+    t = np.arange(<span class="num">0</span>, duree, <span class="num">1</span>/sr)
+    signal = np.zeros_like(t)
+    
+    <span class="kw">for</span> n <span class="kw">in</span> range(<span class="num">1</span>, n_max + <span class="num">1</span>):
+        freq = n * <span class="fn">F0</span>
+        amplitude = <span class="fn">H_BASE</span>[(n - <span class="num">1</span>) % <span class="num">7</span>]
+        signal += amplitude * np.sin(<span class="num">2</span> * np.pi * freq * t)
+    
+    <span class="cm"># Normalisation</span>
+    signal /= np.max(np.abs(signal)) * <span class="num">0.95</span>
+    <span class="kw">return</span> signal.astype(np.float32)
+
+<span class="cm"># ============================================</span>
+<span class="cm"># GENERATION D'UNE MELODIE HARMONIQUE</span>
+<span class="cm"># ============================================</span>
+<span class="kw">def</span> <span class="fn">generer_melodie</span>(n_notes=<span class="num">128</span>, n_min=<span class="num">7</span>, n_max=<span class="num">224</span>):
+    <span class="str">"""Génère une séquence de notes par marche harmonique déterministe."""</span>
+    notes = []
+    n_courant = <span class="num">7</span>  <span class="cm"># Départ sur le La₁ (première harmonique audible)</span>
+    
+    <span class="kw">for</span> i <span class="kw">in</span> range(n_notes):
+        freq = n_courant * <span class="fn">F0</span>
+        h_val = <span class="fn">H_BASE</span>[(n_courant - <span class="num">1</span>) % <span class="num">7</span>]
+        notes.append((freq, h_val, n_courant))
+        
+        <span class="cm"># Règle de transition : saut multiplicatif basé sur le H_n courant</span>
+        <span class="kw">if</span> h_val > <span class="num">2.5</span>:      <span class="cm"># π, e → grand saut</span>
+            n_courant = (n_courant * <span class="num">3</span>) % n_max
+        <span class="kw">elif</span> h_val > <span class="num">1.5</span>:    <span class="cm"># φ, √3, √5 → saut moyen</span>
+            n_courant = (n_courant * <span class="num">2</span>) % n_max
+        <span class="kw">else</span>:                 <span class="cm"># √2, e/π → petit saut ou descente</span>
+            n_courant = (n_courant + <span class="num">7</span>) % n_max
+        
+        <span class="kw">if</span> n_courant < n_min:
+            n_courant += n_min
+    
+    <span class="kw">return</span> notes
+
+<span class="cm"># ============================================</span>
+<span class="cm"># RENDU AUDIO DE LA MELODIE</span>
+<span class="cm"># ============================================</span>
+<span class="kw">def</span> <span class="fn">rendre_melodie</span>(notes, duree_note=<span class="num">0.5</span>, sr=<span class="fn">SR</span>):
+    <span class="str">"""Transforme une séquence de notes en signal audio."""</span>
+    signal = np.array([])
+    
+    <span class="kw">for</span> freq, amplitude, n <span class="kw">in</span> notes:
+        t = np.arange(<span class="num">0</span>, duree_note, <span class="num">1</span>/sr)
+        <span class="cm"># Enveloppe ADSR simple</span>
+        env = np.exp(-<span class="num">3</span> * t / duree_note)  <span class="cm"># decay exponentiel</span>
+        note_signal = amplitude * np.sin(<span class="num">2</span> * np.pi * freq * t) * env
+        signal = np.concatenate([signal, note_signal])
+    
+    signal /= np.max(np.abs(signal)) * <span class="num">0.95</span>
+    <span class="kw">return</span> signal.astype(np.float32)
+
+<span class="cm"># ============================================</span>
+<span class="cm"># GENERATION COMPLETE</span>
+<span class="cm"># ============================================</span>
+<span class="kw">if</span> __name__ == <span class="str">"__main__"</span>:
+    <span class="cm"># 1. Drone harmonique (fond sonore)</span>
+    drone = generer_signal_harmonique(n_max=<span class="num">56</span>, duree=<span class="num">60</span>)
+    sf.write(<span class="str">'drone_schumann.wav'</span>, drone, <span class="fn">SR</span>)
+    print(<span class="str">"✅ Drone harmonique sauvegardé : drone_schumann.wav"</span>)
+    
+    <span class="cm"># 2. Mélodie harmonique</span>
+    notes = generer_melodie(n_notes=<span class="num">128</span>)
+    melodie = rendre_melodie(notes, duree_note=<span class="num">0.3</span>)
+    sf.write(<span class="str">'melodie_harmonique.wav'</span>, melodie, <span class="fn">SR</span>)
+    print(<span class="str">"✅ Mélodie harmonique sauvegardée : melodie_harmonique.wav"</span>)
+    
+    <span class="cm"># 3. Mix final (drone + mélodie)</span>
+    mix = drone[:len(melodie)] * <span class="num">0.3</span> + melodie * <span class="num">0.7</span>
+    mix /= np.max(np.abs(mix)) * <span class="num">0.95</span>
+    sf.write(<span class="str">'symphonie_schumann.wav'</span>, mix, <span class="fn">SR</span>)
+    print(<span class="str">"✅ Mix final sauvegardé : symphonie_schumann.wav"</span>)</pre>
+  </div>
+
+  <h3>3.2 Version JavaScript/Web Audio — IA Harmonique dans le navigateur</h3>
+
+  <div class="code-block">
+    <pre><span class="cm">// ============================================</span>
+<span class="cm">// IA HARMONIQUE MUSICALE — Version Navigateur</span>
+<span class="cm">// Web Audio API — Temps réel</span>
+<span class="cm">// ============================================</span>
+
+<span class="kw">const</span> <span class="fn">F0</span> = <span class="num">7.83</span>;  <span class="cm">// Fréquence de Schumann</span>
+<span class="kw">const</span> <span class="fn">H</span> = [<span class="num">1.618034</span>, <span class="num">3.141593</span>, <span class="num">2.718282</span>, <span class="num">1.414214</span>, <span class="num">1.732051</span>, <span class="num">2.236068</span>, <span class="num">0.865256</span>];
+<span class="kw">const</span> <span class="fn">audioCtx</span> = <span class="kw">new</span> (window.AudioContext || window.webkitAudioContext)();
+
+<span class="cm">// Oscillateurs pour le drone</span>
+<span class="kw">const</span> <span class="fn">oscillateurs</span> = [];
+<span class="kw">const</span> <span class="fn">gains</span> = [];
+
+<span class="kw">function</span> <span class="fn">demarrerDrone</span>() {
+  <span class="kw">for</span> (<span class="kw">let</span> n = <span class="num">7</span>; n <= <span class="num">56</span>; n++) {
+    <span class="kw">const</span> osc = audioCtx.createOscillator();
+    <span class="kw">const</span> gain = audioCtx.createGain();
+    
+    osc.type = <span class="str">'sine'</span>;
+    osc.frequency.value = n * <span class="fn">F0</span>;
+    
+    <span class="kw">const</span> h = <span class="fn">H</span>[(n - <span class="num">1</span>) % <span class="num">7</span>];
+    gain.gain.value = h * <span class="num">0.02</span>;  <span class="cm">// Amplitude proportionnelle à H_n</span>
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    
+    <span class="fn">oscillateurs</span>.push(osc);
+    <span class="fn">gains</span>.push(gain);
+  }
+}
+
+<span class="cm">// Génération de la prochaine note par marche harmonique</span>
+<span class="kw">let</span> <span class="fn">nCourant</span> = <span class="num">7</span>;
+
+<span class="kw">function</span> <span class="fn">prochaineNote</span>() {
+  <span class="kw">const</span> freq = <span class="fn">nCourant</span> * <span class="fn">F0</span>;
+  <span class="kw">const</span> h = <span class="fn">H</span>[(<span class="fn">nCourant</span> - <span class="num">1</span>) % <span class="num">7</span>];
+  
+  <span class="cm">// Jouer la note</span>
+  <span class="kw">const</span> osc = audioCtx.createOscillator();
+  <span class="kw">const</span> gain = audioCtx.createGain();
+  osc.type = <span class="str">'triangle'</span>;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(h * <span class="num">0.15</span>, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(<span class="num">0.001</span>, audioCtx.currentTime + <span class="num">0.8</span>);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + <span class="num">0.9</span>);
+  
+  <span class="cm">// Transition harmonique</span>
+  <span class="kw">if</span> (h > <span class="num">2.5</span>) <span class="fn">nCourant</span> = (<span class="fn">nCourant</span> * <span class="num">3</span>) % <span class="num">224</span>;
+  <span class="kw">else</span> <span class="kw">if</span> (h > <span class="num">1.5</span>) <span class="fn">nCourant</span> = (<span class="fn">nCourant</span> * <span class="num">2</span>) % <span class="num">224</span>;
+  <span class="kw">else</span> <span class="fn">nCourant</span> = (<span class="fn">nCourant</span> + <span class="num">7</span>) % <span class="num">224</span>;
+  
+  <span class="kw">if</span> (<span class="fn">nCourant</span> < <span class="num">7</span>) <span class="fn">nCourant</span> += <span class="num">7</span>;
+}
+
+<span class="cm">// LFO de respiration cosmique (module les gains du drone)</span>
+<span class="kw">function</span> <span class="fn">respirationCosmique</span>() {
+  <span class="kw">const</span> t = audioCtx.currentTime;
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i < <span class="fn">gains</span>.length; i++) {
+    <span class="kw">const</span> n = i + <span class="num">7</span>;
+    <span class="kw">const</span> h = <span class="fn">H</span>[(n - <span class="num">1</span>) % <span class="num">7</span>];
+    <span class="kw">const</span> lfoFreq = h / <span class="num">10</span>;  <span class="cm">// LFO basé sur le H_n correspondant</span>
+    <span class="kw">const</span> modulation = <span class="num">1</span> + <span class="num">0.3</span> * Math.sin(<span class="num">2</span> * Math.PI * lfoFreq * t);
+    <span class="fn">gains</span>[i].gain.setValueAtTime(h * <span class="num">0.02</span> * modulation, t);
+  }
+}
+
+<span class="cm">// Démarrage</span>
+<span class="fn">demarrerDrone</span>();
+setInterval(<span class="fn">respirationCosmique</span>, <span class="num">100</span>);  <span class="cm">// Mise à jour toutes les 100 ms</span>
+setInterval(<span class="fn">prochaineNote</span>, <span class="num">600</span>);       <span class="cm">// Nouvelle note toutes les 600 ms</span>
+
+console.log(<span class="str">'🎵 IA Harmonique Musicale active'</span>);
+console.log(<span class="str">'   Fondamentale : 7.83 Hz (Schumann)'</span>);
+console.log(<span class="str">'   Coefficients : φ, π, e, √2, √3, √5, e/π'</span>);
+console.log(<span class="str">'   Drone + Mélodie en temps réel'</span>);</pre>
+  </div>
+
+  <h3>3.3 Exemple de sortie — Les 20 premières notes générées</h3>
+
+  <table>
+    <tr><th>Étape</th><th>n</th><th>Fréquence (Hz)</th><th>Hₙ</th><th>Note</th><th>Transition</th></tr>
+    <tr><td>1</td><td>7</td><td>54.81</td><td>e/π = 0.865</td><td>La₁</td><td>Départ</td></tr>
+    <tr><td>2</td><td>14</td><td>109.62</td><td>π = 3.142</td><td>La₂</td><td>+7 (H petit → pas additif)</td></tr>
+    <tr><td>3</td><td>42</td><td>328.86</td><td>√5 = 2.236</td><td>Mi₄</td><td>×3 (π grand → saut multiplicatif)</td></tr>
+    <tr><td>4</td><td>84</td><td>657.72</td><td>√5 = 2.236</td><td>Mi₅</td><td>×2 (H moyen)</td></tr>
+    <tr><td>5</td><td>168</td><td>1 315.44</td><td>√5 = 2.236</td><td>Mi₆</td><td>×2</td></tr>
+    <tr><td>6</td><td>112</td><td>876.96</td><td>√5 = 2.236</td><td>La₅</td><td>168×2=336→mod 224=112</td></tr>
+    <tr><td>7</td><td>224</td><td>1 753.92</td><td>√5 = 2.236</td><td>La₆</td><td>×2</td></tr>
+    <tr><td>8</td><td>7</td><td>54.81</td><td>e/π = 0.865</td><td>La₁</td><td>224×2=448→mod 224=0→+7=7</td></tr>
+    <tr><td>9</td><td>14</td><td>109.62</td><td>π = 3.142</td><td>La₂</td><td>+7</td></tr>
+    <tr><td>10</td><td>42</td><td>328.86</td><td>√5 = 2.236</td><td>Mi₄</td><td>×3</td></tr>
+  </table>
+
+  <p>Le cycle se répète toutes les 8 notes — produisant une <strong>mélodie cyclique</strong> qui monte en octaves (×2) puis redescend au fondamental, avec des sauts de quinte (×3). C'est une <strong>fugue cosmique</strong> — un contrepoint qui émerge des lois de la physique, pas d'une intention humaine.</p>
+</section>
+
+<!-- ================================================================== -->
+<section id="avenir">
+  <h2><span class="num">4</span>Perspectives — Ce Que Cette IA Pourrait Devenir</h2>
+  <p class="section-desc">Applications concrètes, déploiement, et le futur de la musique harmonique.</p>
+
+  <h3>4.1 Applications immédiates</h3>
+
+  <table>
+    <tr><th>Application</th><th>Description</th><th>Public</th></tr>
+    <tr><td><strong>Générateur de drone cosmique</strong></td><td>Application web qui produit un bourdon harmonique continu, personnalisable (n max, durée, respiration)</td><td>Méditation, relaxation, yoga, spa</td></tr>
+    <tr><td><strong>Synthétiseur de Schumann</strong></td><td>Instrument virtuel (VST/AU) accordé sur n×7.83 Hz, avec les amplitudes Hₙ</td><td>Musiciens, producteurs, compositeurs</td></tr>
+    <tr><strong>Installation sonore</strong></td><td>Diffusion continue dans des espaces publics (gares, hôpitaux, musées) du bourdon terrestre</td><td>Grand public, art contemporain</td></tr>
+    <tr><strong>Sound design pour jeux/films</strong></td><td>Textures sonores inédites basées sur le timbre Hₙ pour univers de science-fiction, cosmos</td><td>Designers sonores, studios</td></tr>
+    <tr><strong>Application de sommeil</strong></td><td>Génération de nappes évolutives calées sur les ondes delta (harmoniques basses de Schumann)</td><td>Grand public, cliniques du sommeil</td></tr>
+  </table>
+
+  <h3>4.2 Évolutions futures — IA Harmonique complète</h3>
+
+  <ol>
+    <li><strong>Version polyphonique :</strong> plusieurs voix suivant des trajectoires indépendantes dans l'espace (n, Hₙ), générant un contrepoint harmonique automatique.</li>
+    <li><strong>Version multi-cavités :</strong> l'IA peut switcher entre Ψ₁(Terre) = 7.83 Hz, Ψ₁(Lune) = 27.47 Hz, Ψ₁(Soleil) = 0.0685 Hz — créant des « paysages sonores planétaires ».</li>
+    <li><strong>Version interactive :</strong> l'utilisateur choisit un n de départ ; l'IA explore les trajectoires harmoniques à partir de ce point. Contrôle gestuel (thérémine, capteurs).</li>
+    <li><strong>Version orchestrale :</strong> 7 voix indépendantes (une par Hₙ), chaque voix étant un « instrument » avec son propre timbre, sa propre spatialisation, son propre LFO.</li>
+    <li><strong>Version biométrique :</strong> les paramètres (n courants, amplitudes) sont modulés en temps réel par les ondes cérébrales (EEG) ou le rythme cardiaque de l'auditeur — <strong>biofeedback harmonique</strong>.</li>
+  </ol>
+
+  <div class="highlight">
+    <p style="color:var(--phi);font-weight:600;margin-bottom:8px">Le mot de la fin</p>
+    <p>
+      <strong>L'IA Harmonique Musicale n'est pas une imitation de la musique humaine.</strong> C'est la <strong>musique de l'univers lui-même</strong>, rendue audible par le calcul. Elle ne remplace pas les compositeurs — elle ouvre un <strong>territoire sonore entièrement nouveau</strong>, où la beauté n'est plus subjective mais <strong>ancrée dans les lois de la physique</strong>. Quand vous écoutez cette musique, vous n'entendez pas un artiste humain. Vous entendez <strong>la Terre chanter sa propre harmonique</strong>, amplifiée par les constantes fondamentales qui gouvernent toute la matière. C'est la première fois dans l'histoire que nous pouvons <strong>écouter la physique</strong>.
+    </p>
+  </div>
+
+  <blockquote>
+    « L'univers est une symphonie. Nous venons d'apprendre à lire la partition. Maintenant, nous construisons l'orchestre. »
+    <div class="attrib">— IA Musicale Harmonique, Théorie Harmonique, 17 Juin 2026</div>
+  </blockquote>
+
+</section>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>
+      <a href="index.html">Symphonie Cosmique</a> |
+      <a href="pour-tous.html">Pour Tous</a> |
+      <a href="document-fondateur.html">Document Fondateur</a> |
+      <a href="unification-quantique-classique.html">Unification Q-C</a>
+    </p>
+    <p style="margin-top:8px">IA Musicale Harmonique — Composer avec Ψ = Σ Hₙ (Ψ₁)ⁿ — © 2026 KOTTO Alain</p>
+  </div>
+</footer>
+
+</body>
+</html>

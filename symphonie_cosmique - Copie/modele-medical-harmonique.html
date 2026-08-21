@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modèle Médical Harmonique — Hologramme de Connaissances</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --orange: #ff6b35;
+  --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 25% 20%,rgba(122,92,255,0.05),transparent 55%),
+             radial-gradient(ellipse at 65% 50%,rgba(62,240,216,0.04),transparent 60%),
+             radial-gradient(ellipse at 50% 80%,rgba(212,168,67,0.03),transparent 60%);
+  pointer-events:none;
+}
+.container{max-width:1400px;margin:0 auto;padding:0 16px;position:relative;z-index:1}
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:8px 0}
+nav .container{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:5px 12px;border-radius:16px;font-size:0.78em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+nav a.active{color:var(--green);border-color:rgba(46,213,115,0.4);background:rgba(46,213,115,0.08)}
+.hero{text-align:center;padding:40px 20px 30px;background:linear-gradient(180deg,rgba(46,213,115,0.06) 0%,rgba(62,240,216,0.03) 100%)}
+.hero .badge{display:inline-block;padding:5px 14px;border-radius:14px;font-size:0.78em;font-weight:700;background:rgba(62,240,216,0.12);color:var(--acc);margin-bottom:12px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:1.6em;font-weight:700;background:linear-gradient(135deg,var(--green),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+.hero .tagline{font-size:0.90em;color:var(--ink2);max-width:700px;margin:0 auto}
+.hero .meta{color:var(--ink3);font-size:0.75em;margin-top:6px}
+
+/* Layout */
+.main-layout{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}
+@media(max-width:900px){.main-layout{grid-template-columns:1fr}}
+
+.panel{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:18px 22px;margin-bottom:14px}
+.panel h2{font-size:1em;color:var(--phi);margin-bottom:10px}
+.panel h3{font-size:0.88em;color:var(--acc);margin:12px 0 6px}
+
+/* Hologram */
+.hologram{
+  position:relative;width:300px;height:300px;margin:0 auto 16px;
+  perspective:600px;
+}
+.hologram .core{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:60px;height:60px;border-radius:50%;
+  background:radial-gradient(circle,rgba(212,168,67,0.8),rgba(212,168,67,0.2));
+  box-shadow:0 0 40px rgba(212,168,67,0.5),0 0 80px rgba(212,168,67,0.2);
+  z-index:5;
+}
+.hologram .ring{
+  position:absolute;top:50%;left:50%;border-radius:50%;border:1px solid;
+  transform-style:preserve-3d;animation:orbit 8s linear infinite;
+  box-shadow:0 0 15px currentColor;
+}
+@keyframes orbit{from{transform:translate(-50%,-50%) rotateX(60deg) rotateZ(0deg)}to{transform:translate(-50%,-50%) rotateX(60deg) rotateZ(360deg)}}
+.ring:nth-child(2){width:120px;height:120px;border-color:rgba(255,107,53,0.4);animation-duration:10s;animation-delay:0s}
+.ring:nth-child(3){width:160px;height:160px;border-color:rgba(62,240,216,0.4);animation-duration:12s;animation-delay:-2s}
+.ring:nth-child(4){width:200px;height:200px;border-color:rgba(212,168,67,0.35);animation-duration:14s;animation-delay:-4s}
+.ring:nth-child(5){width:240px;height:240px;border-color:rgba(46,213,115,0.3);animation-duration:16s;animation-delay:-6s}
+.ring:nth-child(6){width:280px;height:280px;border-color:rgba(122,92,255,0.25);animation-duration:18s;animation-delay:-8s}
+.ring:nth-child(7){width:320px;height:320px;border-color:rgba(240,201,110,0.2);animation-duration:20s;animation-delay:-10s}
+
+.hologram .node{position:absolute;width:8px;height:8px;border-radius:50%;box-shadow:0 0 8px currentColor}
+.hologram .node.n1{top:7%;left:50%;background:var(--orange)}
+.hologram .node.n2{top:50%;left:93%;background:var(--acc)}
+.hologram .node.n3{bottom:7%;left:50%;background:var(--phi)}
+.hologram .node.n4{top:50%;left:7%;background:var(--green)}
+.hologram .node.n5{top:22%;left:85%;background:var(--acc2)}
+.hologram .node.n6{bottom:22%;left:15%;background:var(--red)}
+.hologram .node.n7{top:78%;left:78%;background:var(--phi2)}
+
+/* Symptom input */
+.symptom-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(170px, 1fr));gap:3px;margin-bottom:8px}
+.sym-btn{
+  background:rgba(10,8,40,0.6);border:1px solid var(--border);border-radius:6px;
+  padding:5px 8px;color:var(--ink2);font-size:0.75em;cursor:pointer;transition:all 0.2s;
+  user-select:none;text-align:left;
+}
+.sym-btn:hover{background:rgba(46,213,115,0.05)}
+.sym-btn.selected{border-color:var(--green);background:rgba(46,213,115,0.1);color:var(--green);font-weight:600}
+
+button{
+  border:none;border-radius:10px;padding:10px 20px;font-size:0.84em;font-weight:600;
+  cursor:pointer;transition:all 0.25s;font-family:inherit;margin:4px;
+}
+.btn-prime{background:var(--acc);color:var(--bg)}
+.btn-prime:hover{box-shadow:0 0 18px rgba(62,240,216,0.3)}
+.btn-green{background:var(--green);color:var(--bg)}
+.btn-green:hover{box-shadow:0 0 18px rgba(46,213,115,0.3)}
+.btn-reset{background:rgba(255,255,255,0.05);color:var(--ink2);border:1px solid var(--border)}
+
+.result-card{
+  background:rgba(10,8,40,0.5);border:1px solid var(--border);border-radius:10px;
+  padding:14px 18px;margin:8px 0;animation:fadeIn 0.4s ease-out;
+}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.spectrum-bar{display:flex;height:5px;border-radius:3px;overflow:hidden;margin:8px 0}
+.spectrum-bar .s-seg{transition:width 0.5s}
+
+.tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:0.70em;font-weight:700;margin:2px 3px}
+.tag.h1{background:rgba(255,107,53,0.2);color:var(--orange)}
+.tag.h2{background:rgba(62,240,216,0.2);color:var(--acc)}
+.tag.h3{background:rgba(212,168,67,0.2);color:var(--phi)}
+.tag.h4{background:rgba(46,213,115,0.2);color:var(--green)}
+.tag.h5{background:rgba(122,92,255,0.2);color:var(--acc2)}
+.tag.h6{background:rgba(255,71,87,0.2);color:var(--red)}
+.tag.h7{background:rgba(240,201,110,0.2);color:var(--phi2)}
+
+.kb-stats{
+  display:grid;grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));gap:8px;margin:10px 0;
+}
+.kb-stat{
+  background:rgba(10,8,40,0.5);border:1px solid var(--border);border-radius:10px;
+  padding:10px;text-align:center;
+}
+.kb-stat .kb-num{font-size:1.5em;font-weight:700;color:var(--phi)}
+.kb-stat .kb-label{font-size:0.68em;color:var(--ink3)}
+
+footer{text-align:center;padding:20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.72em;margin-top:20px}
+footer a{color:var(--phi);text-decoration:none}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Symphonie Cosmique</a>
+    <a href="medecine-harmonique.html">Médecine</a>
+    <a href="plantes-phytotherapie-harmonique.html">Plantes</a>
+    <a href="ia-harmonique-app.html">IA App</a>
+    <a href="matrice-croisee-harmonique.html">Matrice</a>
+    <a href="#" class="active">Modèle Médical</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">Hologramme de Connaissances Médicales</div>
+    <h1>Modèle Médical Harmonique — Ingestion Complète</h1>
+    <p class="tagline">Base de connaissances médicales structurée selon Ψ = Σ Hₙ·(Ψ₁)ⁿ. Chaque symptôme, pathologie, plante et fréquence est indexé par sa signature spectrale.</p>
+    <p class="meta">17 Juin 2026 — KOTTO Alain — Théorie Harmonique</p>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- Stats -->
+<div class="kb-stats">
+  <div class="kb-stat"><div class="kb-num" id="statSymptoms">0</div><div class="kb-label">Symptômes</div></div>
+  <div class="kb-stat"><div class="kb-num" id="statPaths">0</div><div class="kb-label">Pathologies</div></div>
+  <div class="kb-stat"><div class="kb-num" id="statPlants">0</div><div class="kb-label">Plantes médicinales</div></div>
+  <div class="kb-stat"><div class="kb-num" id="statFreqs">0</div><div class="kb-label">Fréquences</div></div>
+  <div class="kb-stat"><div class="kb-num" id="statOrgs">0</div><div class="kb-label">Organes</div></div>
+  <div class="kb-stat"><div class="kb-num">7</div><div class="kb-label">Constantes Hₙ</div></div>
+</div>
+
+<div class="main-layout">
+  <!-- COLONNE GAUCHE -->
+  <div>
+    <div class="panel">
+      <h2>🌀 Hologramme Spectral</h2>
+      <div class="hologram">
+        <div class="core"></div>
+        <div class="ring"><div class="node n1"></div></div>
+        <div class="ring"><div class="node n2"></div></div>
+        <div class="ring"><div class="node n3"></div></div>
+        <div class="ring"><div class="node n4"></div></div>
+        <div class="ring"><div class="node n5"></div></div>
+        <div class="ring"><div class="node n6"></div></div>
+        <div class="ring"><div class="node n7"></div></div>
+      </div>
+      <p style="text-align:center;color:var(--ink3);font-size:0.78em">Noyau : Ψ₁ (fondamental). Anneaux : H₁(φ) à H₇(e/π). Nœuds : signatures pathologiques.</p>
+    </div>
+
+    <div class="panel">
+      <h2>🩺 Symptômes (sélection multiple)</h2>
+      <div class="symptom-grid" id="symptomGrid"></div>
+      <div style="margin-top:8px">
+        <button class="btn-green" onclick="analyzeSymptoms()">🔍 Diagnostic harmonique</button>
+        <button class="btn-reset" onclick="resetSymptoms()">↺ Reset</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>🌿 Plantes & Fréquences — Base Complète</h2>
+      <div id="plantList" style="max-height:400px;overflow-y:auto;font-size:0.78em"></div>
+    </div>
+  </div>
+
+  <!-- COLONNE DROITE -->
+  <div>
+    <div class="panel" id="resultPanel" style="max-height:80vh;overflow-y:auto">
+      <h2>📋 Résultats du Diagnostic</h2>
+      <div id="resultContent" style="color:var(--ink3);text-align:center;padding:30px">
+        <div style="font-size:3em">🔍</div>
+        <p>Sélectionnez des symptômes à gauche et cliquez sur Diagnostic harmonique</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<footer>
+  <div class="container">
+    <p><a href="index.html">Symphonie Cosmique</a> | <a href="medecine-harmonique.html">Médecine</a> | <a href="ia-harmonique-app.html">IA App</a></p>
+    <p style="margin-top:4px">Modèle Médical Harmonique — Hologramme de Connaissances — © 2026 KOTTO Alain</p>
+  </div>
+</footer>
+
+<script>
+// ===== MOTEUR HARMONIQUE =====
+const phi=(1+Math.sqrt(5))/2, pi=Math.PI, e=Math.E;
+const s2=Math.sqrt(2), s3=Math.sqrt(3), s5=Math.sqrt(5);
+const eDivPi=e/pi;
+const H=[0,phi,pi,e,s2,s3,s5,eDivPi,phi*phi,(pi*pi)/phi,e*phi];
+const hNames=['','H₁(φ)','H₂(π)','H₃(e)','H₄(√2)','H₅(√3)','H₆(√5)','H₇(e/π)'];
+const hColors=['','var(--orange)','var(--acc)','var(--phi)','var(--green)','var(--acc2)','var(--red)','var(--phi2)'];
+
+// ===== BASE DE CONNAISSANCES MÉDICALES COMPLÈTE =====
+// [id, label, catégorie, H_affecté, direction, score, pathologies_associées]
+const symptomDB = [
+  // Généraux & Systémiques
+  ["soif","Soif excessive","gen","H₃","up",3,"diabete"],
+  ["faim","Faim excessive","gen","H₃","up",2,"diabete"],
+  ["urines","Urines fréquentes","gen","H₁","down",3,"diabete"],
+  ["fatigue","Fatigue chronique","gen","H₁","down",3,"diabete,anxiete,depression"],
+  ["perte_poids","Perte de poids","gen","H₆","down",2,"diabete,cancer"],
+  ["fievre","Fièvre","gen","H₃","up",4,"infection,paludisme"],
+  ["sueurs","Sueurs nocturnes","gen","H₃","up",2,"infection,cancer"],
+  ["paleur","Pâleur","gen","H₈","down",2,"anemie"],
+  // Cardiovasculaires
+  ["maux_tete","Maux de tête","cardio","H₂","up",3,"hta"],
+  ["vertiges","Vertiges","cardio","H₂","up",3,"hta,anxiete"],
+  ["palpitations","Palpitations","cardio","H₂","up",3,"hta,anxiete"],
+  ["douleur_thorax","Douleur thoracique","cardio","H₂","up",5,"hta,infarctus"],
+  ["essoufflement","Essoufflement","cardio","H₁","down",3,"hta,insuff_card"],
+  ["oede","Œdèmes","cardio","H₂","up",3,"insuff_card,insuff_ren"],
+  ["cyanose","Cyanose","cardio","H₈","down",4,"insuff_card,insuff_resp"],
+  // Nerveux & Psy
+  ["anxiete","Anxiété","psy","H₁","down",4,"anxiete"],
+  ["insomnie","Insomnie","psy","H₁","down",4,"anxiete,depression"],
+  ["stress","Stress chronique","psy","H₁","down",3,"anxiete,hta"],
+  ["depression","Humeur dépressive","psy","H₄","down",4,"depression"],
+  ["confusion","Confusion","psy","H₅","down",3,"depression,alzheimer"],
+  ["irritabilite","Irritabilité","psy","H₁","down",2,"anxiete,hyperthyroidie"],
+  ["angoisse","Crise d'angoisse","psy","H₁","down",4,"anxiete"],
+  ["tremblements","Tremblements","psy","H₅","down",2,"parkinson,anxiete"],
+  // Digestifs
+  ["diarrhee","Diarrhée","dig","H₁","down",3,"digestif,infection"],
+  ["nausees","Nausées","dig","H₁","down",3,"digestif,grossesse"],
+  ["vomissements","Vomissements","dig","H₁","down",3,"digestif,infection"],
+  ["douleur_abdo","Douleurs abdominales","dig","H₂","up",3,"digestif,inflamm"],
+  ["ballonnements","Ballonnements","dig","H₁","down",2,"digestif"],
+  ["constipation","Constipation","dig","H₄","down",2,"digestif"],
+  ["reflux","Reflux gastrique","dig","H₂","up",2,"digestif"],
+  // Musculo-Squelettiques
+  ["douleur_artic","Douleurs articulaires","musc","H₂","up",3,"inflamm,arthrose"],
+  ["douleur_musc","Douleurs musculaires","musc","H₂","up",2,"inflamm,fibromyalgie"],
+  ["gonflement","Gonflement","musc","H₂","up",3,"inflamm,oedeme"],
+  ["raideur","Raideur matinale","musc","H₂","up",3,"arthrose,polyarthrite"],
+  ["crampes","Crampes","musc","H₄","down",2,"deshydratation"],
+  ["fracture","Fracture","musc","H₆","down",4,"fracture,osteoporose"],
+  // Peau
+  ["plaie","Plaie","peau","H₄","down",3,"plaie"],
+  ["brulure","Brûlure","peau","H₄","down",3,"brulure"],
+  ["eruption","Éruption cutanée","peau","H₇","brouillé",2,"allergie,infection"],
+  ["demangeaison","Démangeaisons","peau","H₇","brouillé",2,"allergie"],
+  // Respiratoires
+  ["toux","Toux","resp","H₃","up",3,"infection,bpco"],
+  ["expectorations","Expectorations","resp","H₃","up",3,"infection,bpco"],
+  ["sifflement","Sifflement resp.","resp","H₂","up",3,"asthme"],
+  ["douleur_sinus","Douleur sinus","resp","H₃","up",2,"sinusite"],
+  // ORL
+  ["mal_gorge","Mal de gorge","orl","H₃","up",2,"infection"],
+  ["ganglions","Ganglions enflés","orl","H₃","up",3,"infection,cancer"],
+  ["acouphenes","Acouphènes","orl","H₂","up",2,"hta"],
+  ["vertige_rot","Vertige rotatoire","orl","H₂","up",3,"vertige_positionnel"],
+  // Spécifiques
+  ["fievre_cyclique","Fièvre cyclique","spec","H₃","up",4,"paludisme"],
+  ["ictère","Ictère (jaunisse)","spec","H₃","up",3,"hepatite"],
+  ["sang_urines","Sang dans les urines","spec","H₂","up",4,"infection,calculs"],
+  ["masse","Masse palpable","spec","H₃","up",5,"cancer"],
+];
+
+// Pathologies : [id, nom, description, H_principaux, urgence, plantes, frequences, protocole]
+const pathologyDB = {
+  diabete:{n:"Diabète T2",d:"Désaccord H₃(e)/H₁(φ)",hs:["H₁↓","H₃↑","H₆↓","H₇brouillé","H₈↓"],u:false,
+    plants:["Cannelle","Gymnema","Momordica","Myrtille","Nopal"],
+    freqs:["1.618 Hz (binaural φ)","22.36 Hz (piézo √5)","8.65 Hz (binaural e/π)","26.18 Hz (piézo φ²)"],
+    proto:"12 semaines — HbA1c cible: −1.5 à −2.5 points"},
+  hta:{n:"Hypertension",d:"a₂(H₂)/a₁(H₁) > φ",hs:["H₂↑","H₁↓","H₄↑","H₇brouillé"],u:true,
+    plants:["Hibiscus","Ail","Olivier (feuille)","Aubépine"],
+    freqs:["3.14 Hz (binaural π)","14.14 Hz (piézo √2)","7.83 Hz (Schumann)","1.2 Hz (cardiaque)"],
+    proto:"8 semaines — PA cible: −12 à −18 mmHg"},
+  anxiete:{n:"Anxiété/Insomnie",d:"Déficit H₁(φ)",hs:["H₁↓"],u:false,
+    plants:["Lavande","Valériane","Camomille","Passiflore"],
+    freqs:["1.618 Hz (binaural φ)","10 Hz (binaural alpha)"],
+    proto:"4 semaines — ↓anxiété 40-60%"},
+  depression:{n:"Dépression",d:"Déficit H₄(√2)+H₅(√3)",hs:["H₄↓","H₅↓"],u:false,
+    plants:["Millepertuis","Ginseng","Rhodiole","Safran"],
+    freqs:["17.32 Hz (binaural √3)","1.618 Hz (binaural φ)"],
+    proto:"6-12 semaines"},
+  inflamm:{n:"Inflammation/Arthrose",d:"Excès H₂(π)",hs:["H₂↑"],u:false,
+    plants:["Curcuma","Arnica","Harpagophytum","Saule blanc"],
+    freqs:["3.14 Hz (binaural π)","460 nm (LED bleu)","22.36 Hz (piézo √5)"],
+    proto:"4-6 semaines — ↓douleur 50-70%"},
+  infection:{n:"Infection bactérienne",d:"H₃(e) non contrôlé",hs:["H₃↑"],u:false,
+    plants:["Ail","Échinacée","Thym","Propolis"],
+    freqs:["2.718 Hz (PEMF e)","20-40 kHz (ultrasons)"],
+    proto:"7-10 jours — ↓infection 50-70%"},
+  paludisme:{n:"Paludisme",d:"H₃(e) prolifération cyclique",hs:["H₃↑"],u:true,
+    plants:["Artemisia annua","Quinquina"],
+    freqs:["2.718 Hz (PEMF e)"],
+    proto:"7 jours — Transfert si >48h"},
+  digestif:{n:"Troubles digestifs",d:"Désaccord H₁(φ)",hs:["H₁↓"],u:false,
+    plants:["Camomille","Gingembre","Menthe poivrée","Moringa"],
+    freqs:["1.618 Hz (binaural φ)","Eau structurée φ"],
+    proto:"2 semaines — résolution 70-80%"},
+  insuff_card:{n:"Insuffisance cardiaque",d:"Déphasage H₂(π)",hs:["H₂↑","H₁↓"],u:true,
+    plants:["Aubépine","Ail","Olivier"],
+    freqs:["1.2 Hz (magnétique cardiaque)","3.14 Hz (binaural π)"],
+    proto:"Traitement continu — suivi médical obligatoire"},
+  asthme:{n:"Asthme",d:"Désaccord H₂(π)+H₁(φ)",hs:["H₂↑","H₁↓"],u:true,
+    plants:["Eucalyptus","Thym","Plantain"],
+    freqs:["14.14 Hz (piézo √2)","1.618 Hz (binaural φ)"],
+    proto:"Traitement de fond — bronchodilatateurs en crise"},
+  cancer:{n:"Cancer (adjuvant)",d:"a₁→0, a₃→∞",hs:["H₁→0","H₃→∞","H₇inversé"],u:true,
+    plants:["Curcuma","Thé vert","Reishi","Gui","Artémisinine"],
+    freqs:["1.618 Hz (binaural φ)","27.18 Hz (PEMF e)","528 Hz (réparation ADN)","100-300 Hz (anti-prolifératif)"],
+    proto:"Adjuvant — ne remplace pas la chimio/chirurgie"},
+  osteoporose:{n:"Ostéoporose",d:"Déficit H₆(√5)+H₄(√2)",hs:["H₆↓","H₄↓"],u:false,
+    plants:["Prêle","Curcuma","Ortie"],
+    freqs:["22.36 Hz (piézo √5)","25-50 Hz (PEMF osseux)"],
+    proto:"3-6 mois — suivi densitométrie"},
+  anemie:{n:"Anémie",d:"Déficit H₈(φ²)",hs:["H₈↓"],u:false,
+    plants:["Moringa","Ortie","Spiruline"],
+    freqs:["26.18 Hz (piézo φ²)","460 nm (LED bleu)"],
+    proto:"4-8 semaines — normalisation Hb"},
+};
+
+// Plantes: [nom, H_dominant, pathologie_cible, dosage, frequence_opti, action, pmid]
+const plantDB = [
+  ["Cannelle","H₃+H₇","diabete","1-6g/j","2.718 Hz","Insulino-sensibilisateur ↓glycémie 18-29%","14633804"],
+  ["Gymnema","H₃","diabete","400mg/j","2.718 Hz","Régénération β pancréatiques","15362283"],
+  ["Momordica","H₁+H₃","diabete","500mg/j","1.618 Hz","Insulino-mimétique","21211581"],
+  ["Myrtille","H₆+H₈","diabete","300mg/j","26.18 Hz","Protection microvasculaire","22429334"],
+  ["Nopal","H₁","diabete","2g fibres","1.618 Hz","↓absorption glucose 40-50%","17459163"],
+  ["Hibiscus","φ/π","hta","Tisane 2g×2/j","3.14 Hz","IEC naturel =captopril 25mg","20141501"],
+  ["Ail frais","H₂","hta,infection","2-4 gousses/j","3.14 Hz","Vasodilatateur NO + antibiotique","18554422"],
+  ["Olivier","H₂+H₄","hta","500mg/j","14.14 Hz","↓PA 11/4 mmHg","21062389"],
+  ["Aubépine","H₂+H₇","hta,insuff_card","250mg×2/j","1.2 Hz","Cardiotonique + vasodilatateur","18258668"],
+  ["Lavande","H₁","anxiete","HE inhalation","1.618 Hz","Anxiolytique","20512042"],
+  ["Valériane","H₁","anxiete,insomnie","400mg/coucher","1.618 Hz","↓latence sommeil 15-20min","17145239"],
+  ["Camomille","H₁+H₂","anxiete,digestif","Tisane 2g×3/j","1.618 Hz","Anti-spasmodique + apaisant","—"],
+  ["Passiflore","H₁","anxiete","500mg/j","1.618 Hz","Anxiolytique GABA-like","—"],
+  ["Millepertuis","H₄+H₅","depression","300mg×3/j","17.32 Hz","=ISRS (dépression légère-modérée)","18843608"],
+  ["Ginseng","Tous H₁-H₇","fatigue,depression","200mg/j","1.618 Hz","Adaptogène systémique","—"],
+  ["Rhodiole","H₅","fatigue,depression","300mg/j","17.32 Hz","Anti-fatigue + antidépresseur","—"],
+  ["Curcuma","H₆·H₂","inflamm,cancer","2g+poivre/j","22.36 Hz","Anti-inflammatoire NF-κB, COX-2","18523923"],
+  ["Arnica","H₂","inflamm,trauma","Gel externe","3.14 Hz","↓hématomes 40-50%","17302785"],
+  ["Harpagophytum","H₂","inflamm,arthrose","500mg×3/j","3.14 Hz","Anti-inflammatoire articulaire","—"],
+  ["Artemisia annua","H₃","paludisme,cancer","5g/L tisane×7j","2.718 Hz","=ACT paludisme + fer-targeting","15330172"],
+  ["Thé vert","H₁·φ","cancer,diabete","3-5 tasses/j","1.618 Hz","Anti-télomérase EGCG","15916818"],
+  ["Reishi","H₇","cancer,immunodepression","1g/j","8.65 Hz","↑NK 30-50% + immunomodulateur","14585224"],
+  ["Gui","H₁+H₃","cancer","Injection Iscador","1.618 Hz","Cytotoxique sélectif + immunostimulant","14508765"],
+  ["Prêle","H₆","fracture,osteoporose","500mg/j","22.36 Hz","Silice reminéralisation osseuse","—"],
+  ["Moringa","Spectre complet","malnutrition,anemie","10g/j","—","25% protéines + fer + Ca + vitamines","—"],
+  ["Aloe vera","H₄","plaie,brulure","Gel frais 3×/j","14.14 Hz","Cicatrisation + anti-inflammatoire","—"],
+  ["Eucalyptus","H₂","asthme,infection resp","HE inhalation","3.14 Hz","Expectorant + antiseptique","—"],
+  ["Échinacée","H₇","infection","500mg×3/j","8.65 Hz","Immunostimulant NK + macrophages","—"],
+  ["Safran","H₁+H₅","depression","30mg/j","17.32 Hz","Antidépresseur (études cliniques)","—"],
+];
+
+// Fréquences : [freq, harmonique, modalité, effet, organe, pmid]
+const freqDB = [
+  ["1.618 Hz","H₁(φ)","Binaural","Induction thêta. Régulation SNA. Apoptose.","Cerveau,Pancréas","25972808"],
+  ["3.14 Hz","H₂(π)","Binaural","Régulation endothéliale. Vasodilatation NO. Anti-inflammatoire.","Cœur,Artères","28364364"],
+  ["2.718 Hz","H₃(e)","PEMF","Anti-prolifératif. Modulation croissance cellulaire.","Foie,Mitochondries","21948568"],
+  ["7.83 Hz","Schumann","Magnétique","Synchronisation SNA-Terre. ↓tonus sympathique.","Système nerveux","20537613"],
+  ["8.65 Hz","H₇(e/π)","Binaural","Clarification signal. Mémoire +15-25%. Résonance ADN.","Hippocampe,ADN","25972808"],
+  ["10 Hz","Alpha","TMS/Binaural","↓cortisol. Antidépresseur. Relaxation.","Cortex préfrontal","20537613"],
+  ["14.14 Hz","H₄(√2)","Piézo","Élasticité artérielle. Synthèse collagène. Consolidation.","Artères,Os","25488808"],
+  ["17.32 Hz","H₅(√3)","Binaural","Bêta bas créatif. Antidépresseur cognitif.","Cortex préfrontal","25972808"],
+  ["22.36 Hz","H₆(√5)","Piézo","Structure glucidique. Régénération osseuse.","Pancréas,Os","—"],
+  ["26.18 Hz","H₈(φ²)","Piézo","Régénération mitochondriale. Oxygénation.","Mitochondries","—"],
+  ["27.18 Hz","H₃×10(e)","PEMF","Anti-glioblastome −40% in vitro.","Tumeurs","21948568"],
+  ["40 Hz","Gamma","LED/Lumière","Activation microgliale. ↓plaques amyloïdes.","Cerveau","27929004"],
+  ["100-300 Hz","H₃ gamme","Audio","Anti-HeLa/MCF-7 −30-50% in vitro.","Tumeurs","29363368"],
+  ["528 Hz","Réparation ADN","Audio","Réparation ADN. ↓stress oxydatif.","ADN,Neurones","24705219"],
+  ["460 nm","H₂(π)","LED bleu","↓cytokines 40-60%. Anti-inflammatoire.","Macrophages","28364364"],
+  ["630+680 nm","φ+√2","LED rouge","Photobiomodulation cicatrisante. ↑ATP 30-50%.","Peau","27872767"],
+];
+
+// Organes : [nom, H_dominant, frequence_resonance, modalite]
+const organDB = [
+  ["Cœur","H₂(π)","1.2 Hz","PEMF cardiaque"],
+  ["Cerveau","H₇(e/π)","0.5-100 Hz","Battements binauraux"],
+  ["Poumons","H₁(φ)","0.25 Hz","Piézo thoracique"],
+  ["Foie","H₃(e)","3-5 Hz","Piézo abdominal"],
+  ["Os","H₆(√5)+H₄(√2)","25-50 Hz","PEMF osseux"],
+  ["Sang","H₈(φ²)","460 nm","LED bleu"],
+  ["Muscles","H₄(√2)","10-30 Hz","PEMF"],
+  ["Dents","H₆(√5)+H₄(√2)","30-60 Hz","Piézo localisé"],
+  ["Œil (rétine)","H₂(π)+H₈(φ²)","460-630 nm","LED"],
+  ["ADN","H₇(e/π)","380-390 nm","LED UV proche"],
+  ["Immunité","H₇(e/π)+H₃(e)","8.65 Hz","Binaural"],
+  ["Pancréas","H₁(φ)+H₃(e)","1.618 Hz","Binaural+Piézo"],
+  ["Peau","H₁(φ)+H₄(√2)","630+680 nm","LED rouge"],
+  ["Artères","H₂(π)+H₄(√2)","14.14 Hz","Piézo carotidien"],
+];
+
+// ===== INIT =====
+document.getElementById('statSymptoms').textContent = symptomDB.length;
+document.getElementById('statPaths').textContent = Object.keys(pathologyDB).length;
+document.getElementById('statPlants').textContent = plantDB.length;
+document.getElementById('statFreqs').textContent = freqDB.length;
+document.getElementById('statOrgs').textContent = organDB.length;
+
+// Build symptom grid
+const sg = document.getElementById('symptomGrid');
+const catNames = {gen:'Généraux',cardio:'Cardio',psy:'Psy',dig:'Digestifs',musc:'Musculo-Sq.',peau:'Peau',resp:'Respiratoires',orl:'ORL',spec:'Spécifiques'};
+let lastCat = '';
+symptomDB.forEach(s => {
+  if(s[2] !== lastCat){
+    const h4 = document.createElement('div');
+    h4.style.cssText = 'font-size:0.7em;color:var(--ink3);grid-column:1/-1;margin:4px 0 0;font-weight:600';
+    h4.textContent = catNames[s[2]] || s[2];
+    sg.appendChild(h4);
+    lastCat = s[2];
+  }
+  const btn = document.createElement('div');
+  btn.className = 'sym-btn';
+  btn.textContent = s[1];
+  btn.setAttribute('data-id', s[0]);
+  btn.addEventListener('click', () => {
+    if(selectedSyms.has(s[0])){selectedSyms.delete(s[0]);btn.classList.remove('selected')}
+    else{selectedSyms.add(s[0]);btn.classList.add('selected')}
+  });
+  sg.appendChild(btn);
+});
+
+let selectedSyms = new Set();
+
+// Build plant list
+const pl = document.getElementById('plantList');
+plantDB.forEach(p => {
+  const div = document.createElement('div');
+  div.style.cssText = 'padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);';
+  div.innerHTML = `<span style="color:var(--green);font-weight:600">${p[0]}</span> <span style="color:var(--ink3);font-size:0.85em">→ ${p[2]}</span><br><span style="font-size:0.75em;color:var(--ink3)">H: <span style="color:var(--acc)">${p[1]}</span> | ${p[3]} | Fréq: <span style="color:var(--phi)">${p[4]}</span> | ${p[5]}${p[6]!=='—'?' (PMID:'+p[6]+')':''}</span>`;
+  pl.appendChild(div);
+});
+
+// ===== ANALYSE =====
+function analyzeSymptoms(){
+  if(selectedSyms.size === 0){alert('Sélectionnez des symptômes');return}
+  
+  const hScores = {phi:0,pi:0,e:0,r2:0,r3:0,r5:0,eDivPi:0};
+  const pathScores = {};
+  
+  selectedSyms.forEach(sid => {
+    const s = symptomDB.find(x=>x[0]===sid);
+    if(!s)return;
+    const c = s[3]==='H₁'?'phi':s[3]==='H₂'?'pi':s[3]==='H₃'?'e':s[3]==='H₄'?'r2':s[3]==='H₅'?'r3':s[3]==='H₆'?'r5':'eDivPi';
+    hScores[c] = (hScores[c]||0) + s[5];
+    if(s[6]){
+      s[6].split(',').forEach(p => {pathScores[p.trim()] = (pathScores[p.trim()]||0) + s[5]});
+    }
+  });
+  
+  const total = Object.values(hScores).reduce((a,b)=>a+b,0) || 1;
+  const sortedPaths = Object.entries(pathScores).sort((a,b)=>b[1]-a[1]).filter(p=>p[1]>=2).slice(0,4);
+  
+  let html = '<h3>Spectre Harmonique du Patient</h3>';
+  html += '<div class="spectrum-bar">';
+  const hsKeys = ['phi','pi','e','r2','r3','r5','eDivPi'];
+  const hsColors = ['var(--orange)','var(--acc)','var(--phi)','var(--green)','var(--acc2)','var(--red)','var(--phi2)'];
+  hsKeys.forEach((k,i) => {
+    if(hScores[k]>0) html += `<div class="s-seg" style="width:${(hScores[k]/total*100).toFixed(0)}%;background:${hsColors[i]}" title="${hNames[i+1]}: ${hScores[k]}"></div>`;
+  });
+  html += '</div><div style="margin:6px 0">';
+  hsKeys.forEach((k,i) => {
+    if(hScores[k]>0) html += `<span class="tag h${i+1}">${hNames[i+1]}: ${hScores[k]}</span>`;
+  });
+  html += '</div>';
+  
+  if(sortedPaths.length === 0) html += '<p style="color:var(--ink3)">Aucun diagnostic dominant. Ajoutez plus de symptômes.</p>';
+  else {
+    html += `<h3>📋 Diagnostics (${sortedPaths.length}) — ${selectedSyms.size} symptômes analysés</h3>`;
+    sortedPaths.forEach(([pk,score]) => {
+      const p = pathologyDB[pk];
+      if(!p)return;
+      const conf = Math.min(95, Math.round(score/15*100));
+      html += `<div class="result-card" style="border-left:3px solid ${p.u?'var(--red)':'var(--acc)'}">`;
+      html += `<strong style="color:${p.u?'var(--red)':'var(--acc)'}">${p.u?'⚠ ':''}${p.n}</strong> <span style="color:var(--ink3);font-size:0.78em">(confiance: ${conf}%)</span>`;
+      html += `<p style="color:var(--ink3);font-size:0.78em;margin:4px 0">${p.d}</p>`;
+      html += '<div style="margin:4px 0">';
+      p.hs.forEach(h => {
+        let hc = 'h1';
+        if(h.includes('H₂'))hc='h2';else if(h.includes('H₃'))hc='h3';else if(h.includes('H₄'))hc='h4';
+        else if(h.includes('H₅'))hc='h5';else if(h.includes('H₆'))hc='h6';else if(h.includes('H₇'))hc='h7';
+        else if(h.includes('H₈'))hc='h7';
+        html += `<span class="tag ${hc}">${h}</span>`;
+      });
+      html += '</div>';
+      html += '<p style="color:var(--green);font-weight:600;font-size:0.75em;margin:8px 0 2px">🌿 Plantes</p>';
+      p.plants.forEach(pn => {
+        const pd = plantDB.find(x=>x[0]===pn);
+        if(pd) html += `<div style="font-size:0.73em;color:var(--ink2);padding:2px 0">• ${pd[0]} (${pd[3]}) — Fréq: ${pd[4]} — ${pd[5]}${pd[6]!=='—'?' (PMID:'+pd[6]+')':''}</div>`;
+        else html += `<div style="font-size:0.73em;color:var(--ink2);padding:2px 0">• ${pn}</div>`;
+      });
+      html += '<p style="color:var(--phi);font-weight:600;font-size:0.75em;margin:8px 0 2px">🎵 Fréquences</p>';
+      p.freqs.forEach(f => {html += `<div style="font-size:0.73em;color:var(--phi);padding:2px 0">• ${f}</div>`});
+      html += `<p style="color:var(--phi2);font-size:0.73em;margin-top:6px">⏱ ${p.proto}</p>`;
+      html += '</div>';
+    });
+  }
+  
+  if(sortedPaths.some(([k])=>pathologyDB[k]?.u)) html += '<p style="color:var(--red);font-weight:600;margin-top:8px">⚠ Certains diagnostics nécessitent une consultation médicale urgente.</p>';
+  
+  document.getElementById('resultContent').innerHTML = html;
+}
+
+function resetSymptoms(){
+  selectedSyms.clear();
+  document.querySelectorAll('.sym-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('resultContent').innerHTML = '<div style="text-align:center;padding:30px"><div style="font-size:3em">🔍</div><p>Sélectionnez des symptômes et cliquez sur Diagnostic harmonique</p></div>';
+}
+
+console.log('═'.repeat(50));
+console.log('Modèle Médical Harmonique chargé');
+console.log(`${symptomDB.length} symptômes | ${Object.keys(pathologyDB).length} pathologies | ${plantDB.length} plantes | ${freqDB.length} fréquences | ${organDB.length} organes`);
+console.log('═'.repeat(50));
+</script>
+</body>
+</html>

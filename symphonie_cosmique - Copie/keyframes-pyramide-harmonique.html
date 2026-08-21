@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Keyframes HD — La Pyramide Harmonique | Prompts IA Image</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --orange: #ffa502;
+  --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;line-height:1.75;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse at 20% 8%, rgba(212,168,67,0.06), transparent 55%),
+    radial-gradient(ellipse at 60% 45%, rgba(62,240,216,0.04), transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(122,92,255,0.04), transparent 50%);
+  pointer-events:none;
+}
+.container{max-width:1200px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:10px 0}
+nav .container{display:flex;gap:3px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:5px 12px;border-radius:16px;font-size:0.80em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+nav a.active{color:var(--phi);border-color:rgba(212,168,67,0.5);background:rgba(212,168,67,0.1)}
+
+.hero{text-align:center;padding:60px 20px 55px;background:linear-gradient(180deg,rgba(212,168,67,0.1) 0%,rgba(62,240,216,0.05) 50%,transparent 100%)}
+.hero .badge{display:inline-block;padding:5px 14px;border-radius:14px;font-size:0.78em;font-weight:700;background:rgba(212,168,67,0.14);color:var(--phi);margin-bottom:16px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:2.2em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc2),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;line-height:1.3}
+.hero .tagline{font-size:1.05em;color:var(--ink2);max-width:700px;margin:0 auto}
+
+section{padding:45px 0}section:nth-child(even){background:var(--bg2)}
+h2{font-size:1.5em;color:var(--phi);margin-bottom:8px;text-align:center;padding-bottom:10px;border-bottom:1px solid var(--border)}
+h2 .num{display:block;font-size:0.38em;color:var(--ink3);letter-spacing:2px;margin-bottom:4px;font-weight:400;text-transform:uppercase}
+
+.img-card{
+  background:rgba(15,12,46,0.7);border:1px solid var(--border);border-radius:18px;
+  padding:24px 28px;margin:22px 0;transition:border-color 0.3s;
+  display:grid;grid-template-columns:180px 1fr;gap:24px;align-items:start;
+}
+.img-card:hover{border-color:rgba(212,168,67,0.35)}
+.img-card .img-meta{text-align:center}
+.img-card .img-id{
+  width:56px;height:56px;border-radius:50%;
+  background:linear-gradient(135deg,var(--phi),var(--acc));
+  color:var(--bg);font-weight:900;font-size:1.2em;
+  display:flex;align-items:center;justify-content:center;margin:0 auto 10px;
+}
+.img-card .img-scene{color:var(--phi);font-weight:600;font-size:0.85em;line-height:1.4}
+.img-card .img-ratio{color:var(--ink3);font-size:0.75em;margin-top:6px}
+.img-card .img-ratio span{display:block;color:var(--acc);margin-top:2px}
+.img-card .img-content{min-width:0}
+.img-card .img-title{color:var(--acc2);font-weight:700;font-size:1em;margin-bottom:4px}
+.img-card .img-desc{color:var(--ink3);font-size:0.82em;margin-bottom:12px;line-height:1.5}
+
+.prompt-block{
+  background:rgba(0,0,0,0.35);border:1px solid rgba(62,240,216,0.12);border-radius:12px;
+  padding:16px 20px;margin-bottom:10px;
+}
+.prompt-block .prompt-label{
+  font-size:0.68em;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+  margin-bottom:6px;padding:2px 8px;border-radius:5px;display:inline-block;
+}
+.prompt-block .prompt-label.mj{background:rgba(212,168,67,0.15);color:var(--phi)}
+.prompt-block .prompt-label.dalle{background:rgba(62,240,216,0.12);color:var(--acc)}
+.prompt-block .prompt-label.sd{background:rgba(122,92,255,0.12);color:var(--acc2)}
+.prompt-block .prompt-text{
+  color:var(--ink);font-size:0.86em;line-height:1.7;font-family:'Segoe UI',system-ui,sans-serif;
+  word-break:break-word;
+}
+.prompt-block .prompt-text em{color:var(--phi2);font-style:italic}
+
+.scene-sep{
+  text-align:center;padding:8px;margin:8px 0 20px;
+  border-top:1px dashed rgba(212,168,67,0.15);
+  color:var(--phi);font-weight:600;font-size:0.90em;letter-spacing:1px;
+}
+
+.params-box{
+  background:rgba(10,8,40,0.5);border:1px solid rgba(255,165,2,0.2);border-radius:10px;
+  padding:12px 18px;margin:8px 0;font-size:0.80em;color:var(--ink3);
+}
+.params-box strong{color:var(--orange)}
+
+.toc{background:rgba(15,12,46,0.5);border:1px solid var(--border);border-radius:14px;padding:20px 24px;margin:24px 0;columns:3;column-gap:20px}
+.toc a{display:block;color:var(--ink2);text-decoration:none;padding:2px 0;font-size:0.82em;transition:color 0.2s;break-inside:avoid}
+.toc a:hover{color:var(--phi)}
+.toc .toc-section{color:var(--phi);font-weight:600;font-size:0.88em;margin-top:10px;margin-bottom:3px}
+.toc .toc-section:first-child{margin-top:0}
+
+footer{text-align:center;padding:28px 20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.80em;margin-top:40px}
+footer a{color:var(--phi);text-decoration:none}
+
+@media(max-width:768px){
+  .img-card{grid-template-columns:1fr}
+  .toc{columns:2}
+}
+@media(max-width:480px){
+  .toc{columns:1}
+  .hero h1{font-size:1.4em}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Symphonie</a>
+    <a href="scenario-video-pyramide-harmonique.html">Scénario Vidéo</a>
+    <a href="construction-pyramide-harmonique.html">Pyramide φ</a>
+    <a href="maitrise-gravite-harmonique.html">Gravité</a>
+    <a href="#" class="active">Keyframes HD</a>
+    <a href="#acte1">Acte I</a>
+    <a href="#acte2">Acte II</a>
+    <a href="#acte3">Acte III</a>
+    <a href="#acte4">Acte IV</a>
+    <a href="#params">Paramètres IA</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">AI Image Prompts · 60 Keyframes HD</div>
+    <h1>KHÉOPS — Keyframes de la Pyramide Harmonique</h1>
+    <p class="tagline">60 prompts image optimisés pour Midjourney v7, DALL-E 4, Stable Diffusion SDXL/Flux — 3 à 5 keyframes HD par scène du film, prêts à générer pour servir de base au montage vidéo</p>
+  </div>
+</header>
+
+<div class="container">
+
+<div class="toc" id="toc">
+  <span class="toc-section">ACTE I — LE SAVOIR</span>
+  <a href="#kf1">KF 1.1 · Gizeh vierge à l'aube</a>
+  <a href="#kf2">KF 1.2 · Flottille sur le Nil</a>
+  <a href="#kf3">KF 2.1 · Tracé à la corde</a>
+  <a href="#kf4">KF 2.2 · Géométrie φ·π</a>
+  <a href="#kf5">KF 3.1 · Carrière d'Assouan</a>
+  <a href="#kf6">KF 3.2 · Obélisque inachevé</a>
+  <a href="#kf7">KF 4.1 · Triboluminescence</a>
+  <a href="#kf8">KF 4.2 · Diagramme piézo</a>
+
+  <span class="toc-section">ACTE II — CONSTRUCTION</span>
+  <a href="#kf9">KF 5.1 · Fondation nivelée</a>
+  <a href="#kf10">KF 5.2 · Joint parfait</a>
+  <a href="#kf11">KF 6.1 · Chambre du Roi</a>
+  <a href="#kf12">KF 6.2 · Sarcophage-diapason</a>
+  <a href="#kf13">KF 7.1 · Grande Galerie</a>
+  <a href="#kf14">KF 7.2 · Ondes sonores φ</a>
+  <a href="#kf15">KF 8.1 · Rituel Heka</a>
+  <a href="#kf16">KF 8.2 · Ondes stationnaires</a>
+  <a href="#kf17">KF 8.3 · Visage en transe</a>
+  <a href="#kf18">KF 9.1 · Bloc sur trépied</a>
+  <a href="#kf19">KF 9.2 · Eau qui ondule</a>
+  <a href="#kf20">KF 9.3 · Ψ₂ — Fils d'or</a>
+  <a href="#kf21">KF 9.4 · LÉVITATION</a>
+  <a href="#kf22">KF 9.5 · Bloc contre Voie Lactée</a>
+
+  <span class="toc-section">ACTE III — L'ÉLÉVATION</span>
+  <a href="#kf23">KF 10.1 · Ballet de blocs</a>
+  <a href="#kf24">KF 10.2 · Relève des chanteurs</a>
+  <a href="#kf25">KF 11.1 · Conduit + étoile</a>
+  <a href="#kf26">KF 11.2 · 4 conduits extérieurs</a>
+  <a href="#kf27">KF 12.1 · Nuit poétique</a>
+  <a href="#kf28">KF 13.1 · Pyramidion flottant</a>
+  <a href="#kf29">KF 13.2 · Architecte en larmes</a>
+  <a href="#kf30">KF 13.3 · Pyramide achevée</a>
+
+  <span class="toc-section">ACTE IV — L'HÉRITAGE</span>
+  <a href="#kf31">KF 14.1 · Portes scellées</a>
+  <a href="#kf32">KF 14.2 · Dernière torche</a>
+  <a href="#kf33">KF 15.1 · Pyramide blanche</a>
+  <a href="#kf34">KF 15.2 · Pillage médiéval</a>
+  <a href="#kf35">KF 15.3 · Pyramide nue</a>
+  <a href="#kf36">KF 16.1 · Touristes selfies</a>
+  <a href="#kf37">KF 16.2 · Main sur granite</a>
+  <a href="#kf38">KF 17.1 · Labo moderne</a>
+  <a href="#kf39">KF 17.2 · Δm sur écran</a>
+  <a href="#kf40">KF 17.3 · Larmes scientifique</a>
+  <a href="#kf41">KF 18.1 · Chantier futur</a>
+  <a href="#kf42">KF 18.2 · Hôpital en gravité</a>
+  <a href="#kf43">KF 18.3 · VMG sur highway</a>
+  <a href="#kf44">KF 18.4 · Lancement spatial</a>
+  <a href="#kf45">KF 18.5 · Cité φ désert</a>
+  <a href="#kf46">KF 18.6 · Pyramide restaurée</a>
+  <a href="#kf47">KF 18.7 · Pull-back Terre</a>
+
+  <span class="toc-section">POSTERS & TEASERS</span>
+  <a href="#kf48">KF P.1 · Affiche cinéma</a>
+  <a href="#kf49">KF P.2 · Teaser "Sound"</a>
+  <a href="#kf50">KF P.3 · Diagramme équation</a>
+</div>
+
+<!-- ===== GUIDE PARAMÈTRES ===== -->
+<section id="params">
+  <h2>Paramètres Globaux par Plateforme</h2>
+  <p class="section-desc">À ajouter systématiquement en suffixe de chaque prompt.</p>
+
+  <div class="params-box">
+    <strong>🟠 MIDJOURNEY v7 :</strong> <code>--ar 16:9 --style raw --s 750 --v 7.0 --q 2</code><br>
+    <em>Pour les portraits et gros plans :</em> <code>--ar 3:2 --style raw --s 500</code><br>
+    <em>Pour les plans très larges épiques :</em> <code>--ar 21:9 --style raw --s 900</code>
+  </div>
+  <div class="params-box">
+    <strong>🟢 DALL-E 4 :</strong> <code>16:9 aspect ratio, photorealistic, cinematic lighting, 8K resolution</code><br>
+    <em>Style prompt ajouté automatiquement. Privilégier "HD" dans le prompt.</em>
+  </div>
+  <div class="params-box">
+    <strong>🟣 STABLE DIFFUSION SDXL / FLUX :</strong> <code>photorealistic, 8k, masterpiece, cinematic lighting, volumetric light, ray tracing, subsurface scattering, --ar 16:9 --seed [fixe]</code><br>
+    <em>Negative prompt :</em> <code>cartoon, painting, illustration, 3d render, low quality, blurry, oversaturated, watermark, text</code>
+  </div>
+  <div class="params-box">
+    <strong>🌐 STYLE GLOBAL (préfixe commun) :</strong><br>
+    <code>Photorealistic historical epic cinematography. Ancient Egypt, 2550 BCE, IV Dynasty, Old Kingdom, reign of Pharaoh Khufu. Arri Alexa 65 anamorphic lens, golden hour or torchlit, warm amber and ochre palette, deep shadows, suspended dust particles, film grain.</code>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<!-- ACTE I -->
+<!-- ================================================================== -->
+<section id="acte1">
+  <h2><span class="num">ACTE I · LE SAVOIR</span>Keyframes Scènes 1 à 4</h2>
+</section>
+
+<!-- KF 1.1 -->
+<div class="img-card" id="kf1">
+  <div class="img-meta">
+    <div class="img-id">1.1</div>
+    <div class="img-scene">Scène 1<br>Gizeh Vierge</div>
+    <div class="img-ratio">📐 16:9<br><span>Plan aérien</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Le Plateau de Gizeh à l'Aube — 2550 av. J.-C.</div>
+    <div class="img-desc">Aerial establishing shot. Aucune pyramide n'existe encore. Le plateau est vierge.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Epic aerial cinematography, the Giza plateau at golden dawn, 2550 BCE. The desert plateau is pristine and untouched — no pyramids have been built yet, only the natural limestone bedrock emerging from endless golden sand dunes. The Nile River snakes through the desert in the far distance, its surface catching the first sunlight like liquid gold. The rising sun casts impossibly long dramatic shadows across the rippled sand. In the extreme far background, a tiny flotilla of wooden barges approaches on the Nile, carrying stone blocks. Thin columns of smoke rise from a small workers' camp at the plateau's edge. The Sphinx has not yet been carved. Warm amber and ochre tones, David Lean epic scale, Arri Alexa anamorphic lens flare from the sun. Photorealistic historical cinematography.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>A breathtaking aerial view of the Giza plateau in ancient Egypt, 2550 BCE, at sunrise. The desert is pristine with no pyramids yet built, only natural golden limestone formations emerging from vast sand dunes. The Nile River gleams in the distance under the first light of dawn. A distant flotilla of wooden Egyptian barges approaches on the water. Small wisps of campfire smoke rise from a workers' settlement at the plateau edge. Photorealistic, cinematic, epic scale, warm golden hour lighting, 16:9, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 1.2 -->
+<div class="img-card" id="kf2">
+  <div class="img-meta">
+    <div class="img-id">1.2</div>
+    <div class="img-scene">Scène 1<br>Nil</div>
+    <div class="img-ratio">📐 16:9<br><span>Plan moyen</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">La Flottille sur le Nil — Transport des Blocs</div>
+    <div class="img-desc">Gros plan sur les barges transportant le granite d'Assouan.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Medium shot, ancient Egyptian wooden barges on the Nile River, 2550 BCE. Massive pink-grey granite blocks from Aswan are loaded onto the barges, tied with thick hemp ropes. Egyptian boatmen with shaved heads and white linen loincloths pole the barges through papyrus reeds. The water is turquoise-blue, reflecting the intense midday sun. Heat haze shimmers above the stone blocks. Sweat glistens on the workers' muscular bodies. In the background, palm trees and desert cliffs. Photorealistic, National Geographic documentary style, historical accuracy, shallow depth of field on the granite blocks.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Ancient Egyptian barge on the Nile, massive granite blocks from Aswan quarry loaded on wooden boat, Egyptian sailors with white linen, papyrus reeds along riverbank, turquoise water, intense desert sun, heat haze, cinematic lighting, photorealistic 8k, historical documentary style.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 2.1 -->
+<div class="img-card" id="kf3">
+  <div class="img-meta">
+    <div class="img-id">2.1</div>
+    <div class="img-scene">Scène 2<br>Géométrie</div>
+    <div class="img-ratio">📐 16:9<br><span>Plan serré</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Le Tracé Sacré — La Corde à 12 Nœuds</div>
+    <div class="img-desc">L'architecte-prêtre trace φ et π sur le socle calcaire.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Close-up, an elderly Egyptian architect-priest kneels on the Giza limestone bedrock, bright desert sun. His weathered hands pull taut a knotted rope — the sacred 12-knot cord — tracing geometric lines with red ochre powder on the stone. The knots at positions 3, 4, 5 are visible, forming a perfect right-angled triangle. Surrounding younger priests in white linen hold wooden stakes. The limestone surface is covered with precise golden lines forming the golden ratio phi spiral and the pi ratio circle. Sweat drops from the architect's bald head glisten in the sun. Dust motes dance in a sunbeam. Hyper-realistic, extreme shallow depth of field on the rope and hands, Arri Alexa macro photography.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Close-up shot of an aged Egyptian architect-priest kneeling on limestone, pulling a knotted rope to trace sacred geometric patterns — the golden spiral and pi — with red ochre powder. Younger priests in white linen hold wooden stakes around him. The 12-knot rope shows the 3-4-5 triangle forming a right angle. Photorealistic macro photography, shallow depth of field, desert sunlight creating dust motes in the air, 16:9, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 2.2 -->
+<div class="img-card" id="kf4">
+  <div class="img-meta">
+    <div class="img-id">2.2</div>
+    <div class="img-scene">Scène 2<br>Plan</div>
+    <div class="img-ratio">📐 16:9<br><span>Plongée</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Le Plan au Sol — φ et π Gravés dans la Pierre</div>
+    <div class="img-desc">Vue plongeante sur le tracé géométrique complet.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Top-down overhead shot, the limestone bedrock of Giza plateau covered with geometric tracings. Red ochre lines form the base square of the future pyramid (230m side). A golden ratio phi spiral emanates from the center. Concentric circles mark the pi ratio (half-perimeter divided by height = 6.283). The 12-knot rope lies coiled near the center. Wooden stakes planted at precise cardinal points (N-S-E-W). The architect's hands are visible in the corner, still tracing. Sun casts no shadow at zenith. Sacred geometry meets architectural blueprint, photorealistic, mathematical beauty, bird's-eye view, National Geographic documentary style.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Top-down aerial view of limestone bedrock covered with ancient Egyptian geometric tracings in red ochre — golden ratio spiral, pi circle, cardinal alignments. Knotted rope, wooden stakes. Mathematical sacred geometry. Photorealistic, bird's-eye view, harsh desert sunlight casting no shadows at zenith. 8K, symmetrical composition.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 3.1 -->
+<div class="img-card" id="kf5">
+  <div class="img-meta">
+    <div class="img-id">3.1</div>
+    <div class="img-scene">Scène 3<br>Carrière</div>
+    <div class="img-ratio">📐 16:9<br><span>Plan large</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">La Carrière d'Assouan — Extraction du Granite</div>
+    <div class="img-desc">Vue panoramique de la carrière sous le soleil zénithal.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Wide establishing shot, the Aswan granite quarry, 2550 BCE, harsh midday sun. Hundreds of Egyptian workers extract massive pink-grey granite blocks from the living rock using copper chisels and wooden wedges soaked in water. The granite's crystalline structure sparkles — quartz inclusions glittering like trapped stars. Heat haze shimmers above the scorching stone. Sweat drips and evaporates instantly. A freshly cut 70-ton block is being maneuvered onto a wooden sledge by coordinated teams. In the background, the colossal unfinished obelisk — 1,200 tons, still attached to the bedrock — looms like a sleeping stone giant. High contrast, epic industrial scale, dust suspended in thick air, photorealistic, Denis Villeneuve aesthetic.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Wide panoramic shot of the ancient Aswan granite quarry in Egypt, 2550 BCE. Hundreds of workers extracting enormous pink-grey granite blocks using copper tools and water-soaked wooden wedges. Quartz crystals sparkle within the granite. Heat haze distorts the air. A massive 70-ton block is being moved onto a wooden sledge. In the background, the colossal 1,200-ton unfinished obelisk remains attached to the bedrock. Photorealistic, epic scale, harsh midday sun, cinematic, 16:9, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 3.2 -->
+<div class="img-card" id="kf6">
+  <div class="img-meta">
+    <div class="img-id">3.2</div>
+    <div class="img-scene">Scène 3<br>Obélisque</div>
+    <div class="img-ratio">📐 9:16<br><span>Vertical</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">L'Obélisque Inachevé — 1 200 Tonnes</div>
+    <div class="img-desc">Format vertical pour l'immensité du monolithe.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Vertical cinematic composition, the unfinished obelisk of Aswan, 2550 BCE. A colossal 1,200-ton granite monolith, still partially attached to the bedrock by its underside, lies horizontally in the quarry. Egyptian workers, tiny as ants in comparison, stand around and on top of it, highlighting its impossible scale. The granite surface is rough-hewn on three sides, the fourth still fused to the living rock. Quartz veins catch the harsh sunlight. The scale emphasizes that these ancient builders were NOT afraid of weight — they had a method we lost. Terrence Malick poetic composition, human figures for scale, photorealistic, vertical 9:16 framing emphasizing the monolith's length.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Vertical shot, the 1,200-ton unfinished obelisk in the Aswan granite quarry, ancient Egypt. Tiny human figures stand on and around the colossal monolith for scale. The obelisk is partially carved, still attached to bedrock. Quartz veins glitter in the sun. Photorealistic, epic scale emphasizing the impossible size, cinematic, 8K, vertical composition 9:16.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 4.1 -->
+<div class="img-card" id="kf7">
+  <div class="img-meta">
+    <div class="img-id">4.1</div>
+    <div class="img-scene">Scène 4<br>Piézo</div>
+    <div class="img-ratio">📐 16:9<br><span>Macro</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Triboluminescence — L'Étincelle dans la Pierre</div>
+    <div class="img-desc">Gros plan macro sur l'étincelle bleu-vert dans le quartz.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Extreme macro close-up, inside a dimly lit Egyptian temple workshop, a moment of scientific discovery. An ancient Egyptian priest strikes a dark granite block with a wooden mallet in near-total darkness. A brilliant blue-green spark flashes inside the quartz crystals embedded in the granite — triboluminescence — captured at the exact moment of impact. The spark illuminates the priest's face from below, his eyes wide with awe and understanding. The crystalline structure of the quartz is visible, light refracting and dancing within. This is not magic — this is the empirical discovery of piezoelectricity, 4,500 years before Curie. Ultra-high-speed photography aesthetic, the spark frozen in time, dramatic chiaroscuro lighting, photorealistic macro, 1:1 magnification.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Extreme macro photography, a granite block being struck in darkness. A brilliant blue-green electric spark flashes inside the quartz crystals embedded in the stone — the phenomenon of triboluminescence. The spark illuminates the face of an ancient Egyptian priest-scientist from below, his expression one of wonder. The crystalline structure of quartz is visible, with light refracting like trapped lightning. Photorealistic, dramatic lighting, macro photography, 16:9, 8K, moment of discovery.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 4.2 -->
+<div class="img-card" id="kf8">
+  <div class="img-meta">
+    <div class="img-id">4.2</div>
+    <div class="img-scene">Scène 4<br>Sciences</div>
+    <div class="img-ratio">📐 16:9<br><span>Diagramme</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Le Diagramme Piézoélectrique — Science Antique</div>
+    <div class="img-desc">Split : quartz moléculaire + équation Ψ₂ = π·(Ψ₁)² en or.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Split composition, scientific illustration meets ancient Egyptian aesthetic. LEFT SIDE: 3D molecular diagram of quartz crystal — silicon dioxide tetrahedra (SiO₂) deforming under mechanical pressure, generating an electric dipole moment. The tetrahedra glow with internal blue-green light. RIGHT SIDE: The harmonic equation Ψ₂ = π·(Ψ₁)² written in glowing golden Egyptian hieroglyphic-style symbols on a dark obsidian background. The phi symbol φ appears multiple times in gold. Surrounding the equation: geometric diagrams of the pyramid's cross-section, the King's Chamber, and sound wave propagation arrows. The background texture resembles ancient papyrus but with a futuristic holographic overlay. Scientific mysticism, Carl Sagan Cosmos meets ancient Egyptian temple art, photorealistic diagram quality, 16:9.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Scientific educational diagram split composition. Left: 3D molecular structure of quartz (SiO₂) deforming under pressure, generating piezoelectric dipole, blue-green internal glow. Right: Golden equation Ψ₂ = π·(Ψ₁)² in elegant typography, with phi symbols, surrounded by pyramid cross-section diagrams and sound wave propagation arrows. Ancient papyrus texture with holographic overlay. Scientific visualization, educational documentary style, photorealistic, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- ACTE II -->
+<!-- ================================================================== -->
+<section id="acte2">
+  <h2><span class="num">ACTE II · LA CONSTRUCTION</span>Keyframes Scènes 5 à 9</h2>
+</section>
+
+<!-- KF 5.1 -->
+<div class="img-card" id="kf9">
+  <div class="img-meta">
+    <div class="img-id">5.1</div>
+    <div class="img-scene">Scène 5<br>Fondation</div>
+    <div class="img-ratio">📐 16:9<br><span>Plan large</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">La Fondation Parfaite — 230m × 230m</div>
+    <div class="img-desc">Le socle nivelé avec une précision inférieure à 2 cm.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Wide shot, the Giza plateau transformed. The limestone bedrock has been leveled into a perfectly flat 230m × 230m square platform — accurate to within 2 centimeters across the entire surface. Water-filled trenches act as a giant spirit level, reflecting the sky. Workers are laying the first course of polished white Tura limestone casing blocks, each joint so tight that a human hair cannot penetrate. The blocks reflect the sky like mirrors. The foundation is precisely aligned to the cardinal points — due north, south, east, west — within 0.05 degrees. Morning sunlight strikes the polished limestone, creating a blinding white glow. This is not just a foundation — it's an acoustic reflector that will bounce sound waves into the structure. Photorealistic, epic scale, architectural precision, warm morning light, shallow depth of field emphasizing the joint precision, 16:9.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Wide architectural shot of the perfectly leveled Giza pyramid foundation platform — a 230m square of polished white limestone blocks so precisely joined that no gap is visible. Water-filled leveling trenches reflect the sky. The platform is aligned to cardinal points. Workers in white linen lay the first casing stones. The polished stone mirrors the morning sky. Photorealistic, epic scale, architectural documentary, 16:9, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 5.2 -->
+<div class="img-card" id="kf10">
+  <div class="img-meta">
+    <div class="img-id">5.2</div>
+    <div class="img-scene">Scène 5<br>Joint</div>
+    <div class="img-ratio">📐 3:2<br><span>Macro</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Le Joint Invisible — Précision Acoustique</div>
+    <div class="img-desc">Une main caresse la jonction entre deux blocs — aucun espace.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Extreme close-up, a weathered Egyptian worker's hand gently caresses the junction between two polished white limestone casing blocks. The joint is so incredibly fine that it is nearly invisible — thinner than a razor blade, thinner than a human hair. The polished stone surfaces reflect the sky like liquid mirrors, clouds visible in the reflection. Dust motes float in the air. The contrast between the rough, calloused human hand and the impossibly smooth, precise stone surface is striking. This precision is not aesthetic — it is ACOUSTIC. Each joint is a node of sound reflection. Photorealistic macro photography, hyper-detailed skin texture and stone surface, shallow depth of field, 3:2 aspect ratio, poetic composition.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Macro close-up of a rough Egyptian worker's hand touching the perfect polished joint between two white limestone blocks. The joint is razor-thin, near invisible. Stone surfaces reflect the sky like mirrors. Dust motes in sunlight. Poetic composition, photorealistic, macro lens, 8K, 3:2 ratio.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 6.1 -->
+<div class="img-card" id="kf11">
+  <div class="img-meta">
+    <div class="img-id">6.1</div>
+    <div class="img-scene">Scène 6<br>Chambre</div>
+    <div class="img-ratio">📐 16:9<br><span>Intérieur</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">La Chambre du Roi — Le Cœur Piézoélectrique</div>
+    <div class="img-desc">Intérieur de la chambre en construction, torches.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Interior cinematography, the King's Chamber of the Great Pyramid, under construction at the 50th course, 43 meters above ground, torchlit. Workers position the colossal 70-ton granite beams that form the ceiling using ropes and coordinated effort. The walls are polished red Aswan granite, reflecting dancing torch flames. A priest runs his hand over the wall and hums — visible vibration ripples travel across the granite surface. The black granite sarcophagus (3.5 tons) sits in the center — it is NOT a coffin, it is a TUNING FORK. Torch flames flicker in sync with the hum. The atmosphere is claustrophobic, sacred, and deeply technical. Cinematography: warm torchlight, deep red-black shadows, shallow depth of field, Ridley Scott meets Denis Villeneuve. 16:9, 8K photorealistic.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Interior of the King's Chamber in the Great Pyramid under construction, 2550 BCE. Torchlit red polished granite walls, workers positioning massive 70-ton granite ceiling beams. A black granite sarcophagus — actually a giant tuning fork — sits in the center. A priest hums and the wall visibly vibrates in response, torch flames flickering in sync. Sacred and technical atmosphere, warm firelight, photorealistic, 16:9, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 6.2 -->
+<div class="img-card" id="kf12">
+  <div class="img-meta">
+    <div class="img-id">6.2</div>
+    <div class="img-scene">Scène 6<br>Diapason</div>
+    <div class="img-ratio">📐 3:2<br><span>Serre</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Le Sarcophage-Diapason — 3.5 Tonnes de Granite Noir</div>
+    <div class="img-desc">Gros plan sur le sarcophage — un instrument, pas un cercueil.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Close-up, the black granite sarcophagus in the King's Chamber. 3.5 tons of polished Aswan granite, its surface gleaming like dark glass under torchlight. A priest's hand touches its edge gently. Subtle vibration patterns — Chladni figures — become visible on its surface as fine dust particles arrange themselves into geometric standing wave patterns. The sarcophagus is hollow, revealing its true purpose: a massive acoustic tuning fork, not a burial container. The resonance is palpable — you can feel the hum through the image. Photorealistic macro, chiaroscuro lighting, dust particles dancing in torchlight, sacred geometry Chladni patterns on dark granite, 3:2 aspect ratio, poetic and scientific simultaneously.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Close-up of the black granite sarcophagus in the King's Chamber — actually a 3.5-ton tuning fork, not a coffin. Chladni standing wave patterns made of fine dust visible on its polished surface. A hand touches its edge. Torchlight, dancing dust particles, sacred geometry patterns. Photorealistic, macro, dark and golden lighting, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 7.1 -->
+<div class="img-card" id="kf13">
+  <div class="img-meta">
+    <div class="img-id">7.1</div>
+    <div class="img-scene">Scène 7<br>Galerie</div>
+    <div class="img-ratio">📐 9:16<br><span>Vertical</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">La Grande Galerie — Guide d'Onde Ascendant</div>
+    <div class="img-desc">Format vertical pour la perspective ascendante à 26°.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Vertical low-angle cinematography, the Grand Gallery of the Great Pyramid under construction. The corbelled walls rise 8.5 meters high, narrowing toward the ceiling like an inverted trumpet bell. The 26° slope creates a dramatic upward perspective. Wooden resonator blades are inserted into the 28 regular notches along the side benches. Torchlight flickers, casting elongated dancing shadows. A priest strikes one of the wooden blades with a small hammer — the vibration is visible as a subtle distortion in the air. Golden sound wave pulses (subtle CGI visualization) bounce between the corbelled walls, being compressed and channeled upward toward the King's Chamber above. The architecture itself is the protagonist — no human figures needed. Vertical 9:16 framing emphasizing the steep ascent toward the light at the top. Photorealistic, majestic, claustrophobic, sacred engineering.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Vertical low-angle shot looking up the 26-degree slope of the Grand Gallery inside the Great Pyramid. Corbelled walls narrowing toward the ceiling, torchlit. Wooden blades in regular notches along the side benches. Subtle golden wave visualizations of sound compression traveling upward. Photorealistic, majestic interior architecture, warm torchlight, vertical 9:16, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 7.2 -->
+<div class="img-card" id="kf14">
+  <div class="img-meta">
+    <div class="img-id">7.2</div>
+    <div class="img-scene">Scène 7<br>Ondes</div>
+    <div class="img-ratio">📐 16:9<br><span>CGI</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Visualisation des Ondes — La Grande Galerie comme Instrument</div>
+    <div class="img-desc">Diagramme 3D montrant les ondes sonores dans la galerie.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>3D cutaway scientific diagram of the Grand Gallery and King's Chamber inside the Great Pyramid. The corbelled walls are shown in cross-section. Golden sinusoidal sound waves (104 Hz) travel upward from the bottom of the gallery, being compressed and amplified as they bounce between the narrowing walls. The 28 resonator blades are visible, each emitting a harmonic frequency. The waves converge at the King's Chamber, where the granite walls convert the acoustic energy into piezoelectric electric fields — shown as blue-white branching lightning patterns. The 5 relief chambers above act as stacked amplifiers. Below, the pyramid's foundation reflects waves upward. The entire cross-section glows with internal energy — the pyramid is ALIVE with sound. Scientific visualization, photorealistic 3D render, cinematic lighting, cutaway view, 16:9, beautiful golden and blue color palette.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>3D cutaway scientific visualization of the Great Pyramid's Grand Gallery and King's Chamber. Golden 104 Hz sound waves compressing upward, 28 resonator blades emitting harmonic frequencies, piezoelectric blue-white energy in the granite chamber, 5 relief chambers as stacked amplifiers. The pyramid glows from within. Photorealistic render, beautiful golden-blue palette, 16:9, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 8.1 — LE RITUEL -->
+<div class="img-card" id="kf15">
+  <div class="img-meta">
+    <div class="img-id">8.1</div>
+    <div class="img-scene">Scène 8<br>Heka</div>
+    <div class="img-ratio">📐 16:9<br><span>Plan large</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Le Rituel du Heka — 40 Prêtres en Transe</div>
+    <div class="img-desc">Vue d'ensemble de la Chambre du Roi pendant le rituel.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Wide shot, inside the torchlit King's Chamber of the Great Pyramid, night, 2550 BCE. FORTY Egyptian priests in identical white linen garments, heads shaved, stand in perfect concentric circles around the central black granite sarcophagus. Their eyes are closed. A single high priest raises a bronze sistrum — the metallic instrument catches the torchlight. The moment is frozen just BEFORE the first sound. The air is thick with incense smoke and suspended dust particles. The red granite walls glow warmly. The atmosphere is one of absolute sacred concentration — this is not a religious ceremony, this is a TECHNOLOGICAL PROCEDURE. The 40 priests are not worshipping — they are about to activate the world's largest musical instrument. Epic cinematography, symmetrical composition, chiaroscuro torchlight, photorealistic, 16:9, 8K, Denis Villeneuve aesthetic.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Wide cinematic shot inside the King's Chamber of the Great Pyramid. Forty Egyptian priests in white linen stand in concentric circles around a black granite sarcophagus, eyes closed. A high priest raises a bronze sistrum instrument. Torchlight, incense smoke, suspended dust, red granite walls. Sacred technological atmosphere. Symmetrical composition, photorealistic, 16:9, 8K, epic cinematography.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 8.2 -->
+<div class="img-card" id="kf16">
+  <div class="img-meta">
+    <div class="img-id">8.2</div>
+    <div class="img-scene">Scène 8<br>Ondes</div>
+    <div class="img-ratio">📐 16:9<br><span>Macro</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Ondes Stationnaires — La Poussière qui Danse</div>
+    <div class="img-desc">Les particules de poussière forment des nœuds et ventres visibles.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Macro close-up, inside the King's Chamber during the Heka ritual. Suspended dust particles and incense smoke in the air have arranged themselves into visible STANDING WAVE PATTERNS — alternating bands of dense and sparse particles forming nodes and antinodes of acoustic pressure. The particles glow golden in the torchlight, trapped in the 104 Hz standing wave. The pattern is perfectly geometric, like a 3D Chladni figure floating in mid-air. A single dust mote is frozen at a pressure antinode, vibrating intensely. The background is the blurred red granite wall with torch flames pulsing in perfect sync with the wave. Scientific poetry — the invisible made visible. Photorealistic macro, shallow depth of field, golden dust against dark background, 16:9, 8K.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Macro photography, suspended dust particles and incense smoke forming 3D standing wave patterns (Chladni figures) in mid-air inside the King's Chamber. Alternating dense and sparse bands — nodes and antinodes. Golden torchlit particles, pulsing flame in bokeh background. Photorealistic, scientific poetry, shallow depth of field, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 8.3 -->
+<div class="img-card" id="kf17">
+  <div class="img-meta">
+    <div class="img-id">8.3</div>
+    <div class="img-scene">Scène 8<br>Transe</div>
+    <div class="img-ratio">📐 3:2<br><span>Portrait</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Visage en Transe — Le Chant Diphonique</div>
+    <div class="img-desc">Portrait serré d'un prêtre en pleine émission du bourdon.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Intense portrait close-up, an Egyptian priest in the King's Chamber during the Heka ritual. His shaved head glistens with sweat. His mouth is open, throat muscles visibly tensed, producing the deep 104 Hz drone in DIPHONIC OVERTONE SINGING — two notes simultaneously from one voice. Veins stand out on his neck. His eyes are rolled back, showing only white — he is in a state of deep trance, not sleep but hyper-concentration. Torchlight from below casts dramatic shadows upward on his face, creating an almost supernatural chiaroscuro. Every pore, every drop of sweat, every muscle fiber is visible. This is not ecstasy — this is TECHNOLOGY. The human voice as a precision instrument. Hyper-realistic portrait, 85mm lens, f/1.4, photorealistic, 3:2 aspect ratio, raw emotion, National Geographic portrait quality.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Extreme close-up portrait of an Egyptian priest in trance inside the torchlit King's Chamber. Sweat glistening on shaved head. Throat muscles tensed, mouth open in overtone chant producing deep drone. Eyes rolled back showing white. Dramatic upward torchlight creating chiaroscuro shadows. Hyper-realistic, intense, raw, 3:2 portrait, 8K, National Geographic quality.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 9.1 — LA LÉVITATION — Keyframes clés -->
+<div class="img-card" id="kf18">
+  <div class="img-meta">
+    <div class="img-id">9.1</div>
+    <div class="img-scene">⭐ Scène 9<br>Pré-lévit.</div>
+    <div class="img-ratio">📐 16:9<br><span>Plan moyen</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Pré-Lévitation — Le Bloc sur le Trépied</div>
+    <div class="img-desc">La masse de 2.5 tonnes attend dans son bassin d'eau.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Medium shot, night, the partially-built Great Pyramid. A massive 2.5-ton limestone block sits on a wooden tripod at the pyramid's base, partially submerged in a shallow water basin. The water acts as an acoustic coupling medium. Forty workers stand ready with thick hemp ropes, but they are NOT pulling — they are GUIDING, their postures relaxed, waiting. Above them, on the 50th course (~43m up), a faint golden glow emanates from the King's Chamber's ventilation shafts. The low-frequency drone of the priests' chant drifts down. The water in the basin begins to ripple in perfect concentric circles. The block's surface starts to HUM — subtle vibration visible. The Milky Way stretches across the sky above. The atmosphere is tense with anticipation — everyone knows what is about to happen. Cinematic, photorealistic, night scene lit by starlight and the distant golden glow, 16:9, 8K.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Night scene at the base of the half-built Great Pyramid. A 2.5-ton limestone block on a wooden tripod in a shallow water basin. Forty workers with hemp ropes stand relaxed, waiting. Golden glow from the King's Chamber above. Water rippling in concentric circles from vibration. Milky Way in the sky. Cinematic, photorealistic, anticipation, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 9.2 -->
+<div class="img-card" id="kf19">
+  <div class="img-meta">
+    <div class="img-id">9.2</div>
+    <div class="img-scene">⭐ Scène 9<br>Eau</div>
+    <div class="img-ratio">📐 16:9<br><span>Macro</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">L'Eau qui Ondule — Le Couplage Acoustique</div>
+    <div class="img-desc">Macro sur les rides concentriques dans le bassin.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Extreme macro close-up, the surface of the shallow water basin at the base of the pyramid. Perfect concentric circular ripples emanate from the center, each ring precisely spaced at the wavelength of the 104 Hz drone. The water surface acts as a cymatic plate — the sound is made visible. The reflection of the Milky Way and the distant golden glow from the King's Chamber is distorted and fragmented by the ripples into a thousand dancing star-points. The wooden tripod legs are visible entering the water, also vibrating. This is the moment when the energy becomes visible — when sound transforms into physical force. Photorealistic macro, abstract beauty, golden and blue reflections, 16:9, 8K, poetic and scientific.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Extreme macro of water surface with perfect concentric circular ripples — cymatic patterns made visible by 104 Hz sound vibration. The reflection of the starry night sky and distant golden pyramid glow is fragmented into dancing light points by the ripples. Wooden tripod legs vibrate in the water. Photorealistic, abstract beauty, 16:9, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 9.3 -->
+<div class="img-card" id="kf20">
+  <div class="img-meta">
+    <div class="img-id">9.3</div>
+    <div class="img-scene">⭐ Scène 9<br>Ψ₂</div>
+    <div class="img-ratio">📐 16:9<br><span>CGI overlay</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Ψ₂ — Les Fils d'Or de la Gravité</div>
+    <div class="img-desc">Visualisation des harmoniques gravitationnelles autour du bloc.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Cinematic scientific visualization, the 2.5-ton limestone block seen in semi-transparent X-ray style. Surrounding the block, fine GOLDEN THREADS of light represent Ψ₂ — the gravitational harmonic. The threads are densely woven around the block, then begin to THIN and STRETCH as the 104 Hz modulation takes effect. Some threads snap, dissolving into golden sparks. The block itself is semi-transparent, revealing its internal crystalline structure resonating. The background is the night sky with stars. The golden threads form a beautiful geometric mandala pattern — sacred geometry meets quantum field visualization. The equation Ψ₂ = π·(Ψ₁)² appears faintly in gold in the corner. Scientific poetry, photorealistic CGI, 16:9, 8K, Carl Sagan Cosmos meets ancient Egypt.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Semi-transparent 3D visualization of a limestone block surrounded by golden thread-like gravitational field lines (Ψ₂ harmonic). The threads are thinning and stretching as sound modulation takes effect, some snapping into golden sparks. Crystalline structure visible inside the block. Equation Ψ₂ = π·(Ψ₁)² faintly in gold. Sacred geometry mandala pattern. Photorealistic CGI, 8K, 16:9.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 9.4 — LA LÉVITATION — IMAGE CLÉ -->
+<div class="img-card" id="kf21">
+  <div class="img-meta">
+    <div class="img-id">9.4 ⭐</div>
+    <div class="img-scene">⭐ Scène 9<br>LÉVITATION</div>
+    <div class="img-ratio">📐 16:9<br><span>Plan large</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">⭐ LA LÉVITATION — Le Bloc S'Élève ⭐</div>
+    <div class="img-desc">L'IMAGE LA PLUS IMPORTANTE. Le bloc de 2.5 tonnes flotte.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>THE KEY IMAGE OF THE ENTIRE PROJECT. Wide cinematic shot, night under a canopy of stars. A 2.5-ton limestone block has RISEN OFF its wooden tripod and is FLOATING in mid-air alongside the face of the partially-built Great Pyramid. It ascends slowly, majestically, at about 1 meter per second — like a ship rising through water, not like a magic trick. Egyptian workers guide it with gentle tugs on hemp ropes, their bodies relaxed — they are STEERING, not lifting. The block casts a shadow on the pyramid's stepped limestone face. A faint golden glow emanates from the King's Chamber above. The water basin below still ripples. The workers' faces show focus and professionalism — this is their JOB, they've done it thousands of times. The effect must feel PHYSICAL and BELIEVABLE — like watching a hot air balloon rise, not like Harry Potter magic. The block should appear weightless but not CGI-fake — it has MASS, it has INERTIA, it's just not subject to gravity. Photorealistic historical cinematography, the most important image. 16:9, 8K, Arri Alexa anamorphic, epic scale, grounded realism.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Cinematic wide shot of a 2.5-ton limestone block LEVITATING in mid-air alongside the face of the half-built Great Pyramid at night. The block floats upward slowly, guided by Egyptian workers with ropes — they guide, not lift. A golden glow emanates from the King's Chamber above. Stars in the sky. The effect must look physically real — like a ship floating, not magic. Photorealistic, epic, 16:9, 8K, historically grounded.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 9.5 -->
+<div class="img-card" id="kf22">
+  <div class="img-meta">
+    <div class="img-id">9.5</div>
+    <div class="img-scene">⭐ Scène 9<br>Cosmos</div>
+    <div class="img-ratio">📐 21:9<br><span>Très large</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Silhouette Cosmique — Le Bloc contre la Voie Lactée</div>
+    <div class="img-desc">Plan ultra-large du bloc flottant devant la galaxie.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Extreme wide cinematographic shot, ultra-wide 21:9 aspect ratio. The partially-built Great Pyramid occupies the left third of the frame. Above it, against the full splendor of the Milky Way galaxy stretching across the entire sky, a single 2.5-ton limestone block floats in silhouette — a dark geometric rectangle ascending toward the stars. The block is tiny against the cosmic backdrop, emphasizing both the magnitude of the achievement and the humility of the builders. The golden glow from the King's Chamber is a pinprick of warm light. Below, the desert stretches into infinity. The image is deeply poetic — humanity reaching for the cosmos not with rockets, but with SOUND. The oldest science in the universe. Terrence Malick aesthetic, cosmic scale, photorealistic astrophotography quality, 21:9 ultra-wide cinema format, 8K, deeply moving composition.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Ultra-wide 21:9 cinematic shot. The silhouette of the half-built Great Pyramid on the left. A single floating limestone block, tiny, silhouetted against the full Milky Way galaxy stretching across the sky. Golden pinprick glow from the King's Chamber. Desert below. Humanity reaching for the cosmos through sound. Terrence Malick poetry, photorealistic astrophotography, 8K, deeply moving.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- ACTE III -->
+<!-- ================================================================== -->
+<section id="acte3">
+  <h2><span class="num">ACTE III · L'ÉLÉVATION</span>Keyframes Scènes 10 à 13</h2>
+</section>
+
+<!-- KF 10.1 -->
+<div class="img-card" id="kf23">
+  <div class="img-meta">
+    <div class="img-id">10.1</div>
+    <div class="img-scene">Scène 10<br>Ballet</div>
+    <div class="img-ratio">📐 16:9<br><span>Plan large</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Ballet de Blocs — La Danse de la Construction</div>
+    <div class="img-desc">Multiple blocs flottent simultanément à différentes hauteurs.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Epic wide shot, the Great Pyramid construction site at golden hour, in full operation. MULTIPLE 2.5-ton limestone blocks float simultaneously at different heights alongside the pyramid's stepped face — a BALLET of stone blocks ascending in slow, graceful arcs like a choreographed dance. Workers on the current top course receive each block with precise hand gestures, guiding them into position. When a block settles, a tiny puff of limestone dust escapes. The pyramid now rises about 100 meters, its shape clearly visible. Dozens of workers coordinate seamlessly. The scene is not chaotic — it is a perfectly orchestrated industrial ballet. Golden hour sunlight bathes everything in warm amber light. Photorealistic, epic scale, dynamic composition, 16:9, 8K, David Lean meets Koyaanisqatsi.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Epic wide shot of the half-built Great Pyramid at golden hour. Multiple limestone blocks float simultaneously at different heights — a choreographed ballet of stones in mid-air. Workers on the pyramid receive each block with precise hand gestures. Golden sunlight, limestone dust puffs, perfect coordination. Photorealistic, epic, dynamic, 16:9, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 10.2 -->
+<div class="img-card" id="kf24">
+  <div class="img-meta">
+    <div class="img-id">10.2</div>
+    <div class="img-scene">Scène 10<br>Relève</div>
+    <div class="img-ratio">📐 3:2<br><span>Plan moyen</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">La Relève — Le Chant Ne S'Arrête Jamais</div>
+    <div class="img-desc">Changement d'équipe des chanteurs dans la Chambre du Roi.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Medium shot, inside the King's Chamber, day. A seamless shift change is happening. One group of exhausted priests exits through the narrow passage while a fresh group enters, all while the 104 Hz drone continues uninterrupted — the transition is flawless, like a choir breathing in rotation. An exiting priest drinks water from a clay cup, sweat soaking his linen. An entering priest rolls his shoulders, takes a deep breath, and seamlessly joins the drone without breaking its continuity. The mundane and the sacred coexist — this is a shift change at a construction site, not a mystical ceremony. Photorealistic documentary style, warm torchlight, human exhaustion and professionalism, 3:2, 8K.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Documentary-style medium shot inside the King's Chamber. Shift change of chanting priests — tired ones exit, fresh ones enter, the 104 Hz drone continues uninterrupted. A priest drinks water, another takes a deep breath and joins the chant. Torchlight, sweat, human professionalism. Photorealistic, 3:2, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 11.1 -->
+<div class="img-card" id="kf25">
+  <div class="img-meta">
+    <div class="img-id">11.1</div>
+    <div class="img-scene">Scène 11<br>Conduit</div>
+    <div class="img-ratio">📐 16:9<br><span>Intérieur</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Le Conduit des Étoiles — Calibration par Alpha Draconis</div>
+    <div class="img-desc">Vue à travers le conduit nord de la Chambre du Roi.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Cinematic shot looking THROUGH the narrow northern shaft of the King's Chamber (20cm × 20cm square cross-section). The granite walls of the shaft create a perfect square tunnel that frames the night sky. At the end of the tunnel, perfectly centered, shines Thuban — Alpha Draconis, the pole star of 2550 BCE. The star is brilliant white-blue. A faint overlay shows the shaft as a Helmholtz resonator: dimensions appear as glowing golden numbers (length ~60m, frequency ~X Hz). The granite surfaces of the shaft are polished smooth. A priest-scientist's eye is visible at the near end of the shaft, peering through. This is not stargazing — this is CALIBRATION. The stars are measurement instruments. Photorealistic, sci-fi meets antiquity, dramatic lighting, 16:9, 8K.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>POV shot looking through the narrow northern shaft of the King's Chamber — a perfect square granite tunnel framing Alpha Draconis, the ancient pole star, centered at the end. Glowing golden annotations mark the shaft as a Helmholtz resonator. A priest's eye peers through. Calibration, not stargazing. Photorealistic, 16:9, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 11.2 -->
+<div class="img-card" id="kf26">
+  <div class="img-meta">
+    <div class="img-id">11.2</div>
+    <div class="img-scene">Scène 11<br>4 conduits</div>
+    <div class="img-ratio">📐 16:9<br><span>Extérieur</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Les Quatre Conduits — Accordage Céleste</div>
+    <div class="img-desc">Vue extérieure de la pyramide avec les 4 conduits et leurs étoiles.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Exterior night shot of the Great Pyramid, with the four narrow shaft openings visible on its north and south faces. Four thin golden laser-like lines extend from each shaft opening and reach across the sky to connect with their respective stars: Orion's belt (Alnilam) for the south King shaft, Sirius for the south Queen shaft, Kochab for the north Queen shaft, and Alpha Draconis for the north King shaft. The shafts are labeled as "Helmholtz Resonators" with their frequencies noted. The sky is a deep indigo filled with stars. The pyramid is half-built, its stepped core visible. This is the world's largest musical instrument being tuned to the cosmos. Photorealistic with subtle scientific overlay, beautiful, 16:9, 8K, planetarium aesthetic.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Night exterior of the half-built Great Pyramid. Four golden lines extend from narrow shaft openings to connect with specific stars: Orion, Sirius, Kochab, Alpha Draconis. The shafts are labeled as Helmholtz resonators. The pyramid as a musical instrument tuned to the cosmos. Photorealistic with subtle scientific overlay, indigo starry sky, 16:9, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 12.1 -->
+<div class="img-card" id="kf27">
+  <div class="img-meta">
+    <div class="img-id">12.1</div>
+    <div class="img-scene">Scène 12<br>Nuit</div>
+    <div class="img-ratio">📐 21:9<br><span>Très large</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">La Nuit Poétique — Pain sous les Étoiles</div>
+    <div class="img-desc">Plan fixe contemplatif — un ouvrier mange sous la Voie Lactée.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Ultra-wide 21:9 static cinematic shot, the Great Pyramid under construction at 3 AM. The Milky Way stretches across the entire sky like a river of diamonds. The stepped pyramid core rises from the desert, a thin golden glow from the King's Chamber vents. In the foreground, a single Egyptian worker sits on a limestone block, eating flatbread and dried fish from a simple cloth, looking up at the stars. His face is tired but deeply peaceful. Fireflies or sparks from the distant quarry dance in the warm night air. The drone of the priests' endless chant drifts across the desert like a planetary OM. This is a moment of pure HUMANITY and CONTEMPLATION after the intensity of the construction scenes. Terrence Malick poetry, Lawrence of Arabia stillness, photorealistic astrophotography, 21:9 ultra-wide, 8K. The camera doesn't move — it breathes.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Ultra-wide 21:9 contemplative shot. The half-built Great Pyramid at 3 AM under the full Milky Way. A single worker sits eating bread on a stone block in the foreground, looking at the stars. His face is tired but peaceful. Distant golden glow from the pyramid. Fireflies. Terrence Malick poetic stillness, photorealistic astrophotography, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 13.1 -->
+<div class="img-card" id="kf28">
+  <div class="img-meta">
+    <div class="img-id">13.1</div>
+    <div class="img-scene">Scène 13<br>Pyramidion</div>
+    <div class="img-ratio">📐 16:9<br><span>Contre-plongée</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Le Pyramidion d'Or — La Dernière Pierre</div>
+    <div class="img-desc">Le pyramidion en or flotte vers le sommet au lever du soleil.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Dramatic low-angle cinematography, dawn at the Great Pyramid summit, 146.6 meters above the desert. The final stone — the PYRAMIDION — a solid gold or electrum capstone, polished to a blinding mirror finish, floats gently upward through the last few meters toward the apex. The rising sun strikes it directly, and it EXPLODES with reflected golden light — a second sun igniting at the pyramid's summit. The high priest stands on a wooden platform, arms raised in ceremonial reception. The sun flares dramatically behind the pyramidion, creating an anamorphic lens flare across the frame. The sky transitions from blue to gold to orange. This is the completion of a 20-year symphony. Photorealistic, epic, slow-motion aesthetic, contra-jour lighting, lens flare, 16:9, 8K, the most triumphant image of the collection.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Low-angle shot at dawn: a golden pyramidion capstone floats gently toward the apex of the completed Great Pyramid. The rising sun strikes the gold, creating a blinding explosion of reflected light — a second sun at the summit. A high priest stands on a platform receiving it. Dramatic lens flare, golden sky, photorealistic, epic, triumphant, 16:9, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 13.2 -->
+<div class="img-card" id="kf29">
+  <div class="img-meta">
+    <div class="img-id">13.2</div>
+    <div class="img-scene">Scène 13<br>Larmes</div>
+    <div class="img-ratio">📐 3:2<br><span>Portrait</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">L'Architecte en Larmes — 20 Ans de Symphonie</div>
+    <div class="img-desc">Gros plan sur le vieil architecte pleurant de joie.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Intimate portrait close-up, the old Egyptian architect-priest — the same man who traced the geometry on the bedrock 20 years earlier in Scene 2, now ancient, his face weathered by two decades of desert sun and sacred duty. Tears stream freely down his deeply wrinkled cheeks — tears of joy, of completion, of release. His eyes reflect the golden light of the pyramidion above. His mouth is slightly open, breathing deeply. The golden reflected light of the pyramidion illuminates his face from above. The pyramid is visible in the extreme background, tiny against the dawn sky. This is not sadness — this is ACCOMPLISHMENT. The 20-year symphony is complete. Hyper-realistic portrait, 85mm f/1.2, raw emotion, photorealistic National Geographic quality, 3:2, 8K, the most emotional human image of the collection.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Ultra-close-up portrait of an elderly Egyptian architect-priest, face deeply weathered, tears of joy streaming down his cheeks. Golden reflected pyramidion light illuminates his face from above. Twenty years of work completed. Hyper-realistic, raw emotion, National Geographic portrait quality, 85mm, f/1.2, 8K, 3:2.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 13.3 -->
+<div class="img-card" id="kf30">
+  <div class="img-meta">
+    <div class="img-id">13.3</div>
+    <div class="img-scene">Scène 13<br>Achevée</div>
+    <div class="img-ratio">📐 16:9<br><span>Plan large</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">La Pyramide Achevée — 5.75 Millions de Tonnes Vivantes</div>
+    <div class="img-desc">La pyramide complète, revêtement blanc, pyramidion d'or au soleil.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Epic wide establishing shot of the COMPLETED Great Pyramid of Giza, 2550 BCE. The pyramid is covered in its original smooth white Tura limestone casing, gleaming like a mountain of polished ivory under the brilliant Egyptian morning sun. The golden pyramidion at the apex catches the sunlight and blazes like a beacon visible for hundreds of kilometers. The pyramid is 146.6 meters tall, 230.4 meters at the base. Thousands of workers, priests, scribes, and craftsmen stand at the base, looking up in awe — a sea of tiny human figures at the foot of the mathematical mountain. Palm trees and the Nile visible in the far distance. The Sphinx has not yet been carved. This is the moment of COMPLETION — the world's greatest monument, built by sound. Photorealistic, epic historical scale, warm morning light, 16:9, 8K, the definitive image of the completed Great Pyramid in its original glory.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Epic wide shot of the fully completed Great Pyramid in 2550 BCE, covered in brilliant white polished Tura limestone casing, with a blazing golden pyramidion at the apex. Thousands of tiny human figures at the base looking up. The pyramid gleams under morning sun. Palm trees and Nile in distance. Photorealistic, epic, 16:9, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- ACTE IV -->
+<!-- ================================================================== -->
+<section id="acte4">
+  <h2><span class="num">ACTE IV · L'HÉRITAGE</span>Keyframes Scènes 14 à 18</h2>
+</section>
+
+<!-- KF 14.1 -->
+<div class="img-card" id="kf31">
+  <div class="img-meta">
+    <div class="img-id">14.1</div>
+    <div class="img-scene">Scène 14<br>Scellé</div>
+    <div class="img-ratio">📐 16:9<br><span>Intérieur</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Les Portes de Granite Scellées — La Mise au Silence</div>
+    <div class="img-desc">La main du vieux prêtre ferme les obturateurs des conduits.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Close-up, the aged hand of the high priest — weathered, spotted with age — pushing a granite portcullis block into place inside one of the narrow ventilation shafts of the King's Chamber. The stone grinds heavily against stone (CLUNK). The shaft beyond is dark. The priest's face is half in shadow, eyes somber. He is deactivating the world's largest musical instrument — passing it from ACTIVE MODE (construction tool) to PASSIVE MODE (eternal monument). The torchlight is dying. This is a funeral — not for a king, but for a technology. Photorealistic, chiaroscuro, solemn, 16:9, 8K, silent cinema aesthetic.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Close-up of an aged Egyptian priest's hand pushing a heavy granite door block into place inside a narrow shaft of the King's Chamber. The stone grinds against stone. Half-shadowed face, solemn expression. Deactivating the pyramid's acoustic function forever. Photorealistic chiaroscuro, solemn, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 14.2 -->
+<div class="img-card" id="kf32">
+  <div class="img-meta">
+    <div class="img-id">14.2</div>
+    <div class="img-scene">Scène 14<br>Noir</div>
+    <div class="img-ratio">📐 16:9<br><span>Intérieur</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">La Dernière Torche — Et le Silence</div>
+    <div class="img-desc">Le prêtre éteint la dernière torche. Noir total.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Wide shot, inside the King's Chamber. The old high priest stands alone, a single torch in his hand — the last source of light in the pyramid. The red granite walls are barely visible in the dying firelight. He looks around one final time at the chamber — the sarcophagus, the walls that vibrated, the shafts now sealed. His expression is of profound loss. He brings the torch to his lips and blows gently. The flame flickers, dances, and dies. The image should capture the EXACT MOMENT the flame goes out — the last ember suspended in mid-air, glowing orange, before plunging into absolute black. The instrument has fallen silent. Forever. Photorealistic, dramatic, the moment between light and darkness, 16:9, 8K, deeply moving.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Wide shot of a lone old Egyptian priest holding the last torch inside the King's Chamber. Red granite walls barely visible. He blows out the flame — the image captures the exact moment the flame dies, the last ember glowing orange in mid-air before darkness. The pyramid falls silent forever. Photorealistic, dramatic, 16:9, 8K, deeply moving.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 15.1 -->
+<div class="img-card" id="kf33">
+  <div class="img-meta">
+    <div class="img-id">15.1</div>
+    <div class="img-scene">Scène 15<br>Blanche</div>
+    <div class="img-ratio">📐 16:9<br><span>Plan large</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">La Pyramide Blanche — Splendeur Originelle</div>
+    <div class="img-desc">La pyramide intacte, casing blanc, sous le soleil d'Égypte.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Majestic wide shot of the completed Great Pyramid in its full original glory, ancient Egypt, Old Kingdom. The smooth white Tura limestone casing is immaculate — a perfect geometric mountain of polished white stone reflecting the intense Egyptian sun. The golden pyramidion blazes at the apex. The pyramid appears almost too perfect to be real — a mathematical ideal made manifest in stone. The desert around is empty of modern structures. Camels and palm trees in the foreground provide scale. The sky is deep blue. This is what the pyramid looked like for over 3,000 years before the casing was stripped. Photorealistic, epic beauty, architectural perfection, 16:9, 8K, the image that shows what we have LOST.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Majestic wide shot of the Great Pyramid in its original white limestone casing, golden pyramidion blazing at apex. Immaculate polished surface reflecting sunlight. Camels and palms for scale. Deep blue sky. Photorealistic, epic beauty, architectural perfection, 8K, showing what was lost.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 15.2 -->
+<div class="img-card" id="kf34">
+  <div class="img-meta">
+    <div class="img-id">15.2</div>
+    <div class="img-scene">Scène 15<br>Pillage</div>
+    <div class="img-ratio">📐 16:9<br><span>Plan moyen</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Le Pillage Médiéval — Les Pierres Arrachées</div>
+    <div class="img-desc">Ouvriers médiévaux du Caire démontent le revêtement blanc.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Medium shot, medieval Cairo, ~1300 CE. Workers on wooden scaffolds are prying the smooth white Tura limestone casing stones off the Great Pyramid. The polished blocks are being lowered by ropes and loaded onto donkey carts to be repurposed for mosques, palaces, and city walls in Cairo. The contrast is heartbreaking — the pristine mathematical perfection being stripped away piece by piece. The pyramid's stepped inner core is becoming visible where the casing has been removed. Dust fills the air. Ottoman-era clothing and tools. The image should convey the tragedy of knowledge lost — the acoustic mirror being dismantled stone by stone. Photorealistic historical scene, warm afternoon light, dust and labor, 16:9, 8K, elegiac tone.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Medieval Cairo, workers on scaffolding prying white limestone casing stones off the Great Pyramid. Blocks loaded onto donkey carts for reuse in city buildings. The stepped inner core becoming visible. Dust, labor, the tragedy of lost knowledge. Photorealistic historical, warm light, elegiac, 16:9, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 15.3 -->
+<div class="img-card" id="kf35">
+  <div class="img-meta">
+    <div class="img-id">15.3</div>
+    <div class="img-scene">Scène 15<br>Aujourd'hui</div>
+    <div class="img-ratio">📐 16:9<br><span>Plan large</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">La Pyramide Nue — Le Squelette de Pierre</div>
+    <div class="img-desc">La pyramide telle que nous la connaissons — core exposé.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Wide shot, present day, the Great Pyramid of Giza as it appears now. The white casing is completely gone, stripped to build medieval Cairo. The stepped inner core of rougher limestone blocks is fully exposed — the iconic silhouette the world knows. The contrast between the few remaining casing stones at the very base (smooth, white, perfect) and the rough stepped core above is poignant. Modern Cairo sprawls in the hazy distance, almost touching the pyramid's base. Tourists and camels are tiny specks. The sun sets behind the pyramid, casting a golden silhouette. This is the pyramid we inherited — stripped of its skin, but its heart of granite still beats silently inside. Photorealistic, documentary style, golden hour, 16:9, 8K, melancholic beauty.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Present-day Great Pyramid of Giza at golden hour — white casing gone, stepped inner core exposed. A few remaining casing stones at the base contrast with the rough upper core. Modern Cairo in the hazy distance. Tourists as tiny specks. Melancholic beauty, documentary style, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 16.1 -->
+<div class="img-card" id="kf36">
+  <div class="img-meta">
+    <div class="img-id">16.1</div>
+    <div class="img-scene">Scène 16<br>Touristes</div>
+    <div class="img-ratio">📐 16:9<br><span>Documentaire</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Visiteurs Ignorants — Selfies dans l'Instrument Sacré</div>
+    <div class="img-desc">Touristes dans la Chambre du Roi — sans savoir où ils sont.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Documentary-style shot, present day, inside the King's Chamber of the Great Pyramid. Modern tourists — a diverse group in casual clothing — take selfies and flash photos with their phones inside the red granite chamber. They have NO IDEA what they're standing inside — that this was once the heart of the world's largest musical instrument. The empty black granite sarcophagus sits ignored in the corner. The flash of a phone camera momentarily illuminates the polished granite walls, and for a split second, you can almost SEE the vibration patterns that once danced there. The contrast between the sacred technological past and the mundane tourist present is stark and ironic. A single tourist touches the granite wall and shivers — not from cold, but from something deeper they can't explain. Photorealistic documentary vérité, available light, 16:9, 8K, bittersweet irony.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Documentary shot inside the King's Chamber of the Great Pyramid, present day. Tourists taking selfies with phones, unaware they stand inside humanity's greatest acoustic instrument. The empty granite sarcophagus sits ignored. A single tourist touches the wall and shivers involuntarily. Flash photography, red granite walls. Bittersweet irony, photorealistic, 16:9, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 16.2 -->
+<div class="img-card" id="kf37">
+  <div class="img-meta">
+    <div class="img-id">16.2</div>
+    <div class="img-scene">Scène 16<br>Contact</div>
+    <div class="img-ratio">📐 3:2<br><span>Macro</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">La Main sur le Granite — Le Souvenir de la Vibration</div>
+    <div class="img-desc">Gros plan émotionnel — une main contemporaine sur le mur antique.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Extreme close-up, a modern human hand — of any ethnicity — pressed flat against the polished red granite wall of the King's Chamber. The contrast between the warm living skin and the cold ancient stone is powerful. The granite still bears the microscopic polish marks from 4,500 years ago. A faint, almost subliminal golden glow seems to emanate from within the stone — as if the 104 Hz resonance is still trapped inside, waiting. The image should convey that the pyramid REMEMBERS the frequency, even if we have forgotten. Photorealistic macro, shallow depth of field, emotional connection across millennia, 3:2, 8K, spiritual and scientific simultaneously.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Extreme close-up of a modern human hand pressed against the polished red granite wall of the King's Chamber. The ancient stone bears microscopic 4500-year-old polish marks. A faint golden glow seems trapped within the stone — the pyramid remembers the frequency. Photorealistic macro, emotional, spiritual-scientific, 8K, 3:2.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 17.1 -->
+<div class="img-card" id="kf38">
+  <div class="img-meta">
+    <div class="img-id">17.1</div>
+    <div class="img-scene">Scène 17<br>Labo</div>
+    <div class="img-ratio">📐 16:9<br><span>Intérieur</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Le Laboratoire du Futur — Validation Scientifique</div>
+    <div class="img-desc">Équipe internationale autour du modèle réduit en granite.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Interior, a clean modern physics laboratory, present day or near future. A diverse international team of scientists — Egyptian, European, Asian, African — women and men in white lab coats, stands around a precise scale model of the King's Chamber built from authentic Aswan granite (proportions φ²:φ:1, dimensions 2.618m × 1.618m × 1m). Piezoelectric sensors and electrodes are attached to the walls. A signal generator emits a clean 104 Hz tone. On large monitors, real-time graphs show frequency spectra and mass readings. The lead scientist — a young Egyptian woman in a hijab, intensely focused — checks a tablet. The atmosphere is one of controlled excitement — they are on the verge of proving something monumental. Photorealistic, cinematic lab lighting, blue-white clean aesthetic, diverse cast, 16:9, 8K.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Modern physics laboratory. A diverse international team of scientists — led by a young Egyptian woman — stands around a granite scale model of the King's Chamber (φ proportions, 2.618m long). Piezoelectric sensors attached. A signal generator emits 104 Hz. Large monitors display graphs. Controlled excitement. Photorealistic, cinematic, 16:9, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 17.2 -->
+<div class="img-card" id="kf39">
+  <div class="img-meta">
+    <div class="img-id">17.2</div>
+    <div class="img-scene">Scène 17<br>Δm</div>
+    <div class="img-ratio">📐 16:9<br><span>Écran</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">La Masse qui Diminue — Δm Observé</div>
+    <div class="img-desc">Gros plan sur l'écran : 10.000 kg → 9.985 kg.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Close-up of a large scientific monitor display in a modern physics lab. The screen shows a real-time mass measurement graph. The red digital readout displays: 10.000 kg. A 104 Hz signal is activated. The number begins to DROP — 9.998 → 9.995 → 9.992 → 9.988 → 9.985. A tiny change of 0.15%, but it's REAL and SUSTAINED. The graph line curves downward clearly. In the reflection on the glossy screen, we see the blurred faces of the scientists looking on in disbelief. Green indicator lights confirm the measurement is statistically significant (p < 0.001). The image captures the EXACT MOMENT of scientific validation — 4,500 years after the Egyptians last witnessed this phenomenon, modern science confirms it. Photorealistic, dramatic focus on the numbers, 16:9, 8K.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Close-up of a scientific monitor showing real-time mass measurement. Red digital readout drops from 10.000 kg to 9.985 kg — a small but real 0.15% decrease under 104 Hz acoustic excitation. Scientists' reflections visible in the glossy screen. The moment of validation. Photorealistic, dramatic focus on numbers, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 17.3 -->
+<div class="img-card" id="kf40">
+  <div class="img-meta">
+    <div class="img-id">17.3</div>
+    <div class="img-scene">Scène 17<br>Larmes</div>
+    <div class="img-ratio">📐 3:2<br><span>Portrait</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">La Révélation — "Ils Savaient"</div>
+    <div class="img-desc">La jeune scientifique égyptienne pleure de joie.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Intimate portrait close-up of a young Egyptian woman scientist, wearing a white lab coat and hijab, in a modern physics laboratory. Her face is illuminated by the glow of a monitor displaying the mass decrease data. Tears stream down her cheeks — tears of JOY, of PRIDE, of CONNECTION across 4,500 years. Her eyes are wide with wonder and emotion. Her lips part slightly — she whispers in Arabic: "3arafu. Ajdaduna kanu ya3lamun." (They knew. Our ancestors KNEW.) Behind her, out of focus, her colleagues are embracing and applauding. The image should capture the moment when science and heritage, past and present, fuse into one overwhelming emotion. Hyper-realistic portrait, 85mm f/1.2, raw authentic emotion, 3:2, 8K, the emotional climax of the entire visual collection.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Close-up portrait of a young Egyptian female scientist in a white lab coat and hijab, tears of joy streaming down her face. Her face is lit by the glow of a monitor showing the mass decrease data. She whispers "They knew." Colleagues celebrating behind her, out of focus. Hyper-realistic, raw emotion, 85mm portrait, 3:2, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 18.1 à 18.7 — FUTUR -->
+<div class="img-card" id="kf41">
+  <div class="img-meta">
+    <div class="img-id">18.1</div>
+    <div class="img-scene">Scène 18<br>Chantier</div>
+    <div class="img-ratio">📐 16:9<br><span>Futur</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Chantier du Futur — Construction Silencieuse</div>
+    <div class="img-desc">Un chantier sans grue, sans diesel, des blocs qui flottent.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Near-future construction site, silent and clean. NO diesel engines, NO cranes, NO scaffolding. A massive 50-ton prefabricated building module floats gently into position, guided by a handful of workers using tablet computers. The module hovers with millimeter precision before settling silently into place. The site is almost eerily quiet — no engine noise, no shouting. Other floating modules are visible in the background at various heights. Trees and grass grow around the construction site — there is no need for the barren dirt of traditional sites. Solar panels on nearby buildings power the harmonic modulators. The atmosphere is one of clean, quiet, technological elegance. Photorealistic, optimistic near-future, clean aesthetic, 16:9, 8K, sustainable utopia.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Near-future silent construction site. A 50-ton building module floats into position guided by workers with tablets. No cranes, no diesel engines, no scaffolding. Grass and trees around the site. Clean, quiet, technological elegance. Photorealistic, optimistic, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<div class="img-card" id="kf42">
+  <div class="img-meta">
+    <div class="img-id">18.2</div>
+    <div class="img-scene">Scène 18<br>Hôpital</div>
+    <div class="img-ratio">📐 16:9<br><span>Futur</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Hôpital en Gravité Modulée — Premiers Pas</div>
+    <div class="img-desc">Un patient d'AVC remarche en 0.3g, larmes de joie.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Interior of a near-future hospital room with modulated gravity. The room is a clean white space with subtle golden indicator lights showing the current gravity level: 0.3g. A stroke patient — an elderly person — takes their FIRST STEPS in months, walking with assistance but without the crushing weight of full gravity. Their face shows tears of joy and disbelief. A physiotherapist walks alongside, smiling warmly. Through a window, we see other patients in adjacent rooms also walking, floating gently in reduced gravity. This is medicine transformed — gravity as a therapeutic variable. Photorealistic, warm, hopeful, medical setting, 16:9, 8K, deeply human.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Near-future hospital room with modulated gravity — 0.3g indicated by golden display. An elderly stroke patient takes their first steps in months, face showing tears of joy. A physiotherapist assists warmly. Other patients visible through windows, walking in reduced gravity. Photorealistic, hopeful, medical, 16:9, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<div class="img-card" id="kf43">
+  <div class="img-meta">
+    <div class="img-id">18.3</div>
+    <div class="img-scene">Scène 18<br>VMG</div>
+    <div class="img-ratio">📐 16:9<br><span>Futur</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Véhicule à Modulation Gravitationnelle — Vol Silencieux</div>
+    <div class="img-desc">Un VMG glisse sans roues au-dessus d'une autoroute.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Near-future scene: a sleek VMG (gravitational modulation vehicle) glides silently above a multi-lane highway — no wheels, no engines, no exhaust. The vehicle hovers about 1 meter above the road surface, leaving the asphalt completely untouched. A subtle golden shimmer is visible beneath the vehicle where the Ψ₂ modulation is active. Other similar vehicles are visible at various heights — some lane-level, some higher, creating a 3D traffic flow. The scene is remarkably quiet — the only sound would be the whisper of air. Trees line the highway, and birds fly alongside the vehicles. Traditional wheeled cars are absent — this is the post-automobile age. Photorealistic, clean futuristic design, optimistic, 16:9, 8K, the future of transportation.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Near-future highway with VMG vehicles hovering silently without wheels at various heights in 3D traffic flow. Golden shimmer beneath vehicles. Trees, birds, no traditional cars. Post-automobile age. Photorealistic, clean futuristic, optimistic, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<div class="img-card" id="kf44">
+  <div class="img-meta">
+    <div class="img-id">18.4</div>
+    <div class="img-scene">Scène 18<br>Espace</div>
+    <div class="img-ratio">📐 16:9<br><span>Futur</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Lancement Spatial Harmonique — Sans Flamme</div>
+    <div class="img-desc">Un vaisseau décolle verticalement, sans propergol, juste une lueur dorée.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Near-future spaceport at dawn. A large spacecraft — sleek, white, with golden harmonic modulator arrays visible on its hull — is lifting off VERTICALLY from a launch pad. There is NO plume of fire, NO smoke, NO deafening roar. The only visible sign of propulsion is a faint, beautiful golden glow emanating from the modulator rings encircling the craft. The ship rises slowly, majestically, in complete silence. The launch pad is surrounded by trees and water — no flame trench needed, no exclusion zone. Engineers and spectators stand remarkably close, watching in awe but without fear. This is the democratization of space — launch as routine as a plane taking off. Photorealistic, serene, revolutionary, 16:9, 8K, the image of post-chemical spaceflight.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Near-future spaceport at dawn. A sleek white spacecraft lifts off vertically with NO fire or smoke — only a faint golden glow from harmonic modulator rings. Spectators stand close, without fear. Trees and water around the pad. Serene, revolutionary, photorealistic, 16:9, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<div class="img-card" id="kf45">
+  <div class="img-meta">
+    <div class="img-id">18.5</div>
+    <div class="img-scene">Scène 18<br>Cité φ</div>
+    <div class="img-ratio">📐 16:9<br><span>Futur</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">La Cité Harmonique — Urbanisme en Spirale φ</div>
+    <div class="img-desc">Vue aérienne d'une ville construite selon les principes φ.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Aerial view of a near-future desert city built entirely on harmonic Fibonacci spiral principles. The city plan is a beautiful golden spiral — buildings, parks, water channels, and roads all follow the phi proportion. A central dodecahedron-shaped building serves as the civic center. Green spaces weave through the city in fractal patterns. The buildings are white and gold, with organic curved shapes. Canals of turquoise water spiral through the urban fabric. The city borders the desert but is lush with vegetation — harmonic water circulation makes the desert bloom. People walk along spiral pathways shaded by palm trees. This is what urban planning becomes when it follows the laws of the universe instead of the grid. Photorealistic aerial photography, beautiful, utopian but grounded, 16:9, 8K.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Aerial view of a near-future desert city built on golden spiral Fibonacci urbanism. White-gold buildings, central dodecahedron civic center, fractal green spaces, turquoise canals in phi spirals. Lush vegetation in the desert. Photorealistic aerial, utopian but grounded, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 18.6 — PYRAMIDE RESTAURÉE -->
+<div class="img-card" id="kf46">
+  <div class="img-meta">
+    <div class="img-id">18.6 ⭐</div>
+    <div class="img-scene">Scène 18<br>Restaurée</div>
+    <div class="img-ratio">📐 16:9<br><span>Plan large</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">La Pyramide Restaurée — Renaissance</div>
+    <div class="img-desc">La Grande Pyramide a retrouvé son revêtement blanc et son pyramidion.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Triumphant wide shot, near future. The Great Pyramid of Giza has been FULLY RESTORED to its original glory by a new generation of Egyptian engineers and scientists. The smooth white Tura limestone casing gleams once more. The golden pyramidion blazes at the apex under the Egyptian sun. But there are subtle futuristic additions: golden harmonic modulator rings are integrated into the casing at precise intervals, and a faint 104 Hz resonance can almost be seen as a shimmer in the air around the pyramid. The monument is no longer silent — it has been REACTIVATED as both a cultural heritage site AND a working harmonic instrument. Egyptian families picnic at its base. Children play. The scene is one of pride, restoration, and hope — the ancient knowledge has returned home. Photorealistic, triumphant, golden hour, 16:9, 8K, the definitive image of HOPE and RECONCILIATION between past and future.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Triumphant wide shot of the Great Pyramid fully restored — white limestone casing, golden pyramidion, subtle futuristic harmonic modulator rings, faint 104 Hz shimmer in the air. Egyptian families picnic at the base. Children play. The pyramid is alive again. Photorealistic, triumphant, golden hour, 16:9, 8K, hope and restoration.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- KF 18.7 — PULL-BACK COSMIQUE -->
+<div class="img-card" id="kf47">
+  <div class="img-meta">
+    <div class="img-id">18.7</div>
+    <div class="img-scene">Scène 18<br>Cosmos</div>
+    <div class="img-ratio">📐 21:9<br><span>Très large</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Pull-Back Cosmique — Le Son Continue</div>
+    <div class="img-desc">La Terre vue de l'espace lointain, la pyramide est un point doré.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Ultra-wide 21:9 cosmic cinematography. View of Earth from deep space, past the Moon. The planet is a beautiful blue-white marble, half in sunlight. A tiny golden dot on the African continent is the only visible sign of human civilization — the restored Great Pyramid, gleaming. The camera continues pulling back: past Mars, past Jupiter. The golden dot fades to invisibility. But superimposed subtly over the cosmic image are golden sound wave patterns — the 104 Hz resonance — implying that the sound continues even when the source is no longer visible. The suggestion is that the frequency has joined the cosmic background. Final image: pure black space with a single golden phi symbol φ remaining before fading to black. Photorealistic space imagery with subtle golden holographic overlay, 21:9 ultra-wide, 8K, the final cosmic image — infinite, hopeful, awe-inspiring.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Ultra-wide 21:9 cosmic shot: Earth from deep space. A tiny golden dot — the restored Great Pyramid — on the African continent. Golden 104 Hz sound wave patterns subtly overlaid. The phi symbol φ remains as the image fades to black. Photorealistic space imagery, infinite, hopeful, awe-inspiring, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- POSTERS & TEASERS -->
+<!-- ================================================================== -->
+<section id="posters">
+  <h2><span class="num">POSTERS & TEASERS</span>Images Promotionnelles</h2>
+</section>
+
+<div class="img-card" id="kf48">
+  <div class="img-meta">
+    <div class="img-id">P.1</div>
+    <div class="img-scene">Poster<br>Cinéma</div>
+    <div class="img-ratio">📐 2:3<br><span>Affiche</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Affiche Cinéma — KHÉOPS</div>
+    <div class="img-desc">Composition verticale pour affiche de film.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Cinematic movie poster, vertical 2:3, titled "KHÉOPS — The Pyramid of Harmony". The half-built Great Pyramid at night dominates the upper half. A single 2.5-ton limestone block floats in mid-air in the center, guided by Egyptian workers with ropes. The Milky Way arches across the sky. Golden 104 Hz sound wave visualizations radiate from the King's Chamber. In the foreground, the silhouette of an Egyptian priest in profile, his mouth open in overtone chant. The title in golden Egyptian-inspired typography at the bottom. Tagline: "They didn't use ramps. They used SOUND." Photorealistic poster design, epic, mysterious, warm golden and deep blue color palette. --ar 2:3</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Movie poster 2:3 vertical. Half-built Great Pyramid at night, Milky Way. A floating limestone block guided by ropes. Priest silhouette chanting. Golden 104 Hz waves. Title: "KHÉOPS". Tagline: "They didn't use ramps. They used SOUND." Epic cinematic poster design, gold and deep blue palette, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<div class="img-card" id="kf49">
+  <div class="img-meta">
+    <div class="img-id">P.2</div>
+    <div class="img-scene">Teaser<br>Sound</div>
+    <div class="img-ratio">📐 1:1<br><span>Réseaux</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">Teaser "Sound" — Format Carré Réseaux Sociaux</div>
+    <div class="img-desc">Image choc pour teaser : le bloc lévite, texte "SOUND".</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Square 1:1 format social media teaser image. A dramatic close-up of the 2.5-ton limestone block LEVITATING in mid-air, seen from slightly below — it fills most of the frame. The block's rough limestone texture is hyper-detailed. Beneath it, Egyptian workers' upturned faces, illuminated by a golden glow from above. The word "SOUND" in massive golden typography overlaid on the block. Minimalist, high-impact, modern graphic design meets historical photography. --ar 1:1</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label dalle">DALL-E 4</span>
+      <div class="prompt-text"><em>Square 1:1 dramatic shot of a 2.5-ton limestone block levitating, seen from below. Upturned faces of Egyptian workers illuminated by golden glow. Word "SOUND" in gold typography overlaid. High-impact minimalist teaser image, historical meets modern graphic design, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<div class="img-card" id="kf50">
+  <div class="img-meta">
+    <div class="img-id">P.3</div>
+    <div class="img-scene">Diagramme<br>Équation</div>
+    <div class="img-ratio">📐 16:9<br><span>Infographie</span></div>
+  </div>
+  <div class="img-content">
+    <div class="img-title">L'Équation Maîtresse — Diagramme Scientifique</div>
+    <div class="img-desc">Infographie expliquant la chaîne de conversion harmonique.</div>
+    <div class="prompt-block">
+      <span class="prompt-label mj">MIDJOURNEY v7</span>
+      <div class="prompt-text"><em>Beautiful scientific infographic poster, 16:9. The central equation Ψ₂ = π·(Ψ₁)² in large golden typography on an obsidian-black background. Surrounding it, connected by golden lines and arrows: LEFT — an Egyptian priest chanting (human voice = Ψ₁ source), CENTER — a cross-section of the King's Chamber showing granite converting sound to electric field (piezoelectricity), RIGHT — the pyramid with golden gravitational waves (Ψ₂) emanating. Below: the chain diagram: Voice → Vibration → Piezoelectric field → Ψ₁ modulation → Ψ₂ reduction → Levitation. The aesthetic is ancient Egyptian temple art meets modern scientific visualization. Beautiful, educational, museum-quality infographic. 16:9, 8K.</em></div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-label sd">SDXL / FLUX</span>
+      <div class="prompt-text"><em>Scientific infographic poster 16:9. Central golden equation Ψ₂ = π·(Ψ₁)² on obsidian black. Connected diagrams: chanting priest → King's Chamber cross-section → piezoelectric conversion → gravitational wave modulation. Chain: Voice → Vibration → Piezoelectric field → Ψ₁ modulation → Ψ₂ reduction → Levitation. Museum-quality, ancient Egyptian meets modern science, 8K.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CONCLUSION ===== -->
+<section style="text-align:center;padding:50px 0">
+  <div class="result-box" style="max-width:700px;margin:0 auto;background:rgba(15,12,46,0.8);border:2px solid rgba(212,168,67,0.35);border-radius:16px;padding:24px 28px;">
+    <div class="label">Mode d'Emploi — Génération des Keyframes</div>
+    <p style="font-size:0.88em;color:var(--ink2);line-height:1.8;">
+      <strong>1.</strong> Copier le prompt MIDJOURNEY, DALL-E ou SD selon votre plateforme.<br>
+      <strong>2.</strong> Ajouter les paramètres globaux (section "Paramètres IA").<br>
+      <strong>3.</strong> Générer 4 variantes par keyframe et sélectionner la meilleure.<br>
+      <strong>4.</strong> Pour la cohérence visuelle du film : fixer le seed Midjourney (<code>--seed 4242</code>).<br>
+      <strong>5.</strong> Upscale en 4K/8K avant import dans l'éditeur vidéo.<br>
+      <strong>6.</strong> Générer ~150 images (3-4 variantes × 50 keyframes) → sélectionner les 50 finales.<br>
+      <strong>7.</strong> Importer dans Runway/Luma/Pika pour animation image-to-video.<br>
+      <strong>8.</strong> Assembler dans DaVinci Resolve avec le son (Suno/Udio).
+    </p>
+  </div>
+
+  <p style="margin-top:40px;color:var(--ink3);font-size:0.90em;">
+    ← <a href="scenario-video-pyramide-harmonique.html" style="color:var(--phi);text-decoration:none;">Scénario Vidéo Complet</a> ·
+    <a href="construction-pyramide-harmonique.html" style="color:var(--phi);text-decoration:none;">Construction de la Pyramide</a> ·
+    <a href="index.html" style="color:var(--phi);text-decoration:none;">Symphonie Cosmique</a> →
+  </p>
+</section>
+
+</div>
+
+<footer>
+  <p>Keyframes KHÉOPS — 50+ prompts image HD pour IA génératives — <a href="index.html">Symphonie Cosmique</a></p>
+  <p style="margin-top:4px;">KOTTO Alain · φ = (1+√5)/2 ≈ 1.6180339887... · 22 Juin 2026</p>
+  <p style="margin-top:4px;font-size:0.72em;color:var(--ink3);">Tous les prompts sont libres de droits pour usage créatif et production. Pour usage commercial : contacter l'auteur.</p>
+</footer>
+
+</body>
+</html>

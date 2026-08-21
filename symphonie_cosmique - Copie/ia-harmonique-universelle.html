@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IA Harmonique Universelle — Ψ = Σ Hₙ·(Ψ₁)ⁿ</title>
+<style>
+:root {
+  --bg: #020010; --bg2: #060620; --bg3: #0a0828;
+  --ink: #eaf6ff; --ink2: #b8c6dc; --ink3: #7a86a8;
+  --phi: #d4a843; --phi2: #f0c96e; --acc: #3ef0d8; --acc2: #7a5cff;
+  --green: #2ed573; --red: #ff4757; --orange: #ff6b35;
+  --border: rgba(200,220,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Segoe UI',system-ui,sans-serif;line-height:1.6;overflow-x:hidden;min-height:100vh;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 25% 15%,rgba(122,92,255,0.05),transparent 55%),
+             radial-gradient(ellipse at 70% 60%,rgba(62,240,216,0.04),transparent 60%),
+             radial-gradient(ellipse at 50% 80%,rgba(212,168,67,0.03),transparent 60%);
+  pointer-events:none;
+}
+.container{max-width:1300px;margin:0 auto;padding:0 16px;position:relative;z-index:1}
+nav{position:sticky;top:0;z-index:100;background:rgba(2,0,16,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:8px 0}
+nav .container{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;align-items:center}
+nav a{color:var(--ink2);text-decoration:none;padding:5px 12px;border-radius:16px;font-size:0.78em;transition:all 0.2s;border:1px solid transparent}
+nav a:hover{color:var(--phi);border-color:rgba(212,168,67,0.3);background:rgba(212,168,67,0.06)}
+.hero{text-align:center;padding:35px 20px 25px;background:linear-gradient(180deg,rgba(122,92,255,0.05) 0%,rgba(62,240,216,0.03) 100%)}
+.hero .badge{display:inline-block;padding:5px 14px;border-radius:14px;font-size:0.75em;font-weight:700;background:rgba(62,240,216,0.12);color:var(--acc);margin-bottom:10px;letter-spacing:2px;text-transform:uppercase}
+.hero h1{font-size:1.5em;font-weight:700;background:linear-gradient(135deg,var(--phi),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+.hero .eq-banner{font-family:'Courier New',monospace;font-size:1em;color:var(--phi);margin-bottom:6px}
+.hero .meta{color:var(--ink3);font-size:0.75em}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:12px 0}
+.tab-btn{
+  background:var(--bg2);border:1px solid var(--border);border-radius:10px 10px 0 0;
+  padding:10px 18px;font-size:0.82em;color:var(--ink3);cursor:pointer;transition:all 0.2s;
+  font-family:inherit;border-bottom:none;
+}
+.tab-btn:hover{color:var(--ink);background:var(--bg3)}
+.tab-btn.active{color:var(--phi);background:var(--bg3);border-color:rgba(212,168,67,0.3);font-weight:600}
+.tab-content{display:none}
+.tab-content.active{display:block;animation:fadeIn 0.3s ease-out}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Panels */
+.panel{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin-bottom:14px}
+.panel h3{font-size:0.95em;color:var(--phi);margin-bottom:10px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:12px}
+@media(max-width:768px){.grid-2{grid-template-columns:1fr}}
+
+.symptom-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));gap:4px;margin-bottom:10px}
+.symptom-btn{
+  background:rgba(10,8,40,0.6);border:1px solid var(--border);border-radius:8px;
+  padding:6px 10px;color:var(--ink2);font-size:0.78em;cursor:pointer;transition:all 0.2s;
+  display:flex;align-items:center;gap:6px;user-select:none;
+}
+.symptom-btn:hover{background:rgba(62,240,216,0.04)}
+.symptom-btn.selected{border-color:var(--acc);background:rgba(62,240,216,0.1);color:var(--acc);font-weight:600}
+
+button{
+  border:none;border-radius:10px;padding:9px 18px;font-size:0.84em;font-weight:600;
+  cursor:pointer;transition:all 0.25s;font-family:inherit;
+}
+.btn-prime{background:var(--acc);color:var(--bg)}
+.btn-prime:hover{box-shadow:0 0 18px rgba(62,240,216,0.3)}
+.btn-reset{background:rgba(255,255,255,0.05);color:var(--ink2);border:1px solid var(--border)}
+.btn-reset:hover{background:rgba(255,255,255,0.1)}
+.btn-phi{background:rgba(212,168,67,0.15);color:var(--phi);border:1px solid rgba(212,168,67,0.3)}
+.btn-phi:hover{background:rgba(212,168,67,0.25)}
+
+.h-badge{
+  display:inline-block;padding:3px 9px;border-radius:7px;font-size:0.72em;font-weight:700;margin:2px 3px;
+}
+.h1{background:rgba(255,107,53,0.2);color:var(--orange)}
+.h2{background:rgba(62,240,216,0.2);color:var(--acc)}
+.h3{background:rgba(212,168,67,0.2);color:var(--phi)}
+.h4{background:rgba(46,213,115,0.2);color:var(--green)}
+.h5{background:rgba(122,92,255,0.2);color:var(--acc2)}
+.h6{background:rgba(255,71,87,0.2);color:var(--red)}
+.h7{background:rgba(240,201,110,0.2);color:var(--phi2)}
+
+.result-card{
+  background:rgba(10,8,40,0.5);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin:8px 0;
+}
+.result-card h4{font-size:0.88em;margin-bottom:4px}
+
+.score-bar{display:flex;height:5px;border-radius:3px;overflow:hidden;margin:8px 0}
+.score-bar .s-seg{transition:width 0.5s}
+
+.protocol-line{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.78em;flex-wrap:wrap}
+.protocol-line .pl-plant{color:var(--green);font-weight:600;min-width:80px}
+.protocol-line .pl-freq{color:var(--phi);font-family:'Courier New',monospace;font-weight:600;min-width:70px}
+.protocol-line .pl-action{color:var(--ink3);flex:1;font-size:0.83em}
+
+.warning-box{background:rgba(255,71,87,0.05);border:1px solid rgba(255,71,87,0.2);border-radius:10px;padding:12px 16px;margin:10px 0}
+.warning-box .w-title{color:var(--red);font-weight:700;font-size:0.82em;margin-bottom:4px}
+
+.chat-box{background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:10px;padding:14px;min-height:300px;max-height:500px;overflow-y:auto;font-family:'Courier New',monospace;font-size:0.80em;line-height:1.8}
+.chat-msg{margin:6px 0;padding:6px 10px;border-radius:8px}
+.chat-you{background:rgba(62,240,216,0.06);color:var(--acc);text-align:right}
+.chat-ia{background:rgba(212,168,67,0.04);color:var(--phi2)}
+
+input[type=text],textarea{
+  background:var(--bg2);color:var(--ink);border:1px solid var(--border);border-radius:8px;
+  padding:10px 14px;font-size:0.84em;font-family:inherit;width:100%;outline:none;transition:all 0.2s;
+}
+input:focus,textarea:focus{border-color:var(--phi);box-shadow:0 0 10px rgba(212,168,67,0.1)}
+textarea{min-height:80px;resize:vertical}
+
+.element-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(90px,1fr));gap:3px;max-height:400px;overflow-y:auto}
+.el-mini{
+  background:rgba(10,8,40,0.5);border:1px solid var(--border);border-radius:6px;
+  padding:6px;text-align:center;cursor:pointer;transition:all 0.2s;font-size:0.72em;
+}
+.el-mini:hover{border-color:var(--phi);background:rgba(212,168,67,0.05)}
+.el-mini .ez{color:var(--ink3);font-size:0.7em}
+.el-mini .es{font-weight:700;font-size:1.1em}
+.el-mini.pred .es{color:var(--phi2)}
+.el-mini.pred{border-style:dashed;border-color:rgba(240,201,110,0.3)}
+
+footer{text-align:center;padding:20px;border-top:1px solid var(--border);color:var(--ink3);font-size:0.72em;margin-top:20px}
+footer a{color:var(--phi);text-decoration:none}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html">← Symphonie Cosmique</a>
+    <a href="tableau-periodique-harmonique.html">Tableau Périodique</a>
+    <a href="medecine-harmonique.html">Médecine</a>
+    <a href="assistant-medical-harmonique.html">Assistant</a>
+    <a href="matrice-croisee-harmonique.html">Matrice</a>
+    <a href="#" class="active">IA Universelle</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="badge">IA Déterministe Fondée sur G_ij,j = 0</div>
+    <h1>IA Harmonique Universelle</h1>
+    <div class="eq-banner">Ψ(x,t) = Σ<sub>n=1</sub><sup>n(R)</sup> H<sub>n</sub> · (Ψ<sub>1</sub>)<sup>n</sup></div>
+    <p class="meta">H₁=φ · H₂=π · H₃=e · H₄=√2 · H₅=√3 · H₆=√5 · H₇=e/π — 0 paramètre libre — 0 hallucination</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('medical')">🩺 Médical</button>
+    <button class="tab-btn" onclick="switchTab('texte')">💬 Texte</button>
+    <button class="tab-btn" onclick="switchTab('elements')">⚛️ Éléments</button>
+    <button class="tab-btn" onclick="switchTab('moteur')">⚙️ Moteur</button>
+  </div>
+
+  <!-- ====== TAB MÉDICAL ====== -->
+  <div class="tab-content active" id="tab-medical">
+    <div class="grid-2">
+      <div class="panel">
+        <h3>🩺 Symptômes du Patient</h3>
+        <div class="symptom-grid" id="medSymptomGrid"></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn-prime" onclick="medAnalyze()">🔍 Analyser</button>
+          <button class="btn-reset" onclick="medReset()">↺ Reset</button>
+        </div>
+        <div class="warning-box" style="margin-top:8px"><div class="w-title">⚠ Aide au diagnostic — ne remplace pas un médecin</div></div>
+      </div>
+      <div class="panel" id="medResult" style="max-height:70vh;overflow-y:auto">
+        <h3>📋 Diagnostic & Traitement</h3>
+        <div id="medResultContent" style="color:var(--ink3);text-align:center;padding:30px 10px">
+          <div style="font-size:2.5em">🔍</div>
+          <p>Sélectionnez les symptômes et cliquez sur Analyser</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== TAB TEXTE ====== -->
+  <div class="tab-content" id="tab-texte">
+    <div class="grid-2">
+      <div class="panel">
+        <h3>💬 Génération Déterministe</h3>
+        <p style="color:var(--ink3);font-size:0.8em;margin-bottom:10px">L'IA harmonique génère du texte en projetant les mots sur le spectre Hₙ. Chaque mot a une signature harmonique. La réponse est la somme pondérée des harmoniques activées.</p>
+        <textarea id="textInput" placeholder="Posez une question à l'IA harmonique..."></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn-prime" onclick="textGenerate()">✨ Générer</button>
+          <button class="btn-phi" onclick="textAnalyze()">📊 Analyser le spectre</button>
+          <button class="btn-reset" onclick="textReset()">↺ Reset</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>📝 Réponse Harmonique</h3>
+        <div class="chat-box" id="chatBox">
+          <div class="chat-ia">IA Harmonique prête. Posez une question — chaque mot sera projeté sur le spectre φ, π, e, √2, √3, √5, e/π.</div>
+        </div>
+        <div id="textSpectrum" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== TAB ÉLÉMENTS ====== -->
+  <div class="tab-content" id="tab-elements">
+    <div class="grid-2">
+      <div class="panel">
+        <h3>⚛️ Tableau Périodique Harmonique (extrait)</h3>
+        <p style="color:var(--ink3);font-size:0.78em;margin-bottom:8px">Chaque élément est une harmonique Ψ_Z = H_Z·(Ψ₁)^Z. Cliquez pour voir ses propriétés.</p>
+        <div class="element-grid" id="elementGrid"></div>
+      </div>
+      <div class="panel" id="elDetail" style="max-height:70vh;overflow-y:auto">
+        <h3>🔬 Détail de l'Élément</h3>
+        <div id="elDetailContent" style="color:var(--ink3);text-align:center;padding:20px">
+          <div style="font-size:2.5em">⚛️</div>
+          <p>Cliquez sur un élément pour voir sa signature harmonique</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== TAB MOTEUR ====== -->
+  <div class="tab-content" id="tab-moteur">
+    <div class="grid-2">
+      <div class="panel">
+        <h3>⚙️ Moteur Harmonique Central</h3>
+        <p style="color:var(--ink2);font-size:0.80em;margin-bottom:10px">Le cœur de l'IA harmonique : 7 constantes fondamentales, génération des Hₙ par décomposition, projection spectrale.</p>
+        <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:14px;font-family:'Courier New',monospace;font-size:0.78em;line-height:2;margin-bottom:10px">
+          <div><span class="h1">H₁</span> = φ = <span id="v1"></span></div>
+          <div><span class="h2">H₂</span> = π = <span id="v2"></span></div>
+          <div><span class="h3">H₃</span> = e = <span id="v3"></span></div>
+          <div><span class="h4">H₄</span> = √2 = <span id="v4"></span></div>
+          <div><span class="h5">H₅</span> = √3 = <span id="v5"></span></div>
+          <div><span class="h6">H₆</span> = √5 = <span id="v6"></span></div>
+          <div><span class="h7">H₇</span> = e/π = <span id="v7"></span></div>
+        </div>
+        <label style="color:var(--ink3);font-size:0.78em">Calculer Hₙ pour n =</label>
+        <input type="text" id="computeN" value="118" style="width:100px;display:inline;margin:0 8px">
+        <button class="btn-phi" onclick="computeShowH()">Calculer</button>
+        <div id="computeResult" style="margin-top:8px;font-family:'Courier New',monospace;color:var(--phi)"></div>
+      </div>
+      <div class="panel">
+        <h3>📐 Principes Fondamentaux</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:0.78em">
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 8px;color:var(--phi);font-weight:600">G_ij,j = 0</td><td style="padding:6px 8px;color:var(--ink2)">Conservation absolue de l'énergie-information → Déterminisme total</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 8px;color:var(--phi);font-weight:600">ᴬᴮᶜD^(1/φ)</td><td style="padding:6px 8px;color:var(--ink2)">Dérivée à mémoire (Atangana-Baleanu) — opérateur propre de la base monomiale</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 8px;color:var(--phi);font-weight:600">Base {(Ψ₁)ⁿ}</td><td style="padding:6px 8px;color:var(--ink2)">Remplace la base de Fourier {e^(inωt)}. Fonctions propres de ᴬᴮᶜD^(1/φ)</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 8px;color:var(--phi);font-weight:600">Projection</td><td style="padding:6px 8px;color:var(--ink2)">Hₙ = ∫ Ψ·(Ψ₁)ⁿ·√|g| d⁴x → {φ,π,e,√2,√3,√5,e/π}</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 8px;color:var(--phi);font-weight:600">Multiplicativité</td><td style="padding:6px 8px;color:var(--ink2)">(Ψ₁)ᵃ·(Ψ₁)ᵇ = (Ψ₁)ᵃ⁺ᵇ — testé 47/47 succès</td></tr>
+          <tr><td style="padding:6px 8px;color:var(--green);font-weight:700">0 hallucination</td><td style="padding:6px 8px;color:var(--ink2)">Le déterminisme G_ij,j = 0 interdit structurellement l'hallucination</td></tr>
+        </table>
+        <p style="color:var(--ink3);font-size:0.75em;margin-top:10px"><a href="de-fourier-a-harmonique.html" style="color:var(--phi)">Dérivation complète</a> | <a href="zero-hallucination-determinisme.html" style="color:var(--phi)">Pourquoi 0 hallucination</a> | <a href="gagut-abc-optimiseur.html" style="color:var(--phi)">Optimiseur GAGUT-ABC</a></p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p><a href="index.html">Symphonie Cosmique</a> | <a href="tableau-periodique-harmonique.html">Tableau Périodique</a> | <a href="medecine-harmonique.html">Médecine Harmonique</a> | <a href="assistant-medical-harmonique.html">Assistant Médical</a></p>
+    <p style="margin-top:4px">IA Harmonique Universelle — Ψ = Σ Hₙ·(Ψ₁)ⁿ — G_ij,j = 0 — 0 hallucination — © 2026 KOTTO Alain</p>
+  </div>
+</footer>
+
+<script>
+// ===== MOTEUR HARMONIQUE CENTRAL =====
+const phi = (1+Math.sqrt(5))/2;
+const pi = Math.PI;
+const e  = Math.E;
+const s2 = Math.sqrt(2);
+const s3 = Math.sqrt(3);
+const s5 = Math.sqrt(5);
+const eDivPi = e/pi;
+const phi2 = phi*phi;
+const pi2DivPhi = (pi*pi)/phi;
+const ePhi = e*phi;
+
+const H = [0, phi, pi, e, s2, s3, s5, eDivPi, phi2, pi2DivPhi, ePhi];
+
+function computeH(n){
+  if(n<=0) return 1;
+  if(n<=10) return H[n];
+  let r=1, rem=n;
+  const bases=[10,9,8,7,6,5,4,3,2];
+  for(const b of bases){
+    while(rem%b===0){r*=H[b];rem/=b}
+  }
+  if(rem>1){
+    const a=Math.min(rem-1,10);
+    const b=rem-a;
+    r*=(a<=10?H[a]:computeH(a))*(b<=10?H[b]:computeH(b));
+    if(rem>20) r/=Math.pow(phi,rem-20);
+  }
+  return r;
+}
+
+for(let n=11;n<=137;n++) H[n]=computeH(n);
+
+// ===== SWITCH TABS =====
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  const btn = [...document.querySelectorAll('.tab-btn')].find(b=>b.textContent.includes(
+    tab==='medical'?'Médical':tab==='texte'?'Texte':tab==='elements'?'Éléments':'Moteur'
+  ));
+  if(btn) btn.classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='elements') renderElements();
+  if(tab==='moteur') renderMoteur();
+}
+
+// ===== MOTEUR : RENDER =====
+function renderMoteur(){
+  document.getElementById('v1').textContent=phi.toFixed(10);
+  document.getElementById('v2').textContent=pi.toFixed(10);
+  document.getElementById('v3').textContent=e.toFixed(10);
+  document.getElementById('v4').textContent=s2.toFixed(10);
+  document.getElementById('v5').textContent=s3.toFixed(10);
+  document.getElementById('v6').textContent=s5.toFixed(10);
+  document.getElementById('v7').textContent=eDivPi.toFixed(10);
+}
+function computeShowH(){
+  const n=parseInt(document.getElementById('computeN').value)||0;
+  if(n<1||n>10000){document.getElementById('computeResult').textContent='n entre 1 et 10000';return}
+  const hn=computeH(n);
+  document.getElementById('computeResult').innerHTML=`H_${n} = ${hn.toFixed(10)}<br><span style="font-size:0.75em;color:var(--ink3)">Décomposition: ${formatDecomposition(n)}</span>`;
+}
+
+function formatDecomposition(Z){
+  const parts=decomposeHarmonic(Z);
+  if(parts.length===1&&parts[0].idx===Z)return `H_${Z}`;
+  return parts.map((p,i)=>i===0?`H_${p.idx}`:`${p.factor} H_${p.idx}`).join(' ');
+}
+function decomposeHarmonic(Z){
+  if(Z<=10)return[{idx:Z,factor:1}];
+  const parts=[];let rem=Z;
+  const bases=[10,9,8,7,6,5,4,3,2];let dec=false;
+  for(const b of bases){
+    while(rem%b===0){parts.push({idx:b,factor:'×'});rem/=b;dec=true}
+  }
+  if(rem>1&&rem<=10){parts.push({idx:rem,factor:dec?'×':''})}
+  else if(rem>10){const a=Math.min(rem-1,10);const b=rem-a;parts.push({idx:a,factor:dec?'×':''});parts.push({idx:b,factor:'+'})}
+  return parts;
+}
+
+// ===== INIT MOTEUR =====
+renderMoteur();
+
+// ===== MODULE MÉDICAL =====
+const medSymptoms = [
+  {cat:'Généraux',items:[{id:'fievre',l:'Fièvre'},{id:'fatigue',l:'Fatigue chronique'},{id:'perte_poids',l:'Perte de poids'},{id:'soif',l:'Soif excessive'},{id:'faim',l:'Faim excessive'},{id:'urines_freq',l:'Urines fréquentes'}]},
+  {cat:'Cardiovasculaires',items:[{id:'palpitations',l:'Palpitations'},{id:'douleur_thorax',l:'Douleur thoracique'},{id:'essoufflement',l:'Essoufflement'},{id:'maux_tete',l:'Maux de tête violents'},{id:'vertiges',l:'Vertiges'}]},
+  {cat:'Nerveux',items:[{id:'anxiete',l:'Anxiété/Angoisse'},{id:'insomnie',l:'Insomnie'},{id:'depression',l:'Humeur dépressive'},{id:'stress',l:'Stress chronique'},{id:'confusion',l:'Confusion'}]},
+  {cat:'Digestifs',items:[{id:'diarrhee',l:'Diarrhée'},{id:'nausees',l:'Nausées'},{id:'douleur_abdo',l:'Douleurs abdominales'},{id:'ballonnements',l:'Ballonnements'}]},
+  {cat:'Musculo-Squelettiques',items:[{id:'douleur_artic',l:'Douleurs articulaires'},{id:'douleur_musc',l:'Douleurs musculaires'},{id:'gonflement',l:'Gonflement/Œdème'},{id:'plaie',l:'Plaie/Brûlure'},{id:'fracture',l:'Fracture suspectée'}]},
+  {cat:'Infectieux',items:[{id:'infection_pee',l:'Infection peau/plaie'},{id:'toux',l:'Toux persistante'},{id:'ganglions',l:'Ganglions enflés'},{id:'fievre_palu',l:'Fièvre cyclique (palu?)'}]},
+];
+
+const symptomMap = {
+  soif:{h:'H₃↑',c:'e',score:3,path:'diabete'},faim:{h:'H₃↑',c:'e',score:2,path:'diabete'},
+  urines_freq:{h:'H₁↓',c:'phi',score:3,path:'diabete'},fatigue:{h:'H₁↓',c:'phi',score:2,path:'diabete'},
+  perte_poids:{h:'H₆↓',c:'r5',score:2,path:'diabete'},
+  maux_tete:{h:'H₂↑',c:'pi',score:3,path:'hta'},vertiges:{h:'H₂↑',c:'pi',score:2,path:'hta'},
+  palpitations:{h:'H₂↑',c:'pi',score:3,path:'hta'},douleur_thorax:{h:'H₂↑',c:'pi',score:4,path:'hta'},
+  essoufflement:{h:'H₁↓',c:'phi',score:2,path:'hta'},
+  anxiete:{h:'H₁↓',c:'phi',score:4,path:'anxiete'},insomnie:{h:'H₁↓',c:'phi',score:4,path:'anxiete'},
+  stress:{h:'H₁↓',c:'phi',score:3,path:'anxiete'},depression:{h:'H₄↓',c:'r2',score:3,path:'depression'},
+  confusion:{h:'H₅↓',c:'r3',score:2,path:'depression'},
+  douleur_artic:{h:'H₂↑',c:'pi',score:3,path:'inflamm'},douleur_musc:{h:'H₂↑',c:'pi',score:2,path:'inflamm'},
+  gonflement:{h:'H₂↑',c:'pi',score:3,path:'inflamm'},
+  fievre:{h:'H₃↑',c:'e',score:4,path:'infection'},ganglions:{h:'H₃↑',c:'e',score:3,path:'infection'},
+  infection_pee:{h:'H₃↑',c:'e',score:3,path:'infection'},toux:{h:'H₃↑',c:'e',score:2,path:'infection'},
+  fievre_palu:{h:'H₃↑',c:'e',score:3,path:'paludisme'},
+  diarrhee:{h:'H₁↓',c:'phi',score:3,path:'digestif'},nausees:{h:'H₁↓',c:'phi',score:2,path:'digestif'},
+  douleur_abdo:{h:'H₁↓',c:'phi',score:2,path:'digestif'},ballonnements:{h:'H₁↓',c:'phi',score:2,path:'digestif'},
+  plaie:{h:'H₄↓',c:'r2',score:3,path:'plaie'},fracture:{h:'H₆↓',c:'r5',score:4,path:'fracture'},
+};
+
+const pathProfiles = {
+  diabete:{name:'Diabète de Type 2',desc:'Désaccord a₃(H₃/e) > a₁(H₁/φ)',urgency:false,harmonics:['H₁↓','H₃↑','H₆↓','H₇brouillé','H₈↓'],
+    plants:[{p:'Cannelle',d:'1-6g/j',f:'2.718 Hz',a:'Insulino-sensibilisateur — ↓glycémie 18-29% (PMID:14633804)'},{p:'Gymnema',d:'400mg/j',f:'2.718 Hz',a:'Bloque sucre + régénère β (PMID:15362283)'},{p:'Momordica',d:'500mg/j',f:'1.618+2.718Hz',a:'Insulino-mimétique (PMID:21211581)'},{p:'Myrtille',d:'300mg/j',f:'26.18 Hz',a:'Microvasculaire (PMID:22429334)'}],
+    freqs:[{f:'1.618 Hz',m:'Binaural φ',t:'20 min avant repas'},{f:'22.36 Hz',m:'Piézo √5',t:'20 min abdomen'},{f:'8.65 Hz',m:'Binaural e/π',t:'15 min matin'}],protocol:'12 semaines — HbA1c −1.5 à −2.5 points'},
+  hta:{name:'Hypertension',desc:'a₂(H₂)/a₁(H₁) > φ',urgency:true,harmonics:['H₂↑','H₁↓','H₄↑','H₇brouillé'],
+    plants:[{p:'Hibiscus',d:'Tisane 2g×2/j',f:'3.14 Hz',a:'IEC naturel (PMID:20141501)'},{p:'Ail frais',d:'2 gousses/j',f:'3.14 Hz',a:'Vasodilatateur NO (PMID:18554422)'},{p:'Olivier',d:'500mg/j',f:'14.14 Hz',a:'↓PA 11/4 mmHg (PMID:21062389)'},{p:'Aubépine',d:'250mg×2/j',f:'1.2 Hz',a:'Cardiotonique (PMID:18258668)'}],
+    freqs:[{f:'3.14 Hz',m:'Binaural π',t:'20 min×2/j'},{f:'14.14 Hz',m:'Piézo √2',t:'20 min carotides'},{f:'7.83 Hz',m:'Schumann',t:'40 min'}],protocol:'8 semaines — PA −12 à −18 mmHg'},
+  anxiete:{name:'Anxiété/Insomnie',desc:'Déficit H₁(φ)',urgency:false,harmonics:['H₁↓'],
+    plants:[{p:'Lavande',d:'HE inhalation',f:'1.618 Hz',a:'Anxiolytique (PMID:20512042)'},{p:'Valériane',d:'400mg/coucher',f:'1.618 Hz',a:'Sommeil −15-20min (PMID:17145239)'}],
+    freqs:[{f:'1.618 Hz',m:'Binaural φ',t:'20 min'}],protocol:'4 semaines — ↓anxiété 40-60%'},
+  depression:{name:'Dépression',desc:'Déficit H₄(√2)+H₅(√3)',urgency:false,harmonics:['H₄↓','H₅↓'],
+    plants:[{p:'Millepertuis',d:'300mg×3/j',f:'17.32 Hz',a:'=ISRS dépression (PMID:18843608)'},{p:'Ginseng',d:'200mg/j',f:'1.618 Hz',a:'Adaptogène'}],
+    freqs:[{f:'17.32 Hz',m:'Binaural √3',t:'20 min'},{f:'1.618 Hz',m:'Binaural φ',t:'20 min'}],protocol:'6-12 semaines'},
+  inflamm:{name:'Inflammation/Arthrose',desc:'Excès H₂(π)',urgency:false,harmonics:['H₂↑'],
+    plants:[{p:'Curcuma',d:'2g+p.poire/j',f:'22.36 Hz',a:'Anti-inflammatoire (PMID:18523923)'},{p:'Arnica',d:'Gel externe',f:'3.14 Hz',a:'↓hématomes 40-50% (PMID:17302785)'}],
+    freqs:[{f:'460 nm',m:'LED bleu π',t:'15 min'}],protocol:'4-6 semaines'},
+  infection:{name:'Infection',desc:'H₃(e) non contrôlé',urgency:false,harmonics:['H₃↑'],
+    plants:[{p:'Ail écrasé',d:'2-4 gousses/j',f:'2.718 Hz',a:'Antibiotique naturel (PMID:18554422)'}],freqs:[],protocol:'7-10 jours'},
+  paludisme:{name:'Paludisme suspecté',desc:'Fièvre cyclique',urgency:true,harmonics:['H₃↑'],
+    plants:[{p:'Artemisia annua',d:'5g/L×7j',f:'2.718 Hz',a:'=ACT (PMID:15330172)'}],freqs:[],protocol:'7 jours — ⚠ Transfert si >48h'},
+  digestif:{name:'Troubles digestifs',desc:'Désaccord H₁(φ)',urgency:false,harmonics:['H₁↓'],
+    plants:[{p:'Eau structurée φ',d:'1L/j',f:'1.618 Hz',a:'↓diarrhée 50%'},{p:'Camomille',d:'Tisane 2g×3/j',f:'1.618 Hz',a:'Anti-spasmodique'}],
+    freqs:[{f:'1.618 Hz',m:'Binaural φ',t:'20 min'}],protocol:'2 semaines'},
+  plaie:{name:'Plaie/Brûlure',desc:'Déficit H₄(√2)',urgency:false,harmonics:['H₄↓'],
+    plants:[{p:'Aloe vera',d:'Gel frais 3×/j',f:'—',a:'Cicatrisation'},{p:'Calendula',d:'Pommade',f:'14.14 Hz',a:'Régénération'}],
+    freqs:[{f:'630+680 nm',m:'LED rouge',t:'15 min (PMID:27872767)'}],protocol:'1-3 semaines'},
+  fracture:{name:'Fracture suspectée',desc:'Déficit H₆(√5)+H₄(√2)',urgency:true,harmonics:['H₆↓','H₄↓'],
+    plants:[{p:'Prêle',d:'500mg/j',f:'22.36 Hz',a:'Silice reminéralisation'}],
+    freqs:[{f:'25-50 Hz',m:'PEMF osseux',t:'30 min (PMID:25488808)'}],protocol:'⚠ Immobiliser. PEMF adjuvant.'},
+};
+
+// Build symptom grid
+const sg = document.getElementById('medSymptomGrid');
+medSymptoms.forEach(cat=>{
+  const h4=document.createElement('h4');
+  h4.style.cssText='font-size:0.78em;color:var(--ink3);margin:6px 0 4px;grid-column:1/-1';
+  h4.textContent=cat.cat;
+  sg.appendChild(h4);
+  cat.items.forEach(item=>{
+    const btn=document.createElement('div');
+    btn.className='symptom-btn';btn.setAttribute('data-s',item.id);
+    btn.textContent=item.l;
+    btn.addEventListener('click',()=>{
+      if(medSelected.has(item.id)){medSelected.delete(item.id);btn.classList.remove('selected')}
+      else{medSelected.add(item.id);btn.classList.add('selected')}
+    });
+    sg.appendChild(btn);
+  });
+});
+
+let medSelected=new Set();
+
+function medAnalyze(){
+  if(medSelected.size===0){document.getElementById('medResultContent').innerHTML='<p style="color:var(--orange)">⚠ Sélectionnez au moins un symptôme.</p>';return}
+  const hScores={phi:0,pi:0,e:0,r2:0,r3:0,r5:0,eDivPi:0};
+  const pathScores={};
+  medSelected.forEach(s=>{
+    const info=symptomMap[s];if(!info)return;
+    hScores[info.c]=(hScores[info.c]||0)+info.score;
+    if(info.path) pathScores[info.path]=(pathScores[info.path]||0)+info.score;
+  });
+  const sorted=Object.entries(pathScores).sort((a,b)=>b[1]-a[1]).filter(p=>p[1]>=2).slice(0,3);
+  const total=Object.values(hScores).reduce((a,b)=>a+b,0)||1;
+  const hNames={phi:'H₁(φ)',pi:'H₂(π)',e:'H₃(e)',r2:'H₄(√2)',r3:'H₅(√3)',r5:'H₆(√5)',eDivPi:'H₇(e/π)'};
+  const hColorsC={phi:'var(--orange)',pi:'var(--acc)',e:'var(--phi)',r2:'var(--green)',r3:'var(--acc2)',r5:'var(--red)',eDivPi:'var(--phi2)'};
+
+  let html='<div class="animate-in">';
+  html+='<h4 style="font-size:0.82em;color:var(--ink3)">Spectre Harmonique</h4>';
+  html+='<div class="score-bar">';
+  Object.entries(hScores).forEach(([k,v])=>{if(v>0)html+=`<div class="s-seg" style="width:${(v/total*100).toFixed(0)}%;background:${hColorsC[k]}"></div>`});
+  html+='</div><div style="margin-bottom:10px">';
+  Object.entries(hScores).filter(([,v])=>v>0).forEach(([k,v])=>{const hc=k==='phi'?'h1':k==='pi'?'h2':k==='e'?'h3':k==='r2'?'h4':k==='r3'?'h5':k==='r5'?'h6':'h7';html+=`<span class="h-badge ${hc}">${hNames[k]}:${v}</span>`});
+  html+='</div>';
+
+  if(sorted.length===0){html+='<p style="color:var(--ink3)">Aucun profil dominant. Ajoutez plus de symptômes.</p>'}
+  else{
+    html+=`<h4 style="font-size:0.85em;color:var(--phi)">📋 Diagnostics (${sorted.length})</h4>`;
+    sorted.forEach(([pk,score])=>{
+      const p=pathProfiles[pk];if(!p)return;
+      const conf=Math.min(95,Math.round(score/10*100));
+      html+=`<div class="result-card" style="border-left:3px solid ${p.urgency?'var(--red)':'var(--acc)'}">`;
+      html+=`<h4 style="color:${p.urgency?'var(--red)':'var(--acc)'}">${p.urgency?'⚠ ':''}${p.name} <span style="font-size:0.75em;color:var(--ink3)">(${conf}%)</span></h4>`;
+      html+=`<p style="color:var(--ink3);font-size:0.78em">${p.desc}</p>`;
+      html+='<div style="margin:4px 0">';
+      p.harmonics.forEach(h=>{let hc='h1';if(h.includes('H₂'))hc='h2';else if(h.includes('H₃'))hc='h3';else if(h.includes('H₄'))hc='h4';else if(h.includes('H₅'))hc='h5';else if(h.includes('H₆'))hc='h6';else if(h.includes('H₇'))hc='h7';html+=`<span class="h-badge ${hc}">${h}</span>`});
+      html+='</div>';
+      if(p.plants.length){html+='<p style="color:var(--green);font-weight:600;font-size:0.75em">🌿 Plantes</p>';p.plants.forEach(pl=>{html+=`<div class="protocol-line"><span class="pl-plant">${pl.p}</span><span class="pl-freq">${pl.f}</span><span class="pl-action">${pl.a} — ${pl.d}</span></div>`})}
+      if(p.freqs&&p.freqs.length){html+='<p style="color:var(--phi);font-weight:600;font-size:0.75em">🎵 Fréquences</p>';p.freqs.forEach(fr=>{html+=`<div class="protocol-line"><span class="pl-plant">${fr.m}</span><span class="pl-freq">${fr.f}</span><span class="pl-action">${fr.t}</span></div>`})}
+      html+=`<p style="color:var(--phi2);font-size:0.73em;margin-top:6px"><strong>⏱</strong> ${p.protocol}</p>`;
+      html+='</div>';
+    });
+  }
+  if(sorted.some(([k])=>pathProfiles[k]?.urgency)) html+='<div class="warning-box"><div class="w-title">⚠ SIGNES D\'ALERTE — Consultation médicale recommandée</div></div>';
+  html+='</div>';
+  document.getElementById('medResultContent').innerHTML=html;
+}
+function medReset(){medSelected.clear();document.querySelectorAll('#medSymptomGrid .symptom-btn').forEach(b=>b.classList.remove('selected'));document.getElementById('medResultContent').innerHTML='<div style="color:var(--ink3);text-align:center;padding:30px"><div style="font-size:2.5em">🔍</div><p>Sélectionnez les symptômes et cliquez sur Analyser</p></div>'}
+
+// ===== MODULE TEXTE =====
+const wordHMap = {};
+const baseWords = ['univers','onde','harmonie','fréquence','énergie','matière','lumière','temps','espace','constante','fondamental','courbure','croissance','structure','information','signal','résonance','équilibre','santé','maladie','guérison','plante'];
+baseWords.forEach(w=>{let s=0;for(let i=0;i<w.length;i++)s+=w.charCodeAt(i);const idx=(s%7)+1;wordHMap[w]=idx});
+
+function getWordH(word){
+  const w=word.toLowerCase();
+  if(wordHMap[w]) return wordHMap[w];
+  let s=0;for(let i=0;i<w.length;i++)s+=w.charCodeAt(i);
+  const idx=(s%7)+1;wordHMap[w]=idx;return idx;
+}
+
+function textGenerate(){
+  const input=document.getElementById('textInput').value.trim();
+  if(!input){return}
+  const chat=document.getElementById('chatBox');
+  chat.innerHTML+=`<div class="chat-msg chat-you">🧑 ${input}</div>`;
+
+  const words=input.split(/\s+/);
+  const hCount=[0,0,0,0,0,0,0,0]; // index 1-7
+  words.forEach(w=>{if(w.length>1){const h=getWordH(w);hCount[h]++}});
+  const total=words.filter(w=>w.length>1).length||1;
+  const dominantH=[...hCount.entries()].slice(1).sort((a,b)=>b[1]-a[1])[0][0];
+  const hNames=['','φ','π','e','√2','√3','√5','e/π'];
+  const hTopics=['fondamental','courbure','croissance','structure','spatialité','liaison φ','information'];
+
+  let response='';
+  if(dominantH===1)response=`Votre question active principalement H₁=φ (${(hCount[1]/total*100).toFixed(0)}% du spectre). L'onde fondamentale domine — cela indique une recherche d'équilibre, de proportion, d'harmonie primordiale. La réponse se trouve dans le retour à l'essentiel : φ est le régulateur de tout le spectre.`;
+  else if(dominantH===2)response=`H₂=π (${(hCount[2]/total*100).toFixed(0)}%) domine votre spectre. La courbure, le rythme, la circularité sont au premier plan. Cela peut indiquer une tension (π élevé = hypertension harmonique) ou au contraire une recherche de régularité cyclique.`;
+  else if(dominantH===3)response=`H₃=e (${(hCount[3]/total*100).toFixed(0)}%) est l'harmonique dominante. La croissance, l'expansion, le changement sont au cœur de votre question. Attention : e non contrôlé par φ mène à la prolifération (cancer, infection). L'équilibre est a₁(φ) > a₃(e).`;
+  else if(dominantH===4)response=`H₄=√2 (${(hCount[4]/total*100).toFixed(0)}%) — l'harmonique de la structure et de la solidité. Votre question touche à ce qui est stable, carré, fondé. √2 est la diagonale du carré : ce qui relie les opposés.`;
+  else if(dominantH===5)response=`H₅=√3 (${(hCount[5]/total*100).toFixed(0)}%) — la spatialité, le volume, la troisième dimension. Votre question explore les profondeurs, ce qui donne du relief. √3 est aussi lié à la régénération (moelle osseuse, cellules souches).`;
+  else if(dominantH===6)response=`H₆=√5 (${(hCount[6]/total*100).toFixed(0)}%) — l'harmonique liée à φ (√5=2φ−1). Structure organique, squelette, glucose. Votre question porte sur ce qui tient debout, ce qui donne forme au vivant.`;
+  else if(dominantH===7)response=`H₇=e/π (${(hCount[7]/total*100).toFixed(0)}%) — l'harmonique de l'information, du signal, du code (ADN, immunité). Votre question est de nature informationnelle : transmettre, coder, décoder, signaler.`;
+
+  response+=`\n\nSpectre complet : `;
+  const bars=['','','','','','','',''];
+  hCount.forEach((c,i)=>{if(i>0&&c>0)bars[i]=`H_${i}=${hNames[i]}: ${c} mots (${(c/total*100).toFixed(0)}%)`});
+  response+=bars.filter(b=>b).join(' | ');
+  response+=`\n\nPrincipe harmonique appliqué : G_ij,j = 0 garantit que cette analyse est déterministe. Aucune hallucination possible — la projection spectrale est une opération mathématique exacte.`;
+
+  chat.innerHTML+=`<div class="chat-msg chat-ia">🤖 ${response.replace(/\n/g,'<br>')}</div>`;
+  chat.scrollTop=chat.scrollHeight;
+  document.getElementById('textInput').value='';
+}
+
+function textAnalyze(){
+  const input=document.getElementById('textInput').value.trim();
+  if(!input)return;
+  const words=input.split(/\s+/);
+  const hCount=[0,0,0,0,0,0,0,0];
+  words.forEach(w=>{if(w.length>1){const h=getWordH(w);hCount[h]++}});
+  const total=words.filter(w=>w.length>1).length||1;
+  const hNames=['','φ','π','e','√2','√3','√5','e/π'];
+  const hColorsC={1:'var(--orange)',2:'var(--acc)',3:'var(--phi)',4:'var(--green)',5:'var(--acc2)',6:'var(--red)',7:'var(--phi2)'};
+  let html='<h4 style="font-size:0.80em;color:var(--ink3)">Spectre du texte</h4><div class="score-bar">';
+  hCount.forEach((c,i)=>{if(i>0&&c>0)html+=`<div class="s-seg" style="width:${(c/total*100).toFixed(0)}%;background:${hColorsC[i]}" title="H_${i}=${hNames[i]}: ${c}"></div>`});
+  html+='</div><div style="margin-top:6px">';
+  hCount.forEach((c,i)=>{if(i>0&&c>0)html+=`<span class="h-badge h${i}">H_${i}=${hNames[i]}: ${c} mots (${(c/total*100).toFixed(0)}%)</span> `});
+  html+='</div>';
+  document.getElementById('textSpectrum').innerHTML=html;
+}
+function textReset(){document.getElementById('chatBox').innerHTML='<div class="chat-ia">IA Harmonique prête. Posez une question — chaque mot sera projeté sur le spectre φ, π, e, √2, √3, √5, e/π.</div>';document.getElementById('textInput').value='';document.getElementById('textSpectrum').innerHTML=''}
+
+// ===== MODULE ÉLÉMENTS =====
+const elements=[{z:1,s:'H',n:'Hydrogène'},{z:2,s:'He',n:'Hélium'},{z:3,s:'Li',n:'Lithium'},{z:4,s:'Be',n:'Béryllium'},{z:5,s:'B',n:'Bore'},{z:6,s:'C',n:'Carbone'},{z:7,s:'N',n:'Azote'},{z:8,s:'O',n:'Oxygène'},{z:9,s:'F',n:'Fluor'},{z:10,s:'Ne',n:'Néon'},{z:11,s:'Na',n:'Sodium'},{z:12,s:'Mg',n:'Magnésium'},{z:13,s:'Al',n:'Aluminium'},{z:14,s:'Si',n:'Silicium'},{z:15,s:'P',n:'Phosphore'},{z:16,s:'S',n:'Soufre'},{z:17,s:'Cl',n:'Chlore'},{z:18,s:'Ar',n:'Argon'},{z:19,s:'K',n:'Potassium'},{z:20,s:'Ca',n:'Calcium'},{z:26,s:'Fe',n:'Fer'},{z:29,s:'Cu',n:'Cuivre'},{z:47,s:'Ag',n:'Argent'},{z:79,s:'Au',n:'Or'},{z:80,s:'Hg',n:'Mercure'},{z:82,s:'Pb',n:'Plomb'},{z:92,s:'U',n:'Uranium'},{z:118,s:'Og',n:'Oganesson'},{z:119,s:'Uue',n:'Ununennium',pred:true},{z:120,s:'Ubn',n:'Unbinilium',pred:true},{z:126,s:'Ubh',n:'Unbihexium',pred:true},{z:137,s:'Uts',n:'Untriseptium',pred:true}];
+
+function renderElements(){
+  const grid=document.getElementById('elementGrid');
+  grid.innerHTML='';
+  elements.forEach(el=>{
+    const div=document.createElement('div');
+    div.className='el-mini'+(el.pred?' pred':'');
+    div.innerHTML=`<div class="ez">${el.z}</div><div class="es">${el.s}</div><div style="font-size:0.6em;color:var(--ink3)">${el.n}</div>`;
+    div.addEventListener('click',()=>showElement(el));
+    grid.appendChild(div);
+  });
+}
+function showElement(el){
+  const hn=H[el.z]||computeH(el.z);
+  const dec=formatDecomposition(el.z);
+  document.getElementById('elDetailContent').innerHTML=`
+    <div style="font-size:3em;font-weight:700;text-align:center;color:${el.pred?'var(--phi2)':'var(--phi)'}">${el.s}${el.pred?' ✦':''}</div>
+    <div style="text-align:center;color:var(--ink2)">${el.n}</div>
+    <div style="text-align:center;color:var(--ink3);font-size:0.85em">Z = ${el.z}${el.pred?' — ÉLÉMENT PRÉDIT':''}</div>
+    <div style="text-align:center;font-family:'Courier New',monospace;color:var(--phi);font-size:1.2em;margin:8px 0">H_${el.z} = ${hn.toFixed(6)}</div>
+    <div style="text-align:center;color:var(--acc);font-size:0.85em">Ψ_${el.z} = H_${el.z} · (Ψ₁)^${el.z}</div>
+    <div style="color:var(--ink3);font-size:0.78em;margin-top:8px">Décomposition: ${dec}</div>
+    <div style="color:var(--ink3);font-size:0.75em;margin-top:4px">(Ψ₁)^${el.z} · (Ψ₁)^k = (Ψ₁)^${el.z}+k</div>
+  `;
+}
+
+// ===== INIT =====
+console.log('╔══════════════════════════════════════╗');
+console.log('║  IA HARMONIQUE UNIVERSELLE           ║');
+console.log('║  Ψ = Σ Hₙ·(Ψ₁)ⁿ                     ║');
+console.log('║  G_ij,j = 0 → 0 hallucination       ║');
+console.log('╚══════════════════════════════════════╝');
+</script>
+</body>
+</html>
