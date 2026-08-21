@@ -1,5 +1,18 @@
 services:
   - type: web
+    name: ka-mobile
+    env: static
+    rootDir: engine/ka-mobile-android
+    buildCommand: npm ci && npm run build
+    staticPublishPath: www
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://api.kamobile.ai
+  - type: web
     name: hcv2-pro-www
     env: static
     buildCommand: cd engine && cp -r www/* .
