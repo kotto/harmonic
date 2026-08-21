@@ -41,8 +41,10 @@ log = logging.getLogger(__name__)
 
 
 def create_app(config_override: dict = None) -> Flask:
-    """
-    Factory pattern pour créer l'app Flask.
+    """Factory pattern pour créer l'app Flask.
+    
+    Relit la config active au moment de la création (pas à l'import) :
+    `--product enterprise` doit charger les faits et la config enterprise.
     
     Args:
         config_override: Dict optionnel pour surcharger la config (tests)
@@ -50,6 +52,13 @@ def create_app(config_override: dict = None) -> Flask:
     Returns:
         Flask app configurée
     """
+    global _KA_CONFIG
+    try:
+        from ka_config import get_active_config as _get_active
+        _KA_CONFIG = _get_active()
+    except Exception:
+        _KA_CONFIG = None
+
     app = Flask(__name__)
     
     # Configuration CORS
@@ -90,6 +99,13 @@ def create_app(config_override: dict = None) -> Flask:
     from ka_server.routes import register_routes
     register_routes(app, services)
     
+    # ── Lancer le service de compression fantôme (GhostCompressor) ────────────
+    try:
+        from ka_background_compress import start_ghost
+        start_ghost()
+    except Exception as e:
+        app.logger.warning(f'GhostCompressor not available: {e}')
+    
     # ── Health check racine / point d'entrée de l'app mobile ────────────────
     @app.route('/')
     def index():
@@ -108,6 +124,27 @@ def create_app(config_override: dict = None) -> Flask:
             'endpoints': '/api/health pour health check'
         }
 
+    # ── Sites publics (KA Corporation & KA Fondation) ───────────────────────
+    from flask import send_from_directory
+    _SITES_DIR = Path(__file__).resolve().parent / 'static'
+    
+    # ── Vital KA — Applications métier (frontends embarqués) ──
+    @app.route('/vital/medecin')
+    def vital_medecin():
+        return send_from_directory(_SITES_DIR / 'vital', 'medecin.html')
+    
+    @app.route('/vital/patient')
+    def vital_patient():
+        return send_from_directory(_SITES_DIR / 'vital', 'patient.html')
+    
+    @app.route('/vital/pharmacien')
+    def vital_pharmacien():
+        return send_from_directory(_SITES_DIR / 'vital', 'pharmacien.html')
+    
+    @app.route('/vital/diaspora')
+    def vital_diaspora():
+        return send_from_directory(_SITES_DIR / 'vital', 'diaspora.html')
+    
     # ── Assets de l'app mobile (www/) — repli vers les routes du site ──
     @app.route('/<path:filename>')
     def app_asset(filename):
@@ -121,10 +158,6 @@ def create_app(config_override: dict = None) -> Flask:
             from flask import send_from_directory
             return send_from_directory(str(_WWW_DIR), filename)
         abort(404)
-    
-    # ── Sites publics (KA Corporation & KA Fondation) ───────────────────────
-    from flask import send_from_directory
-    _SITES_DIR = Path(__file__).resolve().parent / 'static'
     
     @app.route('/corporation')
     def site_corporation():
@@ -145,13 +178,71 @@ def create_app(config_override: dict = None) -> Flask:
     
     @app.route('/enterprise')
     def site_enterprise():
-        """Console d'administration KA Enterprise (PC-first)."""
+        """Landing page publique KA Enterprise (Post-RAG) — vend avant de connecter.
+        Les contenus (manifesto, compare, pricing) viennent des endpoints
+        publics /api/v2/enterprise/* — une seule source de vérité."""
+        return send_from_directory(_SITES_DIR, 'enterprise_landing.html')
+
+    @app.route('/enterprise/console')
+    def site_enterprise_console():
+        """Console d'administration KA Enterprise (PC-first, clé API requise)."""
         return send_from_directory(_SITES_DIR, 'enterprise.html')
 
     @app.route('/wave')
     def site_wave_playground():
         """Playground du service SaaS de calcul harmonique (/api/wave/*)."""
         return send_from_directory(_SITES_DIR, 'wave_playground.html')
+
+    @app.route('/sonic-id')
+    def site_sonic_id():
+        """Démo interactive d'empreinte sonore — chaque identifiant génère un son unique."""
+        return send_from_directory(_SITES_DIR, 'sonic_id.html')
+
+    @app.route('/harmonic-ai')
+    def site_harmonic_ai():
+        """Site institutionnel HARMONIC AI — la société, la technologie, les preuves."""
+        return send_from_directory(_SITES_DIR, 'harmonic_ai.html')
+
+    @app.route('/compress')
+    def site_compress():
+        """Ψ Compress — compression HCV ×213 sans perte. Service en ligne + API."""
+        return send_from_directory(_SITES_DIR, 'compress.html')
+
+    @app.route('/compress/console')
+    def site_compress_console():
+        """Console utilisateur Ψ Compress — upload, historique, stats, graphique."""
+        return send_from_directory(_SITES_DIR, 'compress_console.html')
+
+    @app.route('/care')
+    def site_care():
+        """KA Care — diagnostic IA pour l'Afrique. Hors-ligne, zéro hallucination."""
+        return send_from_directory(_SITES_DIR, 'care.html')
+
+    @app.route('/demo')
+    def site_demo_public():
+        """Démo publique en ligne — sans clé, sans inscription."""
+        return send_from_directory(_SITES_DIR, 'demo_public.html')
+
+    @app.route('/blog')
+    def site_blog_index():
+        """Index des articles de blog HARMONIC AI."""
+        return send_from_directory(_SITES_DIR, 'blog.html')
+
+    @app.route('/blog/post-rag-architecture')
+    def site_blog_postrag():
+        """Article : Architecture IA Enterprise — l'article vs HARMONIC AI."""
+        return send_from_directory(_SITES_DIR, 'blog_post_rag_architecture.html')
+
+    @app.route('/brand/<path:filename>')
+    def brand_asset(filename):
+        """Assets de marque (logos SVG du système HARMONIC AI) — disque argent
+        brossé + symbole gravé par produit (ka, psi, wave, enterprise, care)."""
+        return send_from_directory(_SITES_DIR / 'brand', filename)
+
+    @app.route('/img/<path:filename>')
+    def site_img(filename):
+        """Images statiques des sites (démo, captures…)."""
+        return send_from_directory(_SITES_DIR / 'img', filename)
     
     # ── Téléchargement (distribution sans store) ──
     @app.route('/download')

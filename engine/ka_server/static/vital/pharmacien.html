@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#0d0d0d">
+<title>Vital Ka Pharmacien — Dispensation</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0d0d;--bg-elevated:#141414;--surface:#1a1a1a;--surface-hover:#222225;--glass:rgba(26,26,26,.7);--glass-border:rgba(212,168,83,.08);--border-light:rgba(212,168,83,.12);--text-faint:#6b635a;--text-muted:#9b8f7e;--accent:#d4a853;--accent-dim:#b89030;--accent-glow:rgba(212,168,83,.12);--accent-glow-strong:rgba(212,168,83,.25);--accent-grad:linear-gradient(135deg,#d4a853,#b89030);--success:#27ae60;--warning:#f39c12;--error:#e74c3c;--error-dim:rgba(231,76,60,.15);--urgent:#e74c3c;--font:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;--border:#2a2a2a;--muted:var(--text-muted);--text:#eae1d7;--card:var(--glass);--radius:16px;--gold-grad:linear-gradient(135deg,#d4a853,#7b5804)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5}
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:1}
+.container{max-width:720px;margin:0 auto;padding:0 16px 100px;position:relative;z-index:2}
+header{text-align:center;padding:32px 0 24px}
+header img{width:56px;height:56px;border-radius:50%;object-fit:cover;box-shadow:0 4px 20px rgba(0,0,0,.3),0 0 20px var(--accent-glow);border:2px solid var(--glass-border)}
+.card{background:var(--glass);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--glass-border);border-radius:var(--radius);padding:20px 16px;margin-bottom:16px;box-shadow:0 4px 16px rgba(0,0,0,.35)}
+.card h3{font-size:16px;font-weight:700;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.btn{display:block;width:100%;padding:14px 20px;border:none;border-radius:12px;font-weight:600;font-size:15px;cursor:pointer;font-family:inherit;text-align:center;transition:all .3s cubic-bezier(.16,1,.3,1)}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--gold-grad);color:#0a0a0f;box-shadow:0 4px 20px var(--accent-glow);font-weight:700}
+.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--accent);margin-top:8px}
+.btn-green{background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;margin-top:8px;box-shadow:0 4px 16px rgba(39,174,96,.2)}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:688px;display:flex;justify-content:space-around;align-items:center;padding:8px 16px 12px;background:rgba(20,20,30,.85);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);border:1px solid var(--glass-border);border-radius:28px 28px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.5);z-index:50}
+.nav-item{display:flex;flex-direction:column;align-items:center;cursor:pointer;color:var(--text-faint);transition:all .15s;padding:6px 14px;border-radius:12px;position:relative}
+.nav-item.active{color:var(--accent);background:var(--accent-glow)}
+.nav-item .nav-icon{font-size:22px;margin-bottom:2px}
+.nav-item .nav-label{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.screen{display:none;opacity:0;transform:translateY(12px);transition:opacity .3s cubic-bezier(.16,1,.3,1),transform .3s cubic-bezier(.16,1,.3,1)}
+.screen.active{display:block;opacity:1;transform:translateY(0)}
+input,textarea{background:rgba(15,15,25,.8);color:var(--text);border:1px solid var(--border);padding:12px 16px;border-radius:12px;font-size:14px;font-family:inherit;width:100%}
+input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.rx-item{background:rgba(15,15,25,.8);border:1px solid var(--glass-border);border-radius:12px;padding:14px;margin-bottom:10px;transition:all .15s}
+.rx-item:hover{border-color:var(--border-light)}
+.rx-item.dispensed{opacity:.6;border-left:3px solid var(--success)}
+.rx-item .rx-patient{font-weight:700;font-size:15px}
+.rx-item .rx-date{font-size:11px;color:var(--muted)}
+.rx-item .rx-med{font-size:13px;margin-top:4px;padding:4px 8px;background:var(--accent-glow);border-radius:6px;display:inline-block;margin-right:4px;margin-bottom:4px}
+.rx-badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600}
+.rx-badge.pending{background:var(--warning-dim);color:var(--warning)}
+.rx-badge.done{background:rgba(39,174,96,.15);color:var(--success)}
+.qr-zone{text-align:center;padding:24px;border:2px dashed var(--border);border-radius:16px;margin:16px 0;transition:all .3s}
+.qr-zone:hover{border-color:var(--accent)}
+</style>
+<script src="vital_ka_config.js"></script>
+<script src="ka_bridge.js"></script>
+<script src="ka_secure.js"></script>
+<script src="ka_wallet.js"></script>
+<script src="ka_hologram_router.js"></script>
+</head>
+<body>
+<div class="container">
+
+<!-- SPLASH -->
+<div class="screen active" id="screen-splash">
+<header><img src="logo2.jpg" alt="Vital Ka Pharmacie"><h2>🏪 Vital Ka Pharmacie</h2><p>Dispensation sécurisée — QR code ordonnance</p></header>
+<button class="btn btn-primary" onclick="showScreen('scan')">📷 Scanner une ordonnance</button>
+<button class="btn btn-secondary" onclick="showScreen('history')">📋 Historique des dispensations</button>
+</div>
+
+<!-- SCAN -->
+<div class="screen" id="screen-scan">
+<header><h2>📷 Scanner l'ordonnance</h2></header>
+<div class="card">
+<h3>🔍 Code de l'ordonnance</h3>
+<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Scannez le QR code présenté par le patient, ou collez le code manuellement.</p>
+<textarea id="rxCodeInput" placeholder="Collez le code de l'ordonnance ici..." style="min-height:80px;margin-bottom:8px"></textarea>
+<button class="btn btn-primary" onclick="decodeRx()">🔓 Décoder l'ordonnance</button>
+<div id="rxDecoded" style="margin-top:16px"></div>
+</div>
+<button class="btn btn-secondary" onclick="showScreen('splash')">← Retour</button>
+</div>
+
+<!-- HISTORY -->
+<div class="screen" id="screen-history">
+<header><h2>📋 Historique</h2></header>
+<div id="historyList"><div class="card"><p style="text-align:center;color:var(--muted)">Aucune dispensation.</p></div></div>
+<button class="btn btn-secondary" onclick="showScreen('splash')">← Retour</button>
+</div>
+
+<!-- WALLET / CAISSE -->
+<div class="screen" id="screen-wallet">
+<header><h2>💰 Caisse — Unités Médicales</h2></header>
+<div class="card" style="text-align:center">
+<div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Solde pharmacie</div>
+<div style="font-size:2.5em;font-weight:800;color:var(--accent);line-height:1.2" id="pharmBalance">0</div>
+<div style="font-size:14px;color:var(--muted)">Unités Médicales</div>
+</div>
+<div class="card">
+<h3>💳 Encaisser un paiement patient</h3>
+<p style="color:var(--muted);font-size:13px;margin-bottom:8px">Entrez le montant à facturer et scannez le QR wallet du patient.</p>
+<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+<input id="paymentAmount" type="number" placeholder="Montant (UM)" style="flex:1">
+</div>
+<textarea id="paymentCodeInput" placeholder="Collez le code wallet du patient..." style="min-height:50px;margin-bottom:8px"></textarea>
+<button class="btn btn-primary" onclick="processPayment()">💳 Encaisser</button>
+<div id="paymentResult" style="margin-top:12px"></div>
+</div>
+<div class="card">
+<h3>🏦 Conversion en monnaie locale</h3>
+<p style="color:var(--muted);font-size:13px;margin-bottom:8px">Convertissez vos UM en CFA ou EUR. Taux fixe : 1 UM = 655 CFA = 1 EUR.</p>
+<div style="display:flex;gap:8px;margin-bottom:8px">
+<input id="convAmount" type="number" placeholder="Montant UM" style="flex:1">
+<select id="convCurrency" style="width:auto"><option value="CFA">CFA</option><option value="EUR">EUR</option></select>
+</div>
+<input id="convBank" placeholder="N° mobile money ou IBAN" style="margin-bottom:8px">
+<button class="btn btn-primary" onclick="processConversion()">🏦 Demander la conversion</button>
+<div id="convResult" style="margin-top:12px"></div>
+</div>
+<div class="card">
+<h3>📋 Dernières conversions</h3>
+<div id="convHistory"><span style="color:var(--muted);font-size:.8em">Aucune demande.</span></div>
+</div>
+<button class="btn btn-secondary" onclick="showScreen('splash')">← Retour</button>
+</div>
+
+<!-- ═══ INTERACTIONS MÉDICAMENTEUSES (KA_HOLOGRAM) ═══ -->
+<div class="screen" id="screen-interactions">
+<header><h2 style="color:var(--accent)">⚡ Vérifier des interactions</h2></header>
+<div class="card">
+<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Saisissez les médicaments de l'ordonnance — la base de connaissances Vital Ka (hologrammes) vérifie les interactions connues, 100% hors-ligne.</p>
+<textarea id="interactMeds" placeholder="Ex : amoxicilline, paracétamol, ibuprofène" style="min-height:60px;margin-bottom:8px;background:var(--surface);border:1px solid var(--glass-border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px;width:100%;box-sizing:border-box"></textarea>
+<button class="btn btn-primary" style="width:100%" onclick="checkInteractions()">⚡ Vérifier les interactions</button>
+<div id="interactResult" style="margin-top:12px"><span style="color:var(--muted);font-size:.8em">En attente de vérification...</span></div>
+</div>
+<button class="btn btn-secondary" onclick="showScreen('splash')">← Retour</button>
+</div>
+
+</div>
+
+<nav class="bottom-nav">
+<div class="nav-item active" data-screen="splash" onclick="showScreen('splash')"><span class="nav-icon">🏪</span><span class="nav-label">Accueil</span></div>
+<div class="nav-item" data-screen="scan" onclick="showScreen('scan')"><span class="nav-icon">📷</span><span class="nav-label">Scanner</span></div>
+<div class="nav-item" data-screen="interactions" onclick="showScreen('interactions')"><span class="nav-icon">⚡</span><span class="nav-label">Interactions</span></div>
+<div class="nav-item" data-screen="wallet" onclick="showScreen('wallet')"><span class="nav-icon">💰</span><span class="nav-label">Caisse</span></div>
+<div class="nav-item" data-screen="history" onclick="showScreen('history')"><span class="nav-icon">📋</span><span class="nav-label">Historique</span></div>
+</nav>
+
+<script>
+const STORE = 'ka_pharmacie_dispensations';
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.screen === name));
+  document.querySelector('.bottom-nav').style.display = (name === 'splash') ? 'none' : 'flex';
+  if (name === 'history') renderHistory();
+  if (name === 'wallet') renderPharmWallet();
+}
+
+// ═══ ADAPTATEUR DE FORMAT ORDONNANCE ═══
+// Accepte les DEUX formats :
+//   - 'ordonnance' (nouveau, app médecin v2) : doctor/patient/items/diagnosis
+//   - 'prescription' (ancien, KA Care) : medecin/medicaments/diagnostic
+// Normalise en un format interne unique pour l'affichage et la dispensation.
+function normalizeRx(rx) {
+  if (!rx) return null;
+  const isNew = rx.type === 'ordonnance' || (rx.doctor && rx.items);
+  const isOld = rx.type === 'prescription' || rx.medecin;
+
+  if (!isNew && !isOld) return null;
+
+  if (isNew) {
+    // Format v2 (app médecin)
+    return {
+      type: 'ordonnance',
+      id: rx.id || ('ORD-' + Date.now()),
+      patient: {
+        name: rx.patient?.name || 'Inconnu',
+        age: rx.patient?.age || null,
+        weight: rx.patient?.weight || null
+      },
+      doctor: {
+        name: rx.doctor?.name || 'Inconnu',
+        license: rx.doctor?.license || '',
+        specialty: rx.doctor?.specialty || ''
+      },
+      diagnosis: rx.diagnosis || '',
+      items: (rx.items || []).map(function(m) {
+        return {
+          name: m.medication || m.name || '',
+          dosage: m.dosage || '',
+          frequency: m.frequency || '',
+          duration: m.duration || '',
+          quantity: m.quantity || 0
+        };
+      }),
+      notes: rx.notes || '',
+      created_at: rx.created_at || rx.date || new Date().toISOString(),
+      qr: rx.qr || null
+    };
+  }
+
+  // Format v1 (KA Care / ancien)
+  return {
+    type: 'ordonnance',
+    id: rx.id || ('ORD-' + Date.now()),
+    patient: {
+      name: rx.patient?.name || 'Inconnu',
+      age: rx.patient?.age || null,
+      weight: rx.patient?.weight || null
+    },
+    doctor: {
+      name: rx.medecin?.name || 'Inconnu',
+      license: rx.medecin?.license || '',
+      specialty: rx.medecin?.specialty || ''
+    },
+    diagnosis: rx.diagnostic?.nom || '',
+    items: (rx.medicaments || []).map(function(m) {
+      return {
+        name: m.name || '',
+        dosage: m.dosage || '',
+        frequency: m.frequence || m.frequency || '',
+        duration: m.duree || m.duration || '',
+        quantity: m.quantite || m.quantity || 0
+      };
+    }),
+    notes: rx.notes || '',
+    created_at: rx.date || rx.created_at || new Date().toISOString(),
+    qr: rx.qr || null
+  };
+}
+
+// URL API serveur (configurable, fallback local)
+const API_URL = (function() {
+  try {
+    const u = localStorage.getItem('ka_api_url');
+    if (u) return u;
+  } catch(e) {}
+  try {
+    const u = localStorage.getItem('vital_api_url');
+    if (u) return u;
+  } catch(e) {}
+  return 'https://api.kamobile.ai';
+})();
+
+// ═══ INTERACTIONS MÉDICAMENTEUSES — KA_HOLOGRAM (offline) ═══
+async function checkInteractions() {
+  const el = document.getElementById('interactResult');
+  const input = (document.getElementById('interactMeds').value || '').trim();
+  if (!input) { el.innerHTML = '<span style="color:var(--error)">Saisissez au moins un médicament.</span>'; return; }
+
+  el.innerHTML = '<span style="color:var(--muted)">Analyse de la base de connaissances...</span>';
+
+  try {
+    if (typeof KA_HOLOGRAM === 'undefined') {
+      el.innerHTML = '<span style="color:var(--error)">Base de connaissances non disponible.</span>';
+      return;
+    }
+    await KA_HOLOGRAM.load();
+
+    // Rechercher les interactions via checkInteractions (matching par sous-chaîne)
+    const meds = input.split(/[,;\n]+/).map(m => m.trim()).filter(Boolean);
+    const results = KA_HOLOGRAM.checkInteractions(meds, 8);
+
+    if (!results.length) {
+      el.innerHTML = '<div style="padding:10px;border-left:3px solid var(--success);background:rgba(76,175,80,.08);border-radius:8px;font-size:13px">✅ <b>Aucune interaction connue</b> détectée pour : ' +
+        meds.join(', ') + ' dans la base Vital Ka.</div>';
+      return;
+    }
+
+    let html = '<div style="padding:10px;border-left:3px solid var(--error);background:rgba(244,67,54,.08);border-radius:8px;font-size:13px">⚠️ <b>' + results.length + ' interaction(s) détectée(s)</b> :</div>';
+    for (const r of results.slice(0, 8)) {
+      const sev = r.severity === 'contraindicated' ? 'var(--error)' :
+                  r.severity === 'major' || r.severity === 'moderate' ? 'var(--warning)' : 'var(--success)';
+      html += '<div style="padding:8px 12px;border-left:3px solid ' + sev + ';background:var(--surface-container-lowest);border-radius:6px;margin:6px 0;font-size:13px">' +
+        '<b>' + r.s + '</b> — <span style="text-transform:uppercase;font-size:10px;color:' + sev + '">' + r.severity + '</span><br>' + r.phrase + '</div>';
+    }
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = '<span style="color:var(--error)">Erreur : ' + e.message + '</span>';
+  }
+}
+
+function decodeRx() {
+  const code = document.getElementById('rxCodeInput').value.trim();
+  const el = document.getElementById('rxDecoded');
+  if (!code) { el.innerHTML = '<div class="card" style="text-align:center;color:#f87171">Veuillez entrer un code.</div>'; return; }
+
+  let rx = null;
+  // 1. Tenter KA_BRIDGE.decode (vérifie la signature HMAC)
+  if (typeof KA_BRIDGE !== 'undefined') {
+    try {
+      const decoded = KA_BRIDGE.decode(code);
+      if (decoded) rx = decoded;
+    } catch(e) {}
+  }
+  // 2. Tenter JSON brut
+  if (!rx) {
+    try { rx = JSON.parse(code); } catch(e) {}
+  }
+  // 3. Tenter base64 → JSON
+  if (!rx) {
+    try { rx = JSON.parse(atob(code)); } catch(e) {}
+  }
+
+  // Normaliser les deux formats (ordonnance v2 / prescription v1)
+  const norm = normalizeRx(rx);
+  if (!norm) {
+    el.innerHTML = '<div class="card" style="text-align:center;color:#f87171">❌ Code invalide. Assurez-vous de scanner le QR code de l\'ordonnance Vital Ka.</div>';
+    return;
+  }
+
+  _currentRx = norm;
+  const d = new Date(norm.created_at);
+  let html = '<div class="card">';
+  html += '<h3>📋 Ordonnance vérifiée' + (norm.doctor.license ? ' <span style="font-size:10px;color:var(--success)">✅ signée</span>' : '') + '</h3>';
+  html += '<div style="background:rgba(15,15,25,.8);border-radius:12px;padding:12px;margin-bottom:8px">';
+  html += '<div style="font-size:11px;color:var(--muted);text-transform:uppercase">Patient</div>';
+  html += '<div style="font-weight:700;font-size:16px">' + (norm.patient.name || 'Inconnu') + ' · ' + (norm.patient.age || '?') + ' ans' + (norm.patient.weight ? ' · ' + norm.patient.weight + ' kg' : '') + '</div></div>';
+  html += '<div style="background:rgba(15,15,25,.8);border-radius:12px;padding:12px;margin-bottom:8px">';
+  html += '<div style="font-size:11px;color:var(--muted);text-transform:uppercase">Médecin prescripteur</div>';
+  html += '<div style="font-weight:600">Dr ' + (norm.doctor.name || 'Inconnu') + (norm.doctor.specialty ? ' · ' + norm.doctor.specialty : '') + '</div>';
+  html += '<div style="font-size:11px;color:var(--muted)">' + (norm.doctor.license ? 'N° ordre : ' + norm.doctor.license + ' · ' : '') + 'Date : ' + d.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) + '</div></div>';
+  html += '<div style="background:rgba(15,15,25,.8);border-radius:12px;padding:12px;margin-bottom:8px">';
+  html += '<div style="font-size:11px;color:var(--muted);text-transform:uppercase">Diagnostic</div>';
+  html += '<div style="font-weight:600">' + (norm.diagnosis || '—') + '</div></div>';
+
+  if (norm.items && norm.items.length) {
+    html += '<div style="margin-bottom:8px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">💊 Médicaments prescrits</div>';
+    norm.items.forEach(m => {
+      const dosage = m.dosage ? ' · ' + m.dosage : '';
+      const freq = m.frequency ? ' · ' + m.frequency : '';
+      const dur = m.duration ? ' · ' + m.duration : '';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:rgba(15,15,25,.8);border-radius:8px;margin-bottom:4px;border:1px solid var(--glass-border)">';
+      html += '<div><strong>' + m.name + '</strong><div style="font-size:11px;color:var(--muted)">' + dosage + freq + dur + '</div></div>';
+      html += '<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" class="rx-check" onchange="checkDelivery()"> Délivré</label>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  if (norm.notes) html += '<div style="font-size:12px;color:var(--muted);padding:8px;background:rgba(15,15,25,.8);border-radius:8px;margin-bottom:8px">📝 ' + norm.notes + '</div>';
+
+  html += '<button class="btn btn-green" id="deliverBtn" disabled onclick="deliverRx()">✅ Confirmer la dispensation</button>';
+  html += '<button class="btn btn-secondary" style="margin-top:6px" onclick="document.getElementById(\'rxDecoded\').innerHTML=\'\'">← Nouvelle ordonnance</button>';
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+let _currentRx = null;
+
+function checkDelivery() {
+  const all = document.querySelectorAll('.rx-check');
+  const done = Array.from(all).every(c => c.checked);
+  document.getElementById('deliverBtn').disabled = !done;
+}
+
+function deliverRx() {
+  if (!_currentRx) return;
+  const disp = load();
+  disp.push({
+    id: 'disp_' + Date.now(),
+    ordonnance: _currentRx,
+    dispensedAt: new Date().toISOString(),
+    pharmacien: 'Pharmacie Vital Ka',
+  });
+  if (disp.length > 100) disp.splice(0, disp.length - 100);
+  save(disp);
+  document.getElementById('rxDecoded').innerHTML = '<div class="card" style="text-align:center">'
+    + '<div style="font-size:48px;margin-bottom:8px">✅</div>'
+    + '<h3 style="color:var(--success)">Dispensation confirmée</h3>'
+    + '<p style="color:var(--muted);font-size:13px">Patient : ' + (_currentRx.patient?.name || 'Inconnu') + '</p>'
+    + '<p style="color:var(--muted);font-size:13px">' + (_currentRx.items?.length || 0) + ' médicament(s) délivré(s)</p>'
+    + '<button class="btn btn-primary" style="margin-top:12px" onclick="showScreen(\'splash\')">🏪 Retour</button>'
+    + '<button class="btn btn-secondary" style="margin-top:8px" onclick="document.getElementById(\'rxDecoded\').innerHTML=\'\';document.getElementById(\'rxCodeInput\').value=\'\'">📷 Nouveau scan</button>'
+    + '</div>';
+  _currentRx = null;
+}
+
+function load() { try { return JSON.parse(localStorage.getItem(STORE) || '[]'); } catch(e) { return []; } }
+function save(d) { localStorage.setItem(STORE, JSON.stringify(d)); }
+
+function renderPharmWallet() {
+  const wallet = KA_WALLET.getWallet('pharmacie');
+  document.getElementById('pharmBalance').textContent = wallet.balance;
+  // Conversions history
+  const convs = KA_WALLET.getConversions();
+  const convEl = document.getElementById('convHistory');
+  if (convs.length) {
+    let h = '';
+    convs.slice(-5).reverse().forEach(c => {
+      h += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--glass-border);font-size:13px">';
+      h += '<span>' + c.amount + ' UM → ' + c.convertedAmount + ' ' + c.currency + '</span>';
+      h += '<span style="color:' + (c.status === 'pending' ? 'var(--warning)' : 'var(--success)') + '">' + (c.status === 'pending' ? '⏳ En attente' : '✅ Effectué') + '</span>';
+      h += '</div>';
+    });
+    convEl.innerHTML = h;
+  }
+}
+
+async function processPayment() {
+  const amount = parseInt(document.getElementById('paymentAmount').value) || 0;
+  if (!amount || amount < 1) { alert('Montant invalide.'); return; }
+  const code = document.getElementById('paymentCodeInput').value.trim();
+  let walletId = null;
+  // Décoder le code wallet patient
+  if (code && typeof KA_BRIDGE !== 'undefined') {
+    try {
+      const decoded = KA_BRIDGE.decode(code);
+      if (decoded && decoded.walletId) walletId = decoded.walletId;
+    } catch(e) {}
+  }
+  if (!walletId) { alert('Code wallet patient invalide. Scannez le QR du patient.'); return; }
+
+  // 1. Tenter le WALLET SERVEUR (POST /wallet/pay) — tracé, auditable
+  const pharmWallet = KA_WALLET.getWallet('pharmacie');
+  try {
+    const res = await fetch(API_URL + '/api/v1/wallet/pay', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from_owner_id: walletId,       // walletId patient (QR)
+        to_owner_id: pharmWallet.walletId,
+        amount_um: amount,
+        reference: _currentRx ? _currentRx.id : ('PAY-' + Date.now()),
+        prescription_qr: _currentRx ? (_currentRx.qr || _currentRx.id) : null
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      document.getElementById('paymentResult').innerHTML = '<div style="color:var(--success)">✅ Paiement de ' + amount + ' UM accepté (serveur, tx ' + data.tx_id + '). Solde pharmacie : ' + data.to_balance_after + ' UM</div>';
+      document.getElementById('pharmBalance').textContent = data.to_balance_after;
+      document.getElementById('paymentAmount').value = '';
+      document.getElementById('paymentCodeInput').value = '';
+      return;
+    }
+  } catch(e) { /* serveur indisponible → fallback local */ }
+
+  // 2. Fallback LOCAL (hors-ligne)
+  const result = KA_WALLET.debit('patient', amount, 'pharmacie', 'Paiement pharmacie — ' + amount + ' UM');
+  if (!result.ok) { document.getElementById('paymentResult').innerHTML = '<div style="color:var(--error)">❌ ' + result.error + '</div>'; return; }
+  document.getElementById('paymentResult').innerHTML = '<div style="color:var(--warning)">⚡ Paiement local de ' + amount + ' UM (hors-ligne — sync serveur en attente). Solde pharmacie : ' + result.recipient.balance + ' UM</div>';
+  document.getElementById('pharmBalance').textContent = result.recipient.balance;
+  document.getElementById('paymentAmount').value = '';
+  document.getElementById('paymentCodeInput').value = '';
+}
+
+function processConversion() {
+  const amount = parseInt(document.getElementById('convAmount').value) || 0;
+  if (!amount || amount < 1) { alert('Montant invalide.'); return; }
+  const currency = document.getElementById('convCurrency').value;
+  const bank = document.getElementById('convBank').value.trim();
+  const result = KA_WALLET.requestConversion('pharmacie', amount, currency, { account: bank });
+  if (!result.ok) { document.getElementById('convResult').innerHTML = '<div style="color:var(--error)">❌ ' + result.error + '</div>'; return; }
+  document.getElementById('convResult').innerHTML = '<div style="color:var(--success)">✅ Demande de ' + amount + ' UM → ' + result.conversion.convertedAmount + ' ' + currency + ' soumise. Délai estimé : 48h.</div>';
+  document.getElementById('pharmBalance').textContent = result.wallet.balance;
+  document.getElementById('convAmount').value = '';
+  document.getElementById('convBank').value = '';
+  renderPharmWallet();
+}
+
+function renderHistory() {
+  const disp = load();
+  const el = document.getElementById('historyList');
+  if (!disp.length) { el.innerHTML = '<div class="card"><p style="text-align:center;color:var(--muted)">Aucune dispensation.</p></div>'; return; }
+  let html = '';
+  disp.reverse().forEach(d => {
+    const rx = d.ordonnance;
+    const dt = new Date(d.dispensedAt);
+    html += '<div class="rx-item dispensed">';
+    html += '<div class="rx-patient">' + (rx.patient?.name || 'Inconnu') + '</div>';
+    html += '<div class="rx-date">Délivré le ' + dt.toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) + ' — Dr ' + (rx.doctor?.name || '') + '</div>';
+    const items = rx.items || rx.medicaments || [];
+    items.forEach(m => { html += '<span class="rx-med">💊 ' + (m.name || m.medication || '') + ' ' + (m.dosage||'') + '</span>'; });
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+</script>
+</body></html>
