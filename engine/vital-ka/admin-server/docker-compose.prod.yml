@@ -1,0 +1,85 @@
+# ──────────────────────────────────────────────
+# Vital KA Admin Server — Production (Oracle)
+# Services essentiels uniquement (sans nginx/frontend/monitoring)
+# Le nginx hôte sert de reverse proxy
+# ──────────────────────────────────────────────
+name: vitalka-admin
+
+services:
+  # ─── Base de données ───
+  postgres:
+    image: postgres:16-alpine
+    container_name: vitalka-postgres
+    environment:
+      POSTGRES_DB: vitalka_admin
+      POSTGRES_USER: ${POSTGRES_USER:-vitalka}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vitalka} -d vitalka_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vitalka-internal
+    restart: unless-stopped
+
+  # ─── Cache + Queue Broker ───
+  redis:
+    image: redis:7-alpine
+    container_name: vitalka-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - vitalka-internal
+    restart: unless-stopped
+
+  # ─── API Backend (FastAPI) ───
+  admin-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: vitalka-admin-api
+    ports:
+      - "127.0.0.1:8000:8000"  # Exposé localhost seulement, nginx hôte proxy
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-vitalka}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/vitalka_admin
+      - REDIS_URL=redis://redis:6379/0
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-changeme}
+      - MINIO_BUCKET=assets
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-changeme}
+      - JWT_ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - REFRESH_TOKEN_EXPIRE_DAYS=7
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM=${SMTP_FROM:-noreply@vitalka.local}
+      - FRONTEND_URL=${FRONTEND_URL:-https://ka-mobile.onrender.com}
+      - LOG_LEVEL=INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - vitalka-internal
+    restart: unless-stopped
+
+networks:
+  vitalka-internal:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

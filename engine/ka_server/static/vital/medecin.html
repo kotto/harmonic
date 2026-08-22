@@ -391,7 +391,7 @@ let waLocalStream = null, waPeerConnection = null, waCallType = 'video';
 const API_URL = (function() {
   try { const u = localStorage.getItem('ka_api_url'); if (u) return u; } catch(e) {}
   try { const u = localStorage.getItem('vital_api_url'); if (u) return u; } catch(e) {}
-  return 'https://api.kamobile.ai';
+  return '';
 })();
 
 function loadDocProfile() { try { return JSON.parse(localStorage.getItem(STORE_DOC) || '{}'); } catch(e) { return {}; } }
@@ -1021,7 +1021,7 @@ function aiDiagnose() {
   el.innerHTML = '<span style="color:var(--muted)">Analyse de la base de connaissances (hologrammes)...</span>';
 
   // 1. Tenter le serveur inference /diagnose
-  const INFER_URL = (function() { try { return localStorage.getItem('ka_infer_url') || 'https://api.kamobile.ai'; } catch(e) { return 'https://api.kamobile.ai'; } })();
+  const INFER_URL = (function() { try { return localStorage.getItem('ka_infer_url') || ''; } catch(e) { return ''; } })();
   fetch(INFER_URL + '/diagnose', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

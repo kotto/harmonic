@@ -154,6 +154,39 @@ def create_app(config_override: dict = None) -> Flask:
     def vital_diaspora():
         return send_from_directory(_SITES_DIR / 'vital', 'diaspora.html')
     
+    # ── API Vital KA — Proxy vers admin-server Oracle ──
+    @app.route('/api/v1/<path:subpath>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'])
+    @app.route('/api/v1/', defaults={'subpath': ''}, methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'])
+    def vital_api_proxy(subpath):
+        """Relaye les appels /api/v1/* vers l'admin-server Vital KA sur Oracle."""
+        import requests as http_requests
+        from flask import request as flask_req
+        
+        ORACLE_ADMIN = 'http://158.178.215.219:8000'
+        url = f'{ORACLE_ADMIN}/{subpath}' if subpath else ORACLE_ADMIN
+        url += f'?{flask_req.query_string.decode()}' if flask_req.query_string else ''
+        
+        headers = {k: v for k, v in flask_req.headers if k.lower() not in ('host', 'content-length')}
+        method = flask_req.method
+        
+        try:
+            resp = http_requests.request(
+                method, url,
+                headers=headers,
+                data=flask_req.get_data(),
+                timeout=60,
+            )
+            from flask import Response
+            return Response(
+                resp.content,
+                status=resp.status_code,
+                headers={k: v for k, v in resp.headers.items() if k.lower() not in ('transfer-encoding', 'content-encoding', 'content-length')},
+            )
+        except Exception as e:
+            app.logger.warning(f'Vital API proxy error: {e}')
+            from flask import jsonify
+            return jsonify({'error': 'Proxy error', 'detail': str(e)}), 502
+    
     # ── Assets de l'app mobile (www/) — repli vers les routes du site ──
     @app.route('/<path:filename>')
     def app_asset(filename):
