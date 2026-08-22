@@ -158,11 +158,14 @@ def create_app(config_override: dict = None) -> Flask:
     @app.route('/api/v1/<path:subpath>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'])
     @app.route('/api/v1/', defaults={'subpath': ''}, methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'])
     def vital_api_proxy(subpath):
-        """Relaye les appels /api/v1/* vers l'admin-server Vital KA sur Oracle."""
+        """Relaye les appels /api/v1/* vers l'admin-server Vital KA.
+        Par défaut : localhost:8000 (Oracle Docker). Configurable via VITAL_API_URL.
+        Lorsque Render relaie vers Oracle : définir VITAL_API_URL=http://158.178.215.219:8000
+        """
         import requests as http_requests
         from flask import request as flask_req
         
-        ORACLE_ADMIN = 'http://158.178.215.219:8000'
+        ORACLE_ADMIN = os.environ.get('VITAL_API_URL', 'http://127.0.0.1:8000')
         url = f'{ORACLE_ADMIN}/{subpath}' if subpath else ORACLE_ADMIN
         url += f'?{flask_req.query_string.decode()}' if flask_req.query_string else ''
         
