@@ -6,7 +6,7 @@ services:
     buildCommand: |
       pip install -r requirements.txt
       cd ../ka-mobile-android && npm ci && npm run build
-    startCommand: python -m ka_server.app --port $PORT
+    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
     envVars:
       - key: VITE_API_URL
         value: https://ka-mobile.onrender.com
