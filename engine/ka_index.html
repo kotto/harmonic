@@ -403,6 +403,7 @@ html,body{height:100%;width:100%;background:#000;color:var(--t1);font-family:var
     <div class="kbd" id="kbd">
       <div class="tb" role="toolbar">
         <div class="tbn tbn--on" id="tbv" onclick="toggleVoice()" role="button" aria-pressed="false" aria-label="Voix"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="4" y="1" width="6" height="8" rx="3" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M2 7c0 2.8 2.2 5 5 5s5-2.2 5-5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" fill="none"/><line x1="7" y1="12" x2="7" y2="14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg><span id="vl">Voix</span></div>
+        <div class="tbn" id="tbpiper" onclick="testPiperVoice()" role="button" aria-label="Test Piper TTS" title="Tester la voix neuronale Piper"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M7 3v8M3 7h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg><span>Piper</span></div>
         <div class="tbn" id="tbe" onclick="toggleEmoji()" role="button" aria-pressed="false" aria-label="Emoji"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="4.8" cy="5.8" r=".85" fill="currentColor"/><circle cx="9.2" cy="5.8" r=".85" fill="currentColor"/><path d="M4.2 9c.7 1 1.8 1.6 2.8 1.6s2.1-.6 2.8-1.6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" fill="none"/></svg><span>Emoji</span></div>
         <div class="tbn" onclick="paste()" role="button" aria-label="Coller"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="2" y="4" width="10" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M5 4V3a2 2 0 014 0v1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" fill="none"/></svg><span>Coller</span></div>
         <div class="tbn tbn--xs" onclick="K.txt='';upd()" role="button" aria-label="Effacer"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2 7h10M8 3.5l4 3.5-4 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
@@ -957,7 +958,7 @@ const SD={'':['Sophie','Appeler','Réunion','Oui','Super','Merci','Demain'],'so'
 		const isLocal = h==='localhost'||h==='127.0.0.1'||h.startsWith('192.168.')||h.startsWith('10.')||h.startsWith('172.16.');
 		// ⚡ Utiliser 127.0.0.1 : la résolution DNS de 'localhost' prend ~2s sur Windows
 		const apiHost = (h==='localhost') ? '127.0.0.1' : h;
-		var API_URL = (function(){try{var u=localStorage.getItem('ka_api_url');if(u)return u;}catch(e){}return isLocal?`http://${apiHost}:8765`:'https://ka-api.onrender.com';})(); // [ka-android] override localStorage
+		var API_URL = (function(){try{var u=localStorage.getItem('ka_api_url');if(u)return u;}catch(e){}return isLocal?`http://${apiHost}:8767`:'https://ka-api.onrender.com';})(); // [ka-android] override localStorage
 	let API_ONLINE = false;
 	
 		// Vérifier la connexion au démarrage
@@ -1803,6 +1804,49 @@ function kaCallSpeakFallback(text){
   }
   speechSynthesis.speak(callTTS);
 }
+
+// 🎵 Test voix Piper TTS neuronal (harmonique 11D)
+async function testPiperVoice(){
+  const btn = document.getElementById('tbpiper');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5.5" stroke="var(--life)" stroke-width="1.2" fill="none"/><path d="M7 3v8M3 7h8" stroke="var(--life)" stroke-width="1.2" stroke-linecap="round"/></svg><span>⏳</span>';
+  btn.disabled = true;
+  
+  try {
+    // Utiliser KA_VOICE si dispo (vital_ka_voice.js), sinon appel direct
+    if (typeof KA_VOICE !== 'undefined' && KA_VOICE.speak) {
+      // Déverrouiller AudioContext (geste utilisateur)
+      KA_VOICE.server.unlock();
+      await KA_VOICE.speak("Bonjour, ceci est un test de la voix neuronale Piper avec harmonique 11D.", 'conseiller');
+    } else {
+      // Appel direct au serveur Piper via /api/voice/stream
+      const resp = await fetch(API_URL + '/api/voice/stream', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({text: "Bonjour, ceci est un test de la voix neuronale Piper avec harmonique 11D.", emotion: 'warm', voice: 'fr_FR-siwis-medium'}),
+        signal: AbortSignal.timeout(15000)
+      });
+      if (!resp.ok) throw new Error('Piper server error: ' + resp.status);
+      const buf = await resp.arrayBuffer();
+      
+      // Jouer via AudioContext
+      if (!_kaAudioCtx) _kaAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      _kaAudioCtx.decodeAudioData(buf, function(audioBuf) {
+        var src = _kaAudioCtx.createBufferSource();
+        src.buffer = audioBuf;
+        src.connect(_kaAudioCtx.destination);
+        src.start(0);
+      }, function() { kaCallSpeakFallback("Test Piper fallback"); });
+    }
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5.5" stroke="var(--life)" stroke-width="1.2" fill="none"/><path d="M4 7l2 2 4-4" stroke="var(--life)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>✓</span>';
+    setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 2000);
+  } catch (e) {
+    console.error('[Piper Test] Erreur:', e);
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5.5" stroke="var(--coral)" stroke-width="1.2" fill="none"/><path d="M4 7l2 2 4-4" stroke="var(--coral)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>✗</span>';
+    setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 3000);
+  }
+}
+
 // 🆕 Reconnaissance vocale pendant l'appel → KA répond oralement
 function kaCallListen(){
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
