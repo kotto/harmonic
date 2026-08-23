@@ -25,7 +25,7 @@ except Exception:
     _KA_CONFIG = None
 
 # Version locale pour éviter import circulaire
-__version__ = '4.0.0'
+__version__ = '4.1.0'
 
 # ── Logging structuré (avec rotation : 5 × 10 Mo) ───────────────────────────
 logging.basicConfig(
