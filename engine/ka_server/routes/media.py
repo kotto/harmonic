@@ -767,6 +767,11 @@ def register_media_routes(app, services):
             compressed_size = len(data)
             ratio = original_size / compressed_size if compressed_size > 0 else 1.0
 
+            # Ajuster les dimensions si le codec les a modifiées (ex: 224×224)
+            if img_rec.shape[:2] != (h, w):
+                img_rec = np.array(Image.fromarray(img_rec.clip(0, 255).astype(np.uint8))
+                                   .resize((w, h), Image.LANCZOS))
+
             # Calcul PSNR
             mse = np.mean((img.astype(np.float64) - img_rec.astype(np.float64)) ** 2)
             psnr = 20 * np.log10(255.0 / max(1.0, np.sqrt(mse))) if mse > 0 else 99.99
