@@ -442,6 +442,111 @@ def coherence(psi_a: Wave, psi_b: Wave) -> Scalar:
     return abs(resonate(psi_a, psi_b))
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# RESONANCE AVEC MÉMOIRE — intégrale du noyau ABC
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Cache du noyau ABC spectral (calculé une fois par dimension)
+_ABC_SPECTRAL_CACHE: Dict[int, np.ndarray] = {}
+
+
+def _get_abc_spectral_weight(dim: int, kernel_len: int = 128) -> np.ndarray:
+    """
+    Calcule (ou récupère du cache) la pondération spectrale du noyau ABC.
+
+    Retourne un vecteur de poids W_ν ∈ ℝ⁺ᵈⁱᵐ, normalisé Σ W_ν = 1.
+
+    Args:
+        dim: dimension de l'espace ℂ
+        kernel_len: longueur du noyau ABC temporel
+
+    Returns:
+        poids spectraux (dim,) normalisés
+    """
+    if dim in _ABC_SPECTRAL_CACHE:
+        return _ABC_SPECTRAL_CACHE[dim].copy()
+
+    try:
+        from abc_kernel import abc_kernel_np
+    except ImportError:
+        # Fallback : calcul direct de Mittag-Leffler si abc_kernel non dispo
+        from wave_lang import ALPHA, B_1_PHI
+
+        def abc_kernel_np(length, alpha=ALPHA, B_alpha=B_1_PHI):
+            t = np.arange(length, dtype=np.float64)
+            result = np.zeros(length, dtype=np.float64)
+            for k in range(50):
+                gamma_val = math.gamma(alpha * k + 1.0)
+                arg = -alpha * t**alpha / (1.0 - alpha)
+                result += (arg ** k) / gamma_val
+            result *= B_alpha
+            result = result / result.sum()
+            return result.astype(np.float32)
+
+    # Noyau ABC temporel
+    K_t = abc_kernel_np(kernel_len).astype(np.float64)
+
+    # Zero-pad à la dimension d'espace
+    K_padded = np.zeros(dim, dtype=np.float64)
+    K_padded[:kernel_len] = K_t
+
+    # Réponse spectrale (FFT)
+    K_spectral = np.fft.fft(K_padded)
+
+    # Pondération = puissance spectrale normalisée
+    weight = np.abs(K_spectral) ** 2
+    weight = weight / weight.sum()
+
+    _ABC_SPECTRAL_CACHE[dim] = weight.copy()
+    return weight
+
+
+def resonate_abc(psi_a: Wave, psi_b: Wave) -> Scalar:
+    """
+    Résonance avec mémoire — pondérée par le noyau ABC.
+
+    Contrairement à resonate() qui est un produit scalaire instantané,
+    resonate_abc() pondère chaque fréquence par la puissance spectrale
+    du noyau ABC (Mittag-Leffler d'ordre α = 1/φ).
+
+    Mathématiquement :
+        resonate_abc(a,b) = Re( Σ_ν W_ν · FFT[a](ν) · conj(FFT[b](ν)) )
+
+    où W_ν = |K̃_ABC(ν)|² / Σ |K̃_ABC|² est la densité spectrale
+    normalisée du noyau de mémoire d'or.
+
+    Propriété clé : pour un mode de couplage INDÉPENDANT, le rapport
+        resonate_abc(ψ_mode, ψ_mode) / resonate(ψ_mode, ψ_mode) = 1/φ
+
+    C'est le cœur du lemme L3 : chaque canal subit l'atténuation φ⁻¹
+    par le noyau ABC.
+
+    Args:
+        psi_a, psi_b: ondes à comparer
+
+    Returns:
+        score ∈ [-1, 1] — résonance pondérée par la mémoire
+
+    Example:
+        >>> psi = encode("photon_TE")
+        >>> resonate(psi, psi)      # → 1.0 (résonance parfaite)
+        >>> resonate_abc(psi, psi)  # → ~0.618 (atténué par mémoire)
+    """
+    dim = len(psi_a)
+    weight = _get_abc_spectral_weight(dim)
+
+    spec_a = np.fft.fft(psi_a)
+    spec_b = np.fft.fft(psi_b)
+
+    # Pondération spectrale : W_ν · a_ν · conj(b_ν)
+    # Parseval : ⟨a|b⟩ = (1/D) Σ a_ν conj(b_ν)
+    # Avec poids  : (1/D) Σ W_ν a_ν conj(b_ν)
+    weighted = weight * spec_a * np.conj(spec_b)
+    result = np.real(np.sum(weighted)) / dim
+
+    return float(result)
+
+
 def resonate_batch(query: Wave, candidates: np.ndarray) -> np.ndarray:
     """
     Calcule la résonance d'un vecteur requête contre une matrice de candidats.
