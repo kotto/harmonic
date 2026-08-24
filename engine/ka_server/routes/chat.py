@@ -280,49 +280,6 @@ def _handle_storage_intent(message: str, services: dict) -> dict | None:
         'code': 'STORAGE_SAVER_OFFER',
         'suggestions': ['Oui, lance l\'analyse', 'Non merci', 'Explique moi comment ça marche'],
     }
-                ghost_stats = ghost.stats()
-        except Exception as e:
-            log.warning(f"GhostCompressor not available: {e}")
-            return {
-                'response': (
-                    "Parfait ! Je suis prêt à analyser votre téléphone. "
-                    "Malheureusement le module de compression n'est pas encore actif sur cette version. "
-                    "Rassurez-vous, je vous préviendrai dès qu'il sera disponible — "
-                    "d'ici là, je reste votre assistant pour toutes vos questions ! 😊"
-                ),
-                'engine': 'storage_saver',
-                'method': 'détection intention compression',
-                'code': 'STORAGE_SAVER_UNAVAILABLE',
-            }
-        
-        return {
-            'response': (
-                "Super, je lance l'analyse de votre appareil ! 🔍\n\n"
-                "Je vais inspecter vos fichiers et vous proposer une compression intelligente "
-                "qui préserve la qualité. Je vous tiens au courant dès que j'ai les résultats !"
-            ),
-            'engine': 'storage_saver',
-            'method': 'analyse GhostCompressor',
-            'code': 'STORAGE_SCAN_STARTED',
-            'scan_url': '/api/compress/storage/scan',
-            'activate_url': '/api/compress/storage/activate',
-        }
-    
-    # Premier contact — proposition gracieuse
-    return {
-        'response': (
-            "Je vois que vous souhaitez libérer de l'espace sur votre téléphone ! 📱\n\n"
-            "Je peux m'en occuper pour vous : je vais analyser votre appareil, "
-            "compresser vos photos et vidéos sans perte de qualité visible, "
-            "et vous faire gagner jusqu'à 80% d'espace — le tout intelligemment, "
-            "en préservant vos souvenirs les plus précieux.\n\n"
-            "**Voulez-vous que je lance l'analyse ?** 😊"
-        ),
-        'engine': 'storage_saver',
-        'method': 'détection intention compression',
-        'code': 'STORAGE_SAVER_OFFER',
-        'suggestions': ['Oui, lance l\'analyse', 'Non merci', 'Explique moi comment ça marche'],
-    }
 
 
 def _is_specialize_intent(message: str) -> bool:
