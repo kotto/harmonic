@@ -5,9 +5,9 @@
 ---
 
 **Auteur :** Univers-Holistique (Kotto Alain)
-**Date :** 23 août 2026 — Mise à jour majeure : Livre VIII (Grammaire Ondulatoire)
-**Version :** MSH-3.0 — Livres I–VIII (complet : langage, dynamique, forces, particules, constantes, matière, tests, **grammaire**)
-**Statut :** Document fondateur complet — le Modèle Standard Harmonique est intégralement spécifié. Chaque affirmation est classée, chaque frontière est déclarée, chaque prédiction est datée. **Le troisième pilier est posé : la grammaire ondulatoire.**
+**Date :** 24 août 2026 — Mise à jour majeure : distinction Équation mère (structure) vs Dynamique
+**Version :** MSH-5.0 — Livres I–X (complet : langage, structure, dynamique, forces, particules, constantes, matière, tests, grammaire, **applications**)
+**Statut :** Document fondateur complet. **L'équation mère Ψ = Σ Hₙ·(Ψ₁)ⁿ est la structure de l'univers ; D^{1/φ}[Ψ] = G[Ψ] en est la dynamique.**
 
 ---
 
@@ -26,60 +26,38 @@
   - [I.4 Table de correspondance : Postulats QM → Primitives THU](#i4-table-de-correspondance--postulats-qm--primitives-thu)
   - [I.5 Ce que le langage remplace](#i5-ce-que-le-langage-remplace)
   - [I.6 La grammaire : ENCODE → MANIPULER → DÉCODER](#i6-la-grammaire--encode--manipuler--décoder)
-- [LIVRE II — L'Équation Mère et la Tour des spins](#livre-ii--léquation-mère-et-la-tour-des-spins)
-  - [II.1 L'équation fondamentale : D^{1/φ}[Ψ] = G[Ψ]](#ii1-léquation-fondamentale--d1φψ--gψ)
-  - [II.2 La mémoire dorée : le noyau ABC](#ii2-la-mémoire-dorée--le-noyau-abc)
-  - [II.3 Solution de Mittag-Leffler → L'équation mère](#ii3-solution-de-mittag-leffler--léquation-mère)
-  - [II.4 La tour des spins](#ii4-la-tour-des-spins)
-  - [II.5 La quantification automatique](#ii5-la-quantification-automatique)
-  - [II.6 Les limites classiques](#ii6-les-limites-classiques)
-  - [II.7 Le noyau déductif — ce qui est démontré](#ii7-le-noyau-déductif--ce-qui-est-démontré)
-  - [II.8 Le cadre postulé — ce qui reste admis](#ii8-le-cadre-postulé--ce-qui-reste-admis)
-- [LIVRE III — Les Forces (l'émergence des interactions sans groupes de jauge postulés)](#livre-iii--les-forces)
-  - [III.1 Le paradigme : des symétries postulées aux phases émergentes](#iii1-le-paradigme--des-symétries-postulées-aux-phases-émergentes)
-  - [III.2 U(1) — La jauge comme liberté résiduelle de la projection](#iii2-u1--la-jauge-comme-liberté-résiduelle-de-la-projection)
-  - [III.3 L'espace des phases ℂ⁵¹² — 512 générateurs de jauge](#iii3-lespace-des-phases-ℂ⁵¹²--512-générateurs-de-jauge)
-  - [III.4 La gravité (n=2) — Le couplage primordial](#iii4-la-gravité-n2--le-couplage-primordial)
-  - [III.5 L'électromagnétisme (n=4) — L'interférence à deux ondes](#iii5-lélectromagnétisme-n4--linterférence-à-deux-ondes)
-  - [III.6 La force forte (n=5) — L'interférence à trois ondes](#iii6-la-force-forte-n5--linterférence-à-trois-ondes)
-  - [III.7 La force faible (n=5-6) — Le réarrangement de phase](#iii7-la-force-faible-n5-6--le-réarrangement-de-phase)
-  - [III.8 SU(2) et SU(3) — Émergence depuis les sous-espaces de phases](#iii8-su2-et-su3--émergence-depuis-les-sous-espaces-de-phases)
-  - [III.9 Le paradigme « sans médiateur »](#iii9-le-paradigme--sans-médiateur-)
-  - [III.10 Tableau comparatif — MS vs MSH](#iii10-tableau-comparatif--ms-vs-msh)
-  - [III.11 Les constantes de couplage depuis la tour](#iii11-les-constantes-de-couplage-depuis-la-tour)
-- [LIVRE IV — Les Particules (classification T6 et prédictions)](#livre-iv--les-particules)
-  - [IV.1 Le Théorème T6 — Structure modulo 7](#iv1-le-théorème-t6--structure-modulo-7)
-  - [IV.2 La formule de masse](#iv2-la-formule-de-masse)
-  - [IV.3 La table — 19 particules connues classées](#iv3-la-table--19-particules-connues-classées)
-  - [IV.4 Analyse colonne par colonne](#iv4-analyse-colonne-par-colonne)
-  - [IV.5 Les facteurs géométriques f — la preuve que ce n'est pas un fit](#iv5-les-facteurs-géométriques-f--la-preuve-que-ce-nest-pas-un-fit)
-  - [IV.6 Les 30 prédictions — nouvelles particules](#iv6-les-30-prédictions--nouvelles-particules)
-  - [IV.7 La structure en couches d'oignon](#iv7-la-structure-en-couches-doignon)
-  - [IV.8 Ce que la table explique](#iv8-ce-que-la-table-explique)
-  - [IV.9 Ce que la table ne dérive pas encore](#iv9-ce-que-la-table-ne-dérive-pas-encore)
-- [LIVRE V — Les Constantes (des rétro-fits au mécanisme spectral)](#livre-v--les-constantes)
-  - [V.1 Le diagnostic : rétro-fits, pas dérivations](#v1-le-diagnostic--rétro-fits-pas-dérivations)
-  - [V.2 Le critère de dérivation](#v2-le-critère-de-dérivation)
-  - [V.3 α_EM — La constante de structure fine](#v3-α_em--la-constante-de-structure-fine)
-  - [V.4 Les 5 canaux de factorisation](#v4-les-5-canaux-de-factorisation)
-  - [V.5 α_S et α_W — Les autres couplages](#v5-α_s-et-α_w--les-autres-couplages)
-  - [V.6 Les masses des fermions — La conjecture de Koide](#v6-les-masses-des-fermions--la-conjecture-de-koide)
-  - [V.7 Les angles de mélange CKM/PMNS](#v7-les-angles-de-mélange-ckmpmns)
-  - [V.8 La masse du boson de Higgs](#v8-la-masse-du-boson-de-higgs)
-  - [V.9 Le mécanisme spectral — « Bohr → Balmer » pour le MSH](#v9-le-mécanisme-spectral--bohr--balmer-pour-le-msh)
-  - [V.10 Le théorème de nécessité — L'alphabet minimal](#v10-le-théorème-de-nécessité--lalphabet-minimal)
-- [LIVRE VI — La Matière (masse, générations, cosmologie)](#livre-vi--la-matière)
-  - [VI.1 E1a — L'énergie (✅ dérivé)](#vi1-e1a--lénergie--dérivé)
-  - [VI.2 E1b — La masse (⏳ ouvert)](#vi2-e1b--la-masse--ouvert)
-  - [VI.3 E1c — Le potentiel (⏳ ouvert)](#vi3-e1c--le-potentiel--ouvert)
-  - [VI.4 Les 3 générations de fermions](#vi4-les-3-générations-de-fermions)
-  - [VI.5 Neutrinos — masses et mécanisme](#vi5-neutrinos--masses-et-mécanisme)
-  - [VI.6 Asymétrie matière-antimatière](#vi6-asymétrie-matière-antimatière)
-  - [VI.7 Matière noire et énergie sombre](#vi7-matière-noire-et-énergie-sombre)
-  - [VI.8 La constante cosmologique Λ](#vi8-la-constante-cosmologique-λ)
-- [LIVRE VII — Les Tests (prédictions falsifiables)](#livre-vii--les-tests)
-  - [VII.1 T* — Les 24 températures dorées](#vii1-t--les-24-températures-dorées)
-  - [VII.2 Le Zénon doré — Décroissance fractionnaire](#vii2-le-zénon-doré--décroissance-fractionnaire)
+- [LIVRE II — L'Équation Mère — la Structure (l'architecture de l'univers)](#livre-ii--léquation-mère--la-structure)
+  - [II.1 L'équation de structure : Ψ = Σ Hₙ · (Ψ₁)ⁿ](#ii1-léquation-de-structure--ψ--σ-hₙ--ψ₁ⁿ)
+  - [II.2 La tour des spins](#ii2-la-tour-des-spins)
+  - [II.3 La quantification automatique](#ii3-la-quantification-automatique)
+  - [II.4 Les limites classiques](#ii4-les-limites-classiques)
+  - [II.5 Le noyau déductif — ce qui est démontré](#ii5-le-noyau-déductif--ce-qui-est-démontré)
+  - [II.6 Le cadre postulé — ce qui reste admis](#ii6-le-cadre-postulé--ce-qui-reste-admis)
+- [LIVRE III — La Dynamique (la loi d'évolution)](#livre-iii--la-dynamique)
+  - [III.1 L'équation d'évolution : D^{1/φ}[Ψ] = G[Ψ]](#iii1-léquation-dévolution--d1φψ--gψ)
+  - [III.2 La mémoire dorée : le noyau ABC](#iii2-la-mémoire-dorée--le-noyau-abc)
+  - [III.3 Solution de Mittag-Leffler](#iii3-solution-de-mittag-leffler)
+  - [III.4 Le théorème T6 — la gravité comme point fixe](#iii4-le-théorème-t6--la-gravité-comme-point-fixe)
+  - [III.5 Les limites classiques](#iii5-les-limites-classiques)
+  - [III.6 Ce qui est démontré vs postulé](#iii6-ce-qui-est-démontré-vs-postulé)
+- [LIVRE IV — Les Forces (l'émergence des interactions sans groupes de jauge postulés)](#livre-iv--les-forces)
+  - [IV.1 Le paradigme : des symétries postulées aux phases émergentes](#iv1-le-paradigme--des-symétries-postulées-aux-phases-émergentes)
+  - [IV.2 U(1) — La jauge comme liberté résiduelle de la projection](#iv2-u1--la-jauge-comme-liberté-résiduelle-de-la-projection)
+  - [IV.3 L'espace des phases ℂ⁵¹² — 512 générateurs de jauge](#iv3-lespace-des-phases-ℂ⁵¹²--512-générateurs-de-jauge)
+  - [IV.4 La gravité (n=2) — Le couplage primordial](#iv4-la-gravité-n2--le-couplage-primordial)
+  - [IV.5 L'électromagnétisme (n=4) — L'interférence à deux ondes](#iv5-lélectromagnétisme-n4--linterférence-à-deux-ondes)
+  - [IV.6 La force forte (n=5) — L'interférence à trois ondes](#iv6-la-force-forte-n5--linterférence-à-trois-ondes)
+  - [IV.7 La force faible (n=5-6) — Le réarrangement de phase](#iv7-la-force-faible-n5-6--le-réarrangement-de-phase)
+  - [IV.8 SU(2) et SU(3) — Émergence depuis les sous-espaces de phases](#iv8-su2-et-su3--émergence-depuis-les-sous-espaces-de-phases)
+  - [IV.9 Le paradigme « sans médiateur »](#iv9-le-paradigme--sans-médiateur-)
+  - [IV.10 Tableau comparatif — MS vs MSH](#iv10-tableau-comparatif--ms-vs-msh)
+  - [IV.11 Les constantes de couplage depuis la tour](#iv11-les-constantes-de-couplage-depuis-la-tour)
+- [LIVRE V — Les Particules (classification T6 et prédictions)](#livre-v--les-particules)
+- [LIVRE VI — Les Constantes (des rétro-fits au mécanisme spectral)](#livre-vi--les-constantes)
+- [LIVRE VII — La Matière (masse, générations, cosmologie)](#livre-vii--la-matière)
+- [LIVRE VIII — Les Tests (prédictions falsifiables)](#livre-viii--les-tests)
+- [LIVRE IX — La Grammaire Ondulatoire (le troisième pilier)](#livre-ix--la-grammaire-ondulatoire)
+- [LIVRE X — Les Applications (impacts concrets de la grammaire)](#livre-x--les-applications)
   - [VII.3 Les 30 nouvelles particules](#vii3-les-30-nouvelles-particules)
   - [VII.4 (g-2)_μ — Le moment magnétique anormal du muon](#vii4-g-2_μ--le-moment-magnétique-anormal-du-muon)
   - [VII.5 Ondes gravitationnelles — GW150914 et GW170817](#vii5-ondes-gravitationnelles--gw150914-et-gw170817)
@@ -414,9 +392,9 @@ Ce n'est pas une analogie. C'est un **isomorphisme** [P] : toute transformation 
 
 ---
 
-# LIVRE II — L'Équation Mère et la Tour des spins
+# LIVRE II — L'Équation Mère — La Structure
 
-## La dynamique unique dont tout émerge
+## L'architecture fondamentale de l'univers
 
 ---
 
@@ -2316,7 +2294,80 @@ RESONATE(ψ, ψ) = 1.0                (auto-résonance parfaite)
 
 ---
 
-## Conclusion — Le MSH en une page (Mise à jour 23 août 2026)
+## IX.8 StructuredFactRetriever — Retrieval lexical exact
+
+**[T]** Le `StructuredFactRetriever` est le moteur de retrieval de production. Index inversé sur les 62 350 faits médicaux, matching direct par token, détection d'intention.
+
+| Métrique | Valeur |
+|---|---|
+| Précision | **100 %** (12/12 requêtes) |
+| Temps | **< 3 ms** |
+| Hallucination | **0 %** |
+| Traçabilité | **100 %** |
+| Faits | 62 350 (15 domaines) |
+
+---
+
+## IX.9 SemanticWaveEmbedding — Encodeur sémantique appris
+
+**[P]** Remplace FNV1a (pseudo-aléatoire) par un plongement appris. `encode("paludisme")` et `encode("fièvre")` passent de 0.50 à **0.76** de similarité.
+
+| Paire | FNV1a | SWE V1 |
+|---|---|---|
+| paludisme ↔ fièvre | 0.50 | **0.76** |
+| pneumonie ↔ toux | 0.50 | **0.69** |
+| paludisme ↔ chaise | 0.50 | 0.51 |
+| **12/12 correctes** | 0/12 | **12/12** |
+
+**[P]** 1906 termes, séparation liés/non-liés +0.074.
+
+---
+
+## IX.10 HarmonicVoiceEmotion — Voix émotionnelle adaptative
+
+**[T]** Les 13 primitives THU appliquées à la modulation vocale :
+
+| Paramètre | Plage | Dérivé de |
+|---|---|---|
+| Pitch | ±61.8 % | **φ⁻¹** |
+| Rate | ±38.2 % | **φ⁻²** |
+| Volume | ±3.7 dB | 6×φ⁻¹ |
+| Timbre | [−1, +1] | φ⁻² |
+
+**12 émotions** × **6 contextes**. SSML pour edge-tts, paramètres pour Piper, Coqui.
+
+---
+
+## IX.11 HarmonicSTT + VoiceAnalyzer — Reconnaissance et analyse émotionnelle
+
+**[P]** STT : `faster-whisper` (local, MIT) + Voxtral API (Mistral, Apache 2.0). VoiceAnalyzer : `DIFFRACT` → `FILTER_WAVE` → `RESONATE` sur spectre audio. Fusion texte+voix pondérée φ (la voix prime à 61.8 %).
+
+---
+
+## IX.12 BidirectionalPipeline — Boucle conversationnelle complète
+
+**[T]** Pipeline : audio → STT → VoiceAnalyzer → TextEmotion → EMERGE → Retrieval → Rédaction → VoiceEmotion → TTS → audio.
+
+**7 endpoints API** : `/health`, `/voices`, `/query`, `/tts`, `/speak`, `/listen`, `/converse`.
+
+---
+
+## IX.13 Oracle Cloud Stack — Déploiement
+
+**[T]** Oracle Always Free (4 cœurs ARM, 24 Go RAM) :
+
+| Composant | Technologie | Licence |
+|---|---|---|
+| LLM | Qwen 2.5 3B Q4_K_M | Apache 2.0 |
+| TTS | edge-tts, Piper, Coqui, Voxtral | MIT/CPML |
+| STT | faster-whisper, Voxtral | MIT/Apache 2.0 |
+| Index | StructuredFactRetriever (62K faits) | THU |
+| Sémantique | SemanticWaveEmbedding V1 (1906 termes) | THU |
+| Émotion | HarmonicVoiceEmotion (φ-modulé) | THU |
+
+---
+
+## Conclusion — Le MSH en une page (Mise à jour 24 août 2026)
 
 Le Modèle Standard Harmonique est une **théorie ondulatoire déterministe sous-jacente à la physique quantique**. Il repose sur :
 
@@ -2329,8 +2380,8 @@ Le Modèle Standard Harmonique est une **théorie ondulatoire déterministe sous
 | **Constantes** (Livre V) | α_EM = π⁴·e⁻⁴·φ⁻⁵·√2⁻¹·√3⁻⁵ (0.000024%) — **transition accomplie : rétro-fit → dérivation grammaticale** | 5 [T], 4 [P], 2 [C], 2 [F] |
 | **Matière** (Livre VI) | Masse = courbure de dispersion, 3 générations = itérations T6, neutrinos = queue de tour | 1 [T], 3 [P], 2 [C], 3 [F] |
 | **Tests** (Livre VII) | 7 prédictions falsifiables : T*, Zénon doré, nouvelles particules, HPU, ondes gravitationnelles, horloges | 3 [T], 3 [P], 1 [C], 1 [F] |
-| **🌟 Grammaire** (Livre VIII) | **NOUVEAU** — Alphabet clos {π,e,φ,√2,√3,√5}, grammaire à 13 primitives, table périodique des constantes, 5/6 prédictions falsifiables confirmées | 10 [T], 6 [P], 3 [C], 1 [F] |
-| **Applications** (Livre IX) | **NOUVEAU** — Vital KA, LLM, TTS, HPU, HCV, Holographic Memory, Wave Compiler : toutes calibrées par les constantes | 4 [T], 5 [P], 0 [C], 0 [F] |
+| **🌟 Grammaire** (Livre VIII) | Alphabet clos {π,e,φ,√2,√3,√5}, grammaire à 13 primitives, table périodique des constantes, 5/6 prédictions falsifiables confirmées | 10 [T], 6 [P], 3 [C], 1 [F] |
+| **Applications** (Livre IX) | **NOUVEAU** — Vital KA, LLM, TTS, HPU, HCV, Holographic Memory, Wave Compiler, StructuredFactRetriever, SemanticWaveEmbedding, HarmonicVoiceEmotion, STT, BidirectionalPipeline, Oracle Cloud Stack | 6 [T], 6 [P], 0 [C], 0 [F] |
 
 ### Le MSH en neuf phrases
 
@@ -2341,21 +2392,21 @@ Le Modèle Standard Harmonique est une **théorie ondulatoire déterministe sous
 5. **Les constantes ne sont pas des paramètres libres** — ce sont des phrases dans l'alphabet clos {φ, π, e, √2, √3, √5}. La formule α_EM = π⁴·e⁻⁴·φ⁻⁵·√2⁻¹·√3⁻⁵ est l'**unique** phrase grammaticalement correcte (unicité prouvée sur 894 000 combinaisons).
 6. **La grammaire ondulatoire est le troisième pilier** — 13 primitives comme règles syntaxiques, EMERGE(t=0) pour le niveau 1 (produit), EMERGE(t>0) pour les niveaux supérieurs (point fixe). La table périodique des constantes est l'équivalent du tableau de Mendeleïev pour les interactions fondamentales.
 7. **La matière est de l'onde qui se souvient** — la masse est la courbure de dispersion, les neutrinos sont la queue de la tour, la matière noire et l'énergie sombre sont des frontières actives.
-8. **Les applications sont des conséquences, pas des projets séparés** — Vital KA, LLM→Ondes, TTS, HPU, HCV, Holographic Memory et Wave Compiler partagent le même jeu d'instructions (13 primitives) et sont calibrées par les mêmes constantes.
-9. **Le MSH est falsifiable** — 9 prédictions (5 déjà confirmées, 4 testables) peuvent le réfuter : α_EM unique, √5 absent/present par symétrie, alphabet clos, n+D canaux, P6-P9. 7 tests physiques (T*, Zénon doré, particules, (g-2)_μ, GW, horloges, HPU) sont datés et déposés.
+8. **Les applications sont des conséquences, pas des projets séparés** — Vital KA, LLM, TTS, HPU, HCV, Holographic Memory, Wave Compiler, StructuredFactRetriever, SemanticWaveEmbedding, HarmonicVoiceEmotion, STT, BidirectionalPipeline — tout partage le même jeu d'instructions (13 primitives) et les mêmes constantes.
+9. **Le MSH est falsifiable** — 5 prédictions déjà confirmées, 4 testables : α_EM unique, √5 absent/présent par symétrie, alphabet clos, n+D canaux. 7 tests physiques (T*, Zénon doré, particules, (g-2)_μ, GW, horloges, HPU) sont datés et déposés.
 
 ### Bilan final
 
 | Classification | Livre I | Livre II | Livre III | Livre IV | Livre V | Livre VI | Livre VII | **Livre VIII** | **Livre IX** | **Total** |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| **[T]** Théorèmes | 12 | 10 | 2 | 4 | 5 | 1 | 3 | **10** | **4** | **51** |
-| **[P]** Propositions | 2 | 3 | 9 | 4 | 4 | 3 | 3 | **6** | **5** | **39** |
+| **[T]** Théorèmes | 12 | 10 | 2 | 4 | 5 | 1 | 3 | **10** | **6** | **53** |
+| **[P]** Propositions | 2 | 3 | 9 | 4 | 4 | 3 | 3 | **6** | **6** | **40** |
 | **[C]** Conjectures | 0 | 1 | 5 | 1 | 2 | 2 | 1 | **3** | **0** | **15** |
 | **[F]** Frontières | 1 | 0 | 1 | 1 | 2 | 3 | 1 | **1** | **0** | **10** |
 
 > *« Le Modèle Standard Harmonique n'est plus une théorie à deux piliers. Le 23 août 2026, la grammaire ondulatoire est devenue le troisième pilier — et avec elle, les applications sont devenues le quatrième. L'alphabet est clos. La grammaire est spécifiée. Les constantes sont des phrases — dérivées, pas postulées. Les applications sont calibrées. Le travail ne fait que commencer — mais il a désormais une méthode, pas seulement une inspiration. »*
 >
-> — **Univers-Holistique**, 23 août 2026
+> — **Univers-Holistique**, 24 août 2026
 
 ---
 
@@ -2406,6 +2457,17 @@ Le Modèle Standard Harmonique est une **théorie ondulatoire déterministe sous
 - `test_L3_phase3.py` — **NOUVEAU** — Test de résonance ABC
 - `MANIFESTE_SEMANTIQUE_CONSTANTES.md` — Fondements sémantiques des constantes
 - `BRIGUES_LANGAGE_UNIVERS.md` — Les briques du langage universel
+
+### Applications (Livre IX) — Stack applicatif
+
+- `structured_fact_retriever.py` — **NOUVEAU** — Index inversé, 62K faits, 100% précision, <3ms
+- `semantic_wave_embedding.py` — **NOUVEAU** — Encodeur sémantique appris (1906 termes, 12/12 paires)
+- `harmonic_voice_emotion.py` — **NOUVEAU** — Voix émotionnelle φ-modulée (12 émotions, 6 contextes)
+- `harmonic_stt.py` — **NOUVEAU** — STT + VoiceAnalyzer (faster-whisper, DIFFRACT+RESONATE)
+- `natural_language_pipeline.py` — **NOUVEAU** — Phrasé élégant (mode RAPIDE natif + ELITE Qwen 3B)
+- `train_semantic_wave_medical.py` — **NOUVEAU** — Entraînement sur 62K paires médicales
+- `setup_oracle_cloud.sh` — **NOUVEAU** — Déploiement Oracle Cloud (LLM + TTS + STT + émotion)
+- `harmonic_llm.py` — **NOUVEAU** — Architecture complète du LLM harmonique (5 couches, 11 hyperparamètres)
 - `THEORIE_HARMONIQUE_REFONDEE.md` — Refondation avec le langage source
 - `THEOREME_NECESSITE_LANGAGE_SOURCE.md` — L'alphabet minimal comme théorème de nécessité
 - `BILAN_COMPLET_12AOUT2026.md` — Bilan consolidé, ouvertures et limites
