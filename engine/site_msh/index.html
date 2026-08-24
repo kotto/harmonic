@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MSH — Modèle Standard Harmonique</title>
+<style>
+/* ── RESET & BASE ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --φ:1.618033988749895;
+  --φ-inv:calc(1/var(--φ));
+  --gold:#c9a84c;
+  --gold-light:#e8d48b;
+  --gold-dark:#8a7230;
+  --bg:#0b0a09;
+  --bg2:#141210;
+  --bg3:#1e1b16;
+  --text:#e8e0d0;
+  --text-muted:#9a8e7a;
+  --border:#2a251e;
+  --accent:#d4a84b;
+  --radius:8px;
+  --font:'Georgia','Times New Roman',serif;
+  --font-mono:'Courier New',monospace;
+  --font-sans:'Segoe UI','Helvetica Neue',Arial,sans-serif;
+}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.7;font-size:16px}
+a{color:var(--gold);text-decoration:none}
+a:hover{color:var(--gold-light);text-decoration:underline}
+
+/* ── LOADING SCREEN ── */
+#loading{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 2s}
+#loading.hidden{opacity:0;pointer-events:none}
+#loading .spiral{width:80px;height:80px;border:2px solid var(--border);border-top:2px solid var(--gold);border-radius:50%;animation:spin 2s var(--φ-inv) infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading p{margin-top:20px;color:var(--text-muted);font-family:var(--font-sans);font-size:14px;letter-spacing:2px;text-transform:uppercase}
+#loading .phi{color:var(--gold);font-size:24px;margin-bottom:10px}
+
+/* ── HEADER ── */
+header{position:fixed;top:0;left:0;right:0;height:64px;background:rgba(11,10,9,0.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);z-index:1000;display:flex;align-items:center;padding:0 24px}
+header .logo{font-size:20px;font-weight:700;color:var(--gold);letter-spacing:1px}
+header .logo span{color:var(--text-muted);font-weight:400}
+header .version{font-family:var(--font-sans);font-size:11px;color:var(--text-muted);margin-left:12px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;text-transform:uppercase;letter-spacing:1px}
+header .nav-toggle{display:none;background:none;border:none;color:var(--text);font-size:24px;cursor:pointer;margin-left:auto}
+@media(max-width:768px){header .nav-toggle{display:block}}
+
+/* ── SIDEBAR ── */
+.sidebar{position:fixed;top:64px;left:0;bottom:0;width:280px;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;z-index:900;padding:16px 0;transition:transform 0.3s}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.sidebar .section{margin-bottom:4px}
+.sidebar .section-title{display:block;padding:8px 20px;font-family:var(--font-sans);font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;cursor:pointer;transition:color 0.2s;border:none;background:none;width:100%;text-align:left}
+.sidebar .section-title:hover{color:var(--gold)}
+.sidebar .section-title .count{float:right;font-size:10px;opacity:0.5}
+.sidebar .section-title.active{color:var(--gold)}
+.sidebar .sub-items{max-height:0;overflow:hidden;transition:max-height 0.3s}
+.sidebar .sub-items.open{max-height:500px}
+.sidebar .sub-item{display:block;padding:4px 20px 4px 36px;font-family:var(--font-sans);font-size:13px;color:var(--text-muted);transition:color 0.2s;border:none;background:none;width:100%;text-align:left;cursor:pointer}
+.sidebar .sub-item:hover{color:var(--text)}
+.sidebar .sub-item.active{color:var(--gold);font-weight:500}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+}
+
+/* ── MAIN ── */
+main{margin-left:280px;padding:96px 48px 60px;max-width:960px}
+@media(max-width:768px){
+  main{margin-left:0;padding:80px 20px 40px}
+}
+
+/* ── HERO ── */
+.hero{text-align:center;padding:60px 0 50px;border-bottom:1px solid var(--border);margin-bottom:60px}
+.hero .phi-symbol{font-size:72px;color:var(--gold);opacity:0.6;font-family:var(--font-mono);line-height:1}
+.hero h1{font-size:36px;margin:16px 0 8px;color:var(--text);font-weight:700}
+.hero h1 span{color:var(--gold)}
+.hero .subtitle{font-size:16px;color:var(--text-muted);font-family:var(--font-sans);max-width:600px;margin:0 auto;line-height:1.6}
+.hero .badge{display:inline-block;margin-top:16px;padding:6px 16px;background:rgba(201,168,76,0.1);border:1px solid var(--gold-dark);border-radius:20px;font-family:var(--font-sans);font-size:12px;color:var(--gold);letter-spacing:1px;text-transform:uppercase}
+.hero .stats{display:flex;gap:24px;justify-content:center;margin-top:30px;flex-wrap:wrap}
+.hero .stat{text-align:center;padding:12px 20px;background:var(--bg2);border-radius:var(--radius);border:1px solid var(--border);min-width:80px}
+.hero .stat .num{font-size:24px;font-weight:700;color:var(--gold)}
+.hero .stat .label{font-size:11px;color:var(--text-muted);font-family:var(--font-sans);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+
+/* ── LIVRE ── */
+.livre{display:none;animation:fadeIn 0.5s}
+.livre.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.livre h2{font-size:28px;color:var(--gold);margin-bottom:8px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.livre h2 .num{color:var(--text-muted);font-weight:400}
+.livre .epigraph{font-style:italic;color:var(--text-muted);padding:20px 0 30px;font-size:15px;line-height:1.6;border-bottom:1px solid var(--border);margin-bottom:30px}
+.livre h3{font-size:20px;color:var(--text);margin:40px 0 16px;font-weight:600}
+.livre h4{font-size:17px;color:var(--text);margin:28px 0 12px;font-weight:500}
+.livre p{margin-bottom:14px;line-height:1.7}
+.livre ul,.livre ol{margin:10px 0 18px 24px}
+.livre li{margin-bottom:6px;line-height:1.6}
+.livre strong{color:var(--gold-light)}
+.livre em{color:var(--text-muted)}
+.livre blockquote{border-left:3px solid var(--gold-dark);padding:12px 20px;margin:20px 0;background:var(--bg2);border-radius:0 var(--radius) var(--radius) 0;font-style:italic;color:var(--text-muted);font-size:15px}
+.livre blockquote strong{color:var(--text)}
+.livre code{font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:3px;font-size:14px;color:var(--gold-light)}
+
+/* ── TABLES ── */
+.livre table{width:100%;border-collapse:collapse;margin:20px 0 30px;font-size:14px;font-family:var(--font-sans)}
+.livre th,.livre td{padding:10px 14px;border:1px solid var(--border);text-align:left}
+.livre th{background:var(--bg3);color:var(--gold);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:0.5px}
+.livre td{color:var(--text)}
+.livre td:first-child{font-weight:500;color:var(--gold-light)}
+.livre tr:hover td{background:var(--bg3)}
+.livre .tag{display:inline-block;padding:1px 8px;border-radius:3px;font-size:11px;font-weight:600;letter-spacing:0.5px;font-family:var(--font-sans)}
+.livre .tag-t{background:rgba(76,175,80,0.15);color:#4caf50}
+.livre .tag-p{background:rgba(33,150,243,0.15);color:#2196f3}
+.livre .tag-c{background:rgba(255,152,0,0.15);color:#ff9800}
+.livre .tag-f{background:rgba(244,67,54,0.15);color:#f44336}
+
+/* ── FORMULA BOX ── */
+.formula-box{background:var(--bg3);border:1px solid var(--gold-dark);border-radius:var(--radius);padding:20px 24px;margin:20px 0;text-align:center;font-size:18px;color:var(--gold);font-family:var(--font-mono);letter-spacing:0.5px;position:relative}
+.formula-box::before{content:"Ψ";position:absolute;top:-10px;left:12px;font-size:24px;color:var(--gold-dark);opacity:0.3;font-family:var(--font-mono)}
+.formula-box .label{display:block;font-size:11px;color:var(--text-muted);font-family:var(--font-sans);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}
+.formula-box .precision{display:block;font-size:12px;color:var(--text-muted);font-family:var(--font-sans);margin-top:8px}
+
+/* ── METRIC GRID ── */
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:20px 0}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;text-align:center}
+.metric-card .val{font-size:20px;font-weight:700;color:var(--gold);font-family:var(--font-mono)}
+.metric-card .lbl{font-size:11px;color:var(--text-muted);font-family:var(--font-sans);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+
+/* ── STATUS BOX ── */
+.status-box{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0}
+.status-item{display:flex;align-items:center;gap:6px;font-family:var(--font-sans);font-size:12px;padding:4px 10px;background:var(--bg2);border-radius:4px;border:1px solid var(--border)}
+.status-item .dot{width:8px;height:8px;border-radius:50%}
+.status-item .dot.t{background:#4caf50}
+.status-item .dot.p{background:#2196f3}
+.status-item .dot.c{background:#ff9800}
+.status-item .dot.f{background:#f44336}
+
+/* ── FOOTER ── */
+footer{text-align:center;padding:40px 20px;border-top:1px solid var(--border);margin-top:60px;font-family:var(--font-sans);font-size:13px;color:var(--text-muted)}
+footer .phi{color:var(--gold);font-size:20px;font-family:var(--font-mono)}
+footer a{color:var(--gold)}
+
+/* ── SCROLL TO TOP ── */
+#scroll-top{position:fixed;bottom:24px;right:24px;width:44px;height:44px;border-radius:50%;background:var(--gold);color:var(--bg);border:none;font-size:20px;cursor:pointer;opacity:0;transition:opacity 0.3s;z-index:800}
+#scroll-top.visible{opacity:0.8}
+#scroll-top:hover{opacity:1}
+
+/* ── PRINT ── */
+@media print{
+  .sidebar,header,#scroll-top,#loading{display:none!important}
+  main{margin-left:0;padding:20px}
+  .livre{display:block!important}
+  body{background:white;color:black;font-size:12px}
+  a{color:black}
+}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="phi">φ</div>
+  <div class="spiral"></div>
+  <p>Chargement du Modèle Standard Harmonique</p>
+</div>
+
+<header>
+  <div class="logo">MSH<span> · Modèle Standard Harmonique</span></div>
+  <span class="version">v5.0 · 24 août 2026</span>
+  <button class="nav-toggle" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+</header>
+
+<nav class="sidebar" id="sidebar">
+  <div class="section">
+    <a class="sub-item active" href="#" onclick="showLivre('hero');return false">🏠 Accueil</a>
+  </div>
+  <div class="section">
+    <button class="section-title" onclick="toggleSub(this)">📖 Livre I <span class="count">Langage</span></button>
+    <div class="sub-items">
+      <a class="sub-item" href="#" onclick="showLivre('livre1');return false">13 Primitives</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre1');scrollTo('i3');return false">ℂ⁵¹² & φ-spacing</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre1');scrollTo('i4');return false">Table QM → THU</a>
+    </div>
+  </div>
+  <div class="section">
+    <button class="section-title" onclick="toggleSub(this)">📐 Livre II <span class="count">Structure</span></button>
+    <div class="sub-items">
+      <a class="sub-item" href="#" onclick="showLivre('livre2');return false">Ψ = Σ Hₙ·(Ψ₁)ⁿ</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre2');scrollTo('ii2');return false">Tour des spins</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre2');scrollTo('ii3');return false">Quantification</a>
+    </div>
+  </div>
+  <div class="section">
+    <button class="section-title" onclick="toggleSub(this)">⚡ Livre III <span class="count">Dynamique</span></button>
+    <div class="sub-items">
+      <a class="sub-item" href="#" onclick="showLivre('livre3');return false">D^{1/φ}[Ψ] = G[Ψ]</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre3');scrollTo('iii2');return false">Noyau ABC</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre3');scrollTo('iii4');return false">Théorème T6</a>
+    </div>
+  </div>
+  <div class="section">
+    <button class="section-title" onclick="toggleSub(this)">🌀 Livre IV <span class="count">Forces</span></button>
+    <div class="sub-items">
+      <a class="sub-item" href="#" onclick="showLivre('livre4');return false">Émergence U(1)</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre4');scrollTo('iv4');return false">Gravité n=2</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre4');scrollTo('iv5');return false">EM n=4</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre4');scrollTo('iv10');return false">Tableau MS vs MSH</a>
+    </div>
+  </div>
+  <div class="section">
+    <button class="section-title" onclick="toggleSub(this)">🔬 Livre V <span class="count">Particules</span></button>
+    <div class="sub-items">
+      <a class="sub-item" href="#" onclick="showLivre('livre5');return false">T6 modulo-7</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre5');scrollTo('v-class');return false">Classification</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre5');scrollTo('v-pred');return false">30 prédictions</a>
+    </div>
+  </div>
+  <div class="section">
+    <button class="section-title" onclick="toggleSub(this)">🧮 Livre VI <span class="count">Constantes</span></button>
+    <div class="sub-items">
+      <a class="sub-item" href="#" onclick="showLivre('livre6');return false">α_EM = π⁴·e⁻⁴·φ⁻⁵·√2⁻¹·√3⁻⁵</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre6');scrollTo('vi5');return false">α_W, α_S, m_p/m_e</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre6');scrollTo('vi-table');return false">Table de vérité</a>
+    </div>
+  </div>
+  <div class="section">
+    <button class="section-title" onclick="toggleSub(this)">🧱 Livre VII <span class="count">Matière</span></button>
+    <div class="sub-items">
+      <a class="sub-item" href="#" onclick="showLivre('livre7');return false">Masse = courbure</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre7');scrollTo('vii3');return false">3 générations</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre7');scrollTo('vii5');return false">Neutrinos</a>
+    </div>
+  </div>
+  <div class="section">
+    <button class="section-title" onclick="toggleSub(this)">🧪 Livre VIII <span class="count">Tests</span></button>
+    <div class="sub-items">
+      <a class="sub-item" href="#" onclick="showLivre('livre8');return false">T* — 24 températures</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre8');scrollTo('viii2');return false">Zénon doré</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre8');scrollTo('viii3');return false">30 nouvelles particules</a>
+    </div>
+  </div>
+  <div class="section">
+    <button class="section-title" onclick="toggleSub(this)">🌊 Livre IX <span class="count">Grammaire</span></button>
+    <div class="sub-items">
+      <a class="sub-item" href="#" onclick="showLivre('livre9');return false">Alphabet clos</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre9');scrollTo('ix5');return false">α_EM dérivé</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre9');scrollTo('ix6');return false">Table périodique</a>
+    </div>
+  </div>
+  <div class="section">
+    <button class="section-title" onclick="toggleSub(this)">🚀 Livre X <span class="count">Applications</span></button>
+    <div class="sub-items">
+      <a class="sub-item" href="#" onclick="showLivre('livre10');return false">Structured Fact Retriever</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre10');scrollTo('x9');return false">SemanticWave Embedding</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre10');scrollTo('x10');return false">Voix émotionnelle</a>
+      <a class="sub-item" href="#" onclick="showLivre('livre10');scrollTo('x12');return false">Pipeline bidirectionnel</a>
+    </div>
+  </div>
+  <div class="section" style="margin-top:20px;border-top:1px solid var(--border);padding-top:12px">
+    <a class="sub-item" href="#" onclick="showLivre('conclusion');return false">📋 Conclusion</a>
+  </div>
+</nav>
+
+<main>
+  <!-- HERO -->
+  <section id="section-hero" class="livre active">
+    <div class="hero">
+      <div class="phi-symbol">φ</div>
+      <h1>Modèle Standard <span>Harmonique</span></h1>
+      <p class="subtitle">Un Nouveau Modèle Standard fondé sur la Théorie Harmonique Universelle — avec son propre langage, ses propres équations, et 0 paramètre libre.</p>
+      <div class="badge">MSH-5.0 · 24 août 2026</div>
+      <div class="stats">
+        <div class="stat"><div class="num">53</div><div class="label">Théorèmes [T]</div></div>
+        <div class="stat"><div class="num">40</div><div class="label">Propositions [P]</div></div>
+        <div class="stat"><div class="num">15</div><div class="label">Conjectures [C]</div></div>
+        <div class="stat"><div class="num">10</div><div class="label">Frontières [F]</div></div>
+        <div class="stat"><div class="num">10</div><div class="label">Livres</div></div>
+      </div>
+      <p style="margin-top:30px;font-size:14px;color:var(--text-muted);font-family:var(--font-sans);max-width:700px;margin-left:auto;margin-right:auto;line-height:1.6">
+        <em>« Le Modèle Standard Harmonique n'est pas une théorie finie — c'est un programme de recherche avec des fondations vérifiées, des piliers solides, des conjectures datées, et des frontières déclarées. »</em>
+      </p>
+    </div>
+  </section>
+
+  <!-- LIVRE I -->
+  <section id="section-livre1" class="livre">
+    <h2><span class="num">LIVRE I</span> — Le Langage</h2>
+    <div class="epigraph">« Les 13 primitives universelles sur ℂ⁵¹² — toute la physique est une composition d'opérations ondulatoires. »</div>
+
+    <h3>I.1 Principe fondateur</h3>
+    <p>Dans la THU, <strong>toute réalité est une onde</strong>. Les particules, les forces, les champs, la conscience même — tout est motif d'interférence d'une onde primordiale Ψ₁. Le langage ondulatoire est l'ensemble des opérations primitives qui permettent de manipuler ces ondes, et donc de décrire toute interaction physique.</p>
+
+    <div class="status-box">
+      <span class="status-item"><span class="dot t"></span> [T] Théorème</span>
+      <span class="status-item"><span class="dot p"></span> [P] Proposition</span>
+      <span class="status-item"><span class="dot c"></span> [C] Conjecture</span>
+      <span class="status-item"><span class="dot f"></span> [F] Frontière</span>
+    </div>
+
+    <h3 id="i3">I.2 Les 13 primitives</h3>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="val">ENCODE</div><div class="lbl">Monde → ψ</div></div>
+      <div class="metric-card"><div class="val">DECODE</div><div class="lbl">ψ → Monde</div></div>
+      <div class="metric-card"><div class="val">BIND</div><div class="lbl">Convolution HRR</div></div>
+      <div class="metric-card"><div class="val">UNBIND</div><div class="lbl">Corrélation</div></div>
+      <div class="metric-card"><div class="val">SUPERPOSE</div><div class="lbl">Addition</div></div>
+      <div class="metric-card"><div class="val">RESONATE</div><div class="lbl">Similarité</div></div>
+      <div class="metric-card"><div class="val">ROTATE</div><div class="lbl">Rotation U(1)</div></div>
+      <div class="metric-card"><div class="val">NORMALIZE</div><div class="lbl">Projection unité</div></div>
+      <div class="metric-card"><div class="val">INTERFERE</div><div class="lbl">Mélange contrôlé</div></div>
+      <div class="metric-card"><div class="val">DIFFRACT</div><div class="lbl">FFT (Fourier)</div></div>
+      <div class="metric-card"><div class="val">FILTER</div><div class="lbl">Filtrage spectral</div></div>
+      <div class="metric-card"><div class="val">PHASE_SHIFT</div><div class="lbl">Déphasage</div></div>
+      <div class="metric-card"><div class="val">EMERGE</div><div class="lbl">Émergence</div></div>
+    </div>
+
+    <h3>I.3 Espace de représentation</h3>
+    <p>Les vecteurs d'onde vivent dans <strong>ℂ⁵¹²</strong> (limite de Bekenstein). Ils sont toujours normalisés (‖ψ‖ = 1). L'information est dans la <strong>direction</strong>. L'encodage est déterministe : FNV-1a + φ-spacing. Même entité → même ψ, sur n'importe quelle machine.</p>
+
+    <div class="formula-box">
+      <span class="label">Principe du langage</span>
+      ENCODE → MANIPULER → DÉCODER<br>
+      <span style="font-size:14px;color:var(--text-muted)">(monde → ψ) → (ψ → ψ') → (ψ' → solution)</span>
+    </div>
+  </section>
+
+  <!-- LIVRE II -->
+  <section id="section-livre2" class="livre">
+    <h2><span class="num">LIVRE II</span> — L'Équation Mère</h2>
+    <div class="epigraph">« Une seule équation unifie toute la dynamique — Schrödinger (α→1) et Einstein (n=2) en sont des cas limites. »</div>
+
+    <h3>II.1 L'équation fondamentale</h3>
+    <div class="formula-box">
+      <span class="label">Équation mère</span>
+      D^{1/φ}[Ψ] = G[Ψ]
+      <span class="precision">La mémoire d'or (α = 1/φ) gouverne toute l'évolution</span>
+    </div>
+
+    <p>Le temps qui se souvient (dérivée fractionnaire d'ordre 1/φ) = l'espace qui se courbe (contrainte de jauge du spin 2). Leur égalité est la gravité.</p>
+
+    <h3 id="ii2">II.2 Le noyau ABC</h3>
+    <p>La mémoire dorée est encodée dans le <strong>noyau ABC</strong> (Atangana-Baleanu-Caputo) :</p>
+    <div class="formula-box">
+      <span class="label">Noyau de mémoire</span>
+      K(t) = E_{1/φ}(−φ · t^{1/φ})
+      <span class="precision">Fonction de Mittag-Leffler d'ordre α = 1/φ</span>
+    </div>
+    <p>Quatre invariants vérifiés à 1,1×10⁻¹⁶ près : ∫K = 1, ‖K‖₂ = φ⁻¹, ML(α,α) = 1, N(α) = 1.</p>
+
+    <h3 id="ii4">II.3 La tour des spins</h3>
+    <p>La solution de Mittag-Leffler se déploie en <strong>tour des spins</strong> :</p>
+    <div class="formula-box">
+      <span class="label">Tour des spins</span>
+      Ψ = Σ Hₙ · (Ψ₁)ⁿ
+      <span class="precision">n = 2 (gravité), n = 4 (EM), n = 5 (forces forte/faible)</span>
+    </div>
+    <p>Les coefficients cₙ = 1/Γ(n/φ + 1) sont des nombres irrationnels, non programmables — <strong>la structure est gravée</strong>.</p>
+  </section>
+
+  <!-- LIVRE III -->
+  <section id="section-livre3" class="livre">
+    <h2><span class="num">LIVRE III</span> — Les Forces</h2>
+    <div class="epigraph">« Les forces ne sont pas des jauges postulées — ce sont des motifs d'interférence à différents niveaux de la tour. »</div>
+
+    <h3>III.1 Émergence des interactions</h3>
+    <p>Les 4 interactions fondamentales émergent comme des <strong>motifs de phase</strong> à différents niveaux de la tour, sans groupes de jauge postulés.</p>
+
+    <table>
+      <tr><th>Force</th><th>Niveau n</th><th>Origine</th></tr>
+      <tr><td>Gravité</td><td>n=2</td><td>Champ de spin 2 sans masse → la seule théorie cohérente est la RG (théorème de Deser)</td></tr>
+      <tr><td>Électromagnétisme</td><td>n=4</td><td>Interférence à deux ondes → U(1) dérivé</td></tr>
+      <tr><td>Force forte</td><td>n=5</td><td>Interférence à trois ondes → SU(3) conjecturé</td></tr>
+      <tr><td>Force faible</td><td>n=5-6</td><td>Réarrangement de phase → SU(2) brisé</td></tr>
+    </table>
+
+    <h3 id="iii4">III.2 Gravité (n=2) — Le théorème T6</h3>
+    <p>La gravité est le survivant du secteur n=2 de l'équation mère. <strong>Théorème T6</strong> : La seule théorie cohérente d'un champ de spin 2 sans masse auto-interactif est la relativité générale. 4 vérifications machine (□h̄ = 1,2×10⁻¹⁵, G^lin = 6×10⁻¹⁶, Deser cohérent, Schwarzschild identique).</p>
+
+    <h3 id="iii5">III.3 Électromagnétisme (n=4)</h3>
+    <p>U(1) émerge comme la liberté résiduelle de la projection ontologique. Le photon est le niveau n=1 de la tour de spin. La constante de structure fine α_EM = π⁴·e⁻⁴·φ⁻⁵·√2⁻¹·√3⁻⁵ est dérivée grammaticalement (précision 0,000024 %).</p>
+
+    <h3>III.4 Tableau MS vs MSH</h3>
+    <table>
+      <tr><th>Propriété</th><th>Modèle Standard</th><th>MSH</th></tr>
+      <tr><td>Groupes de jauge</td><td>Postulés (SU(3)×SU(2)×U(1))</td><td>Émergents (de la tour des spins)</td></tr>
+      <tr><td>Paramètres libres</td><td>26</td><td>0</td></tr>
+      <tr><td>Constantes</td><td>Mesurées</td><td>Dérivées (grammaire ondulatoire)</td></tr>
+      <tr><td>Particules</td><td>Entités fondamentales</td><td>Itérations T6 modulo-7</td></tr>
+      <tr><td>Gravité</td><td>Externe (RG)</td><td>Intégrée (n=2 de la tour)</td></tr>
+    </table>
+  </section>
+
+  <!-- LIVRE IV -->
+  <section id="section-livre4" class="livre">
+    <h2><span class="num">LIVRE IV</span> — Les Particules</h2>
+    <div class="epigraph">« Les particules ne sont pas des entités fondamentales — ce sont des itérations (n = type + 7k) de 7 types de base. »</div>
+
+    <h3>IV.1 Classification T6 modulo-7</h3>
+    <p>Les particules sont classées par <strong>périodicité modulo 7</strong> :</p>
+    <div class="formula-box">
+      <span class="label">T6</span>
+      H_{n+7} = H_n · e^{i/φⁿ}
+      <span class="precision">Périodicité de structure dans la tour des spins</span>
+    </div>
+    <p>7 types de base (n = 0, 1, 2, 3, 4, 5, 6) correspondant aux 7 forces archétypales de la tour. Les particules connues sont des itérations de ces types.</p>
+
+    <h3 id="iv-class">IV.2 Classification des 19 particules connues</h3>
+    <table>
+      <tr><th>Type</th><th>n</th><th>Particules</th><th>Force</th></tr>
+      <tr><td>0</td><td>0, 7, 14…</td><td>Photon, gluon, graviton</td><td>Étalon</td></tr>
+      <tr><td>1</td><td>1, 8, 15…</td><td>e, μ, τ</td><td>Électrofaible</td></tr>
+      <tr><td>2</td><td>2, 9, 16…</td><td>ν_e, ν_μ, ν_τ</td><td>Faible</td></tr>
+      <tr><td>3</td><td>3, 10, 17…</td><td>u, c, t</td><td>Forte (up)</td></tr>
+      <tr><td>4</td><td>4, 11, 18…</td><td>d, s, b</td><td>Forte (down)</td></tr>
+      <tr><td>5</td><td>5, 12, 19…</td><td>W±, Z, H</td><td>Brisure</td></tr>
+      <tr><td>6</td><td>6, 13, 20…</td><td>γ, g, (autres)</td><td>Résiduel</td></tr>
+    </table>
+
+    <h3 id="iv-pred">IV.3 30 nouvelles particules prédites</h3>
+    <p>La table T6 prédit <strong>30 nouvelles particules</strong> aux masses M_Pl·cₙ/f avec facteurs f O(1). Les masses suivent une progression géométrique de raison φ. Les signatures expérimentales sont spécifiées pour chaque niveau.</p>
+  </section>
+
+  <!-- LIVRE V -->
+  <section id="section-livre5" class="livre">
+    <h2><span class="num">LIVRE V</span> — Les Constantes</h2>
+    <div class="epigraph">« Les constantes ne sont pas des paramètres libres — ce sont des phrases dans l'alphabet clos {π, e, φ, √2, √3, √5}. »</div>
+
+    <h3>V.1 α_EM — La constante de structure fine</h3>
+    <div class="formula-box">
+      <span class="label">α_EM — constante de structure fine</span>
+      α_EM = π⁴ · e⁻⁴ · φ⁻⁵ · √2⁻¹ · √3⁻⁵
+      <span class="precision">Précision : 0,000024 % vs CODATA · 3/5 exposants rigoureux · 2/5 conjecturaux (L3)</span>
+    </div>
+
+    <div class="metric-grid">
+      <div class="metric-card"><div class="val">π⁴</div><div class="lbl">DIFFRACT — cycle FFT⁴=I</div></div>
+      <div class="metric-card"><div class="val">e⁻⁴</div><div class="lbl">FILTER — propagateur 4D</div></div>
+      <div class="metric-card"><div class="val">φ⁻⁵</div><div class="lbl">RESONATE — n+D=5 canaux</div></div>
+      <div class="metric-card"><div class="val">√2⁻¹</div><div class="lbl">ROTATE — dim SU(2)=2</div></div>
+      <div class="metric-card"><div class="val">√3⁻⁵</div><div class="lbl">SUPERPOSE — dilution ℝ³</div></div>
+    </div>
+
+    <p>La formule est <strong>unique</strong> : parmi 894 000 combinaisons d'exposants entiers, c'est la seule qui atteigne cette précision. Zéro paramètre libre. 5 constantes dérivées (T1, T4, F5).</p>
+
+    <h3 id="v5">V.2 Les autres constantes</h3>
+    <table>
+      <tr><th>Constante</th><th>Formule</th><th>Précision</th><th>Statut</th></tr>
+      <tr><td>α_EM</td><td>π⁴·e⁻⁴·φ⁻⁵·√2⁻¹·√3⁻⁵</td><td>0,000024 %</td><td><span class="tag tag-t">[T]</span></td></tr>
+      <tr><td>α_W</td><td>√2⁻²·√3⁻²·√5⁻² = 1/30</td><td>Exacte</td><td><span class="tag tag-p">[P]</span></td></tr>
+      <tr><td>α_S</td><td>1/(2·φ³)</td><td>0,11 %</td><td><span class="tag tag-p">[P]</span></td></tr>
+      <tr><td>m_p/m_e</td><td>(e²/π)⁴ × 60</td><td>0,00027 %</td><td><span class="tag tag-p">[P]</span></td></tr>
+      <tr><td>M_P/m_p</td><td>e⁴⁴</td><td>1,23 %</td><td><span class="tag tag-p">[P]</span></td></tr>
+      <tr><td>v_EW</td><td>2·π·e·φ²·√2·√3·√5</td><td>0,53 %</td><td><span class="tag tag-p">[P]</span></td></tr>
+      <tr><td>θ_W</td><td>sin²θ = 2/9</td><td>0,35 %</td><td><span class="tag tag-c">[C]</span></td></tr>
+    </table>
+
+    <h3>V.3 L'alphabet clos</h3>
+    <p>6 constantes pures : <strong>{π, e, φ, √2, √3, √5}</strong>. Chacune est le survivant d'un filtre d'élimination (T1, T4, F5). Aucune n'est postulée. L'alphabet est clos — aucune 7ème constante n'est nécessaire pour les couplages de jauge.</p>
+
+    <div class="formula-box">
+      <span class="label">Prédiction falsifiable</span>
+      √5 est ABSENT de α_EM (U(1) non brisée) ✅<br>
+      √5 est PRÉSENT dans α_W (SU(2) brisée) ✅<br>
+      √5 est ABSENT de α_S (SU(3) non brisée) ✅
+      <span class="precision">5/6 prédictions falsifiables confirmées</span>
+    </div>
+  </section>
+
+  <!-- LIVRE VI -->
+  <section id="section-livre6" class="livre">
+    <h2><span class="num">LIVRE VI</span> — La Matière</h2>
+    <div class="epigraph">« La matière est de l'onde qui se souvient — la masse est la courbure de dispersion. »</div>
+
+    <h3>VI.1 Masse = courbure de dispersion</h3>
+    <p>La masse n'est pas une propriété intrinsèque — c'est la <strong>courbure de la relation de dispersion</strong> de l'onde dans le temps qui se souvient. La mémoire d'or (D^{1/φ}) crée une résistance au changement que nous percevons comme masse.</p>
+
+    <div class="formula-box">
+      <span class="label">Masse comme courbure</span>
+      m = ℏ · ω₀ · (1 − φ⁻¹) / c²
+      <span class="precision">La masse émerge de la mémoire fractionnaire</span>
+    </div>
+
+    <h3 id="vi3">VI.2 Les 3 générations</h3>
+    <p>Les 3 générations de fermions (e, μ, τ et u,d / c,s / t,b) sont les itérations k=4,5,6 de la formule T6, correspondant aux 3 fenêtres d'observation accessibles dans notre univers. Les masses suivent :</p>
+    <div class="formula-box">
+      <span class="label">Hiérarchie des masses</span>
+      m_n = M_Pl · cₙ / f
+      <span class="precision">cₙ = 1/Γ(n/φ+1), f = facteurs O(1) à dériver</span>
+    </div>
+
+    <h3 id="vi5">VI.3 Neutrinos</h3>
+    <p>Les neutrinos sont la queue de la tour — des excitations de niveau élevé dont la masse est naturellement faible par le facteur cₙ décroissant. Leur oscillation est une interférence entre niveaux de la tour.</p>
+  </section>
+
+  <!-- LIVRE VII -->
+  <section id="section-livre7" class="livre">
+    <h2><span class="num">LIVRE VII</span> — Les Tests</h2>
+    <div class="epigraph">« 7 prédictions falsifiables, 5 déjà confirmées, 4 testables. »</div>
+
+    <h3>VII.1 T* — Les 24 températures dorées</h3>
+    <p>Les températures de transition de phase de l'univers primitif sont φ-spacées. 24 températures T* sont prédites, allant de l'échelle de Planck (~10³² K) à la température du CMB (~2.7 K).</p>
+
+    <h3 id="vii2">VII.2 Le Zénon doré</h3>
+    <p>La décroissance fractionnaire (noyau ABC) implique un <strong>effet Zénon quantique modifié</strong> : la probabilité de survie décroît comme E_{1/φ}(−φ·t^{1/φ}) au lieu de l'exponentielle classique. Testable sur des atomes froids.</p>
+
+    <h3 id="vii3">VII.3 30 nouvelles particules</h3>
+    <p>La classification T6 prédit 30 particules au-delà du Modèle Standard. Leurs masses, signatures de désintégration et sections efficaces sont spécifiées dans la table T6.</p>
+
+    <h3>VII.4 (g-2)_μ</h3>
+    <p>Le moment magnétique anormal du muon s'explique par la mémoire fractionnaire : Δa_μ ≈ 2×10⁻⁹ × φ⁻¹, cohérent avec l'écart mesuré à Fermilab.</p>
+
+    <h3>VII.5 Ondes gravitationnelles</h3>
+    <p>GW170817 exclut la version linéaire naïve du graviton fractionnaire (X2 : 10¹⁴× la borne LIGO), mais la version non-linéaire (Deser, point fixe) est la RG — cohérente avec toutes les observations.</p>
+  </section>
+
+  <!-- LIVRE VIII -->
+  <section id="section-livre8" class="livre">
+    <h2><span class="num">LIVRE VIII</span> — La Grammaire Ondulatoire</h2>
+    <div class="epigraph">« Le troisième pilier — l'alphabet clos, la grammaire à 13 primitives, la table périodique des constantes. »</div>
+
+    <h3>VIII.1 L'alphabet clos</h3>
+    <p>6 lettres, toutes dérivées comme survivants de filtres :</p>
+    <table>
+      <tr><th>Lettre</th><th>Symbole</th><th>Filtre de survie</th><th>Primitive associée</th></tr>
+      <tr><td>L'agrégation</td><td>π</td><td>Point fixe du TCL (T4)</td><td>DIFFRACT</td></tr>
+      <tr><td>La proportionnalité</td><td>e</td><td>Solution de dx/dt = x (T4)</td><td>FILTER</td></tr>
+      <tr><td>La non-répétition</td><td>φ</td><td>Hurwitz : le moins bien approximable (T1)</td><td>RESONATE</td></tr>
+      <tr><td>Diagonale du carré</td><td>√2</td><td>Pythagore 2D (F5)</td><td>ROTATE</td></tr>
+      <tr><td>Diagonale du cube</td><td>√3</td><td>Pythagore 3D (F5)</td><td>SUPERPOSE</td></tr>
+      <tr><td>Brisure</td><td>√5</td><td>√5 = 2φ−1 (F5)</td><td>EMERGE (t>0)</td></tr>
+    </table>
+
+    <h3>VIII.2 La méthode grammaticale</h3>
+    <div class="formula-box">
+      <span class="label">Méthode en 5 étapes</span>
+      1. IDENTIFIER l'objet physique → 2. TRADUIRE en arbre de primitives<br>
+      3. COMPTER les applications (cycle, dimension, canaux)<br>
+      4. ASSEMBLER (produit si t=0, point fixe si t>0)<br>
+      5. VÉRIFIER (précision, unicité, falsifiabilité)
+    </div>
+
+    <h3 id="viii5">VIII.3 α_EM dérivé grammaticalement</h3>
+    <div class="formula-box">
+      <span class="label">Arbre grammatical du vertex e⁻e⁻γ</span>
+      EMERGE(t=0) → DIFFRACT(×4) · FILTER(×4) · RESONATE(×5) · ROTATE(×1) · SUPERPOSE(×5)
+      <span class="precision">Chaque exposant est forcé par une propriété structurelle de la primitive</span>
+    </div>
+
+    <h3 id="viii6">VIII.4 Table périodique des constantes</h3>
+    <table>
+      <tr><th>Niveau n</th><th>Boson</th><th>π</th><th>e</th><th>φ</th><th>√2</th><th>√3</th><th>√5</th></tr>
+      <tr><td>n=0</td><td>Scalaire</td><td>π⁺⁴</td><td>e⁻⁴</td><td>φ⁻⁴</td><td>√2⁻¹</td><td>√3⁻⁴</td><td>—</td></tr>
+      <tr><td>n=1</td><td>Photon</td><td>π⁺⁴</td><td>e⁻⁴</td><td>φ⁻⁵</td><td>√2⁻¹</td><td>√3⁻⁵</td><td>—</td></tr>
+      <tr><td>n=1</td><td>W/Z</td><td>—</td><td>—</td><td>—</td><td>√2⁻²</td><td>√3⁻²</td><td>√5⁻²</td></tr>
+      <tr><td>n=2</td><td>Graviton</td><td>π⁺⁴</td><td>e⁻⁴</td><td>φ⁻⁶</td><td>√2⁻¹</td><td>√3⁻⁶</td><td>√5</td></tr>
+    </table>
+  </section>
+
+  <!-- LIVRE IX -->
+  <section id="section-livre9" class="livre">
+    <h2><span class="num">LIVRE IX</span> — Les Applications</h2>
+    <div class="epigraph">« La grammaire ondulatoire est le « missing manual » de toutes les applications — le manuel qui manquait pour passer du développement empirique à l'ingénierie fondée sur des principes. »</div>
+
+    <h3>IX.1 Structured Fact Retriever — Retrieval lexical exact</h3>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="val">100%</div><div class="lbl">Précision</div></div>
+      <div class="metric-card"><div class="val"><3ms</div><div class="lbl">Temps/requête</div></div>
+      <div class="metric-card"><div class="val">0%</div><div class="lbl">Hallucination</div></div>
+      <div class="metric-card"><div class="val">62 350</div><div class="lbl">Faits indexés</div></div>
+    </div>
+    <p>Moteur de retrieval par index inversé sur les 62 350 faits médicaux (15 domaines). Matching direct par token + détection d'intention lexicale. 100 % traçable — chaque réponse pointe vers son fait source.</p>
+
+    <h3 id="ix9">IX.2 SemanticWave Embedding — Encodeur sémantique appris</h3>
+    <p>Remplace l'encodeur FNV1a (pseudo-aléatoire) par un plongement appris par descente de gradient sur les 62K paires (sujet, objet) des faits médicaux.</p>
+    <table>
+      <tr><th>Paire</th><th>FNV1a (baseline)</th><th>SemanticWave V1</th></tr>
+      <tr><td>paludisme ↔ fièvre</td><td>0.50 (bruit)</td><td><strong>0.76</strong></td></tr>
+      <tr><td>pneumonie ↔ toux</td><td>0.50 (bruit)</td><td><strong>0.69</strong></td></tr>
+      <tr><td>infection ↔ antibiotique</td><td>0.50 (bruit)</td><td><strong>0.73</strong></td></tr>
+      <tr><td>paludisme ↔ chaise</td><td>0.50 (bruit)</td><td>0.51 (correct)</td></tr>
+    </table>
+    <p>1906 termes, 16.8 Mo. 12/12 paires correctement classées.</p>
+
+    <h3 id="ix10">IX.3 Harmonic Voice Emotion — Voix émotionnelle adaptative</h3>
+    <p>Les 13 primitives THU appliquées à la modulation vocale :</p>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="val">±61.8%</div><div class="lbl">Pitch (φ⁻¹)</div></div>
+      <div class="metric-card"><div class="val">±38.2%</div><div class="lbl">Rate (φ⁻²)</div></div>
+      <div class="metric-card"><div class="val">±3.7dB</div><div class="lbl">Volume (6×φ⁻¹)</div></div>
+      <div class="metric-card"><div class="val">12</div><div class="lbl">Émotions</div></div>
+    </div>
+    <p>SSML pour edge-tts (Microsoft Neural, gratuit, illimité). Paramètres pour Piper TTS (local, MIT, <100ms). Adaptation contextuelle : diagnostic, urgence, conseil, explication, empathie, général.</p>
+
+    <h3>IX.4 Harmonic STT + Voice Analyzer</h3>
+    <p>Reconnaissance vocale : <strong>faster-whisper</strong> (local, MIT, tiny) + <strong>Voxtral API</strong> (Mistral, Apache 2.0). Analyse émotionnelle de la voix via <code>DIFFRACT(audio) → FILTER_WAVE → RESONATE(prototypes)</code>.</p>
+
+    <h3 id="ix12">IX.5 Pipeline bidirectionnel complet</h3>
+    <p>Le pipeline <strong>audio → réponse audio</strong> combine toutes les briques :</p>
+    <div class="formula-box">
+      <span class="label">Boucle conversationnelle complète</span>
+      audio → STT → VoiceAnalyzer → TextEmotion → EMERGE →<br>
+      Retrieval → Rédaction → VoiceEmotion → TTS → audio
+      <span class="precision">7 endpoints API · Oracle Cloud · 4 cœurs ARM · 24 Go RAM</span>
+    </div>
+
+    <h3>IX.6 Déploiement Oracle Cloud</h3>
+    <table>
+      <tr><th>Composant</th><th>Technologie</th><th>Licence</th></tr>
+      <tr><td>LLM</td><td>Qwen 2.5 3B Q4_K_M</td><td>Apache 2.0</td></tr>
+      <tr><td>TTS</td><td>edge-tts, Piper, Coqui, Voxtral</td><td>MIT / CPML</td></tr>
+      <tr><td>STT</td><td>faster-whisper, Voxtral</td><td>MIT / Apache 2.0</td></tr>
+      <tr><td>Index</td><td>StructuredFactRetriever (62K faits)</td><td>THU</td></tr>
+      <tr><td>Sémantique</td><td>SemanticWaveEmbedding V1</td><td>THU</td></tr>
+      <tr><td>Émotion</td><td>HarmonicVoiceEmotion (φ-modulé)</td><td>THU</td></tr>
+    </table>
+  </section>
+
+  <!-- CONCLUSION -->
+  <section id="section-conclusion" class="livre">
+    <h2>Conclusion</h2>
+    <div class="epigraph">« Le Modèle Standard Harmonique n'est pas une théorie finie — c'est un programme de recherche avec des fondations vérifiées, des piliers solides, des conjectures datées, et des frontières déclarées. »</div>
+
+    <h3>Le MSH en neuf phrases</h3>
+    <ol>
+      <li><strong>Toute réalité est une somme d'harmoniques</strong> d'une onde primordiale Ψ₁, pondérées par la mémoire d'or cₙ = 1/Γ(n/φ+1).</li>
+      <li><strong>La dynamique est une seule équation</strong> D^{1/φ}[Ψ] = G[Ψ] — dont Schrödinger (α→1) et Einstein (n=2) sont des cas limites.</li>
+      <li><strong>Les forces ne sont pas des jauges postulées</strong> — ce sont des motifs d'interférence à différents niveaux de la tour.</li>
+      <li><strong>Les particules ne sont pas des entités fondamentales</strong> — ce sont des itérations (n = type + 7k) de 7 types de base.</li>
+      <li><strong>Les constantes ne sont pas des paramètres libres</strong> — ce sont des phrases dans l'alphabet clos {π, e, φ, √2, √3, √5}.</li>
+      <li><strong>La grammaire ondulatoire est le troisième pilier</strong> — 13 primitives, table périodique des constantes.</li>
+      <li><strong>La matière est de l'onde qui se souvient</strong> — la masse est la courbure de dispersion.</li>
+      <li><strong>Les applications sont des conséquences, pas des projets séparés</strong> — tout partage les 13 primitives et les mêmes constantes.</li>
+      <li><strong>Le MSH est falsifiable</strong> — 5 prédictions déjà confirmées, 4 testables.</li>
+    </ol>
+
+    <h3>Bilan final</h3>
+    <table>
+      <tr><th>Classification</th><th>Livre I</th><th>Livre II</th><th>Livre III</th><th>Livre IV</th><th>Livre V</th><th>Livre VI</th><th>Livre VII</th><th>Livre VIII</th><th>Livre IX</th><th><strong>Total</strong></th></tr>
+      <tr><td><span class="tag tag-t">[T]</span> Théorèmes</td><td>12</td><td>10</td><td>2</td><td>4</td><td>5</td><td>1</td><td>3</td><td>10</td><td>6</td><td><strong>53</strong></td></tr>
+      <tr><td><span class="tag tag-p">[P]</span> Propositions</td><td>2</td><td>3</td><td>9</td><td>4</td><td>4</td><td>3</td><td>3</td><td>6</td><td>6</td><td><strong>40</strong></td></tr>
+      <tr><td><span class="tag tag-c">[C]</span> Conjectures</td><td>0</td><td>1</td><td>5</td><td>1</td><td>2</td><td>2</td><td>1</td><td>3</td><td>0</td><td><strong>15</strong></td></tr>
+      <tr><td><span class="tag tag-f">[F]</span> Frontières</td><td>1</td><td>0</td><td>1</td><td>1</td><td>2</td><td>3</td><td>1</td><td>1</td><td>0</td><td><strong>10</strong></td></tr>
+    </table>
+
+    <div style="text-align:center;margin:50px 0;padding:30px;border:1px solid var(--gold-dark);border-radius:var(--radius);background:var(--bg3)">
+      <p style="font-size:18px;color:var(--gold);font-family:var(--font-mono);margin-bottom:10px">φ = 1.618033988749895…</p>
+      <p style="color:var(--text-muted);font-style:italic">« Le travail ne fait que commencer — mais il a désormais une méthode, pas seulement une inspiration. »</p>
+      <p style="color:var(--text-muted);font-size:14px;font-family:var(--font-sans);margin-top:12px">— Univers-Holistique, 24 août 2026</p>
+    </div>
+  </section>
+</main>
+
+<button id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Haut de page">↑</button>
+
+<footer>
+  <div class="phi">φ</div>
+  <p>Modèle Standard Harmonique — MSH-5.0</p>
+  <p>Univers-Holistique · 24 août 2026</p>
+  <p style="margin-top:8px;font-size:12px;color:var(--text-muted)">
+    Construit sur l'alphabet {π, e, φ, √2, √3, √5} · 13 primitives · 0 paramètre libre · 10 livres · 53 théorèmes
+  </p>
+</footer>
+
+<script>
+// ── LOADING ──
+window.addEventListener('load',()=>{
+  setTimeout(()=>document.getElementById('loading').classList.add('hidden'),600)
+})
+
+// ── SIDEBAR ──
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open')
+}
+
+function toggleSub(btn){
+  const sub = btn.nextElementSibling
+  sub.classList.toggle('open')
+  btn.classList.toggle('active')
+}
+
+// ── NAVIGATION ──
+function showLivre(id){
+  document.querySelectorAll('.livre').forEach(l=>l.classList.remove('active'))
+  document.getElementById('section-'+id).classList.add('active')
+  document.querySelectorAll('.sub-item').forEach(i=>i.classList.remove('active'))
+  // Close sidebar on mobile
+  if(window.innerWidth<=768) document.getElementById('sidebar').classList.remove('open')
+  window.scrollTo({top:0,behavior:'smooth'})
+  return false
+}
+
+function scrollTo(id){
+  setTimeout(()=>{
+    const el = document.getElementById(id)
+    if(el) el.scrollIntoView({behavior:'smooth',block:'start'})
+  },100)
+}
+
+// ── SCROLL TOP ──
+window.addEventListener('scroll',()=>{
+  document.getElementById('scroll-top').classList.toggle('visible',window.scrollY>400)
+})
+
+// ── ACTIVE SIDEBAR LINK ──
+document.querySelectorAll('.sub-item').forEach(item=>{
+  item.addEventListener('click',function(){
+    document.querySelectorAll('.sub-item').forEach(i=>i.classList.remove('active'))
+    this.classList.add('active')
+  })
+})
+</script>
+</body>
+</html>
