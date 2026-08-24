@@ -25,7 +25,7 @@ except Exception:
     _KA_CONFIG = None
 
 # Version locale pour éviter import circulaire
-__version__ = '4.1.0'
+__version__ = '4.2.0'
 
 # ── Logging structuré (avec rotation : 5 × 10 Mo) ───────────────────────────
 logging.basicConfig(
@@ -138,6 +138,10 @@ def create_app(config_override: dict = None) -> Flask:
     _SITES_DIR = Path(__file__).resolve().parent / 'static'
     
     # ── Vital KA — Applications métier (frontends embarqués) ──
+    @app.route('/vital/')
+    def vital_launcher():
+        return send_from_directory(_SITES_DIR / 'vital', 'launcher.html')
+    
     @app.route('/vital/medecin')
     def vital_medecin():
         return send_from_directory(_SITES_DIR / 'vital', 'medecin.html')
@@ -153,6 +157,14 @@ def create_app(config_override: dict = None) -> Flask:
     @app.route('/vital/diaspora')
     def vital_diaspora():
         return send_from_directory(_SITES_DIR / 'vital', 'diaspora.html')
+    
+    @app.route('/vital/solidarite')
+    def vital_solidarite():
+        return send_from_directory(_SITES_DIR / 'vital', 'solidarite.html')
+    
+    @app.route('/vital/teleconsult')
+    def vital_teleconsult():
+        return send_from_directory(_SITES_DIR / 'vital', 'teleconsult.html')
     
     # ── API Vital KA — Proxy vers admin-server Oracle ──
     @app.route('/api/v1/<path:subpath>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'])

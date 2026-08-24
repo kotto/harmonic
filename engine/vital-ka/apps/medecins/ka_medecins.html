@@ -387,10 +387,10 @@ const STORE_CHATS = 'ka_medecins_chats';
 let currentChatContact = null;
 let waLocalStream = null, waPeerConnection = null, waCallType = 'video';
 
-// API serveur (wallet UM central) — configurable, fallback local
+// API serveur (wallet UM central) — configurable, fallback via proxy KA Server
 const API_URL = (function() {
   try { const u = localStorage.getItem('ka_api_url'); if (u) return u; } catch(e) {}
-  return 'http://localhost:8000';
+  return '/api/v1';
 })();
 
 function loadDocProfile() { try { return JSON.parse(localStorage.getItem(STORE_DOC) || '{}'); } catch(e) { return {}; } }
@@ -1020,7 +1020,7 @@ function aiDiagnose() {
   el.innerHTML = '<span style="color:var(--muted)">Analyse de la base de connaissances (hologrammes)...</span>';
 
   // 1. Tenter le serveur inference /diagnose
-  const INFER_URL = (function() { try { return localStorage.getItem('ka_infer_url') || 'http://localhost:8010'; } catch(e) { return 'http://localhost:8010'; } })();
+  const INFER_URL = (function() { try { return localStorage.getItem('ka_infer_url') || '/api/v1'; } catch(e) { return '/api/v1'; } })();
   fetch(INFER_URL + '/diagnose', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
