@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KARE — Simulation multi-agents (téléphones réels)</title>
+<style>
+:root{
+  --bg:#0d0d0d;--bg2:#141414;--surface:#1a1a1a;--border:#2a2a2a;
+  --gold:#d4a853;--gold-dim:#b89030;--gold-grad:linear-gradient(135deg,#d4a853,#7b5804);
+  --success:#27ae60;--warning:#f39c12;--error:#e74c3c;--text:#eae1d7;--muted:#9b8f7e;--faint:#6b635a;
+  --blue:#5b8def;--purple:#a78bfa;--cyan:#57c8d4;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+.wrap{max-width:1280px;margin:0 auto;padding:24px 16px 80px}
+header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+h1{font-size:22px;font-weight:800;letter-spacing:-.02em}
+h1 b{background:var(--gold-grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sub{color:var(--muted);font-size:12px}
+.badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600}
+.badge.ok{background:rgba(39,174,96,.15);color:var(--success)}
+.badge.err{background:rgba(231,76,60,.15);color:var(--error)}
+.badge.warn{background:rgba(243,156,18,.15);color:var(--warning)}
+.badge.info{background:rgba(91,94,235,.15);color:var(--blue)}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:16px}
+.card h2{font-size:15px;font-weight:700;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+input,select,button,textarea{font-family:inherit;font-size:13px}
+input,select,textarea{background:#0f0f19;color:var(--text);border:1px solid var(--border);padding:10px 12px;border-radius:10px;width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold)}
+textarea{resize:vertical;min-height:80px;font-family:'Courier New',monospace;font-size:11px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border:none;border-radius:10px;font-weight:600;cursor:pointer;transition:.15s}
+.btn:active{transform:scale(.97)}
+.btn-gold{background:var(--gold-grad);color:#0a0a0f;font-weight:700}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--gold)}
+.btn-green{background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff}
+.btn-red{background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:8px}
+.btn-blue{background:linear-gradient(135deg,#5b8def,#4a6fcf);color:#fff}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.row>div{flex:1;min-width:160px}
+label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--surface);border:1px solid var(--gold);border-radius:12px;padding:12px 18px;z-index:99;display:none;font-size:13px;max-width:420px;word-break:break-word}
+.empty{color:var(--faint);text-align:center;padding:24px;font-size:13px}
+
+/* ── Téléphones ── */
+.phone-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px}
+.phone{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:16px;position:relative;transition:.2s;overflow:hidden}
+.phone::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:16px 16px 0 0}
+.phone.patient::before{background:var(--blue)}
+.phone.medecin::before{background:var(--success)}
+.phone.pharmacie::before{background:var(--gold)}
+.phone.labo::before{background:var(--purple)}
+.phone.solidarite::before{background:var(--cyan)}
+.phone.offline{opacity:.5;border-color:var(--error)}
+.phone.offline::before{background:var(--error)}
+.phone .p-icon{font-size:24px;margin-bottom:6px}
+.phone .p-name{font-weight:700;font-size:14px;color:var(--text)}
+.phone .p-role{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.phone .p-loc{font-size:11px;color:var(--faint);margin-top:2px}
+.phone .p-bal{font-size:20px;font-weight:800;color:var(--gold);margin-top:6px}
+.phone .p-bal span{font-size:10px;color:var(--muted);font-weight:400}
+.phone .p-net{font-size:10px;color:var(--muted);margin-top:4px;display:flex;gap:6px;flex-wrap:wrap}
+.phone .p-net .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:2px}
+.phone .p-net .dot.on{background:var(--success)}
+.phone .p-net .dot.off{background:var(--error)}
+.phone .p-net .dot.warn{background:var(--warning)}
+.phone.active{border-color:var(--gold);box-shadow:0 0 20px rgba(212,168,83,.12)}
+
+/* ── Timeline ── */
+.timeline{position:relative;padding:0;margin:0}
+.timeline::before{content:'';position:absolute;left:20px;top:0;bottom:0;width:2px;background:var(--border)}
+.tl-event{position:relative;padding:8px 0 8px 48px;font-size:13px;animation:fadeIn .3s}
+.tl-event .tl-time{position:absolute;left:0;top:8px;width:40px;font-size:10px;color:var(--faint);font-family:monospace;text-align:right}
+.tl-event .tl-dot{position:absolute;left:16px;top:10px;width:10px;height:10px;border-radius:50%;border:2px solid}
+.tl-event .tl-dot.ok{border-color:var(--success);background:rgba(39,174,96,.15)}
+.tl-event .tl-dot.err{border-color:var(--error);background:rgba(231,76,60,.15)}
+.tl-event .tl-dot.neutral{border-color:var(--faint);background:rgba(155,143,126,.1)}
+.tl-event .tl-agent{display:inline-block;font-weight:600;color:var(--gold);font-size:12px;cursor:pointer}
+.tl-event .tl-agent:hover{color:var(--text)}
+.tl-event .tl-action{display:inline;color:var(--text)}
+.tl-event .tl-latency{font-size:10px;color:var(--faint);margin-left:6px}
+.tl-event .tl-err{display:block;font-size:11px;color:var(--error);margin-top:2px}
+.tl-event.agent-patient .tl-dot{border-color:var(--blue)}
+.tl-event.agent-medecin .tl-dot{border-color:var(--success)}
+.tl-event.agent-pharmacie .tl-dot{border-color:var(--gold)}
+.tl-event.agent-labo .tl-dot{border-color:var(--purple)}
+.tl-event.agent-solidarite .tl-dot{border-color:var(--cyan)}
+.tl-event.agent-SYSTEM .tl-dot{border-color:var(--faint);background:transparent}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Récapitulatif ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.stat-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center}
+.stat-box b{display:block;font-size:22px;color:var(--gold);font-weight:800}
+.stat-box span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.stat-box.green b{color:var(--success)}
+.stat-box.red b{color:var(--error)}
+.stat-box.blue b{color:var(--blue)}
+
+/* ── Légende animation ── */
+.world-map{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;min-height:120px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px}
+.world-map .city{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;border:1px solid var(--border);font-size:12px}
+.world-map .city .flag{font-size:18px}
+.world-map .conn{color:var(--faint);font-size:18px}
+.world-map .conn.active{color:var(--gold);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── Sonic ID Player ── */
+.sonic-panel{background:var(--bg2);border:1px solid var(--gold);border-radius:16px;padding:18px;margin-bottom:16px;display:none}
+.sonic-panel.visible{display:block}
+.sonic-panel .s-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.sonic-panel .s-head h3{font-size:14px;color:var(--gold);font-weight:700}
+.sonic-panel .s-head .s-close{background:none;border:none;color:var(--faint);cursor:pointer;font-size:18px}
+.sonic-panel .s-id{font-size:11px;color:var(--muted);margin-bottom:6px;font-family:monospace;word-break:break-all}
+.sonic-panel .s-detail{font-size:12px;color:var(--text);margin-bottom:10px}
+.sonic-panel .s-variant{font-size:10px;color:var(--faint);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+.sonic-panel .s-controls{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.sonic-panel .s-controls .s-play{background:var(--gold-grad);color:#0a0a0f;border:none;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.sonic-panel .s-controls .s-play:active{transform:scale(.92)}
+.sonic-panel .s-controls .s-play.playing{opacity:.6}
+.sonic-panel .s-controls .s-dur{font-size:11px;color:var(--muted);font-family:monospace}
+.sonic-panel .s-waveform{width:100%;height:48px;margin-bottom:8px;overflow:hidden;border-radius:8px;background:rgba(0,0,0,.3)}
+.sonic-panel .s-waveform svg{width:100%;height:100%;display:block}
+.sonic-panel .s-waveform svg path{stroke:var(--gold);stroke-width:1.5;fill:none;opacity:.7}
+.sonic-panel .s-verify{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sonic-panel .s-verify input{flex:1;min-width:120px;background:#0f0f19;border:1px solid var(--border);padding:8px 10px;border-radius:8px;color:var(--text)}
+.sonic-panel .s-verify .btn-check{background:var(--blue);color:#fff;border:none;padding:6px 14px;border-radius:8px;font-weight:600;cursor:pointer;font-size:12px}
+.sonic-panel .s-verify .btn-check:active{transform:scale(.97)}
+.sonic-panel .s-verify .result{font-size:11px;padding:4px 10px;border-radius:6px}
+.sonic-panel .s-verify .result.match{background:rgba(39,174,96,.15);color:var(--success)}
+.sonic-panel .s-verify .result.diff{background:rgba(231,76,60,.15);color:var(--error)}
+
+/* ── Timeline Sonic button ── */
+.sonic-btn{display:inline-flex;align-items:center;gap:3px;background:rgba(212,168,83,.1);border:1px solid rgba(212,168,83,.2);border-radius:6px;padding:2px 8px;font-size:10px;color:var(--gold);cursor:pointer;transition:.15s;margin-left:6px}
+.sonic-btn:hover{background:rgba(212,168,83,.2)}
+.sonic-btn:active{transform:scale(.93)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <h1>📡 KARE <b>Simulation multi-agents</b></h1>
+    <div class="sub">Plusieurs téléphones réels communiquent via internet — latence, coupures, transactions en temps réel</div>
+  </div>
+  <div class="row" style="flex:0 0 auto;min-width:auto;width:auto">
+    <input id="apiKey" type="password" placeholder="Clé API" style="width:180px" autocomplete="off">
+    <button class="btn btn-ghost btn-sm" onclick="saveKey()">🔑</button>
+  </div>
+</header>
+
+<!-- ═══ SCÉNARIOS ═══ -->
+<div class="card">
+  <div class="row" style="align-items:flex-end">
+    <div><label>Scénario intégré</label>
+      <select id="scenarioSelect" onchange="updateScenarioDesc()"></select>
+    </div>
+    <div>
+      <label style="display:flex;align-items:center;gap:6px;text-transform:none">
+        <input type="checkbox" id="resetFirst" checked> Reset avant
+      </label>
+    </div>
+    <div><button class="btn btn-gold" onclick="runSimulation()" id="runBtn">▶️ Lancer la simulation</button></div>
+    <div><button class="btn btn-ghost" onclick="stopSimulation()" id="stopBtn" style="display:none">⏹️ Arrêter</button></div>
+    <div><button class="btn btn-ghost btn-sm" onclick="switchView('custom')">✏️ Personnalisé</button></div>
+  </div>
+  <p id="scenarioDesc" style="font-size:12px;color:var(--muted);margin-top:8px"></p>
+</div>
+
+<!-- ═══ SCÉNARIO PERSONNALISÉ ═══ -->
+<div class="card" id="customCard" style="display:none">
+  <h2>✏️ Scénario personnalisé</h2>
+  <div class="row">
+    <div><label>Nom</label><input id="csName" value="Mon scénario"></div>
+    <div><label>Description</label><input id="csDesc" placeholder="Description"></div>
+  </div>
+  <div class="row">
+    <div style="flex:2"><label>Agents (JSON)</label>
+      <textarea id="csAgents" rows="4">[
+  {"wallet_id": "PAT-EX", "role": "patient", "name": "Exemple Patient", "location": "Abidjan", "latency_min_ms": 50, "latency_max_ms": 200, "reliability": 0.95},
+  {"wallet_id": "MED-EX", "role": "medecin", "name": "Dr. Exemple", "location": "Paris", "latency_min_ms": 100, "latency_max_ms": 400, "reliability": 0.9, "bank_account": "BANK_EX"}
+]</textarea></div>
+    <div style="flex:2"><label>Étapes (JSON)</label>
+      <textarea id="csSteps" rows="4">[
+  {"action": "create_account", "wallet_id": "PAT-EX"},
+  {"action": "create_account", "wallet_id": "MED-EX"},
+  {"action": "credit", "wallet_id": "PAT-EX", "amount_um": 100, "description": "Aide"},
+  {"action": "debit", "wallet_id": "PAT-EX", "target": "MED-EX", "amount_um": 30, "description": "Consultation"},
+  {"action": "conversion", "wallet_id": "MED-EX", "amount_um": 30, "currency": "EUR"}
+]</textarea></div>
+  </div>
+  <button class="btn btn-blue" onclick="runCustomSimulation()">▶️ Lancer le scénario personnalisé</button>
+</div>
+
+<!-- ═══ TÉLÉPHONES ═══ -->
+<div id="phonesContainer" class="phone-grid"></div>
+
+<!-- ═══ STATS ═══ -->
+<div id="statsContainer" class="stat-grid" style="display:none"></div>
+
+<!-- ═══ TIMELINE ═══ -->
+<div class="card">
+  <h2>📡 Timeline des événements <span id="eventCount" class="badge info" style="margin-left:8px">0</span></h2>
+  <div class="world-map" id="worldMap">
+    <span style="color:var(--faint);font-size:13px">🌍 Lancez une simulation pour voir les téléphones communiquer</span>
+  </div>
+  <div id="timeline" class="timeline" style="max-height:600px;overflow-y:auto"></div>
+</div>
+
+<!-- ═══ SONIC ID PLAYER ═══ -->
+<div class="sonic-panel" id="sonicPanel">
+  <div class="s-head">
+    <h3>🎵 Empreinte sonore de la transaction</h3>
+    <button class="s-close" onclick="closeSonic()">✕</button>
+  </div>
+  <div class="s-id" id="sonicTxId">—</div>
+  <div class="s-detail" id="sonicDetail">—</div>
+  <div class="s-variant" id="sonicVariant">—</div>
+  <div class="s-controls">
+    <button class="s-play" id="sonicPlayBtn" onclick="playSonic()">▶</button>
+    <span class="s-dur" id="sonicDur">—</span>
+    <audio id="sonicAudio" style="display:none" onended="onSonicEnded()"></audio>
+  </div>
+  <div class="s-waveform" id="sonicWaveform">
+    <svg viewBox="0 0 480 48" preserveAspectRatio="none">
+      <path id="sonicWavePath" d=""/>
+    </svg>
+  </div>
+  <div class="s-verify">
+    <input id="sonicVerifyInput" type="text" placeholder="Entrez un tx_id pour comparer…" autocomplete="off">
+    <button class="btn-check" onclick="verifySonic()">🔍 Vérifier</button>
+    <span class="result" id="sonicVerifyResult"></span>
+  </div>
+</div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══ ÉTAT ═══
+const LS_KEY = 'ka_banking_sim_key';
+let API_KEY = localStorage.getItem(LS_KEY) || '';
+document.getElementById('apiKey').value = API_KEY;
+let POLLING = null;
+let RUNNING = false;
+let SCENARIO_DATA = { agents: [], steps: [] };
+
+function saveKey() {
+  API_KEY = document.getElementById('apiKey').value.trim();
+  localStorage.setItem(LS_KEY, API_KEY);
+  toast(API_KEY ? '✅ Clé enregistrée' : '⚠️ Clé vide');
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', 3000);
+}
+
+function switchView(v) {
+  document.getElementById('customCard').style.display = v === 'custom' ? 'block' : 'none';
+}
+
+// ═══ REQUÊTE ═══
+async function api(method, path, body) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (API_KEY) headers['X-API-Key'] = API_KEY;
+  const resp = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(data.error || ('HTTP ' + resp.status));
+  return data;
+}
+
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ═══ SCÉNARIOS ═══
+async function loadScenarios() {
+  try {
+    const d = await api('GET', '/api/banking/simulate/scenarios');
+    const sel = document.getElementById('scenarioSelect');
+    sel.innerHTML = d.scenarios.map(s =>
+      '<option value="' + esc(s.name) + '">' + esc(s.name) + ' (' + s.agents + ' agents, ' + s.steps + ' étapes)</option>'
+    ).join('');
+    if (d.scenarios.length) updateScenarioDesc();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+function updateScenarioDesc() {
+  const sel = document.getElementById('scenarioSelect');
+  const opt = sel.selectedOptions[0];
+  document.getElementById('scenarioDesc').textContent = opt ? opt.text : '';
+}
+
+// ═══ SIMULATION ── LANCEMENT ═══
+async function runSimulation() {
+  if (RUNNING) return;
+  const scenario = document.getElementById('scenarioSelect').value;
+  if (!scenario) return toast('⚠️ Choisissez un scénario');
+  const reset = document.getElementById('resetFirst').checked;
+
+  RUNNING = true;
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('stopBtn').style.display = 'inline-flex';
+  document.getElementById('timeline').innerHTML = '';
+  document.getElementById('phonesContainer').innerHTML = '';
+  document.getElementById('statsContainer').style.display = 'none';
+  document.getElementById('eventCount').textContent = '0';
+  document.getElementById('worldMap').innerHTML = '⏳ Simulation en cours...';
+
+  try {
+    const d = await api('POST', '/api/banking/simulate', {
+      scenario, reset, async: false
+    });
+    renderSimulation(d);
+  } catch (e) {
+    toast('❌ ' + e.message);
+  }
+
+  RUNNING = false;
+  document.getElementById('runBtn').disabled = false;
+  document.getElementById('stopBtn').style.display = 'none';
+}
+
+async function runCustomSimulation() {
+  if (RUNNING) return;
+  let agents, steps;
+  try {
+    agents = JSON.parse(document.getElementById('csAgents').value);
+    steps = JSON.parse(document.getElementById('csSteps').value);
+  } catch (e) { toast('❌ JSON invalide : ' + e.message); return; }
+  if (!agents.length || !steps.length) return toast('⚠️ Agents et étapes requis');
+  const name = document.getElementById('csName').value.trim() || 'Personnalisé';
+  const desc = document.getElementById('csDesc').value.trim() || '';
+
+  RUNNING = true;
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('stopBtn').style.display = 'inline-flex';
+  document.getElementById('timeline').innerHTML = '';
+  document.getElementById('phonesContainer').innerHTML = '';
+  document.getElementById('statsContainer').style.display = 'none';
+  document.getElementById('eventCount').textContent = '0';
+  document.getElementById('worldMap').innerHTML = '⏳ Simulation personnalisée en cours...';
+
+  try {
+    const d = await api('POST', '/api/banking/simulate', {
+      name, description: desc, agents, steps, reset: document.getElementById('resetFirst').checked,
+      async: false
+    });
+    renderSimulation(d);
+  } catch (e) {
+    toast('❌ ' + e.message);
+  }
+
+  RUNNING = false;
+  document.getElementById('runBtn').disabled = false;
+  document.getElementById('stopBtn').style.display = 'none';
+}
+
+async function stopSimulation() {
+  // Le simulateur synchrone ne peut pas être arrêté, mais on peut ignorer le résultat.
+  RUNNING = false;
+  toast('⏹️ Arrêt demandé (fin de la simulation en cours)');
+}
+
+// ═══ RENDU ═══
+function renderSimulation(d) {
+  const sim = d.simulation;
+  if (!sim || !sim.agents || !sim.events) {
+    document.getElementById('worldMap').innerHTML = '<span class="badge err">Erreur : données de simulation invalides</span>';
+    return;
+  }
+
+  // ── Téléphones ──
+  renderPhones(sim.agents, sim.events);
+
+  // ── Stats ──
+  renderStats(d.summary, sim.events);
+
+  // ── Timeline ──
+  renderTimeline(sim.events);
+
+  // ── Carte monde ──
+  renderWorldMap(sim.agents, sim.events);
+}
+
+function renderPhones(agents, events) {
+  const container = document.getElementById('phonesContainer');
+  const roles = { patient:'patient', medecin:'medecin', pharmacie:'pharmacie', labo:'labo', solidarite:'solidarite' };
+  const icons = { patient:'👤', medecin:'🩺', pharmacie:'💊', labo:'🔬', solidarite:'🤝' };
+
+  container.innerHTML = agents.map(a => {
+    const role = roles[a.role] || 'patient';
+    const icon = icons[a.role] || '📱';
+    const lat = a.network_latency_ms || '?';
+    const rel = a.reliability ? (a.reliability * 100) + '%' : '?';
+    const bal = a.balance_um || 0;
+    return '<div class="phone ' + role + '" id="phone-' + esc(a.wallet_id) + '">' +
+      '<div class="p-icon">' + icon + '</div>' +
+      '<div class="p-name">' + esc(a.name) + '</div>' +
+      '<div class="p-role">' + esc(a.role) + '</div>' +
+      '<div class="p-loc">📍 ' + esc(a.location) + '</div>' +
+      '<div class="p-bal">' + bal.toLocaleString('fr-FR') + ' <span>UM</span></div>' +
+      '<div class="p-net">' +
+        '<span class="dot on"></span> ' + lat + ' ms · ' + rel + ' fiabilité' +
+      '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function renderStats(summary, events) {
+  const container = document.getElementById('statsContainer');
+  container.style.display = 'grid';
+  const success = events.filter(e => e.success).length;
+  const fail = events.filter(e => !e.success).length;
+  const totalUm = events.filter(e => e.success && ['credit','debit','solidarite_credit'].includes(e.action))
+    .reduce((s, e) => s + (e.amount_um || 0), 0);
+  const avgLat = events.filter(e => e.latency_ms).reduce((s, e) => s + (e.latency_ms || 0), 0) /
+    Math.max(1, events.filter(e => e.latency_ms).length);
+
+  container.innerHTML =
+    '<div class="stat-box"><b>' + events.length + '</b><span>Événements</span></div>' +
+    '<div class="stat-box green"><b>' + success + '</b><span>Réussis</span></div>' +
+    '<div class="stat-box red"><b>' + fail + '</b><span>Échecs</span></div>' +
+    '<div class="stat-box"><b>' + totalUm.toLocaleString('fr-FR') + '</b><span>UM échangés</span></div>' +
+    '<div class="stat-box"><b>' + agents.length + '</b><span>Téléphones</span></div>' +
+    '<div class="stat-box blue"><b>' + (avgLat ? avgLat.toFixed(0) : '?') + ' ms</b><span>Latence moyenne</span></div>' +
+    '<div class="stat-box"><b>' + (summary.duration_s ? summary.duration_s.toFixed(1) : '?') + ' s</b><span>Durée</span></div>';
+}
+
+function renderTimeline(events) {
+  const tl = document.getElementById('timeline');
+  const count = document.getElementById('eventCount');
+  count.textContent = events.length;
+
+  if (!events.length) {
+    tl.innerHTML = '<div class="empty">Aucun événement</div>';
+    return;
+  }
+
+  tl.innerHTML = events.map(e => {
+    const cls = e.success ? 'ok' : 'err';
+    const agentCls = 'agent-' + (e.agent || 'SYSTEM');
+    const lat = e.latency_ms ? '<span class="tl-latency">' + e.latency_ms.toFixed(0) + ' ms</span>' : '';
+    const err = e.error ? '<span class="tl-err">❌ ' + esc(e.error) + '</span>' : '';
+    const sonic = e.sonic_id
+      ? '<span class="sonic-btn" onclick="event.stopPropagation();openSonic(\'' + esc(JSON.stringify(e).replace(/'/g, "\\'")) + '\')">🔊 Jouer</span>'
+      : '';
+    return '<div class="tl-event ' + agentCls + '">' +
+      '<span class="tl-time">' + esc(e.time_str || '') + '</span>' +
+      '<span class="tl-dot ' + cls + '"></span>' +
+      '<span class="tl-agent" onclick="highlightPhone(\'' + esc(e.agent) + '\')">' + esc(e.agent) + '</span> ' +
+      '<span class="tl-action">' + esc(e.detail) + '</span>' + lat + err + sonic +
+      '</div>';
+  }).join('');
+
+  tl.scrollTop = tl.scrollHeight;
+}
+
+function renderWorldMap(agents, events) {
+  const map = document.getElementById('worldMap');
+  // Extraire les localisations uniques
+  const cities = {};
+  agents.forEach(a => {
+    const loc = a.location || 'Inconnu';
+    if (!cities[loc]) cities[loc] = [];
+    cities[loc].push(a.wallet_id);
+  });
+
+  const locEntries = Object.entries(cities);
+  if (locEntries.length <= 1) {
+    map.innerHTML = '<span style="color:var(--faint);font-size:13px">📍 ' +
+      esc(locEntries[0][0]) + ' — ' + locEntries[0][1].length + ' téléphone(s)</span>';
+    return;
+  }
+
+  map.innerHTML = locEntries.map(([loc, ids]) => {
+    const flag = loc.includes('Paris') ? '🇫🇷' : loc.includes('New York') || loc.includes('USA') ? '🇺🇸' : '🇨🇮';
+    return '<span class="city"><span class="flag">' + flag + '</span> ' + esc(loc) + ' (' + ids.length + ')</span>';
+  }).join(' <span class="conn active">➡️</span> ');
+}
+
+function highlightPhone(walletId) {
+  const el = document.getElementById('phone-' + walletId);
+  if (el) {
+    el.classList.add('active');
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => el.classList.remove('active'), 2000);
+  }
+}
+
+// ═══ SONIC ID PLAYER ═══
+let sonicCurrentEvent = null;
+let sonicAudioCtx = null;
+
+function openSonic(eventJson) {
+  try {
+    sonicCurrentEvent = JSON.parse(eventJson.replace(/\\'/g, "'"));
+  } catch (e) {
+    try { sonicCurrentEvent = JSON.parse(eventJson); }
+    catch (e2) { toast('❌ Erreur de parsing événement'); return; }
+  }
+
+  const ev = sonicCurrentEvent;
+  document.getElementById('sonicPanel').classList.add('visible');
+  document.getElementById('sonicTxId').textContent = '🔗 tx_id : ' + (ev.tx_id || '—');
+  document.getElementById('sonicDetail').textContent = ev.detail || '—';
+  document.getElementById('sonicVariant').textContent = '🎼 Variante : ' + (ev.sonic_variant || 'default');
+  document.getElementById('sonicDur').textContent = '⏳ chargement...';
+  document.getElementById('sonicPlayBtn').textContent = '▶';
+  document.getElementById('sonicPlayBtn').classList.remove('playing');
+  document.getElementById('sonicVerifyResult').textContent = '';
+  document.getElementById('sonicVerifyInput').value = '';
+
+  // Charger et afficher la waveform
+  if (ev.sonic_id) {
+    loadSonicWaveform(ev.sonic_id);
+    loadSonicDuration(ev.sonic_id);
+  }
+
+  // Faire défiler jusqu'au panneau
+  document.getElementById('sonicPanel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function closeSonic() {
+  document.getElementById('sonicPanel').classList.remove('visible');
+  const audio = document.getElementById('sonicAudio');
+  audio.pause();
+  audio.src = '';
+  sonicCurrentEvent = null;
+}
+
+async function playSonic() {
+  const ev = sonicCurrentEvent;
+  if (!ev || !ev.sonic_id) { toast('⚠️ Aucune empreinte sonore disponible'); return; }
+
+  const btn = document.getElementById('sonicPlayBtn');
+  const audio = document.getElementById('sonicAudio');
+
+  if (!audio.paused) {
+    audio.pause();
+    audio.currentTime = 0;
+    btn.textContent = '▶';
+    btn.classList.remove('playing');
+    return;
+  }
+
+  try {
+    btn.textContent = '⏳';
+    const resp = await fetch(ev.sonic_id);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    audio.src = url;
+    audio.load();
+    await audio.play();
+    btn.textContent = '⏸';
+    btn.classList.add('playing');
+  } catch (e) {
+    toast('❌ ' + e.message);
+    btn.textContent = '▶';
+    btn.classList.remove('playing');
+  }
+}
+
+function onSonicEnded() {
+  document.getElementById('sonicPlayBtn').textContent = '▶';
+  document.getElementById('sonicPlayBtn').classList.remove('playing');
+}
+
+async function loadSonicWaveform(url) {
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return;
+    const blob = await resp.blob();
+    const buf = await blob.arrayBuffer();
+    const dv = new DataView(buf);
+
+    // Cherche le chunk "data" dans le WAV
+    let offset = 12;
+    let found = false;
+    while (offset < buf.byteLength - 8) {
+      const chunkId = String.fromCharCode(dv.getUint8(offset), dv.getUint8(offset+1), dv.getUint8(offset+2), dv.getUint8(offset+3));
+      const chunkSize = dv.getUint32(offset + 4, true);
+      if (chunkId === 'data') { found = true; offset += 8; break; }
+      offset += 8 + chunkSize;
+    }
+    if (!found) return;
+
+    const sampleCount = Math.floor((buf.byteLength - offset) / 2);
+    const samples = new Int16Array(sampleCount);
+    for (let i = 0; i < sampleCount; i++) samples[i] = dv.getInt16(offset + i * 2, true);
+
+    const points = 160;
+    const step = Math.max(1, Math.floor(sampleCount / points));
+    const values = [];
+    for (let i = 0; i < points; i++) {
+      const idx = Math.min(i * step, sampleCount - 1);
+      values.push(samples[idx] / 32768);
+    }
+
+    const w = 480, h = 48, mid = h / 2;
+    const xStep = w / (values.length - 1);
+    let d = '';
+    for (let i = 0; i < values.length; i++) {
+      const x = i * xStep;
+      const y = mid + values[i] * (mid - 4);
+      d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1);
+    }
+    document.getElementById('sonicWavePath').setAttribute('d', d);
+  } catch (e) { /* ignore waveform errors */ }
+}
+
+async function loadSonicDuration(url) {
+  try {
+    const resp = await fetch(url, { method: 'HEAD' });
+    const dur = resp.headers.get('X-Sonic-Duration');
+    if (dur) document.getElementById('sonicDur').textContent = '⏱ ' + dur + ' s';
+  } catch (e) { /* ignore */ }
+}
+
+async function verifySonic() {
+  const input = document.getElementById('sonicVerifyInput').value.trim();
+  const result = document.getElementById('sonicVerifyResult');
+  if (!input) { result.textContent = '⚠️ Entrez un tx_id'; result.className = 'result'; return; }
+
+  // Construire l'URL de vérification (même variante pour comparer)
+  const ev = sonicCurrentEvent;
+  const variant = (ev && ev.sonic_variant) || 'default';
+  const verifyUrl = '/api/sonic-id/' + encodeURIComponent(input) + '?variant=' + variant;
+
+  try {
+    const resp = await fetch(verifyUrl);
+    if (!resp.ok) { result.textContent = '❌ Erreur ' + resp.status; result.className = 'result diff'; return; }
+
+    // Vérifier si le hash du contenu correspond
+    const blob = await resp.blob();
+    const buf = await blob.arrayBuffer();
+    const hash = await crypto.subtle.digest('SHA-256', buf);
+    const hashHex = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+    // Charger le hash original
+    if (ev && ev.sonic_id) {
+      const origResp = await fetch(ev.sonic_id);
+      const origBlob = await origResp.blob();
+      const origBuf = await origBlob.arrayBuffer();
+      const origHash = await crypto.subtle.digest('SHA-256', origBuf);
+      const origHashHex = Array.from(new Uint8Array(origHash)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+      if (hashHex === origHashHex) {
+        result.textContent = '✅ MÊME EMPREINTE SONORE — transaction identique';
+        result.className = 'result match';
+      } else {
+        result.textContent = '❌ EMPREINTES DIFFÉRENTES — transactions distinctes';
+        result.className = 'result diff';
+      }
+    } else {
+      result.textContent = '🔍 Hash : ' + hashHex.slice(0, 16) + '…';
+      result.className = 'result';
+    }
+  } catch (e) {
+    result.textContent = '❌ ' + e.message;
+    result.className = 'result diff';
+  }
+}
+
+// ═══ INIT ═══
+document.getElementById('reconDate').value = new Date().toISOString().slice(0, 10);
+loadScenarios();
+</script>
+</body>
+</html>

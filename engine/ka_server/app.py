@@ -137,6 +137,18 @@ def create_app(config_override: dict = None) -> Flask:
     from flask import send_from_directory
     _SITES_DIR = Path(__file__).resolve().parent / 'static'
     
+    # ── Feedback UI (fine-tuning conversationnel) ──────────────────────────
+    @app.route('/feedback')
+    @app.route('/feedback.html')
+    def feedback_ui():
+        return send_from_directory(_SITES_DIR, 'feedback.html')
+
+    # ── KA Plus (onboarding + chat personnalisé) ───────────────────────────
+    @app.route('/ka-plus')
+    @app.route('/ka_plus')
+    def ka_plus_ui():
+        return send_from_directory(_SITES_DIR, 'ka_plus.html')
+    
     # ── Vital KA — Applications métier (frontends embarqués) ──
     @app.route('/vital/')
     def vital_launcher():
@@ -269,6 +281,18 @@ def create_app(config_override: dict = None) -> Flask:
     def site_compress_console():
         """Console utilisateur Ψ Compress — upload, historique, stats, graphique."""
         return send_from_directory(_SITES_DIR, 'compress_console.html')
+
+    @app.route('/banking/console')
+    def site_banking_console():
+        """Console d'administration bancaire KARE — comptes, ledger, conversions,
+        rapprochement Ecobank. Clé API requise pour les appels /api/banking/*."""
+        return send_from_directory(_SITES_DIR, 'banking_console.html')
+
+    @app.route('/banking/simulate')
+    def site_banking_simulate():
+        """Simulation multi-agents — plusieurs téléphones réels communiquant
+        via internet (latence, coupures réseau, actions en temps réel)."""
+        return send_from_directory(_SITES_DIR, 'simulate.html')
 
     @app.route('/care')
     def site_care():

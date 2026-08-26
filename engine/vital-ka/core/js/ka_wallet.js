@@ -13,6 +13,10 @@
  *   ka_wallet_{role}    → solde + transactions par rôle
  *   ka_ledger           → registre central (append-only)
  *   ka_conversions       → demandes de conversion prestataire
+ *
+ * Depuis l'intégration Ecobank, le localStorage est un CACHE hors-ligne :
+ * la source de vérité est le serveur /api/banking/* (KA_BANKING). Les
+ * écritures critiques (conversion) sont poussées au serveur en best-effort.
  */
 'use strict';
 
@@ -151,6 +155,25 @@ const KA_WALLET = (() => {
     saveConversions(conversions);
     // Ledger
     recordTransaction('conversion_request', wallet.walletId, 'BANK', amount, { currency, bankInfo });
+
+    // ── Sync serveur (best-effort, non-bloquant) ──
+    // La source de vérité de l'argent est le SERVEUR bancaire (/api/banking/*).
+    // Le localStorage reste un cache hors-ligne ; si KA_BANKING est chargé, on
+    // pousse la demande et on mémorise l'identifiant serveur de la conversion.
+    if (typeof KA_BANKING !== 'undefined' && KA_BANKING.requestConversion) {
+      KA_BANKING.requestConversion(wallet.walletId, amount, currency, bankInfo)
+        .then((res) => {
+          if (res && res.ok && res.data && res.data.conversion) {
+            conv.serverId = res.data.conversion.id;
+            conv.serverStatus = res.data.conversion.status;
+            const convs = getConversions();
+            const i = convs.findIndex((c) => c.id === conv.id);
+            if (i >= 0) { convs[i] = conv; saveConversions(convs); }
+          }
+        })
+        .catch(() => {});
+    }
+
     return { ok: true, conversion: conv, wallet };
   }
 

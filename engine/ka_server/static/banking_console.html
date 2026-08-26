@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KARE — Console bancaire (Ecobank)</title>
+<style>
+:root{
+  --bg:#0d0d0d;--bg2:#141414;--surface:#1a1a1a;--border:#2a2a2a;
+  --gold:#d4a853;--gold-dim:#b89030;--gold-grad:linear-gradient(135deg,#d4a853,#7b5804);
+  --success:#27ae60;--warning:#f39c12;--error:#e74c3c;--text:#eae1d7;--muted:#9b8f7e;--faint:#6b635a;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 16px 80px}
+header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+h1{font-size:22px;font-weight:800;letter-spacing:-.02em}
+h1 b{background:var(--gold-grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sub{color:var(--muted);font-size:12px}
+.badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600}
+.badge.ok{background:rgba(39,174,96,.15);color:var(--success)}
+.badge.warn{background:rgba(243,156,18,.15);color:var(--warning)}
+.badge.err{background:rgba(231,76,60,.15);color:var(--error)}
+.badge.pending{background:rgba(212,168,83,.15);color:var(--gold)}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:16px}
+.card h2{font-size:15px;font-weight:700;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px}
+.stat b{display:block;font-size:24px;color:var(--gold);font-weight:800}
+.stat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+input,select,button,textarea{font-family:inherit;font-size:13px}
+input,select,textarea{background:#0f0f19;color:var(--text);border:1px solid var(--border);padding:10px 12px;border-radius:10px;width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold)}
+textarea{resize:vertical;min-height:60px;font-family:'Courier New',monospace;font-size:11px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border:none;border-radius:10px;font-weight:600;cursor:pointer;transition:.15s}
+.btn:active{transform:scale(.97)}
+.btn-gold{background:var(--gold-grad);color:#0a0a0f;font-weight:700}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--gold)}
+.btn-green{background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff}
+.btn-red{background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--faint);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:10px 12px;border-bottom:1px solid var(--border)}
+td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text)}
+tr:hover td{background:rgba(212,168,83,.03)}
+.mono{font-family:'Courier New',monospace;font-size:11px;color:var(--muted)}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.row>div{flex:1;min-width:160px}
+label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.amt-pos{color:var(--success);font-weight:600}
+.amt-neg{color:var(--error);font-weight:600}
+.tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.tab{padding:8px 16px;border-radius:10px;border:1px solid var(--border);cursor:pointer;font-size:13px;color:var(--muted);transition:.15s}
+.tab:hover{border-color:var(--gold);color:var(--text)}
+.tab.active{border-color:var(--gold);color:var(--gold);background:rgba(212,168,83,.08)}
+.panel{display:none}
+.panel.active{display:block}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--surface);border:1px solid var(--gold);border-radius:12px;padding:12px 18px;z-index:99;display:none;font-size:13px;max-width:400px;word-break:break-word}
+.empty{color:var(--faint);text-align:center;padding:24px;font-size:13px}
+.code-row{display:flex;gap:8px;align-items:center}
+.code-row input{flex:1}
+a{color:var(--gold)}
+.log-box{background:#0a0a0f;border:1px solid var(--border);border-radius:10px;padding:12px;font-family:'Courier New',monospace;font-size:11px;max-height:300px;overflow-y:auto;white-space:pre-wrap;color:var(--muted);margin-top:10px}
+.log-box .log-ok{color:var(--success)}
+.log-box .log-err{color:var(--error)}
+.log-box .log-info{color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <h1>🏦 KARE <b>Console bancaire</b></h1>
+    <div class="sub">Émission UM · conversion CFA · rapprochement Ecobank — 1 UM = 1 € = 655 FCFA</div>
+  </div>
+  <div class="code-row" style="width:320px">
+    <input id="apiKey" type="password" placeholder="Clé API (X-API-Key)" autocomplete="off">
+    <button class="btn btn-ghost btn-sm" onclick="saveKey()">🔑</button>
+  </div>
+</header>
+
+<div class="grid" id="statsGrid"></div>
+
+<div class="tabs">
+  <div class="tab active" data-p="bacs" onclick="switchTab('bacs')">🧪 Bac à sable</div>
+  <div class="tab" data-p="accounts" onclick="switchTab('accounts')">👥 Comptes</div>
+  <div class="tab" data-p="payment" onclick="switchTab('payment')">💳 Paiement</div>
+  <div class="tab" data-p="conversions" onclick="switchTab('conversions')">🔁 Conversions</div>
+  <div class="tab" data-p="ledger" onclick="switchTab('ledger')">📜 Ledger</div>
+  <div class="tab" data-p="recon" onclick="switchTab('recon')">⚖️ Rapprochement</div>
+</div>
+
+<!-- ═══ BAC À SABLE ═══ -->
+<div class="panel active" id="panel-bacs">
+  <div class="card">
+    <h2>🧪 Bac à sable — données de démonstration</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">
+      Peuple l'économie KARE de données fictives (10 patients, 5 médecins, 2 pharmacies, 2 labos,
+      des UM émises, des soins payés, des conversions en attente/réglées/échouées).
+      Tout est local, rien ne part en réseau.
+    </p>
+    <div class="row">
+      <div><button class="btn btn-green" onclick="seedDemo()">🌱 Seed — données de démo</button></div>
+      <div><button class="btn btn-red" onclick="resetAll()">🗑️ Reset — tout vider</button></div>
+      <div><button class="btn btn-ghost" onclick="refreshAll()">🔄 Rafraîchir</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📋 Scénario pas-à-pas</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px">
+      Exécute un script d'étapes en une requête. Les actions disponibles :
+      <code style="color:var(--gold)">create_account · credit · debit · request_conversion · execute_settlement · collect_momo · reconcile · sleep</code>
+    </p>
+    <div class="row" style="align-items:flex-end">
+      <div style="flex:2"><label>Script JSON (liste d'étapes)</label>
+        <textarea id="scenarioJson" rows="6">[
+  {"action": "create_account", "wallet_id": "PAT-DEMO", "role": "patient"},
+  {"action": "create_account", "wallet_id": "MED-DEMO", "role": "medecin", "bank_account": "BANK_DEMO"},
+  {"action": "credit", "wallet_id": "PAT-DEMO", "amount_um": 100, "description": "Aide"},
+  {"action": "debit", "from": "PAT-DEMO", "to": "MED-DEMO", "amount_um": 30, "description": "Consultation"},
+  {"action": "request_conversion", "wallet_id": "MED-DEMO", "amount_um": 30}
+]</textarea></div>
+    </div>
+    <div class="row">
+      <div><button class="btn btn-gold" onclick="runScenario()">▶️ Exécuter le scénario</button></div>
+      <div>
+        <button class="btn btn-ghost btn-sm" onclick="loadScenarioExample('diallo')">📄 Scénario Diallo</button>
+        <button class="btn btn-ghost btn-sm" onclick="loadScenarioExample('reset')">🗑️ Reset + Seed</button>
+      </div>
+    </div>
+    <div id="scenarioLog" class="log-box" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ═══ COMPTES ═══ -->
+<div class="panel" id="panel-accounts">
+  <div class="card">
+    <h2>👥 Comptes (wallets serveur)</h2>
+    <div class="row" style="align-items:flex-end">
+      <div><label>Wallet ID</label><input id="accWallet" placeholder="PAT-XXXXXX"></div>
+      <div><label>Rôle</label>
+        <select id="accRole">
+          <option value="patient">patient</option>
+          <option value="medecin">medecin</option>
+          <option value="pharmacie">pharmacie</option>
+          <option value="labo">labo</option>
+          <option value="solidarite">solidarite</option>
+        </select>
+      </div>
+      <div><label>Compte bancaire (règlement)</label><input id="accBank" placeholder="PREST_XXX"></div>
+      <div><button class="btn btn-gold" onclick="createAccount()">+ Créer</button></div>
+    </div>
+    <div style="overflow-x:auto"><table id="accountsTable"><thead>
+      <tr><th>Wallet</th><th>Rôle</th><th>Solde UM</th><th>Gelé UM</th><th>Compte bancaire</th></tr>
+    </thead><tbody></tbody></table></div>
+  </div>
+</div>
+
+<!-- ═══ PAIEMENT ═══ -->
+<div class="panel" id="panel-payment">
+  <div class="card">
+    <h2>💳 Règlement d'un soin (patient → prestataire)</h2>
+    <div class="row">
+      <div><label>Patient (débiteur)</label><input id="payFrom" placeholder="PAT-XXXXXX"></div>
+      <div><label>Prestataire (créditeur)</label><input id="payTo" placeholder="MED-XXXXXX"></div>
+      <div><label>Montant (UM)</label><input id="payAmount" type="number" min="1" placeholder="10"></div>
+      <div><label>Description</label><input id="payDesc" placeholder="Consultation générale"></div>
+    </div>
+    <button class="btn btn-gold" onclick="doPayment()">✅ Régler le soin</button>
+  </div>
+  <div class="card">
+    <h2>💝 Crédit de solidarité (→ patient)</h2>
+    <div class="row">
+      <div><label>Patient (bénéficiaire)</label><input id="solWallet" placeholder="PAT-XXXXXX"></div>
+      <div><label>Montant (UM)</label><input id="solAmount" type="number" min="1" placeholder="50"></div>
+      <div><label>Description</label><input id="solDesc" placeholder="Aide famille"></div>
+    </div>
+    <button class="btn btn-green" onclick="doCredit()">💝 Créditer</button>
+  </div>
+</div>
+
+<!-- ═══ CONVERSIONS ═══ -->
+<div class="panel" id="panel-conversions">
+  <div class="card">
+    <h2>🔁 Demandes de conversion (UM → CFA)</h2>
+    <div style="overflow-x:auto"><table id="convTable"><thead>
+      <tr><th>ID</th><th>Prestataire</th><th>UM</th><th>CFA (XOF)</th><th>Compte</th><th>Statut</th><th>Action</th></tr>
+    </thead><tbody></tbody></table></div>
+  </div>
+</div>
+
+<!-- ═══ LEDGER ═══ -->
+<div class="panel" id="panel-ledger">
+  <div class="card">
+    <h2>📜 Ledger append-only (dernières entrées)</h2>
+    <div style="overflow-x:auto"><table id="ledgerTable"><thead>
+      <tr><th>#</th><th>Type</th><th>De</th><th>Vers</th><th>Montant</th><th>Horodatage</th></tr>
+    </thead><tbody></tbody></table></div>
+  </div>
+</div>
+
+<!-- ═══ RAPPROCHEMENT ═══ -->
+<div class="panel" id="panel-recon">
+  <div class="card">
+    <h2>⚖️ Rapprochement journalier (ledger UM ↔ relevé Ecobank)</h2>
+    <div class="row" style="align-items:flex-end">
+      <div><label>Date (YYYY-MM-DD)</label><input id="reconDate" type="date"></div>
+      <div><button class="btn btn-gold" onclick="doReconcile()">⚖️ Rapprocher</button></div>
+    </div>
+    <div id="reconResult" style="margin-top:12px"></div>
+  </div>
+</div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══ ÉTAT ═══
+const LS_KEY = 'ka_banking_console_key';
+let API_KEY = localStorage.getItem(LS_KEY) || '';
+const apiKeyEl = document.getElementById('apiKey');
+apiKeyEl.value = API_KEY;
+
+function saveKey() {
+  API_KEY = apiKeyEl.value.trim();
+  localStorage.setItem(LS_KEY, API_KEY);
+  toast(API_KEY ? '✅ Clé enregistrée' : '⚠️ Clé vide — les appels seront refusés');
+  refreshAll();
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', 3000);
+}
+
+function switchTab(p) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.p === p));
+  document.querySelectorAll('.panel').forEach(pn => pn.classList.remove('active'));
+  document.getElementById('panel-' + p).classList.add('active');
+}
+
+// ═══ REQUÊTE ═══
+async function api(method, path, body) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (API_KEY) headers['X-API-Key'] = API_KEY;
+  const resp = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(data.error || ('HTTP ' + resp.status));
+  return data;
+}
+
+function fmt(n) { return (typeof n === 'number') ? n.toLocaleString('fr-FR') : '—'; }
+function statusBadge(s) {
+  const map = { settled:'ok', success:'ok', ok:'ok', completed:'ok',
+    failed:'err', rejected:'err', pending:'warn', requested:'pending', frozen:'pending', settling:'pending' };
+  return '<span class="badge ' + (map[s]||'warn') + '">' + (s||'—') + '</span>';
+}
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ═══ SEED / RESET / SCENARIO ═══
+async function seedDemo() {
+  try {
+    const d = await api('POST', '/api/banking/seed');
+    const s = d.summary;
+    toast('✅ Seed effectué : ' + s.wallets_created + ' comptes, ' + s.ledger_entries + ' entrées ledger');
+    refreshAll();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+async function resetAll() {
+  if (!confirm('⚠️ Vider toutes les données bancaires ?')) return;
+  try {
+    const d = await api('POST', '/api/banking/reset');
+    toast('🗑️ Reset: ' + d.ledger_entries_deleted + ' entrées supprimées');
+    refreshAll();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+async function runScenario() {
+  const logEl = document.getElementById('scenarioLog');
+  logEl.style.display = 'block';
+  logEl.innerHTML = '⏳ Exécution en cours...\n';
+
+  let steps;
+  try { steps = JSON.parse(document.getElementById('scenarioJson').value); }
+  catch (e) { logEl.innerHTML = '<span class="log-err">❌ JSON invalide : ' + esc(e.message) + '</span>'; return; }
+
+  if (!Array.isArray(steps) || !steps.length) {
+    logEl.innerHTML = '<span class="log-err">❌ Liste d\'étapes vide</span>'; return;
+  }
+
+  try {
+    const d = await api('POST', '/api/banking/scenario', { steps });
+    const sc = d.scenario;
+    let html = '';
+    for (const r of sc.results) {
+      const s = steps[r.step];
+      html += '<span class="log-info">▶ étape ' + r.step + ' : ' + esc(s.action) + '</span>\n';
+      if (typeof r.result === 'object' && r.result !== null) {
+        const ok = r.result.ok || r.result.status === 'settled' || r.result.status === 'ok' || r.result.balanced === true;
+        html += '  <span class="' + (ok ? 'log-ok' : 'log-err') + '">' + esc(JSON.stringify(ok ? r.result : r.result)) + '</span>\n';
+      } else {
+        html += '  → ' + esc(String(r.result)) + '\n';
+      }
+    }
+    for (const e of sc.errors) {
+      html += '<span class="log-err">❌ étape ' + e.step + ' (' + esc(e.action) + ') : ' + esc(e.error) + '</span>\n';
+    }
+    html += '<span class="' + (d.success ? 'log-ok' : 'log-err') + '">' + (d.success ? '✅ Scénario terminé' : '⚠️ Scénario avec erreurs') + '</span>';
+    logEl.innerHTML = html;
+    refreshAll();
+  } catch (e) { logEl.innerHTML = '<span class="log-err">❌ ' + esc(e.message) + '</span>'; }
+}
+
+function loadScenarioExample(type) {
+  const el = document.getElementById('scenarioJson');
+  if (type === 'diallo') {
+    el.value = JSON.stringify([
+      {"action": "create_account", "wallet_id": "PAT-DIALLO", "role": "patient"},
+      {"action": "create_account", "wallet_id": "MED-DIALLO", "role": "medecin", "bank_account": "BANK_DIALLO"},
+      {"action": "credit", "wallet_id": "PAT-DIALLO", "amount_um": 200, "description": "Aide famille Moussa"},
+      {"action": "debit", "from": "PAT-DIALLO", "to": "MED-DIALLO", "amount_um": 50, "description": "Consultation générale"},
+      {"action": "request_conversion", "wallet_id": "MED-DIALLO", "amount_um": 50, "currency": "XOF"}
+    ], null, 2);
+  } else if (type === 'reset') {
+    el.value = JSON.stringify([
+      {"action": "create_account", "wallet_id": "PAT-DIALLO", "role": "patient"},
+      {"action": "create_account", "wallet_id": "MED-DIALLO", "role": "medecin", "bank_account": "BANK_DIALLO"},
+      {"action": "credit", "wallet_id": "PAT-DIALLO", "amount_um": 200, "description": "Aide famille Moussa"},
+      {"action": "debit", "from": "PAT-DIALLO", "to": "MED-DIALLO", "amount_um": 50, "description": "Consultation générale"},
+      {"action": "request_conversion", "wallet_id": "MED-DIALLO", "amount_um": 50, "currency": "XOF"}
+    ], null, 2);
+  }
+}
+
+// ═══ RENDU ═══
+async function refreshAll() {
+  if (!API_KEY) {
+    document.getElementById('statsGrid').innerHTML = '<div class="card empty" style="grid-column:1/-1">🔑 Renseignez une clé API pour afficher la console.</div>';
+    return;
+  }
+  await Promise.all([loadStats(), loadAccounts(), loadConversions(), loadLedger()]);
+}
+
+async function loadStats() {
+  try {
+    const d = await api('GET', '/api/banking/summary');
+    const s = d.summary; const aml = s.aml || {};
+    const g = document.getElementById('statsGrid');
+    g.innerHTML = `
+      <div class="stat"><b>${s.accounts}</b><span>Comptes</span></div>
+      <div class="stat"><b>${fmt(s.total_um_in_circulation)}</b><span>UM en circulation</span></div>
+      <div class="stat"><b>${s.ledger_entries}</b><span>Entrées ledger</span></div>
+      <div class="stat"><b>${s.conversions_pending}</b><span>Conversions en attente</span></div>
+      <div class="stat"><b>${fmt(aml.total)} / ${fmt(aml.limit)}</b><span>Solidarité (mois, AML)</span></div>`;
+  } catch (e) { document.getElementById('statsGrid').innerHTML = '<div class="card empty" style="grid-column:1/-1">' + esc(e.message) + '</div>'; }
+}
+
+async function loadAccounts() {
+  const tbody = document.querySelector('#accountsTable tbody');
+  try {
+    const d = await api('GET', '/api/banking/accounts-list');
+    const rows = (d.accounts || []).map(a =>
+      '<tr><td class="mono">' + esc(a.wallet_id) + '</td>' +
+      '<td>' + esc(a.role) + '</td>' +
+      '<td class="amt-pos">' + fmt(a.balance_um) + '</td>' +
+      '<td class="mono">' + fmt(a.frozen_um) + '</td>' +
+      '<td class="mono">' + esc(a.bank_account) + '</td></tr>').join('');
+    tbody.innerHTML = rows || '<tr><td colspan="5" class="empty">Aucun compte. 🌱 Faites un seed !</td></tr>';
+  } catch (e) { tbody.innerHTML = '<tr><td colspan="5" class="empty">' + esc(e.message) + '</td></tr>'; }
+}
+
+async function loadConversions() {
+  const tbody = document.querySelector('#convTable tbody');
+  try {
+    const d = await api('GET', '/api/banking/conversions');
+    const rows = (d.conversions || []).map(c =>
+      '<tr><td class="mono">' + esc(c.id) + '</td>' +
+      '<td class="mono">' + esc(c.wallet_id) + '</td>' +
+      '<td>' + fmt(c.amount_um) + '</td>' +
+      '<td>' + fmt(c.amount_cfa) + '</td>' +
+      '<td class="mono">' + esc(c.bank_account) + '</td>' +
+      '<td>' + statusBadge(c.status) + '</td>' +
+      '<td>' + ((c.status === 'requested' || c.status === 'frozen')
+        ? '<button class="btn btn-green btn-sm" onclick="executeConv(\'' + esc(c.id) + '\')">Régler</button>'
+        : '<span class="mono">' + esc(c.ecobank_ref || '—') + '</span>') + '</td></tr>').join('');
+    tbody.innerHTML = rows || '<tr><td colspan="7" class="empty">Aucune conversion. 🌱 Faites un seed !</td></tr>';
+  } catch (e) { tbody.innerHTML = '<tr><td colspan="7" class="empty">' + esc(e.message) + '</td></tr>'; }
+}
+
+async function loadLedger() {
+  const tbody = document.querySelector('#ledgerTable tbody');
+  try {
+    const d = await api('GET', '/api/banking/ledger?limit=50');
+    const rows = (d.entries || []).map(t =>
+      '<tr><td class="mono">' + esc(t.seq) + '</td>' +
+      '<td>' + esc(t.type) + '</td>' +
+      '<td class="mono">' + esc(t.from) + '</td>' +
+      '<td class="mono">' + esc(t.to) + '</td>' +
+      '<td>' + fmt(t.amount) + '</td>' +
+      '<td class="mono">' + esc(t.timestamp) + '</td></tr>').join('');
+    tbody.innerHTML = rows || '<tr><td colspan="6" class="empty">Ledger vide. 🌱 Faites un seed !</td></tr>';
+  } catch (e) { tbody.innerHTML = '<tr><td colspan="6" class="empty">' + esc(e.message) + '</td></tr>'; }
+}
+
+// ═══ ACTIONS ═══
+async function createAccount() {
+  const body = {
+    wallet_id: document.getElementById('accWallet').value.trim(),
+    role: document.getElementById('accRole').value,
+    bank_account: document.getElementById('accBank').value.trim() || undefined,
+  };
+  if (!body.wallet_id) return toast('⚠️ Wallet ID requis');
+  try { await api('POST', '/api/banking/accounts', body); toast('✅ Compte créé'); refreshAll(); }
+  catch (e) { toast('❌ ' + e.message); }
+}
+
+async function doPayment() {
+  const body = {
+    wallet_id: document.getElementById('payFrom').value.trim(),
+    recipient: document.getElementById('payTo').value.trim(),
+    amount_um: parseFloat(document.getElementById('payAmount').value),
+    description: document.getElementById('payDesc').value.trim(),
+  };
+  if (!body.wallet_id || !body.recipient || !body.amount_um) return toast('⚠️ Champs requis');
+  try { await api('POST', '/api/banking/payment', body); toast('✅ Soin réglé'); refreshAll(); }
+  catch (e) { toast('❌ ' + e.message); }
+}
+
+async function doCredit() {
+  const body = {
+    wallet_id: document.getElementById('solWallet').value.trim(),
+    amount_um: parseFloat(document.getElementById('solAmount').value),
+    description: document.getElementById('solDesc').value.trim(),
+  };
+  if (!body.wallet_id || !body.amount_um) return toast('⚠️ Champs requis');
+  try { await api('POST', '/api/banking/solidarite/credit', body); toast('✅ Crédit effectué'); refreshAll(); }
+  catch (e) { toast('❌ ' + e.message); }
+}
+
+async function executeConv(id) {
+  try { await api('POST', '/api/banking/conversion/' + id + '/execute'); toast('✅ Règlement exécuté'); refreshAll(); }
+  catch (e) { toast('❌ ' + e.message); }
+}
+
+async function doReconcile() {
+  const date = document.getElementById('reconDate').value;
+  if (!date) return toast('⚠️ Choisissez une date');
+  try {
+    const d = await api('GET', '/api/banking/reconciliation/' + date);
+    const r = d.reconciliation;
+    document.getElementById('reconResult').innerHTML =
+      '<table><thead><tr><th>Indicateur</th><th>Ledger</th><th>Banque</th><th>Écart</th></tr></thead><tbody>' +
+      '<tr><td>Collectes (fiat)</td><td>' + fmt(r.ledger_collects) + '</td><td>' + fmt(r.bank_collects) + '</td><td class="mono">' + fmt(r.ecart_collects) + '</td></tr>' +
+      '<tr><td>Règlements (fiat)</td><td>' + fmt(r.ledger_settlements) + '</td><td>' + fmt(r.bank_settlements) + '</td><td class="mono">' + fmt(r.ecart_settlements) + '</td></tr>' +
+      '</tbody></table><p style="margin-top:10px">' +
+      (r.balanced ? '<span class="badge ok">✅ Rapproché — adossement 1:1 respecté</span>'
+                  : '<span class="badge err">❌ Écart détecté — investigation requise</span>') +
+      ' · ' + r.statement_entries + ' mouvement(s) bancaire(s)</p>';
+  } catch (e) { document.getElementById('reconResult').innerHTML = '<span class="badge err">' + esc(e.message) + '</span>'; }
+}
+
+// ═══ INIT ═══
+document.getElementById('reconDate').value = new Date().toISOString().slice(0, 10);
+refreshAll();
+</script>
+</body>
+</html>

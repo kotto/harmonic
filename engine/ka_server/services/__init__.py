@@ -20,6 +20,9 @@ from .docling_harmonique import (
 )
 from .hcv_codec import init_hcv_codec, compress_image, upscale_image, analyze_storage, get_hcv_status
 from .voice_engine import init_voice_engine, get_voice_engine
+from .tools import init_tools
+from .ecobank_gateway import get_ecobank_client
+from . import settlement
 
 log = None
 
@@ -67,6 +70,15 @@ def init_services(app) -> dict:
     services['specializer'] = get_specializer()
     services['optimized_specializer'] = get_optimized_specializer()
     
+    # 4b. Hugging Face Specializer (création d'hologrammes via HF APIs)
+    try:
+        from .hf_specializer import specialize_with_huggingface
+        services['hf_specializer'] = specialize_with_huggingface
+        log.info("  🤗 Hugging Face Specializer prêt")
+    except Exception as e:
+        log.warning(f"  🤗 Hugging Face Specializer non disponible: {e}")
+        services['hf_specializer'] = None
+    
     # 5. Hologram Store
     holo_ok = init_hologram_store()
     services['hologram_store'] = get_hologram_store()
@@ -105,6 +117,21 @@ def init_services(app) -> dict:
     # 9. Voice Engine
     voice = init_voice_engine()
     services['voice_engine'] = voice
+    
+    # 10. Tools (analyse document, traduction, idées)
+    tools_ok = init_tools(harmonic_ai=harmonic_ai)
+    import ka_server.services.tools as _tools_mod
+    services['tools'] = _tools_mod
+    
+    # 11. Banking — passerelle Ecobank (émission UM / conversion CFA)
+    try:
+        services['ecobank_client'] = get_ecobank_client()
+        services['banking_settlement'] = settlement
+        log.info("  🏦 Services bancaires prêts (Ecobank)")
+    except Exception as e:
+        log.warning(f"  🏦 Services bancaires non disponibles: {e}")
+        services['ecobank_client'] = None
+        services['banking_settlement'] = None
     
     log.info("  ✅ Services initialisés")
     return services
@@ -173,4 +200,5 @@ __all__ = [
     'init_hcv_codec', 'compress_image', 'upscale_image', 'analyze_storage', 'get_hcv_status',
     'init_voice_engine', 'get_voice_engine',
     'holographic_consensus_recall', 'is_refusal', 'is_garbage_answer', 'is_non_subject',
+    'settlement', 'get_ecobank_client',
 ]

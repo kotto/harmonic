@@ -1,0 +1,57 @@
+# ──────────────────────────────────────────────
+# docker-compose.ka-server.yml — KA Server (Flask)
+# À combiner avec docker-compose.prod.yml (ou docker-compose.yml)
+# pour ajouter les services bancaires, simulation et Sonic ID
+# sur l'instance Oracle.
+#
+# Usage :
+#   cd /opt/vitalka/admin-server
+#   docker compose -f docker-compose.prod.yml -f docker-compose.ka-server.yml up -d
+#
+# Le KA Server sera accessible sur :
+#   http://localhost:8765  (local Docker host)
+#   http://<ORACLE_IP>:8765  (externe, si le port est ouvert)
+#
+# Pour un accès via le reverse proxy nginx du host (recommandé),
+# voir DEPLOY_KA_SERVER.md
+# ──────────────────────────────────────────────
+name: vitalka-full
+
+services:
+  # ─── KA Server (Flask, port 8765) ───
+  ka-server:
+    build:
+      context: /opt/vitalka/engine
+      dockerfile: Dockerfile
+    container_name: vitalka-ka-server
+    ports:
+      - "127.0.0.1:8765:8765"   # localhost seulement, nginx hôte proxy
+    environment:
+      - PORT=8765
+      - HOST=0.0.0.0
+      - KA_PRODUCT=enterprise
+      - KA_API_KEYS=${KA_API_KEYS:-changez-moi}
+      - ECOBANK_MODE=simulator
+      - KA_BANKING_SECRET=${KA_BANKING_SECRET:-}
+      - VITAL_API_URL=http://admin-api:8000
+      - LOG_LEVEL=INFO
+    env_file:
+      - .env
+    volumes:
+      - ka_data:/opt/vitalka/engine/data   # Données persistantes (ledger, simulations)
+    networks:
+      - vitalka-internal
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+networks:
+  vitalka-internal:
+    external: true
+
+volumes:
+  ka_data:

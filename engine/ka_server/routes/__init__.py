@@ -20,6 +20,8 @@ from .memory_first import register_memory_first_routes
 from .demo_public import register_demo_public_routes
 from .sonic_id import register_sonic_id_routes
 from .compress_dashboard import register_compress_dashboard_routes
+from .tools import register_tools_routes
+from .banking import register_banking_routes
 
 
 def register_routes(app, services):
@@ -66,6 +68,12 @@ def register_routes(app, services):
     # Routes Agent (peuvent nécessiter auth selon config)
     register_agent_routes(app, services)
     
+    # Routes Tools — analyse document, traduction, idées
+    register_tools_routes(app, services)
+    
+    # Routes Banking — émission UM / conversion CFA (Ecobank)
+    register_banking_routes(app, services)
+    
     # Log résumé
     import logging
     log = logging.getLogger(__name__)
@@ -89,4 +97,5 @@ __all__ = [
     'register_wave_routes',
     'register_memory_first_routes',
     'register_demo_public_routes',
+    'register_banking_routes',
 ]
