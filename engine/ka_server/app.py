@@ -178,6 +178,19 @@ def create_app(config_override: dict = None) -> Flask:
     def vital_teleconsult():
         return send_from_directory(_SITES_DIR / 'vital', 'teleconsult.html')
     
+    # ── Téléchargement APK Vital KA ──
+    @app.route('/apk/<filename>')
+    def download_apk(filename):
+        """Servir les APK Vital KA / KA CARE pour installation mobile."""
+        from flask import send_file
+        apk_dir = Path(__file__).resolve().parent.parent / 'apk-download'
+        safe = filename.replace('/', '').replace('\\', '')
+        filepath = apk_dir / safe
+        if filepath.exists() and safe.endswith('.apk'):
+            return send_file(str(filepath), mimetype='application/vnd.android.package-archive',
+                             as_attachment=True, download_name=safe)
+        return 'APK non trouvée', 404
+
     # ── API Vital KA — Proxy vers admin-server Oracle ──
     @app.route('/api/v1/<path:subpath>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'])
     @app.route('/api/v1/', defaults={'subpath': ''}, methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'])
