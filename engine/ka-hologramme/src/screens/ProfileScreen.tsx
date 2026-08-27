@@ -1,4 +1,4 @@
-import { Screen, Hologramme } from '../App';
+import type { Screen, Hologramme } from '../types';
 
 const HOLOS: Hologramme[] = [
   { id: '1', nom: 'Finance', icone: '💰', exemples: 12, precision: 95, temps: '3 min', actif: true },

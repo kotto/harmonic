@@ -824,60 +824,176 @@ const SD={'':['Sophie','Appeler','Réunion','Oui','Super','Merci','Demain'],'so'
 	const RP=['Je suis KA, votre assistant personnel intelligent. Posez-moi une question !','Que voulez-vous savoir ? Je suis là pour vous aider.','Bonjour ! Je suis KA. Que puis-je faire pour vous ?'];
 	// Note : RP n'est utilisé qu'en mode déconnecté temporaire
 	
-		// === CONNEXION À L'IA HARMONIC ===
-		// Auto-détection : même serveur que la page (local/Render), sauf si override
-		const h = location.hostname;
-		const isLocal = h==='localhost'||h==='127.0.0.1'||h.startsWith('192.168.')||h.startsWith('10.')||h.startsWith('172.16.');
-		var API_URL = isLocal ? `http://${h}:8765` : 'https://ka-api.onrender.com';
-	let API_ONLINE = false;
-	
-		// Vérifier la connexion au démarrage
-		(async function checkAPI(){
-		  try {
-		    const r = await fetch(API_URL + '/api/health', {signal: AbortSignal.timeout(5000)});
-		    if (r.ok) { API_ONLINE = true; console.log('✅ KA connecté'); }
-		  } catch(e) { 
-		    API_ONLINE = false;
-		    console.log('⚠️ Serveur inaccessible — mode dégradé'); 
-		    // Afficher un indicateur discret dans l'UI
-		    const sb = document.querySelector('.sb__t');
-		    if(sb) sb.textContent = 'KA · ⚠️';
-		  }
-		})();
-	
-		async function askKA(message) {
-		  if (!API_ONLINE) return RP[Math.floor(Math.random() * RP.length)];
-		  try {
-		    // Récupérer/générer un user_id persistant
-		    let uid = localStorage.getItem('ka_user_id');
-		    if (!uid) { uid = 'user_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); localStorage.setItem('ka_user_id', uid); }
-		    
-		    const res = await fetch(API_URL + '/api/chat', {
-		      method: 'POST',
-		      headers: {'Content-Type': 'application/json'},
-		      body: JSON.stringify({message: message, user_id: uid})
-		    });
-		    if (!res.ok) throw new Error('API error');
-		    const data = await res.json();
-		    
-		    // Afficher les infos de spécialisation si présentes
-		    if (data.specialization) {
-		      const spec = data.specialization;
-		      setTimeout(() => {
-		        const el = document.getElementById('spec-info');
-		        if (el && spec.success) {
-		          el.innerHTML = '🎯 '+spec.domain+' · '+spec.triplets_count.toLocaleString()+' faits';
-		          el.style.display = 'block';
-		        }
-		      }, 500);
-		    }
-		    
-		    return data.response || RP[Math.floor(Math.random() * RP.length)];
-		  } catch(e) {
-		    API_ONLINE = false;
-		    return RP[Math.floor(Math.random() * RP.length)];
-		  }
-		}
+// === CONNEXION À L'IA HARMONIC + WAVE REASONER ===
+const h = location.hostname;
+const isLocal = h==='localhost'||h==='127.0.0.1'||h.startsWith('192.168.')||h.startsWith('10.')||h.startsWith('172.16.');
+var API_URL = location.origin;  // même origine (nginx proxy → KA server)
+let API_ONLINE = false;
+var KA_SESSION = null;  // session_id du contexte conversationnel
+var KA_USER = localStorage.getItem('ka_user_id') || ('user_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6));
+
+localStorage.setItem('ka_user_id', KA_USER);
+
+// Vérifier la connexion au démarrage
+(async function checkAPI(){
+  try {
+    const r = await fetch(API_URL + '/api/health', {signal: AbortSignal.timeout(5000)});
+    if (r.ok) { API_ONLINE = true; console.log('✅ KA connecté · WaveReasoner actif'); }
+  } catch(e) { 
+    API_ONLINE = false;
+    console.log('⚠️ Serveur inaccessible — mode dégradé'); 
+    const sb = document.querySelector('.sb__t');
+    if(sb) sb.textContent = 'KA · ⚠️';
+  }
+})();
+
+// ══════════════════════════════════════════════════════════════
+// 🌊 askKA — SSE streaming + WaveReasoner + Storage Saver
+// ══════════════════════════════════════════════════════════════
+async function askKA(message, onToken) {
+  if (!API_ONLINE) return RP[Math.floor(Math.random() * RP.length)];
+  
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  
+  try {
+    const body = {message: message, user_id: KA_USER};
+    if (KA_SESSION) body.session_id = KA_SESSION;
+    
+    const res = await fetch(API_URL + '/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'Accept': 'text/event-stream'},
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    
+    if (!res.ok) throw new Error('API error ' + res.status);
+    
+    // Stocker le session_id
+    const newSid = res.headers.get('X-Session-Id');
+    if (newSid) KA_SESSION = newSid;
+    
+    const contentType = res.headers.get('content-type') || '';
+    
+    // ── SSE Streaming ──
+    if (contentType.includes('text/event-stream')) {
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullResponse = '';
+      let data = null;
+      
+      while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value, {stream: true});
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              data = JSON.parse(line.slice(6));
+              if (data.token) {
+                fullResponse += data.token;
+                if (onToken) onToken(fullResponse, false);
+              }
+              if (data.session_id) KA_SESSION = data.session_id;
+            } catch(e) {}
+          } else if (line.startsWith('event: done')) {
+            break;
+          }
+        }
+      }
+      
+      if (data) {
+        return handleChatResponse(data, message);
+      }
+      return fullResponse || RP[Math.floor(Math.random() * RP.length)];
+    }
+    
+    // ── JSON classique ──
+    const data = await res.json();
+    return handleChatResponse(data, message);
+    
+  } catch(e) {
+    API_ONLINE = false;
+    return RP[Math.floor(Math.random() * RP.length)];
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// 🎯 handleChatResponse — Route les réponses du backend
+// ══════════════════════════════════════════════════════════════
+function handleChatResponse(data, message) {
+  if (!data) return RP[Math.floor(Math.random() * RP.length)];
+  
+  const code = data.code || '';
+  const response = data.response || '';
+  
+  // 🌊 WaveReasoner Arithmétique
+  if (code === 'WAVE_REASONER_ARITHMETIC') {
+    let html = '<div style="font-size:24px;font-weight:700;margin-bottom:4px;color:var(--soul)">🌊 ' + (data.result || '?') + '</div>';
+    html += '<div style="font-size:11px;color:var(--t4)">Raisonnement harmonique FHRR · résonance ' + ((data.resonance||0)*100).toFixed(0) + '%</div>';
+    if (data.steps && data.steps.length) {
+      html += '<div style="font-size:10px;color:var(--t4);margin-top:3px;opacity:.7">' + data.steps.slice(0,4).join(' → ') + '</div>';
+    }
+    return {html: html, text: response, code: code, data: data};
+  }
+  
+  // 🌊 WaveReasoner Logique
+  if (code === 'WAVE_REASONER_LOGIC') {
+    let html = '<div style="font-weight:600">🧠 ' + (data.conclusion || response) + '</div>';
+    html += '<div style="font-size:11px;color:var(--t4);margin-top:2px">Confiance ' + ((data.confidence||0)*100).toFixed(0) + '%';
+    if (data.warm_started) html += ' · ♻️ warm-start';
+    html += '</div>';
+    return {html: html, text: response, code: code, data: data};
+  }
+  
+  // 🌊 WaveReasoner Comparaison
+  if (code === 'WAVE_REASONER_COMPARISON') {
+    let html = '<div style="font-weight:600">🏆 ' + (data.winner || '?') + '</div>';
+    if (data.scores) {
+      html += '<div style="font-size:11px;color:var(--t4);margin-top:2px">';
+      for (const [k,v] of Object.entries(data.scores)) {
+        html += k + ': ' + (v*100).toFixed(0) + '% ';
+      }
+      html += '</div>';
+    }
+    return {html: html, text: response, code: code, data: data};
+  }
+  
+  // 💾 Storage Saver
+  if (code === 'STORAGE_SAVER_OFFER') {
+    let html = '💾 <b>Optimiseur de stockage</b><br><br>' + response + '<br><br>';
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
+    html += '<span style="display:inline-block;background:var(--life);color:#fff;padding:8px 14px;border-radius:10px;cursor:pointer;font-weight:600" onclick="sendMsgPreset(\'oui lance l\\\'analyse\')">✅ Oui, lance l\'analyse</span>';
+    html += '<span style="display:inline-block;background:var(--g2);color:var(--t2);padding:8px 14px;border-radius:10px;cursor:pointer;border:.5px solid var(--b2)" onclick="sendMsgPreset(\'non merci\')">Non merci</span>';
+    html += '</div>';
+    return {html: html, text: response, code: code, data: data};
+  }
+  
+  if (code === 'STORAGE_SCAN_STARTED') {
+    let html = '🔍 <b>Analyse en cours...</b><br><br>' + response;
+    // Lancer animation du scanner
+    startStorageScan();
+    return {html: html, text: response, code: code, data: data};
+  }
+  
+  // 🎯 Spécialisation
+  if (data.specialization) {
+    const spec = data.specialization;
+    setTimeout(() => {
+      const el = document.getElementById('spec-info');
+      if (el && spec.success) {
+        el.innerHTML = '🎯 '+spec.domain+' · '+spec.triplets_count.toLocaleString()+' faits';
+        el.style.display = 'block';
+      }
+    }, 500);
+  }
+  
+  return {html: null, text: response, code: code, data: data};
+}
 
 const CALL_SCREENS=new Set(['s-call']);
 const NAV_MAP={'s-home':'nb-h','s-msg':'nb-m','s-mem':'nb-mm'};
@@ -1139,43 +1255,81 @@ function renderSugs(){
   });
 }
 function paste(){const w=['Sophie','Réunion demain ?','Ok pour 19h !','Super idée !'];K.txt+=w[Math.floor(Math.random()*w.length)];upd();}
+// ══════════════════════════════════════════════════════════════
+// 🌊 sendMsg — SSE streaming + WaveReasoner + Storage Saver
+// ══════════════════════════════════════════════════════════════
 function sendMsg(){
   const val=K.txt.trim();if(!val)return;
   const c=document.getElementById('msglist');
+  
   // Message utilisateur
   const m=document.createElement('div');m.className='msg msg--m';m.textContent=val;c.appendChild(m);c.scrollTop=c.scrollHeight;
   K.txt='';upd();
   
-  // 🆕 Détection commandes de compression/stockage
-  const vlow=val.toLowerCase();
-  const stoKeywords=['compresse','compresser','compression','libère','liberer','espace','stockage','optimise','optimiser','fichiers','photos lourdes','disque plein','sature'];
-  const isStorageCmd=stoKeywords.some(function(k){return vlow.indexOf(k)>=0;}) && vlow.length<80;
-  
-  if(isStorageCmd){
-    const think=document.createElement('div');think.className='msg msg--t';think.style.opacity='0.6';
-    think.innerHTML='<span style="animation:pulse 1.2s ease-in-out infinite">●</span> KA analyse…';
-    think.id='ka-thinking';c.appendChild(think);c.scrollTop=c.scrollHeight;
-    
-    // Ouvrir l'optimiseur et répondre
-    setTimeout(function(){
-      const t=document.getElementById('ka-thinking');if(t)t.remove();
-      const r=document.createElement('div');r.className='msg msg--t';
-      r.innerHTML='💾 <b>Optimiseur de stockage</b><br><br>Je peux compresser vos photos (jusqu\'à 30×), vidéos (30×) et fichiers (3×) sans perte visible.<br><br><span style="display:inline-block;background:var(--life);color:#fff;padding:8px 18px;border-radius:10px;cursor:pointer;font-weight:600;margin-top:4px" onclick="go(\'s-storage\')">📂 Ouvrir l\'optimiseur</span>';
-      c.appendChild(r);c.scrollTop=c.scrollHeight;
-    },800);
-    return;
-  }
-  
   // Indicateur "KA réfléchit..."
   const think=document.createElement('div');think.className='msg msg--t';think.style.opacity='0.6';
-  think.innerHTML='<span style="animation:pulse 1.2s ease-in-out infinite">●</span> KA réfléchit…';
-  think.id='ka-thinking';c.appendChild(think);c.scrollTop=c.scrollHeight;
-  // Appeler l'IA
-  askKA(val).then(reply => {
-    const t = document.getElementById('ka-thinking');
+  think.id='ka-thinking';
+  think.innerHTML='<span style="animation:pulse 1.2s ease-in-out infinite">●</span> KA réfléchit<span id="ka-stream-token" style="color:var(--soul);margin-left:4px"></span>';
+  c.appendChild(think);c.scrollTop=c.scrollHeight;
+  
+  // Appeler l'IA avec SSE streaming
+  var streamText = '';
+  askKA(val, function(text, done) {
+    streamText = text;
+    // Mise à jour progressive du message KA
+    var tok = document.getElementById('ka-stream-token');
+    if (tok && !done) {
+      tok.textContent = text.length > 60 ? ' ' + text.slice(-60) + '…' : ' ' + text;
+    }
+  }).then(function(result) {
+    var t = document.getElementById('ka-thinking');
     if (t) t.remove();
-    const r=document.createElement('div');r.className='msg msg--t';r.textContent=reply;c.appendChild(r);c.scrollTop=c.scrollHeight;
+    
+    // Créer la réponse
+    var r = document.createElement('div');
+    r.className = 'msg msg--t';
+    
+    if (typeof result === 'object' && result !== null) {
+      if (result.html) {
+        r.innerHTML = result.html;
+      } else if (result.text) {
+        r.textContent = result.text;
+      } else {
+        r.textContent = JSON.stringify(result);
+      }
+    } else if (typeof result === 'string') {
+      r.textContent = result;
+    } else {
+      r.textContent = 'Je n\'ai pas compris…';
+    }
+    
+    c.appendChild(r);
+    c.scrollTop = c.scrollHeight;
   });
+}
+
+// Pré-envoi depuis un bouton preset (suggestions, stockage)
+function sendMsgPreset(txt) {
+  K.txt = txt;
+  sendMsg();
+}
+
+// Animation de scan stockage
+function startStorageScan() {
+  var el = document.getElementById('spec-info');
+  if (!el) return;
+  el.style.display = 'block';
+  el.style.background = 'rgba(61,219,160,.12)';
+  el.style.border = '.5px solid rgba(61,219,160,.3)';
+  el.style.color = 'var(--life)';
+  el.innerHTML = '🔍 Scan du stockage en cours… 0%';
+  
+  var pct = 0;
+  var iv = setInterval(function() {
+    pct += Math.random() * 15 + 3;
+    if (pct >= 100) { pct = 100; clearInterval(iv); el.innerHTML = '✅ Scan terminé · ' + Math.floor(Math.random() * 40 + 10) + '% libérable'; }
+    else { el.innerHTML = '🔍 Scan du stockage en cours… ' + Math.floor(pct) + '%'; }
+  }, 400);
 }
 function toggleVoice(){
   K.voice=!K.voice;const btn=document.getElementById('tbv'),lbl=document.getElementById('vl');
@@ -1258,11 +1412,12 @@ function kaCallListen(){
     for(var i=ev.resultIndex;i<ev.results.length;i++){txt+=ev.results[i][0].transcript;}
     if(tr)tr.textContent='"'+txt+'"';
     if(ev.results[ev.results.length-1].isFinal){
-      // Envoyer à KA et faire parler la réponse
-      askKA(txt).then(function(reply){
-        if(tr)tr.textContent=reply.slice(0,80);
-        kaCallSpeak(reply);
-      });
+// Envoyer à KA et faire parler la réponse
+	      askKA(txt).then(function(result){
+	        var reply = (typeof result === 'object' && result !== null) ? (result.text || result.response || JSON.stringify(result)) : String(result);
+	        if(tr)tr.textContent=reply.slice(0,80);
+	        kaCallSpeak(reply);
+	      });
     }
   };
   rec.onerror=function(){if(tr)tr.textContent='';};

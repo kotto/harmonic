@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,maximum-scale=1.0,user-scalable=no">
+<title>KA Plus — Ton assistant personnalisé</title>
+<style>
+:root{--bg:#0d0d0d;--glass:rgba(26,26,26,.7);--glass-border:rgba(212,168,83,.08);
+--text:#eae1d7;--muted:#9b8f7e;--accent:#d4a853;--accent-glow:rgba(212,168,83,.12);
+--accent-soft:rgba(212,168,83,.06);--gold-grad:linear-gradient(135deg,#d4a853,#7b5804);
+--success:#10b981;--error:#ef4444;--radius:16px;--radius-sm:10px;
+--font:'Inter',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100dvh;height:100%;overflow-x:hidden}
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;
+background:radial-gradient(ellipse at 50% 0%,rgba(212,168,83,.05) 0%,transparent 60%)}
+.container{position:relative;z-index:2;max-width:480px;width:100%;margin:0 auto;padding:16px;padding-bottom:100px}
+
+/* ─── HEADER ─── */
+.header{display:flex;align-items:center;justify-content:space-between;padding:12px 0 16px;border-bottom:1px solid var(--glass-border);margin-bottom:16px}
+.header-left{display:flex;align-items:center;gap:12px}
+.header-logo{width:clamp(36px,10vw,40px);height:clamp(36px,10vw,40px);border-radius:50%;background:var(--gold-grad);display:flex;align-items:center;justify-content:center;font-size:clamp(17px,5.5vw,20px);box-shadow:0 4px 16px var(--accent-glow);border:2px solid rgba(212,168,83,.15)}
+.header h1{font-size:clamp(14px,4vw,16px);font-weight:800;color:var(--accent);letter-spacing:-.02em}
+.header .sub{font-size:clamp(9px,3vw,11px);color:var(--muted)}
+.header-actions{display:flex;gap:8px}
+.header-btn{width:clamp(32px,9vw,36px);height:clamp(32px,9vw,36px);border-radius:50%;background:var(--glass);border:1px solid var(--glass-border);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:clamp(14px,4vw,16px);cursor:pointer;transition:all .3s}
+.header-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+
+/* ─── ONBOARDING ─── */
+.onboarding{display:none}
+.onboarding.active{display:block;animation:fadeUp .4s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.ob-hero{text-align:center;padding:20px 0 8px}
+.ob-hero .emoji{font-size:48px;display:block;margin-bottom:12px}
+.ob-hero h2{font-size:clamp(20px,6vw,24px);font-weight:800;color:var(--accent);margin-bottom:8px}
+.ob-hero p{font-size:clamp(12px,3.8vw,14px);color:var(--muted);line-height:1.6;max-width:320px;margin:0 auto}
+.ob-steps{display:flex;justify-content:center;gap:8px;margin:20px 0 8px}
+.ob-step{width:8px;height:8px;border-radius:50%;background:var(--glass-border);transition:all .3s}
+.ob-step.active{background:var(--accent);width:24px;border-radius:4px}
+.ob-content{margin-top:16px}
+.ob-content h3{font-size:clamp(16px,5vw,18px);font-weight:700;color:var(--text);margin-bottom:4px}
+.ob-content .desc{font-size:clamp(11px,3.5vw,13px);color:var(--muted);margin-bottom:16px}
+.channel-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.channel-card{background:var(--glass);backdrop-filter:blur(24px);border:2px solid var(--glass-border);border-radius:var(--radius-sm);padding:16px 12px;text-align:center;cursor:pointer;transition:all .3s;user-select:none;position:relative}
+.channel-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.channel-card.selected{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 20px var(--accent-glow)}
+.channel-card.selected::after{content:'✓';position:absolute;top:8px;right:12px;color:var(--accent);font-weight:800;font-size:clamp(16px,5vw,18px)}
+.channel-card .emoji{font-size:clamp(24px,7vw,30px);display:block;margin-bottom:6px}
+.channel-card .label{font-weight:600;font-size:clamp(10px,3.2vw,12px);color:var(--text)}
+.channel-card .desc{font-size:clamp(8px,2.8vw,10px);color:var(--muted);margin-top:2px}
+.ob-actions{display:flex;gap:10px;margin-top:20px}
+.btn{flex:1;padding:15px;border-radius:14px;border:none;font-size:clamp(12px,3.8vw,14px);font-weight:700;cursor:pointer;transition:all .2s;font-family:var(--font)}
+.btn-primary{background:var(--gold-grad);color:#0d0d0d}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 20px var(--accent-glow)}
+.btn-primary:disabled{opacity:.5;transform:none;cursor:default;box-shadow:none}
+.btn-ghost{background:var(--glass);border:1px solid var(--glass-border);color:var(--muted)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm{padding:10px 14px;font-size:clamp(10px,3.2vw,12px);flex:0 0 auto;border-radius:10px}
+
+/* ─── CHAT ─── */
+.chat-view{display:none}
+.chat-view.active{display:block}
+.chat-area{flex:1;overflow-y:auto;padding:4px 0;display:flex;flex-direction:column;gap:10px;min-height:0}
+.msg{max-width:88%;padding:12px 16px;border-radius:var(--radius);font-size:clamp(11px,3.5vw,13px);line-height:1.5;animation:msgIn .3s}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.msg.user{align-self:flex-end;background:var(--gold-grad);color:#0d0d0d;border-bottom-right-radius:4px;font-weight:500}
+.msg.bot{align-self:flex-start;background:var(--glass);backdrop-filter:blur(24px);border:1px solid var(--glass-border);border-bottom-left-radius:4px}
+.msg.bot .bot-name{font-size:clamp(8px,2.8vw,10px);color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.msg .ts{font-size:clamp(7px,2.5vw,9px);color:var(--muted);margin-top:6px;text-align:right;opacity:.6}
+.msg .src{font-size:clamp(7px,2.5vw,9px);color:var(--muted);margin-top:2px;opacity:.5}
+
+/* Feedback boutons dans le message */
+.msg-feedback{display:flex;gap:6px;margin-top:10px;align-items:center}
+.fb-btn{width:30px;height:30px;border-radius:50%;background:var(--accent-soft);border:1px solid var(--glass-border);color:var(--muted);font-size:clamp(12px,3.8vw,14px);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.fb-btn:hover{transform:scale(1.1);border-color:var(--accent)}
+.fb-btn.up-active{background:rgba(16,185,129,.15);border-color:var(--success);color:var(--success)}
+.fb-btn.down-active{background:rgba(239,68,68,.15);border-color:var(--error);color:var(--error)}
+.fb-status{font-size:clamp(8px,2.8vw,10px);color:var(--success);margin-left:6px;opacity:0;transition:opacity .3s}
+.fb-status.show{opacity:1}
+
+/* Input */
+.input-area{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:12px 16px 20px;background:linear-gradient(180deg,transparent,var(--bg) 40%);z-index:10}
+.input-inner{display:flex;gap:8px;align-items:center;background:var(--glass);backdrop-filter:blur(24px);border:2px solid var(--glass-border);border-radius:var(--radius);padding:4px;transition:border-color .3s}
+.input-inner:focus-within{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow)}
+.input-inner input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:clamp(12px,3.8vw,14px);font-family:var(--font);padding:8px 12px;min-width:0}
+.input-inner input::placeholder{color:var(--muted)}
+.input-inner button{width:clamp(36px,10vw,40px);height:clamp(36px,10vw,40px);border-radius:50%;background:var(--gold-grad);border:none;color:#0d0d0d;font-size:clamp(16px,5vw,18px);cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.input-inner button:active{transform:scale(.92)}
+
+/* Toast */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--success);color:#fff;padding:12px 24px;border-radius:30px;font-size:clamp(11px,3.5vw,13px);font-weight:600;transition:all .4s;z-index:100;opacity:0;max-width:90%;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.error{background:var(--error)}
+</style>
+</head>
+<body>
+<div class="container" id="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-logo">🌊</div>
+      <div>
+        <h1>KA Plus</h1>
+        <div class="sub" id="userName">Ton assistant personnalisé</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="header-btn" onclick="showOnboarding()" title="Changer mes chaînes">📺</div>
+      <div class="header-btn" onclick="clearChat()" title="Nouvelle conversation">✕</div>
+    </div>
+  </div>
+
+  <!-- ─── ONBOARDING : Choix des chaînes ─── -->
+  <div class="onboarding active" id="onboarding">
+    <div class="ob-hero">
+      <span class="emoji">📺</span>
+      <h2>Bienvenue sur KA Plus</h2>
+      <p>Comme à la télé : choisis tes chaînes favorites. KA devient expert sur ce qui t'intéresse — pas sur tout, sur <em>toi</em>.</p>
+    </div>
+    <div class="ob-steps"><div class="ob-step active" id="step1"></div><div class="ob-step" id="step2"></div></div>
+
+    <!-- Étape 1 : Choix des packs -->
+    <div class="ob-content" id="obStep1">
+      <h3>Qu'est-ce qui t'intéresse ?</h3>
+      <div class="desc">Choisis 3 à 5 domaines. KA installera leurs hologrammes sur ton téléphone (2 Mo chacun).</div>
+      <div class="channel-grid" id="channelGrid"></div>
+      <div class="ob-actions">
+        <button class="btn btn-primary" id="btnNext" onclick="goStep2()" disabled>Continuer →</button>
+      </div>
+    </div>
+
+    <!-- Étape 2 : Confirmation + nom -->
+    <div class="ob-content" id="obStep2" style="display:none">
+      <h3>Ton bouquet KA est prêt 🎉</h3>
+      <div class="desc">Voici tes chaînes sélectionnées :</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px" id="selectedPacks"></div>
+      <div class="desc" style="margin-top:16px">Comment veux-tu qu'on t'appelle ?</div>
+      <div class="input-inner" style="margin-bottom:16px">
+        <input type="text" id="userNameInput" placeholder="Ton prénom..." autocomplete="off">
+      </div>
+      <button class="btn btn-primary" onclick="finishOnboarding()">C'est parti ✨</button>
+    </div>
+  </div>
+
+  <!-- ─── CHAT ─── -->
+  <div class="chat-view" id="chatView">
+    <div class="chat-area" id="chatArea"></div>
+  </div>
+</div>
+
+<!-- Input -->
+<div class="input-area" id="inputArea" style="display:none">
+  <div class="input-inner">
+    <input type="text" id="chatInput" placeholder="Pose ta question..." autocomplete="off" enterkeyhint="send"
+           onkeydown="if(event.key==='Enter')sendMessage()">
+    <button id="sendBtn" onclick="sendMessage()">➤</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══ PACKS DISPONIBLES ═══
+const PACKS = [
+  {id:'physique', name:'Physique', icon:'⚛️', desc:'Atomes, lumière, quantique'},
+  {id:'astronomie', name:'Espace', icon:'🪐', desc:'Planètes, étoiles, trous noirs'},
+  {id:'biologie', name:'Biologie', icon:'🧬', desc:'ADN, cellules, vivant'},
+  {id:'chimie', name:'Chimie', icon:'🧪', desc:'Molécules, éléments, réactions'},
+  {id:'histoire', name:'Histoire', icon:'📜', desc:'Révolutions, empires, guerres'},
+  {id:'informatique', name:'Informatique', icon:'💻', desc:'Code, IA, internet'},
+  {id:'geographie', name:'Géographie', icon:'🌍', desc:'Pays, capitales, voyages'},
+  {id:'mathematiques', name:'Maths', icon:'📐', desc:'Nombres, théorèmes, phi'},
+  {id:'medecine', name:'Santé', icon:'🏥', desc:'Corps, maladies, soins'},
+  {id:'philosophie', name:'Philosophie', icon:'🧠', desc:'Pensée, éthique, sagesse'},
+  {id:'art', name:'Art & Culture', icon:'🎨', desc:'Peinture, musique, cinéma'},
+  {id:'technologie', name:'Techno', icon:'🔧', desc:'Inventions, robotique'},
+  {id:'psychologie', name:'Psychologie', icon:'🧘', desc:'Cerveau, émotions, thérapies'},
+  {id:'religion', name:'Spiritualité', icon:'🕊️', desc:'Croyances, mythologies'},
+  {id:'economie', name:'Économie', icon:'💰', desc:'Finance, marchés, crypto'},
+  {id:'cuisine', name:'Cuisine', icon:'🍳', desc:'Recettes, techniques, nutrition'},
+  {id:'sport', name:'Sport', icon:'⚽', desc:'Disciplines, compétitions, records'},
+  {id:'ecologie', name:'Écologie', icon:'🌱', desc:'Climat, biodiversité, durable'},
+  {id:'linguistique', name:'Langues', icon:'🗣️', desc:'Français, linguistique'},
+  {id:'droit', name:'Droit', icon:'⚖️', desc:'Justice, lois, droits'},
+];
+
+// ═══ ÉTAT ═══
+const user_id = localStorage.getItem('ka_user') || 'ka_' + Math.random().toString(36).slice(2,8);
+localStorage.setItem('ka_user', user_id);
+let selectedPacks = JSON.parse(localStorage.getItem('ka_packs') || '[]');
+let sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+let chatHistory = [];  // [{q, a, fact, source}]
+
+// ═══ RENDU DES CHAÎNES ═══
+function renderChannels() {
+  const grid = document.getElementById('channelGrid');
+  grid.innerHTML = '';
+  PACKS.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'channel-card' + (selectedPacks.includes(p.id) ? ' selected' : '');
+    div.innerHTML = '<span class="emoji">' + p.icon + '</span>' +
+                    '<div class="label">' + p.name + '</div>' +
+                    '<div class="desc">' + p.desc + '</div>';
+    div.onclick = () => togglePack(p.id);
+    grid.appendChild(div);
+  });
+  updateNextBtn();
+}
+
+function togglePack(id) {
+  if (selectedPacks.includes(id)) {
+    selectedPacks = selectedPacks.filter(x => x !== id);
+  } else if (selectedPacks.length < 5) {
+    selectedPacks.push(id);
+  } else {
+    showToast('Maximum 5 chaînes', true);
+    return;
+  }
+  localStorage.setItem('ka_packs', JSON.stringify(selectedPacks));
+  renderChannels();
+}
+
+function updateNextBtn() {
+  const btn = document.getElementById('btnNext');
+  btn.disabled = selectedPacks.length < 3;
+}
+
+// ═══ NAVIGATION ONBOARDING ═══
+function goStep2() {
+  document.getElementById('obStep1').style.display = 'none';
+  document.getElementById('obStep2').style.display = 'block';
+  document.getElementById('step1').classList.remove('active');
+  document.getElementById('step2').classList.add('active');
+  // Afficher les packs choisis
+  const sel = document.getElementById('selectedPacks');
+  sel.innerHTML = '';
+  selectedPacks.forEach(id => {
+    const p = PACKS.find(x => x.id === id);
+    if (p) sel.innerHTML += '<div class="channel-card selected" style="flex:0 0 auto;padding:10px 14px;cursor:default">' +
+      '<span class="emoji" style="font-size:clamp(17px,5.5vw,20px);display:inline;margin-right:6px">' + p.icon + '</span>' +
+      '<span class="label" style="font-size:clamp(10px,3.2vw,12px);display:inline">' + p.name + '</span></div>';
+  });
+}
+
+function finishOnboarding() {
+  const name = document.getElementById('userNameInput').value.trim();
+  if (name) {
+    localStorage.setItem('ka_name', name);
+    document.getElementById('userName').textContent = name;
+  }
+  startChat();
+}
+
+function showOnboarding() {
+  document.getElementById('onboarding').classList.add('active');
+  document.getElementById('chatView').classList.remove('active');
+  document.getElementById('inputArea').style.display = 'none';
+  renderChannels();
+  // Reset étapes
+  document.getElementById('obStep1').style.display = 'block';
+  document.getElementById('obStep2').style.display = 'none';
+  document.getElementById('step1').classList.add('active');
+  document.getElementById('step2').classList.remove('active');
+}
+
+// ═══ DÉMARRER LE CHAT ═══
+function startChat() {
+  document.getElementById('onboarding').classList.remove('active');
+  document.getElementById('chatView').classList.add('active');
+  document.getElementById('inputArea').style.display = 'block';
+  const name = localStorage.getItem('ka_name') || '';
+  const area = document.getElementById('chatArea');
+  area.innerHTML = '';
+  addMsg('bot', 'Bonjour ' + name + ' ! 🌊\n\nTes chaînes sont installées : ' +
+    selectedPacks.map(id => { const p = PACKS.find(x => x.id===id); return p ? p.icon : ''; }).join(' ') +
+    '\n\nPose-moi une question, et si tu aimes ma réponse, donne-moi un 👍 — je m\'en souviens pour toi.');
+}
+
+// ═══ MESSAGES ═══
+function addMsg(role, text, extra) {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  const ts = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
+  if (role === 'bot') {
+    div.innerHTML = '<div class="bot-name">🌊 KA</div>' + text.replace(/\n/g,'<br>') +
+      (extra && extra.src ? '<div class="src">' + extra.src + '</div>' : '') +
+      '<div class="ts">' + ts + '</div>';
+    // Boutons feedback
+    if (extra && extra.fact) {
+      const fb = document.createElement('div');
+      fb.className = 'msg-feedback';
+      fb.innerHTML = '<button class="fb-btn up" onclick="feedback(this, 5, \'' + extra.fact.replace(/'/g,"\\'") + '\')">👍</button>' +
+                     '<button class="fb-btn down" onclick="feedback(this, 1, \'' + extra.fact.replace(/'/g,"\\'") + '\')">👎</button>' +
+                     '<span class="fb-status">Merci !</span>';
+      div.appendChild(fb);
+    }
+  } else {
+    div.innerHTML = text.replace(/\n/g,'<br>') + '<div class="ts">' + ts + '</div>';
+  }
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  return div;
+}
+
+function addTyping() {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+  div.id = 'typing';
+  div.innerHTML = '<div class="bot-name">🌊 KA</div><span style="opacity:.5">…</span>';
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  return div;
+}
+
+// ═══ ENVOYER ═══
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  addMsg('user', msg);
+  const typing = addTyping();
+
+  try {
+    const r = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        message: msg, mode: 'auto',
+        user_id: user_id, session_id: sessionId,
+        stream: false
+      })
+    });
+    const data = await r.json();
+    typing.remove();
+
+    const text = data.response || '🤔 Je n\'ai pas compris. Reformule ?';
+    const src = data.source ? 'source: ' + data.source : '';
+
+    // Extraire un "fait" pour le feedback (à partir de la réponse)
+    const fact = extractFact(text);
+    chatHistory.push({q: msg, a: text, fact: fact, source: data.source});
+    addMsg('bot', text, {fact: fact, src: src});
+
+    // Envoyer le signal implicite (follow-up = bon signe)
+    try {
+      await fetch('/api/chat/turn', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id: user_id, session_id: sessionId,
+          question: msg, response: text, latency_ms: 0})
+      });
+    } catch(e) {}
+
+  } catch(err) {
+    typing.remove();
+    addMsg('bot', '⚠️ Connexion impossible au serveur.');
+  }
+}
+
+// Extraire un fait depuis la réponse (heuristique : sujet | relation | objet)
+function extractFact(text) {
+  if (!text) return '';
+  // Prendre la première phrase
+  const first = text.split(/[.!?\n]/)[0].trim();
+  return first.slice(0, 80);
+}
+
+// ═══ FEEDBACK ═══
+async function feedback(btn, rating, factText) {
+  // UI feedback immédiat
+  const row = btn.closest('.msg-feedback');
+  row.querySelectorAll('.fb-btn').forEach(b => b.classList.remove('up-active','down-active'));
+  btn.classList.add(rating >= 4 ? 'up-active' : 'down-active');
+  const status = row.querySelector('.fb-status');
+  status.classList.add('show');
+  status.textContent = rating >= 4 ? '✨ Merci, je renforce !' : '📉 Merci, j\'ajuste !';
+
+  try {
+    await fetch('/api/chat/feedback', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        user_id: user_id, rating: rating,
+        fact_text: factText, session_id: sessionId
+      })
+    });
+  } catch(e) {}
+  setTimeout(() => status.classList.remove('show'), 2500);
+}
+
+// ═══ UTILS ═══
+function clearChat() {
+  if (!confirm('Nouvelle conversation ?')) return;
+  document.getElementById('chatArea').innerHTML = '';
+  sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  addMsg('bot', 'Nouvelle conversation. Pose-moi une question ! 🌊');
+}
+
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ═══ INIT ═══
+const name = localStorage.getItem('ka_name');
+if (name) document.getElementById('userName').textContent = name;
+
+if (selectedPacks.length >= 3) {
+  // Déjà configuré → aller direct au chat
+  document.getElementById('onboarding').classList.remove('active');
+  document.getElementById('chatView').classList.add('active');
+  document.getElementById('inputArea').style.display = 'block';
+  startChat();
+} else {
+  // Premier lancement → onboarding
+  renderChannels();
+}
+</script>
+</body>
+</html>

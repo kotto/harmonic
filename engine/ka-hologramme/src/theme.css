@@ -23,13 +23,34 @@
 
 body { background: #000; display: flex; align-items: center; justify-content: center; min-height: 100dvh; }
 
-/* Phone frame */
+/* Phone frame.
+   Version mockup (desktop) : cadre téléphone centré, max-width 420px.
+   Version native (Capacitor / écran mobile < 500px) : fullscreen, sans bord ni ombre. */
 .phone {
   width: 100%; max-width: 420px; height: 100dvh;
   background: radial-gradient(ellipse at 48% 16%, #2a2048 0%, #18163a 42%, var(--void) 100%);
   overflow: hidden; position: relative; display: flex; flex-direction: column;
   box-shadow: 0 56px 108px rgba(0,0,0,.95);
 }
+
+@media (max-width: 500px) {
+  body { display: block; }
+  .phone {
+    max-width: 100%;
+    box-shadow: none;
+  }
+  /* En natif (Capacitor), la vraie barre Android (horloge, batterie)
+     s'affiche par-dessus (edge-to-edge API 35). On masque la fausse
+     barre « 9:41 » pour éviter le doublon, et on honore les safe-areas. */
+  .sb { display: none; }
+  .screen { padding-top: env(safe-area-inset-top, 0px); }
+  .nav { padding-bottom: max(10px, env(safe-area-inset-bottom, 0px)); }
+}
+
+/* Version native (Capacitor) détectée via JS : même traitement, garanti. */
+.phone.native .sb { display: none; }
+.phone.native .screen { padding-top: env(safe-area-inset-top, 0px); }
+.phone.native .nav { padding-bottom: max(10px, env(safe-area-inset-bottom, 0px)); }
 
 /* Orbs */
 .orb { position: absolute; border-radius: 50%; pointer-events: none; }

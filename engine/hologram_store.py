@@ -964,6 +964,15 @@ class HologramStore:
                     score = max(conv_score, float(token_scores[i]))
                 else:
                     score = conv_score
+                # 🎛️ FINE-TUNING : pondérer par l'amplitude du fait.
+                # L'amplitude (défaut 1.0) est le levier de renforcement
+                # utilisateur : un fait apprécié (α>1) remonte dans le
+                # rappel, un fait ignoré/corrigé (α<1) descend.
+                # Le ConversationTuner ajuste ces amplitudes via le feedback.
+                if 'amplitudes' in psi_data:
+                    amp = float(psi_data['amplitudes'][i])
+                    if amp != 1.0:
+                        score = score * amp
                 scores.append((score, i))
             
             # Top-k

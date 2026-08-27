@@ -699,10 +699,75 @@ function renderLabResults() {
 })();
 
 function renderWallet() {
-  const wallet = KA_WALLET.getWallet('patient');
-  document.getElementById('walletBalance').textContent = wallet.balance;
-  document.getElementById('walletId').textContent = 'ID: ' + wallet.walletId;
-  // QR code de réception
+  // ═══ WALLET SERVER — Connexion au backend API ═══
+  // 1. Obtenir ou créer un owner_id persistant
+  let ownerId = localStorage.getItem('ka_owner_id');
+  if (!ownerId) {
+    ownerId = 'KAUSER-PAT-' + Date.now().toString(36).toUpperCase();
+    localStorage.setItem('ka_owner_id', ownerId);
+  }
+  
+  // 2. Essayer de récupérer le solde depuis le serveur
+  const walletIdEl = document.getElementById('walletId');
+  const balanceEl = document.getElementById('walletBalance');
+  txEl = document.getElementById('walletTransactions');
+  
+  // Afficher chargement
+  if (balanceEl) balanceEl.textContent = '…';
+  if (walletIdEl) walletIdEl.textContent = 'Connexion au serveur…';
+  
+  fetch(API_URL + '/wallet/' + encodeURIComponent(ownerId) + '/balance', {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.balance_um !== undefined) {
+      // ✅ Compte existant sur le serveur
+      if (balanceEl) balanceEl.textContent = data.balance_um;
+      if (walletIdEl) walletIdEl.textContent = 'ID: ' + (data.public_id || data.owner_id);
+      // Mettre à jour le wallet local
+      try { 
+        const w = KA_WALLET.getWallet('patient');
+        w.balance = data.balance_um;
+        w.walletId = data.public_id || ownerId;
+        KA_WALLET.saveWallet('patient', w);
+      } catch(e) {}
+    } else {
+      // ⚠️ Pas de compte — en créer un
+      return fetch(API_URL + '/wallet/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          owner_id: ownerId,
+          role: 'patient',
+          public_id: 'PAT-' + Date.now().toString(36).toUpperCase()
+        })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(createData) {
+        if (createData.balance_um !== undefined) {
+          if (balanceEl) balanceEl.textContent = createData.balance_um;
+          if (walletIdEl) walletIdEl.textContent = 'ID: ' + (createData.public_id || ownerId);
+          try { 
+            const w = KA_WALLET.getWallet('patient');
+            w.balance = createData.balance_um;
+            w.walletId = createData.public_id || ownerId;
+            KA_WALLET.saveWallet('patient', w);
+          } catch(e) {}
+        } else {
+          // Fallback local
+          renderWalletLocal();
+        }
+      });
+    }
+  })
+  .catch(function() {
+    // ⚠️ Serveur inaccessible — fallback wallet local
+    renderWalletLocal();
+  });
+  
+  // QR code de réception (toujours affiché)
   const qrCode = KA_WALLET.generateReceiveQR('patient');
   const qrDiv = document.getElementById('walletQR');
   if (qrDiv) {
@@ -713,11 +778,21 @@ function renderWallet() {
       qrDiv.textContent = qrCode;
     }
   }
-  // Transactions
+}
+
+function renderWalletLocal() {
+  /* Fallback : wallet local (hors ligne) */
+  const wallet = KA_WALLET.getWallet('patient');
+  document.getElementById('walletBalance').textContent = wallet.balance;
+  document.getElementById('walletId').textContent = 'ID: ' + wallet.walletId;
+  renderWalletTransactions(wallet);
+}
+
+function renderWalletTransactions(wallet) {
   const txEl = document.getElementById('walletTransactions');
-  if (txEl && wallet.transactions.length) {
+  if (txEl && wallet.transactions && wallet.transactions.length) {
     let html = '';
-    wallet.transactions.slice(-10).reverse().forEach(tx => {
+    wallet.transactions.slice(-10).reverse().forEach(function(tx) {
       const d = new Date(tx.timestamp);
       const sign = tx.direction === 'in' ? '+' : '-';
       const color = tx.direction === 'in' ? 'var(--success)' : 'var(--error)';

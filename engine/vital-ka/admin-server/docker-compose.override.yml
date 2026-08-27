@@ -1,0 +1,41 @@
+# ──────────────────────────────────────────────
+# docker-compose.override.yml — Production Oracle
+# Version minimaliste : uniquement les services essentiels
+# Le nginx hôte sert de reverse proxy
+# ──────────────────────────────────────────────
+services:
+  # Désactiver les services non nécessaires
+  nginx:
+    profiles: ["disabled"]
+
+  certbot:
+    profiles: ["disabled"]
+
+  admin-worker:
+    profiles: ["disabled"]
+
+  admin-scheduler:
+    profiles: ["disabled"]
+
+  frontend:
+    profiles: ["disabled"]
+
+  prometheus:
+    profiles: ["disabled"]
+
+  grafana:
+    profiles: ["disabled"]
+
+  loki:
+    profiles: ["disabled"]
+
+  promtail:
+    profiles: ["disabled"]
+
+  # Exposer l'API sur l'hôte
+  admin-api:
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      - CORS_ORIGINS=["https://ka-mobile.onrender.com","http://localhost:5001","http://localhost:8765","http://localhost:8000"]
+      - LOG_LEVEL=INFO

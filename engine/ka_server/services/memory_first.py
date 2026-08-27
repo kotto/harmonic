@@ -38,12 +38,33 @@ DIM = 512
 # la frontière publiée F6, « le spectre s'apprend »). Le seuil gate donc
 # seulement les anti-résonances FORTES (score < −0,05) — un fait connu
 # n'est pas refusé à cause de la variabilité de l'encodeur.
-DEFAULT_REFUSAL_THRESHOLD = float(os.environ.get('KA_REFUSAL_THRESHOLD', -0.05))
+# ⚠️ Seuil CALIBRÉ à 0.07 (mesuré) :
+#   - Faux positif « le ciel est bleu » (question relativité) : 0.047 → REFUSÉ
+#   - Réponses légitimes (paludisme, dengue…) : 0.08-0.10 → ACCEPTÉES
+# Ancien seuil -0.05 acceptait n'importe quoi ; 0.15 refusait tout.
+DEFAULT_REFUSAL_THRESHOLD = float(os.environ.get('KA_REFUSAL_THRESHOLD', 0.07))
 
 _lock = threading.Lock()
 _memory: HolographicMemory | None = None
 _facts: list = []          # [{'sujet','relation','objet','source'}]
 _vocabulary: list = []     # les entités connues (sujets + objets)
+
+# Mots-outils trop génériques : ne doivent JAMAIS devenir des entités.
+# « le », « un », « est »… matchent n'importe quelle question → faux positifs.
+_STOP_ENTITIES = {
+    'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'au', 'aux',
+    'est', 'et', 'ou', 'que', 'qui', 'quoi', 'ce', 'cette', 'ces',
+    'il', 'elle', 'on', 'nous', 'vous', 'ils', 'elles', 'je', 'tu',
+    'pour', 'dans', 'sur', 'avec', 'sans', 'par', 'en', 'à', 'a',
+}
+
+
+def _is_valid_entity(word: str) -> bool:
+    """Une entité valide : non vide, >= 3 lettres, pas un mot-outil."""
+    w = _normalize(word)
+    if not w or len(w) < 3:
+        return False
+    return w not in _STOP_ENTITIES
 
 
 def _data_dir() -> Path:
@@ -89,13 +110,26 @@ def _restore():
 
 
 def _store_unlocked(sujet: str, relation: str, objet: str, source: str = ''):
-    """Stocke un fait — À APPELER avec _lock tenu (interne, pas de re-entrée)."""
-    _memory.store(encode(sujet, dim=DIM), encode(relation, dim=DIM),
-                  encode(objet, dim=DIM))
-    _facts.append({'sujet': sujet, 'relation': relation, 'objet': objet,
+    """Stocke un fait — À APPELER avec _lock tenu (interne, pas de re-entrée).
+
+    Validation : un fait dont le sujet ou l'objet est un mot-outil
+    (« le », « un », « est »…) est IGNORÉ — c'est un fait malformé qui
+    pollue le vocabulaire et crée des faux positifs au rappel.
+    """
+    # Nettoyer les entités
+    s_clean = str(sujet).strip()
+    o_clean = str(objet).strip()
+
+    # Rejeter les faits à entité invalide (mot-outil ou trop court)
+    if not _is_valid_entity(s_clean) or not _is_valid_entity(o_clean):
+        return
+
+    _memory.store(encode(s_clean, dim=DIM), encode(relation, dim=DIM),
+                  encode(o_clean, dim=DIM))
+    _facts.append({'sujet': s_clean, 'relation': relation, 'objet': o_clean,
                    'source': source})
-    for w in (sujet, objet):
-        if w not in _vocabulary:
+    for w in (s_clean, o_clean):
+        if _is_valid_entity(w) and w not in _vocabulary:
             _vocabulary.append(w)
     _persist()
 
@@ -118,10 +152,16 @@ def _match_entities(query: str) -> list:
     """Le pont sémantique LEXICAL : les entités du vocabulaire liées à la
     requête — dans les DEUX sens (la requête dans l'entité « paludisme »,
     ou l'entité dans la requête « quel est le traitement du paludisme »).
-    Déterministe, exact, zéro sémantique (X3)."""
+    Déterministe, exact, zéro sémantique (X3).
+
+    ⚠️ Anti-faux-positif : les mots-outils du vocabulaire (« le », « est »…)
+    sont EXCLUS — sinon « c'est quoi le relativité » matcherait « le » et
+    rappellerait n'importe quel fait contenant « le ».
+    """
     q = _normalize(query)
     return [w for w in _vocabulary
-            if _normalize(w) in q or q in _normalize(w)]
+            if _is_valid_entity(w) and
+            (_normalize(w) in q or q in _normalize(w))]
 
 
 def _score_fact(entity: str, i: int) -> float:
@@ -239,7 +279,15 @@ def ask(query: str, threshold: float | None = None, top_k: int = 3) -> dict:
                    'resonance': round(s, 4)}
                   for i, s, e in top for f in [_facts[i]]]
     fact = _facts[best_i]
-    answer = f"{fact['sujet']} {fact['relation']} {fact['objet']}."
+    # Phraséologie naturelle : le triplet brut → phrase composée par
+    # surface_grammar (morphologie + syntagmes), avec fallback SÛR sur le
+    # triplet brut quand la relation n'est pas un verbe connu.
+    try:
+        from ka_server.services.phrase_engine import get_phrase_engine
+        answer = get_phrase_engine().phrase_fact(
+            fact['sujet'], fact['relation'], fact['objet'])
+    except Exception:
+        answer = f"{fact['sujet']} {fact['relation']} {fact['objet']}."
     return {'answer': answer, 'provenance': provenance,
             'confidence': round(best_score, 4), 'refused': False, 'reason': None,
             'suggested_action': None}

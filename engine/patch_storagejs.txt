@@ -1,0 +1,93 @@
+// ═══════════════════════════════════════════════════════════════════════
+// STORAGE SAVER — Conversationnel (design compress.html)
+// ═══════════════════════════════════════════════════════════════════════
+function kaSay(html){
+  var c=document.getElementById('msglist');
+  var m=document.createElement('div');m.className='msg msg--ka';m.innerHTML=html;
+  c.appendChild(m);c.scrollTop=c.scrollHeight;
+  return m;
+}
+function kaAsk(html,btns){
+  var m=kaSay(html);
+  var d=document.createElement('div');
+  d.style.cssText='display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px';
+  d.innerHTML=btns;
+  m.appendChild(d);
+  return m;
+}
+function proposeStorageScan(){
+  go('s-msg');
+  setTimeout(function(){
+    kaAsk('<b>📱 Analyser le stockage ?</b><div style="font-size:11.5px;color:var(--t3);margin-top:4px">Je peux scanner vos fichiers, les compresser et libérer de l\'espace.<br>Les originaux sont conservés <b style="color:var(--life)">7 jours</b>.</div>',
+      '<button class="btn btn--life" style="padding:8px 16px;font-size:12px;border-radius:999px;border:none;cursor:pointer;background:var(--life-d);color:var(--life);font-weight:600" onclick="startStorageScan()">✅ Oui, analyser</button>'
+      +'<button style="padding:8px 16px;font-size:12px;border-radius:999px;border:none;cursor:pointer;background:none;color:var(--t3)" onclick="skipStorage()">Non merci</button>');
+  },500);
+}
+function startStorageScan(){
+  var m=kaSay('<div style="display:flex;align-items:center;gap:8px"><span style="width:12px;height:12px;border:2px solid var(--b2);border-top-color:var(--soul-l);border-radius:50%;animation:spin .7s linear infinite"></span> Analyse du stockage...</div>');
+  fetch('/api/compress/storage/scan')
+    .then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error||'Erreur');return d})})
+    .then(function(d){
+      m.remove();
+      kaAsk('<b>📊 Analyse terminée</b><div style="font-size:11.5px;color:var(--t3);margin-top:4px">J\'ai trouvé <b>'+d.total_files+' fichiers</b> représentant <b>'+d.total_size_fmt+'</b>.<br>💾 Économie estimée : <b style="color:var(--life)">'+d.saved_estimate_fmt+'</b> · Ratio <b>×'+d.estimated_ratio+'</b></div>',
+        '<button class="btn btn--life" style="padding:8px 16px;font-size:12px;border-radius:999px;border:none;cursor:pointer;background:var(--life-d);color:var(--life);font-weight:600" onclick="activateStorage()">🚀 Lancer la compression</button>'
+        +'<button style="padding:8px 16px;font-size:12px;border-radius:999px;border:none;cursor:pointer;background:var(--g1);color:var(--t2)" onclick="viewStorageStatus()">📈 Statistiques</button>'
+        +'<button style="padding:8px 16px;font-size:12px;border-radius:999px;border:none;cursor:pointer;background:none;color:var(--t3)" onclick="skipStorage()">Plus tard</button>');
+    })
+    .catch(function(e){m.remove();kaSay('<span style="color:var(--rose)">❌ '+e.message+'</span>')});
+}
+function activateStorage(){
+  var m=kaSay('<div style="display:flex;align-items:center;gap:8px"><span style="width:12px;height:12px;border:2px solid var(--b2);border-top-color:var(--soul-l);border-radius:50%;animation:spin .7s linear infinite"></span> Activation du compresseur de fond...</div>');
+  fetch('/api/compress/storage/activate',{method:'POST'})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      m.remove();
+      kaSay('<b>✅ Compression activée</b><div style="font-size:11.5px;color:var(--t3);margin-top:4px">Le <b>GhostCompressor</b> tourne en arrière-plan. Chaque fichier est compressé un par un.</div>');
+      setTimeout(function(){viewStorageStatus()},800);
+    })
+    .catch(function(e){m.remove();kaSay('<span style="color:var(--rose)">❌ '+e.message+'</span>')});
+}
+function viewStorageStatus(){
+  fetch('/api/compress/storage/status')
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(!d.success)throw new Error(d.error||'Erreur');
+      var pct=d.total_original_bytes?Math.round(100*d.total_saved_bytes/d.total_original_bytes):0;
+      var h='<b>📈 GhostCompressor — état</b>'
+        +'<div style="background:rgba(61,219,160,.06);border:1px solid rgba(61,219,160,.18);border-radius:12px;padding:10px 12px;margin-top:6px">'
+        +'<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--t2);padding:3px 0"><span>📂 Fichiers compressés</span><b style="color:var(--t1)">'+d.files_count+'</b></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--t2);padding:3px 0"><span>💾 Avant</span><b style="color:var(--t1)">'+d.total_original_fmt+'</b></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--t2);padding:3px 0"><span>📦 Après</span><b style="color:var(--soul-l)">'+d.total_compressed_fmt+'</b></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--t2);padding:3px 0"><span>✅ Économisé</span><b style="color:var(--life)">'+d.total_saved_fmt+'</b></div>'
+        +(d.free_space_gb?'<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--t2);padding:3px 0"><span>💽 Espace libre</span><b style="color:var(--t1)">'+d.free_space_gb+' Go</b></div>':'')
+        +'<div style="height:4px;border-radius:2px;background:var(--g2);overflow:hidden;margin-top:8px"><i style="display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,var(--life),var(--soul));width:'+Math.min(100,pct)+'%;transition:width .6s"></i></div>'
+        +'</div>';
+      if(d.projection&&d.projection.photos_can_fit>0)h+='<div style="font-size:11px;color:var(--t3);margin-top:5px">🔮 Vous pouvez encore stocker environ <b style="color:var(--life)">+'+d.projection.photos_can_fit+' photos</b>.</div>';
+      kaAsk(h,
+        '<button class="btn btn--life" style="padding:8px 16px;font-size:12px;border-radius:999px;border:none;cursor:pointer;background:var(--life-d);color:var(--life);font-weight:600" onclick="activateStorage()">🚀 Activer</button>'
+        +'<button style="padding:8px 16px;font-size:12px;border-radius:999px;border:none;cursor:pointer;background:var(--g1);color:var(--t2)" onclick="viewStorageStatus()">🔄 Rafraîchir</button>'
+        +'<button style="padding:8px 16px;font-size:12px;border-radius:999px;border:none;cursor:pointer;background:var(--g1);color:var(--rose)" onclick="deactivateStorage()">⏹ Arrêter</button>'
+        +'<button style="padding:8px 16px;font-size:12px;border-radius:999px;border:none;cursor:pointer;background:none;color:var(--t3)" onclick="skipStorage()">Fermer</button>');
+    })
+    .catch(function(e){kaSay('<span style="color:var(--rose)">❌ '+e.message+'</span>')});
+}
+function deactivateStorage(){
+  var ms=document.querySelectorAll('.msg--ka');if(ms.length)ms[ms.length-1].remove();
+  fetch('/api/compress/storage/deactivate',{method:'POST'}).catch(function(){});
+  kaSay('⏹ GhostCompressor arrêté.');
+}
+function skipStorage(){
+  var ms=document.querySelectorAll('.msg--ka');if(ms.length)ms[ms.length-1].remove();
+  kaSay('👍 D\'accord. Je reste disponible.');
+}
+	if ('serviceWorker' in navigator && !window.Capacitor) { // [ka-android] SW off en WebView
+	  navigator.serviceWorker.register('/sw.js').then(() => {
+	    console.log('KA Phone · Service Worker activé — Mode hors-ligne prêt');
+	  }).catch(() => {
+	    console.log('KA Phone · Service Worker non disponible');
+	  });
+	}
+	</script>
+	<script src="ka_server_switch.js"></script>
+</body>
+	</html>

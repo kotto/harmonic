@@ -1,0 +1,1 @@
+# HARMONIC AI V 5 — Core Package

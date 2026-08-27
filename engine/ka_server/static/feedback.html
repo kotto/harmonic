@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,maximum-scale=1.0,user-scalable=no">
+<title>KA — Affiner mes réponses</title>
+<style>
+:root{--bg:#0d0d0d;--glass:rgba(26,26,26,.7);--glass-border:rgba(212,168,83,.08);
+--text:#eae1d7;--muted:#9b8f7e;--accent:#d4a853;--accent-glow:rgba(212,168,83,.12);
+--gold-grad:linear-gradient(135deg,#d4a853,#7b5804);--success:#10b981;--error:#ef4444}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;height:100%}
+.container{max-width:480px;margin:0 auto;padding:clamp(12px,4vw,20px) clamp(12px,4vw,16px) clamp(30px,8vw,40px)}
+
+.header{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.header-logo{width:clamp(38px,10vw,44px);height:clamp(38px,10vw,44px);border-radius:50%;background:var(--gold-grad);
+display:flex;align-items:center;justify-content:center;font-size:clamp(18px,5.5vw,22px);box-shadow:0 4px 16px var(--accent-glow)}
+.header h1{font-size:clamp(16px,5vw,18px);font-weight:800;color:var(--accent)}
+.header .sub{font-size:clamp(10px,3.2vw,12px);color:var(--muted)}
+
+.intro{font-size:clamp(11px,3.5vw,13px);color:var(--muted);line-height:1.6;margin-bottom:20px}
+
+/* Carte de session */
+.session-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;
+padding:16px;margin-bottom:16px}
+.session-card .label{font-size:clamp(9px,3vw,11px);color:var(--muted);text-transform:uppercase;font-weight:700;letter-spacing:.5px;margin-bottom:8px}
+.session-list{display:flex;flex-direction:column;gap:8px}
+.session-item{background:rgba(255,255,255,.03);border:1px solid var(--glass-border);
+border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .2s}
+.session-item:hover{border-color:var(--accent);background:var(--accent-soft,rgba(212,168,83,.05))}
+.session-item.active{border-color:var(--accent);background:var(--accent-glow)}
+.session-item .q{font-size:clamp(11px,3.5vw,13px);color:var(--text);font-weight:500;margin-bottom:2px}
+.session-item .fact{font-size:clamp(9px,3vw,11px);color:var(--muted)}
+
+/* Boutons de feedback */
+.rating-row{display:flex;gap:10px;margin:16px 0}
+.rating-btn{flex:1;padding:14px;border-radius:14px;border:2px solid var(--glass-border);
+background:var(--glass);color:var(--muted);font-size:clamp(20px,6vw,24px);cursor:pointer;text-align:center;transition:all .2s}
+.rating-btn:hover{transform:translateY(-2px);border-color:var(--accent)}
+.rating-btn.active-down{border-color:var(--error);background:rgba(239,68,68,.1);color:var(--error)}
+.rating-btn.active-up{border-color:var(--success);background:rgba(16,185,129,.1);color:var(--success)}
+
+/* Étoiles */
+.stars-row{display:flex;gap:6px;justify-content:center;margin:16px 0}
+.star{font-size:clamp(26px,7vw,32px);color:var(--muted);cursor:pointer;transition:all .2s;user-select:none}
+.star.filled{color:var(--accent);text-shadow:0 0 12px var(--accent-glow)}
+.star:hover{transform:scale(1.15)}
+
+/* Correction */
+.correction-area{margin:16px 0}
+.correction-area textarea{width:100%;background:var(--glass);border:1px solid var(--glass-border);
+border-radius:10px;color:var(--text);padding:12px;font-size:clamp(11px,3.5vw,13px);font-family:'Inter',sans-serif;min-height:60px;resize:vertical}
+.correction-area textarea:focus{border-color:var(--accent);outline:none}
+.correction-hint{font-size:clamp(9px,3vw,11px);color:var(--muted);margin-top:4px}
+
+/* Bouton principal */
+.btn-send{width:100%;padding:16px;border-radius:14px;background:var(--gold-grad);border:none;
+color:#0d0d0d;font-size:15px;font-weight:800;cursor:pointer;transition:all .2s;margin-top:8px}
+.btn-send:hover{transform:translateY(-1px);box-shadow:0 4px 20px var(--accent-glow)}
+.btn-send:active{transform:scale(.97)}
+.btn-send:disabled{opacity:.5;transform:none;cursor:default}
+
+/* Toast */
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);
+background:var(--success);color:#fff;padding:12px 24px;border-radius:30px;font-size:clamp(12px,3.8vw,14px);font-weight:600;
+transition:all .4s cubic-bezier(.16,1,.3,1);z-index:100;opacity:0}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.error{background:var(--error)}
+
+/* State */
+.empty{text-align:center;color:var(--muted);padding:30px 0;font-size:clamp(11px,3.5vw,13px)}
+.section-title{font-size:clamp(11px,3.5vw,13px);color:var(--accent);font-weight:700;margin:20px 0 10px}
+.profile-badge{display:inline-flex;align-items:center;gap:6px;background:var(--accent-glow);
+border:1px solid var(--glass-border);border-radius:20px;padding:6px 12px;font-size:clamp(10px,3.2vw,12px);color:var(--accent);margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="header-logo">🌊</div>
+    <div>
+      <h1>Affiner les réponses</h1>
+      <div class="sub">KA apprend de vos retours</div>
+    </div>
+  </div>
+
+  <div class="intro">
+    Dites à KA ce qui vous plaît ou non dans ses réponses.
+    Chaque retour affûte son hologramme personnel — <strong>vos préférences
+    restent sur votre appareil</strong>, jamais partagées.
+  </div>
+
+  <!-- Dernière conversation -->
+  <div class="session-card">
+    <div class="label">Dernières réponses</div>
+    <div class="session-list" id="sessionList">
+      <div class="empty" id="emptyState">Aucune réponse récente. Posez d'abord une question à KA.</div>
+    </div>
+  </div>
+
+  <!-- Zone de feedback -->
+  <div class="section-title">Comment était cette réponse ?</div>
+  <div class="profile-badge">🎛️ Votre profil conversationnel sera ajusté</div>
+
+  <!-- Boutons 👍 / 👎 -->
+  <div class="rating-row">
+    <div class="rating-btn" id="btnDown" onclick="setRating(1)">👎</div>
+    <div class="rating-btn" id="btnUp" onclick="setRating(5)">👍</div>
+  </div>
+
+  <!-- Étoiles fines -->
+  <div class="stars-row" id="starsRow">
+    <span class="star" data-v="1" onclick="setStars(1)">★</span>
+    <span class="star" data-v="2" onclick="setStars(2)">★</span>
+    <span class="star" data-v="3" onclick="setStars(3)">★</span>
+    <span class="star" data-v="4" onclick="setStars(4)">★</span>
+    <span class="star" data-v="5" onclick="setStars(5)">★</span>
+  </div>
+
+  <!-- Correction -->
+  <div class="correction-area">
+    <textarea id="correctionInput" placeholder="Corriger la réponse (optionnel) :&#10;hologramme | est créé par | l'interférence de deux faisceaux laser"></textarea>
+    <div class="correction-hint">Format : sujet | relation | objet — la correction devient un fait appris</div>
+  </div>
+
+  <button class="btn-send" id="sendBtn" onclick="sendFeedback()">Envoyer mon retour ✨</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── État ───
+const user_id = localStorage.getItem('ka_user') || 'mobile_' + Math.random().toString(36).slice(2,8);
+localStorage.setItem('ka_user', user_id);
+
+let selectedFact = null;       // le fait actuellement évalué
+let rating = 3;                // 1-5
+let history = [];
+
+// ─── Charger les dernières réponses (depuis le profil) ───
+async function loadHistory() {
+  try {
+    const r = await fetch('/api/chat/history?user_id=' + encodeURIComponent(user_id));
+    const data = await r.json();
+    if (data.history && data.history.length) {
+      history = data.history;
+      renderSessions();
+    }
+  } catch(e) { /* pas d'historique serveur, fallback local */ }
+
+  // Fallback : historique local
+  const local = JSON.parse(localStorage.getItem('ka_history') || '[]');
+  if (local.length) {
+    history = local;
+    renderSessions();
+  }
+}
+
+function renderSessions() {
+  const list = document.getElementById('sessionList');
+  const empty = document.getElementById('emptyState');
+  if (!history.length) { list.innerHTML = '<div class="empty">Aucune réponse récente. Posez d\'abord une question à KA.</div>'; return; }
+  list.innerHTML = '';
+  history.slice(0, 5).forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'session-item' + (i === 0 ? ' active' : '');
+    div.innerHTML = '<div class="q">' + (item.question || item.q || 'Question') + '</div>' +
+                    '<div class="fact">' + (item.fact || item.answer || '') + '</div>';
+    div.onclick = () => selectSession(item, div, i);
+    list.appendChild(div);
+  });
+  if (history[0]) selectSession(history[0], null, 0);
+}
+
+function selectSession(item, el, idx) {
+  document.querySelectorAll('.session-item').forEach(e => e.classList.remove('active'));
+  if (el) el.classList.add('active');
+  selectedFact = item.fact || item.answer || item.question || '';
+  // Pré-remplir la correction avec le fait
+  const corr = document.getElementById('correctionInput');
+  if (selectedFact && !corr.value) corr.value = selectedFact;
+}
+
+// ─── Feedback UI ───
+function setRating(v) {
+  rating = v;
+  document.getElementById('btnDown').classList.toggle('active-down', v <= 2);
+  document.getElementById('btnUp').classList.toggle('active-up', v >= 4);
+  setStars(v);
+}
+
+function setStars(v) {
+  rating = v;
+  document.querySelectorAll('.star').forEach((s, i) => {
+    s.classList.toggle('filled', i < v);
+  });
+}
+
+// ─── Envoyer le feedback ───
+async function sendFeedback() {
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  btn.textContent = 'Envoi...';
+
+  const correction = document.getElementById('correctionInput').value.trim();
+  const payload = {
+    user_id: user_id,
+    rating: rating,
+    fact_text: selectedFact || '',
+    correction: correction,
+    question: history[0]?.question || ''
+  };
+
+  try {
+    const r = await fetch('/api/chat/feedback', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await r.json();
+    if (data.status === 'ok' || data.delta !== undefined) {
+      const delta = data.delta || 0;
+      const msg = delta > 0 ? '✨ Retour positif enregistré — KA renforce ce fait !'
+                 : delta < 0 ? '📉 Retour enregistré — KA ajuste ce fait.'
+                 : '✅ Retour enregistré';
+      showToast(msg);
+      if (data.operations && data.operations.length) {
+        console.log('Fine-tuning:', data.operations);
+      }
+    } else {
+      showToast('⚠️ ' + (data.message || 'Erreur'), true);
+    }
+  } catch(e) {
+    showToast('⚠️ Serveur injoignable', true);
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Envoyer mon retour ✨';
+}
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── Init ───
+loadHistory();
+</script>
+</body>
+</html>

@@ -423,16 +423,73 @@ function showScreen(name) {
 // ═══ HONORAIRES — WALLET MÉDECIN (Unités Médicales) ═══
 function renderDoctorWallet() {
   if (typeof KA_WALLET === 'undefined') return;
-  const wallet = KA_WALLET.getWallet('medecin');
   const bal = document.getElementById('docBalance');
   const id = document.getElementById('docWalletId');
-  if (bal) bal.textContent = wallet.balance;
-  if (id) id.textContent = 'ID: ' + wallet.walletId;
+  
+  // Obtenir ou créer un owner_id persistant
+  let ownerId = localStorage.getItem('ka_med_owner_id');
+  if (!ownerId) {
+    ownerId = 'KAUSER-MED-' + Date.now().toString(36).toUpperCase();
+    localStorage.setItem('ka_med_owner_id', ownerId);
+  }
+  
+  // Essayer de récupérer le solde depuis le serveur
+  if (bal) bal.textContent = '…';
+  if (id) id.textContent = 'Connexion…';
+  
+  fetch(API_URL + '/api/v1/wallet/' + encodeURIComponent(ownerId) + '/balance', {
+    headers: { 'Accept': 'application/json' }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.balance_um !== undefined) {
+      if (bal) bal.textContent = data.balance_um;
+      if (id) id.textContent = 'ID: ' + (data.public_id || ownerId);
+      try {
+        const w = KA_WALLET.getWallet('medecin');
+        w.balance = data.balance_um;
+        w.walletId = data.public_id || ownerId;
+        KA_WALLET.saveWallet('medecin', w);
+      } catch(e) {}
+    } else {
+      // Créer un compte
+      return fetch(API_URL + '/api/v1/wallet/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ owner_id: ownerId, role: 'medecin', public_id: 'MED-' + Date.now().toString(36).toUpperCase() })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(createData) {
+        if (createData.balance_um !== undefined) {
+          if (bal) bal.textContent = createData.balance_um;
+          if (id) id.textContent = 'ID: ' + (createData.public_id || ownerId);
+          try {
+            const w = KA_WALLET.getWallet('medecin');
+            w.balance = createData.balance_um;
+            w.walletId = createData.public_id || ownerId;
+            KA_WALLET.saveWallet('medecin', w);
+          } catch(e) {}
+        }
+      });
+    }
+  })
+  .catch(function() {
+    // Fallback local
+    const wallet = KA_WALLET.getWallet('medecin');
+    if (bal) bal.textContent = wallet.balance;
+    if (id) id.textContent = 'ID: ' + wallet.walletId;
+  });
+  
   // Transactions
+  renderDocWalletTransactions();
+}
+
+function renderDocWalletTransactions() {
+  const wallet = KA_WALLET.getWallet('medecin');
   const txEl = document.getElementById('docTransactions');
-  if (txEl && wallet.transactions.length) {
+  if (txEl && wallet.transactions && wallet.transactions.length) {
     let html = '';
-    wallet.transactions.slice(-8).reverse().forEach(tx => {
+    wallet.transactions.slice(-8).reverse().forEach(function(tx) {
       const d = new Date(tx.timestamp);
       const sign = tx.direction === 'in' ? '+' : '-';
       const color = tx.direction === 'in' ? 'var(--success)' : 'var(--error)';

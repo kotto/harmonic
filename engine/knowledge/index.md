@@ -1,0 +1,701 @@
+# KA Knowledge Wiki — Index
+
+*Généré le 2026-08-26 13:09 — 646 concepts, 2160 faits*
+
+
+## art (194 concepts, 741 faits)
+
+- [227ac](art\227ac.md) — 2 faits
+- [400 languages](art\400_languages.md) — 2 faits
+- [6128 plus](art\6128_plus.md) — 2 faits
+- [Aardvark](art\aardvark.md) — 4 faits
+- [Abba](art\abba.md) — 3 faits
+- [Abel](art\abel.md) — 2 faits
+- [Academy of motion picture arts and sciences](art\academy_of_motion_picture_arts_and_sciences.md) — 4 faits
+- [Acariens](art\acariens.md) — 2 faits
+- [Adobe structures](art\adobe_structures.md) — 3 faits
+- [Aesc](art\aesc.md) — 2 faits
+- [Afi](art\afi.md) — 2 faits
+- [Agassi](art\agassi.md) — 2 faits
+- [Agriculture](art\agriculture.md) — 18 faits
+- [Agriculture de larabie saoudite](art\agriculture_de_larabie_saoudite.md) — 2 faits
+- [Agriculture de precision](art\agriculture_de_precision.md) — 3 faits
+- [Agriculture durable](art\agriculture_durable.md) — 5 faits
+- [Agriculture industrielle](art\agriculture_industrielle.md) — 2 faits
+- [Aikido](art\aikido.md) — 5 faits
+- [Aire urbaine](art\aire_urbaine.md) — 2 faits
+- [Aix](art\aix.md) — 2 faits
+- [Alabama](art\alabama.md) — 4 faits
+- [Albanais](art\albanais.md) — 2 faits
+- [Albert speer](art\albert_speer.md) — 2 faits
+- [Alberta](art\alberta.md) — 4 faits
+- [Alfred](art\alfred.md) — 4 faits
+- [Allier](art\allier.md) — 2 faits
+- [Alpes-maritimes (departement)](art\alpes_maritimes_departement.md) — 3 faits
+- [Amd](art\amd.md) — 2 faits
+- [American film institute](art\american_film_institute.md) — 2 faits
+- [Amerique du sud](art\amerique_du_sud.md) — 6 faits
+- [Amis et opposants](art\amis_et_opposants.md) — 2 faits
+- [Ampere](art\ampere.md) — 2 faits
+- [Anarchists](art\anarchists.md) — 3 faits
+- [Anatomy](art\anatomy.md) — 2 faits
+- [Andy warhol](art\andy_warhol.md) — 2 faits
+- [Angola](art\angola.md) — 3 faits
+- [Animal](art\animal.md) — 2 faits
+- [Anime culture](art\anime_culture.md) — 2 faits
+- [Anthropologue](art\anthropologue.md) — 6 faits
+- [Antoine-roi artaud](art\antoine_roi_artaud.md) — 2 faits
+- [Antonin artaud](art\antonin_artaud.md) — 19 faits
+- [Anvers](art\anvers.md) — 3 faits
+- [Appellant](art\appellant.md) — 3 faits
+- [Architecture](art\architecture.md) — 4 faits
+- [Ardeche](art\ardeche.md) — 3 faits
+- [Argentine](art\argentine.md) — 10 faits
+- [Ariege](art\ariege.md) — 2 faits
+- [Aristote](art\aristote.md) — 6 faits
+- [Armee](art\armee.md) — 4 faits
+- [Arp sark](art\arp_sark.md) — 2 faits
+- [Art](art\art.md) — 10 faits
+- [Art amarnien](art\art_amarnien.md) — 11 faits
+- [Art ascii](art\art_ascii.md) — 6 faits
+- [Art contemporain](art\art_contemporain.md) — 2 faits
+- [Art martial japonais](art\art_martial_japonais.md) — 2 faits
+- [Art mimetique](art\art_mimetique.md) — 3 faits
+- [Art nouveau](art\art_nouveau.md) — 14 faits
+- [Art total](art\art_total.md) — 3 faits
+- [Artemis](art\artemis.md) — 2 faits
+- [Arthur](art\arthur.md) — 12 faits
+- [Arthur honegger](art\arthur_honegger.md) — 11 faits
+- [Arthur john evans](art\arthur_john_evans.md) — 10 faits
+- [Arthur maurice hocart](art\arthur_maurice_hocart.md) — 2 faits
+- [Arthur schopenhauer](art\arthur_schopenhauer.md) — 9 faits
+- [Article](art\article.md) — 3 faits
+- [Article accusatif et](art\article_accusatif_et.md) — 2 faits
+- [Article connexe](art\article_connexe.md) — 5 faits
+- [Articles of confederation](art\articles_of_confederation.md) — 4 faits
+- [Articles of confederation and perpetual union](art\articles_of_confederation_and_perpetual_union.md) — 2 faits
+- [Artificial archipelagos](art\artificial_archipelagos.md) — 2 faits
+- [Arts](art\arts.md) — 6 faits
+- [Arts martiaux de guerre](art\arts_martiaux_de_guerre.md) — 2 faits
+- [Artworks](art\artworks.md) — 2 faits
+- [Aruba](art\aruba.md) — 4 faits
+- [Arvo part](art\arvo_part.md) — 3 faits
+- [Asia](art\asia.md) — 5 faits
+- [Asie](art\asie.md) — 3 faits
+- [Aston martin](art\aston_martin.md) — 12 faits
+- [Atoum](art\atoum.md) — 3 faits
+- [Auvergne](art\auvergne.md) — 3 faits
+- [Aveyron](art\aveyron.md) — 3 faits
+- [Bangladesh](art\bangladesh.md) — 3 faits
+- [Beaker culture](art\beaker_culture.md) — 2 faits
+- [Beaute](art\beaute.md) — 2 faits
+- [Beethoven](art\beethoven.md) — 3 faits
+- [Benin](art\benin.md) — 6 faits
+- [Bouches-du-rhone](art\bouches_du_rhone.md) — 7 faits
+- [Carte facultative](art\carte_facultative.md) — 2 faits
+- [Cartoon](art\cartoon.md) — 3 faits
+- [Categorie](art\categorie.md) — 3 faits
+- [Cerebellum](art\cerebellum.md) — 2 faits
+- [Characteristic art style](art\characteristic_art_style.md) — 3 faits
+- [Chef decorateur](art\chef_decorateur.md) — 2 faits
+- [Cinéma](art\cinema.md) — 2 faits
+- [Compose de la musique](art\compose_de_la_musique.md) — 2 faits
+- [Concept darts visuels](art\concept_darts_visuels.md) — 2 faits
+- [Cor latin](art\cor_latin.md) — 2 faits
+- [Creation](art\creation.md) — 2 faits
+- [Cubisme](art\cubisme.md) — 2 faits
+- [Dagny taggart](art\dagny_taggart.md) — 2 faits
+- [Danzig](art\danzig.md) — 2 faits
+- [Dart](art\dart.md) — 3 faits
+- [Deisme](art\deisme.md) — 2 faits
+- [Departement](art\departement.md) — 45 faits
+- [Departement de la bourgogne](art\departement_de_la_bourgogne.md) — 4 faits
+- [Departement de lariege](art\departement_de_lariege.md) — 4 faits
+- [Departement de laude](art\departement_de_laude.md) — 3 faits
+- [Departement des alpes-de-haute-provence](art\departement_des_alpes_de_haute_provence.md) — 5 faits
+- [Departement des alpes-maritimes](art\departement_des_alpes_maritimes.md) — 3 faits
+- [Departement francais](art\departement_francais.md) — 12 faits
+- [Departement inferieur](art\departement_inferieur.md) — 3 faits
+- [Diagonal stripes](art\diagonal_stripes.md) — 2 faits
+- [Dipteres](art\dipteres.md) — 3 faits
+- [Du departement](art\du_departement.md) — 5 faits
+- [Durance](art\durance.md) — 2 faits
+- [Dysarthria](art\dysarthria.md) — 2 faits
+- [Ecrivain](art\ecrivain.md) — 2 faits
+- [Elle](art\elle.md) — 7 faits
+- [Esthetique](art\esthetique.md) — 2 faits
+- [Etat bourguignon](art\etat_bourguignon.md) — 4 faits
+- [Existentialist philosophers](art\existentialist_philosophers.md) — 2 faits
+- [Famille](art\famille.md) — 2 faits
+- [Fine arts](art\fine_arts.md) — 3 faits
+- [France](art\france.md) — 2 faits
+- [Gastronomie](art\gastronomie.md) — 2 faits
+- [Government departments of war](art\government_departments_of_war.md) — 3 faits
+- [Government under the articles](art\government_under_the_articles.md) — 2 faits
+- [Habitants du departement de laisne](art\habitants_du_departement_de_laisne.md) — 2 faits
+- [He](art\he.md) — 14 faits
+- [Il](art\il.md) — 19 faits
+- [Imagination](art\imagination.md) — 2 faits
+- [Important information](art\important_information.md) — 2 faits
+- [Impressionnisme](art\impressionnisme.md) — 3 faits
+- [Isamu kurosawa](art\isamu_kurosawa.md) — 2 faits
+- [La Joconde](art\joconde.md) — 2 faits
+- [Kurosawa](art\kurosawa.md) — 4 faits
+- [Langage](art\langage.md) — 2 faits
+- [Le departement](art\le_departement.md) — 3 faits
+- [Lieu culturel dimportance](art\lieu_culturel_dimportance.md) — 6 faits
+- [Litterature](art\litterature.md) — 2 faits
+- [Living theatre](art\living_theatre.md) — 3 faits
+- [Localites de lextreme sud-est du departement](art\localites_de_lextreme_sud_est_du_departement.md) — 2 faits
+- [Marseille](art\marseille.md) — 2 faits
+- [Martin kitchen](art\martin_kitchen.md) — 2 faits
+- [Martin schulz](art\martin_schulz.md) — 2 faits
+- [Membres](art\membres.md) — 2 faits
+- [Mesarthim](art\mesarthim.md) — 2 faits
+- [Mouvement artistique](art\mouvement_artistique.md) — 2 faits
+- [Musique](art\musique.md) — 3 faits
+- [National arts organization](art\national_arts_organization.md) — 2 faits
+- [Navy department](art\navy_department.md) — 2 faits
+- [Normes](art\normes.md) — 2 faits
+- [Nouvel empire](art\nouvel_empire.md) — 2 faits
+- [Panama](art\panama.md) — 2 faits
+- [Part](art\part.md) — 4 faits
+- [Participants](art\participants.md) — 5 faits
+- [Partie de lorganisation](art\partie_de_lorganisation.md) — 2 faits
+- [Partie meridionale](art\partie_meridionale.md) — 2 faits
+- [Partie occidentale](art\partie_occidentale.md) — 2 faits
+- [Parties](art\parties.md) — 2 faits
+- [Partisans](art\partisans.md) — 2 faits
+- [Party on the other side](art\party_on_the_other_side.md) — 2 faits
+- [Party who files an appeal](art\party_who_files_an_appeal.md) — 4 faits
+- [Patrimoine culturel subaquatique](art\patrimoine_culturel_subaquatique.md) — 6 faits
+- [Pays](art\pays.md) — 5 faits
+- [Pci express](art\pci_express.md) — 2 faits
+- [Plaine dariege](art\plaine_dariege.md) — 2 faits
+- [Platon](art\platon.md) — 3 faits
+- [Poesie](art\poesie.md) — 3 faits
+- [Poudre a canon](art\poudre_a_canon.md) — 2 faits
+- [Pouvoir legislatif](art\pouvoir_legislatif.md) — 2 faits
+- [Province](art\province.md) — 3 faits
+- [Pucerons](art\pucerons.md) — 3 faits
+- [Quartier](art\quartier.md) — 2 faits
+- [Quartier du](art\quartier_du.md) — 4 faits
+- [Raymond dart](art\raymond_dart.md) — 2 faits
+- [Region](art\region.md) — 3 faits
+- [Region de bruxelles-capitale](art\region_de_bruxelles_capitale.md) — 4 faits
+- [Rene descartes](art\rene_descartes.md) — 5 faits
+- [Roi de france](art\roi_de_france.md) — 2 faits
+- [Route departementale d 64](art\route_departementale_d_64.md) — 4 faits
+- [Scale](art\scale.md) — 2 faits
+- [Scientifique en agriculture](art\scientifique_en_agriculture.md) — 3 faits
+- [She](art\she.md) — 3 faits
+- [Siddhartha gautama](art\siddhartha_gautama.md) — 2 faits
+- [Starting point](art\starting_point.md) — 3 faits
+- [Statement](art\statement.md) — 2 faits
+- [Sun-dried earth buildings](art\sun_dried_earth_buildings.md) — 8 faits
+- [They](art\they.md) — 4 faits
+- [Thysanopteres](art\thysanopteres.md) — 2 faits
+- [Visual art](art\visual_art.md) — 3 faits
+- [Wartime alliance](art\wartime_alliance.md) — 2 faits
+- [Weakness](art\weakness.md) — 2 faits
+- [Zone culturelle irano-indienne](art\zone_culturelle_irano_indienne.md) — 4 faits
+
+## astronomie (46 concepts, 162 faits)
+
+- [Algerie](astronomie\algerie.md) — 2 faits
+- [Allah](astronomie\allah.md) — 2 faits
+- [Allemand](astronomie\allemand.md) — 14 faits
+- [Armstrong et aldrin](astronomie\armstrong_et_aldrin.md) — 2 faits
+- [Association francophone des utilisateurs de logiciels libres (aful)](astronomie\association_francophone_des_utilisateurs_de_logici.md) — 3 faits
+- [Astronomie](astronomie\astronomie.md) — 5 faits
+- [Big bang](astronomie\big_bang.md) — 2 faits
+- [Blender](astronomie\blender.md) — 3 faits
+- [Boerentoren](astronomie\boerentoren.md) — 2 faits
+- [Boutique en ligne](astronomie\boutique_en_ligne.md) — 2 faits
+- [Catalan](astronomie\catalan.md) — 2 faits
+- [Constellation](astronomie\constellation.md) — 3 faits
+- [Espace temps](astronomie\espace_temps.md) — 2 faits
+- [Étoiles](astronomie\etoiles.md) — 3 faits
+- [Galaxie](astronomie\galaxie.md) — 2 faits
+- [Galaxies](astronomie\galaxies.md) — 3 faits
+- [Hawking](astronomie\hawking.md) — 2 faits
+- [He](astronomie\he.md) — 17 faits
+- [Il](astronomie\il.md) — 6 faits
+- [Langue officielle](astronomie\langue_officielle.md) — 4 faits
+- [Les trois astronautes](astronomie\les_trois_astronautes.md) — 2 faits
+- [Logiciel](astronomie\logiciel.md) — 11 faits
+- [Logiciels](astronomie\logiciels.md) — 5 faits
+- [Logiciels danalyse syntaxique](astronomie\logiciels_danalyse_syntaxique.md) — 2 faits
+- [Lune](astronomie\lune.md) — 2 faits
+- [Matiere noire](astronomie\matiere_noire.md) — 2 faits
+- [Mercure](astronomie\mercure.md) — 2 faits
+- [Metallurgical laboratory](astronomie\metallurgical_laboratory.md) — 2 faits
+- [Nebuleuse](astronomie\nebuleuse.md) — 2 faits
+- [Objets astronomiques](astronomie\objets_astronomiques.md) — 2 faits
+- [Planète et Étoile](astro\planete_etoile.md) — 6 faits
+- [Planètes](astronomie\planetes.md) — 4 faits
+- [Sculpture officielle](astronomie\sculpture_officielle.md) — 2 faits
+- [Soleil](astronomie\soleil.md) — 5 faits
+- [Supernova](astronomie\supernova.md) — 2 faits
+- [Système Solaire](astro\systeme_solaire.md) — 2 faits
+- [Système Solaire](astronomie\systeme_solaire.md) — 3 faits
+- [Tai](astronomie\tai.md) — 2 faits
+- [Temps universel coordonne](astronomie\temps_universel_coordonne.md) — 3 faits
+- [Terre](astronomie\terre.md) — 4 faits
+- [Trou Noir](astro\trou_noir.md) — 3 faits
+- [Trou noir](astronomie\trou_noir.md) — 3 faits
+- [Univers](astronomie\univers.md) — 3 faits
+- [Universite de la planete](astronomie\universite_de_la_planete.md) — 2 faits
+- [Universite doxford](astronomie\universite_doxford.md) — 3 faits
+- [Venus](astronomie\venus.md) — 2 faits
+
+## biologie (39 concepts, 124 faits)
+
+- [1. adn](biologie\1_adn.md) — 2 faits
+- [ADN](bio\adn.md) — 5 faits
+- [ADN](biologie\adn.md) — 5 faits
+- [Alvin eugene toffler](biologie\alvin_eugene_toffler.md) — 6 faits
+- [Ambiguity](biologie\ambiguity.md) — 2 faits
+- [Anatomie](biologie\anatomie.md) — 2 faits
+- [Anatomy](biologie\anatomy.md) — 3 faits
+- [Animal](biologie\animal.md) — 3 faits
+- [Arbre](biologie\arbre.md) — 2 faits
+- [Archees](biologie\archees.md) — 2 faits
+- [Bactérie](biologie\bacterie.md) — 2 faits
+- [Biologie](biologie\biologie.md) — 15 faits
+- [Biologie moleculaire](biologie\biologie_moleculaire.md) — 15 faits
+- [La Cellule](bio\cellule.md) — 3 faits
+- [Cellule](biologie\cellule.md) — 3 faits
+- [Cerveau](biologie\cerveau.md) — 2 faits
+- [Champignon](biologie\champignon.md) — 2 faits
+- [Coeur](biologie\coeur.md) — 2 faits
+- [Écosystème](biologie\ecosysteme.md) — 2 faits
+- [Évolution](biologie\evolution.md) — 3 faits
+- [Fleur](biologie\fleur.md) — 2 faits
+- [Island arcs](biologie\island_arcs.md) — 2 faits
+- [Microorganismes](biologie\microorganismes.md) — 3 faits
+- [Oiseau](biologie\oiseau.md) — 2 faits
+- [Organismes](biologie\organismes.md) — 3 faits
+- [Peau](biologie\peau.md) — 2 faits
+- [Photosynthèse](bio\photosynthese.md) — 2 faits
+- [Photosynthèse](biologie\photosynthese.md) — 3 faits
+- [Plante](biologie\plante.md) — 2 faits
+- [Protéine](biologie\proteine.md) — 2 faits
+- [Protéines et Enzymes](bio\proteine_enzyme.md) — 2 faits
+- [Revolutionary tactics](biologie\revolutionary_tactics.md) — 2 faits
+- [Sang](biologie\sang.md) — 2 faits
+- [Système Circulatoire](biologie\systeme_circulatoire.md) — 3 faits
+- [Système Nerveux](biologie\systeme_nerveux.md) — 3 faits
+- [Terme biologie moleculaire](biologie\terme_biologie_moleculaire.md) — 2 faits
+- [Toundra](biologie\toundra.md) — 2 faits
+- [Virus](biologie\virus.md) — 2 faits
+- [Virus et Bactérie](bio\virus_bacterie.md) — 2 faits
+
+## chimie (6 concepts, 28 faits)
+
+- [Acides et Bases](chimie\acide_base.md) — 3 faits
+- [Eau](chimie\eau.md) — 4 faits
+- [Éléments Chimiques](chimie\elements.md) — 8 faits
+- [Éléments Chimiques](chimie\elements_chimiques.md) — 7 faits
+- [États de la Matière](chimie\etats_matiere.md) — 3 faits
+- [Molécule](chimie\molecule.md) — 3 faits
+
+## ecologie (13 concepts, 42 faits)
+
+- [Agriculture](ecologie\agriculture.md) — 4 faits
+- [Albedo](ecologie\albedo.md) — 2 faits
+- [Anciens](ecologie\anciens.md) — 2 faits
+- [Aruba](ecologie\aruba.md) — 3 faits
+- [Climat](ecologie\climat.md) — 6 faits
+- [Climats](ecologie\climats.md) — 4 faits
+- [Degradation environnementale](ecologie\degradation_environnementale.md) — 4 faits
+- [Deserts chauds](ecologie\deserts_chauds.md) — 2 faits
+- [Environmental issues](ecologie\environmental_issues.md) — 2 faits
+- [Icealbedo feedback](ecologie\icealbedo_feedback.md) — 2 faits
+- [Indicateurs climatiques](ecologie\indicateurs_climatiques.md) — 2 faits
+- [Regulation naturelle du climat](ecologie\regulation_naturelle_du_climat.md) — 2 faits
+- [Sciences paleo-environnementales](ecologie\sciences_paleo_environnementales.md) — 7 faits
+
+## economie (27 concepts, 76 faits)
+
+- [Accusatif](economie\accusatif.md) — 2 faits
+- [Alcatel](economie\alcatel.md) — 2 faits
+- [Ambiguity](economie\ambiguity.md) — 3 faits
+- [Bangladesh](economie\bangladesh.md) — 2 faits
+- [Crepy-en-valois](economie\crepy_en_valois.md) — 2 faits
+- [Entites politiques albanaises](economie\entites_politiques_albanaises.md) — 3 faits
+- [Entreprise](economie\entreprise.md) — 2 faits
+- [Etretat](economie\etretat.md) — 2 faits
+- [Exploitation agricole durable](economie\exploitation_agricole_durable.md) — 5 faits
+- [Gouvernement](economie\gouvernement.md) — 9 faits
+- [Gouvernement angolais](economie\gouvernement_angolais.md) — 3 faits
+- [He](economie\he.md) — 2 faits
+- [Il](economie\il.md) — 2 faits
+- [Interpretation](economie\interpretation.md) — 2 faits
+- [Liberte](economie\liberte.md) — 3 faits
+- [Liberte politique](economie\liberte_politique.md) — 4 faits
+- [Loi](economie\loi.md) — 4 faits
+- [Loi de titius-bode](economie\loi_de_titius_bode.md) — 3 faits
+- [Operation binaire](economie\operation_binaire.md) — 2 faits
+- [Pays](economie\pays.md) — 2 faits
+- [Private company](economie\private_company.md) — 2 faits
+- [Systeme dexploitation](economie\systeme_dexploitation.md) — 3 faits
+- [Systemes dexploitation](economie\systemes_dexploitation.md) — 4 faits
+- [Systemes dexploitation libres](economie\systemes_dexploitation_libres.md) — 2 faits
+- [Table de cette loi](economie\table_de_cette_loi.md) — 2 faits
+- [Vegetation](economie\vegetation.md) — 2 faits
+- [Winter annuals](economie\winter_annuals.md) — 2 faits
+
+## geographie (5 concepts, 42 faits)
+
+- [Continents](geographie\continents.md) — 3 faits
+- [Notions de Géographie](geo\geographie_generale.md) — 4 faits
+- [Notions de Géographie](geographie\geographie_generale.md) — 8 faits
+- [Pays et Capitales](geo\pays_capitale.md) — 10 faits
+- [Pays et Capitales](geographie\pays_capitales.md) — 17 faits
+
+## histoire (28 concepts, 84 faits)
+
+- [Agriculture](histoire\agriculture.md) — 5 faits
+- [Anglican communion](histoire\anglican_communion.md) — 2 faits
+- [Antiquite](histoire\antiquite.md) — 4 faits
+- [Archeologie](histoire\archeologie.md) — 2 faits
+- [Art martial traditionnel](histoire\art_martial_traditionnel.md) — 2 faits
+- [Article connexe](histoire\article_connexe.md) — 2 faits
+- [Astronomes modernes](histoire\astronomes_modernes.md) — 2 faits
+- [Christophe colomb](histoire\christophe_colomb.md) — 2 faits
+- [City](histoire\city.md) — 3 faits
+- [Égypte Ancienne](histoire\egypte_ancienne.md) — 3 faits
+- [Empire Romain](histoire\empire_romain.md) — 3 faits
+- [Extradition](histoire\extradition.md) — 2 faits
+- [Gutenberg](histoire\gutenberg.md) — 2 faits
+- [He](histoire\he.md) — 2 faits
+- [Histoire](histoire\histoire.md) — 3 faits
+- [Histoire dun plat bourgeois](histoire\histoire_dun_plat_bourgeois.md) — 5 faits
+- [Il](histoire\il.md) — 9 faits
+- [Late medieval tradition of alchemy](histoire\late_medieval_tradition_of_alchemy.md) — 3 faits
+- [Léonard de Vinci](histoire\leonard_de_vinci.md) — 3 faits
+- [Napoléon](histoire\napoleon.md) — 4 faits
+- [Passage de la prehistoire a lantiquite](histoire\passage_de_la_prehistoire_a_lantiquite.md) — 2 faits
+- [Première Guerre Mondiale](histoire\premiere_guerre_mondiale.md) — 3 faits
+- [Renaissance](histoire\renaissance.md) — 3 faits
+- [Revolution francaise](histoire\revolution_francaise.md) — 2 faits
+- [Revolution industrielle](histoire\revolution_industrielle.md) — 2 faits
+- [Seconde Guerre Mondiale](histoire\seconde_guerre_mondiale.md) — 3 faits
+- [Shramana](histoire\shramana.md) — 2 faits
+- [Usage des baguettes](histoire\usage_des_baguettes.md) — 4 faits
+
+## informatique (10 concepts, 27 faits)
+
+- [Algorithme](info\algorithme.md) — 2 faits
+- [Algorithme](informatique\algorithme.md) — 2 faits
+- [Blockchain](informatique\blockchain.md) — 2 faits
+- [Intelligence Artificielle](informatique\intelligence_artificielle.md) — 3 faits
+- [Internet](info\internet.md) — 2 faits
+- [Internet](informatique\internet.md) — 3 faits
+- [Ordinateur](info\ordinateur.md) — 3 faits
+- [Ordinateur](informatique\ordinateur.md) — 3 faits
+- [Programmation](info\programmation.md) — 4 faits
+- [Programmation](informatique\programmation.md) — 3 faits
+
+## langues (2 concepts, 7 faits)
+
+- [Langue Anglaise](langues\anglais.md) — 3 faits
+- [Langue Française](langues\francais.md) — 4 faits
+
+## mathematiques (41 concepts, 112 faits)
+
+- [Abacus](mathematiques\abacus.md) — 2 faits
+- [Abacuses](mathematiques\abacuses.md) — 2 faits
+- [Ada lovelace](mathematiques\ada_lovelace.md) — 2 faits
+- [Agglomeration morphologique](mathematiques\agglomeration_morphologique.md) — 8 faits
+- [Algorithme](mathematiques\algorithme.md) — 12 faits
+- [Algorithme deuclide](mathematiques\algorithme_deuclide.md) — 2 faits
+- [Anastylose](mathematiques\anastylose.md) — 2 faits
+- [Apple](mathematiques\apple.md) — 2 faits
+- [Approche phytogeomorphologique](mathematiques\approche_phytogeomorphologique.md) — 3 faits
+- [Archimede](mathematiques\archimede.md) — 3 faits
+- [Aube](mathematiques\aube.md) — 2 faits
+- [Calcul Différentiel](mathematiques\calcul_differentiel.md) — 3 faits
+- [Calculations](mathematiques\calculations.md) — 6 faits
+- [Cantor](mathematiques\cantor.md) — 2 faits
+- [Conjecture](mathematiques\conjecture.md) — 2 faits
+- [Corpus theologiques](mathematiques\corpus_theologiques.md) — 4 faits
+- [Cryptographie](mathematiques\cryptographie.md) — 2 faits
+- [Deep learning](mathematiques\deep_learning.md) — 2 faits
+- [Descartes](mathematiques\descartes.md) — 2 faits
+- [Differentes tailles d infini](mathematiques\differentes_tailles_d_infini.md) — 2 faits
+- [Fibonacci](mathematiques\fibonacci.md) — 2 faits
+- [Generative intelligence artificielle](mathematiques\generative_intelligence_artificielle.md) — 2 faits
+- [Index egyptologique](mathematiques\index_egyptologique.md) — 2 faits
+- [Intelligence artificielle](mathematiques\intelligence_artificielle.md) — 2 faits
+- [Logique](mathematiques\logique.md) — 2 faits
+- [Modeles statistiques](mathematiques\modeles_statistiques.md) — 2 faits
+- [Nombre d'Or](mathematiques\nombre_d_or.md) — 3 faits
+- [Le Nombre d'Or (Phi)](math\nombre_phi.md) — 3 faits
+- [Nombres Premiers](mathematiques\nombre_premier.md) — 2 faits
+- [Nombres et Opérations](math\nombres.md) — 2 faits
+- [Nombreux artistes](mathematiques\nombreux_artistes.md) — 2 faits
+- [Phi](mathematiques\phi.md) — 4 faits
+- [La constante Pi](math\pi.md) — 2 faits
+- [Pi](mathematiques\pi.md) — 2 faits
+- [Programme](mathematiques\programme.md) — 2 faits
+- [Recherches scientifiques et archeologiques](mathematiques\recherches_scientifiques_et_archeologiques.md) — 2 faits
+- [Societe ethnologique de paris](mathematiques\societe_ethnologique_de_paris.md) — 3 faits
+- [Théorème de Pythagore](mathematiques\theoreme_pythagore.md) — 2 faits
+- [Transformation de fourier](mathematiques\transformation_de_fourier.md) — 2 faits
+- [Turing](mathematiques\turing.md) — 2 faits
+- [Zero](mathematiques\zero.md) — 2 faits
+
+## medecine (6 concepts, 18 faits)
+
+- [Cerveau](medecine\cerveau.md) — 2 faits
+- [Cœur](medecine\coeur.md) — 2 faits
+- [Diabète](medecine\diabete.md) — 3 faits
+- [Maladies](medecine\maladies.md) — 5 faits
+- [Système Immunitaire](medecine\systeme_immunitaire.md) — 3 faits
+- [Vaccin](medecine\vaccin.md) — 3 faits
+
+## philosophie (6 concepts, 20 faits)
+
+- [Aristote](philosophie\aristote.md) — 4 faits
+- [Cogito Ergo Sum](philosophie\cogito.md) — 3 faits
+- [Existentialisme](philosophie\existentialisme.md) — 3 faits
+- [Emmanuel Kant](philosophie\kant.md) — 3 faits
+- [Nietzsche](philosophie\nietzsche.md) — 3 faits
+- [Platon](philosophie\platon.md) — 4 faits
+
+## physique (98 concepts, 294 faits)
+
+- [1. leonard de vinci](physique\1_leonard_de_vinci.md) — 2 faits
+- [Aikido](physique\aikido.md) — 2 faits
+- [Aimant](physique\aimant.md) — 2 faits
+- [Air force](physique\air_force.md) — 3 faits
+- [Aker](physique\aker.md) — 2 faits
+- [Algerie](physique\algerie.md) — 2 faits
+- [Amd](physique\amd.md) — 2 faits
+- [American patriot forces](physique\american_patriot_forces.md) — 2 faits
+- [Amstrad cpc](physique\amstrad_cpc.md) — 2 faits
+- [Angolan armed forces](physique\angolan_armed_forces.md) — 2 faits
+- [Anime](physique\anime.md) — 2 faits
+- [Apple](physique\apple.md) — 4 faits
+- [Apple i](physique\apple_i.md) — 3 faits
+- [Arabie saoudite](physique\arabie_saoudite.md) — 4 faits
+- [Asia](physique\asia.md) — 3 faits
+- [Asie](physique\asie.md) — 2 faits
+- [Assistive technologies](physique\assistive_technologies.md) — 2 faits
+- [Astronomie](physique\astronomie.md) — 2 faits
+- [Atari st](physique\atari_st.md) — 2 faits
+- [L'Atome](phys\atome.md) — 3 faits
+- [Atome](physique\atome.md) — 16 faits
+- [Atomes](physique\atomes.md) — 8 faits
+- [Atomes delements differents](physique\atomes_delements_differents.md) — 2 faits
+- [Batterie](physique\batterie.md) — 2 faits
+- [Boite](physique\boite.md) — 2 faits
+- [Boutique en ligne](physique\boutique_en_ligne.md) — 2 faits
+- [Bresil](physique\bresil.md) — 2 faits
+- [Brigade des forces speciales](physique\brigade_des_forces_speciales.md) — 3 faits
+- [Cette technologie](physique\cette_technologie.md) — 2 faits
+- [Circuits](physique\circuits.md) — 2 faits
+- [Civilisations](physique\civilisations.md) — 2 faits
+- [Current](physique\current.md) — 2 faits
+- [Disquettes](physique\disquettes.md) — 2 faits
+- [Documents de seconde main](physique\documents_de_seconde_main.md) — 3 faits
+- [Eau](physique\eau.md) — 2 faits
+- [Einstein](physique\einstein.md) — 4 faits
+- [L'Électricité](phys\electricite.md) — 3 faits
+- [Électricité](physique\electricite.md) — 2 faits
+- [Electromagnetic force](physique\electromagnetic_force.md) — 2 faits
+- [Electron](physique\electron.md) — 2 faits
+- [Elle](physique\elle.md) — 2 faits
+- [L'Énergie](phys\energie.md) — 3 faits
+- [Énergie](physique\energie.md) — 3 faits
+- [Entreprise](physique\entreprise.md) — 4 faits
+- [Entropie](physique\entropie.md) — 2 faits
+- [Fission et Fusion Nucléaire](physique\fission_fusion.md) — 3 faits
+- [Force](physique\force.md) — 4 faits
+- [Force de ladversaire](physique\force_de_ladversaire.md) — 2 faits
+- [Force vitale](physique\force_vitale.md) — 3 faits
+- [Forces](physique\forces.md) — 2 faits
+- [Forces armees](physique\forces_armees.md) — 2 faits
+- [Forces armees bresiliennes](physique\forces_armees_bresiliennes.md) — 3 faits
+- [Forces de lalliance du nord](physique\forces_de_lalliance_du_nord.md) — 2 faits
+- [Forces hostiles](physique\forces_hostiles.md) — 4 faits
+- [Frequence](physique\frequence.md) — 2 faits
+- [Fusion](physique\fusion.md) — 2 faits
+- [Galilee](physique\galilee.md) — 2 faits
+- [Gamme dordinateurs personnels populaires amstrad cpc](physique\gamme_dordinateurs_personnels_populaires_amstrad_c.md) — 4 faits
+- [Gamme dordinateurs professionnels amstrad pcw](physique\gamme_dordinateurs_professionnels_amstrad_pcw.md) — 2 faits
+- [Gardien redoutable du passage](physique\gardien_redoutable_du_passage.md) — 2 faits
+- [Gouvernement](physique\gouvernement.md) — 2 faits
+- [La Gravité](phys\gravite.md) — 3 faits
+- [Gravite](physique\gravite.md) — 2 faits
+- [Hologramme](phys\hologramme.md) — 5 faits
+- [Hologramme](physique\hologramme.md) — 4 faits
+- [Il](physique\il.md) — 10 faits
+- [Interference](physique\interference.md) — 2 faits
+- [It](physique\it.md) — 2 faits
+- [Laser](physique\laser.md) — 2 faits
+- [La Lumière](phys\lumiere.md) — 4 faits
+- [Lumiere](physique\lumiere.md) — 6 faits
+- [Machine](physique\machine.md) — 7 faits
+- [Magnétisme](physique\magnetisme.md) — 2 faits
+- [Maxwell](physique\maxwell.md) — 2 faits
+- [Mécanique Quantique](physique\mecanique_quantique.md) — 3 faits
+- [Newton](physique\newton.md) — 3 faits
+- [Not a number technologies (nan)](physique\not_a_number_technologies_nan.md) — 4 faits
+- [Nouvelles technologies](physique\nouvelles_technologies.md) — 3 faits
+- [Onde](physique\onde.md) — 3 faits
+- [Onde electromagnetique](physique\onde_electromagnetique.md) — 2 faits
+- [Ordinateur](physique\ordinateur.md) — 13 faits
+- [Ordinateur fonctionnel](physique\ordinateur_fonctionnel.md) — 4 faits
+- [Ordinateurs personnels](physique\ordinateurs_personnels.md) — 2 faits
+- [Photons](physique\photons.md) — 2 faits
+- [Proprietes physiques](physique\proprietes_physiques.md) — 3 faits
+- [Relativite](physique\relativite.md) — 3 faits
+- [Resonance](physique\resonance.md) — 2 faits
+- [Ses travaux](physique\ses_travaux.md) — 2 faits
+- [Simulations physiques](physique\simulations_physiques.md) — 4 faits
+- [Technologie adsl](physique\technologie_adsl.md) — 2 faits
+- [Technologie logicielle](physique\technologie_logicielle.md) — 2 faits
+- [Terme francais  art nouveau](physique\terme_francais_art_nouveau.md) — 2 faits
+- [Théorie des Cordes](physique\theorie_cordes.md) — 2 faits
+- [Théorie Harmonique Universelle](physique\theorie_harmonique.md) — 4 faits
+- [Thermodynamique](physique\thermodynamique.md) — 3 faits
+- [Uvres sur les technologies modernes](physique\uvres_sur_les_technologies_modernes.md) — 3 faits
+- [Vitesse de la Lumière](physique\vitesse_lumiere.md) — 2 faits
+- [Volume dun atome](physique\volume_dun_atome.md) — 2 faits
+
+## psychologie (7 concepts, 16 faits)
+
+- [Akhenaton](psychologie\akhenaton.md) — 2 faits
+- [Amour](psychologie\amour.md) — 3 faits
+- [Angoisse](psychologie\angoisse.md) — 2 faits
+- [Idee ancienne](psychologie\idee_ancienne.md) — 2 faits
+- [Joie](psychologie\joie.md) — 2 faits
+- [Methode de raisonnement](psychologie\methode_de_raisonnement.md) — 2 faits
+- [Peur](psychologie\peur.md) — 3 faits
+
+## religion (107 concepts, 344 faits)
+
+- [A. van gogh](religion\a_van_gogh.md) — 2 faits
+- [Aardvark](religion\aardvark.md) — 2 faits
+- [Abacus](religion\abacus.md) — 2 faits
+- [Abba](religion\abba.md) — 2 faits
+- [Achilles](religion\achilles.md) — 2 faits
+- [Ada](religion\ada.md) — 2 faits
+- [Aesc](religion\aesc.md) — 2 faits
+- [Afghanistan](religion\afghanistan.md) — 3 faits
+- [Agassi](religion\agassi.md) — 3 faits
+- [Agnosticisme](religion\agnosticisme.md) — 2 faits
+- [Agnostiques](religion\agnostiques.md) — 3 faits
+- [Aikido](religion\aikido.md) — 6 faits
+- [Aker](religion\aker.md) — 2 faits
+- [Akhenaton](religion\akhenaton.md) — 4 faits
+- [Alabama](religion\alabama.md) — 2 faits
+- [Alchimie](religion\alchimie.md) — 2 faits
+- [Alexander graham bell](religion\alexander_graham_bell.md) — 2 faits
+- [Alfred hitchcock](religion\alfred_hitchcock.md) — 2 faits
+- [Aluminium](religion\aluminium.md) — 2 faits
+- [Amemet](religion\amemet.md) — 8 faits
+- [Amenhotep](religion\amenhotep.md) — 3 faits
+- [Amenhotep iii](religion\amenhotep_iii.md) — 8 faits
+- [Amenhotep iv](religion\amenhotep_iv.md) — 3 faits
+- [American civil war](religion\american_civil_war.md) — 6 faits
+- [American engineering standards committee](religion\american_engineering_standards_committee.md) — 2 faits
+- [American film institute](religion\american_film_institute.md) — 5 faits
+- [American national standards institute](religion\american_national_standards_institute.md) — 2 faits
+- [American shot](religion\american_shot.md) — 4 faits
+- [American standards association](religion\american_standards_association.md) — 2 faits
+- [Americium](religion\americium.md) — 10 faits
+- [Americium-241](religion\americium_241.md) — 3 faits
+- [Amerigo vespucci](religion\amerigo_vespucci.md) — 2 faits
+- [Amon](religion\amon.md) — 3 faits
+- [An american in paris](religion\an_american_in_paris.md) — 2 faits
+- [Anarcho-capitalisme](religion\anarcho_capitalisme.md) — 6 faits
+- [Andy warhol](religion\andy_warhol.md) — 2 faits
+- [Angora](religion\angora.md) — 2 faits
+- [Anime](religion\anime.md) — 2 faits
+- [Animisme](religion\animisme.md) — 2 faits
+- [Ansi](religion\ansi.md) — 2 faits
+- [Anthropologie de la religion](religion\anthropologie_de_la_religion.md) — 2 faits
+- [Antigua](religion\antigua.md) — 3 faits
+- [Apollo](religion\apollo.md) — 5 faits
+- [Archipel](religion\archipel.md) — 2 faits
+- [Argon](religion\argon.md) — 2 faits
+- [Aristotle](religion\aristotle.md) — 2 faits
+- [Arslan](religion\arslan.md) — 2 faits
+- [Aruba](religion\aruba.md) — 3 faits
+- [Asa](religion\asa.md) — 3 faits
+- [Asteroids](religion\asteroids.md) — 2 faits
+- [Atheisme](religion\atheisme.md) — 2 faits
+- [Aton](religion\aton.md) — 2 faits
+- [Atoum](religion\atoum.md) — 2 faits
+- [Auteur](religion\auteur.md) — 2 faits
+- [Bouddhisme](religion\bouddhisme.md) — 3 faits
+- [British parliament](religion\british_parliament.md) — 3 faits
+- [Camera](religion\camera.md) — 3 faits
+- [Camera effects](religion\camera_effects.md) — 3 faits
+- [Capital algiers](religion\capital_algiers.md) — 3 faits
+- [Christianisme](religion\christianisme.md) — 2 faits
+- [Comte de foix](religion\comte_de_foix.md) — 2 faits
+- [Crocodile](religion\crocodile.md) — 2 faits
+- [Dieu](religion\dieu.md) — 2 faits
+- [Dieux](religion\dieux.md) — 3 faits
+- [Droits et devoirs du comte de foix](religion\droits_et_devoirs_du_comte_de_foix.md) — 3 faits
+- [Equipment](religion\equipment.md) — 3 faits
+- [Esprits mystiques](religion\esprits_mystiques.md) — 2 faits
+- [Filament](religion\filament.md) — 2 faits
+- [Filament de carbone](religion\filament_de_carbone.md) — 2 faits
+- [Fille du dieu re](religion\fille_du_dieu_re.md) — 2 faits
+- [Flowers](religion\flowers.md) — 3 faits
+- [Foix](religion\foix.md) — 3 faits
+- [Game](religion\game.md) — 9 faits
+- [Gettysburg address](religion\gettysburg_address.md) — 2 faits
+- [Graham](religion\graham.md) — 2 faits
+- [He](religion\he.md) — 22 faits
+- [Hindouisme](religion\hindouisme.md) — 2 faits
+- [Huxley](religion\huxley.md) — 2 faits
+- [Il](religion\il.md) — 9 faits
+- [Islam](religion\islam.md) — 3 faits
+- [It](religion\it.md) — 2 faits
+- [Jakob](religion\jakob.md) — 2 faits
+- [James bowman lindsay](religion\james_bowman_lindsay.md) — 2 faits
+- [Kalinago](religion\kalinago.md) — 2 faits
+- [La question de linexistence de dieu](religion\la_question_de_linexistence_de_dieu.md) — 2 faits
+- [Latimer](religion\latimer.md) — 2 faits
+- [Les dieux](religion\les_dieux.md) — 3 faits
+- [Lincoln](religion\lincoln.md) — 2 faits
+- [Milne](religion\milne.md) — 3 faits
+- [Min](religion\min.md) — 4 faits
+- [Mythologie egyptienne](religion\mythologie_egyptienne.md) — 6 faits
+- [Name](religion\name.md) — 6 faits
+- [Philosophie](religion\philosophie.md) — 3 faits
+- [Portugal](religion\portugal.md) — 2 faits
+- [Question de lexistence ou de linexistence de dieu](religion\question_de_lexistence_ou_de_linexistence_de_dieu.md) — 2 faits
+- [Religion](religion\religion.md) — 5 faits
+- [Revenus du petrole](religion\revenus_du_petrole.md) — 2 faits
+- [Riviere dieu alphee](religion\riviere_dieu_alphee.md) — 2 faits
+- [Sensory fibers](religion\sensory_fibers.md) — 4 faits
+- [Setif and guelma massacre](religion\setif_and_guelma_massacre.md) — 2 faits
+- [She](religion\she.md) — 2 faits
+- [Soviet union](religion\soviet_union.md) — 4 faits
+- [Standards](religion\standards.md) — 2 faits
+- [The amazing spider-man](religion\the_amazing_spider_man.md) — 2 faits
+- [They](religion\they.md) — 3 faits
+- [Vietnamese](religion\vietnamese.md) — 11 faits
+- [Winter olympic games](religion\winter_olympic_games.md) — 5 faits
+
+## technologie (11 concepts, 23 faits)
+
+- [Anxiete](technologie\anxiete.md) — 3 faits
+- [Électricité (Technologie)](technologie\electricite_technologie.md) — 2 faits
+- [Future shock](technologie\future_shock.md) — 2 faits
+- [He](technologie\he.md) — 2 faits
+- [Imprimerie](technologie\imprimerie.md) — 2 faits
+- [Machine à Vapeur](technologie\machine_vapeur.md) — 2 faits
+- [Marge de progression economique saoudienne](technologie\marge_de_progression_economique_saoudienne.md) — 2 faits
+- [Progressive conservatives](technologie\progressive_conservatives.md) — 2 faits
+- [Recherche future](technologie\recherche_future.md) — 2 faits
+- [Robotique](technologie\robotique.md) — 2 faits
+- [Téléphone](technologie\telephone.md) — 2 faits

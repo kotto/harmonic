@@ -48,7 +48,9 @@ def test_ask_known_entity_with_provenance(seeded):
     assert r.status_code == 200
     body = r.get_json()
     assert body['refused'] is False
-    assert body['answer'] == 'lumiere est une onde electromagnetique.'
+    # surface_grammar: « La lumiere est une onde electromagnetique. »
+    assert 'lumiere' in body['answer'].lower()
+    assert 'onde' in body['answer'].lower()
     assert len(body['provenance']) >= 1
     assert body['provenance'][0]['source'] == 'cours de physique'
     assert body['confidence'] >= 0.0
@@ -58,10 +60,10 @@ def test_ask_second_fact_of_entity(seeded):
     r = seeded.post('/api/memory-first/ask',
                     json={'query': 'quelle est la vitesse de la lumiere ?'})
     body = r.get_json()
-    # les deux faits de 'lumiere' sont candidats — l'un répond
+    # les deux faits de 'lumiere' sont candidats — l'un répond (surface_grammar)
     assert body['refused'] is False
-    assert body['answer'] in ('lumiere est une onde electromagnetique.',
-                              'lumiere a pour vitesse 300 000 km par seconde.')
+    assert 'lumiere' in body['answer'].lower()
+    assert ('onde' in body['answer'].lower() or 'vitesse' in body['answer'].lower())
 
 
 def test_ask_unknown_entity_is_refused(seeded):

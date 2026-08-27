@@ -22,6 +22,7 @@ from .sonic_id import register_sonic_id_routes
 from .compress_dashboard import register_compress_dashboard_routes
 from .tools import register_tools_routes
 from .banking import register_banking_routes
+from .resoudre import register_resoudre_routes
 
 
 def register_routes(app, services):
@@ -73,6 +74,9 @@ def register_routes(app, services):
     
     # Routes Banking — émission UM / conversion CFA (Ecobank)
     register_banking_routes(app, services)
+    
+    # Routes Solveur — résolution de questions arithmétiques (solveur_structure.py)
+    register_resoudre_routes(app, services)
     
     # Log résumé
     import logging

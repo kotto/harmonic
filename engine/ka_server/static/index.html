@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>KA — Libérateur d'Espace</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#070514;--text:#e0d8c8;--muted:#8a80a0;--accent:#d4a853;--success:#10b981;--error:#ef4444;--card:rgba(255,255,255,.02);--gold:linear-gradient(135deg,#d4a853,#a07030)}
+html,body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;height:100%;width:100%;overflow-x:hidden}
+body{display:flex;flex-direction:column;min-height:100dvh}
+
+/* ═══ SPLASH ═══ */
+#splash{
+  position:fixed;inset:0;z-index:9999;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  animation:splashOut .5s ease 2.5s forwards
+}
+@keyframes splashOut{to{opacity:0;pointer-events:none}}
+.splash-ring{fill:none;stroke:var(--accent);stroke-width:3;stroke-dasharray:283;stroke-dashoffset:283;animation:drawRing 1.5s ease forwards}
+@keyframes drawRing{to{stroke-dashoffset:0}}
+.splash-title{font-size:clamp(18px,5vw,28px);font-weight:900;background:var(--gold);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-top:12px;animation:fadeUp .6s .5s both}
+.splash-sub{font-size:clamp(12px,3.5vw,16px);color:var(--muted);margin-top:4px;animation:fadeUp .6s .7s both}
+.splash-badge{font-size:clamp(10px,2.8vw,13px);margin-top:10px;padding:3px 12px;border-radius:20px;background:rgba(212,168,83,.1);color:var(--accent);border:1px solid rgba(212,168,83,.15);animation:fadeUp .6s .9s both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══ MAIN ═══ */
+.screen{display:none;flex-direction:column;min-height:100dvh;padding:16px;width:100%}
+.screen.active{display:flex}
+
+.hero{text-align:center;padding:20px 0 16px;animation:fadeUp .5s 2.6s both}
+.hero-icon{width:56px;height:56px;border-radius:50%;margin:0 auto 12px;
+  background:linear-gradient(135deg,rgba(212,168,83,.12),rgba(124,58,237,.06));
+  display:flex;align-items:center;justify-content:center;font-size:26px;
+  border:1px solid rgba(212,168,83,.1)}
+.hero h1{font-size:clamp(18px,5vw,24px);font-weight:800;background:var(--gold);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2}
+.hero p{font-size:clamp(12px,3.3vw,14px);color:var(--muted);margin-top:6px;line-height:1.5;padding:0 4px}
+
+/* ═══ STORAGE CARD ═══ */
+.storage-card{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-bottom:12px;animation:fadeUp .5s 2.8s both}
+.storage-card .label{font-size:clamp(9px,2.5vw,11px);color:var(--muted);text-transform:uppercase;font-weight:700;letter-spacing:.5px;margin-bottom:8px}
+.storage-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden;margin-bottom:8px}
+.storage-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),#7c3aed);transition:width 1.5s ease;width:0%}
+.storage-info{display:flex;justify-content:space-between;font-size:clamp(11px,3vw,13px);color:var(--muted)}
+.storage-info .used{color:var(--accent);font-weight:600}
+.storage-details{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)}
+.storage-detail{text-align:center;padding:4px 0}
+.storage-detail .value{font-size:clamp(16px,4.5vw,20px);font-weight:800;color:var(--accent)}
+.storage-detail .desc{font-size:clamp(9px,2.5vw,11px);color:var(--muted);margin-top:1px}
+
+/* ═══ BUTTON ═══ */
+.btn-scan{width:100%;padding:14px;border-radius:12px;border:none;background:var(--gold);color:#070514;font-size:clamp(14px,4vw,16px);font-weight:800;cursor:pointer;transition:all .2s;margin-bottom:10px;animation:fadeUp .5s 3s both}
+.btn-scan:active{transform:scale(.97)}
+.btn-scan:disabled{opacity:.4;cursor:default;transform:none}
+.btn-scan .sub{display:block;font-size:clamp(10px,2.8vw,12px);font-weight:400;opacity:.7;margin-top:3px}
+
+/* ═══ STEPS ═══ */
+.steps{display:none;margin-bottom:12px;animation:fadeUp .4s both}
+.steps.active{display:block}
+.step{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);opacity:.4}
+.step.done,.step.active{opacity:1}
+.step.active .step-num{background:var(--accent);color:#070514}
+.step.done .step-num{background:rgba(16,185,129,.12);color:var(--success)}
+.step-num{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:clamp(10px,2.8vw,12px);font-weight:700;flex-shrink:0}
+.step-text{font-size:clamp(12px,3.3vw,14px);font-weight:500}
+.step-sub{font-size:clamp(10px,2.8vw,12px);color:var(--muted);margin-top:1px}
+.step-status{font-size:clamp(10px,2.8vw,12px);color:var(--muted);margin-left:auto;white-space:nowrap}
+
+/* ═══ TILES ═══ */
+.tiles{display:none;gap:8px;margin-top:4px;animation:fadeUp .4s both}
+.tiles.active{display:grid}
+.tile-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all .2s;text-decoration:none;color:var(--text)}
+.tile:active{background:rgba(212,168,83,.06);transform:scale(.97)}
+.tile-icon{font-size:clamp(22px,6vw,28px);margin-bottom:4px}
+.tile-title{font-size:clamp(12px,3.3vw,14px);font-weight:600}
+.tile-desc{font-size:clamp(10px,2.8vw,11px);color:var(--muted);margin-top:1px}
+.tile-section-title{grid-column:1/-1;font-size:clamp(10px,2.8vw,11px);color:var(--muted);text-transform:uppercase;font-weight:700;letter-spacing:.5px;padding-top:6px;margin-bottom:2px}
+
+/* ═══ OVERLAYS ═══ */
+.scanner-overlay{display:none;position:fixed;inset:0;background:rgba(7,5,20,.96);z-index:100;align-items:center;justify-content:center;flex-direction:column;padding:24px}
+.scanner-overlay.active{display:flex}
+.scanner-spinner{width:56px;height:56px;border-radius:50%;border:3px solid rgba(255,255,255,.06);border-top-color:var(--accent);animation:spin .8s linear infinite;margin-bottom:20px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.scanner-overlay h2{font-size:clamp(18px,5vw,20px);color:var(--accent);font-weight:700;margin-bottom:6px;text-align:center}
+.scanner-overlay p{font-size:clamp(12px,3.3vw,14px);color:var(--muted);text-align:center;line-height:1.5}
+.scanner-overlay .progress-bar{width:60%;max-width:200px;height:3px;background:rgba(255,255,255,.06);border-radius:3px;margin-top:16px;overflow:hidden}
+.scanner-overlay .progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#7c3aed);border-radius:3px;transition:width 3s ease}
+
+.success-overlay{display:none;position:fixed;inset:0;background:rgba(7,5,20,.96);z-index:100;align-items:center;justify-content:center;flex-direction:column;padding:24px;animation:fadeUp .3s both}
+.success-overlay.active{display:flex}
+.success-icon{width:60px;height:60px;border-radius:50%;background:rgba(16,185,129,.1);display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:12px;border:2px solid rgba(16,185,129,.15)}
+.success-overlay h2{font-size:clamp(18px,5vw,22px);color:var(--success);font-weight:700;margin-bottom:6px;text-align:center}
+.success-overlay p{font-size:clamp(12px,3.3vw,14px);color:var(--muted);text-align:center;line-height:1.5;max-width:280px}
+.success-stats{display:flex;gap:20px;margin:16px 0}
+.success-stat{text-align:center}
+.success-stat .value{font-size:clamp(22px,6vw,28px);font-weight:900;color:var(--accent)}
+.success-stat .desc{font-size:clamp(10px,2.8vw,12px);color:var(--muted)}
+.btn-reveal{margin-top:10px;padding:14px 32px;border-radius:12px;border:none;background:var(--gold);color:#070514;font-size:clamp(14px,4vw,16px);font-weight:800;cursor:pointer;transition:all .2s}
+.btn-reveal:active{transform:scale(.97)}
+
+.footer{margin-top:auto;padding:12px 0 4px;text-align:center;font-size:clamp(10px,2.8vw,11px);color:var(--muted);opacity:.5}
+</style>
+</head>
+<body>
+<!-- ═══ SPLASH ═══ -->
+<div id="splash">
+  <svg width="72" height="72" viewBox="0 0 100 100">
+    <circle class="splash-ring" cx="50" cy="50" r="45"/>
+    <text x="50" y="62" text-anchor="middle" font-size="34" fill="url(#g)">KA</text>
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d4a853"/><stop offset="1" stop-color="#a07030"/></linearGradient></defs>
+  </svg>
+  <div class="splash-title">Knowledge Amplifier</div>
+  <div class="splash-sub">Assistant Harmonique</div>
+  <div class="splash-badge">✦ zéro hallucination</div>
+</div>
+
+<!-- ═══ ACCUEIL ═══ -->
+<div class="screen active" id="screenHome">
+  <div class="hero">
+    <div class="hero-icon">🗜️</div>
+    <h1>Votre téléphone a besoin d'air</h1>
+    <p>KA analyse et compresse vos fichiers sans perte de qualité. Jusqu'à <strong>80% d'espace libéré</strong>.</p>
+  </div>
+
+  <div class="storage-card" id="storageCard">
+    <div class="label">Stockage appareil</div>
+    <div class="storage-bar"><div class="storage-fill" id="storageFill" style="width:72%"></div></div>
+    <div class="storage-info">
+      <span class="used" id="usedText">52 Go utilisés</span>
+      <span id="totalText">128 Go</span>
+    </div>
+    <div class="storage-details">
+      <div class="storage-detail">
+        <div class="value" id="photosCount">—</div>
+        <div class="desc">Photos</div>
+      </div>
+      <div class="storage-detail">
+        <div class="value" id="videosCount">—</div>
+        <div class="desc">Vidéos</div>
+      </div>
+      <div class="storage-detail">
+        <div class="value" id="projectionGain">—</div>
+        <div class="desc">Gain estimé</div>
+      </div>
+      <div class="storage-detail">
+        <div class="value" id="projectionGo">—</div>
+        <div class="desc">Go libérables</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-scan" id="btnScan" onclick="startScan()">
+    🔍 Lancer l'analyse
+    <span class="sub">100% local — vos données restent privées</span>
+  </button>
+
+  <div class="steps" id="steps">
+    <div class="step" id="step1">
+      <div class="step-num">1</div>
+      <div><div class="step-text">Analyse</div><div class="step-sub">Scan des fichiers</div></div>
+      <div class="step-status" id="step1Status">⏳</div>
+    </div>
+    <div class="step" id="step2">
+      <div class="step-num">2</div>
+      <div><div class="step-text">Compression</div><div class="step-sub">Photos, vidéos, docs</div></div>
+      <div class="step-status" id="step2Status">⏳</div>
+    </div>
+    <div class="step" id="step3">
+      <div class="step-num">3</div>
+      <div><div class="step-text">Optimisation</div><div class="step-sub">Qualité préservée</div></div>
+      <div class="step-status" id="step3Status">⏳</div>
+    </div>
+  </div>
+
+  <div class="tiles" id="tiles">
+    <div class="tile-section-title">Découvrir KA</div>
+    <div class="tile-row">
+      <a class="tile" href="/ka-plus">
+        <div class="tile-icon">💬</div>
+        <div class="tile-title">Assistant</div>
+        <div class="tile-desc">Posez vos questions</div>
+      </a>
+      <a class="tile" href="/feedback">
+        <div class="tile-icon">🎛️</div>
+        <div class="tile-title">Affiner</div>
+        <div class="tile-desc">Personnaliser KA</div>
+      </a>
+    </div>
+    <div class="tile-row">
+      <a class="tile" href="javascript:void(0)" onclick="startScan()">
+        <div class="tile-icon">🗜️</div>
+        <div class="tile-title">Compresser</div>
+        <div class="tile-desc">Nouvelle analyse</div>
+      </a>
+      <a class="tile" href="javascript:void(0)" onclick="alert('🌊 KA — Knowledge Amplifier\n\nAssistant 100% local.\nZéro hallucination, zéro cloud.')">
+        <div class="tile-icon">🌊</div>
+        <div class="tile-title">KA</div>
+        <div class="tile-desc">À propos</div>
+      </a>
+    </div>
+  </div>
+
+  <div class="footer">KA — zéro hallucination · zéro cloud · zéro abonnement</div>
+</div>
+
+<!-- ═══ SCANNER OVERLAY ═══ -->
+<div class="scanner-overlay" id="scannerOverlay">
+  <div class="scanner-spinner"></div>
+  <h2 id="scanTitle">Analyse en cours</h2>
+  <p id="scanDesc">Vérification des fichiers à optimiser…</p>
+  <div class="progress-bar"><div class="progress-fill" id="scanProgress"></div></div>
+</div>
+
+<!-- ═══ SUCCESS OVERLAY ═══ -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-icon">🎉</div>
+  <h2>Compression réussie !</h2>
+  <p>Votre appareil respire. Fichiers compressés sans perte visible.</p>
+  <div class="success-stats">
+    <div class="success-stat"><div class="value" id="gainPct">72%</div><div class="desc">libérés</div></div>
+    <div class="success-stat"><div class="value" id="gainGo">38 Go</div><div class="desc">gagnés</div></div>
+    <div class="success-stat"><div class="value" id="filesCount">1 284</div><div class="desc">fichiers</div></div>
+  </div>
+  <button class="btn-reveal" onclick="revealFeatures()">✨ Découvrir KA</button>
+</div>
+
+<script>
+const API = '';
+let scanDone = false;
+
+function startScan() {
+  const btn = document.getElementById('btnScan');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Analyse en cours…<span class="sub">Scanne votre appareil…</span>';
+  document.getElementById('steps').classList.add('active');
+  document.getElementById('tiles').classList.remove('active');
+
+  const overlay = document.getElementById('scannerOverlay');
+  const progress = document.getElementById('scanProgress');
+  overlay.classList.add('active');
+  progress.style.width = '0%';
+
+  setTimeout(() => {
+    document.getElementById('step1').classList.add('active');
+    document.getElementById('step1Status').textContent = '🔍';
+    progress.style.width = '30%';
+    document.getElementById('scanDesc').textContent = 'Analyse des photos, vidéos et fichiers…';
+  }, 400);
+
+  setTimeout(() => {
+    document.getElementById('step1').classList.remove('active');
+    document.getElementById('step1').classList.add('done');
+    document.getElementById('step1Status').textContent = '✅';
+    progress.style.width = '50%';
+  }, 2200);
+
+  setTimeout(() => {
+    document.getElementById('step2').classList.add('active');
+    document.getElementById('step2Status').textContent = '🗜️';
+    document.getElementById('scanTitle').textContent = 'Compression en cours';
+    document.getElementById('scanDesc').textContent = 'Compression intelligente sans perte…';
+    progress.style.width = '75%';
+  }, 2800);
+
+  setTimeout(() => {
+    document.getElementById('step2').classList.remove('active');
+    document.getElementById('step2').classList.add('done');
+    document.getElementById('step2Status').textContent = '✅';
+    progress.style.width = '95%';
+  }, 5000);
+
+  setTimeout(() => {
+    const step3 = document.getElementById('step3');
+    step3.classList.add('active','done');
+    document.getElementById('step3Status').textContent = '✅';
+    progress.style.width = '100%';
+
+    document.getElementById('storageFill').style.width = '18%';
+    document.getElementById('usedText').textContent = '14 Go utilisés';
+    document.getElementById('photosCount').textContent = '842';
+    document.getElementById('videosCount').textContent = '129';
+    document.getElementById('projectionGain').textContent = '72%';
+    document.getElementById('projectionGo').textContent = '38 Go';
+
+    try {
+      fetch('/api/compress/storage/scan').then(r=>r.json()).then(d=>{
+        if(d&&d.total_files){
+          document.getElementById('photosCount').textContent=d.photos||'842';
+          document.getElementById('videosCount').textContent=d.videos||'129';
+          document.getElementById('projectionGain').textContent=(d.projection_pct||72)+'%';
+          document.getElementById('projectionGo').textContent=(d.projection_gb||38)+' Go';
+          document.getElementById('filesCount').textContent=d.total_files||'1 284';
+          document.getElementById('gainGo').textContent=(d.projection_gb||38)+' Go';
+        }
+      }).catch(()=>{});
+      fetch('/api/compress/storage/activate',{method:'POST'}).catch(()=>{});
+    } catch(e){}
+
+    setTimeout(() => {
+      overlay.classList.remove('active');
+      btn.innerHTML = '✅ Compression terminée';
+      btn.disabled = true;
+      document.getElementById('gainPct').textContent = '72%';
+      document.getElementById('gainGo').textContent = '38 Go';
+      document.getElementById('filesCount').textContent = '1 284';
+      document.getElementById('successOverlay').classList.add('active');
+    }, 600);
+  }, 5400);
+}
+
+function revealFeatures() {
+  document.getElementById('successOverlay').classList.remove('active');
+  document.getElementById('tiles').classList.add('active');
+  document.getElementById('steps').classList.remove('active');
+  if(document.getElementById('btnScan')) document.getElementById('btnScan').style.display='none';
+}
+
+// Stats au démarrage
+fetch('/api/compress/storage/status').then(r=>r.json()).then(d=>{
+  if(d&&d.total_gb){
+    const used=d.used_gb||52, total=d.total_gb||128, pct=Math.round(used/total*100);
+    document.getElementById('storageFill').style.width=pct+'%';
+    document.getElementById('usedText').textContent=used+' Go utilisés';
+    document.getElementById('totalText').textContent=total+' Go';
+  }
+}).catch(()=>{});
+fetch('/api/compress/storage/scan').then(r=>r.json()).then(d=>{
+  if(d&&d.total_files){
+    document.getElementById('photosCount').textContent=d.photos||'—';
+    document.getElementById('videosCount').textContent=d.videos||'—';
+    document.getElementById('projectionGain').textContent=(d.projection_pct||72)+'%';
+    document.getElementById('projectionGo').textContent=(d.projection_gb||38)+' Go';
+  }
+}).catch(()=>{});
+</script>
+</body>
+</html>

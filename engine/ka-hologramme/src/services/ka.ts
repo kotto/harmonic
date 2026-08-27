@@ -1,6 +1,6 @@
-import type { Hologramme } from '../App';
+import type { Hologramme } from '../types';
 
-// ─── Types ───
+// Types
 export interface ReponseKA {
   resultat: number;
   resultat_formate: string;
@@ -10,25 +10,17 @@ export interface ReponseKA {
   style: string;
 }
 
-// ─── Styles ───
-export type StyleKA = 'conversationnel' | 'vocal' | 'bref' | 'pédagogique';
+export type StyleKA = 'conversationnel' | 'vocal' | 'bref' | 'pedagogique';
 
-// ─── Enrichisseur (version TypeScript de enrichisseur.py) ───
-
+// Enrichisseur (version TypeScript de enrichisseur.py)
 const CONCLUSIONS: Record<string, string> = {
-  gain: '💰 Le gain total s\'élève à {r}.',
-  rapporte: '💰 Le gain total s\'élève à {r}.',
-  profit: '💰 Le profit est de {r}.',
-  perte: '📉 La perte totale s\'élève à {r}.',
-  perd: '📉 La perte totale s\'élève à {r}.',
-  total: '📊 Le résultat est {r}.',
-  augmentation: '📈 L\'augmentation est de {r}.',
-  augmente: '📈 L\'augmentation est de {r}.',
-  cout: '💵 Le coût est de {r}.',
-  investissement: '💎 Le retour sur investissement est de {r}.',
-  loan: '🏦 Les intérêts du prêt sont de {r}.',
-  prêt: '🏦 Les intérêts du prêt sont de {r}.',
-  salaire: '👔 L\'augmentation de salaire est de {r}.',
+  gain: 'Le gain total s eleve a {r}.',
+  rapporte: 'Le gain total s eleve a {r}.',
+  profit: 'Le profit est de {r}.',
+  perte: 'La perte totale s eleve a {r}.',
+  total: 'Le resultat est {r}.',
+  augmentation: 'L augmentation est de {r}.',
+  cout: 'Le cout est de {r}.',
 };
 
 function formaterNombre(v: number): string {
@@ -50,7 +42,7 @@ function conclure(question: string, r: string): string {
   if (t !== 'CALC' && CONCLUSIONS[t]) {
     return CONCLUSIONS[t].replace('{r}', r);
   }
-  return `✅ Le résultat est ${r}.`;
+  return 'Le resultat est ' + r + '.';
 }
 
 function expliquerEtapes(operationsText: string): string {
@@ -67,22 +59,22 @@ function expliquerEtapes(operationsText: string): string {
 
     if (op === 'INIT') {
       acc = valStr;
-      parties.push(`valeur initiale : ${vs}`);
+      parties.push('valeur initiale : ' + vs);
     } else if (op === 'MUL' && acc !== null) {
       const mulR: number = acc * valStr;
-      parties.push(`× ${vs} → ${formaterNombre(acc)} × ${vs} = ${formaterNombre(mulR)}`);
+      parties.push('x ' + vs + ' -> ' + formaterNombre(acc) + ' x ' + vs + ' = ' + formaterNombre(mulR));
       acc = mulR;
     } else if (op === 'DIV' && acc !== null) {
       const divR: number = valStr ? acc / valStr : acc;
-      parties.push(`÷ ${vs} → ${formaterNombre(divR)}`);
+      parties.push('/ ' + vs + ' -> ' + formaterNombre(divR));
       acc = divR;
     } else if (op === 'ADD' && acc !== null) {
       const addR: number = acc + valStr;
-      parties.push(`+ ${vs} → ${formaterNombre(addR)}`);
+      parties.push('+ ' + vs + ' -> ' + formaterNombre(addR));
       acc = addR;
     } else if (op === 'SUB' && acc !== null) {
       const subR: number = acc - valStr;
-      parties.push(`− ${vs} → ${formaterNombre(subR)}`);
+      parties.push('- ' + vs + ' -> ' + formaterNombre(subR));
       acc = subR;
     }
   }
@@ -110,34 +102,41 @@ export function reponseRedigee(
   };
 }
 
-// ─── Pipeline complet : question → codec ψ → enrichisseur ───
-
+/**
+ * Pipeline complet : question vers codec psi vers enrichisseur
+ * Utilise d'abord l'API /api/resoudre si disponible,
+ * sinon fallback simulation locale.
+ */
 export async function resoudreAvecKA(
   question: string,
   hologramme: Hologramme | null,
   style: StyleKA = 'conversationnel'
 ): Promise<ReponseKA | { erreur: string }> {
-  // Appel à l'API Python /solveur_structure.py (via le backend)
-  // Pour l'instant, on utilise une simulation qui sera remplacée par le vrai appel
   try {
     const resp = await fetch('/api/resoudre', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        question,
-        hologramme_id: hologramme?.id,
-        style,
-      }),
+      body: JSON.stringify({ question, style }),
     });
     if (!resp.ok) throw new Error('Erreur serveur');
     const data = await resp.json();
-    return reponseRedigee(question, data.operations, data.resultat, style);
+    if (data.success) {
+      return {
+        resultat: data.resultat,
+        resultat_formate: data.resultat_formate,
+        explication: data.etapes,
+        trajectoire_psi: data.operations,
+        conclusion: data.resultat_formate,
+        style: data.style,
+      };
+    }
+    throw new Error(data.error || 'Erreur inconnue');
   } catch {
-    // Fallback simulation pour le développement
-    const m = question.match(/(\d+)/g);
+    // Fallback simulation locale
+    const m = question.match(/\d+/g);
     const vals = m ? m.map(Number) : [0];
-    const ops = `INIT(${vals[0] || 0}) MUL(${(vals[1] || 0) / 100})`;
-    let rslt: number = (vals[0] || 0) * ((vals[1] || 0) / 100);
+    const ops = 'INIT(' + (vals[0] || 0) + ') MUL(' + ((vals[1] || 0) / 100) + ')';
+    let rslt = (vals[0] || 0) * ((vals[1] || 0) / 100);
     return reponseRedigee(question, ops, rslt, style);
   }
 }

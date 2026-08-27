@@ -16,6 +16,7 @@ def register_specialize_routes(app, services):
     
     specializer = services.get('specializer')
     optimized_specializer = services.get('optimized_specializer')
+    hf_specializer = services.get('hf_specializer')  # 🤗
     web_retriever = services.get('web_retriever')
     brain = services.get('brain')
     hologram_store = services.get('hologram_store')
@@ -28,15 +29,16 @@ def register_specialize_routes(app, services):
         
         data = request.get_json() or {}
         domain = data.get('domain', '').strip()
-        user_kbs = data.get('user_kbs', [])  # KBs utilisateur
+        user_kbs = data.get('user_kbs', [])
         force_refresh = data.get('force_refresh', False)
-        use_optimized = data.get('use_optimized', True)
+        mode = data.get('mode', 'auto').lower()
+        use_optimized = data.get('use_optimized', True)  # retrocompatibilité
         
         if not domain:
             return jsonify({'error': 'Domaine requis', 'code': 'MISSING_DOMAIN'}), 400
         
         # Vérifier si hologramme existe déjà
-        if hologram_store:
+        if hologram_store and mode != 'huggingface':
             existing = hologram_store.get_hologram(domain)
             if existing and not force_refresh:
                 return jsonify({
@@ -46,6 +48,18 @@ def register_specialize_routes(app, services):
                     'hologram': existing,
                     'message': f"Hologramme '{domain}' existe déjà. Utilisez force_refresh=true pour recréer."
                 })
+        
+        # Mode HuggingFace explicite
+        if mode == 'huggingface' and hf_specializer:
+            try:
+                log.info(f"  🤗 Spécialisation HF pour '{domain}'")
+                result = hf_specializer(domain)
+                return jsonify(_format_specialize_result(result, domain, 'huggingface'))
+            except Exception as e:
+                log.error(f"HF specialize failed: {e}")
+                return jsonify({'error': f"HF specialize failed: {e}", 'code': 'HF_FAILED'}), 500
+        
+        # Modes existants…
         
         # Utiliser OptimizedSpecializer si dispo
         if use_optimized and optimized_specializer:
@@ -229,7 +243,7 @@ def _format_specialize_result(result: dict, domain: str, method: str) -> dict:
     facts = result.get('facts', [])
     fact_count = result.get('fact_count', len(facts))
     
-    return {
+    response = {
         'success': success,
         'domain': domain,
         'method': method,
@@ -239,3 +253,10 @@ def _format_specialize_result(result: dict, domain: str, method: str) -> dict:
         'hologram_id': result.get('hologram_id', domain),
         'message': f"Spécialisation '{domain}' terminée: {fact_count} faits créés" if success else result.get('error', 'Échec'),
     }
+    
+    # Ajouter champs supplémentaires (huggingface, etc.)
+    for extra in ('datasets_found', 'source_name', 'inference_facts'):
+        if extra in result:
+            response[extra] = result[extra]
+    
+    return response

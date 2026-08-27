@@ -1,0 +1,1979 @@
+
+'use strict';
+const K={txt:'',shift:false,lock:false,ts:0,alt:false,voice:false,vt:null,emo:false};
+const KR=[[['1','~'],['2','@'],['3','#'],['4','$'],['5','%'],['6','^'],['7','&'],['8','*'],['9','('],['0',')']],[['a','à'],['z','æ'],['e','€'],['r','®'],['t','™'],['y','¥'],['u','ù'],['i','ï'],['o','œ'],['p','°']],[['q',''],['s','ß'],['d',''],['f',''],['g',''],['h',''],['j',''],['k',''],['l',''],['m','µ']],[['w',''],['x',''],['c','ç'],['v',''],['b',''],['n','ñ']]];
+const EM=['😊','😂','❤️','🔥','✨','🙏','👍','🎉','😄','😍','🤔','😎','🥰','💪','🙌','👋','🎶','🌟','💡','🚀','🌍','🍕','☕','🎯','💬','✅','😘','🫶','🤩','😅','🫠','🤝','🌸','⭐','🎵'];
+const SD={'':['Sophie','Appeler','Réunion','Oui','Super','Merci','Demain'],'so':['Sophie','Soirée','Souvenir'],'ap':['Appeler','Appelle','Après'],'me':['Merci','Message','Même'],'ou':['Oui','Ouvert','Ouais'],'to':['Tokyo','Toi','Toujours'],'de':['Demain','Décision','Depuis'],'re':['Réunion','Rendez-vous','Retrouve'],'su':['Super','Sur','Surtout'],'bi':['Bientôt','Bien','Bises'],'bo':['Bonjour','Bonsoir','Bon'],'co':['Comment','Comme','Contact'],'pr':['Prépare','Prendre','Prochain'],'pa':['Paris','Parfait','Partager'],'ma':['Maintenant','Matin','Mais'],'vo':['Voici','Voilà','Voyage'],'sa':['Salut','Samedi','Sans'],'tr':['Très','Travail','Trouver']};
+	// ═══ PONT D'AUDIT HYBRIDE — noyau local (garanti) + cerveau de connaissances ═══
+	// Plus de phrases aléatoires : hors-ligne, KA répond par le noyau
+	// (calcul exact, corpus médical, conduites, refus calibré) ou se tait.
+	// Note : RP n'est utilisé qu'en mode déconnecté temporaire
+	
+		// === CONNEXION À L'IA HARMONIC ===
+		// Auto-détection : même serveur que la page (local/Render), sauf si override
+		const h = location.hostname;
+		const isLocal = h==='localhost'||h==='127.0.0.1'||h.startsWith('192.168.')||h.startsWith('10.')||h.startsWith('172.16.');
+		// ⚡ Utiliser 127.0.0.1 : la résolution DNS de 'localhost' prend ~2s sur Windows
+		const apiHost = (h==='localhost') ? '127.0.0.1' : h;
+		var API_URL = (function(){try{var u=localStorage.getItem('ka_api_url');if(u)return u;}catch(e){}return isLocal?`http://${apiHost}:8765`:'https://ka-api.onrender.com';})(); // [ka-android] override localStorage
+	let API_ONLINE = false;
+	
+		// Vérifier la connexion au démarrage
+		(async function checkAPI(){
+		  try {
+		    const r = await fetch(API_URL + '/api/health', {signal: AbortSignal.timeout(5000)});
+		    if (r.ok) { API_ONLINE = true; console.log('✅ KA connecté'); }
+		  } catch(e) { 
+		    API_ONLINE = false;
+		    console.log('⚠️ Serveur inaccessible — mode dégradé'); 
+		    // Afficher un indicateur discret dans l'UI
+		    const sb = document.querySelector('.sb__t');
+		    if(sb) sb.textContent = 'KA · ⚠️';
+		  }
+		})();
+	
+		async function askKA(message) {
+		  // ═══ LE NOYAU HYBRIDE — réponse immédiate, garantie, hors-ligne ═══
+		  // Calcul exact par les ondes · corpus médical · conduites d'urgence ·
+		  // identité · concepts appris · refus calibré (« je préfère me taire »).
+		  // ⚠️ Le refus du noyau est FINAL : l'escalade vers /api/chat a été testée
+		  // et retirée — le cerveau répond parfois hors-sujet (« météo à Paris » →
+		  // « Art nouveau… ») ; on refuse plutôt que d'inventer.
+		  if (window.KAHybrid) {
+		    const core = KAHybrid.repondre(message);
+		    return KAHybrid.phraseModele(core);
+		  }
+		  // Secours (noyau absent) : ancien chemin cerveau, refus honnête si hors-ligne
+		  if (!API_ONLINE) return "Je ne peux pas répondre à ça — ce n'est pas dans ce que je connais.";
+		  const rep = await repondreCerveau(message);
+		  return rep || "Je ne peux pas répondre à ça — ce n'est pas dans ce que je connais.";
+		}
+
+		async function repondreCerveau(message) {
+		  try {
+		    // Récupérer/générer un user_id persistant
+		    let uid = localStorage.getItem('ka_user_id');
+		    if (!uid) { uid = 'user_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); localStorage.setItem('ka_user_id', uid); }
+		    
+		    // 📜 Historique conversationnel (multi-tours) — localStorage
+		    let hist = [];
+		    try { hist = JSON.parse(localStorage.getItem('ka_chat_hist') || '[]'); } catch(e) {}
+		    hist = hist.slice(-6); // garder les 6 derniers échanges
+		    const res = await fetch(API_URL + '/api/chat', {
+		      method: 'POST',
+		      headers: {'Content-Type': 'application/json'},
+		      body: JSON.stringify({message: message, user_id: uid, history: hist})
+		    });
+		    if (!res.ok) throw new Error('API error');
+		    const data = await res.json();
+		    // Sauvegarder l'échange
+		    hist.push({role:'user', content:message});
+		    hist.push({role:'assistant', content:(data.response||'').slice(0,500)});
+		    try { localStorage.setItem('ka_chat_hist', JSON.stringify(hist.slice(-6))); } catch(e) {}
+		    
+		    // Afficher les infos de spécialisation si présentes
+		    if (data.specialization) {
+		      const spec = data.specialization;
+		      setTimeout(() => {
+		        const el = document.getElementById('spec-info');
+		        if (el && spec.success) {
+		          el.innerHTML = '🎯 '+spec.domain+' · '+spec.triplets_count.toLocaleString()+' faits';
+		          el.style.display = 'block';
+		        }
+		      }, 500);
+		    }
+		    return data.response || '';
+		  } catch(e) {
+		    API_ONLINE = false;
+		    return '';
+		  }
+		}
+
+const CALL_SCREENS=new Set(['s-call']);
+const NAV_MAP={'s-home':'nb-h','s-msg':'nb-m','s-mem':'nb-mm'};
+let cur='s-home';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🧠 ONBOARDING — Personnalisation de KA
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Domaines disponibles pour sélection
+const KA_DOMAINS = [
+  {id:'medecine',name:'Médecine',icon:'🏥',f1:0.76},
+  {id:'droit',name:'Droit',icon:'⚖️',f1:0.72},
+  {id:'education',name:'Éducation',icon:'📚',f1:0.53},
+  {id:'sciences',name:'Sciences',icon:'🔬',f1:0.71},
+  {id:'geographie',name:'Géographie',icon:'🌍',f1:0.79},
+  {id:'histoire',name:'Histoire',icon:'📜',f1:0.82},
+  {id:'informatique',name:'Informatique',icon:'💻',f1:0.64},
+  {id:'economie',name:'Économie',icon:'💰',f1:0.83},
+  {id:'cuisine',name:'Cuisine',icon:'🍳',f1:0.90},
+  {id:'sport',name:'Sport',icon:'🏅',f1:0.72},
+  {id:'psychologie',name:'Psychologie',icon:'🧠',f1:0.94},
+  {id:'nature',name:'Nature',icon:'🌿',f1:0.78},
+  {id:'culture',name:'Culture',icon:'🎨',f1:0.76},
+  {id:'langues',name:'Langues',icon:'🗣️',f1:0.37},
+  {id:'mathematiques',name:'Maths',icon:'📐',f1:0.84},
+  {id:'technologie',name:'Technologie',icon:'🔧',f1:0.65},
+];
+var kaUser = {domains:[], custom:[]}; // {domains:['medecine','cuisine'], custom:['droit congolais']}
+
+// Charger le profil utilisateur depuis localStorage
+function kaUserLoad() {
+  try {
+    var raw = localStorage.getItem('ka_user');
+    if (raw) kaUser = JSON.parse(raw);
+  } catch(e) {}
+  return kaUser;
+}
+function kaUserSave() {
+  localStorage.setItem('ka_user', JSON.stringify(kaUser));
+}
+kaUserLoad();
+
+// Vérifier si onboarding nécessaire
+function kaNeedsOnboard() {
+  return (kaUser.domains||[]).length < 2;
+}
+
+// Remplir la grille d'onboarding
+function onboardRender() {
+  var grid = document.getElementById('onboard-grid');
+  if (!grid) return;
+  var selected = new Set(kaUser.domains||[]);
+  var customSet = new Set(kaUser.custom||[]);
+  var html = '';
+  KA_DOMAINS.forEach(function(d) {
+    var on = selected.has(d.id);
+    html += '<div class="card" style="cursor:pointer;padding:10px 12px;text-align:center;' +
+      (on ? 'border:2px solid var(--life);background:var(--life-d)' : '') +
+      '" onclick="onboardToggle(\'' + d.id + '\')" id="onb-' + d.id + '">';
+    html += '<div style="font-size:22px">' + d.icon + '</div>';
+    html += '<div style="font-size:11px;color:var(--t1);font-weight:600;margin-top:3px">' + d.name + '</div>';
+    html += '<div style="font-size:9px;color:' + (d.f1>=0.80?'var(--life)':d.f1>=0.70?'var(--wisdom)':'var(--t4)') + '">' + Math.round(d.f1*100) + '%</div>';
+    html += '</div>';
+  });
+  grid.innerHTML = html;
+  // Custom tags
+  var tagsEl = document.getElementById('onboard-custom-tags');
+  tagsEl.innerHTML = '';
+  customSet.forEach(function(c) {
+    tagsEl.innerHTML += '<span class="pill pill--life" style="cursor:pointer" onclick="onboardRemoveCustom(\'' + c + '\')">✨ ' + c + ' ✕</span>';
+  });
+  onboardUpdateSummary();
+}
+
+function onboardToggle(id) {
+  var idx = kaUser.domains.indexOf(id);
+  if (idx >= 0) kaUser.domains.splice(idx, 1);
+  else kaUser.domains.push(id);
+  kaUserSave();
+  onboardRender();
+}
+
+function onboardAddCustom() {
+  var inp = document.getElementById('onboard-custom');
+  var val = inp.value.trim().toLowerCase();
+  if (!val || val.length < 3) return;
+  if (!kaUser.custom) kaUser.custom = [];
+  if (kaUser.custom.indexOf(val) < 0) kaUser.custom.push(val);
+  inp.value = '';
+  kaUserSave();
+  onboardRender();
+}
+
+function onboardRemoveCustom(val) {
+  kaUser.custom = (kaUser.custom||[]).filter(function(c) { return c !== val; });
+  kaUserSave();
+  onboardRender();
+}
+
+function onboardUpdateSummary() {
+  var n = (kaUser.domains||[]).length + (kaUser.custom||[]).length;
+  var el = document.getElementById('onboard-summary');
+  var btn = document.getElementById('onboard-btn');
+  if (n >= 3) {
+    el.innerHTML = '✅ <b>' + n + ' centres d\'intérêt sélectionnés</b> — KA va se spécialiser pour vous.';
+    btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+  } else {
+    el.innerHTML = 'Sélectionnez au moins 3 centres d\'intérêt (' + n + '/' + '3).';
+    btn.style.opacity = '.4'; btn.style.pointerEvents = 'none';
+  }
+}
+
+// Finaliser l'onboarding → construire les hologrammes
+async function onboardFinish() {
+  var n = (kaUser.domains||[]).length + (kaUser.custom||[]).length;
+  if (n < 3) return;
+  var btn = document.getElementById('onboard-btn');
+  btn.textContent = '⏳ Construction de vos hologrammes…';
+  btn.style.opacity = '.7'; btn.style.pointerEvents = 'none';
+
+  var status = document.getElementById('onboard-summary');
+  var built = 0;
+  var all = (kaUser.domains||[]).concat(kaUser.custom||[]);
+  var uid = localStorage.getItem('ka_user_id') || ('user_' + Date.now().toString(36));
+
+  // ⚡ Construction PARALLÈLE (Promise.all) : 6 domaines en ~6s au lieu de 35s
+  status.innerHTML = '⏳ Construction des ' + all.length + ' hologrammes en parallèle…';
+  btn.textContent = '🛠️ Construction en cours…';
+  btn.style.opacity = '.5'; btn.style.pointerEvents = 'none';
+
+  // ⚡ Job async : réponse immédiate + re-vérification après 8s
+  async function buildOne(d) {
+    try {
+      var r = await fetch(API_URL + '/api/personalize/build', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({domain: d, user_id: uid}),
+        signal: AbortSignal.timeout(5000)
+      });
+      var data = await r.json();
+      if (data.success && data.source !== 'async') { built++; return data; }
+      // Job en cours → re-vérifier après 8s
+      await new Promise(function(res) { setTimeout(res, 8000); });
+      var r2 = await fetch(API_URL + '/api/personalize/build', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({domain: d, user_id: uid}),
+        signal: AbortSignal.timeout(5000)
+      });
+      var d2 = await r2.json();
+      if (d2.success) built++;
+      return d2;
+    } catch(e) { return {success: false}; }
+  }
+
+  var results = await Promise.all(all.map(buildOne));
+
+  kaUser.onboarded = true;
+  kaUserSave();
+  status.innerHTML = '✅ ' + built + '/' + all.length + ' hologrammes construits. KA est prêt !';
+  btn.textContent = '✨ Accéder à mon KA personnel →';
+  btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+  btn.onclick = function() { go('s-home'); };
+}
+
+// Modifier l'écran d'accueil pour n'afficher que les domaines de l'utilisateur
+function homePersonalize() {
+  var holoCard = document.querySelector('[onclick*=\"s-holo\"]');
+  if (!holoCard) return;
+  var domains = (kaUser.domains||[]).concat(kaUser.custom||[]);
+  if (domains.length < 2) return;
+
+  // Ajouter une section 'Mes domaines' en haut du More panel
+  var panel = document.getElementById('more-panel');
+  if (!panel) return;
+  var existing = document.getElementById('my-domains-section');
+  if (existing) existing.remove();
+
+  var html = '<div id=\"my-domains-section\" style=\"margin-bottom:14px\">';
+  html += '<div style=\"font-size:9.5px;letter-spacing:.1em;color:var(--t4);margin-bottom:8px\">MES DOMAINES</div>';
+  html += '<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:6px\">';
+  domains.slice(0,8).forEach(function(d) {
+    var found = KA_DOMAINS.find(function(k) { return k.id === d; });
+    var name = found ? found.name : d;
+    var icon = found ? found.icon : '✨';
+    html += '<div class=\"card\" style=\"cursor:pointer;padding:8px 10px;text-align:center;font-size:11px;color:var(--t1)\" onclick=\"go(\'s-msg\');closeMore();document.getElementById(\'msg-input\').value=\'explique-moi ' + name + '\';msgSend()\">';
+    html += '<div style=\"font-size:16px\">' + icon + '</div>';
+    html += '<div style=\"margin-top:2px\">' + name + '</div>';
+    html += '</div>';
+  });
+  html += '</div></div>';
+  panel.insertAdjacentHTML('afterbegin', html);
+}
+
+// ═══ INIT ═══
+// Démarrage : splash animé → premier lancement = ESPACE DISQUE (compression),
+// sinon → accueil "Bonjour, comment puis-je vous accompagner ?"
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    // Splash screen : 2.6s animé, puis fondu
+    var splash = document.getElementById('splash');
+    setTimeout(function() {
+      if (splash) {
+        splash.style.opacity = '0';
+        setTimeout(function() { if (splash) splash.style.display = 'none'; }, 500);
+      }
+      // Routage après le splash
+      var demoDone = false;
+      try { demoDone = localStorage.getItem('ka_demo_done') === '1'; } catch(e) {}
+      if (!demoDone) {
+        // 🗜️ PREMIER LANCEMENT → ESPACE DISQUE (le produit entre par la compression)
+        go('s-storage');
+        try { localStorage.setItem('ka_demo_done', '1'); } catch(e) {}
+      } else if (kaNeedsOnboard()) {
+        go('s-onboard');
+        onboardRender();
+      }
+      homePersonalize();
+    }, 2600);
+  }, 100);
+});
+
+// ═══ PREMIER LANCEMENT — KA accueille, compression conversationnelle ═══
+function demoDismiss() {
+  try { localStorage.setItem('ka_demo_done', '1'); } catch(e) {}
+  if (kaNeedsOnboard()) {
+    go('s-onboard');
+    onboardRender();
+  } else {
+    go('s-home');
+  }
+}
+
+// ── Démo express : charger une photo et la compresser ──
+function demoExpress() {
+  var btn = document.getElementById('demo-skip-btn'); if (btn) btn.style.display = 'none';
+  showDemoProgress('Chargement de la photo de démonstration…');
+  fetch('/img/demo_landscape.jpg')
+    .then(function(r) { return r.arrayBuffer(); })
+    .then(function(b) {
+      var u = new Uint8Array(b), s = '';
+      for (var i = 0; i < u.length; i++) s += String.fromCharCode(u[i]);
+      var b64 = btoa(s);
+      showDemoProgress('Analyse harmonique en cours…');
+      return compressDemoB64(b64, 'demo_landscape.jpg', b.byteLength);
+    })
+    .catch(function(e) { demoProgressText('❌ ' + e.message); });
+}
+
+// ── Upload : compression via le sélecteur de fichier ──
+(function() {
+  var df = document.getElementById('demo-file');
+  if (df) df.addEventListener('change', function() {
+    if (df.files.length) {
+      var file = df.files[0];
+      var r = new FileReader();
+      r.onload = function(e) {
+        demoDismiss();
+        setTimeout(function() {
+          var b64 = e.target.result.split(',')[1];
+          showDemoProgress('Analyse harmonique en cours…');
+          compressDemoB64(b64, file.name, file.size);
+        }, 600);
+      };
+      r.readAsDataURL(file);
+    }
+  });
+})();
+
+// ── Compression réelle via l'API ──
+function compressDemoB64(b64, name, size) {
+  var f = new FormData();
+  f.append('file', new Blob([Uint8Array.from(atob(b64), function(c) { return c.charCodeAt(0); })], {type: 'image/jpeg'}), name || 'image.jpg');
+  f.append('mode', 'select');
+  f.append('min_psnr', '25');
+  return fetch('/api/compress/preview', {method: 'POST', body: f})
+    .then(function(r) { return r.json().then(function(d) { if (!r.ok) throw new Error(d.error || 'Erreur'); return d; }); })
+    .then(function(d) {
+      var sv = d.saved_percent, vr = d.ratio;
+      var h = '<div style="text-align:left;background:var(--g1);border:1px solid var(--b1);border-radius:14px;padding:12px 14px;margin-top:10px">';
+      h += '<div style="font-size:13px;font-weight:700;color:var(--life)">✅ Compression terminée <span style="float:right;background:var(--life-d);border:1px solid var(--life-g);border-radius:999px;padding:2px 10px;font-size:11px">×' + vr + '</span></div>';
+      h += '<div style="font-size:12px;color:var(--t3);margin-top:4px">' + fmtBytes(size) + ' → <b style="color:var(--soul-l)">' + fmtBytes(d.compressed_size) + '</b> · <b style="color:var(--life)">' + sv + '%</b> économisés</div>';
+      h += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:11px;color:var(--t3)"><span>🎯 PSNR <b style="color:var(--t1)">' + (d.psnr >= 99 ? '∞' : d.psnr.toFixed(1)) + ' dB</b></span><span>📦 <b style="color:var(--t1)">' + d.format + '</b></span><span>📐 <b style="color:var(--t1)">' + d.width + '×' + d.height + '</b></span></div>';
+      h += '<div style="position:relative;aspect-ratio:3/2;background:#05070d;border-radius:10px;overflow:hidden;margin-top:10px"><img src="data:image/jpeg;base64,' + d.reconstructed_base64 + '" style="width:100%;height:100%;object-fit:contain" alt="Ψ"></div>';
+      h += '</div>';
+      h += '<div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap">';
+      h += '<button onclick="demoFinish()" style="padding:10px 22px;border:none;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,var(--life),#1fae7c);color:#04261a">🚀 Continuer</button>';
+      h += '<button onclick="demoStoragePropose()" style="padding:10px 22px;border:.5px solid var(--soul-g);border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;background:var(--soul-d);color:var(--soul-l)">📱 Et mes fichiers ?</button>';
+      h += '</div>';
+      document.getElementById('demo-result-compress').style.display = 'block';
+      document.getElementById('demo-result-compress').innerHTML = h;
+      document.getElementById('demo-progress').style.display = 'none';
+      return d;
+    })
+    .catch(function(e) { demoProgressText('❌ ' + e.message); });
+}
+
+function demoFinish() {
+  try { localStorage.setItem('ka_demo_done', '1'); } catch(e) {}
+  if (kaNeedsOnboard()) { go('s-onboard'); onboardRender(); }
+  else { go('s-home'); }
+}
+
+// ── Proposer l'analyse du stockage ──
+function demoStoragePropose() {
+  demoDismiss();
+  setTimeout(function() {
+    if (window.proposeStorageScan) proposeStorageScan();
+    else go('s-storage');
+  }, 600);
+}
+
+// ── Helpers ──
+function showDemoProgress(txt) {
+  var p = document.getElementById('demo-progress'); if (p) p.style.display = 'block';
+  var b = document.getElementById('demo-progress-bar'); if (b) b.style.width = '40%';
+  demoProgressText(txt);
+}
+function demoProgressText(txt) {
+  var t = document.getElementById('demo-progress-text'); if (t) t.textContent = txt;
+}
+function fmtBytes(n) {
+  if (n < 1024) return n + ' o';
+  if (n < 1048576) return (n / 1024).toFixed(1) + ' Ko';
+  return (n / 1048576).toFixed(1) + ' Mo';
+}
+// ═══ ASSISTANCE RESPIRATION HARMONIQUE ═══
+// Fréquence de résonance : 6 cycles/min (0,1 Hz) — inspir 4 s / expir 6 s
+// La même fréquence que celle mesurée par la caméra (indicateur φ Cohérence)
+var breathOn = false, breathTimer = null, breathT0 = 0;
+var breathLastPhase = '', breathVoice = true;
+var breathPhiTick = 0, breathProfile = 'resonance';
+var BREATH_PROFILES = {
+  resonance:  { in: 4, out: 6,  emoji: '🌊', name: 'Résonance' },
+  relaxation: { in: 4, out: 8,  emoji: '😌', name: 'Relaxation' },
+  energie:    { in: 4, out: 4,  emoji: '⚡', name: 'Énergie' }
+};
+function breathIn() { return BREATH_PROFILES[breathProfile].in; }
+function breathOut() { return BREATH_PROFILES[breathProfile].out; }
+
+function breathSetProfile(name) {
+  if (!BREATH_PROFILES[name]) return;
+  breathProfile = name;
+  var p = BREATH_PROFILES[name];
+  // Mise en évidence du profil actif
+  Object.keys(BREATH_PROFILES).forEach(function(k) {
+    var el = document.getElementById('bp-' + k);
+    if (!el) return;
+    var active = k === name;
+    el.style.background = active ? 'var(--soul-d)' : 'var(--g1)';
+    el.style.border = active ? '.5px solid var(--soul-g)' : '.5px solid var(--b1)';
+    el.style.color = active ? 'var(--soul-l)' : 'var(--t3)';
+  });
+  var info = document.getElementById('breath-profile-info');
+  if (info) {
+    var cpm = 60 / (p.in + p.out);
+    var cpmStr = (cpm % 1 === 0) ? String(cpm) : cpm.toFixed(1).replace('.', ',');
+    info.textContent = p.emoji + ' ' + p.name + ' · ' + p.in + ' s inspir / ' + p.out + ' s expir · ' + cpmStr + ' cycles/min';
+  }
+  if (breathOn) { breathStop(); breathStart(); } // redémarrer avec le nouveau rythme
+}
+
+function breathToggle() {
+  var ui = document.getElementById('breath-ui');
+  var btn = document.getElementById('breath-btn');
+  if (!ui) return;
+  if (ui.style.display === 'none') {
+    ui.style.display = 'block';
+    btn.textContent = '✕ Fermer la respiration';
+    renderBreathStats();
+  } else {
+    breathStop();
+    ui.style.display = 'none';
+    btn.textContent = '🫁 Assistance respiration harmonique';
+  }
+}
+
+function breathStart() {
+  if (breathOn) return;
+  breathOn = true;
+  breathLastPhase = '';
+  breathPhiTick = 0;
+  breathT0 = Date.now();
+  document.getElementById('breath-start').style.display = 'none';
+  document.getElementById('breath-stop').style.display = 'inline-block';
+  document.getElementById('breath-cycle').textContent = 'cycle 1 · 0:00';
+  document.getElementById('breath-phase').textContent = 'Inspirez…';
+  breathTimer = setInterval(breathFrame, 100);
+}
+
+function breathStop() {
+  if (!breathOn) return;
+  breathOn = false;
+  if (breathTimer) { clearInterval(breathTimer); breathTimer = null; }
+  document.getElementById('breath-start').style.display = 'inline-block';
+  document.getElementById('breath-stop').style.display = 'none';
+  var orb = document.getElementById('breath-orb');
+  if (orb) { orb.style.transform = 'scale(.65)'; orb.style.background = 'radial-gradient(circle at 50% 50%,var(--soul-d),var(--soul-g))'; }
+  var ph = document.getElementById('breath-phase');
+  if (ph) ph.textContent = 'Inspirez…';
+  saveBreathSession();
+}
+
+function breathFrame() {
+  var t = (Date.now() - breathT0) / 1000;
+  var period = breathIn() + breathOut();
+  var cyc = t / period;
+  var f = cyc % 1;
+  var inFrac = breathIn() / period;
+  var isIn = f < inFrac;
+  var p = isIn ? f / inFrac : (f - inFrac) / (1 - inFrac);
+  var s = p * p * (3 - 2 * p); // smoothstep — souffle naturel
+  var scale = isIn ? 0.65 + 0.35 * s : 1 - 0.35 * s;
+  var orb = document.getElementById('breath-orb');
+  if (orb) {
+    orb.style.transform = 'scale(' + scale.toFixed(3) + ')';
+    orb.style.background = isIn
+      ? 'radial-gradient(circle at 50% 50%,var(--soul-d),var(--soul-g))'
+      : 'radial-gradient(circle at 50% 50%,var(--life-d),var(--life-g))';
+  }
+  var label = isIn ? 'Inspirez…' : 'Expirez…';
+  var ph = document.getElementById('breath-phase');
+  if (ph) {
+    ph.textContent = label;
+    ph.style.color = isIn ? 'var(--soul-l)' : 'var(--life)';
+  }
+  // Annonce vocale locale (hors-ligne) à chaque changement de phase
+  if (label !== breathLastPhase) {
+    breathLastPhase = label;
+    if (breathVoice) kaCallSpeakFallback(isIn ? 'Inspirez' : 'Expirez');
+  }
+  var mm = Math.floor(t / 60), ss = Math.floor(t % 60);
+  var cycEl = document.getElementById('breath-cycle');
+  if (cycEl) cycEl.textContent = 'cycle ' + (Math.floor(cyc) + 1) + ' · ' + mm + ':' + String(ss).padStart(2, '0');
+  // FC en direct si la caméra PPG tourne
+  var bpmEl = document.getElementById('breath-live-bpm');
+  if (bpmEl && typeof santeCamBPM === 'number' && santeCamBPM) bpmEl.textContent = Math.round(santeCamBPM) + ' bpm';
+  // φ Cohérence en direct (~toutes les 3 s, si signal PPG suffisant)
+  breathPhiTick++;
+  if (breathPhiTick % 30 === 0) {
+    var phiEl = document.getElementById('breath-live-phi');
+    if (phiEl && santeCamAllSamples && santeCamAllSamples.length >= 120) {
+      var ind = santeComputeAllIndicators(santeCamAllSamples);
+      if (ind && ind.coherence_phi !== undefined) {
+        phiEl.textContent = ind.coherence_phi + '%';
+        phiEl.style.color = ind.coherence_phi > 70 ? 'var(--life)' : 'var(--coral)';
+      }
+    }
+  }
+}
+
+function renderBreathStats() {
+  var log = breathLoadLog();
+  var total = 0;
+  log.forEach(function(s) { total += s.dur; });
+  var el = document.getElementById('breath-stats');
+  if (el) el.textContent = log.length
+    ? 'Séances : ' + log.length + ' · total ' + Math.round(total / 60) + ' min'
+    : 'Première séance ? 4 s inspir · 6 s expir.';
+}
+
+function breathLoadLog() {
+  try { return JSON.parse(localStorage.getItem('ka_breath_log') || '[]'); } catch(e) { return []; }
+}
+
+function saveBreathSession() {
+  var dur = (Date.now() - breathT0) / 1000;
+  if (dur < 10) return; // ignorer les séances de moins de 10 s
+  var cycles = Math.floor(dur / (breathIn() + breathOut()));
+  var log = breathLoadLog();
+  log.push({ d: Date.now(), dur: Math.round(dur), cyc: cycles, profil: breathProfile });
+  if (log.length > 100) log = log.slice(-100);
+  try { localStorage.setItem('ka_breath_log', JSON.stringify(log)); } catch(e) {}
+  renderBreathStats();
+}
+
+// Hook : rafraîchir la personnalisation quand on ouvre le More panel
+var _origShowMore = showMore;
+showMore = function() {
+  homePersonalize();
+  _origShowMore();
+};
+
+function go(id){
+  if(id===cur)return;
+  document.querySelectorAll('.sc').forEach(s=>s.classList.remove('sc--on','sc--in'));
+  const el=document.getElementById(id);
+  el.classList.add('sc--on','sc--in');
+  cur=id;
+  const nb=document.getElementById('nav-bar');
+  nb.style.display=CALL_SCREENS.has(id)?'none':'flex';
+  Object.entries(NAV_MAP).forEach(([sid,nid])=>{document.getElementById(nid)?.classList.toggle('nb--on',sid===id);});
+  if(!Object.values(NAV_MAP).includes('nb-'+id)) document.getElementById('nb-more')?.classList.remove('nb--on');
+	if(id==='s-call'){startCall();}else{stopCall();}
+	if(id==='s-cap'){buildCapWave();}
+	if(id==='s-holo'){holoRender('all');}
+	if(id==='s-onboard'){onboardRender();}
+	if(id==='s-vitalka'){if(window.VitalKaModule)VitalKaModule.render();}
+	closeMore();
+}
+function showMore(){document.getElementById('more-panel').style.display='block';document.getElementById('nb-more').classList.add('nb--on');}
+
+// ── QUALITÉ INTUITIVE ──
+
+function closeMore(){const p=document.getElementById('more-panel');if(p)p.style.display='none';document.getElementById('nb-more')?.classList.remove('nb--on');}
+
+function mk(lbl,alt,w,cls,fn){
+  const el=document.createElement('div');el.className='key'+(cls?' '+cls:'');el.style.width=w+'px';
+  el.setAttribute('role','button');
+  el.innerHTML=`<span class="key__c">${lbl}</span>${alt?`<span class="key__a">${alt}</span>`:''}`;
+  el.addEventListener('pointerdown',e=>{e.preventDefault();el.classList.add('key--p');setTimeout(()=>el.classList.remove('key--p'),115);fn();});
+  return el;
+}
+function buildKbd(){
+  const rn=document.getElementById('rn');rn.innerHTML='';
+  KR[0].forEach(([c,a])=>{const d=K.alt?(a||c):c,s=K.alt?c:a;rn.appendChild(mk(d,s,32,'',()=>type(d)));});
+  ['r1','r2'].forEach((id,ri)=>{
+    const r=document.getElementById(id);r.innerHTML='';
+    KR[ri+1].forEach(([c,a])=>{const d=(K.shift||K.lock)?c.toUpperCase():c;r.appendChild(mk(d,a,33,'',()=>{type(d);if(K.shift&&!K.lock){K.shift=false;buildKbd();}}));});
+  });
+  const r3=document.getElementById('r3');r3.innerHTML='';
+  r3.appendChild(mk(K.lock?'⇪':'⇧','',43,'key--sp'+((K.shift||K.lock)?' key--sft':''),()=>{
+    const n=Date.now();if(n-K.ts<280){K.lock=!K.lock;K.shift=K.lock;}else{K.shift=!K.shift;K.lock=false;}K.ts=n;buildKbd();
+  }));
+  KR[3].forEach(([c,a])=>{const d=(K.shift||K.lock)?c.toUpperCase():c;r3.appendChild(mk(d,a,35,'',()=>{type(d);if(K.shift&&!K.lock){K.shift=false;buildKbd();}}));});
+  r3.appendChild(mk('⌫','',43,'key--sp key--del',()=>{K.txt=K.txt.slice(0,-1);upd();}));
+  const rs=document.getElementById('rs');rs.innerHTML='';
+  rs.appendChild(mk(K.alt?'ABC':'123','',49,'key--sp',()=>{K.alt=!K.alt;buildKbd();}));
+  const sp=document.createElement('div');sp.className='key key--spc';sp.style.flex='1';
+  sp.innerHTML='<span class="key__c">espace</span>';
+  sp.addEventListener('pointerdown',e=>{e.preventDefault();sp.classList.add('key--p');setTimeout(()=>sp.classList.remove('key--p'),115);type(' ');});
+  rs.appendChild(sp);
+  rs.appendChild(mk('Envoyer','',82,'key--life',()=>sendMsg()));
+}
+function type(c){K.txt+=c;upd();}
+function upd(){
+  document.getElementById('ftxt').textContent=K.txt;
+  var ni=document.getElementById('fld-native');
+  if(ni&&document.activeElement!==ni)ni.value=K.txt;
+  document.getElementById('sbtn').classList.toggle('ib__snd--on',K.txt.length>0);
+  renderSugs();
+}
+function getSugs(t){const l=(t.trim().split(' ').pop()||'').toLowerCase();for(const[k,v]of Object.entries(SD)){if(k&&l.startsWith(k))return v.slice(0,6);}return SD[''].slice(0,6);}
+function renderSugs(){
+  const c=document.getElementById('sgs');c.innerHTML='';
+  getSugs(K.txt).forEach((w,i)=>{
+    const d=document.createElement('div');d.className='sg'+(i===0?' sg--h':'');
+    d.setAttribute('role','option');d.textContent=w;
+    d.addEventListener('pointerdown',e=>{e.preventDefault();const p=K.txt.trim().split(' ');p[p.length-1]=w;K.txt=p.join(' ')+' ';upd();});
+    c.appendChild(d);
+  });
+}
+function paste(){const w=['Sophie','Réunion demain ?','Ok pour 19h !','Super idée !'];K.txt+=w[Math.floor(Math.random()*w.length)];upd();}
+// 🎓 Onboarding : envoie une question d'exemple + masque la carte
+function onboardAsk(q){
+  var card=document.getElementById('onboard-card');
+  if(card)card.style.display='none';
+  try{localStorage.setItem('ka_onboarded','1');}catch(e){}
+  K.txt=q;upd();
+  sendMsg();
+}
+// Affiche la carte au premier lancement
+(function(){
+  var onboarded=false;
+  try{onboarded=!!localStorage.getItem('ka_onboarded');}catch(e){}
+  if(!onboarded){
+    setTimeout(function(){
+      var card=document.getElementById('onboard-card');
+      if(card)card.style.display='block';
+    },600);
+  }
+})();
+function sendMsg(){
+  const val=K.txt.trim();if(!val)return;
+  const c=document.getElementById('msglist');
+  // Message utilisateur
+  const m=document.createElement('div');m.className='msg msg--m';m.textContent=val;c.appendChild(m);c.scrollTop=c.scrollHeight;
+  K.txt='';upd();
+  var ni=document.getElementById('fld-native');if(ni)ni.value='';
+  
+  
+// ⚡ Clavier contextuel : s'ouvre au focus du champ, se ferme à l'envoi
+function openKbd(){
+  var k=document.getElementById('kbd');
+  if(!k)return;
+  // Détection tactile : le clavier AZERTY custom est pour mobile/tactile
+  var touch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  if(touch && window.innerWidth<760){
+    k.classList.add('open');
+    setTimeout(function(){k.scrollIntoView({behavior:'smooth',block:'nearest'});},50);
+  }
+}
+function closeKbd(){const k=document.getElementById('kbd');if(k)k.classList.remove('open');}
+// ⌨️ Support clavier physique : sur desktop, les touches tapent directement
+document.addEventListener('keydown',function(e){
+  var t=e.target;
+  // Si on tape dans un champ natif (input réel), laisser le navigateur gérer
+  if(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'))return;
+  // Ne taper que si l'écran messages est visible (classe sc--on, pas style)
+  var msgScreen=document.getElementById('s-msg');
+  if(!msgScreen||!msgScreen.classList.contains('sc--on'))return;
+  // Enter : envoyer si le clavier AZERTY est actif (l'input natif gère son propre Enter)
+  if(e.key==='Enter'){ if(K.txt.trim()){sendMsg();} return; }
+  if(e.key==='Backspace'){ K.txt=K.txt.slice(0,-1); upd(); return; }
+  if(e.key.length===1 && !e.ctrlKey && !e.metaKey && !e.altKey){
+    K.txt+=e.key; upd();
+  }
+});
+document.addEventListener('DOMContentLoaded',function(){
+  var fld=document.getElementById('fld');
+  if(fld){
+    fld.addEventListener('click',function(){openKbd();fld.focus();});
+    fld.addEventListener('focus',function(){openKbd();});
+    fld.addEventListener('touchend',function(){openKbd();});
+  }
+  var sbtn=document.getElementById('sbtn');
+  if(sbtn){sbtn.addEventListener('click',function(){setTimeout(closeKbd,150);});}
+  document.addEventListener('click',function(e){
+    if(e.target.closest('#kbd')||e.target.closest('.ib'))return;
+    if(window.innerWidth<760)closeKbd();
+  });
+});
+
+// 🆕 Détection commandes de compression/stockage
+  const vlow=val.toLowerCase();
+  const stoKeywords=['compresse','compresser','compression','libère','liberer','espace','stockage','optimise','optimiser','fichiers','photos lourdes','disque plein','sature'];
+  const isStorageCmd=stoKeywords.some(function(k){return vlow.indexOf(k)>=0;}) && vlow.length<80;
+  
+  if(isStorageCmd){
+    const think=document.createElement('div');think.className='msg msg--t';think.style.opacity='0.6';
+    think.innerHTML='<span style="animation:pulse 1.2s ease-in-out infinite">●</span> KA analyse…';
+    think.id='ka-thinking';c.appendChild(think);c.scrollTop=c.scrollHeight;
+    
+    // Ouvrir l'optimiseur et répondre
+    setTimeout(function(){
+      const t=document.getElementById('ka-thinking');if(t)t.remove();
+      const r=document.createElement('div');r.className='msg msg--t';
+      r.innerHTML='💾 <b>Optimiseur de stockage</b><br><br>Je peux compresser vos photos (jusqu\'à 30×), vidéos (30×) et fichiers (3×) sans perte visible.<br><br><span style="display:inline-block;background:var(--life);color:#fff;padding:8px 18px;border-radius:10px;cursor:pointer;font-weight:600;margin-top:4px" onclick="go(\'s-storage\')">📂 Ouvrir l\'optimiseur</span>';
+      c.appendChild(r);c.scrollTop=c.scrollHeight;
+    },800);
+    return;
+  }
+  
+  // 🌊 HarmonicAI v3 — arithmétique émergente LOCALE (hors-ligne, 0 serveur)
+  if (window.HarmonicAI) {
+    const local = window.HarmonicAI.tryLocal(val);
+    if (local && local.local) {
+      const r = document.createElement('div'); r.className = 'msg msg--t';
+      r.innerHTML = '<b>' + local.expression + '</b> = ' + local.result +
+                    '<br><span style="font-size:11px;color:var(--t3)">⚡ émergence ondulatoire — s<sub>a</sub>·s<sub>b</sub> = s<sub>a+b</sub> — 0 fait stocké</span>';
+      c.appendChild(r); c.scrollTop = c.scrollHeight;
+      return;
+    }
+  }
+  
+  // Indicateur "KA réfléchit..."
+  const think=document.createElement('div');think.className='msg msg--t';think.style.opacity='0.6';
+  think.innerHTML='<span style="animation:pulse 1.2s ease-in-out infinite">●</span> KA réfléchit…';
+  think.id='ka-thinking';c.appendChild(think);c.scrollTop=c.scrollHeight;
+  // Appeler l'IA
+  askKA(val).then(reply => {
+    const t = document.getElementById('ka-thinking');
+    if (t) t.remove();
+    const r=document.createElement('div');r.className='msg msg--t';r.textContent=reply;c.appendChild(r);c.scrollTop=c.scrollHeight;
+    // 🎵 KA parle si la voix est activée
+    if (K.voice) { kaCallSpeak(reply); }
+  });
+}
+function toggleVoice(){
+  K.voice=!K.voice;const btn=document.getElementById('tbv'),lbl=document.getElementById('vl');
+  btn.classList.toggle('tbn--on',K.voice);btn.setAttribute('aria-pressed',K.voice);
+  if(K.voice){
+    lbl.textContent='● Écoute…';
+    // 🆕 Vraie reconnaissance vocale via Web Speech API
+    var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(SR){
+      K.rec=new SR();
+      K.rec.lang='fr-FR';K.rec.continuous=false;K.rec.interimResults=true;
+      K.rec.onresult=function(ev){
+        var txt='';
+        for(var i=ev.resultIndex;i<ev.results.length;i++){txt+=ev.results[i][0].transcript;}
+        K.txt=txt;upd();
+      };
+      K.rec.onend=function(){
+        if(K.voice){
+          try{K.rec.start();}catch(e){
+            K.voice=false;btn.classList.remove('tbn--on');lbl.textContent='Voix';btn.setAttribute('aria-pressed','false');
+          }
+        }
+      };
+      K.rec.onerror=function(){K.voice=false;btn.classList.remove('tbn--on');lbl.textContent='Voix';btn.setAttribute('aria-pressed','false');};
+      try{K.rec.start();}catch(e){}
+    }else{
+      // Fallback: simulation si Web Speech API indisponible
+      lbl.textContent='Voix (simulé)';
+      const phrases=['Rendez-vous demain à 19h ?','Appelle Sophie','Prépare ma réunion'];
+      const phrase=phrases[Math.floor(Math.random()*phrases.length)];let i=0;
+      K.vt=setInterval(()=>{if(!K.voice||i>=phrase.length){clearInterval(K.vt);if(K.voice){K.voice=false;btn.classList.remove('tbn--on');lbl.textContent='Voix';btn.setAttribute('aria-pressed','false');}return;}K.txt+=phrase[i++];upd();},72);
+    }
+  }else{
+    if(K.rec){try{K.rec.stop();}catch(e){}}
+    clearInterval(K.vt);lbl.textContent='Voix';
+  }
+}
+function toggleEmoji(){
+  K.emo=!K.emo;const ep=document.getElementById('ep'),kd=document.getElementById('kbd'),btn=document.getElementById('tbe');
+  btn.classList.toggle('tbn--on',K.emo);btn.setAttribute('aria-pressed',K.emo);
+  if(K.emo){ep.innerHTML='';EM.forEach(e=>{const b=document.createElement('div');b.className='eb';b.setAttribute('role','button');b.textContent=e;b.addEventListener('pointerdown',ev=>{ev.preventDefault();type(e);});ep.appendChild(b);});ep.classList.add('ep--on');kd.style.display='none';}
+  else{ep.classList.remove('ep--on');kd.style.display='block';}
+}
+let callSecs=0,callIv=null,callTTS=null;
+function startCall(){
+  callSecs=0;clearInterval(callIv);
+  callIv=setInterval(()=>{callSecs++;const m=String(Math.floor(callSecs/60)).padStart(2,'0'),s=String(callSecs%60).padStart(2,'0');const el=document.getElementById('ctmr');if(el)el.textContent=m+':'+s;},1000);
+  const w=document.getElementById('cwv');if(!w)return;w.innerHTML='';
+  for(let i=0;i<22;i++){const b=document.createElement('div');b.className='wb';b.style.cssText='--wh:'+(3+Math.random()*22)+'px;animation-duration:'+(0.35+Math.random()*0.5)+'s;animation-delay:'+(Math.random()*0.4)+'s';w.appendChild(b);}
+  // 🆕 Synthèse vocale : KA parle après 2 secondes
+  setTimeout(function(){
+    if(cur!=='s-call')return;
+    kaCallSpeak("Bonjour, je suis KA. Comment puis-je vous aider ?");
+  },2000);
+}
+function stopCall(){clearInterval(callIv);if(callTTS){callTTS.cancel();callTTS=null;}if(window._callRec){try{window._callRec.stop();}catch(e){}}}
+// 🆕 Synthèse vocale Web (TTS)
+// 🎵 KA Voice Engine (serveur harmonique) avec fallback Web Speech
+// 🗣️ Le synthétiseur « emprunte » le style conversationnel : kaVocaliser
+//    transforme le texte KA en texte parlé (≥ → « supérieur ou égal à »,
+//    ⚠️ — → nettoyés, 140/90 → « 140 sur 90 »…). Le contenu reste identique,
+//    seuls les symboles deviennent des mots. (port JS de pont_hybride.vocaliser)
+var _kaAudioCtx=null;
+function kaVocaliser(text){
+  if(!text)return text;
+  if(window.KAHybrid&&KAHybrid.vocaliser)return KAHybrid.vocaliser(text);
+  return text;
+}
+function kaCallSpeak(text){
+  if(!text)return;
+  text=kaVocaliser(text);
+  // ⚡ Essayer le KA Voice Engine serveur d'abord
+  fetch(API_URL + '/api/voice/stream', {
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({text:text,emotion:'warm'}),
+    signal:AbortSignal.timeout(15000)
+  }).then(function(r){
+    if(!r.ok)throw new Error('voice fail');
+    return r.arrayBuffer();
+  }).then(function(buf){
+    // Lire le WAV (RIFF) avec AudioContext
+    try{
+      if(!_kaAudioCtx)_kaAudioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      _kaAudioCtx.decodeAudioData(buf,function(audioBuf){
+        var src=_kaAudioCtx.createBufferSource();
+        src.buffer=audioBuf;
+        src.connect(_kaAudioCtx.destination);
+        src.start(0);
+      },function(){kaCallSpeakFallback(text);});
+    }catch(e){kaCallSpeakFallback(text);}
+  }).catch(function(){kaCallSpeakFallback(text);});
+}
+// Fallback : Web Speech API si le serveur est indisponible
+function kaCallSpeakFallback(text){
+  if(!('speechSynthesis' in window))return;
+  if(callTTS)callTTS.cancel();
+  callTTS=new SpeechSynthesisUtterance(text);
+  callTTS.lang='fr-FR';callTTS.rate=1.0;callTTS.pitch=1.05;
+  var voices=speechSynthesis.getVoices();
+  for(var i=0;i<voices.length;i++){
+    if(voices[i].lang.indexOf('fr')>=0){callTTS.voice=voices[i];break;}
+  }
+  speechSynthesis.speak(callTTS);
+}
+// 🆕 Reconnaissance vocale pendant l'appel → KA répond oralement
+function kaCallListen(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('Reconnaissance vocale non disponible sur ce navigateur');return;}
+  var rec=new SR();
+  rec.lang='fr-FR';rec.continuous=false;rec.interimResults=true;
+  var tr=document.getElementById('call-transcript');
+  if(tr)tr.textContent='● Écoute…';
+  rec.onresult=function(ev){
+    var txt='';
+    for(var i=ev.resultIndex;i<ev.results.length;i++){txt+=ev.results[i][0].transcript;}
+    if(tr)tr.textContent='"'+txt+'"';
+    if(ev.results[ev.results.length-1].isFinal){
+      // Envoyer à KA et faire parler la réponse
+      askKA(txt).then(function(reply){
+        if(tr)tr.textContent=reply.slice(0,80);
+        kaCallSpeak(reply);
+      });
+    }
+  };
+  rec.onerror=function(){if(tr)tr.textContent='';};
+  rec.onend=function(){if(tr&&tr.textContent.indexOf('Écoute')>=0)tr.textContent='';};
+  window._callRec=rec;
+  try{rec.start();}catch(e){}
+}
+function buildCapWave(){
+  const w=document.getElementById('capwv');if(!w)return;w.innerHTML='';
+  for(let i=0;i<18;i++){const b=document.createElement('div');b.style.cssText='width:2.5px;border-radius:2px;background:rgba(61,219,160,.6);--wh:'+(3+Math.random()*16)+'px;animation:wave '+(0.35+Math.random()*0.5)+'s ease-in-out infinite alternate '+(Math.random()*0.4)+'s';w.appendChild(b);}
+}
+function tick(){const n=new Date();document.getElementById('clk').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
+tick();setInterval(tick,10000);
+buildKbd();renderSugs();
+
+// ── SANTÉ : CAMÉRA PPG ──
+let santeCamStream=null,santeCamTimer=null,santeCamBPM=null,santeCamSamples=[],santeCamAllSamples=[];
+let santeCamVideo=null,santeCamCanvas=null; // vidéo/canvas PPG (utilisés aussi par la démo « le choc »)
+async function santeCamStart(){
+  const ui=document.getElementById('sante-cam-ui');
+  const btn=document.getElementById('sante-cam-btn');
+  const video=document.getElementById('sante-cam-video');
+  const msg=document.getElementById('sante-cam-msg');
+  try{
+    santeCamStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:320,height:240},audio:false});
+    video.srcObject=santeCamStream;
+    ui.style.display='block'; btn.style.display='none';
+    santeCamSamples=[]; santeCamBPM=null; santeCamAllSamples=[];
+    document.getElementById('sante-cam-bpm').textContent='--';
+    document.getElementById('sante-cam-apply').style.display='none';
+    document.getElementById('sante-indicators').style.display='none';
+    msg.textContent='Placez votre visage dans le cadre · Restez immobile · Patientez 10s...';
+    // Démarrer l'analyse PPG après un court délai (le temps que l'exposition se stabilise)
+    setTimeout(()=>{santeCamAnalyze();},1500);
+  }catch(e){
+    msg.textContent='⚠️ Caméra non disponible : '+e.message;
+  }
+}
+function santeCamStop(){
+  if(santeCamStream){santeCamStream.getTracks().forEach(t=>t.stop());santeCamStream=null;}
+  if(santeCamTimer){clearInterval(santeCamTimer);santeCamTimer=null;}
+  document.getElementById('sante-cam-ui').style.display='none';
+  document.getElementById('sante-cam-btn').style.display='block';
+  document.getElementById('sante-cam-video').srcObject=null;
+}
+function santeCamApply(){
+  if(santeCamBPM){
+    document.getElementById('sante-fc').value=Math.round(santeCamBPM);
+    document.getElementById('sante-fc-cam').style.display='inline';
+    // Calculer les indicateurs avancés si assez de données
+    if(santeCamAllSamples&&santeCamAllSamples.length>120){
+      const indicators=santeComputeAllIndicators(santeCamAllSamples);
+      if(indicators){
+        let html='<div class="sec-lbl">📡 INDICATEURS HARMONIQUES (caméra)</div>';
+        html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:10px">';
+        if(indicators.hrv_sdnn) html+=`<div>🫀 HRV SDNN <b>${indicators.hrv_sdnn}</b> ms</div>`;
+        if(indicators.hrv_rmssd) html+=`<div>🧠 HRV RMSSD <b>${indicators.hrv_rmssd}</b> ms</div>`;
+        if(indicators.coherence_phi) html+=`<div style="color:${indicators.coherence_phi>70?'var(--life)':'var(--coral)'}">φ Cohérence <b>${indicators.coherence_phi}%</b></div>`;
+        if(indicators.resp_rate) html+=`<div>🫁 Respiration <b>${indicators.resp_rate}</b> rpm</div>`;
+        if(indicators.arythmia_score!==undefined) html+=`<div>∛ Arythmie <b>${indicators.arythmia_score}%</b> <span style="color:var(--t4)">${indicators.arythmia_risk}</span></div>`;
+        if(indicators.rise_time_ms) html+=`<div>📈 Rigidité <b>${indicators.rise_time_ms}</b>ms <span style="color:var(--t4)">${indicators.arterial_stiffness}</span></div>`;
+        if(indicators.vitality_score) html+=`<div style="grid-column:1/-1;text-align:center;margin-top:4px;font-size:13px">✨ Vitalité <b style="font-size:18px;color:var(--life)">${indicators.vitality_score}%</b></div>`;
+        html+='</div>';
+        document.getElementById('sante-indicators').innerHTML=html;
+        document.getElementById('sante-indicators').style.display='block';
+      }
+    }
+    santeCamStop();
+  }
+}
+function santeCamAnalyze(){
+  const video=document.getElementById('sante-cam-video');
+  const canvas=document.getElementById('sante-cam-canvas');
+  const ctx=canvas.getContext('2d');
+  const bpmEl=document.getElementById('sante-cam-bpm');
+  const msg=document.getElementById('sante-cam-msg');
+  const applyBtn=document.getElementById('sante-cam-apply');
+  let samples=[];
+  let startTime=Date.now();
+  santeCamTimer=setInterval(()=>{
+    if(!santeCamStream){clearInterval(santeCamTimer);return;}
+    // Capturer le frame
+    canvas.width=video.videoWidth||320; canvas.height=video.videoHeight||240;
+    ctx.drawImage(video,0,0,canvas.width,canvas.height);
+    // Extraire la région d'intérêt (centre du visage — zone du front)
+    const rx=Math.floor(canvas.width*0.3),ry=Math.floor(canvas.height*0.2);
+    const rw=Math.floor(canvas.width*0.4),rh=Math.floor(canvas.height*0.3);
+    const imgData=ctx.getImageData(rx,ry,rw,rh);
+    // Calculer la moyenne du canal rouge (le sang absorbe le vert, reflète le rouge)
+    let sum=0;
+    for(let i=0;i<imgData.data.length;i+=4){
+      sum+=imgData.data[i]; // canal rouge
+    }
+    const avg=sum/(imgData.data.length/4);
+    samples.push({t:Date.now()-startTime,v:avg});
+    santeCamAllSamples.push({t:Date.now()-startTime,v:avg});
+    if(santeCamAllSamples.length>1200) santeCamAllSamples=santeCamAllSamples.slice(-900); // ~30s max
+    // Garder ~15 secondes de données
+    if(samples.length>450) samples=samples.slice(-450);
+    // Calculer la FC toutes les ~2 secondes si assez de données
+    if(samples.length>90&&samples.length%30===0){
+      const bpm=santeCamComputeBPM(samples);
+      if(bpm>40&&bpm<180){
+        santeCamBPM=bpm;
+        bpmEl.textContent=Math.round(bpm);
+        // Vérifier si la mesure est stable (écart-type faible sur les 5 dernières mesures)
+        if(santeCamSamples.length>=4){
+          const recent=santeCamSamples.slice(-5).concat([bpm]);
+          const mean=recent.reduce((a,b)=>a+b,0)/recent.length;
+          const std=Math.sqrt(recent.reduce((s,x)=>s+(x-mean)**2,0)/recent.length);
+          if(std<3&&recent.length>=5){
+            msg.textContent='✅ Mesure stable · FC = '+Math.round(bpm)+' bpm';
+            applyBtn.style.display='inline-block';
+          }
+        }
+        santeCamSamples.push(bpm);
+        if(santeCamSamples.length>10)santeCamSamples=santeCamSamples.slice(-10);
+      }
+    }
+    // Timeout après 30s
+    if(Date.now()-startTime>30000&&santeCamBPM){
+      msg.textContent='⏱ Mesure terminée · FC = '+Math.round(santeCamBPM)+' bpm';
+      applyBtn.style.display='inline-block';
+      clearInterval(santeCamTimer);
+    }
+  },33); // ~30 fps
+}
+function santeCamComputeBPM(samples){
+  // Détection des pics dans le signal PPG (canal rouge moyen)
+  // Le signal PPG a une fréquence correspondant au rythme cardiaque
+  // On utilise l'autocorrélation pour trouver la période dominante
+  const n=samples.length;
+  if(n<60) return null;
+  // Normaliser le signal (enlever la tendance)
+  const signal=samples.map(s=>s.v);
+  // Filtre passe-bande simple : différences successives (détrend)
+  const filtered=[];
+  for(let i=2;i<n;i++){
+    filtered.push(signal[i]-signal[i-2]);
+  }
+  // Détection de pics (zero-crossing du signal filtré)
+  // > à gauche && >= à droite : tolère les paliers de quantification
+  // (>= des deux côtés détecterait tout élément d'un plateau → pics parasites)
+  let peaks=[];
+  for(let i=2;i<filtered.length-1;i++){
+    if(filtered[i]>filtered[i-1]&&filtered[i]>=filtered[i+1]&&filtered[i]>0.5){
+      peaks.push(i);
+    }
+  }
+  if(peaks.length<2) return null;
+  // Calculer les intervalles entre pics (en ms)
+  const intervals=[];
+  for(let i=1;i<peaks.length;i++){
+    const dt=samples[peaks[i]].t-samples[peaks[i-1]].t;
+    if(dt>300&&dt<2000) intervals.push(dt); // filtrer les artefacts (20-200 BPM)
+  }
+  if(intervals.length<2) return null;
+  // Médiane des intervalles (robuste aux outliers)
+  intervals.sort((a,b)=>a-b);
+  const medianInterval=intervals[Math.floor(intervals.length/2)];
+  const bpm=60000/medianInterval;
+	  return Math.round(bpm);
+	}
+
+// ── SANTÉ : INDICATEURS HARMONIQUES AVANCÉS ──
+function santeComputeAllIndicators(ppgSamples){
+  // ppgSamples = [{t: ms, v: red_avg}, ...]
+  // Retourne un objet avec tous les indicateurs harmoniques
+  const n=ppgSamples.length;
+  if(n<120) return null; // besoin d'au moins 4 secondes de données
+
+  // 1. Extraire le signal et normaliser
+  const signal=ppgSamples.map(s=>s.v);
+  const mean=signal.reduce((a,b)=>a+b,0)/n;
+  const std=Math.sqrt(signal.reduce((s,x)=>s+(x-mean)**2,0)/n);
+  const normalized=signal.map(v=>(v-mean)/std);
+
+  // 2. Détection des intervalles RR (battement à battement)
+  const filtered=[];
+  for(let i=2;i<n;i++) filtered.push(normalized[i]-normalized[i-2]);
+  const peaks=[];
+  for(let i=2;i<filtered.length-1;i++){
+    // > à gauche && >= à droite : tolère les paliers de quantification
+    if(filtered[i]>filtered[i-1]&&filtered[i]>=filtered[i+1]&&filtered[i]>0.3){
+      peaks.push(i+2); // index dans le signal original
+    }
+  }
+  const rrIntervals=[];
+  for(let i=1;i<peaks.length;i++){
+    const dt=ppgSamples[peaks[i]].t-ppgSamples[peaks[i-1]].t;
+    if(dt>300&&dt<2000) rrIntervals.push(dt);
+  }
+
+  const result={};
+
+  // ── FC (BPM) ── π : périodicité cardiaque
+  if(rrIntervals.length>=2){
+    const sorted=[...rrIntervals].sort((a,b)=>a-b);
+    const medRR=sorted[Math.floor(sorted.length/2)];
+    result.bpm=Math.round(60000/medRR);
+  }
+
+  // ── HRV SDNN (ms) ── φ : variabilité globale
+  if(rrIntervals.length>=4){
+    const rrMean=rrIntervals.reduce((a,b)=>a+b,0)/rrIntervals.length;
+    result.hrv_sdnn=Math.round(Math.sqrt(rrIntervals.reduce((s,x)=>s+(x-rrMean)**2,0)/rrIntervals.length));
+  }
+
+  // ── HRV RMSSD (ms) ── φ : variabilité court terme (tonus vagal)
+  if(rrIntervals.length>=4){
+    let sumSq=0;
+    for(let i=1;i<rrIntervals.length;i++) sumSq+=(rrIntervals[i]-rrIntervals[i-1])**2;
+    result.hrv_rmssd=Math.round(Math.sqrt(sumSq/(rrIntervals.length-1)));
+  }
+
+  // ── Cohérence φ cardiaque ── φ : ratio optimal = φ
+  if(result.hrv_sdnn&&result.bpm){
+    const phi=1.618033988749895;
+    const rrMean=60000/result.bpm;
+    const cv=result.hrv_sdnn/rrMean; // coefficient de variation
+    // Score de cohérence : CV proche de 1/φ² est optimal
+    const target=1/(phi*phi); // ~0.382
+    result.coherence_phi=Math.round(Math.max(0,Math.min(100,100*(1-Math.abs(cv-target)/target))));
+  }
+
+  // ── Fréquence respiratoire (rpm) ── π : modulation lente du PPG
+  // On extrait l'enveloppe du signal PPG (amplitude des pics)
+  if(peaks.length>=6){
+    const amplitudes=peaks.map(i=>ppgSamples[i].v);
+    const ampFiltered=[];
+    for(let i=2;i<amplitudes.length;i++) ampFiltered.push(amplitudes[i]-amplitudes[i-2]);
+    // Détection des cycles respiratoires (pics d'amplitude PPG = inspiration)
+    let respPeaks=0;
+    for(let i=2;i<ampFiltered.length-1;i++){
+      if(ampFiltered[i]>ampFiltered[i-1]&&ampFiltered[i]>ampFiltered[i+1]&&ampFiltered[i]>0.2) respPeaks++;
+    }
+    const durationSec=(ppgSamples[ppgSamples.length-1].t-ppgSamples[0].t)/1000;
+    if(durationSec>5&&respPeaks>=2){
+      result.resp_rate=Math.round(respPeaks*60/durationSec);
+    }
+  }
+
+  // ── Indice d'arythmie √3 ── irrégularité cubique
+  if(rrIntervals.length>=8){
+    const rrMean=rrIntervals.reduce((a,b)=>a+b,0)/rrIntervals.length;
+    // √3 = 1.732... la stabilité du rythme est gouvernée par √3
+    const s3=1.732050807568877;
+    const cv_rr=Math.sqrt(rrIntervals.reduce((s,x)=>s+(x-rrMean)**2,0)/rrIntervals.length)/rrMean;
+    // Un rythme sain a CV < 0.1 (régulier comme √3)
+    result.arythmia_score=Math.round(Math.max(0,Math.min(100,100*(1-cv_rr*10/s3))));
+    result.arythmia_risk=cv_rr>0.15?'élevé':cv_rr>0.10?'modéré':'faible';
+  }
+
+  // ── Indice de rigidité artérielle ── e : temps de montée du pic
+  if(peaks.length>=4){
+    const riseTimes=[];
+    for(const pi of peaks){
+      // Chercher le creux précédent
+      let trough=pi;
+      for(let j=pi-1;j>Math.max(0,pi-30);j--){
+        if(normalized[j]<normalized[trough]) trough=j;
+      }
+      const riseTime=ppgSamples[pi].t-ppgSamples[trough].t;
+      if(riseTime>50&&riseTime<400) riseTimes.push(riseTime);
+    }
+    if(riseTimes.length>=3){
+      const avgRise=riseTimes.reduce((a,b)=>a+b,0)/riseTimes.length;
+      result.rise_time_ms=Math.round(avgRise);
+      // Temps de montée normal : 100-150ms. >200ms = rigidité
+      result.arterial_stiffness=avgRise>200?'élevée':avgRise>150?'modérée':'normale';
+    }
+  }
+
+  // ── Score de vitalité harmonique ── φ·π·e fusion
+  let vitalityScore=0, vitalityCount=0;
+  if(result.coherence_phi!==undefined){vitalityScore+=result.coherence_phi;vitalityCount++;}
+  if(result.arythmia_score!==undefined){vitalityScore+=result.arythmia_score;vitalityCount++;}
+  if(result.bpm&&result.bpm>=55&&result.bpm<=85){vitalityScore+=100;vitalityCount++;}
+  else if(result.bpm){vitalityScore+=Math.max(0,100-Math.abs(result.bpm-64)*3);vitalityCount++;}
+  if(result.hrv_rmssd&&result.hrv_rmssd>30){vitalityScore+=100;vitalityCount++;}
+  else if(result.hrv_rmssd){vitalityScore+=Math.min(100,result.hrv_rmssd*3);vitalityCount++;}
+  if(result.resp_rate&&result.resp_rate>=12&&result.resp_rate<=18){vitalityScore+=100;vitalityCount++;}
+  result.vitality_score=vitalityCount>0?Math.round(vitalityScore/vitalityCount):null;
+
+  return result;
+}
+
+// ── SANTÉ HARMONIQUE ──
+async function santeDiagnostic(){
+  const r=document.getElementById('sante-result');
+  const l=document.getElementById('sante-loading');
+  r.style.display='none'; l.style.display='block';
+  // Collecter les données
+  const symptomes=document.getElementById('sante-symptomes').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const vitaux={};
+  const fc=parseFloat(document.getElementById('sante-fc').value);
+  const temp=parseFloat(document.getElementById('sante-temp').value);
+  const sys=parseFloat(document.getElementById('sante-sys').value);
+  const dia=parseFloat(document.getElementById('sante-dia').value);
+  const spo2=parseFloat(document.getElementById('sante-spo2').value);
+  const age=parseInt(document.getElementById('sante-age').value)||null;
+  if(fc)vitaux.frequence_cardiaque=fc;
+  if(temp)vitaux.temperature=temp;
+  if(sys)vitaux.pression_systolique=sys;
+  if(dia)vitaux.pression_diastolique=dia;
+  if(spo2)vitaux.saturation_oxygene=spo2;
+  // Contexte respiration (dernières 24 h) — le serveur ignore le champ s'il ne le connaît pas
+  let respiration=null;
+  try{
+    const now=Date.now();
+    const log=JSON.parse(localStorage.getItem('ka_breath_log')||'[]');
+    const recent=log.filter(s=>now-s.d<86400000);
+    if(recent.length){
+      const totalMin=Math.round(recent.reduce((a,s)=>a+s.dur,0)/60);
+      const lastMin=Math.round((now-recent[recent.length-1].d)/60000);
+      respiration={seances:recent.length,duree_totale_min:totalMin,derniere_seance_il_y_a_min:lastMin};
+    }
+  }catch(e){}
+  try{
+    const resp=await fetch(API_URL+'/api/health/diagnostic',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({symptomes,vitaux,age,respiration})
+    });
+    const d=await resp.json();
+    l.style.display='none'; r.style.display='block';
+    let html='';
+    // Note de contexte respiratoire (séance de cohérence récente)
+    if(respiration){
+      html+=`<div style="font-size:10px;color:var(--life);background:var(--life-d);border-radius:8px;padding:6px;margin-bottom:8px;text-align:center">🫁 Cohérence respiratoire : ${respiration.seances} séance(s) · ${respiration.duree_totale_min} min au total · dernière il y a ${respiration.derniere_seance_il_y_a_min} min</div>`;
+    }
+    // Score global
+    const sc=d.score_harmonique_global||0;
+    const color=sc>0.75?'var(--life)':sc>0.5?'var(--sun)':'var(--coral)';
+    html+=`<div style="text-align:center;margin-bottom:12px"><div style="font-size:28px;font-weight:700;color:${color}">${(sc*100).toFixed(0)}%</div><div style="font-size:10px;color:var(--t4)">Score harmonique global</div></div>`;
+    // Diagnostic principal
+    if(d.diagnostic_harmonique){
+      const diag=d.diagnostic_harmonique;
+      html+=`<div class="sec-lbl" style="color:var(--sun)">🧬 DIAGNOSTIC</div>`;
+      html+=`<div style="font-size:14px;color:var(--t1);font-weight:600;margin-bottom:4px">${diag.pathologie_principale||'—'}</div>`;
+      html+=`<div style="font-size:11px;color:var(--t2);margin-bottom:2px">Constante altérée : <b style="color:var(--soul-l)">${diag.constante_alteree||'—'}</b></div>`;
+      html+=`<div style="font-size:11px;color:var(--t4);margin-bottom:8px">${diag.mecanisme_harmonique||''}</div>`;
+    }
+    // Différentiel
+    if(d.analyse_symptomes&&d.analyse_symptomes.resultats){
+      html+=`<div class="sec-lbl">📊 DIFFÉRENTIEL</div>`;
+      d.analyse_symptomes.resultats.slice(0,4).forEach(x=>{
+        const bar='█'.repeat(Math.round(x.score_resonance*25));
+        html+=`<div style="font-size:11px;margin-bottom:3px;color:var(--t1)"><span style="color:var(--t4)">${x.pathologie}</span> <span style="font-size:9px;color:var(--t4)">${(x.score_resonance*100).toFixed(1)}%</span><br><span style="font-family:monospace;color:var(--soul-l)">${bar}</span></div>`;
+      });
+    }
+    // Vitaux
+    if(d.analyse_vitales&&d.analyse_vitales.scores_individuels){
+      html+=`<div class="sec-lbl" style="margin-top:8px">🩺 CONSTANTES</div>`;
+      Object.entries(d.analyse_vitales.scores_individuels).forEach(([k,v])=>{
+        const em=v.score_coherence>0.7?'✓':v.score_coherence>0.4?'⚠':'✗';
+        html+=`<div style="font-size:10px;color:var(--t2)">${em} ${k}: <b>${v.valeur}</b> ${v.unite} (écart ${v.ecart_pct}%)</div>`;
+      });
+    }
+    // Fréquences
+    if(d.frequences_therapeutiques){
+      html+=`<div class="sec-lbl" style="margin-top:8px">🎵 FRÉQUENCES</div>`;
+      d.frequences_therapeutiques.forEach(f=>{
+        html+=`<div style="font-size:10px;color:var(--t2)">• ${f.freq_hz.toFixed(1)} Hz — ${f.effet}</div>`;
+      });
+    }
+    // Recommandations
+    if(d.recommandations){
+      html+=`<div class="sec-lbl" style="margin-top:8px">💡 RECOMMANDATIONS</div>`;
+      d.recommandations.slice(0,3).forEach((rec,i)=>{
+        html+=`<div style="font-size:10px;color:var(--t2);margin-bottom:2px">${i+1}. ${rec}</div>`;
+      });
+    }
+    r.innerHTML=html||'<div style="color:var(--t4);text-align:center">Aucun résultat. Fournir symptômes et/ou constantes.</div>';
+  }catch(e){
+    l.style.display='none'; r.style.display='block';
+    r.innerHTML=`<span style="color:var(--coral)">⚠️ Erreur: ${e.message}</span>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ÉCRANS DYNAMIQUES — hooks appelés au chargement de chaque écran
+// ═══════════════════════════════════════════════════════════════════
+
+const SCREEN_HOOKS={
+  's-mem': loadMemory,
+  's-prep': loadPrep,
+  's-jrn': loadJourney,
+  's-dec': loadDecision,
+  's-cap': loadCapture,
+  's-rel': loadRelation,
+  's-sante': loadSante,
+};
+
+// Intercepter go() pour déclencher les hooks
+const _originalGo = go;
+go = function(id) {
+  _originalGo(id);
+  const hook = SCREEN_HOOKS[id];
+  if (hook) setTimeout(hook, 100);
+};
+
+// ── MÉMOIRE ──
+async function loadMemory() {
+  const body = document.querySelector('#s-mem .sp-body');
+  if (!body || body.dataset.loaded) return;
+  body.dataset.loaded = '1';
+  try {
+    const r = await fetch(API_URL + '/api/memory/recent', {signal: AbortSignal.timeout(5000)});
+    const data = await r.json();
+    if (data.memories && data.memories.length) {
+      let html = '';
+      data.memories.forEach(function(m) {
+        html += '<div class="tl-item" style="margin-top:10px"><div class="tl-dot tl-dot--soul"></div><div style="font-size:13px;color:var(--t2)">'+(m.title||(m.content||'').slice(0,60))+'</div><div style="font-size:11px;color:var(--t4)">'+(m.date||'')+'</div></div>';
+      });
+      var tl = body.querySelector('.tl');
+      if (tl) tl.innerHTML = html || tl.innerHTML;
+    }
+  } catch(e) {}
+}
+
+// ── PRÉPARER ──
+async function loadPrep() {
+  var briefing = document.querySelector('#s-prep .insight--soul div:last-child');
+  if (!briefing || briefing.dataset.loaded) return;
+  briefing.dataset.loaded = '1';
+  try {
+    var r = await fetch(API_URL + '/api/chat', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: 'genere un briefing pour une reunion produit', user_id: localStorage.getItem('ka_user_id')||'web'}),
+      signal: AbortSignal.timeout(8000)
+    });
+    var d = await r.json();
+    if (d.response && d.response.length > 20) briefing.textContent = d.response.slice(0, 300);
+  } catch(e) {}
+}
+
+// ── VOYAGE ──
+async function loadJourney() {
+  var container = document.querySelector('#s-jrn .sp-body');
+  if (!container || container.dataset.loaded) return;
+  container.dataset.loaded = '1';
+  try {
+    var r = await fetch(API_URL + '/api/chat', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: 'suggere un itineraire de voyage original', user_id: localStorage.getItem('ka_user_id')||'web'}),
+      signal: AbortSignal.timeout(8000)
+    });
+    var d = await r.json();
+    if (d.response) {
+      var card = document.createElement('div');
+      card.className = 'insight insight--wisdom';
+      card.style.marginTop = '12px';
+      card.innerHTML = '<div class="sec-lbl">💡 SUGGESTION KA</div><div style="font-size:13px;color:var(--t2);line-height:1.5">'+d.response.slice(0,250)+'</div>';
+      container.appendChild(card);
+    }
+  } catch(e) {}
+}
+
+// ── DÉCISION ──
+async function loadDecision() {
+  var container = document.querySelector('#s-dec .sp-body');
+  if (!container || container.dataset.loaded) return;
+  container.dataset.loaded = '1';
+  try {
+    var r = await fetch(API_URL + '/api/reason', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({topic: 'analyse les pour et contre de changer de voiture', user_id: localStorage.getItem('ka_user_id')||'web'}),
+      signal: AbortSignal.timeout(8000)
+    });
+    var d = await r.json();
+    var chain = d.chain || d.response || d.reasoning || '';
+    if (chain) {
+      var card = document.createElement('div');
+      card.className = 'insight insight--soul';
+      card.style.marginTop = '12px';
+      card.innerHTML = '<div class="sec-lbl">🧠 ANALYSE KA</div><div style="font-size:13px;color:var(--t2);line-height:1.5">'+chain.slice(0,300)+'</div>';
+      container.appendChild(card);
+    }
+  } catch(e) {}
+}
+
+// ── CAPTURE ──
+async function loadCapture() {
+  var input = document.querySelector('#s-cap .home__ib span');
+  if (!input || input.dataset.hooked) return;
+  input.dataset.hooked = '1';
+  var ib = document.querySelector('#s-cap .home__ib');
+  if (ib) {
+    ib.onclick = async function() {
+      var idea = prompt('Votre idée :');
+      if (!idea) return;
+      try {
+        await fetch(API_URL + '/api/chat', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({message: 'apprends: ' + idea, user_id: localStorage.getItem('ka_user_id')||'web'})
+        });
+        input.textContent = '✨ Idée capturée !';
+        setTimeout(function(){ input.textContent = 'Nouvelle idée…'; }, 2000);
+      } catch(e) { input.textContent = '⚠️ Hors ligne'; }
+    };
+  }
+}
+
+// ── RELATION ──
+async function loadRelation() {
+  var container = document.querySelector('#s-rel .sp-body');
+  if (!container || container.dataset.loaded) return;
+  container.dataset.loaded = '1';
+  try {
+    var r = await fetch(API_URL + '/api/chat', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: 'resume ma relation avec Sophie en 2 phrases', user_id: localStorage.getItem('ka_user_id')||'web'}),
+      signal: AbortSignal.timeout(5000)
+    });
+    var d = await r.json();
+    if (d.response) {
+      var card = document.createElement('div');
+      card.className = 'insight insight--rose';
+      card.style.marginTop = '14px';
+      card.innerHTML = '<div class="sec-lbl">💭 RÉSUMÉ KA</div><div style="font-size:13px;color:var(--t2);line-height:1.5">'+d.response.slice(0,200)+'</div>';
+      container.appendChild(card);
+    }
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ── SMS ──
+var smsCurrentContact='';
+var smsHistory=JSON.parse(localStorage.getItem('ka_sms_history')||'{}');
+function smsOpen(name){
+  smsCurrentContact=name;
+  document.getElementById('sms-contacts').style.display='none';
+  document.getElementById('sms-chat').style.display='block';
+  document.getElementById('sms-chat-name').textContent=name;
+  var messages=smsHistory[name]||[];
+  var html='';
+  messages.forEach(function(m){
+    var cls=m.from==='me'?'msg--m':'msg--t';
+    html+='<div class="msg '+cls+'" style="margin-bottom:4px">'+m.text+'</div>';
+  });
+  if(!messages.length) html='<div style="text-align:center;color:var(--t4);padding:20px;font-size:12px">Aucun message</div>';
+  document.getElementById('sms-messages').innerHTML=html;
+}
+function smsSend(){
+  var input=document.getElementById('sms-input');
+  var text=input.value.trim();
+  if(!text||!smsCurrentContact) return;
+  if(!smsHistory[smsCurrentContact]) smsHistory[smsCurrentContact]=[];
+  smsHistory[smsCurrentContact].push({from:'me',text:text,time:Date.now()});
+  localStorage.setItem('ka_sms_history',JSON.stringify(smsHistory));
+  input.value='';
+  smsOpen(smsCurrentContact);
+	try{window.open('sms:?body='+encodeURIComponent(text),'_blank');}catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🧠 HOLOGRAM STORE — Savoirs spécialisés téléchargeables
+// ═══════════════════════════════════════════════════════════════════════════════
+
+var holoCache = null;       // cache de la liste des hologrammes
+var holoInstalled = {};     // {id: true} pour les hologrammes installés
+var holoFilterMode = 'all'; // 'all' | 'installed' | 'available'
+
+// Récupère la liste des hologrammes depuis l'API
+async function holoFetchList() {
+  if (holoCache) return holoCache;
+  try {
+    var resp = await fetch(API_URL + '/api/store/list', {signal: AbortSignal.timeout(8000)});
+    var data = await resp.json();
+    holoCache = data.holograms || [];
+    return holoCache;
+  } catch(e) {
+    return [];
+  }
+}
+
+// Affiche la liste dans l'écran
+async function holoRender(filter) {
+  if (filter) holoFilterMode = filter;
+  var list = document.getElementById('holo-list');
+  var holos = await holoFetchList();
+  if (!holos.length) { list.innerHTML = '<div style="text-align:center;padding:16px;color:var(--t4)">Aucun hologramme disponible.</div>'; return; }
+
+  // Mettre à jour les pastilles de filtre
+  ['all','installed','available'].forEach(function(f) {
+    var el = document.getElementById('holo-f-'+f);
+    if (el) { el.className = 'pill' + (holoFilterMode===f?' pill--life':''); }
+  });
+
+  // Filtrer
+  var filtered = holos;
+  if (holoFilterMode === 'installed') filtered = holos.filter(function(h) { return holoInstalled[h.id]; });
+  if (holoFilterMode === 'available') filtered = holos.filter(function(h) { return !holoInstalled[h.id]; });
+
+  // Trier par score qualité décroissant
+  filtered.sort(function(a,b) { return (b.quality_score||0) - (a.quality_score||0); });
+
+  var html = '';
+  filtered.forEach(function(h) {
+    var installed = holoInstalled[h.id];
+    var score = (h.quality_score || 0) * 100;
+    var scoreColor = score >= 70 ? 'var(--life)' : score >= 50 ? 'var(--wisdom)' : 'var(--t4)';
+    var facts = h.facts_count || 0;
+    var domain = h.domain || h.id.replace('official_','').replace('community_KA Expander_','');
+    var author = h.author === 'KA' ? 'Officiel' : (h.author||'').replace('KA Expander','Étendu').replace('KA Builder','Construit');
+
+    html += '<div class="card" style="margin-bottom:8px;padding:12px 14px;cursor:pointer;' +
+      (installed ? 'border:1px solid var(--life);' : '') + '" ' +
+      'onclick="' + (installed ? '' : 'holoDownload(\'' + h.id + '\',\'' + domain + '\',' + facts + ')') + '">';
+
+    html += '<div style="display:flex;align-items:center;gap:10px">';
+    html += '<span style="font-size:22px">' + (installed ? '✅' : '🧠') + '</span>';
+    html += '<div style="flex:1;min-width:0">';
+    html += '<div style="font-size:13px;color:var(--t1);font-weight:600">' + domain.charAt(0).toUpperCase() + domain.slice(1) + '</div>';
+    html += '<div style="font-size:10px;color:var(--t4)">' + author + ' · ' + facts.toLocaleString() + ' faits</div>';
+    html += '</div>';
+    html += '<div style="text-align:right">';
+    html += '<div style="font-size:14px;font-weight:700;color:' + scoreColor + '">' + Math.round(score) + '%</div>';
+    html += '<div style="font-size:9px;color:var(--t4)">F1</div>';
+    html += '</div>';
+    html += '<div style="font-size:18px;margin-left:4px">' + (installed ? '' : '›') + '</div>';
+    html += '</div>';
+
+    if (installed) {
+      html += '<div style="margin-top:6px;font-size:10px;color:var(--life);text-align:center">✓ Installé — KA répond dans ce domaine</div>';
+    }
+
+    html += '</div>';
+  });
+
+  list.innerHTML = html;
+}
+
+// Télécharge et installe un hologramme
+async function holoDownload(holoId, domain, facts) {
+  var status = document.getElementById('holo-status');
+  var list = document.getElementById('holo-list');
+
+  status.style.display = 'block';
+  status.innerHTML = '<span style="animation:pulse 1.2s ease-in-out infinite">●</span> Téléchargement de l\'hologramme ' + domain + '…';
+  list.style.opacity = '0.6'; list.style.pointerEvents = 'none';
+
+  try {
+    var resp = await fetch(API_URL + '/api/store/download/' + holoId, {signal: AbortSignal.timeout(15000)});
+    var data = await resp.json();
+    if (data.error) { throw new Error(data.error); }
+
+    // Envoyer au cerveau pour intégration
+    var loadResp = await fetch(API_URL + '/api/store/load', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({holo_id: holoId, facts: data.facts}),
+      signal: AbortSignal.timeout(10000)
+    });
+    var loadData = await loadResp.json();
+
+    holoInstalled[holoId] = true;
+    status.innerHTML = '✅ <b>Hologramme ' + domain + ' installé</b> — ' + (facts||0).toLocaleString() + ' faits. Posez-moi une question sur ce domaine !';
+    status.style.background = 'rgba(120,255,180,.1)';
+    status.style.color = 'var(--life)';
+
+    // Rafraîchir la liste
+    setTimeout(function() { holoRender(); }, 800);
+    setTimeout(function() { status.style.display = 'none'; }, 6000);
+
+  } catch(e) {
+    status.innerHTML = '⚠️ Échec du téléchargement : ' + (e.message || 'réessayez');
+    status.style.background = 'rgba(255,150,150,.1)';
+    status.style.color = 'var(--coral)';
+    list.style.opacity = '1'; list.style.pointerEvents = 'auto';
+    setTimeout(function() { status.style.display = 'none'; }, 5000);
+  }
+}
+
+// 🎯 Spécialisation : centres d'intérêt → hologramme dédié (ingestion massive optionnelle)
+async function holoSpecialize() {
+  var input = document.getElementById('spec-input');
+  var interests = (input.value || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  if (!interests.length) { input.focus(); return; }
+  var massive = document.getElementById('spec-massive').checked;
+  var status = document.getElementById('holo-status');
+  var list = document.getElementById('holo-list');
+  var t0 = Date.now();
+
+  status.style.display = 'block';
+  status.style.background = 'rgba(120,200,255,.08)';
+  status.style.color = 'var(--sky)';
+  status.innerHTML = '<span style="animation:pulse 1.2s ease-in-out infinite">●</span> Spécialisation « ' + interests.join(', ') + ' » en cours…<br><span style="font-size:10px;opacity:.8">ancres bilingues → résonance → benchmark' + (massive ? ' → ingestion massive web' : '') + '</span>';
+  list.style.opacity = '0.6'; list.style.pointerEvents = 'none';
+
+  try {
+    var resp = await fetch(API_URL + '/api/store/specialize', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({interests: interests, language: 'fr', massive: massive, user_id: (localStorage.getItem('ka_user_id')||'mobile')}),
+      signal: AbortSignal.timeout(massive ? 240000 : 120000)
+    });
+    var data = await resp.json();
+    if (data.error) throw new Error(data.error);
+
+    holoInstalled[data.holo_id] = true;
+    if (holoCache) holoCache.push({id: data.holo_id, domain: (data.interests||[])[0]||'', facts_count: data.facts_count, quality_score: data.quality_score||0, author: 'KA-Specializer'});
+    var secs = Math.round((Date.now()-t0)/1000);
+    var q = Math.round((data.quality_score||0)*100);
+    var extra = data.massive_added ? ' (' + data.massive_added + ' via ingestion massive)' : (data.enriched ? ' (+' + data.enriched + ' web)' : '');
+    status.style.background = 'rgba(120,255,180,.1)';
+    status.style.color = 'var(--life)';
+    var cov = data.coverage ? Math.round(data.coverage*100) + '%' : '—';
+    var miss = (data.coverage_missing||[]).length ? ' · à enrichir : ' + data.coverage_missing.slice(0,4).join(', ') : '';
+    status.innerHTML = '✅ <b>' + (data.holo_id||'').replace('personal_','') + '</b> — ' + data.facts_count + ' faits' + extra + ' · qualité ' + q + '% · couverture ' + cov + miss + ' · ' + secs + 's<br><span style="font-size:10px;opacity:.8">Posez-moi une question sur ce sujet !</span>';
+
+    setTimeout(function() { holoRender(); }, 800);
+    setTimeout(function() { status.style.display = 'none'; }, 8000);
+  } catch(e) {
+    status.style.background = 'rgba(255,150,150,.1)';
+    status.style.color = 'var(--coral)';
+    status.innerHTML = '⚠️ ' + (e.message || 'spécialisation échouée');
+    setTimeout(function() { status.style.display = 'none'; }, 6000);
+  } finally {
+    list.style.opacity = '1'; list.style.pointerEvents = 'auto';
+  }
+}
+
+// Initialise l'écran hologrammes à l'ouverture
+function holoInit() {
+  holoRender('all');
+}
+// Exécuter au chargement de l'écran (via l'attribut onscreen ou appel direct)
+document.addEventListener('DOMContentLoaded', function() {
+  // Précharger la liste en arrière-plan
+  setTimeout(function() { holoFetchList().then(function() {}); }, 2000);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 💻 CODE & MATHS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function mathSolve() {
+  var q = document.getElementById('math-input').value.trim();
+  if (!q) return;
+  var el = document.getElementById('math-result');
+  el.innerHTML = '<span style=\"animation:pulse 1.2s ease-in-out infinite\">●</span>';
+  try {
+    var resp = await fetch(API_URL + '/api/chat', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({prompt: q}), signal: AbortSignal.timeout(10000)
+    });
+    var d = await resp.json();
+    el.textContent = d.response || d.error || '?';
+  } catch(e) { el.textContent = '⚠️ ' + (e.message || 'erreur'); }
+}
+
+async function codeGen() {
+  var q = document.getElementById('code-input').value.trim();
+  if (!q) return;
+  var el = document.getElementById('code-result');
+  el.textContent = '● Génération…';
+  try {
+    var resp = await fetch(API_URL + '/api/chat', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({prompt: q}), signal: AbortSignal.timeout(15000)
+    });
+    var d = await resp.json();
+    var r = d.response || d.error || '';
+    el.textContent = r;
+    // Colorer le code si markdown
+    if (r.includes('```')) { el.innerHTML = '<pre>' + r.replace(/```/g,'') + '</pre>'; }
+  } catch(e) { el.textContent = '⚠️ ' + (e.message || 'erreur'); }
+}
+
+function quickCode(q) {
+  document.getElementById('code-input').value = q;
+  codeGen();
+}
+
+function smsNew(){
+  var name=prompt('Nom du contact :');
+  if(!name) return;
+  smsHistory[name]=smsHistory[name]||[];
+  localStorage.setItem('ka_sms_history',JSON.stringify(smsHistory));
+  smsOpen(name);
+}
+
+// ── CAMERA ──
+var camStream=null,camRecorder=null,camRecording=false,camChunks=[];
+var camGallery=JSON.parse(localStorage.getItem('ka_cam_gallery')||'[]');
+function camCapture(){
+  var video=document.getElementById('cam-video');
+  var canvas=document.getElementById('cam-canvas');
+  var placeholder=document.getElementById('cam-placeholder');
+  if(!camStream){
+    navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:1920,height:1080},audio:false})
+      .then(function(s){camStream=s;video.srcObject=s;video.style.display='block';placeholder.style.display='none';setTimeout(function(){camCapture();},800);})
+      .catch(function(e){alert('Camera non disponible');});
+    return;
+  }
+  canvas.width=video.videoWidth||1920;canvas.height=video.videoHeight||1080;
+  var ctx=canvas.getContext('2d');ctx.drawImage(video,0,0);
+  var dataUrl=canvas.toDataURL('image/jpeg',0.9);
+  camAddToGallery(dataUrl,'photo');
+  canvas.toBlob(function(blob){
+    var fd=new FormData();fd.append('file',blob,'photo_'+Date.now()+'.jpg');fd.append('quality','standard');
+    fetch(API_URL+'/api/storage/optimize',{method:'POST',body:fd}).then(function(r){var ratio=r.headers.get('X-Ratio');if(ratio)console.log('Compresse '+ratio+'x');}).catch(function(){});
+  },'image/jpeg',0.9);
+}
+function camRecord(){
+  if(camRecording){camStopRecord();return;}
+  if(!camStream){
+    navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:true})
+      .then(function(s){camStream=s;document.getElementById('cam-video').srcObject=s;document.getElementById('cam-video').style.display='block';document.getElementById('cam-placeholder').style.display='none';camStartRecord();})
+      .catch(function(e){alert('Camera non disponible');});
+    return;
+  }
+  camStartRecord();
+}
+function camStartRecord(){
+  camChunks=[];camRecorder=new MediaRecorder(camStream,{mimeType:'video/webm'});
+  camRecorder.ondataavailable=function(e){if(e.data.size)camChunks.push(e.data);};
+  camRecorder.onstop=function(){var blob=new Blob(camChunks,{type:'video/webm'});var url=URL.createObjectURL(blob);camAddToGallery(url,'video');camRecording=false;};
+  camRecorder.start();camRecording=true;
+  document.querySelector('#s-camera .btn--soul').textContent='Stop';
+}
+function camStopRecord(){if(camRecorder)camRecorder.stop();document.querySelector('#s-camera .btn--soul').textContent='Video';}
+function camAddToGallery(url,type){camGallery.unshift({url:url,type:type,date:Date.now()});if(camGallery.length>12)camGallery=camGallery.slice(0,12);localStorage.setItem('ka_cam_gallery',JSON.stringify(camGallery));camRenderGallery();}
+function camRenderGallery(){
+  var el=document.getElementById('cam-gallery');
+  var html='';
+  camGallery.forEach(function(item,i){
+    var icon=item.type==='video'?'V':'';
+    html+='<div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--g1);cursor:pointer" onclick="camView('+i+')"><img src="'+item.url+'" style="width:100%;height:100%;object-fit:cover"><div style="position:absolute;top:4px;right:4px;font-size:12px">'+(item.type==='video'?'VIDEO':'')+'</div></div>';
+  });
+  el.innerHTML=html||'<div style="text-align:center;color:var(--t4);font-size:12px;grid-column:1/-1">Aucune capture</div>';
+}
+function camView(i){var item=camGallery[i];if(!item)return;window.open(item.url,'_blank');}
+function camStop(){if(camStream){camStream.getTracks().forEach(function(t){t.stop();});camStream=null;}if(camRecorder&&camRecording)camRecorder.stop();camRecording=false;document.getElementById('cam-video').style.display='none';document.getElementById('cam-placeholder').style.display='block';}
+camRenderGallery();
+
+// STORAGE OPTIMIZER
+// ═══════════════════════════════════════════════════════════════════
+let stoQuality = 'standard';
+let stoFiles = [];
+let stoUpscale4K = false;
+let stoCodec = 'hcv2'; // 'hcv1' | 'hcv2'
+
+function storageSetCodec(q) {
+  stoCodec = q;
+  document.querySelectorAll('[id^="sto-codec-"]').forEach(function(el) {
+    el.className = 'pill';
+  });
+  var el = document.getElementById('sto-codec-' + q);
+  if (el) el.className = 'pill pill--life';
+}
+
+function storageSetQuality(q) {
+  stoQuality = q;
+  ['arc','std','eco'].forEach(function(id) {
+    var el = document.getElementById('sto-q-' + id);
+    if (!el) return;
+    el.className = 'pill';
+    el.style.background = '';
+    el.style.borderColor = '';
+    el.style.color = '';
+  });
+  var sel = document.getElementById('sto-q-' + (q === 'archive' ? 'arc' : q === 'standard' ? 'std' : 'eco'));
+  if (sel) {
+    if (q === 'standard') { sel.className = 'pill pill--life'; }
+    else if (q === 'eco') { sel.style.background = 'rgba(240,149,149,.12)'; sel.style.borderColor = 'rgba(240,149,149,.3)'; sel.style.color = 'var(--coral)'; }
+    else { sel.style.background = 'rgba(139,131,255,.12)'; sel.style.borderColor = 'rgba(139,131,255,.3)'; sel.style.color = 'var(--soul-l)'; }
+  }
+}
+
+function storageToggle4K() {
+  stoUpscale4K = !stoUpscale4K;
+  var bg = document.getElementById('sto-4k-toggle');
+  var knob = document.getElementById('sto-4k-knob');
+  var label = document.getElementById('sto-4k-label');
+  if (stoUpscale4K) {
+    bg.style.background = 'var(--life)';
+    knob.style.left = '22px';
+    label.textContent = '4K';
+    label.style.color = 'var(--life)';
+  } else {
+    bg.style.background = 'var(--g1)';
+    knob.style.left = '2px';
+    label.textContent = 'OFF';
+    label.style.color = 'var(--t4)';
+  }
+}
+
+function storageSetQuality(q) {
+  stoQuality = q;
+  ['arc','std','eco'].forEach(function(id) {
+    var el = document.getElementById('sto-q-' + id);
+    if (!el) return;
+    el.className = 'pill';
+    el.style.background = '';
+    el.style.borderColor = '';
+    el.style.color = '';
+  });
+  var sel = document.getElementById('sto-q-' + (q === 'archive' ? 'arc' : q === 'standard' ? 'std' : 'eco'));
+  if (sel) {
+    if (q === 'standard') { sel.className = 'pill pill--life'; }
+    else if (q === 'eco') { sel.style.background = 'rgba(240,149,149,.12)'; sel.style.borderColor = 'rgba(240,149,149,.3)'; sel.style.color = 'var(--coral)'; }
+    else { sel.style.background = 'rgba(139,131,255,.12)'; sel.style.borderColor = 'rgba(139,131,255,.3)'; sel.style.color = 'var(--soul-l)'; }
+  }
+}
+
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' o';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' Ko';
+  return (bytes / 1048576).toFixed(1) + ' Mo';
+}
+
+function storageSelectFiles(fileList) {
+  stoFiles = Array.from(fileList);
+  var gauge = document.getElementById('sto-gauge');
+  var results = document.getElementById('sto-results');
+  var btn = document.getElementById('sto-optimize-btn');
+  if (!stoFiles.length) { gauge.style.display = 'none'; btn.style.opacity = '.5'; btn.style.pointerEvents = 'none'; return; }
+
+  // Analyser le lot
+  var fd = new FormData();
+  stoFiles.forEach(function(f) { fd.append('files', f); });
+  results.innerHTML = '<div style="text-align:center;padding:14px;color:var(--t4);font-size:12px"><span style="animation:pulse 1.2s ease-in-out infinite">●</span> Analyse…</div>';
+
+  fetch(API_URL + '/api/storage/optimize-batch', { method: 'POST', body: fd, signal: AbortSignal.timeout(30000) })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.error) { results.innerHTML = '<span style="color:var(--coral)">⚠️ ' + d.error + '</span>'; return; }
+      gauge.style.display = 'block';
+      btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+
+      var pct = d.total_original > 0 ? Math.round(d.total_saved / d.total_original * 100) : 0;
+      document.getElementById('sto-saved-total').textContent = fmtSize(d.total_saved);
+      document.getElementById('sto-orig-total').textContent = fmtSize(d.total_original);
+      document.getElementById('sto-after-total').textContent = fmtSize(d.total_estimated_after);
+      document.getElementById('sto-bar').style.width = Math.min(pct, 100) + '%';
+
+      // Liste
+      var html = '<div class="sec-lbl" style="margin-bottom:6px">FICHIERS (' + d.n_files + ')</div>';
+      d.files.forEach(function(f) {
+        var icon = f.media_type.indexOf('image') >= 0 ? '🖼️' : f.media_type.indexOf('video') >= 0 ? '🎬' : f.media_type.indexOf('voice') >= 0 ? '🎤' : '📄';
+        html += '<div class="card" style="display:flex;align-items:center;gap:10px;margin-bottom:6px;padding:10px 12px"><span style="font-size:16px">' + icon + '</span>';
+        html += '<div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + f.filename + '</div>';
+        html += '<div style="font-size:10px;color:var(--t4)">' + fmtSize(f.original_size) + ' → <span style="color:var(--life)">' + fmtSize(f.estimated_after) + '</span> (' + f.estimated_ratio + '×)</div></div>';
+        html += '<span style="font-size:13px;font-weight:700;color:var(--life)">-' + Math.round(f.estimated_saved / f.original_size * 100) + '%</span></div>';
+      });
+      results.innerHTML = html;
+    })
+    .catch(function(e) {
+      results.innerHTML = '<span style="color:var(--coral)">⚠️ API inaccessible — réessayez plus tard</span>';
+      gauge.style.display = 'none';
+    });
+}
+
+function storageOptimize() {
+  if (!stoFiles.length) return;
+  var results = document.getElementById('sto-results');
+  var btn = document.getElementById('sto-optimize-btn');
+  btn.style.opacity = '.5'; btn.style.pointerEvents = 'none';
+  btn.textContent = '⏳ Optimisation…';
+
+  var done = 0;
+  var totalSaved = 0;
+  var totalOrig = 0;
+
+  stoFiles.forEach(function(f, idx) {
+    var fd = new FormData();
+    fd.append('file', f);
+    fd.append('quality', stoQuality);
+    fd.append('image', f);
+    fd.append('mode', stoCodec === 'hcv2' ? 'select' : 'auto');
+    fd.append('min_psnr', stoQuality === 'eco' ? '15' : stoQuality === 'archive' ? '30' : '20');
+
+    var endpoint = stoCodec === 'hcv2' ? API_URL + '/api/hcv2/compress' : API_URL + '/api/storage/optimize';
+
+    fetch(endpoint, { method: 'POST', body: fd, signal: AbortSignal.timeout(60000) })
+      .then(function(r) {
+        return r.blob().then(function(blob) { return {r: r, blob: blob}; });
+      })
+      .then(function(resp) {
+        var r = resp.r;
+        var blob = resp.blob;
+        var ratio = parseFloat(r.headers.get('X-Ratio') || (orig > 0 ? (orig / blob.size).toFixed(1) : '1'));
+        var saved = parseInt(r.headers.get('X-Saved') || (orig - blob.size));
+        var orig = parseInt(r.headers.get('X-Original-Size') || f.size);
+        var warning = r.headers.get('X-Warning') || '';
+        var codec = r.headers.get('X-Codec') || (stoCodec === 'hcv2' ? 'HCV2' : 'HCV');
+        var psnr = r.headers.get('X-PSNR') || '';
+        totalSaved += saved; totalOrig += orig; done++;
+
+        // Mettre à jour la liste pour ce fichier avec détails
+        var cards = results.querySelectorAll('.card');
+        if (cards[idx]) {
+          var badge = cards[idx].querySelector('span:last-child');
+          if (badge) {
+            badge.textContent = warning ? '⚠️' : '✅';
+            badge.style.color = warning ? 'var(--coral)' : 'var(--life)';
+          }
+          // ⬇️ Bouton télécharger le fichier .hcv compressé
+          var dlBtn = document.createElement('a');
+          dlBtn.textContent = '⬇️';
+          dlBtn.title = 'Télécharger le fichier compressé';
+          dlBtn.style.cssText = 'font-size:14px;text-decoration:none;cursor:pointer;padding:4px;margin-left:4px';
+          dlBtn.href = URL.createObjectURL(blob);
+          dlBtn.download = (stoFiles[idx] ? stoFiles[idx].name : 'fichier') + (codec === 'HCV2' ? '.hcv2' : '.hcv');
+          cards[idx].querySelector('span:last-child').parentElement.appendChild(dlBtn);
+          // Ajouter le codec sous la ligne taille
+          var sub = cards[idx].querySelector('div > div:nth-child(2)');
+          if (sub) {
+            var extra = document.createElement('div');
+            extra.style.cssText = 'font-size:9px;color:var(--t4);margin-top:2px';
+            extra.textContent = codec + (psnr && psnr !== '0' ? ' · PSNR ' + psnr + ' dB' : '');
+            if (warning) extra.textContent += ' · ' + warning.slice(0, 40);
+            sub.appendChild(extra);
+          }
+        }
+
+        if (done === stoFiles.length) {
+          btn.textContent = '✅ Terminé';
+          document.getElementById('sto-saved-total').textContent = fmtSize(totalSaved);
+          // 📣 Résumé final clair
+          var summary = document.createElement('div');
+          summary.style.cssText = 'text-align:center;padding:12px;margin-top:10px;border-radius:12px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2)';
+          var pct = totalOrig > 0 ? Math.round(totalSaved / totalOrig * 100) : 0;
+          summary.innerHTML = '🎉 <b>' + done + ' fichier' + (done > 1 ? 's' : '') + ' compressé' + (done > 1 ? 's' : '') + '</b> — ' +
+            '<span style="color:var(--life);font-weight:700">' + fmtSize(totalSaved) + '</span> économisés (' + pct + '%)';
+          results.appendChild(summary);
+          // 🔔 Toast de notification
+          try {
+            var t = document.createElement('div');
+            t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--life);color:#04210f;padding:10px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:999;box-shadow:0 8px 30px rgba(0,0,0,.4);animation:pulse 1s';
+            t.textContent = '✅ ' + fmtSize(totalSaved) + ' économisés (' + pct + '%)';
+            document.body.appendChild(t);
+            setTimeout(function() { t.remove(); }, 3500);
+          } catch(e) {}
+        }
+      })
+      .catch(function() {
+        done++;
+        if (done === stoFiles.length) { btn.textContent = '✅ Terminé'; }
+      });
+  });
+}
+
+// ── SANTÉ : bouton diagnostic ──
+async function loadSante() {
+  var resultEl = document.querySelector('#s-sante .result');
+  var assessBtn = document.querySelector('#s-sante .btn--assess');
+  if (!assessBtn || assessBtn.dataset.hooked) return;
+  assessBtn.dataset.hooked = '1';
+  assessBtn.onclick = async function() {
+    var fc = document.getElementById('sante-fc')?.value;
+    var spo2 = document.getElementById('sante-spo2')?.value;
+    var temp = document.getElementById('sante-temp')?.value;
+    if (!fc && !spo2 && !temp) {
+      if (resultEl) { resultEl.style.display = 'block'; resultEl.innerHTML = '<div class="verdict verdict--treat">Veuillez entrer au moins une valeur vitale</div>'; }
+      return;
+    }
+    if (resultEl) { resultEl.style.display = 'block'; resultEl.innerHTML = '<span style="color:var(--soul-l);animation:pulse 1.2s ease-in-out infinite">●</span> Analyse harmonique…'; }
+    try {
+      var resp = await fetch(API_URL + '/api/health/diagnostic', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          symptomes: [],
+          vitaux: {
+            frequence_cardiaque: parseInt(fc)||null,
+            saturation_oxygene: parseInt(spo2)||null,
+            temperature: parseFloat(temp)||null
+          }
+        }),
+        signal: AbortSignal.timeout(10000)
+      });
+      var d = await resp.json();
+      if (resultEl) {
+        // Format de réponse: diagnostic_harmonique, analyse_vitales, recommandations
+        var diag = d.diagnostic_harmonique;
+        var vitales = d.analyse_vitales;
+        var recos = d.recommandations || [];
+        
+        if (diag && diag.score_confiance > 0.6) {
+          resultEl.innerHTML = '<div class="verdict verdict--urgent">🫀 '+(diag.pathologie_principale||'Anomalie détectée')+' — confiance '+(diag.score_confiance*100).toFixed(0)+'%</div>';
+        } else if (vitales && vitales.score_harmonique_global < 0.7) {
+          resultEl.innerHTML = '<div class="verdict verdict--treat">⚠️ Cohérence harmonique faible ('+(vitales.score_harmonique_global*100).toFixed(0)+'%)</div>';
+        } else if (vitales && vitales.score_harmonique_global >= 0.7) {
+          resultEl.innerHTML = '<div class="verdict verdict--ok">✅ Constantes harmoniques normales ('+(vitales.score_harmonique_global*100).toFixed(0)+'%)</div>';
+        } else {
+          resultEl.innerHTML = '<div class="verdict verdict--ok">✅ Aucune anomalie détectée</div>';
+        }
+        if (recos.length) {
+          resultEl.innerHTML += '<div style="font-size:11px;color:var(--t4);margin-top:6px;text-align:center">'+recos.slice(0,2).join(' · ')+'</div>';
+        }
+      }
+    } catch(e) {
+      if (resultEl) resultEl.innerHTML = '<div class="verdict verdict--treat">⚠️ API inaccessible</div>';
+    }
+  };
+}
+			
