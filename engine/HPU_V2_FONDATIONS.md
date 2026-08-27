@@ -503,9 +503,13 @@ PHYSIQUE QUANTIQUE (émergence)
 DÉTERMINISME (THU-D)
   ✅ Substrat non-répétitif : α = 1/φ (Hurwitz — le plus irrationnel)
   ✅ Mémoire λ = φ dérivée · non-localité = nature de l'onde (Bell)
-  ⏳ E1 — dériver Schrödinger/Q depuis l'équation mère (ouverte)
-  ⏳ E2 — précision quantique ≥ 10⁻¹⁰ (ouverte)
-  ✅ E3 — T* déposée avant test (E3 v2, 24 instances)
+  ✅ E1a — Ĥ = ℏω₀·n̂ dérivé et vérifié machine (≤ 4,4×10⁻¹⁶) — le photon prouve E = ℏω sans masse
+  ⚠️ E1b — structure ✅ [T] (27/08 : κ = 0,427511045 unique, d²ω/dk²(0) = 1/κ, empreinte κ(α) — verif_masse_ondes.py 22/22) · ancrage ⏳ (quelle ω₀ ?) · E1c ⏳ le potentiel
+  ✅ Chaîne Schrödinger close : D^{1/φ} → équation mère → Schrödinger (17/08/2026) · limite mémoire courte K(t) → iℏ∂ₜψ (maillons 1-3, 21/08/2026)
+  ✅ E2 secteur spectral atteint : oscillateur < 10⁻⁸ · hydrogène 1s exact (π dérivé T4) · ionisation 23 éléments
+  ⏳ E2 secteur temporel : certification ≥ 10⁻¹⁰ liée à E1b/E1c
+  ✅ E3 — T* déposée avant test (E3 v2, 24 instances) — T*_ion(H) = 327 918 K
+      (suivi vivant : ETAT_E1_E2_APRES_SPECTRES.md — synchro carte 27/08/2026)
 
 EXCLUSIONS (les bornes)
   ❌ X1 — {φ, π, e} ne sont pas les coefficients Hₙ (0,707 · 0/935)
@@ -527,5 +531,5 @@ HARDWARE
 
 ---
 
-*HPU V2.1 — Spécifications révisées — 11/08/2026*
+*HPU V2.1 — Spécifications révisées 11/08/2026 — carte E1/E2 synchronisée sur ETAT_E1_E2_APRES_SPECTRES.md le 27/08/2026*
 *Univers-Holistique — Kotto Alain*

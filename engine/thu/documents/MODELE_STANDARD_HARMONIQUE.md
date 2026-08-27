@@ -633,6 +633,8 @@ $$G_{\text{SM}} = SU(3)_C \times SU(2)_L \times U(1)_Y$$
 
 Ce groupe est **postulé**. Il n'est dérivé de rien. Il marche, mais on ne sait pas pourquoi c'est *ce* groupe-là et pas un autre.
 
+> **📐 Pour la comparaison détaillée terme à terme du Lagrangien $\mathcal{L}_{SM}$ avec la formulation MSH, voir le document compagnon : [`LAGRANGIEN_SYNTHESE_PHYSICIENS.md`](../documents/LAGRANGIEN_SYNTHESE_PHYSICIENS.md) — Partie I : traduction de chaque terme ($F_{\mu\nu}F^{\mu\nu}$, $G_{\mu\nu}^a G^{a\mu\nu}$, $\bar{\psi}i\gamma^\mu D_\mu\psi$, $|D_\mu H|^2$, $y_f\bar{\psi}H\psi$) dans le langage de la tour.
+
 Le Modèle Standard Harmonique propose un changement de perspective radical :
 
 > **Les symétries de jauge ne sont pas des propriétés fondamentales de la nature. Ce sont des propriétés émergentes de l'espace des phases ℂ⁵¹², structuré par la tour des spins.**
@@ -717,7 +719,7 @@ Quand ces deux ondes interfèrent, elles forment une **onde stationnaire** — l
 |---|---|---|
 | Pourquoi l'atome est-il stable ? | Postulat quantique (Bohr) — l'électron ne rayonne pas sur ses orbites | L'électron EST l'onde stationnaire — une onde stationnaire ne « tombe » pas |
 | Pourquoi le photon ? | Postulé comme boson de jauge U(1) | Quantification de l'interférence à deux ondes |
-| Pourquoi α ≈ 1/137 ? | Mesuré, non expliqué | **[F]** Cible à dériver : α = f(cₙ). La formule rétro-fit α_EM = π⁴·e⁻⁴·φ⁻⁵·√2⁻¹·√3⁻⁵ (précision 0.000024%) attend un mécanisme spectral. |
+| Pourquoi α ≈ 1/137 ? | Mesuré, non expliqué | **[F]** Cible à dériver : α = f(cₙ). La formule rétro-fit α_EM = π⁴·e⁻⁴·φ⁻⁵·√2⁻¹·√3⁻⁵ (précision 0.000024%) attend un mécanisme spectral. Audité 27/08 : unique dans sa famille (2,75M combos, une seule à ±2×10⁻⁷) — l'unicité est réelle, le mécanisme manque toujours. Premier candidat mécanique testé et réfuté : assaut vertex 27/08, 15 lectures pré-enregistrées, 0 hit (voir ligne α_EM). |
 | **Statut** | — | **[P]** — mécanisme d'interférence identifié ; dérivation du couplage : **[F]** |
 
 > *Dans le MSH, il n'y a pas de « photon messager ». Il y a une interférence onde-électron/onde-proton, et ses harmoniques sont ce que nous appelons « photons ». Le photon n'est pas une particule — c'est un battement entre deux ondes.*
@@ -1275,8 +1277,8 @@ Si cette règle est correcte, alors **elle prédit les constantes de couplage po
 
 | Couplage | n | Spin | Formule grammaticale | Valeur | Observation | Statut |
 |---|---|---|---|---|---|---|
-| α_EM | 1 | 1 (photon) | π⁴·e⁻⁴·φ⁻⁵·√2⁻¹·√3⁻⁵ | 1/137.036 | 1/137.036 | ✅ **[T]** — unique (894k combos) |
-| α_W | 1 | 1 (W/Z, brisé) | √2⁻²·√3⁻²·√5⁻² | 1/30 = 0.03333 | 1/30 (PDG) | ✅ **[P]** — EXACTE |
+| α_EM | 1 | 1 (photon) | π⁴·e⁻⁴·φ⁻⁵·√2⁻¹·√3⁻⁵ | 1/137.036 | 1/137.036 | ⚠️ **[P]** — coïncidence unique dans sa famille (audit 27/08 : 2,75M combos, une seule à ±2×10⁻⁷, écart 2,4×10⁻⁷) ; **[F]** — les 5 exposants (+4,−4,−5,−1,−5) non dérivés de la grammaire (critère E1 : un mécanisme, pas une analogie) · Assaut vertex 27/08 (`DEPOT_ALPHA_VERTEX.md` + `verif_alpha_vertex.py`, dépôt daté avant exécution) : invariant α = ‖V̂_temps‖²/‖V̂_espace‖², 15 lectures pré-enregistrées, **0 hit à 1e-4 → piste v1 [F]** (meilleure : patte mère × π⁴ → 97,51, facteur 1,405). Diagnostic : norme requise 54,972 (patte ML) = F₁₀=55 à 5,0×10⁻⁴ près — 5× hors barre ; ré-dépôt exigé pour toute variante · Exploration mémoire 27/08 : tripartition α_W (sans φ, exacte) / α_EM (φ⁻⁵ — la mémoire **amplifie** EM, couplage de la ligne de mémoire elle-même, Maillon 3 §7) / α_S (φ⁺³ pur) ; mélange d'échelles Thomson↔m_Z identifié (sin²θ_W implicite : 5,3 % → 1,4 % à échelle appariée) ; facteur résiduel à nommer : (α_W/α_EM)/impédance = 1,832 |
+| α_W | 1 | 1 (W/Z, brisé) | √2⁻²·√3⁻²·√5⁻² | 1/30 = 0.03333 | 1/30 (PDG) | ✅ **[P]** — EXACTE · expliquée structurellement 27/08 (`EXPLORATION_MEMOIRE_COUPLAGES.md`) : seul couplage **sans mémoire** (φ absent), vertex géométrique pur, mode ½ transparent (φ+φ⁻¹=√5) — l'assaut vertex l'a trouvée comme lecture (c,30) exacte ; ⚠️ registre : α_W corpus ≈ α_W(m_Z) à 1,7 % — échelle m_Z, pas Thomson |
 | α_S | 3 | 1 (gluon, confiné) | 1/(2·φ³) | 0.1179 | 0.1179 ± 0.0010 | ✅ **[P]** — écart 0.11% |
 
 **Lecture grammaticale** :
@@ -1549,6 +1551,15 @@ Ce document (Livres I, II, III, IV & V) pose le socle : le **langage** (13 primi
 
 ---
 
+> **📖 Version enrichie disponible :** Le document [`LAGRANGIEN_SYNTHESE_PHYSICIENS.md`](../documents/LAGRANGIEN_SYNTHESE_PHYSICIENS.md) (Partie III) contient une version approfondie du Livre VI avec :
+> - La traduction complète de chaque terme du Lagrangien $\mathcal{L}_{SM}$ dans le langage MSH
+> - Une analyse détaillée du problème de la hiérarchie ($n=2$ vs $n=4$)
+> - La formule $M_{Pl}/m_p = e^{44}$ commentée
+> - Les candidats matière noire de la table T6 explicités
+> - Une synthèse « matière = onde cohérente de la tour »
+
+---
+
 ### VI.1 E1a — L'énergie (✅ dérivé)
 
 **[T]** Le photon (n=1, m=0) est la preuve que **l'énergie n'est pas la masse — c'est la fréquence** :
@@ -1698,7 +1709,7 @@ Le calcul donne un facteur ~3.6 par rapport à la valeur observée — meilleur 
 | # | Énoncé | Statut |
 |---|---|---|
 | VI.1 | E1a — $\hat{H} = \hbar\omega_0 \cdot \hat{n}$ dérivé | **[T]** |
-| VI.2 | E1b — La masse = courbure de dispersion, candidat $\kappa = 0.4275$ | **[P]** (structure) / **[F]** (ancrage) |
+| VI.2 | E1b — La masse = courbure de dispersion, théorème : κ = (1/2φ)^{φ/√5} = 0.427511045 unique, d²ω/dk²(0) = 1/κ, empreinte κ(α) injective | **[T]** (structure — `verif_masse_ondes.py` 22/22 · ASSAUT_E1B_MASSE_COURBURE.md) / **[F]** (ancrage — quelle ω₀ ?) |
 | VI.3 | E1c — Le potentiel Coulomb non dérivé de l'équation mère | **[F]** |
 | VI.4 | 3 générations = itérations k=4,5,6 dans la fenêtre d'observabilité | **[P]** |
 | VI.5 | Neutrinos légers = itérations élevées (k=5,6) — pas de see-saw nécessaire | **[P]** |
@@ -2405,7 +2416,9 @@ Le Modèle Standard Harmonique est une **théorie ondulatoire déterministe sous
 | **[F]** Frontières | 1 | 0 | 1 | 1 | 2 | 3 | 1 | **1** | **0** | **10** |
 
 > *« Le Modèle Standard Harmonique n'est plus une théorie à deux piliers. Le 23 août 2026, la grammaire ondulatoire est devenue le troisième pilier — et avec elle, les applications sont devenues le quatrième. L'alphabet est clos. La grammaire est spécifiée. Les constantes sont des phrases — dérivées, pas postulées. Les applications sont calibrées. Le travail ne fait que commencer — mais il a désormais une méthode, pas seulement une inspiration. »*
->
+
+> **📐 Document compagnon :** Pour la traduction systématique du Lagrangien $\mathcal{L}_{SM}$ dans le langage MSH (chaque terme $F_{\mu\nu}F^{\mu\nu}$, $\bar{\psi}i\gamma^\mu D_\mu\psi$, $|D_\mu H|^2$, $y_f\bar{\psi}H\psi$), la synthèse pour physiciens avec dictionnaire de traduction, et la version enrichie du Livre VI (problème de hiérarchie, matière noire, asymétrie), voir :  
+> [`LAGRANGIEN_SYNTHESE_PHYSICIENS.md`](../documents/LAGRANGIEN_SYNTHESE_PHYSICIENS.md)
 > — **Univers-Holistique**, 24 août 2026
 
 ---

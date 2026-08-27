@@ -64,7 +64,7 @@ iℏ∂ₜψ = Ĥψ         ← DYNAMIQUE (évolution)
 | Exigence | Statut avant (09/08) | Statut après (11/08) | Preuve |
 |---|---|---|---|
 | **E1a — l'énergie : Ĥ = ℏω₀·n̂, le Hamiltonien de la tour** | ⏳ « heuristique » | ✅ **dérivé — théorème vérifié** : les modes sont les états propres du générateur temporel par construction ; le photon (n=1, m=0) prouve E = ℏω sans masse | `verif_hamiltonien_tour.py` — écarts ≤ 4,4×10⁻¹⁶ · Eₙ = n+½ (7,1×10⁻¹⁵) · la valeur de ℏ reste un étalon déclaré (la FORME est dérivée) |
-| **E1b — la masse : la dispersion ω = ℏk²/2m** | ⏳ | ⏳ ouverte — la masse n'est pas la source de l'énergie (le photon le prouve) : c'est la courbure de la dispersion ; piste : la mémoire dorée (D^{1/φ}, propagateur 1/(ω^{1/φ}−k²), R3) | — |
+| **E1b — la masse : la dispersion ω = ℏk²/2m** | ⏳ | ⚠️ **structure franchie (27/08/2026)** : κ = (1/(2φ))^{φ/√5} = 0,427511045 est l'unique gap qui courbe la dispersion du secteur doré — coïncidence massive d'ordre k² ssi κ, d²ω_f/dk²(0) = 1/κ exact, reste k⁴ prédit (l'écart 4,9×10⁻⁴ expliqué), empreinte κ(α) = (α/2)^{1/(2−α)} injective (T-MASSE.1/2/3) ; ⏳ **l'ancrage** (κ → m_e, m_p : quelle fréquence ω₀ porte l'échelle ? 165 fm ne touche rien de standard) reste la porte | ✅ 22/22 `verif_masse_ondes.py` · `ASSAUT_E1B_MASSE_COURBURE.md` |
 | **E1c — le potentiel (Coulomb…)** | ⏳ | ⏳ ouverte — la liaison entre les modes, la forme reste donnée | — |
 | **E2** — Reproduire une prédiction quantique à ≥ 10⁻¹⁰ | ⏳ ouverte — « le mur 3 » | ✅/⏳ **secteur spectral ATTEINT** : oscillateur, hydrogène 1s, ionisation 23 éléments — calculs à la précision de Schrödinger sur la base modale dérivée | écart < 1e-8 (oscillateur) · exact (1s) · machine (23 éléments, E3 v2) — le secteur temporel reste lié à E1b/E1c |
 | **E3** — Prédiction nouvelle pré-enregistrée | ✅ déposée (E3 v2, 24 instances) | ✅ **déposée — toujours en attente de test** | T\*_ion(H) = 327 918 K — falsifiable |
@@ -94,9 +94,9 @@ iℏ·∂ₜ (Ψ₁*)ⁿ = +nℏω₀·(Ψ₁*)ⁿ     (convention quantique e^{
 
 **Statut des étalons** : la FORME de Ĥ est dérivée (le générateur de la tour) ; la VALEUR de ℏ reste un étalon déclaré.
 
-### E1b · La masse — ⏳ ouverte
+### E1b · La masse — ⚠️ structure ✅ [T] · ancrage ⏳ [F]
 
-La masse n'est pas la source de l'énergie (le photon le prouve) : c'est la **courbure de la dispersion** ω = ℏk²/2m. Piste naturelle : la mémoire dorée — le propagateur fractionnaire 1/(ω^{1/φ} − k²) du secteur n=2 (R3) montre déjà que l'exposant de la mémoire habite la dispersion. *D'où vient m ?* — la porte.
+La masse n'est pas la source de l'énergie (le photon le prouve) : c'est la **courbure de la dispersion** ω = ℏk²/2m. **Assaut du 27/08/2026** (`verif_masse_ondes.py`, 22/22 PASS) : le gap du secteur doré — propagateur 1/(ω^{1/φ} − k²) du secteur n=2 (R3) — qui coïncide avec la dispersion massive à l'ordre k² est **unique**, κ = (1/(2φ))^{φ/√5} = 0,427511045… ; pour cette valeur d²ω_f/dk²(0) = 1/κ (la masse EST l'inverse de la courbure), le reste est O(k⁴) à coefficient prédit, et l'empreinte κ(α) = (α/2)^{1/(2−α)} est injective — la masse mesure la mémoire. *D'où vient la VALEUR de m ?* — l'ancrage (quelle ω₀ ?) reste la porte, comme ℏ reste l'étalon de E1a. Voir `ASSAUT_E1B_MASSE_COURBURE.md`.
 
 ### E1c · Le potentiel — ⏳ ouverte
 
