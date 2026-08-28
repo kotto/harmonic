@@ -78,3 +78,51 @@ Toute tentative d'identification passera par un dépôt daté (protocole du 27/0
 ---
 
 > *Trois couplages, trois relations à la même mémoire : oublier, porter, être.*
+
+---
+
+## 7. Complément d'exploration — 28/08/2026 : le facteur sans nom rencontre 1/D₂
+
+Croisement des deux résultats machine du 27/08 (assaut vertex + assaut grammaire),
+réponse à la question quantifiée du §5 :
+
+```
+facteur sans nom = α_W/α_EM ÷ impédance = 4,567867711866667 / 2,492819122951908
+                 = 1,8324104102898406
+1/D₂ (seule norme intégrale convergente du noyau — théorème de convergence 27/08)
+                 = 1,8342481982500942
+écart relatif    = 1,00×10⁻³   (facteur 10 au-dessus de la barre 1e-4)
+e^{1/φ} (résidu T3) = 1,855277 — écart 1,25×10⁻² : distinct, T5 confirmé
+```
+
+**[OBS]** Le résidu sans nom du §5 est voisin de l'inverse de D₂ — la seule norme
+intégrale convergente du noyau de mémoire. **Aucune revendication** : écart 1,0×10⁻³,
+au-dessus de la barre du dépôt vertex. Le candidat est consigné et entre d'office
+dans la famille « force » du registre fermé de `DEPOT_JAUGAGE_V0.md` — il sera
+tranché par un dépôt daté, pas par ce document. Le fait que le seul reste entre le
+vertex faible (transparent) et le coût de mémoire du vertex EM soit l'inverse de la
+seule norme convergente est le type de signature qu'une grammaire dynamique doit
+expliquer — ou rejeter.
+
+Lecture structurelle (hypothèse, [P]) : si le couplage EM est le prix de la
+stationnarité locale (le compensateur de rephasage modulé, cf. fiche U(1) §5.1),
+alors sa force doit être une *réponse du noyau* — et 1/D₂ est la seule réponse
+globale convergente que le noyau possède. La proximité à 10⁻³ est la première
+quantité machine qui pointe dans cette direction.
+
+---
+
+> *Le trou a une mesure : 1,8324. Le trou a un premier nom candidat : 1/D₂. Le nom sera mérité par un dépôt, pas par une proximité.*
+
+---
+
+**Suivi machine du 28/08 — `DEPOT_JAUGAGE_V0.md` exécuté** (`RESULTAT_JAUGAGE_V0.md` ;
+8/8 contrôles, verdict **V3 — COVARIANCE_LOCALE_DERIVEE_FORCE_SANS_NOM**, exit 0) :
+la force du défaut de commutation mesurée au porteur de référence est **G\* = 0,32328801** —
+0/16 candidats fermés touchés. **Le candidat 1/D₂ est tranché négativement** comme force du
+défaut de jaugage (rapport direct 5,67 ; écart inverse 40,7 %). La proximité 1,8324 ↔ 1/D₂
+à 1,0×10⁻³ reste vraie en arithmétique et **reste sans explication** : le facteur sans nom
+n'est ni la réponse du noyau au rephasage local, ni un nom fermé du registre. La covariance
+locale, elle, est dérivée (U(1) global exact à 1,1×10⁻¹⁶ ; défaut linéaire et gradient-porté) —
+le trou D1 est structurellement fermé, le trou D2 (la force) devient une question à registre
+ouvert, pas une piste fermée.

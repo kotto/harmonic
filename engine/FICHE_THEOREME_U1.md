@@ -97,8 +97,10 @@ Statut : **[P]** (coïncidence structurelle, à publier).
 | Lieu | Ce qui est montré | Statut |
 |---|---|---|
 | Découplage machine (triangle, P6) | sur une boucle à 3 modes, la dynamique se factorise exactement en (phase commune $=\mathrm{tr}(H)t$) × (rotation d'octet) ; marges ≤ 8,9×10⁻¹⁶ | **[T]** |
-| Couplage EM | $\alpha^{-1}_{MSH}=137{,}036031356$ dérivé grammaticalement des primitives (écart au CODATA 2,4×10⁻⁷) | **[T]** — verrou résiduel L3 daté |
+| Couplage EM | $\alpha^{-1}_{MSH}=137{,}036031356$ (5 facteurs) — **ancre de compression** : l'assaut grammaire statique du 27/08 soir a donné **0/218 lectures de verdict** (`DEPOT_ALPHA_GRAMMAIRE_V0.md`, exit 1) ; l'ancre tient à 3,1×10⁻¹² (C4), le mécanisme de dérivation statique est tombé | **[F] statique / ancre** — le verrou L3 passe au jaugage (`DEPOT_JAUGAGE_V0.md`) et à la grammaire dynamique |
 | Photon | harmonique de l'interférence électron-proton | **[P]** (pont) |
+
+> **Correction du 28/08/2026.** La ligne « Couplage EM **[T]** — verrou résiduel L3 daté » ci-dessus datait du 27/08 matin, *avant* l'exécution de l'assaut grammaire (`verif_alpha_grammaire.py`, 8/8 contrôles, 0/218, exit 1). La 5-facteurs est reclassée **coïncidence de compression** : ancre maintenue, dérivation statique tombée. Le verrou résiduel L3 est reporté sur le jaugage local — trou cartographié le 28/08 : localisation (rephasage modulé), force (facteur 1,8324, candidat 1/D₂ à 1,0×10⁻³), dynamique du compensateur, dictionnaire μ↔ω.
 
 ---
 
