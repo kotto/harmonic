@@ -69,7 +69,7 @@ def main():
     # Dépendance en âge
     print("─ VERDICT HONNÊTE")
     print(f"  a₀_THU = φ·c·H₀ = {A0_THU:.2e} m/s² (proche de a₀_MOND = {A0_MOND:.2e})")
-    print(f"  MAIS à l'échelle galactique (10 kpc), le terme mémoire (r/r_mem)^{1-1/φ:.3f}")
+    print(f"  MAIS à l'échelle galactique (10 kpc), le terme mémoire (r/r_mem)^{1-1/PHI:.3f}")
     print(f"  est ~{(10*KPC/r_mem)**(1-1/PHI):.1e} — NÉGLIGEABLE.")
     print(f"  → La mémoire au temps cosmologique explique Λ (facteur 3,6) mais")
     print(f"  ne suffit PAS pour les courbes de rotation galactiques.")
