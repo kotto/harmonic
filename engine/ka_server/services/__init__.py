@@ -21,7 +21,7 @@ from .docling_harmonique import (
 from .hcv_codec import init_hcv_codec, compress_image, upscale_image, analyze_storage, get_hcv_status
 from .voice_engine import init_voice_engine, get_voice_engine
 from .tools import init_tools
-from .ecobank_gateway import get_ecobank_client
+from .banking_gateway import get_payment_processor
 from . import settlement
 
 log = None
@@ -125,12 +125,12 @@ def init_services(app) -> dict:
     
     # 11. Banking — passerelle Ecobank (émission UM / conversion CFA)
     try:
-        services['ecobank_client'] = get_ecobank_client()
+        services['payment_processor'] = get_payment_processor()
         services['banking_settlement'] = settlement
-        log.info("  🏦 Services bancaires prêts (Ecobank)")
+        log.info("  🏦 Services bancaires prêts (Orabank)")
     except Exception as e:
         log.warning(f"  🏦 Services bancaires non disponibles: {e}")
-        services['ecobank_client'] = None
+        services['payment_processor'] = None
         services['banking_settlement'] = None
     
     log.info("  ✅ Services initialisés")

@@ -67,8 +67,8 @@ def register_banking_routes(app, services):
         """État de la passerelle bancaire (mode simulateur / live)."""
         if request.method == 'OPTIONS':
             return '', 200
-        from ..services.ecobank_gateway import get_ecobank_client, UM_TO_CFA
-        client = get_ecobank_client()
+        from ..services.banking_gateway import get_payment_processor, UM_TO_CFA
+        client = get_payment_processor()
         return jsonify({
             "service": "kare-banking",
             "status": "ok",
@@ -252,8 +252,8 @@ def register_banking_routes(app, services):
         """
         if request.method == 'OPTIONS':
             return '', 200
-        from ..services.ecobank_gateway import get_ecobank_client
-        client = get_ecobank_client()
+        from ..services.banking_gateway import get_payment_processor
+        client = get_payment_processor()
         sig = request.headers.get("X-Ecobank-Signature", "")
         if not client.verify_webhook(request.get_data(), sig):
             return jsonify({"error": "Signature webhook invalide", "code": "BAD_SIGNATURE"}), 401
@@ -318,7 +318,7 @@ def register_banking_routes(app, services):
             return '', 200
         n = settle.reset_state()
         try:
-            from ..services.ecobank_gateway import get_ecobank_client as _g
+            from ..services.banking_gateway import get_payment_processor as _g
             _g().reset()
         except Exception:
             pass

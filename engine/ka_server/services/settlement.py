@@ -27,8 +27,8 @@ import uuid
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from .ecobank_gateway import (
-    EcobankError, FIDUCIARY_ACCOUNT, UM_TO_CFA, get_ecobank_client,
+from .banking_gateway import (
+    PaymentError, FIDUCIARY_ACCOUNT, UM_TO_CFA, get_payment_processor,
 )
 
 log = logging.getLogger(__name__)
@@ -233,7 +233,7 @@ def record_collection(method: str, amount_fiat: float, currency: str,
     if key in state["processed"]:
         return state["processed"][key]
 
-    client = get_ecobank_client()
+    client = get_payment_processor()
     amount_um = _um_from_fiat(amount_fiat, currency)
 
     # AML — la collecte diaspora → patient est un crédit de solidarité, plafonné.
@@ -354,12 +354,12 @@ def execute_settlement(conversion_id: str) -> Dict:
     conv["status"] = "settling"
     _save_state(state)
 
-    client = get_ecobank_client()
+    client = get_payment_processor()
     key = f"settle_{conversion_id}"
     try:
         result = client.settle(conv["amount_cfa"], conv["currency"],
                                conv["bank_account"], f"KARE_{conversion_id}", key)
-    except EcobankError as e:
+    except PaymentError as e:
         result = {"ref": None, "status": "failed", "amount": conv["amount_cfa"],
                   "currency": conv["currency"], "fee": 0.0,
                   "raw": {"reason": str(e)}}
@@ -415,7 +415,7 @@ def reconcile(date_iso: str) -> Dict:
     1:1 tient (fiat collecté = UM émis, fiat réglé = UM consommés).
     """
     state = _load_state()
-    client = get_ecobank_client()
+    client = get_payment_processor()
     statement = client.get_statement(date_iso)
 
     ledger_collects = ledger_settlements = 0.0
@@ -703,7 +703,7 @@ def _sync_bank_simulator(state):
     bancaires correspondant aux collections et règlements du seed.
     """
     try:
-        client = get_ecobank_client()
+        client = get_payment_processor()
         client.reset()
         # Ajouter les mouvements bancaires correspondant aux collections
         for coll in state["collections"].values():

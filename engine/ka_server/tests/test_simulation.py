@@ -25,7 +25,7 @@ os.environ['KA_API_KEYS'] = 'test-banking-key-1234567890'
 
 from ka_server.app import create_app  # noqa: E402
 from ka_server.services import settlement  # noqa: E402
-from ka_server.services.ecobank_gateway import get_ecobank_client  # noqa: E402
+from ka_server.services.banking_gateway import get_payment_processor  # noqa: E402
 from ka_server.services.simulation import (  # noqa: E402
     SimulationEngine, SimAgent, run_scenario, run_custom_scenario,
     list_scenarios, get_engine, list_results,
@@ -48,7 +48,7 @@ def client(app):
 def _clean_state():
     """Repart d'un état vierge à chaque test."""
     settlement.reset_state()
-    get_ecobank_client().reset()
+    get_payment_processor().reset()
     # Réinitialiser le moteur
     from ka_server.services.simulation import _engine
     import ka_server.services.simulation as _sim

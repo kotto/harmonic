@@ -31,7 +31,7 @@ os.environ['KA_API_KEYS'] = 'test-banking-key-1234567890'
 
 from ka_server.app import create_app  # noqa: E402
 from ka_server.services import settlement  # noqa: E402
-from ka_server.services.ecobank_gateway import get_ecobank_client, SimulatedEcobankClient  # noqa: E402
+from ka_server.services.banking_gateway import get_payment_processor, SimulatedPaymentProcessor  # noqa: E402
 
 API_KEY = 'test-banking-key-1234567890'
 
@@ -50,7 +50,7 @@ def client(app):
 def _clean_state(app):
     """Repart d'un état vierge à chaque test (ledger + simulateur + rate-limit)."""
     settlement.reset_state()
-    get_ecobank_client().reset()
+    get_payment_processor().reset()
     # Le rate-limit global (30 req/min/IP) s'applique aussi au test client :
     # on le vide entre les tests pour ne pas polluer les assertions avec des 429.
     store = getattr(app, 'ka_rate_limit_store', None)
@@ -74,7 +74,7 @@ def test_health_public(client):
     assert r.status_code == 200
     body = r.get_json()
     assert body['status'] == 'ok'
-    assert body['gateway'] == 'ecobank-simulator'
+    assert body['gateway'] == 'simulated-payment-processor'
     assert body['rate']['1_UM_CFA'] == 655
 
 
@@ -162,7 +162,7 @@ def test_T5_conversion_settled(client):
     assert body['bank']['status'] == 'settled'
 
     # Le compte fiduciaire a été débité, le compte prestataire crédité.
-    bank = get_ecobank_client()
+    bank = get_payment_processor()
     assert bank.get_balance('PREST_MED-1') == 6550
 
 
@@ -253,7 +253,7 @@ def test_T10_bank_settlement_idempotent(client):
     r = client.post(f'/api/banking/conversion/{conv_id}/execute', headers=_auth())
     assert r.status_code == 400  # état déjà settled → invalide
 
-    bank = get_ecobank_client()
+    bank = get_payment_processor()
     assert bank.get_balance('PREST_MED-10') == 3275  # 5 UM * 655, une seule fois
 
 
@@ -353,13 +353,13 @@ def test_seed_demo_creates_accounts(client):
     assert 'conversion_failed' in types
 
     # Vérifier que le simulateur bancaire est synchronisé
-    bank = get_ecobank_client()
-    assert isinstance(bank, SimulatedEcobankClient)
+    bank = get_payment_processor()
+    assert isinstance(bank, SimulatedPaymentProcessor)
     # Les comptes des conversions réglées existent dans le simulateur
     # (BANK_TOURE = 20 UM * 655 = 13100 XOF, BANK_PHM_CENTRALE = 70 * 655 = 45850 XOF)
     assert bank.get_balance('BANK_TOURE', 'XOF') == 13100.0
     assert bank.get_balance('BANK_PHM_CENTRALE', 'XOF') == 45850.0
-    bank = get_ecobank_client()
+    bank = get_payment_processor()
     assert bank.get_balance('BANK_KONE') == 0.0  # compte de prestataire, pas fiduciaire
 
 

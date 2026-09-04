@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
 from . import settlement
-from .ecobank_gateway import get_ecobank_client, UM_TO_CFA
+from .banking_gateway import get_payment_processor, UM_TO_CFA
 from .sonic_id import sonic_id_wav
 
 log = logging.getLogger(__name__)
@@ -609,7 +609,7 @@ class SimulationEngine:
 
         if reset_first:
             settlement.reset_state()
-            get_ecobank_client().reset()
+            get_payment_processor().reset()
 
         log.info(f"▶️ Simulation démarrée : {self._scenario_name}")
 
