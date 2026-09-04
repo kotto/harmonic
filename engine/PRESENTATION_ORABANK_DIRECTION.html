@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>KARE × Orabank — Présentation Direction Générale</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  background:#07070f;
+  color:#eae1d7;
+  overflow:hidden;
+  height:100vh;
+  width:100vw;
+}
+
+/* ── Slides ── */
+.slide{
+  display:none;
+  height:100vh;
+  width:100vw;
+  padding:60px 80px;
+  position:relative;
+  overflow-y:auto;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(212,168,83,.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(61,219,160,.03) 0%, transparent 60%),
+    #07070f;
+}
+.slide.active{display:flex;flex-direction:column;justify-content:center}
+.slide .inner{max-width:1100px;margin:0 auto;width:100%}
+
+/* ── Numéro de slide ── */
+.slide-number{
+  position:absolute;bottom:30px;right:40px;
+  font-size:80px;font-weight:900;
+  color:rgba(212,168,83,.06);
+  line-height:1;
+  pointer-events:none;
+  font-family:Georgia,serif;
+}
+
+/* ── Navigation ── */
+.nav-bar{
+  position:fixed;bottom:0;left:0;right:0;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:14px 20px;
+  background:rgba(7,7,15,.85);
+  backdrop-filter:blur(12px);
+  border-top:1px solid rgba(255,255,255,.06);
+  z-index:100;
+}
+.nav-bar .dot{
+  width:10px;height:10px;border-radius:50%;
+  border:1.5px solid rgba(212,168,83,.3);
+  cursor:pointer;transition:.3s;
+  background:transparent;
+}
+.nav-bar .dot.active{background:#d4a853;border-color:#d4a853;box-shadow:0 0 10px rgba(212,168,83,.3)}
+.nav-bar .dot:hover{border-color:#d4a853}
+.nav-bar .nav-btn{
+  background:rgba(212,168,83,.1);border:1px solid rgba(212,168,83,.2);
+  color:#d4a853;padding:6px 14px;border-radius:8px;cursor:pointer;
+  font-size:13px;font-weight:600;transition:.2s;font-family:inherit;
+}
+.nav-bar .nav-btn:hover{background:rgba(212,168,83,.2)}
+.nav-bar .nav-btn:active{transform:scale(.95)}
+.nav-bar .counter{color:rgba(255,255,255,.3);font-size:12px;min-width:50px;text-align:center}
+.nav-bar .progress-track{flex:1;max-width:300px;height:2px;background:rgba(255,255,255,.06);border-radius:2px}
+.nav-bar .progress-fill{height:100%;background:#d4a853;border-radius:2px;transition:width .5s}
+
+/* ── Typographie ── */
+h1{font-size:clamp(32px,4.5vw,60px);font-weight:900;letter-spacing:-.03em;line-height:1.08;margin-bottom:16px}
+h1 b{background:linear-gradient(135deg,#d4a853,#f0d06a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+h1 .gold{background:linear-gradient(135deg,#d4a853,#f0d06a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+h1 .green{background:linear-gradient(135deg,#27ae60,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+h2{font-size:clamp(22px,2.8vw,36px);font-weight:800;letter-spacing:-.02em;margin-bottom:20px;color:#d4a853}
+h3{font-size:18px;font-weight:700;color:#d4a853;margin-bottom:10px}
+.tag{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+     padding:5px 12px;border-radius:999px;margin-bottom:14px;
+     background:rgba(212,168,83,.1);color:#d4a853;border:1px solid rgba(212,168,83,.2)}
+p,li{font-size:16px;line-height:1.7;color:rgba(234,225,215,.75)}
+p.big{font-size:20px;line-height:1.6}
+p.small{font-size:13px;color:rgba(234,225,215,.5)}
+ul{list-style:none;padding:0}
+li{padding:6px 0;padding-left:20px;position:relative}
+li::before{content:'◆';position:absolute;left:0;color:#d4a853;font-size:9px;top:10px}
+
+/* ── Cartes et grilles ── */
+.grid{display:grid;gap:14px}
+.grid-2{grid-template-columns:1fr 1fr}
+.grid-3{grid-template-columns:1fr 1fr 1fr}
+.grid-4{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.card{
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+  border-radius:16px;padding:24px;transition:.2s;
+}
+.card:hover{border-color:rgba(212,168,83,.15);background:rgba(212,168,83,.04)}
+.card .num{font-size:32px;font-weight:900;color:#d4a853;display:block;margin-bottom:4px;line-height:1}
+.card .num.green{color:#27ae60}
+.card .num.blue{color:#5b8def}
+.card .label{font-size:12px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.card .value{font-size:28px;font-weight:800;color:#fff;line-height:1.2}
+.card .sub{font-size:12px;color:rgba(255,255,255,.4);margin-top:4px}
+
+/* ── Tableaux ── */
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:10px}
+th{text-align:left;color:rgba(255,255,255,.4);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
+td{padding:12px;border-bottom:1px solid rgba(255,255,255,.04);color:rgba(234,225,215,.8)}
+tr:hover td{background:rgba(212,168,83,.03)}
+td:first-child{color:#fff;font-weight:600}
+td.gold{color:#d4a853}
+td.green{color:#27ae60}
+td.ok{color:#27ae60}
+td.no{color:#e74c3c}
+
+/* ── Architecture diagram ── */
+.diagram{display:flex;flex-direction:column;align-items:center;gap:8px;margin:20px 0}
+.diagram .layer{
+  padding:14px 24px;border-radius:12px;text-align:center;font-weight:700;font-size:15px;width:80%;max-width:500px
+}
+.diagram .layer.top{background:linear-gradient(135deg,rgba(212,168,83,.2),rgba(212,168,83,.05));border:1px solid rgba(212,168,83,.2);color:#d4a853}
+.diagram .layer.mid{background:linear-gradient(135deg,rgba(39,174,96,.15),rgba(39,174,96,.05));border:1px solid rgba(39,174,96,.15);color:#27ae60}
+.diagram .layer.bot{background:linear-gradient(135deg,rgba(91,139,239,.15),rgba(91,139,239,.05));border:1px solid rgba(91,139,239,.15);color:#5b8def}
+.diagram .arrow{color:rgba(255,255,255,.2);font-size:20px}
+.diagram .side{font-size:11px;color:rgba(255,255,255,.35);margin-top:4px}
+
+/* ── Flow horizontal ── */
+.flow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:16px 0}
+.flow .box{padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;text-align:center;min-width:100px}
+.flow .box.client{border:1px solid rgba(212,168,83,.3);background:rgba(212,168,83,.08);color:#d4a853}
+.flow .box.kare{border:1px solid rgba(39,174,96,.3);background:rgba(39,174,96,.08);color:#27ae60}
+.flow .box.orabank{border:1px solid rgba(91,139,239,.3);background:rgba(91,139,239,.08);color:#5b8def}
+.flow .conn{color:rgba(255,255,255,.2);font-size:18px}
+
+/* ── Barres de progression ── */
+.bar-track{height:8px;background:rgba(255,255,255,.06);border-radius:4px;margin:12px 0;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#d4a853,#f0d06a);transition:width .5s}
+.bar-fill.green{background:linear-gradient(90deg,#27ae60,#34d399)}
+.bar-fill.blue{background:linear-gradient(90deg,#5b8def,#7ba3f5)}
+
+/* ── Stats inline ── */
+.stat-row{display:flex;gap:20px;flex-wrap:wrap;margin:16px 0}
+.stat-item{flex:1;min-width:120px}
+.stat-item b{display:block;font-size:28px;font-weight:800;color:#d4a853;line-height:1.1}
+.stat-item b.green{color:#27ae60}
+.stat-item b.blue{color:#5b8def}
+.stat-item span{font-size:11px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.05em}
+
+/* ── Brand bar ── */
+.brand-bar{
+  position:fixed;top:0;left:0;right:0;z-index:99;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 24px;
+  background:rgba(7,7,15,.8);backdrop-filter:blur(8px);
+  border-bottom:1px solid rgba(255,255,255,.04);
+}
+.brand-bar .logo{font-size:15px;font-weight:800;letter-spacing:-.02em}
+.brand-bar .logo b{background:linear-gradient(135deg,#d4a853,#f0d06a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.brand-bar .conf{font-size:10px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.1em;border:1px solid rgba(255,255,255,.08);padding:3px 10px;border-radius:4px}
+
+/* ── Slide spécifique ── */
+.slide-cover{text-align:center}
+.slide-cover h1{font-size:clamp(38px,6vw,72px)}
+.slide-cover .subtitle{font-size:22px;color:rgba(255,255,255,.5);margin-top:8px}
+.slide-cover .meta{margin-top:40px;color:rgba(255,255,255,.3);font-size:13px}
+.slide-cover .brand{display:flex;align-items:center;justify-content:center;gap:20px;margin-top:30px}
+.slide-cover .brand span{font-size:40px}
+.slide-cover .brand .plus{color:rgba(212,168,83,.4);font-size:30px}
+
+.quote-box{
+  border-left:3px solid #d4a853;padding:14px 20px;margin:20px 0;
+  background:rgba(212,168,83,.04);border-radius:0 12px 12px 0;
+  font-size:18px;font-style:italic;color:rgba(255,255,255,.7)
+}
+
+@media(max-width:768px){
+  .slide{padding:50px 20px 70px}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+  h1{font-size:28px}
+  .slide-number{font-size:40px;bottom:70px}
+  .nav-bar{padding:10px 12px}
+}
+
+@media print{
+  body{overflow:visible;background:#fff;color:#111}
+  .slide{display:block!important;height:auto;min-height:100vh;page-break-after:always;padding:40px}
+  .nav-bar,.brand-bar,.slide-number{display:none!important}
+  h1,h2,.card .num{color:#222!important;-webkit-text-fill-color:#222!important}
+  .card{background:#f5f5f5;border-color:#ddd}
+  p,li{color:#333}
+}
+</style>
+</head>
+<body>
+
+<div class="brand-bar">
+  <div class="logo">KARE &times; <b>ORABANK</b></div>
+  <div class="conf">Confidentiel &middot; Septembre 2026</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 1 — COVER -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="slide slide-cover active" data-i="0">
+  <div class="inner">
+    <div class="tag">Partenariat Stratégique</div>
+    <h1>
+      La première<br>
+      <b>monnaie de santé</b><br>
+      en zone UEMOA
+    </h1>
+    <div class="subtitle">KARE &times; Orabank</div>
+    <div class="brand">
+      <span>💚</span>
+      <span class="plus">+</span>
+      <span>🏦</span>
+    </div>
+    <div class="meta">
+      Présentation à la Direction Générale &middot; Septembre 2026<br>
+      <span style="font-size:11px;opacity:.6">Document confidentiel &mdash; Ne pas diffuser</span>
+    </div>
+  </div>
+  <div class="slide-number">01</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 2 — LE CONSTAT -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="slide" data-i="1">
+  <div class="inner">
+    <div class="tag">Le constat</div>
+    <h1>La santé en Afrique :<br><b>60% des paiements en espèces</b></h1>
+    <p class="big" style="margin-bottom:30px">Un problème de circulation, pas de moyens. L'argent existe, les soins existent — mais ils ne se rencontrent pas.</p>
+
+    <div class="grid grid-4" style="margin-bottom:24px">
+      <div class="card"><div class="num">60%</div><div class="label">Paiements santé en cash</div></div>
+      <div class="card"><div class="num">80%</div><div class="label">Africains sans assurance</div></div>
+      <div class="card"><div class="num green">&#60;5%</div><div class="label">Transactions santé digitalisées</div></div>
+      <div class="card"><div class="num blue">95 Mds$</div><div class="label">Diaspora envoie / an</div></div>
+    </div>
+
+    <div class="quote-box">
+      &laquo; 10 000+ décès évitables par an faute de moyens de paiement. La diaspora envoie 95 milliards de dollars mais n'a aucun moyen simple de payer les soins d'un proche à distance. &raquo;
+    </div>
+  </div>
+  <div class="slide-number">02</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 3 — LA SOLUTION UM -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="slide" data-i="2">
+  <div class="inner">
+    <div class="tag">La solution</div>
+    <h1>KARE : une <b>Unité Médicale</b><br>pas une monnaie de spéculation</h1>
+    <p class="big">1 UM = <b>1 EUR</b> = <b>655 FCFA</b> — taux fixe, non spéculatif, adossé 1:1</p>
+
+    <div class="grid grid-3" style="margin-top:24px">
+      <div class="card">
+        <div style="font-size:36px;margin-bottom:10px">💚</div>
+        <div class="label">Patient</div>
+        <p style="font-size:13px">Reçoit des UM &rarr; ne peut les utiliser QUE pour se soigner. <strong>Non convertible</strong> &rarr; pas de sortie d'argent.</p>
+      </div>
+      <div class="card">
+        <div style="font-size:36px;margin-bottom:10px">🩺</div>
+        <div class="label">Prestataire</div>
+        <p style="font-size:13px">Reçoit des UM en paiement. <strong>Convertible en CFA</strong> avec traçabilité et plafonds AML (5 000 UM/mois).</p>
+      </div>
+      <div class="card">
+        <div style="font-size:36px;margin-bottom:10px">✈️</div>
+        <div class="label">Diaspora</div>
+        <p style="font-size:13px">Achète des UM par Mobile Money ou carte. Les envoie instantanément à un proche. <strong>0 frais</strong> pour le bénéficiaire.</p>
+      </div>
+    </div>
+
+    <div class="quote-box" style="margin-top:16px;text-align:center">
+      &laquo; L'argent de la santé reste dans la santé &raquo;
+    </div>
+  </div>
+  <div class="slide-number">03</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 4 — L'ARCHITECTURE -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="slide" data-i="3">
+  <div class="inner">
+    <div class="tag">L'architecture</div>
+    <h1><b>Orabank</b> est invisible pour le client,<br>indispensable pour le système</h1>
+
+    <div class="diagram">
+      <div class="layer top">👤 Clients KARE (patients, médecins, diaspora)</div>
+      <div class="arrow">&#9661; interface UM &nbsp;&#9651; soins</div>
+      <div class="layer mid">💚 KARE &mdash; Plateforme santé<br><span style="font-weight:400;font-size:12px">Interface, ledger UM, relation client</span></div>
+      <div class="arrow" style="color:rgba(91,139,239,.4)">&#9661; collecte fiat &nbsp;&#9651; règlement CFA</div>
+      <div class="layer bot">🏦 ORABANK &mdash; Infrastructure bancaire<br><span style="font-weight:400;font-size:12px">Compte fiduciaire, licence e-money, MoMo, carte</span></div>
+      <div class="side">⚠️ Orabank ne voit jamais le patient &mdash; seulement les flux agrégés</div>
+    </div>
+
+    <p style="text-align:center;margin-top:10px;font-size:13px;color:rgba(255,255,255,.4)">
+      Le client KARE nous appartient. Orabank est notre partenaire de confiance en backend.
+    </p>
+  </div>
+  <div class="slide-number">04</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 5 — CE QUE ÇA RAPPORTE À ORABANK -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="slide" data-i="4">
+  <div class="inner">
+    <div class="tag">Business case</div>
+    <h1><b>5 sources de revenus</b> pour Orabank</h1>
+
+    <div class="stat-row">
+      <div class="stat-item"><b>15&ndash;30 M FCFA</b><span>Année 1 · Frais de collecte</span></div>
+      <div class="stat-item"><b class="green">150&ndash;300 M FCFA</b><span>Année 3 · Frais de collecte</span></div>
+      <div class="stat-item"><b class="blue">200 M FCFA</b><span>Solde fiduciaire moyen An 1</span></div>
+      <div class="stat-item"><b class="blue">5 Mds FCFA</b><span>Solde fiduciaire moyen An 3</span></div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="label">Source 1</div>
+        <div class="value">Frais de collecte</div>
+        <div class="sub">0.5% sur chaque transaction Mobile Money et carte. Volume Année 3 : 50 Mds FCFA.</div>
+      </div>
+      <div class="card">
+        <div class="label">Source 2</div>
+        <div class="value">Float du compte fiduciaire</div>
+        <div class="sub">Les fonds collectés restent chez Orabank jusqu'au règlement. Solde moyen croissant.</div>
+      </div>
+      <div class="card">
+        <div class="label">Source 3</div>
+        <div class="value">Nouveaux prestataires</div>
+        <div class="sub">Chaque médecin et pharmacien ouvre un compte Orabank pour être réglé. 10 000 en année 3.</div>
+      </div>
+      <div class="card">
+        <div class="label">Source 4 &amp; 5</div>
+        <div class="value">Clients + Volume</div>
+        <div class="sub">Nouveaux clients particuliers (50 000+) et 100% du flux transactionnel chez Orabank.</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">05</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 6 — AVANTAGE CONCURRENTIEL -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="slide" data-i="5">
+  <div class="inner">
+    <div class="tag">Positionnement</div>
+    <h1>Orabank sera <b>le premier</b> sur ce marché<br>avec <b>12 à 24 mois</b> d'avance</h1>
+
+    <table>
+      <tr><th>Concurrent</th><th>Produit santé digital</th><th>Statut</th></tr>
+      <tr><td><strong>Orabank</strong></td><td>KARE (UM)</td><td class="ok"><strong>✅ EN COURS</strong></td></tr>
+      <tr><td>Ecobank</td><td>Ecobank Health (crédit)</td><td class="no">❌ Pas de monnaie</td></tr>
+      <tr><td>Orange Bank</td><td>Pas de verticale santé</td><td class="no">❌</td></tr>
+      <tr><td>Wave</td><td>Transfert d'argent uniquement</td><td class="no">❌</td></tr>
+      <tr><td>MTN MoMo</td><td>Paiement marchand</td><td class="no">❌</td></tr>
+    </table>
+
+    <div class="grid grid-3" style="margin-top:20px">
+      <div class="card">
+        <div class="num">12&ndash;24</div>
+        <div class="label">Mois d'avance sur les concurrents</div>
+        <div class="sub">Barrière à l'entrée : licence e-money + intégration technique</div>
+      </div>
+      <div class="card">
+        <div class="num green">100%</div>
+        <div class="label">Des flux financiers chez Orabank</div>
+        <div class="sub">Collecte, règlement, float &mdash; tout passe par Orabank</div>
+      </div>
+      <div class="card">
+        <div class="num blue">0</div>
+        <div class="label">Offre concurrente équivalente en UEMOA</div>
+        <div class="sub">Océan bleu &mdash; la santé digitale n'est investie par aucune banque</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">06</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 7 — IMPACT SOCIAL -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="slide" data-i="6">
+  <div class="inner">
+    <div class="tag">Impact &amp; image</div>
+    <h1>Un projet qui fait du bien<br>à <b>l'image</b> et au <b>business</b></h1>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div style="font-size:36px;margin-bottom:8px">🌍</div>
+        <div class="label">Impact social mesurable</div>
+        <ul style="margin-top:6px">
+          <li>Chaque UM émise = un soin qui peut être payé</li>
+          <li>Traçabilité totale &rarr; lutte contre la fraude</li>
+          <li>Réduction du cash dans le circuit de santé</li>
+          <li>Accès aux soins pour les non bancarisés</li>
+          <li>ODD 3 : Bonne santé et bien-être</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div style="font-size:36px;margin-bottom:8px">🏆</div>
+        <div class="label">Positionnement Orabank</div>
+        <ul style="margin-top:6px">
+          <li>Banque de l'innovation santé en Afrique</li>
+          <li>Partenaire officiel de la diaspora</li>
+          <li>Acteur de l'inclusion financière par la santé</li>
+          <li>Visibilité médiatique internationale</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="quote-box" style="text-align:center">
+      &laquo; Orabank lance la première monnaie de santé en Afrique &raquo;<br>
+      <span style="font-size:13px;font-style:normal;color:rgba(255,255,255,.3)">Couverture médiatique attendue : Jeune Afrique, Financial Times, Les Échos</span>
+    </div>
+  </div>
+  <div class="slide-number">07</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 8 — CHIFFRES CLÉS -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="slide" data-i="7">
+  <div class="inner">
+    <div class="tag">Projection</div>
+    <h1>Une <b>croissance exponentielle</b>,<br>des risques maîtrisés</h1>
+
+    <table>
+      <tr><th>Indicateur</th><th>Année 1</th><th>Année 2</th><th>Année 3</th></tr>
+      <tr><td>Patients</td><td class="gold">10 000</td><td class="gold">50 000</td><td class="gold">200 000</td></tr>
+      <tr><td>Prestataires</td><td>500</td><td>2 000</td><td>10 000</td></tr>
+      <tr><td>Volume annuel</td><td class="gold">2 Mds FCFA</td><td class="gold">10 Mds FCFA</td><td class="gold">50 Mds FCFA</td></tr>
+      <tr><td>Solde fiduciaire moyen</td><td class="gold">200 M FCFA</td><td class="gold">1 Md FCFA</td><td class="gold">5 Mds FCFA</td></tr>
+      <tr><td>Revenus Orabank</td><td class="green">30 M FCFA</td><td class="green">150 M FCFA</td><td class="green">500 M FCFA</td></tr>
+      <tr><td>Pays couverts</td><td>1 (Côte d'Ivoire)</td><td>3 (+Sénégal, Mali)</td><td>13 (toute l'UEMOA)</td></tr>
+    </table>
+
+    <div class="grid grid-3" style="margin-top:20px">
+      <div class="card">
+        <div class="label">Investissement initial</div>
+        <div class="num green">Quasi nul</div>
+        <div class="sub">API existante, infrastructure Docker déjà déployée</div>
+      </div>
+      <div class="card">
+        <div class="label">Risque</div>
+        <div class="num blue">Maîtrisé</div>
+        <div class="sub">Plafonds AML 5 000 UM/mois, adossement 1:1, ledger tracé</div>
+      </div>
+      <div class="card">
+        <div class="label">Retour sur investissement</div>
+        <div class="num green">6 mois</div>
+        <div class="sub">ROI positif dès le 6<sup>e</sup> mois de fonctionnement</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">08</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 9 — MODÈLE DE PARTENARIAT -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="slide" data-i="8">
+  <div class="inner">
+    <div class="tag">Notre proposition</div>
+    <h1>Un <b>partenariat gagnant-gagnant</b><br>sur 3 ans renouvelables</h1>
+
+    <div class="grid grid-3" style="margin-top:16px">
+      <div class="card">
+        <div style="font-size:32px;margin-bottom:6px">💚</div>
+        <div class="label">KARE apporte</div>
+        <ul style="font-size:13px;margin-top:6px">
+          <li>Interface client (apps, web)</li>
+          <li>Ledger UM (sourc de vérité)</li>
+          <li>Acquisition et fidélisation</li>
+          <li>Support technique 24/7</li>
+          <li><strong>Le client nous appartient</strong></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div style="font-size:32px;margin-bottom:6px">🏦</div>
+        <div class="label">Orabank apporte</div>
+        <ul style="font-size:13px;margin-top:6px">
+          <li>Licence e-money BCEAO</li>
+          <li>Compte fiduciaire global</li>
+          <li>Agrégation Mobile Money &amp; carte</li>
+          <li>Règlement CFA aux prestataires</li>
+          <li>Conformité réglementaire</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div style="font-size:32px;margin-bottom:6px">💵</div>
+        <div class="label">Part des revenus</div>
+        <ul style="font-size:13px;margin-top:6px">
+          <li>Orabank : <strong>0.5%</strong> du volume collecté</li>
+          <li>Orabank : <strong>100%</strong> du float fiduciaire</li>
+          <li>Orabank : <strong>100%</strong> des nouveaux comptes</li>
+          <li>KARE : 1.0-2.0% du volume (frais tech)</li>
+          <li>Exclusivité santé UEMOA (à négocier)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">09</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 10 — PROCHAINES ÉTAPES -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="slide" data-i="9">
+  <div class="inner">
+    <div class="tag">Planning</div>
+    <h1>6 mois pour un <b>pilote opérationnel</b><br>en Côte d'Ivoire</h1>
+
+    <div style="margin:20px 0">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
+        <div style="background:#d4a853;color:#0a0a0f;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none">1</div>
+        <div><strong style="color:#d4a853">Mois 1 :</strong> Cadrage juridique et commercial<br><span style="font-size:13px;color:rgba(255,255,255,.4)">Signature d'un protocole d'entente (MoU)</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
+        <div style="background:#d4a853;color:#0a0a0f;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none">2</div>
+        <div><strong style="color:#d4a853">Mois 2 :</strong> Accès au sandbox Orabank<br><span style="font-size:13px;color:rgba(255,255,255,.4)">Comptes de test, API, cartes et Mobile Money de test</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
+        <div style="background:#d4a853;color:#0a0a0f;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none">3</div>
+        <div><strong style="color:#d4a853">Mois 3 :</strong> Intégration technique<br><span style="font-size:13px;color:rgba(255,255,255,.4)">Connexion API, tests de collecte, règlement, rapprochement</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
+        <div style="background:#27ae60;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none">4</div>
+        <div><strong style="color:#27ae60">Mois 4-5 :</strong> Pilote Côte d'Ivoire (1 000 patients)<br><span style="font-size:13px;color:rgba(255,255,255,.4)">50 médecins, 20 pharmacies, 3 laboratoires — transactions réelles</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <div style="background:#5b8def;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none">5</div>
+        <div><strong style="color:#5b8def">Mois 6 :</strong> Déploiement production<br><span style="font-size:13px;color:rgba(255,255,255,.4)">Ouverture grand public, communication, extension Sénégal et Mali</span></div>
+      </div>
+    </div>
+
+    <div class="quote-box" style="text-align:center;border-left-color:#27ae60">
+      <strong style="color:#27ae60">Nous sommes prêts techniquement.</strong> Le code est écrit, testé (40 tests), déployé (151 endpoints API).<br>
+      Il ne manque que le <strong style="color:#d4a853">sandbox Orabank</strong> pour basculer du simulateur vers le réel.
+    </div>
+  </div>
+  <div class="slide-number">10</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 11 — CONCLUSION -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="slide slide-cover" data-i="10">
+  <div class="inner">
+    <div class="tag">Conclusion</div>
+    <h1>
+      KARE <span class="plus" style="font-size:32px;color:#d4a853;font-weight:300">+</span> <b>Orabank</b><br>
+      <span style="font-size:clamp(24px,3vw,36px);font-weight:400;background:linear-gradient(135deg,#27ae60,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">
+        = la santé qui circule en Afrique
+      </span>
+    </h1>
+
+    <div class="grid grid-3" style="margin-top:30px">
+      <div class="card" style="text-align:center">
+        <div class="num green">Orabank gagne</div>
+        <div class="sub">Un nouveau marché, des milliers de clients, un compte fiduciaire qui grossit, une image de banque innovante</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="num">KARE apporte</div>
+        <div class="sub">Une technologie éprouvée, une architecture sécurisée, des clients prêts, une équipe passionnée</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="num blue">Le patient gagne</div>
+        <div class="sub">Des soins payables à distance, une traçabilité totale, zéro cash dans le circuit médical</div>
+      </div>
+    </div>
+
+    <div style="margin-top:30px;text-align:center;font-size:20px;font-weight:700;color:rgba(255,255,255,.6)">
+      &laquo; L'argent de la santé reste dans la santé &raquo;
+    </div>
+
+    <div style="margin-top:30px;text-align:center;font-size:13px;color:rgba(255,255,255,.3)">
+      Merci de votre attention.<br>
+      Document préparé par l'équipe KARE — Septembre 2026<br>
+      Contact : [à remplir]
+    </div>
+  </div>
+  <div class="slide-number">11</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- NAVIGATION -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="nav-bar">
+  <button class="nav-btn" onclick="prevSlide()">◀ Précédent</button>
+  <div class="counter" id="slideCounter">1 / 11</div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:9%"></div></div>
+  <div id="dotsContainer" style="display:flex;gap:6px"></div>
+  <button class="nav-btn" onclick="nextSlide()">Suivant ▶</button>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+let current = 0;
+
+function buildDots(){
+  const c = document.getElementById('dotsContainer');
+  c.innerHTML = '';
+  for(let i=0;i<total;i++){
+    const d = document.createElement('div');
+    d.className = 'dot' + (i===0?' active':'');
+    d.onclick = ()=>goTo(i);
+    c.appendChild(d);
+  }
+}
+buildDots();
+
+function goTo(n){
+  slides.forEach(s=>s.classList.remove('active'));
+  current = Math.max(0, Math.min(n, total-1));
+  slides[current].classList.add('active');
+  document.getElementById('slideCounter').textContent = (current+1)+' / '+total;
+  document.getElementById('progressFill').style.width = ((current+1)/total*100)+'%';
+  document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active',i===current));
+}
+
+function nextSlide(){ goTo(current+1); }
+function prevSlide(){ goTo(current-1); }
+
+document.addEventListener('keydown', e => {
+  if(e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+  if(e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prevSlide(); }
+  if(e.key === 'Home') { e.preventDefault(); goTo(0); }
+  if(e.key === 'End') { e.preventDefault(); goTo(total-1); }
+});
+
+// Touch support
+let tx = 0;
+document.addEventListener('touchstart', e => { tx = e.changedTouches[0].screenX; });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].screenX - tx;
+  if(Math.abs(dx) > 50) { dx < 0 ? nextSlide() : prevSlide(); }
+});
+</script>
+</body>
+</html>
